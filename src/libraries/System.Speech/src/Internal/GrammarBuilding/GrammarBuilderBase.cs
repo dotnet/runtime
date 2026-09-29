@@ -12,9 +12,9 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal abstract GrammarBuilderBase Clone();
 
-        internal abstract IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds);
+        internal abstract IElement? CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds);
 
-        internal virtual int CalcCount(BuilderElements parent)
+        internal virtual int CalcCount(BuilderElements? parent)
         {
             Marked = false;
             Parent = parent;
@@ -61,7 +61,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <summary>
         /// Marker to know if an element has already been visited.
         /// </summary>
-        internal virtual BuilderElements Parent
+        internal virtual BuilderElements? Parent
         {
             get
             {
@@ -84,7 +84,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         private bool _marker;
 
-        private BuilderElements _parent;
+        private BuilderElements? _parent;
 
         #endregion
     }

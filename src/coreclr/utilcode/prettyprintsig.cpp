@@ -20,7 +20,7 @@ static WCHAR* asStringW(CQuickBytes *out)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return NULL;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -39,7 +39,7 @@ static CHAR* asStringA(CQuickBytes *out)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return NULL;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -61,7 +61,7 @@ static HRESULT appendStrW(CQuickBytes *out, const WCHAR* str)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -84,7 +84,7 @@ static HRESULT appendStrA(CQuickBytes *out, const CHAR* str)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -104,7 +104,7 @@ static HRESULT appendStrNumW(CQuickBytes *out, int num)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -118,7 +118,7 @@ static HRESULT appendStrNumA(CQuickBytes *out, int num)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -132,7 +132,7 @@ static HRESULT appendStrHexW(CQuickBytes *out, int num)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -146,7 +146,7 @@ static HRESULT appendStrHexA(CQuickBytes *out, int num)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -304,7 +304,7 @@ static PCCOR_SIGNATURE PrettyPrintType(
         {
             typePtr = PrettyPrintType(typePtr, (typeEnd - typePtr), out, pIMDI);
             unsigned rank = CorSigUncompressData(typePtr);
-            PREFIX_ASSUME(rank <= 0xffffff);
+            _ASSERTE(rank <= 0xffffff);
 
             // <TODO>TODO what is the syntax for the rank 0 case? </TODO>
             if (rank == 0)
@@ -554,11 +554,6 @@ static HRESULT PrettyPrintClass(
     CQuickBytes         *out,       // where to put the pretty printed string
     IMDInternalImport   *pIMDI);    // ptr to IMDInternal class with ComSig
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 //*****************************************************************************
 //*****************************************************************************
 // pretty prints 'type' to the buffer 'out' returns a pointer to the next type,
@@ -574,7 +569,7 @@ static HRESULT PrettyPrintTypeA(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -674,7 +669,7 @@ static HRESULT PrettyPrintTypeA(
         sprintf_s(tempBuffer, 64, "pMT: %p", pMT);
         IfFailGo(appendStrA(out, tempBuffer));
         break;
-    
+
     case ELEMENT_TYPE_CMOD_INTERNAL:
         {
             bool required = *typePtr++ != 0;
@@ -724,7 +719,7 @@ static HRESULT PrettyPrintTypeA(
         {
             IfFailGo(PrettyPrintTypeA(typePtr, (typeEnd - typePtr), out, pIMDI));
             unsigned rank = CorSigUncompressData(typePtr);
-            PREFIX_ASSUME(rank <= 0xffffff);
+            _ASSERTE(rank <= 0xffffff);
             // <TODO>TODO what is the syntax for the rank 0 case? </TODO>
             if (rank == 0)
             {
@@ -840,9 +835,6 @@ static HRESULT PrettyPrintTypeA(
  ErrExit:
     return hr;
 } // PrettyPrintTypeA
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 // pretty prints the class 'type' to the buffer 'out'
 static HRESULT PrettyPrintClass(
@@ -854,7 +846,7 @@ static HRESULT PrettyPrintClass(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -921,7 +913,7 @@ HRESULT PrettyPrintSigInternalLegacy(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -938,7 +930,7 @@ HRESULT PrettyPrintSigWorkerInternal(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 

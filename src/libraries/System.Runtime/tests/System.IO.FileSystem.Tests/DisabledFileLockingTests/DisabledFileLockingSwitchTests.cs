@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Xunit;
 
 namespace System.IO.Tests
@@ -10,7 +11,10 @@ namespace System.IO.Tests
         [Fact]
         public static void ConfigSwitchIsHonored()
         {
-            Assert.Equal(OperatingSystem.IsWindows(), PlatformDetection.IsFileLockingEnabled);
+            bool expected = OperatingSystem.IsWindows() ||
+                (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) ||
+                OperatingSystem.IsTvOS();
+            Assert.Equal(expected, PlatformDetection.IsFileLockingEnabled);
         }
     }
 }

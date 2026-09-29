@@ -6,8 +6,10 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
+using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -341,7 +343,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             NetEventSource.Info(this, $"{this} New inbound connection {connection}.");
         }
 
-        SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
+        SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Encoding.UTF8.GetString((byte*)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
         // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
         StartConnectionHandshake(connection, clientHello);
@@ -349,13 +351,13 @@ public sealed partial class QuicListener : IAsyncDisposable
         return QUIC_STATUS_SUCCESS;
 
     }
-    private unsafe int HandleEventStopComplete()
+    private int HandleEventStopComplete()
     {
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
 
-    private unsafe int HandleListenerEvent(ref QUIC_LISTENER_EVENT listenerEvent)
+    private int HandleListenerEvent(ref QUIC_LISTENER_EVENT listenerEvent)
         => listenerEvent.Type switch
         {
             QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION => HandleEventNewConnection(ref listenerEvent.NEW_CONNECTION),
@@ -364,7 +366,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         };
 
 #pragma warning disable CS3016
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
     private static unsafe int NativeCallback(QUIC_HANDLE* listener, void* context, QUIC_LISTENER_EVENT* listenerEvent)
     {
@@ -418,10 +420,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         // Check if the listener has been shut down and if not, shut it down.
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {
-            unsafe
-            {
-                MsQuicApi.Api.ListenerStop(_handle);
-            }
+            MsQuicApi.Api.ListenerStop(_handle);
         }
 
         // Wait for STOP_COMPLETE, the last event, so that all resources can be safely released.

@@ -1,8 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
   <PropertyGroup>
-    <CrossHostArch Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$(BuildArchitecture)</CrossHostArch>
-    <OutputPath>$(RuntimeBinDir)/$(BuildArchitecture)/crossgen2/tools</OutputPath>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <CrossHostArch Condition="'$(_BuildAnyCrossArch)' == 'true'">$(BuildArchitecture)</CrossHostArch>
+    <_IsPublishing>true</_IsPublishing>
+    <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+    <PublishDir>$(RuntimeBinDir)$(BuildArchitecture)/crossgen2/</PublishDir>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishSingleFile>true</PublishSingleFile>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CrossBuild)' != 'true'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+  </PropertyGroup>
+
   <Import Project="crossgen2.props" />
+
 </Project>

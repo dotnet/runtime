@@ -11,6 +11,7 @@ namespace System.Net.Sockets.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class DnsEndPointTest : DualModeBase
     {
         private void OnConnectAsyncCompleted(object sender, SocketAsyncEventArgs args)
@@ -310,7 +311,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DnsEndPointTest), nameof(LocalhostIsBothIPv4AndIPv6))]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
         [Trait("IPv4", "true")]

@@ -21,8 +21,8 @@ class PEWriter;
 class CeeFileGenWriter;
 
 // default setting for PE file
-const UINT32 CEE_IMAGE_BASE_32 =              0x00400000;
-const UINT64 CEE_IMAGE_BASE_64 = UI64(0x0000000140000000);
+const UINT32 CEE_IMAGE_BASE_32 =            0x00400000;
+const UINT64 CEE_IMAGE_BASE_64 = 0x0000000140000000ULL;
 const int CEE_IMAGE_SUBSYSTEM_MAJOR_VERSION = 4;
 const int CEE_IMAGE_SUBSYSTEM_MINOR_VERSION = 0;
 
@@ -108,6 +108,7 @@ public:
     HRESULT getCorHeader(IMAGE_COR20_HEADER **ppHeader);
 
     HRESULT getFileTimeStamp(DWORD *pTimeStamp);
+    void setFileHeaderTimeStamp(DWORD timeStamp);
 
     HRESULT setLibraryGuid(_In_ LPWSTR libraryGuid);
 

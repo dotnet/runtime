@@ -1,0 +1,985 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+//
+// Implementation of the NativeAOT Platform Abstraction Layer (PAL) library when Unix is the platform.
+//
+
+#include <stdio.h>
+#include <errno.h>
+#include <cwchar>
+#include <algorithm>
+#include <sal.h>
+#include "config.h"
+#include <pthread.h>
+#include "gcenv.h"
+#include "gcenv.ee.h"
+#include "gcconfig.h"
+#include "holder.h"
+#include "UnixSignals.h"
+#include "NativeContext.h"
+#include "HardwareExceptions.h"
+#include "PalCreateDump.h"
+#include "cgroupcpu.h"
+#include "threadstore.h"
+#include "thread.h"
+#include "threadstore.inl"
+
+#define _T(s) s
+#include "RhConfig.h"
+
+#include <unistd.h>
+#include <minipal/cpucount.h>
+#include <sched.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <dlfcn.h>
+#include <dirent.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/time.h>
+#include <cstdarg>
+#include <signal.h>
+#include <minipal/memorybarrierprocesswide.h>
+#include <minipal/thread.h>
+
+#ifdef TARGET_LINUX
+#include <sys/syscall.h>
+#include <link.h>
+#include <elf.h>
+#endif
+
+#if HAVE_PTHREAD_GETTHREADID_NP
+#include <pthread_np.h>
+#endif
+
+#if defined(__OpenBSD__)
+#include <pthread_np.h>
+#endif
+
+#if HAVE_LWP_SELF
+#include <lwp.h>
+#endif
+
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+#include <time.h>
+#endif
+
+#ifdef TARGET_APPLE
+#include <mach/mach.h>
+#endif
+
+#ifdef TARGET_HAIKU
+#include <OS.h>
+#endif
+
+using std::nullptr_t;
+
+#define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
+
+#define PAGE_NOACCESS           0x01
+#define PAGE_READWRITE          0x04
+#define PAGE_EXECUTE_READ       0x20
+#define PAGE_EXECUTE_READWRITE  0x40
+
+void RhFailFast()
+{
+    // Causes creation of a crash dump if enabled
+    PalCreateCrashDumpIfEnabled();
+
+    // Aborts the process
+    abort();
+}
+
+#if TARGET_LINUX
+
+struct PalGetPDBInfoPhdrCallbackData
+{
+    void* Base;
+    void* BuildID;
+    uint32_t BuildIDLength;
+};
+
+static int PalGetPDBInfoPhdrCallback(struct dl_phdr_info *info, size_t size, void* pData)
+{
+    struct PalGetPDBInfoPhdrCallbackData* pCallbackData = (struct PalGetPDBInfoPhdrCallbackData*)pData;
+
+    // Find the module of interest
+    void* loadAddress = NULL;
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        if (info->dlpi_phdr[i].p_type == PT_LOAD)
+        {
+            loadAddress = (void*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+            if (loadAddress == pCallbackData->Base)
+                break;
+        }
+    }
+
+    if (loadAddress != pCallbackData->Base)
+    {
+        return 0;
+    }
+
+    // Got the module of interest. Now iterate program headers and try to find the GNU build ID note
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        // Must be a note section. We don't check the name because while there's a convention for the name,
+        // the convention is not mandatory.
+        if (info->dlpi_phdr[i].p_type != PT_NOTE)
+            continue;
+
+        // Got a note section, iterate over the contents and find the GNU build id one
+        ElfW(Nhdr) *note = (ElfW(Nhdr)*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        ElfW(Addr) align = info->dlpi_phdr[i].p_align;
+        ElfW(Addr) size = info->dlpi_phdr[i].p_memsz;
+        ElfW(Addr) start = (ElfW(Addr))note;
+
+        while ((ElfW(Addr)) (note + 1) - start < size)
+        {
+            if (note->n_namesz == 4
+                && note->n_type == NT_GNU_BUILD_ID
+                && memcmp(note + 1, "GNU", 4) == 0)
+            {
+                // Got the note, fill out the callback data and return.
+                pCallbackData->BuildID = (uint8_t*)note + sizeof(ElfW(Nhdr)) + ALIGN_UP(note->n_namesz, align);
+                pCallbackData->BuildIDLength = note->n_descsz;
+                return 1;
+            }
+
+            // Skip over the note. Size of the note is determined by the header and payload (aligned)
+            size_t offset = sizeof(ElfW(Nhdr))
+                + ALIGN_UP(note->n_namesz, align)
+                + ALIGN_UP(note->n_descsz, align);
+            note = (ElfW(Nhdr)*)((uint8_t*)note + offset);
+        }
+    }
+
+    return 0;
+}
+#endif
+
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, _Out_ uint32_t * pcbBuildId, _Out_ void ** ppBuildId)
+{
+    memset(pGuidSignature, 0, sizeof(*pGuidSignature));
+    *pdwAge = 0;
+    *ppBuildId = NULL;
+    *pcbBuildId = 0;
+    if (cchPath <= 0)
+        return;
+    wszPath[0] = L'\0';
+
+#if TARGET_LINUX
+    struct PalGetPDBInfoPhdrCallbackData data;
+    data.Base = hOsHandle;
+
+    if (!dl_iterate_phdr(&PalGetPDBInfoPhdrCallback, &data))
+    {
+        return;
+    }
+
+    *pcbBuildId = data.BuildIDLength;
+    *ppBuildId = data.BuildID;
+#endif
+}
+
+static void UnmaskActivationSignal()
+{
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
+    _ASSERTE(sigmaskRet == 0);
+}
+
+// This functions configures behavior of the signals that are not
+// related to hardware exception handling.
+void ConfigureSignals()
+{
+    // The default action for SIGPIPE is process termination.
+    // Since SIGPIPE can be signaled when trying to write on a socket for which
+    // the connection has been dropped, we need to tell the system we want
+    // to ignore this signal.
+    // Instead of terminating the process, the system call which would had
+    // issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
+    signal(SIGPIPE, SIG_IGN);
+}
+
+void InitializeCurrentProcessCpuCount()
+{
+    uint32_t count = 0;
+
+    // If the configuration value has been set, it takes precedence. Otherwise, take into account
+    // process affinity and CPU quota limit, except for Android (explained below).
+
+    const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
+    uint64_t configValue;
+    int cpuPresentCount;
+
+    if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
+        0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
+    {
+        count = configValue;
+    }
+#ifdef HOST_ANDROID
+    // Android tries really hard to save power by powering off CPUs on SMP phones which
+    // means the normal way to query cpu count can underestimate the number of available CPUs.
+    else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
+    {
+        count = cpuPresentCount;
+
+        uint32_t cpuLimit;
+        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
+    }
+#endif
+    else
+    {
+#if HAVE_SCHED_GETAFFINITY
+
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
+        if (configuredCpuCount == -1)
+        {
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            configuredCpuCount = CPU_SETSIZE;
+        }
+
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
+        if (pCpuSet != nullptr)
+        {
+            size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
+            CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
+            if (st == 0)
+            {
+                count = (uint32_t)CPU_COUNT_S(cpuSetSize, pCpuSet);
+            }
+            else
+            {
+                _ASSERTE(!"sched_getaffinity failed");
+            }
+
+            CPU_FREE(pCpuSet);
+        }
+        else
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+        }
+
+        if (count == 0)
+        {
+            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
+            count = GCToOSInterface::GetTotalProcessorCount();
+        }
+#else // HAVE_SCHED_GETAFFINITY
+        count = GCToOSInterface::GetTotalProcessorCount();
+#endif // HAVE_SCHED_GETAFFINITY
+
+        uint32_t cpuLimit;
+        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
+    }
+
+    _ASSERTE(count > 0);
+    g_RhNumberOfProcessors = count;
+}
+
+#if defined(TARGET_LINUX)
+static pthread_key_t key;
+#endif
+
+#ifdef FEATURE_HIJACK
+bool InitializeSignalHandling();
+#endif
+
+// The NativeAOT PAL must be initialized before any of its exports can be called. Returns true for a successful
+// initialization and false on failure.
+bool PalInit()
+{
+#ifndef FEATURE_PORTABLE_HELPERS
+    if (!InitializeHardwareExceptionHandling())
+    {
+        return false;
+    }
+#endif // !FEATURE_PORTABLE_HELPERS
+
+    ConfigureSignals();
+
+    if (!PalCreateDumpInitialize())
+    {
+        return false;
+    }
+
+    GCConfig::Initialize();
+
+    if (!GCToOSInterface::Initialize())
+    {
+        return false;
+    }
+
+    InitializeCpuCGroup();
+
+    InitializeCurrentProcessCpuCount();
+
+#ifdef FEATURE_HIJACK
+    if (!InitializeSignalHandling())
+    {
+        return false;
+    }
+#endif
+
+#if defined(TARGET_LINUX)
+    if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
+    {
+        return false;
+    }
+#endif
+
+    return true;
+}
+
+#if !defined(TARGET_LINUX)
+struct TlsDestructionMonitor
+{
+    void* m_thread = nullptr;
+
+    void SetThread(void* thread)
+    {
+        m_thread = thread;
+    }
+
+    ~TlsDestructionMonitor()
+    {
+        if (m_thread != nullptr)
+        {
+            RuntimeThreadShutdown(m_thread);
+        }
+    }
+};
+
+// This thread local object is used to detect thread shutdown. Its destructor
+// is called when a thread is being shut down.
+thread_local TlsDestructionMonitor tls_destructionMonitor;
+#endif
+
+// Register the thread with OS to be notified when thread is about to be destroyed
+// It fails fast if a different thread was already registered.
+// Parameters:
+//  thread        - thread to attach
+void PalAttachThread(void* thread)
+{
+#if defined(TARGET_LINUX)
+    if (pthread_setspecific(key, thread) != 0)
+    {
+        _ASSERTE(!"pthread_setspecific failed");
+        RhFailFast();
+    }
+#else
+    tls_destructionMonitor.SetThread(thread);
+#endif
+
+    UnmaskActivationSignal();
+}
+
+#if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+
+UInt32_BOOL PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
+{
+#ifdef TARGET_APPLE
+    vm_address_t addr, taddr;
+    vm_prot_t prot, max_prot;
+    kern_return_t ret;
+
+    // Allocate two contiguous ranges of memory: the first range will contain the stubs
+    // and the second range will contain their data.
+    do
+    {
+        ret = vm_allocate(mach_task_self(), &addr, templateSize * 2, VM_FLAGS_ANYWHERE);
+    } while (ret == KERN_ABORTED);
+
+    if (ret != KERN_SUCCESS)
+    {
+        return UInt32_FALSE;
+    }
+
+    do
+    {
+        ret = vm_remap(
+            mach_task_self(), &addr, templateSize, 0, VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE,
+            mach_task_self(), ((vm_address_t)hTemplateModule + templateRva), FALSE, &prot, &max_prot, VM_INHERIT_SHARE);
+    } while (ret == KERN_ABORTED);
+
+    if (ret != KERN_SUCCESS)
+    {
+        do
+        {
+            ret = vm_deallocate(mach_task_self(), addr, templateSize * 2);
+        } while (ret == KERN_ABORTED);
+
+        return UInt32_FALSE;
+    }
+
+    *newThunksOut = (void*)addr;
+
+    return UInt32_TRUE;
+#else
+    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#endif
+}
+
+UInt32_BOOL PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
+{
+#ifdef TARGET_APPLE
+    kern_return_t ret;
+
+    do
+    {
+        ret = vm_deallocate(mach_task_self(), (vm_address_t)pBaseAddress, templateSize * 2);
+    } while (ret == KERN_ABORTED);
+
+    return ret == KERN_SUCCESS ? UInt32_TRUE : UInt32_FALSE;
+#else
+    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#endif
+}
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+
+UInt32_BOOL PalMarkThunksAsValidCallTargets(
+    void *virtualAddress,
+    int thunkSize,
+    int thunksPerBlock,
+    int thunkBlockSize,
+    int thunkBlocksPerMapping)
+{
+    int ret = mprotect(
+        (void*)((uintptr_t)virtualAddress + (thunkBlocksPerMapping * OS_PAGE_SIZE)),
+        thunkBlocksPerMapping * OS_PAGE_SIZE,
+        PROT_READ | PROT_WRITE);
+    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
+}
+
+UInt32_BOOL __stdcall PalSwitchToThread()
+{
+    // sched_yield yields to another thread in the current process.
+    sched_yield();
+
+    // The return value of sched_yield indicates the success of the call and does not tell whether a context switch happened.
+    // On Linux sched_yield is documented as never failing.
+    // Since we do not know if there was a context switch, we will just return `false`.
+    return false;
+}
+
+UInt32_BOOL PalAreShadowStacksEnabled()
+{
+    return false;
+}
+
+typedef uint32_t(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
+
+bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
+{
+#ifdef HOST_WASM
+    // No threads, so we can't start one
+    ASSERT(false);
+#endif // HOST_WASM
+    pthread_attr_t attrs;
+
+    int st = pthread_attr_init(&attrs);
+    ASSERT(st == 0);
+
+    size_t stacksize = GetDefaultStackSizeSetting();
+    if (stacksize != 0)
+    {
+        st = pthread_attr_setstacksize(&attrs, stacksize);
+        ASSERT(st == 0);
+    }
+
+    static const int NormalPriority = 0;
+    static const int HighestPriority = -20;
+
+    // TODO: Figure out which scheduler to use, the default one doesn't seem to
+    // support per thread priorities.
+#if 0
+    sched_param params;
+    memset(&params, 0, sizeof(params));
+
+    params.sched_priority = highPriority ? HighestPriority : NormalPriority;
+
+    // Set the priority of the thread
+    st = pthread_attr_setschedparam(&attrs, &params);
+    ASSERT(st == 0);
+#endif
+    // Create the thread as detached, that means not joinable
+    st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+    ASSERT(st == 0);
+
+    pthread_t threadId;
+    st = pthread_create(&threadId, &attrs, (void *(*)(void*))callback, pCallbackContext);
+
+    int st2 = pthread_attr_destroy(&attrs);
+    ASSERT(st2 == 0);
+
+    return st == 0;
+}
+
+bool PalSetCurrentThreadName(const char* name)
+{
+    // Ignore requests to set the main thread name because
+    // it causes the value returned by Process.ProcessName to change.
+    if ((pid_t)PalGetCurrentOSThreadId() != getpid())
+    {
+        int setNameResult = minipal_set_thread_name(pthread_self(), name);
+        (void)setNameResult; // used
+        assert(setNameResult == 0);
+    }
+    return true;
+}
+
+bool PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+{
+    return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
+}
+
+bool PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+{
+    return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
+}
+
+bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+{
+    return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
+}
+
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
+{
+    HANDLE moduleHandle = NULL;
+
+    // Emscripten's implementation of dladdr corrupts memory,
+    // but always returns 0 for the module handle, so just skip the call
+#if !defined(HOST_WASM)
+    Dl_info info;
+    int st = dladdr(pointer, &info);
+    if (st != 0)
+    {
+#if defined(HOST_OSX)
+        if (pinModule && info.dli_fname != nullptr)
+        {
+            // NativeAOT runtime state cannot be safely unloaded.
+            // Keep the extra reference for the lifetime of the process.
+            // Unloading is disabled via `-z,nodelete` linker option on ELF platforms.
+            dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
+        }
+#endif
+
+        moduleHandle = info.dli_fbase;
+    }
+#endif //!defined(HOST_WASM)
+
+    return moduleHandle;
+}
+
+void PalPrintFatalError(const char* message)
+{
+    // Write the message using lowest-level OS API available. This is used to print the stack overflow
+    // message, so there is not much that can be done here.
+    // write() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)write(..)`,
+    // so we use additional NOT(!) operator to force unused-result suppression.
+    (void)!write(STDERR_FILENO, message, strlen(message));
+}
+
+char* PalCopyTCharAsChar(const TCHAR* toCopy)
+{
+    NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    if (copy.IsNull())
+    {
+        return nullptr;
+    }
+
+    strcpy(copy, toCopy);
+    return copy.Extract();
+}
+
+HANDLE PalLoadLibrary(const char* moduleName)
+{
+    return dlopen(moduleName, RTLD_LAZY);
+}
+
+void* PalGetProcAddress(HANDLE module, const char* functionName)
+{
+    return dlsym(module, functionName);
+}
+
+static int W32toUnixAccessControl(uint32_t flProtect)
+{
+    int prot = 0;
+
+    switch (flProtect & 0xff)
+    {
+    case PAGE_NOACCESS:
+        prot = PROT_NONE;
+        break;
+    case PAGE_READWRITE:
+        prot = PROT_READ | PROT_WRITE;
+        break;
+    case PAGE_EXECUTE_READ:
+        prot = PROT_READ | PROT_EXEC;
+        break;
+    case PAGE_EXECUTE_READWRITE:
+        prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+        break;
+    case PAGE_READONLY:
+        prot = PROT_READ;
+        break;
+    default:
+        ASSERT(false);
+        break;
+    }
+    return prot;
+}
+
+_Ret_maybenull_ _Post_writable_byte_size_(size) void* PalVirtualAlloc(size_t size, uint32_t protect)
+{
+    int unixProtect = W32toUnixAccessControl(protect);
+
+    int flags = MAP_ANON | MAP_PRIVATE;
+
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
+    if (unixProtect & PROT_EXEC)
+    {
+        flags |= MAP_JIT;
+    }
+#endif
+    void* pMappedMemory = mmap(NULL, size, unixProtect, flags, -1, 0);
+    if (pMappedMemory == MAP_FAILED)
+        return NULL;
+    return pMappedMemory;
+}
+
+void PalVirtualFree(_In_ void* pAddress, size_t size)
+{
+    munmap(pAddress, size);
+}
+
+UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
+{
+    int unixProtect = W32toUnixAccessControl(protect);
+
+    // mprotect expects the address to be page-aligned
+    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, OS_PAGE_SIZE);
+    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, OS_PAGE_SIZE) - pPageStart;
+
+    return mprotect(pPageStart, memSize, unixProtect) == 0;
+}
+
+#if (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
+extern "C" void sys_icache_invalidate(const void* start, size_t len);
+#endif
+
+void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
+{
+#if defined(__linux__) && defined(HOST_ARM)
+    // On Linux/arm (at least on 3.10) we found that there is a problem with __do_cache_op (arch/arm/kernel/traps.c)
+    // implementing cacheflush syscall. cacheflush flushes only the first page in range [pAddress, pAddress + size)
+    // and leaves other pages in undefined state which causes random tests failures (often due to SIGSEGV) with no particular pattern.
+    //
+    // As a workaround, we call __builtin___clear_cache on each page separately.
+
+    uint8_t* begin = (uint8_t*)pAddress;
+    uint8_t* end = begin + size;
+
+    while (begin < end)
+    {
+        uint8_t* endOrNextPageBegin = ALIGN_UP(begin + 1, OS_PAGE_SIZE);
+        if (endOrNextPageBegin > end)
+            endOrNextPageBegin = end;
+
+        __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
+        begin = endOrNextPageBegin;
+    }
+#elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
+    sys_icache_invalidate (pAddress, size);
+#else
+    __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
+#endif
+}
+
+uint32_t PalGetCurrentProcessId()
+{
+    return getpid();
+}
+
+uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
+{
+    const char* value = getenv(name);
+    if (value == NULL)
+    {
+        return 0;
+    }
+
+    size_t valueLen = strlen(value);
+    if (valueLen < size)
+    {
+        strcpy(buffer, value);
+        return valueLen;
+    }
+
+    // return required size including the null character or 0 if the size doesn't fit into uint32_t
+    return (valueLen < UINT32_MAX) ? (valueLen + 1) : 0;
+}
+
+uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)
+{
+    // UNIXTODO: Implement this function
+    return 0;
+}
+
+#ifdef FEATURE_HIJACK
+static struct sigaction g_previousActivationHandler;
+
+static bool IsSaSigInfo(struct sigaction* action)
+{
+    return (action->sa_flags & SA_SIGINFO) != 0;
+}
+
+static bool IsSigDfl(struct sigaction* action)
+{
+    // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
+    // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
+    // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_DFL;
+}
+
+static bool IsSigIgn(struct sigaction* action)
+{
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_IGN;
+}
+
+static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
+{
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
+    if (pThread)
+    {
+        // Only accept activations from the current process
+        if (siginfo->si_pid == getpid()
+#ifdef HOST_APPLE
+            // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+            // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+            || siginfo->si_pid == 0
+#endif
+            )
+        {
+            // Make sure that errno is not modified
+            int savedErrNo = errno;
+            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread, true /* doInlineSuspend */);
+            errno = savedErrNo;
+        }
+
+        pThread->SetActivationPending(false);
+    }
+
+    // Call the original handler when it is not ignored or default (terminate).
+    if (!IsSigDfl(&g_previousActivationHandler) && !IsSigIgn(&g_previousActivationHandler))
+    {
+        if (IsSaSigInfo(&g_previousActivationHandler))
+        {
+            _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
+            g_previousActivationHandler.sa_sigaction(code, siginfo, context);
+        }
+        else
+        {
+            _ASSERTE(g_previousActivationHandler.sa_handler != NULL);
+            g_previousActivationHandler.sa_handler(code);
+        }
+    }
+}
+
+bool InitializeSignalHandling()
+{
+#ifdef __APPLE__
+    void *libSystem = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY);
+    if (libSystem != NULL)
+    {
+        int (*dispatch_allow_send_signals_ptr)(int) = (int (*)(int))dlsym(libSystem, "dispatch_allow_send_signals");
+        if (dispatch_allow_send_signals_ptr != NULL)
+        {
+            int status = dispatch_allow_send_signals_ptr(INJECT_ACTIVATION_SIGNAL);
+            _ASSERTE(status == 0);
+        }
+    }
+
+    // TODO: Once our CI tools can get upgraded to xcode >= 15.3, replace the code above by this:
+    // if (__builtin_available(macOS 14.4, iOS 17.4, tvOS 17.4, *))
+    // {
+    //    // Allow sending the activation signal to dispatch queue threads
+    //    int status = dispatch_allow_send_signals(INJECT_ACTIVATION_SIGNAL);
+    //    _ASSERTE(status == 0);
+    // }
+#endif // __APPLE__
+
+    return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
+}
+
+HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
+{
+    return defaultHijackTarget;
+}
+
+void PalHijack(Thread* pThreadToHijack)
+{
+    if (pThreadToHijack->IsActivationPending())
+    {
+        return;
+    }
+
+    pThreadToHijack->SetActivationPending(true);
+
+    int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);
+
+    // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
+    // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
+    // the process exits.
+    // ESRCH may happen on some OSes when the thread is exiting.
+    if ((status == EAGAIN)
+     || (status == ESRCH)
+#ifdef __APPLE__
+        // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads on macOS older than 14.4 or iOS/tvOS older than 17.4
+     || (status == ENOTSUP)
+#endif
+       )
+    {
+        pThreadToHijack->SetActivationPending(false);
+        return;
+    }
+
+    if (status != 0)
+    {
+        // Causes creation of a crash dump if enabled
+        PalCreateCrashDumpIfEnabled();
+
+        // Failure to send the signal is fatal. There are only two cases when sending
+        // the signal can fail. First, if the signal ID is invalid and second,
+        // if the thread doesn't exist anymore.
+        abort();
+    }
+}
+#endif // FEATURE_HIJACK
+
+HANDLE PalCreateLowMemoryResourceNotification()
+{
+    return NULL;
+}
+
+#if !__has_builtin(_mm_pause)
+extern "C" void _mm_pause()
+// Defined for implementing PalYieldProcessor in Pal.h
+{
+#if defined(HOST_AMD64) || defined(HOST_X86)
+  __asm__ volatile ("pause");
+#endif
+}
+#endif
+
+int32_t _stricmp(const char *string1, const char *string2)
+{
+    return strcasecmp(string1, string2);
+}
+
+uint32_t g_RhNumberOfProcessors;
+
+int32_t PalGetProcessCpuCount()
+{
+    ASSERT(g_RhNumberOfProcessors > 0);
+    return g_RhNumberOfProcessors;
+}
+
+// Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
+// not get the current dynamic bounds of the stack, which can be significantly smaller than
+// the maximum bounds.
+bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
+{
+    void* pStackHighOut = NULL;
+    void* pStackLowOut = NULL;
+
+#ifdef __APPLE__
+    // This is a Mac specific method
+    pStackHighOut = pthread_get_stackaddr_np(pthread_self());
+    pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+#elif defined(__OpenBSD__)
+    // OpenBSD provides the stack segment of the current thread via pthread_stackseg_np.
+    // ss_sp points to the top (highest address) of the stack.
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    pStackHighOut = stack.ss_sp;
+    pStackLowOut = (uint8_t*)stack.ss_sp - stack.ss_size;
+#else // __APPLE__
+    pthread_attr_t attr;
+    size_t stackSize;
+    int status;
+
+    pthread_t thread = pthread_self();
+
+    status = pthread_attr_init(&attr);
+    ASSERT_MSG(status == 0, "pthread_attr_init call failed");
+
+#if HAVE_PTHREAD_ATTR_GET_NP
+    status = pthread_attr_get_np(thread, &attr);
+#elif HAVE_PTHREAD_GETATTR_NP
+    status = pthread_getattr_np(thread, &attr);
+#else
+#error Dont know how to get thread attributes on this platform!
+#endif
+    ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
+
+    status = pthread_attr_getstack(&attr, &pStackLowOut, &stackSize);
+    ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
+
+    status = pthread_attr_destroy(&attr);
+    ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
+
+    pStackHighOut = (uint8_t*)pStackLowOut + stackSize;
+#endif // __APPLE__
+
+    *ppStackLowOut = pStackLowOut;
+    *ppStackHighOut = pStackHighOut;
+
+    return true;
+}
+
+// retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the
+// executable module of the current process.
+//
+// Return value:  number of characters in name string
+//
+int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
+{
+#if defined(HOST_WASM)
+    // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
+    const TCHAR* wasmModuleName = "WebAssemblyModule";
+    *pModuleNameOut = wasmModuleName;
+    return strlen(wasmModuleName);
+#else // HOST_WASM
+    Dl_info dl;
+    if (dladdr(moduleBase, &dl) == 0)
+    {
+        *pModuleNameOut = NULL;
+        return 0;
+    }
+
+    *pModuleNameOut = dl.dli_fname;
+    return strlen(dl.dli_fname);
+#endif // defined(HOST_WASM)
+}
+
+uint64_t PalGetCurrentOSThreadId()
+{
+    return (uint64_t)minipal_get_current_thread_id();
+}

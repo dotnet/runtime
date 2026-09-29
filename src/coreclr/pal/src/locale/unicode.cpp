@@ -14,6 +14,7 @@ Implementation of all functions related to Unicode support
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
+#include <minipal/strings.h>
 #include <minipal/utf8.h>
 #include "pal/cruntime.h"
 #include "pal/stackstring.hpp"
@@ -39,31 +40,6 @@ PALAPI
 GetConsoleOutputCP(
        VOID)
 {
-    UINT nRet = 0;
-    PERF_ENTRY(GetConsoleOutputCP);
-    ENTRY("GetConsoleOutputCP()\n");
-    nRet = GetACP();
-    LOGEXIT("GetConsoleOutputCP returns UINT %d \n", nRet );
-    PERF_EXIT(GetConsoleOutputCP);
-    return nRet;
-}
-
-/*++
-Function:
-GetACP
-
-See MSDN doc.
---*/
-UINT
-PALAPI
-GetACP(VOID)
-{
-    PERF_ENTRY(GetACP);
-    ENTRY("GetACP(VOID)\n");
-
-    LOGEXIT("GetACP returning UINT %d\n", CP_UTF8);
-    PERF_EXIT(GetACP);
-
     return CP_UTF8;
 }
 
@@ -202,7 +178,7 @@ WideCharToMultiByte(
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
         if (cchWideChar < 0)
-            cchWideChar = PAL_wcslen(lpWideCharStr) + 1;
+            cchWideChar = minipal_u16_strlen((CHAR16_T*)lpWideCharStr) + 1;
 
         if (!lpMultiByteStr || cbMultiByte == 0)
             retval = minipal_get_length_utf16_to_utf8((CHAR16_T*)lpWideCharStr, cchWideChar, dwFlags);

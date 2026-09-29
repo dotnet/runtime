@@ -50,7 +50,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="maximum">The maximum allowable value.</param>
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public RangeAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            [DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)] Type type,
             string minimum,
             string maximum)
             : base(populateErrorMessageResourceAccessor: false)
@@ -85,7 +85,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Gets the type of the <see cref="Minimum" /> and <see cref="Maximum" /> values (e.g. Int32, Double, or some custom
         ///     type)
         /// </summary>
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)]
         public Type OperandType { get; }
 
         /// <summary>
@@ -157,6 +157,10 @@ namespace System.ComponentModel.DataAnnotations
             {
                 return false;
             }
+            catch (OverflowException)
+            {
+                return false;
+            }
 
             var min = (IComparable)Minimum;
             var max = (IComparable)Maximum;
@@ -174,9 +178,24 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
         public override string FormatErrorMessage(string name)
         {
+            // Preserve range validation before resolving ErrorMessageString.
+            // FormatMessage also initializes conversion for direct callers.
             SetupConversion();
 
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Minimum, Maximum);
+            return FormatMessage(ErrorMessageString, name);
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" />, <c>{1}</c> is replaced with <see cref="Minimum" />,
+        /// and <c>{2}</c> is replaced with <see cref="Maximum" />.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The attribute is not configured with a valid range.</exception>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            SetupConversion();
+
+            return string.Format(CultureInfo.CurrentCulture, format, name, Minimum, Maximum);
         }
 
         /// <summary>

@@ -6,6 +6,7 @@
 #include "longfilepathwrappers.h"
 #include "sstring.h"
 #include "ex.h"
+#include <dn-stdio.h>
 
 #ifdef HOST_WINDOWS
 class LongFile
@@ -45,6 +46,7 @@ SearchPathWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -136,6 +138,7 @@ GetModuleFileNameWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -192,6 +195,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -255,6 +259,7 @@ LoadLibraryExWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -303,6 +308,7 @@ CreateFileWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -342,51 +348,31 @@ CreateFileWrapper(
     return ret;
 }
 
-BOOL
-GetFileAttributesExWrapper(
-        _In_ LPCWSTR lpFileName,
-        _In_ GET_FILEEX_INFO_LEVELS fInfoLevelId,
-        _Out_writes_bytes_(sizeof(WIN32_FILE_ATTRIBUTE_DATA)) LPVOID lpFileInformation
-        )
+int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
 {
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BOOL   ret = FALSE;
-    DWORD lastError = 0;
-
     EX_TRY
     {
-        LongPathString path(LongPathString::Literal, lpFileName);
+        LongPathString path(LongPathString::Literal, filename);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
-            ret = GetFileAttributesExW(
-                    path.GetUnicode(),
-                    fInfoLevelId,
-                    lpFileInformation
-                    );
-
+            return u16_fopen_s(stream, path.GetUnicode(), mode);
         }
-
-        lastError = GetLastError();
     }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
+    EX_CATCH
     {
-        SetLastError(hr);
+        return -1;
     }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
+    EX_END_CATCH
 
-    return ret;
+    return -1;
 }
 
 BOOL
@@ -403,6 +389,7 @@ CopyFileExWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 

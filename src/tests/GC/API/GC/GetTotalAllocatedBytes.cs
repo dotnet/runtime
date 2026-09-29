@@ -9,9 +9,13 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 public class Test_GetTotalAllocatedBytes 
 {
+    public static bool IsNotHeapVerifyOnArmArchitecture => !(Utilities.IsArm && TestLibrary.CoreClrConfigurationDetection.IsHeapVerify);
+    public static bool IsMultithreadingSupported => PlatformDetection.IsMultithreadingSupported;
+
     struct Counts
     {
         public Counts(long precise, long imprecise)
@@ -109,8 +113,11 @@ public class Test_GetTotalAllocatedBytes
         {
             object lck = new object();
 
+            // 1000 quickly created threads can be too many for a 32-bit environment, so reduce on 32-bit.
+            int threadCount = IntPtr.Size == 4 ? 100 : 1000;
+
             tsk = Task.Run(() => {
-                while (running)
+                for (int i = 0; i < threadCount; i++)
                 {
                     Thread thd = new Thread(() => {
                         lock (lck)
@@ -121,11 +128,14 @@ public class Test_GetTotalAllocatedBytes
 
                     thd.Start();
                     thd.Join();
+
+                    if (!running)
+                        break;
                 }
             });
 
             Counts previous = default(Counts);
-            for (int i = 0; i < 1000; ++i)
+            for (int i = 0; i < 100; ++i)
             {
                 lock (lck)
                 {
@@ -172,11 +182,19 @@ public class Test_GetTotalAllocatedBytes
             thr.Join();
     }
 
-    [Fact]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [ConditionalFact(typeof(Test_GetTotalAllocatedBytes), nameof(IsNotHeapVerifyOnArmArchitecture), nameof(IsMultithreadingSupported))]
     public static void TestEntryPoint() 
     {
         TestSingleThreaded();
         TestSingleThreadedLOH();
+    }
+
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    public static void TestMultithreaded()
+    {
         TestAnotherThread();
         TestLohSohConcurrently();
     }

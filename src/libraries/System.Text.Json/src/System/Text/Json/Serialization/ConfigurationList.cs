@@ -34,10 +34,7 @@ namespace System.Text.Json.Serialization
             }
             set
             {
-                if (value is null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 OnCollectionModifying();
                 ValidateAddedValue(value);
@@ -50,10 +47,7 @@ namespace System.Text.Json.Serialization
 
         public void Add(TItem item)
         {
-            if (item is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             OnCollectionModifying();
             ValidateAddedValue(item);
@@ -68,32 +62,20 @@ namespace System.Text.Json.Serialization
             OnCollectionModified();
         }
 
-        public bool Contains(TItem item)
-        {
-            return _list.Contains(item);
-        }
+        public bool Contains(TItem item) => _list.Contains(item);
 
         public void CopyTo(TItem[] array, int arrayIndex)
         {
             _list.CopyTo(array, arrayIndex);
         }
 
-        public List<TItem>.Enumerator GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
+        public List<TItem>.Enumerator GetEnumerator() => _list.GetEnumerator();
 
-        public int IndexOf(TItem item)
-        {
-            return _list.IndexOf(item);
-        }
+        public int IndexOf(TItem item) => _list.IndexOf(item);
 
         public void Insert(int index, TItem item)
         {
-            if (item is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             OnCollectionModifying();
             ValidateAddedValue(item);

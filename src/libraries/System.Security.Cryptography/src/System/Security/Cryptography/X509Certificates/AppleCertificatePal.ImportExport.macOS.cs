@@ -81,40 +81,34 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException();
         }
 
-        internal unsafe byte[] ExportPkcs8(ReadOnlySpan<char> password)
+        internal unsafe byte[] ExportPkcs8(PbeParameters pbeParameters, ReadOnlySpan<char> password)
         {
             Debug.Assert(_identityHandle != null);
 
             using (SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle))
             {
-                return ExportPkcs8(key, password);
+                return ExportPkcs8(key, pbeParameters, password);
             }
         }
 
-        internal static unsafe byte[] ExportPkcs8(SafeSecKeyRefHandle key, ReadOnlySpan<char> password)
+        internal static byte[] ExportPkcs8(SafeSecKeyRefHandle key, PbeParameters pbeParameters, ReadOnlySpan<char> password)
         {
             using (SafeCFDataHandle data = Interop.AppleCrypto.SecKeyExportData(key, exportPrivate: true, password))
             {
                 ReadOnlySpan<byte> systemExport = Interop.CoreFoundation.CFDataDangerousGetSpan(data);
 
-                fixed (byte* ptr = systemExport)
-                {
-                    using (PointerMemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, systemExport.Length))
-                    {
-                        // Apple's PKCS8 export exports using PBES2, which Win7, Win8.1, and Apple all fail to
-                        // understand in their PKCS12 readers, so re-encrypt using the Win7 PKCS12-PBE parameters.
-                        //
-                        // Since Apple only reliably exports keys with encrypted PKCS#8 there's not a
-                        // "so export it plaintext and only encrypt it once" option.
-                        AsnWriter writer = KeyFormatHelper.ReencryptPkcs8(
-                            password,
-                            manager.Memory,
-                            password,
-                            UnixExportProvider.s_windowsPbe);
+                // Apple's PKCS8 export exports using PBES2, which Win7, Win8.1, and Apple all fail to
+                // understand in their PKCS12 readers, so re-encrypt using the Win7 PKCS12-PBE parameters.
+                //
+                // Since Apple only reliably exports keys with encrypted PKCS#8 there's not a
+                // "so export it plaintext and only encrypt it once" option.
+                AsnWriter writer = KeyFormatHelper.ReencryptPkcs8(
+                    password,
+                    systemExport,
+                    password,
+                    pbeParameters);
 
-                        return writer.Encode();
-                    }
-                }
+                return writer.Encode();
             }
         }
 

@@ -39,11 +39,11 @@ public:
         CORJIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        CORJIT_FLAG_MAKEFINALCODE           = 10, // Use the final code generator, i.e., not the interpreter.
-        CORJIT_FLAG_READYTORUN              = 11, // Use version-resilient code generation
+        CORJIT_FLAG_PORTABLE_ENTRY_POINTS   = 10, // Use portable entrypoints for managed calling convention (see clr-abi.md for details)
+        CORJIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         CORJIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
-        CORJIT_FLAG_PREJIT                  = 14, // prejit is the execution engine.
+        CORJIT_FLAG_ASYNC                   = 14, // Generate code for use as an async function
         CORJIT_FLAG_RELOC                   = 15, // Generate relocatable code
         CORJIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         CORJIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
@@ -51,7 +51,7 @@ public:
         CORJIT_FLAG_BBINSTR_IF_LOOPS        = 19, // JIT must instrument current method if it has loops
         CORJIT_FLAG_BBOPT                   = 20, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED                  = 21, // All methods have an EBP frame
-        CORJIT_FLAG_PUBLISH_SECRET_PARAM    = 22, // JIT must place stub secret param into local 0.  (used by IL stubs)
+        // UNUSED                           = 22,
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 23, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE         = 24, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
         CORJIT_FLAG_TRACK_TRANSITIONS       = 25, // The JIT should insert the helper variants that track transitions.
@@ -63,11 +63,8 @@ public:
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-        CORJIT_FLAG_VECTOR512_THROTTLING    = 31, // On x86/x64, 512-bit vector usage may incur CPU frequency throttling
-#endif
-
+        CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
+        CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32, // The JIT should emit the diagnostic helpers that verify GC mode transitions are legal
     };
 
     CORJIT_FLAGS()

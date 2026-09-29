@@ -58,7 +58,7 @@ namespace System.Tests
             Assert.Equal(Environment.CurrentManagedThreadId, Environment.CurrentManagedThreadId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void CurrentManagedThreadId_DifferentForActiveThreads()
         {
             var ids = new HashSet<int>();
@@ -94,7 +94,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Throws PNSE")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android, "Throws PNSE")]
         public void ProcessPath_MatchesExpectedValue()
         {
             string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
@@ -224,7 +224,7 @@ namespace System.Tests
         [Fact]
         public void Version_Valid()
         {
-            Assert.True(Environment.Version >= new Version(3, 0));
+            Assert.Equal(Version.Parse((string)AppContext.GetData("System.Runtime.Extensions.Tests.EnvironmentTests.ExpectedVersion")), Environment.Version);
         }
 
         [Fact]

@@ -28,7 +28,7 @@ struct HardCodedMetaSig
 #define DEFINE_METASIG_T(body)          extern body
 #define METASIG_BODY(varname, types)    HardCodedMetaSig gsig_ ## varname;
 #include "metasig.h"
-
+#include "cdacdata.h"
 //
 // Use the Binder objects to avoid doing unnecessary name lookup
 // (esp. in the prejit case)
@@ -294,6 +294,7 @@ private:
     USHORT m_cFields;
 
     static CrstStatic s_SigConvertCrst;
+    friend struct ::cdac_data<CoreLibBinder>;
 
 #ifdef _DEBUG
 
@@ -313,6 +314,12 @@ private:
 #endif
 };
 
+template<>
+struct cdac_data<CoreLibBinder>
+{
+    static constexpr size_t Classes = offsetof(CoreLibBinder, m_pClasses);
+};
+
 //
 // Global bound modules:
 //
@@ -325,7 +332,6 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetClass(BinderClassID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != CLASS__NIL);
         PRECONDITION((&g_CoreLib)->m_cClasses > 0);  // Make sure CoreLib has been loaded.
@@ -348,7 +354,6 @@ FORCEINLINE MethodDesc * CoreLibBinder::GetMethod(BinderMethodID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != METHOD__NIL);
         PRECONDITION(id <= (&g_CoreLib)->m_cMethods);
@@ -370,7 +375,6 @@ FORCEINLINE FieldDesc * CoreLibBinder::GetField(BinderFieldID id)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(id != FIELD__NIL);
         PRECONDITION(id <= (&g_CoreLib)->m_cFields);
@@ -416,7 +420,6 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetClassIfExist(BinderClassID id)
     {
         GC_NOTRIGGER;
         NOTHROW;
-        FORBID_FAULT;
         MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);

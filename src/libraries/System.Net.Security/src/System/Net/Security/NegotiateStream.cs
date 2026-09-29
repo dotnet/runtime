@@ -221,10 +221,7 @@ namespace System.Net.Security
         [MemberNotNullWhen(true, nameof(_context))]
         private bool IsAuthenticatedCore => _context != null && HandshakeComplete && _exception == null && _remoteOk;
 
-        public override bool IsMutuallyAuthenticated =>
-            IsAuthenticatedCore &&
-            !string.Equals(_context.Package, NegotiationInfoClass.NTLM) && // suppressing for NTLM since SSPI does not return correct value in the context flags.
-            _context.IsMutuallyAuthenticated;
+        public override bool IsMutuallyAuthenticated => IsAuthenticatedCore && _context.IsMutuallyAuthenticated;
 
         public override bool IsEncrypted => IsAuthenticatedCore && _context.IsEncrypted;
 
@@ -381,17 +378,22 @@ namespace System.Net.Security
 
                     // Always pass InternalBuffer for SSPI "in place" decryption.
                     // A user buffer can be shared by many threads in that case decryption/integrity check may fail cause of data corruption.
-                    _readBufferCount = readBytes;
-                    _readBufferOffset = 0;
                     if (_readBuffer.Length < readBytes)
                     {
                         _readBuffer = new byte[readBytes];
                     }
 
+                    // Note: do not assign _readBufferCount/_readBufferOffset before the read completes successfully.
+                    // If the read throws (e.g. due to the connection closing), a subsequent Read call would otherwise
+                    // observe a non-zero _readBufferCount and return stale/undecrypted buffer contents.
                     readBytes = await ReadAllAsync(InnerStream, new Memory<byte>(_readBuffer, 0, readBytes), allowZeroRead: false, cancellationToken).ConfigureAwait(false);
 
                     // Decrypt into the same buffer (decrypted data size can be shrunk after decryption).
+                    // Use locals so that on failure we do not leave _readBufferOffset/_readBufferCount in a state that
+                    // would expose stale or undecrypted data on a subsequent Read call.
                     NegotiateAuthenticationStatusCode statusCode;
+                    int decryptedOffset = 0;
+                    int decryptedCount = 0;
                     if (isNtlm && !_context.IsEncrypted)
                     {
                         // Non-encrypted NTLM uses an encoding quirk
@@ -404,14 +406,14 @@ namespace System.Net.Security
                         }
                         else
                         {
-                            _readBufferOffset = NtlmSignatureLength;
-                            _readBufferCount = readBytes - NtlmSignatureLength;
+                            decryptedOffset = NtlmSignatureLength;
+                            decryptedCount = readBytes - NtlmSignatureLength;
                             statusCode = NegotiateAuthenticationStatusCode.Completed;
                         }
                     }
                     else
                     {
-                        statusCode = _context.UnwrapInPlace(_readBuffer.AsSpan(0, readBytes), out _readBufferOffset, out _readBufferCount, out _);
+                        statusCode = _context.UnwrapInPlace(_readBuffer.AsSpan(0, readBytes), out decryptedOffset, out decryptedCount, out _);
                     }
 
                     if (statusCode != NegotiateAuthenticationStatusCode.Completed)
@@ -419,6 +421,9 @@ namespace System.Net.Security
                         // TODO: Better exception
                         throw new IOException(SR.net_io_read);
                     }
+
+                    _readBufferOffset = decryptedOffset;
+                    _readBufferCount = decryptedCount;
 
                     // Decrypted data can be shrunk after decryption.
                     if (_readBufferCount == 0 && buffer.Length != 0)
@@ -694,7 +699,8 @@ namespace System.Net.Security
                         RequiredProtectionLevel = protectionLevel,
                         AllowedImpersonationLevel = impersonationLevel,
                         RequireMutualAuthentication = protectionLevel != ProtectionLevel.None
-                    });
+                    },
+                    enforceMutualAuthentication: false);
             }
         }
 

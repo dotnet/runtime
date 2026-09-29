@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
         {
             // For performance, lift up the writer implementation.
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNullValue();
             }
@@ -35,16 +35,13 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, string value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
-            if (options.DictionaryKeyPolicy != null && !isWritingExtensionDataProperty)
+            if (options.DictionaryKeyPolicy is not null && !isWritingExtensionDataProperty)
             {
                 value = options.DictionaryKeyPolicy.ConvertName(value);
 
-                if (value == null)
+                if (value is null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
                 }
@@ -54,5 +51,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.String };
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.String;
     }
 }

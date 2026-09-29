@@ -13,17 +13,23 @@
         /// <param name="options">The options instance.</param>
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
+        #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.MyOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "MyOptions", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
@@ -31,7 +37,7 @@
             }
 
             context.MemberName = "P2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P2" : $"{name}.P2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -41,7 +47,7 @@
             }
 
             context.MemberName = "P3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P3" : $"{name}.P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -51,7 +57,7 @@
             }
 
             context.MemberName = "P4";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P4" : $"{name}.P4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -61,7 +67,7 @@
             }
 
             context.MemberName = "P5";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P5" : $"{name}.P5";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -71,7 +77,7 @@
             }
 
             context.MemberName = "P6";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P6" : $"{name}.P6";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P6" : $"{name}.P6";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -137,7 +143,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -157,6 +163,10 @@ namespace __OptionValidationGeneratedAttributes
             return (uint)(length - MinimumLength) <= (uint)(MaximumLength - MinimumLength);
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, MinimumLength, MaximumLength);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, MinimumLength, MaximumLength);
+        }
     }
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -168,6 +178,10 @@ namespace __OptionValidationGeneratedAttributes
         public __SourceGen__MaxLengthAttribute(): base(() => DefaultErrorMessageString) { Length = MaxAllowableLength; }
         public int Length { get; }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Length);
+        }
         public override bool IsValid(object? value)
         {
             if (Length == 0 || Length < -1)
@@ -184,7 +198,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -228,7 +242,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -248,5 +262,9 @@ namespace __OptionValidationGeneratedAttributes
             return length >= Length;
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Length);
+        }
     }
 }

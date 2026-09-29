@@ -13,7 +13,7 @@
 inline bool create_mdhandle(malloc_span<uint8_t> const& buffer, mdhandle_ptr& handle)
 {
     mdhandle_t h;
-    if (!md_create_handle(buffer, buffer.size(), &h))
+    if (!md_create_handle(buffer.data(), buffer.size(), &h))
         return false;
     handle.reset(h);
     return true;
@@ -71,7 +71,7 @@ inline bool read_in_file(char const* file, malloc_span<uint8_t>& b)
         return false;
 
     b = { (uint8_t*)std::malloc(size), size };
-    fd.read((char*)(uint8_t*)b, b.size());
+    fd.read((char*)b.data(), b.size());
     return true;
 }
 
@@ -82,7 +82,7 @@ inline bool write_out_file(char const* file, malloc_span<uint8_t> b)
     if (!fd)
         return false;
 
-    fd.write((char*)(uint8_t*)b, b.size());
+    fd.write((char*)b.data(), b.size());
     return true;
 }
 
@@ -95,7 +95,7 @@ inline bool find_pe_image_bitness(uint16_t machine, uint8_t& bitness)
     case ((x) ^ IMAGE_FILE_MACHINE_OS_MASK_NETBSD): \
     case ((x) ^ IMAGE_FILE_MACHINE_OS_MASK_SUN): \
     case (x)
-    
+
     switch (machine)
     {
     MAKE_MACHINE_CASE(IMAGE_FILE_MACHINE_I386):
@@ -120,7 +120,7 @@ inline bool get_metadata_from_pe(malloc_span<uint8_t>& b)
 
     // [TODO] Handle endian issues with .NET generated PE images
     // All integers should be read as little-endian.
-    auto dos_header = (PIMAGE_DOS_HEADER)(void*)b;
+    auto dos_header = (PIMAGE_DOS_HEADER)(void*)b.data();
     bool is_pe = dos_header->e_magic == IMAGE_DOS_SIGNATURE;
     if (!is_pe)
         return false;
@@ -138,7 +138,7 @@ inline bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     size_t remaining_pe_size = b.size() - dos_header->e_lfanew;
     uint16_t section_header_count;
     uint8_t* section_header_begin;
-    auto nt_header_any = (PIMAGE_NT_HEADERS)(b + dos_header->e_lfanew);
+    auto nt_header_any = (PIMAGE_NT_HEADERS)(b.data() + dos_header->e_lfanew);
     uint16_t machine = nt_header_any->FileHeader.Machine;
 
     uint8_t bitness;
@@ -196,7 +196,7 @@ inline bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     if (cor_header_offset > b.size() - sizeof(IMAGE_COR20_HEADER))
         return false;
 
-    auto cor_header = (PIMAGE_COR20_HEADER)(b + cor_header_offset);
+    auto cor_header = (PIMAGE_COR20_HEADER)(b.data() + cor_header_offset);
     tgt_header = find_section_header(section_headers, cor_header->MetaData.VirtualAddress);
     if (tgt_header == nullptr)
         return false;
@@ -209,7 +209,7 @@ inline bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     if (metadata_offset > b.size())
         return false;
 
-    void* ptr = (void*)(b + metadata_offset);
+    void* ptr = (void*)(b.data() + metadata_offset);
 
     size_t metadata_length = cor_header->MetaData.Size;
     if (metadata_length > b.size() - metadata_offset)
@@ -217,7 +217,7 @@ inline bool get_metadata_from_pe(malloc_span<uint8_t>& b)
 
     // Capture the metadata portion of the image.
     malloc_span<uint8_t> metadata = { (uint8_t*)std::malloc(metadata_length), metadata_length };
-    std::memcpy(metadata, ptr, metadata.size());
+    std::memcpy(metadata.data(), ptr, metadata.size());
     b = std::move(metadata);
     return true;
 }

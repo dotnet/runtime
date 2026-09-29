@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
@@ -21,6 +21,14 @@ namespace System.Text.Json.SourceGeneration
         public required bool? AllowTrailingCommas { get; init; }
 
         public required ImmutableEquatableArray<TypeRef>? Converters { get; init; }
+
+        public required ImmutableEquatableArray<TypeRef>? TypeClassifiers { get; init; }
+
+        /// <summary>
+        /// The <c>[Experimental]</c> diagnostic IDs referenced by the options-level converters and type
+        /// classifiers above. These are suppressed in the aggregate source files that emit the options setup.
+        /// </summary>
+        public required ImmutableEquatableArray<string> ExperimentalDiagnosticIds { get; init; }
 
         public required int? DefaultBufferSize { get; init; }
 
@@ -52,6 +60,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonCommentHandling? ReadCommentHandling { get; init; }
 
+        public required JsonKnownReferenceHandler? ReferenceHandler { get; init; }
+
         public required JsonUnknownTypeHandling? UnknownTypeHandling { get; init; }
 
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
@@ -63,6 +73,13 @@ namespace System.Text.Json.SourceGeneration
         public required char? IndentCharacter { get; init; }
 
         public required int? IndentSize { get; init; }
+
+        public required bool? AllowDuplicateProperties { get; init; }
+
+        public required bool? InferClosedTypePolymorphism { get; init; }
+
+        public JsonNumberHandling GetEffectiveNumberHandling()
+            => NumberHandling ?? (Defaults is JsonSerializerDefaults.Web ? JsonNumberHandling.AllowReadingFromString : JsonNumberHandling.Strict);
 
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
             => PropertyNamingPolicy ?? (Defaults is JsonSerializerDefaults.Web ? JsonKnownNamingPolicy.CamelCase : null);

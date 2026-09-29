@@ -27,24 +27,19 @@ namespace System.Formats.Asn1
         /// <param name="expectedTag">
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 16).
         /// </param>
-        /// <remarks>
-        ///   The nested content is not evaluated by this method, except for minimal processing to
-        ///   determine the location of an end-of-contents marker.
-        ///   Therefore, the contents may contain data which is not valid under the current encoding rules.
-        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -52,6 +47,11 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
+        /// <remarks>
+        ///   The nested content is not evaluated by this method, except for minimal processing to
+        ///   determine the location of an end-of-contents marker.
+        ///   Therefore, the contents might contain data that's not valid under the current encoding rules.
+        /// </remarks>
         public static void ReadSequence(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
@@ -75,7 +75,7 @@ namespace System.Formats.Asn1
 
             if (length.HasValue)
             {
-                if (length.Value + headerLength > source.Length)
+                if (length.Value > source.Length - headerLength)
                 {
                     throw GetValidityException(LengthValidity.LengthExceedsInput);
                 }
@@ -109,20 +109,16 @@ namespace System.Formats.Asn1
         ///   A new reader positioned at the first
         ///   value in the sequence (or with <see cref="HasData"/> == <see langword="false"/>).
         /// </returns>
-        /// <remarks>
-        ///   the nested content is not evaluated by this method, and may contain data
-        ///   which is not valid under the current encoding rules.
-        /// </remarks>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -130,6 +126,10 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
+        /// <remarks>
+        ///   The nested content is not evaluated by this method, and might contain data
+        ///   that's not valid under the current encoding rules.
+        /// </remarks>
         public AsnReader ReadSequence(Asn1Tag? expectedTag = null)
         {
             AsnDecoder.ReadSequence(
@@ -141,6 +141,57 @@ namespace System.Formats.Asn1
                 expectedTag);
 
             AsnReader ret = CloneAtSlice(contentStart, contentLength);
+            _data = _data.Slice(bytesConsumed);
+            return ret;
+        }
+    }
+
+    public ref partial struct ValueAsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a SEQUENCE or SEQUENCE-OF with the specified tag
+        ///   and returns the result as a new reader positioned at the first
+        ///   value in the sequence (or with <see cref="HasData"/> == <see langword="false"/>).
+        /// </summary>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 16).
+        /// </param>
+        /// <returns>
+        ///   A new reader positioned at the first
+        ///   value in the sequence (or with <see cref="HasData"/> == <see langword="false"/>).
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <remarks>
+        ///   The nested content is not evaluated by this method, and might contain data
+        ///   that's not valid under the current encoding rules.
+        /// </remarks>
+        public ValueAsnReader ReadSequence(Asn1Tag? expectedTag = null)
+        {
+            AsnDecoder.ReadSequence(
+                _data,
+                RuleSet,
+                out int contentStart,
+                out int contentLength,
+                out int bytesConsumed,
+                expectedTag);
+
+            ValueAsnReader ret = new ValueAsnReader(_data.Slice(contentStart, contentLength), RuleSet, _options);
             _data = _data.Slice(bytesConsumed);
             return ret;
         }

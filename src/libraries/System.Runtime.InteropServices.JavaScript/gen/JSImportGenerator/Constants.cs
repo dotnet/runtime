@@ -11,9 +11,12 @@ namespace Microsoft.Interop.JavaScript
         public const string JSExportAttribute = "System.Runtime.InteropServices.JavaScript.JSExportAttribute";
         public const string JavaScriptMarshal = "System.Runtime.InteropServices.JavaScript.JavaScriptMarshal";
         public const string DebuggerNonUserCodeAttribute = "global::System.Diagnostics.DebuggerNonUserCode";
+        public const string SupportedOSPlatformAttribute = "global::System.Runtime.Versioning.SupportedOSPlatform";
+        public const string BrowserPlatform = "browser";
 
         public const string JSFunctionSignatureGlobal = "global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding";
         public const string JSMarshalerArgumentGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument";
+        public const string JSMarshalerArgument = "System.Runtime.InteropServices.JavaScript.JSMarshalerArgument";
         public const string ModuleInitializerAttributeGlobal = "global::System.Runtime.CompilerServices.ModuleInitializerAttribute";
         public const string CompilerGeneratedAttributeGlobal = "global::System.Runtime.CompilerServices.CompilerGeneratedAttribute";
         public const string DynamicDependencyAttributeGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute";

@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32)]
         internal static partial uint LsaSetForestTrustInformation(SafeLsaPolicyHandle handle, in UNICODE_STRING target, IntPtr forestTrustInfo, [MarshalAs(UnmanagedType.U1)] bool checkOnly, out IntPtr collisionInfo);
     }

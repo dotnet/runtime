@@ -37,59 +37,37 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void EmptyIList()
+        public void Empty()
         {
-            int[] source = { };
-
-            Assert.Throws<InvalidOperationException>(() => source.Single());
+            foreach (IEnumerable<int> source in CreateSources<int>([]))
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Single());
+            }
         }
 
         [Fact]
-        public void SingleElementIList()
+        public void SingleElement()
         {
-            int[] source = { 4 };
             int expected = 4;
-
-            Assert.Equal(expected, source.Single());
+            foreach (IEnumerable<int> source in CreateSources([4]))
+            {
+                Assert.Equal(expected, source.Single());
+            }
         }
 
         [Fact]
-        public void ManyElementIList()
+        public void ManyElement()
         {
-            int[] source = { 4, 4, 4, 4, 4 };
-
-            Assert.Throws<InvalidOperationException>(() => source.Single());
-        }
-
-        [Fact]
-        public void EmptyNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(0, 0);
-
-            Assert.Throws<InvalidOperationException>(() => source.Single());
-        }
-
-        [Fact]
-        public void SingleElementNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(-5, 1);
-            int expected = -5;
-
-            Assert.Equal(expected, source.Single());
-        }
-
-        [Fact]
-        public void ManyElementNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(3, 5);
-
-            Assert.Throws<InvalidOperationException>(() => source.Single());
+            foreach (IEnumerable<int> source in CreateSources([4, 4, 4, 4, 4]))
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Single());
+            }
         }
 
         [Fact]
         public void EmptySourceWithPredicate()
         {
-            int[] source = { };
+            int[] source = [];
 
             Assert.All(CreateSources(source), source =>
             {
@@ -100,7 +78,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleElementPredicateTrue()
         {
-            int[] source = { 4 };
+            int[] source = [4];
             int expected = 4;
 
             Assert.All(CreateSources(source), source =>
@@ -112,7 +90,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleElementPredicateFalse()
         {
-            int[] source = { 3 };
+            int[] source = [3];
 
             Assert.All(CreateSources(source), source =>
             {
@@ -123,7 +101,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ManyElementsPredicateFalseForAll()
         {
-            int[] source = { 3, 1, 7, 9, 13, 19 };
+            int[] source = [3, 1, 7, 9, 13, 19];
 
             Assert.All(CreateSources(source), source =>
             {
@@ -134,7 +112,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ManyElementsPredicateTrueForLast()
         {
-            int[] source = { 3, 1, 7, 9, 13, 19, 20 };
+            int[] source = [3, 1, 7, 9, 13, 19, 20];
             int expected = 20;
 
             Assert.All(CreateSources(source), source =>
@@ -146,7 +124,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ManyElementsPredicateTrueForFirstAndLast()
         {
-            int[] source = { 2, 3, 1, 7, 9, 13, 19, 10 };
+            int[] source = [2, 3, 1, 7, 9, 13, 19, 10];
 
             Assert.All(CreateSources(source), source =>
             {
@@ -187,7 +165,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowsOnNullPredicate()
         {
-            int[] source = { };
+            int[] source = [];
             Func<int, bool> nullPredicate = null;
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.Single(nullPredicate));
         }

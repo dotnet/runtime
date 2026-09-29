@@ -1513,10 +1513,7 @@ namespace System.Management
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
 
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (value is ManagementScope && destinationType == typeof(InstanceDescriptor))
             {

@@ -31,17 +31,17 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, 
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startupinfo"));
 
+    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr || dotnet_root[0] == _X('\0'))
+    {
+        trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
+        return StatusCode::InvalidArgFailure;
+    }
+
     StatusCode bundleStatus = bundle::info_t::process_bundle(host_path, app_path, bundle_header_offset);
     if (bundleStatus != StatusCode::Success)
     {
         trace::error(_X("A fatal error occurred while processing application bundle"));
         return bundleStatus;
-    }
-
-    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr)
-    {
-        trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
-        return StatusCode::InvalidArgFailure;
     }
 
     host_startup_info_t startup_info(host_path, dotnet_root, app_path);
@@ -53,7 +53,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const p
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_startupinfo"));
 
-    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr)
+    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr || dotnet_root[0] == _X('\0'))
     {
         trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
         return StatusCode::InvalidArgFailure;
@@ -75,8 +75,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 
 // [OBSOLETE] Replaced by hostfxr_resolve_sdk2
 //
-// Determines the directory location of the SDK accounting for
-// global.json and multi-level lookup policy.
+// Determines the directory location of the SDK accounting for global.json.
 //
 // Invoked via MSBuild SDK resolver to locate SDK props and targets
 // from an msbuild other than the one bundled by the CLI.
@@ -86,9 +85,6 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 //      The main directory where SDKs are located in sdk\[version]
 //      sub-folders. Pass the directory of a dotnet executable to
 //      mimic how that executable would search in its own directory.
-//      It is also valid to pass nullptr or empty, in which case
-//      multi-level lookup can still search other locations if
-//      it has not been disabled by the user's environment.
 //
 //    working_dir
 //      The directory where the search for global.json (which can
@@ -173,15 +169,29 @@ enum class hostfxr_resolve_sdk2_result_key_t : int32_t
     resolved_sdk_dir = 0,
     global_json_path = 1,
     requested_version = 2,
+    global_json_state = 3,
 };
 
 typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
     hostfxr_resolve_sdk2_result_key_t key,
     const pal::char_t* value);
 
+namespace
+{
+    const pal::char_t *GlobalJsonStates[] =
+    {
+        _X("not_found"),
+        _X("valid"),
+        _X("invalid_json"),
+        _X("invalid_data"),
+        _X("__invalid_data_no_fallback"),
+    };
+    static_assert((sizeof(GlobalJsonStates) / sizeof(*GlobalJsonStates)) == static_cast<size_t>(sdk_resolver::global_file_info::state::__last), "Invalid state count");
+}
+
 //
 // Determines the directory location of the SDK accounting for
-// global.json and multi-level lookup policy.
+// global.json.
 //
 // Invoked via MSBuild SDK resolver to locate SDK props and targets
 // from an msbuild other than the one bundled by the CLI.
@@ -192,13 +202,12 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //      sub-folders. Pass the directory of a dotnet executable to
 //      mimic how that executable would search in its own directory.
 //      It is also valid to pass nullptr or empty, in which case
-//      multi-level lookup can still search other locations if
-//      it has not been disabled by the user's environment.
+//      only paths from any found global.json will be searched.
 //
 //    working_dir
 //      The directory where the search for global.json (which can
 //      control the resolved SDK version) starts and proceeds
-//      upwards.
+//      upwards. If nullptr or empty, global.json search is disabled.
 //
 //   flags
 //      Bitwise flags that influence resolution.
@@ -228,9 +237,13 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //      value will hold the requested version. This will occur for
 //      both resolution success and failure.
 //
+//      The result will be invoked with global_json_state key and
+//      the value will hold one of: not_found, valid, invalid_json,
+//      invalid_data.
+//
 // Return value:
 //   0 on success, otherwise failure
-//   0x8000809b - SDK could not be resolved (SdkResolverResolveFailure)
+//   0x8000809b - SDK could not be resolved (SdkResolveFailure)
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
@@ -273,11 +286,11 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
             resolved_sdk_dir.c_str());
     }
 
-    if (!resolver.global_file_path().empty())
+    if (resolver.global_file().is_data_used() && !resolver.global_file().path.empty())
     {
         result(
             hostfxr_resolve_sdk2_result_key_t::global_json_path,
-            resolver.global_file_path().c_str());
+            resolver.global_file().path.c_str());
     }
 
     if (!resolver.get_requested_version().is_empty())
@@ -287,9 +300,13 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
             resolver.get_requested_version().as_str().c_str());
     }
 
+    result(
+        hostfxr_resolve_sdk2_result_key_t::global_json_state,
+        GlobalJsonStates[static_cast<int>(resolver.global_file().state)]);
+
     return !resolved_sdk_dir.empty()
         ? StatusCode::Success
-        : StatusCode::SdkResolverResolveFailure;
+        : StatusCode::SdkResolveFailure;
 }
 
 
@@ -416,7 +433,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     }
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_dir, nullptr, /*disable_multilevel_lookup*/ true, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_dir, nullptr, /*include_disabled_versions*/ false, &framework_infos);
 
     std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
     std::vector<pal::string_t> framework_versions;
@@ -550,7 +567,7 @@ namespace
             if (!pal::get_own_executable_path(&startup_info.host_path) || !pal::fullpath(&startup_info.host_path))
             {
                 trace::error(_X("Failed to resolve full path of the current host [%s]"), startup_info.host_path.c_str());
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
             }
         }
 
@@ -558,13 +575,13 @@ namespace
         {
             pal::string_t mod_path;
             if (!pal::get_method_module_path(&mod_path, (void*)&hostfxr_set_error_writer))
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
 
             startup_info.dotnet_root = get_dotnet_root_from_fxr_path(mod_path);
             if (!pal::fullpath(&startup_info.dotnet_root))
             {
                 trace::error(_X("Failed to resolve full path of dotnet root [%s]"), startup_info.dotnet_root.c_str());
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
             }
         }
 
@@ -623,7 +640,12 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_confi
     const runtime_config_t::settings_t override_settings;
     app->parse_runtime_config(runtime_config, _X(""), override_settings);
 
-    const runtime_config_t app_config = app->get_runtime_config();
+    const runtime_config_t& app_config = app->get_runtime_config();
+    if (!app_config.is_valid())
+    {
+        trace::error(_X("Invalid runtimeconfig.json [%s]"), app_config.get_path().c_str());
+        return StatusCode::InvalidConfigFile;
+    }
 
     // Resolve frameworks for framework-dependent apps.
     // Self-contained apps assume the framework is next to the app, so we just treat it as success.

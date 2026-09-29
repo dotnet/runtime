@@ -82,7 +82,7 @@ void merge(merge_config_t cfg)
     size_t save_size;
     md_write_to_buffer(handle.get(), nullptr, &save_size);
     malloc_span<uint8_t> out_buffer { (uint8_t*)malloc(save_size), save_size };
-    if (!md_write_to_buffer(handle.get(), out_buffer, &save_size))
+    if (!md_write_to_buffer(handle.get(), out_buffer.data(), &save_size))
     {
         std::fprintf(stderr, "Failed to save image.\n");
     }
@@ -97,7 +97,7 @@ void merge(merge_config_t cfg)
 
 static char const* s_usage = "Syntax: mdmerge [-o <output_path>] [-d <path_to_delta>]* <path ecma-335 data>";
 
-int main(int ac, char** av)
+int MAIN_CALLCONV main(int ac, char** av)
 {
     if (ac <= 1)
     {

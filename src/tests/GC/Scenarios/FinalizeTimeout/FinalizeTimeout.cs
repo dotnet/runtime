@@ -5,9 +5,12 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class FinalizeTimeout
 {
+    [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void TestEntryPoint()
     {

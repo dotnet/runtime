@@ -21,14 +21,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// If the <see paramref="wrapHandlersPipeline"/> is `true`, <see cref="IHttpClientLogger.LogRequestStart"/> and
+        /// If the <paramref name="wrapHandlersPipeline"/> is `true`, <see cref="IHttpClientLogger.LogRequestStart"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStartAsync"/> would be executed before all
         /// other additional handlers in the chain. <see cref="IHttpClientLogger.LogRequestStop"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStopAsync"/> would be executed after all
         /// other additional handlers, essentially wrapping the whole pipeline.
         /// </para>
         /// <para>
-        /// If the <see paramref="wrapHandlersPipeline"/> is `false`, <see cref="IHttpClientLogger.LogRequestStart"/> and
+        /// If the <paramref name="wrapHandlersPipeline"/> is `false`, <see cref="IHttpClientLogger.LogRequestStart"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStartAsync"/> would be executed after all
         /// other additional handlers in the chain, right before the primary handler. <see cref="IHttpClientLogger.LogRequestStop"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStopAsync"/> would be executed before all
@@ -45,8 +45,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddLogger(this IHttpClientBuilder builder, Func<IServiceProvider, IHttpClientLogger> httpClientLoggerFactory, bool wrapHandlersPipeline = false)
         {
-            ThrowHelper.ThrowIfNull(builder);
-            ThrowHelper.ThrowIfNull(httpClientLoggerFactory);
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(httpClientLoggerFactory);
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
@@ -83,14 +83,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </typeparam>
         /// <remarks>
         /// <para>
-        /// If the <see paramref="wrapHandlersPipeline"/> is `true`, <see cref="IHttpClientLogger.LogRequestStart"/> and
+        /// If the <paramref name="wrapHandlersPipeline"/> is `true`, <see cref="IHttpClientLogger.LogRequestStart"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStartAsync"/> would be executed before all
         /// other additional handlers in the chain. <see cref="IHttpClientLogger.LogRequestStop"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStopAsync"/> would be executed after all
         /// other additional handlers, essentially wrapping the whole pipeline.
         /// </para>
         /// <para>
-        /// If the <see paramref="wrapHandlersPipeline"/> is `false`, <see cref="IHttpClientLogger.LogRequestStart"/> and
+        /// If the <paramref name="wrapHandlersPipeline"/> is `false`, <see cref="IHttpClientLogger.LogRequestStart"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStartAsync"/> would be executed after all
         /// other additional handlers in the chain, right before the primary handler. <see cref="IHttpClientLogger.LogRequestStop"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStopAsync"/> would be executed before all
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder AddLogger<TLogger>(this IHttpClientBuilder builder, bool wrapHandlersPipeline = false)
             where TLogger : IHttpClientLogger
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
 
             return AddLogger(builder, services => services.GetRequiredService<TLogger>(), wrapHandlersPipeline);
         }
@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         public static IHttpClientBuilder RemoveAllLoggers(this IHttpClientBuilder builder)
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         public static IHttpClientBuilder AddDefaultLogger(this IHttpClientBuilder builder)
         {
-            ThrowHelper.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(builder);
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options => options.SuppressDefaultLogging = false);
             return builder;

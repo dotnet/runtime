@@ -13,6 +13,7 @@ internal static partial class Interop
             REPORT_NO_PRIVATE_KEY                 = 0x00000001,
             REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY = 0x00000002,
             EXPORT_PRIVATE_KEYS                   = 0x00000004,
+            PKCS12_EXPORT_PBES2_PARAMS            = 0x00000080,
             None                                  = 0x00000000,
         }
     }

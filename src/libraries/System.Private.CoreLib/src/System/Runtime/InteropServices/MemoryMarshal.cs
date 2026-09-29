@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
@@ -27,11 +28,12 @@ namespace System.Runtime.InteropServices
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [OverloadResolutionPriority(1)] // Prioritize this overload over the ReadOnlySpan overload so types convertible to both resolve to this mutable version.
         public static unsafe Span<byte> AsBytes<T>(Span<T> span)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
 
             return new Span<byte>(
                 ref Unsafe.As<T, byte>(ref GetReference(span)),
@@ -54,7 +56,7 @@ namespace System.Runtime.InteropServices
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
 
             return new ReadOnlySpan<byte>(
                 ref Unsafe.As<T, byte>(ref GetReference(span)),
@@ -71,7 +73,7 @@ namespace System.Runtime.InteropServices
         /// as <see cref="Memory{T}"/> but only used for reading to store a <see cref="ReadOnlyMemory{T}"/>.
         /// </remarks>
         public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> memory) =>
-            Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref memory);
+            new Memory<T>(memory._object, memory._index, memory._length);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
@@ -84,6 +86,44 @@ namespace System.Runtime.InteropServices
         /// would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
         /// </summary>
         public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._reference;
+
+#if !MONO
+        /// <summary>
+        /// Returns a reference to the 0th element of <paramref name="array"/>. If the array is empty, returns a reference to where the 0th element
+        /// would have been stored. Such a reference may be used for pinning but must never be dereferenced.
+        /// </summary>
+        /// <exception cref="NullReferenceException"><paramref name="array"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// This method does not perform array variance checks. The caller must manually perform any array variance checks
+        /// if the caller wishes to write to the returned reference.
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        public static ref T GetArrayDataReference<T>(T[] array) =>
+            ref GetArrayDataReference(array);
+
+        /// <summary>
+        /// Returns a reference to the 0th element of <paramref name="array"/>. If the array is empty, returns a reference to where the 0th element
+        /// would have been stored. Such a reference may be used for pinning but must never be dereferenced.
+        /// </summary>
+        /// <exception cref="NullReferenceException"><paramref name="array"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// The caller must manually reinterpret the returned <em>ref byte</em> as a ref to the array's underlying elemental type,
+        /// perhaps utilizing an API such as <em>System.Runtime.CompilerServices.Unsafe.As</em> to assist with the reinterpretation.
+        /// This technique does not perform array variance checks. The caller must manually perform any array variance checks
+        /// if the caller wishes to write to the returned reference.
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe ref byte GetArrayDataReference(Array array)
+        {
+            // If needed, we can save one or two instructions per call by marking this method as intrinsic and asking the JIT
+            // to special-case arrays of known type and dimension.
+
+            // See comment on RawArrayData (in RuntimeHelpers.CoreCLR.cs / RuntimeHelpers.NativeAot.cs) for details
+            return ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)RuntimeHelpers.GetMethodTable(array)->BaseSize - (nuint)(2 * sizeof(IntPtr)));
+        }
+#endif // !MONO
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to fake non-null pointer. Such a reference can be used
@@ -111,14 +151,15 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [OverloadResolutionPriority(1)] // Prioritize this overload over the ReadOnlySpan overload so types convertible to both resolve to this mutable version.
         public static unsafe Span<TTo> Cast<TFrom, TTo>(Span<TFrom> span)
             where TFrom : struct
             where TTo : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(TFrom));
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(TTo));
 
             // Use unsigned integers - unsigned division by constant (especially by power of 2)
             // and checked casts are faster and smaller.
@@ -171,9 +212,9 @@ namespace System.Runtime.InteropServices
             where TTo : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(TFrom));
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(TTo));
 
             // Use unsigned integers - unsigned division by constant (especially by power of 2)
             // and checked casts are faster and smaller.
@@ -383,7 +424,7 @@ namespace System.Runtime.InteropServices
             // If the memory is empty, just return an empty array as the enumerable.
             if (length is 0 || obj is null)
             {
-                return Array.Empty<T>();
+                return [];
             }
 
             // If the object is a string, we can optimize. If it isn't a slice, just return the string as the
@@ -470,9 +511,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > source.Length)
+            if (source.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -489,9 +530,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)source.Length)
+            if (source.Length < sizeof(T))
             {
                 value = default;
                 return false;
@@ -509,9 +550,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if ((uint)sizeof(T) > (uint)destination.Length)
+            if (destination.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -528,9 +569,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)destination.Length)
+            if (destination.Length < sizeof(T))
             {
                 return false;
             }
@@ -546,14 +587,15 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [OverloadResolutionPriority(1)] // Prioritize this overload over the ReadOnlySpan overload so types convertible to both resolve to this mutable version.
         public static unsafe ref T AsRef<T>(Span<byte> span)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)span.Length)
+            if (span.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -573,9 +615,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)span.Length)
+            if (span.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }

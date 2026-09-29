@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     pal.h
 
 Abstract:
-
     CoreCLR Platform Adaptation Layer (PAL) header file.  This file
     defines all types and API calls required by the CoreCLR when
     compiled for Unix-like systems.
@@ -27,7 +24,6 @@ Abstract:
 
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
-
 --*/
 
 #ifndef __PAL_H__
@@ -100,7 +96,6 @@ extern bool g_arm64_atomics_present;
 /******************* ABI-specific glue *******************************/
 
 #define MAX_PATH 260
-#define _MAX_PATH 260
 #define _MAX_DRIVE  3   /* max. length of drive component */
 #define _MAX_DIR    256 /* max. length of path component */
 #define _MAX_FNAME  256 /* max. length of file name component */
@@ -111,9 +106,7 @@ extern bool g_arm64_atomics_present;
 #define MAX_PATH_FNAME MAX_PATH
 #define MAX_LONGPATH   1024  /* max. length of full pathname */
 
-#define MAXSHORT      0x7fff
 #define MAXLONG       0x7fffffff
-#define MAXCHAR       0x7f
 #define MAXDWORD      0xffffffff
 
 //  Sorting IDs.
@@ -124,37 +117,19 @@ extern bool g_arm64_atomics_present;
 #define LANG_ENGLISH                     0x09
 
 /******************* Compiler-specific glue *******************************/
-#if defined(_MSC_VER)
-#define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#else
-#define DECLSPEC_ALIGN(x)   __attribute__ ((aligned(x)))
-#endif
-
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
-#ifdef __clang_analyzer__
-#define ANALYZER_NORETURN __attribute((analyzer_noreturn))
-#else
-#define ANALYZER_NORETURN
-#endif
-
-#define EMPTY_BASES_DECL
-
-
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
-#define __assume(x) (void)0
+#if __has_builtin(__builtin_assume)
+#define __assume(condition) do { bool assume_cond = (condition); __builtin_assume(assume_cond); } while (0)
+#else
+#define __assume(condition) do { if (!(condition)) __builtin_unreachable(); } while (0)
+#endif // __has_builtin(__builtin_assume)
+
 #define __annotation(x)
 #endif //!MSC_VER
 
 #define UNALIGNED
-
-#ifndef FORCEINLINE
-#if _MSC_VER < 1200
-#define FORCEINLINE inline
-#else
-#define FORCEINLINE __forceinline
-#endif
-#endif
 
 #ifndef NOOPT_ATTRIBUTE
 #if defined(__llvm__)
@@ -164,18 +139,7 @@ extern bool g_arm64_atomics_present;
 #endif
 #endif
 
-#ifndef __has_cpp_attribute
-#define __has_cpp_attribute(x) (0)
-#endif
-
 /******************* PAL-Specific Entrypoints *****************************/
-
-#define IsDebuggerPresent PAL_IsDebuggerPresent
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent();
 
 #define DLL_PROCESS_ATTACH 1
 #define DLL_THREAD_ATTACH  2
@@ -237,7 +201,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, BOOL runningInExe);
+    BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -286,6 +250,47 @@ PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
 
+/// <summary>
+/// Callback invoked when a signal is received that will terminate the process.
+/// The callback should log the managed callstack for the signal.
+/// </summary>
+typedef VOID (*PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK)(LPCWSTR signalName);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback);
+
+/// <summary>
+/// Callback invoked from the fatal-signal path to write an in-proc crash
+/// report. The callback runs inside the signal handler and must therefore
+/// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
+/// raw ucontext_t pointer received by the PAL signal handler.
+///
+/// The PAL serializes concurrent crash diagnostics (this callback and the
+/// out-of-proc createdump path) through a shared gate before invoking the
+/// callback, so implementations do not need to serialize themselves.
+///
+/// Registration is opt-in: if no callback is installed the PAL falls back
+/// to its default crash-dump path (createdump where available). The PAL
+/// itself has no source-level dependency on the in-proc reporter library;
+/// it only knows about this callback ABI.
+/// </summary>
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetInProcCrashReportCallback(
+    IN PINPROCCRASHREPORT_CALLBACK callback);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_EnableCrashReportBeforeSignalChaining(
+    void);
+
 PALIMPORT
 BOOL
 PALAPI
@@ -295,27 +300,6 @@ PAL_GenerateCoreDump(
     IN ULONG32 flags,
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer);
-
-typedef VOID (*PPAL_STARTUP_CALLBACK)(
-    char *modulePath,
-    HMODULE hModule,
-    PVOID parameter);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_RegisterForRuntimeStartup(
-    IN DWORD dwProcessId,
-    IN LPCWSTR lpApplicationGroupId,
-    IN PPAL_STARTUP_CALLBACK pfnCallback,
-    IN PVOID parameter,
-    OUT PVOID *ppUnregisterToken);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_UnregisterForRuntimeStartup(
-    IN PVOID pUnregisterToken);
 
 PALIMPORT
 BOOL
@@ -367,39 +351,6 @@ PAL_UnregisterModule(
     IN HINSTANCE hInstance);
 
 PALIMPORT
-VOID
-PALAPI
-PAL_Random(
-    IN OUT LPVOID lpBuffer,
-    IN DWORD dwLength);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_OpenProcessMemory(
-    IN DWORD processId,
-    OUT DWORD* pHandle
-);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_CloseProcessMemory(
-    IN DWORD handle
-);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_ReadProcessMemory(
-    IN DWORD handle,
-    IN ULONG64 address,
-    IN LPVOID buffer,
-    IN SIZE_T size,
-    OUT SIZE_T* numberOfBytesRead
-);
-
-PALIMPORT
 BOOL
 PALAPI
 PAL_ProbeMemory(
@@ -422,7 +373,7 @@ PALIMPORT
 int
 PALAPI
 // Log a method to the jitdump file.
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo);
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock);
 
 PALIMPORT
 int
@@ -432,29 +383,10 @@ PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
 
-#define MB_OKCANCEL             0x00000001L
-#define MB_ABORTRETRYIGNORE     0x00000002L
-
-#define MB_ICONQUESTION         0x00000020L
-#define MB_ICONEXCLAMATION      0x00000030L
-
-#define MB_TASKMODAL            0x00002000L
-
-#define MB_DEFAULT_DESKTOP_ONLY     0x00020000L
-
 #define IDOK                    1
 #define IDCANCEL                2
 #define IDABORT                 3
 #define IDRETRY                 4
-
-// From win32.h
-#ifndef _CRTIMP
-#ifdef __GNUC__
-#define _CRTIMP
-#else // __GNUC__
-#define _CRTIMP __declspec(dllimport)
-#endif // __GNUC__
-#endif // _CRTIMP
 
 /******************* winbase.h Entrypoints and defines ************************/
 typedef struct _SECURITY_ATTRIBUTES {
@@ -462,8 +394,6 @@ typedef struct _SECURITY_ATTRIBUTES {
             LPVOID lpSecurityDescriptor;
             BOOL bInheritHandle;
 } SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
-
-#define _SH_DENYWR      0x20    /* deny write mode */
 
 #define FILE_READ_DATA            ( 0x0001 )    // file & pipe
 #define FILE_APPEND_DATA          ( 0x0004 )    // file
@@ -490,7 +420,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
-#define FILE_FLAG_NO_BUFFERING     0x20000000
 #define FILE_FLAG_RANDOM_ACCESS    0x10000000
 #define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000
 #define FILE_FLAG_BACKUP_SEMANTICS 0x02000000
@@ -536,138 +465,6 @@ SearchPathW(
     );
 
 #define SearchPath  SearchPathW
-
-PALIMPORT
-BOOL
-PALAPI
-CopyFileW(
-      IN LPCWSTR lpExistingFileName,
-      IN LPCWSTR lpNewFileName,
-      IN BOOL bFailIfExists);
-
-#ifdef UNICODE
-#define CopyFile CopyFileW
-#else
-#define CopyFile CopyFileA
-#endif
-
-typedef struct _WIN32_FIND_DATAA {
-    DWORD dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    DWORD nFileSizeHigh;
-    DWORD nFileSizeLow;
-    DWORD dwReserved0;
-    DWORD dwReserved1;
-    CHAR cFileName[ MAX_PATH_FNAME ];
-    CHAR cAlternateFileName[ 14 ];
-} WIN32_FIND_DATAA, *PWIN32_FIND_DATAA, *LPWIN32_FIND_DATAA;
-
-typedef struct _WIN32_FIND_DATAW {
-    DWORD dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    DWORD nFileSizeHigh;
-    DWORD nFileSizeLow;
-    DWORD dwReserved0;
-    DWORD dwReserved1;
-    WCHAR cFileName[ MAX_PATH_FNAME ];
-    WCHAR cAlternateFileName[ 14 ];
-} WIN32_FIND_DATAW, *PWIN32_FIND_DATAW, *LPWIN32_FIND_DATAW;
-
-#ifdef UNICODE
-typedef WIN32_FIND_DATAW WIN32_FIND_DATA;
-typedef PWIN32_FIND_DATAW PWIN32_FIND_DATA;
-typedef LPWIN32_FIND_DATAW LPWIN32_FIND_DATA;
-#else
-typedef WIN32_FIND_DATAA WIN32_FIND_DATA;
-typedef PWIN32_FIND_DATAA PWIN32_FIND_DATA;
-typedef LPWIN32_FIND_DATAA LPWIN32_FIND_DATA;
-#endif
-
-PALIMPORT
-HANDLE
-PALAPI
-FindFirstFileW(
-           IN LPCWSTR lpFileName,
-           OUT LPWIN32_FIND_DATAW lpFindFileData);
-
-#ifdef UNICODE
-#define FindFirstFile FindFirstFileW
-#else
-#define FindFirstFile FindFirstFileA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-FindNextFileW(
-          IN HANDLE hFindFile,
-          OUT LPWIN32_FIND_DATAW lpFindFileData);
-
-#ifdef UNICODE
-#define FindNextFile FindNextFileW
-#else
-#define FindNextFile FindNextFileA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-FindClose(
-      IN OUT HANDLE hFindFile);
-
-PALIMPORT
-DWORD
-PALAPI
-GetFileAttributesW(
-           IN LPCWSTR lpFileName);
-
-#ifdef UNICODE
-#define GetFileAttributes GetFileAttributesW
-#else
-#define GetFileAttributes GetFileAttributesA
-#endif
-
-typedef enum _GET_FILEEX_INFO_LEVELS {
-  GetFileExInfoStandard
-} GET_FILEEX_INFO_LEVELS;
-
-typedef enum _FINDEX_INFO_LEVELS {
-    FindExInfoStandard,
-    FindExInfoBasic,
-    FindExInfoMaxInfoLevel
-} FINDEX_INFO_LEVELS;
-
-typedef enum _FINDEX_SEARCH_OPS {
-    FindExSearchNameMatch,
-    FindExSearchLimitToDirectories,
-    FindExSearchLimitToDevices,
-    FindExSearchMaxSearchOp
-} FINDEX_SEARCH_OPS;
-
-typedef struct _WIN32_FILE_ATTRIBUTE_DATA {
-    DWORD      dwFileAttributes;
-    FILETIME   ftCreationTime;
-    FILETIME   ftLastAccessTime;
-    FILETIME   ftLastWriteTime;
-    DWORD      nFileSizeHigh;
-    DWORD      nFileSizeLow;
-} WIN32_FILE_ATTRIBUTE_DATA, *LPWIN32_FILE_ATTRIBUTE_DATA;
-
-PALIMPORT
-BOOL
-PALAPI
-GetFileAttributesExW(
-             IN LPCWSTR lpFileName,
-             IN GET_FILEEX_INFO_LEVELS fInfoLevelId,
-             OUT LPVOID lpFileInformation);
-
-#ifdef UNICODE
-#define GetFileAttributesEx GetFileAttributesExW
-#endif
 
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
@@ -739,38 +536,6 @@ PALAPI GetFileSizeEx(
         OUT  PLARGE_INTEGER lpFileSize);
 
 PALIMPORT
-VOID
-PALAPI
-GetSystemTimeAsFileTime(
-            OUT LPFILETIME lpSystemTimeAsFileTime);
-
-typedef struct _SYSTEMTIME {
-    WORD wYear;
-    WORD wMonth;
-    WORD wDayOfWeek;
-    WORD wDay;
-    WORD wHour;
-    WORD wMinute;
-    WORD wSecond;
-    WORD wMilliseconds;
-} SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemTime(
-          OUT LPSYSTEMTIME lpSystemTime);
-
-PALIMPORT
-BOOL
-PALAPI
-FileTimeToSystemTime(
-            IN CONST FILETIME *lpFileTime,
-            OUT LPSYSTEMTIME lpSystemTime);
-
-
-
-PALIMPORT
 BOOL
 PALAPI
 FlushFileBuffers(
@@ -797,21 +562,6 @@ GetFullPathNameW(
 #endif
 
 PALIMPORT
-UINT
-PALAPI
-GetTempFileNameW(
-         IN LPCWSTR lpPathName,
-         IN LPCWSTR lpPrefixString,
-         IN UINT uUnique,
-         OUT LPWSTR lpTempFileName);
-
-#ifdef UNICODE
-#define GetTempFileName GetTempFileNameW
-#else
-#define GetTempFileName GetTempFileNameA
-#endif
-
-PALIMPORT
 DWORD
 PALAPI
 GetTempPathW(
@@ -831,140 +581,6 @@ GetTempPathA(
 #else
 #define GetTempPath GetTempPathA
 #endif
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateSemaphoreExW(
-        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-        IN LONG lInitialCount,
-        IN LONG lMaximumCount,
-        IN LPCWSTR lpName,
-        IN /*_Reserved_*/  DWORD dwFlags,
-        IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenSemaphoreW(
-    IN DWORD dwDesiredAccess,
-    IN BOOL bInheritHandle,
-    IN LPCWSTR lpName);
-
-#define CreateSemaphoreEx CreateSemaphoreExW
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseSemaphore(
-         IN HANDLE hSemaphore,
-         IN LONG lReleaseCount,
-         OUT LPLONG lpPreviousCount);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN BOOL bManualReset,
-         IN BOOL bInitialState,
-         IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventExW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN LPCWSTR lpName,
-         IN DWORD dwFlags,
-         IN DWORD dwDesiredAccess);
-
-// CreateEventExW: dwFlags
-#define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
-#define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
-
-#define CreateEvent CreateEventW
-
-PALIMPORT
-BOOL
-PALAPI
-SetEvent(
-     IN HANDLE hEvent);
-
-PALIMPORT
-BOOL
-PALAPI
-ResetEvent(
-       IN HANDLE hEvent);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenEventW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-#ifdef UNICODE
-#define OpenEvent OpenEventW
-#endif
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateMutexW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateMutexExW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN LPCWSTR lpName,
-    IN DWORD dwFlags,
-    IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_CreateMutexW(
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName,
-    IN LPSTR lpSystemCallErrors,
-    IN DWORD dwSystemCallErrorsBufferSize);
-
-// CreateMutexExW: dwFlags
-#define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
-
-#define CreateMutex CreateMutexW
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenMutexW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_OpenMutexW(
-       IN LPCWSTR lpName,
-       IN LPSTR lpSystemCallErrors,
-       IN DWORD dwSystemCallErrorsBufferSize);
-
-#ifdef UNICODE
-#define OpenMutex  OpenMutexW
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseMutex(
-    IN HANDLE hMutex);
 
 PALIMPORT
 DWORD
@@ -996,57 +612,11 @@ GetCurrentThread();
 
 #define STARTF_USESTDHANDLES       0x00000100
 
-typedef struct _STARTUPINFOW {
-    DWORD cb;
-    LPWSTR lpReserved_PAL_Undefined;
-    LPWSTR lpDesktop_PAL_Undefined;
-    LPWSTR lpTitle_PAL_Undefined;
-    DWORD dwX_PAL_Undefined;
-    DWORD dwY_PAL_Undefined;
-    DWORD dwXSize_PAL_Undefined;
-    DWORD dwYSize_PAL_Undefined;
-    DWORD dwXCountChars_PAL_Undefined;
-    DWORD dwYCountChars_PAL_Undefined;
-    DWORD dwFillAttribute_PAL_Undefined;
-    DWORD dwFlags;
-    WORD wShowWindow_PAL_Undefined;
-    WORD cbReserved2_PAL_Undefined;
-    LPBYTE lpReserved2_PAL_Undefined;
-    HANDLE hStdInput;
-    HANDLE hStdOutput;
-    HANDLE hStdError;
-} STARTUPINFOW, *LPSTARTUPINFOW;
-
+typedef struct _STARTUPINFOW STARTUPINFOW, *LPSTARTUPINFOW;
 typedef STARTUPINFOW STARTUPINFO;
 typedef LPSTARTUPINFOW LPSTARTUPINFO;
 
-#define CREATE_NEW_CONSOLE          0x00000010
-
-#define NORMAL_PRIORITY_CLASS             0x00000020
-
-typedef struct _PROCESS_INFORMATION {
-    HANDLE hProcess;
-    HANDLE hThread;
-    DWORD dwProcessId;
-    DWORD dwThreadId_PAL_Undefined;
-} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
-
-PALIMPORT
-BOOL
-PALAPI
-CreateProcessW(
-           IN LPCWSTR lpApplicationName,
-           IN LPWSTR lpCommandLine,
-           IN LPSECURITY_ATTRIBUTES lpProcessAttributes,
-           IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
-           IN BOOL bInheritHandles,
-           IN DWORD dwCreationFlags,
-           IN LPVOID lpEnvironment,
-           IN LPCWSTR lpCurrentDirectory,
-           IN LPSTARTUPINFOW lpStartupInfo,
-           OUT LPPROCESS_INFORMATION lpProcessInformation);
-
-#define CreateProcess CreateProcessW
+typedef struct _PROCESS_INFORMATION PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
 
 PALIMPORT
 PAL_NORETURN
@@ -1062,71 +632,12 @@ TerminateProcess(
          IN HANDLE hProcess,
          IN UINT uExitCode);
 
-PALIMPORT
-BOOL
-PALAPI
-GetExitCodeProcess(
-           IN HANDLE hProcess,
-           IN LPDWORD lpExitCode);
-
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
-#define WAIT_ABANDONED   0x00000080
-#define WAIT_ABANDONED_0 0x00000080
 #define WAIT_TIMEOUT 258
 #define WAIT_FAILED ((DWORD)0xFFFFFFFF)
 
 #define INFINITE 0xFFFFFFFF // Infinite timeout
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObject(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_WaitForSingleObjectPrioritized(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObjectEx(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds,
-            IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjects(
-               IN DWORD nCount,
-               IN CONST HANDLE *lpHandles,
-               IN BOOL bWaitAll,
-               IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjectsEx(
-             IN DWORD nCount,
-             IN CONST HANDLE *lpHandles,
-             IN BOOL bWaitAll,
-             IN DWORD dwMilliseconds,
-             IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-SignalObjectAndWait(
-    IN HANDLE hObjectToSignal,
-    IN HANDLE hObjectToWaitOn,
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
 
 #define DUPLICATE_CLOSE_SOURCE      0x00000001
 #define DUPLICATE_SAME_ACCESS       0x00000002
@@ -1142,19 +653,6 @@ DuplicateHandle(
         IN DWORD dwDesiredAccess,
         IN BOOL bInheritHandle,
         IN DWORD dwOptions);
-
-PALIMPORT
-VOID
-PALAPI
-Sleep(
-      IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-SleepEx(
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
 
 PALIMPORT
 BOOL
@@ -1200,16 +698,6 @@ DWORD
 PALAPI
 ResumeThread(
          IN HANDLE hThread);
-
-typedef VOID (PALAPI_NOEXPORT *PAPCFUNC)(ULONG_PTR dwParam);
-
-PALIMPORT
-DWORD
-PALAPI
-QueueUserAPC(
-         IN PAPCFUNC pfnAPC,
-         IN HANDLE hThread,
-         IN ULONG_PTR dwData);
 
 #ifdef HOST_X86
 
@@ -1384,12 +872,14 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define XSTATE_AVX512_KMASK (5)
 #define XSTATE_AVX512_ZMM_H (6)
 #define XSTATE_AVX512_ZMM (7)
+#define XSTATE_APX (19)
 
-#define XSTATE_MASK_GSSE (UI64(1) << (XSTATE_GSSE))
+#define XSTATE_MASK_GSSE (1ULL << (XSTATE_GSSE))
 #define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
-#define XSTATE_MASK_AVX512 ((UI64(1) << (XSTATE_AVX512_KMASK)) | \
-                            (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
-                            (UI64(1) << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_AVX512 ((1ULL << (XSTATE_AVX512_KMASK)) | \
+                            (1ULL << (XSTATE_AVX512_ZMM_H)) | \
+                            (1ULL << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_APX (1ULL << (XSTATE_APX))
 
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
@@ -1626,6 +1116,27 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm30;
         M512 Zmm31;
     };
+
+    struct
+    {
+        DWORD64 R16;
+        DWORD64 R17;
+        DWORD64 R18;
+        DWORD64 R19;
+        DWORD64 R20;
+        DWORD64 R21;
+        DWORD64 R22;
+        DWORD64 R23;
+        DWORD64 R24;
+        DWORD64 R25;
+        DWORD64 R26;
+        DWORD64 R27;
+        DWORD64 R28;
+        DWORD64 R29;
+        DWORD64 R30;
+        DWORD64 R31;
+    };
+
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //
@@ -1850,7 +1361,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
 
 #define XSTATE_ARM64_SVE (2)
-#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE))
+#define XSTATE_MASK_ARM64_SVE (1ULL << (XSTATE_ARM64_SVE))
 
 //
 // This flag is set by the unwinder if it has unwound to a call
@@ -2038,6 +1549,9 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
 
 #define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
 
+#define CONTEXT_LSX 0x10
+#define CONTEXT_LASX 0x20
+
 #define CONTEXT_EXCEPTION_ACTIVE 0x8000000
 #define CONTEXT_SERVICE_ACTIVE 0x10000000
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000
@@ -2132,7 +1646,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 S7;
     PDWORD64 S8;
     PDWORD64 Fp;
-    PDWORD64 Tp;
     PDWORD64 Ra;
 
     PDWORD64 F24;
@@ -2525,6 +2038,33 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     //
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+#elif defined(HOST_WASM)
+#define CONTEXT_CONTROL 0
+#define CONTEXT_INTEGER 0
+#define CONTEXT_FLOATING_POINT 0
+#define CONTEXT_DEBUG_REGISTERS 0
+#define CONTEXT_FULL 0
+#define CONTEXT_ALL 0
+
+#define CONTEXT_XSTATE 0
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
+#define CONTEXT_SERVICE_ACTIVE 0x10000000L
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
+
+typedef struct _CONTEXT {
+    ULONG ContextFlags;
+
+    DWORD InterpreterWalkFramePointer;
+    DWORD InterpreterSP;
+    DWORD InterpreterFP;
+    DWORD InterpreterIP;
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+    DWORD none;
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
 #else
 #error Unknown architecture for defining CONTEXT.
@@ -2610,78 +2150,11 @@ PAL_GetCpuLimit(UINT* val);
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
 
 PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
-
-/* PAL_CS_NATIVE_DATA_SIZE is defined as sizeof(PAL_CRITICAL_SECTION_NATIVE_DATA) */
-
-#if defined(__APPLE__) && defined(__i386__)
-#define PAL_CS_NATIVE_DATA_SIZE 76
-#elif defined(__APPLE__) && defined(HOST_AMD64)
-#define PAL_CS_NATIVE_DATA_SIZE 120
-#elif defined(__APPLE__) && defined(HOST_ARM64)
-#define PAL_CS_NATIVE_DATA_SIZE 120
-#elif defined(__FreeBSD__) && defined(HOST_X86)
-#define PAL_CS_NATIVE_DATA_SIZE 12
-#elif defined(__FreeBSD__) && defined(__x86_64__)
-#define PAL_CS_NATIVE_DATA_SIZE 24
-#elif defined(__FreeBSD__) && defined(HOST_ARM64)
-#define PAL_CS_NATIVE_DATA_SIZE 24
-#elif defined(__linux__) && defined(HOST_ARM)
-#define PAL_CS_NATIVE_DATA_SIZE 80
-#elif defined(__linux__) && defined(HOST_ARM64)
-#define PAL_CS_NATIVE_DATA_SIZE 104
-#elif defined(__linux__) && defined(__i386__)
-#define PAL_CS_NATIVE_DATA_SIZE 76
-#elif defined(__linux__) && defined(__x86_64__)
-#define PAL_CS_NATIVE_DATA_SIZE 96
-#elif defined(__linux__) && defined(HOST_S390X)
-#define PAL_CS_NATIVE_DATA_SIZE 96
-#elif defined(__linux__) && defined(HOST_POWERPC64)
-#define PAL_CS_NATIVE_DATA_SIZE 96
-#elif defined(__NetBSD__) && defined(__amd64__)
-#define PAL_CS_NATIVE_DATA_SIZE 96
-#elif defined(__NetBSD__) && defined(__earm__)
-#define PAL_CS_NATIVE_DATA_SIZE 56
-#elif defined(__NetBSD__) && defined(__i386__)
-#define PAL_CS_NATIVE_DATA_SIZE 56
-#elif defined(__sun) && defined(__x86_64__)
-#define PAL_CS_NATIVE_DATA_SIZE 48
-#elif defined(__linux__) && defined(__loongarch64)
-#define PAL_CS_NATIVE_DATA_SIZE 96
-#elif defined(__linux__) && defined(__riscv) && __riscv_xlen == 64
-#define PAL_CS_NATIVE_DATA_SIZE 96
-#else
-#error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
-#endif
-
-//
-typedef struct _CRITICAL_SECTION {
-    PVOID DebugInfo;
-    LONG LockCount;
-    LONG RecursionCount;
-    HANDLE OwningThread;
-    ULONG_PTR SpinCount;
-
-#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
-    BOOL bInternal;
-#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
-    volatile DWORD dwInitState;
-
-    union CSNativeDataStorage
-    {
-        BYTE rgNativeDataStorage[PAL_CS_NATIVE_DATA_SIZE];
-        PVOID pvAlign; // make sure the storage is machine-pointer-size aligned
-    } csnds;
-} CRITICAL_SECTION, *PCRITICAL_SECTION, *LPCRITICAL_SECTION;
-
-PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
-PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
-PALIMPORT VOID PALAPI InitializeCriticalSection(OUT LPCRITICAL_SECTION lpCriticalSection);
-PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02
@@ -2931,6 +2404,11 @@ VOID
 PALAPI
 PAL_JitWriteProtect(bool writeEnable);
 
+#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
+
+// Define empty macro for platforms that don't allow JIT write protection
+#define PAL_JitWriteProtect(writeEnable) do { } while(0)
+
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 
@@ -2976,11 +2454,6 @@ FlushInstructionCache(
 
 #define MAX_LEADBYTES         12
 #define MAX_DEFAULTCHAR       2
-
-PALIMPORT
-UINT
-PALAPI
-GetACP(void);
 
 typedef struct _cpinfo {
     UINT MaxCharSize;
@@ -3085,39 +2558,9 @@ typedef struct _RUNTIME_FUNCTION {
 #define READ_CONTROL              (0x00020000L)
 #define MAXIMUM_ALLOWED           (0x02000000L)
 
-#define EVENT_MODIFY_STATE        (0x0002)
-#define EVENT_ALL_ACCESS          (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
-
 #define MUTANT_QUERY_STATE        (0x0001)
 #define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)
 #define MUTEX_ALL_ACCESS          MUTANT_ALL_ACCESS
-
-#define SEMAPHORE_MODIFY_STATE    (0x0002)
-#define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
-
-#define PROCESS_TERMINATE         (0x0001)
-#define PROCESS_CREATE_THREAD     (0x0002)
-#define PROCESS_SET_SESSIONID     (0x0004)
-#define PROCESS_VM_OPERATION      (0x0008)
-#define PROCESS_VM_READ           (0x0010)
-#define PROCESS_VM_WRITE          (0x0020)
-#define PROCESS_DUP_HANDLE        (0x0040)
-#define PROCESS_CREATE_PROCESS    (0x0080)
-#define PROCESS_SET_QUOTA         (0x0100)
-#define PROCESS_SET_INFORMATION   (0x0200)
-#define PROCESS_QUERY_INFORMATION (0x0400)
-#define PROCESS_SUSPEND_RESUME    (0x0800)
-#define PROCESS_ALL_ACCESS        (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | \
-                                   0xFFF)
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenProcess(
-    IN DWORD dwDesiredAccess, /* PROCESS_DUP_HANDLE or PROCESS_ALL_ACCESS */
-    IN BOOL bInheritHandle,
-    IN DWORD dwProcessId
-    );
 
 PALIMPORT
 VOID
@@ -3207,30 +2650,6 @@ RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,
     IN DWORD dwFlags);
-
-PALIMPORT
-DWORD
-PALAPI
-GetTickCount();
-
-PALIMPORT
-ULONGLONG
-PALAPI
-GetTickCount64();
-
-PALIMPORT
-BOOL
-PALAPI
-QueryPerformanceCounter(
-    OUT LARGE_INTEGER *lpPerformanceCount
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-QueryPerformanceFrequency(
-    OUT LARGE_INTEGER *lpFrequency
-    );
 
 PALIMPORT
 BOOL
@@ -3599,9 +3018,6 @@ Define_InterlockMethod(
         Exchange /* The value to be stored */)
 )
 
-#define InterlockedCompareExchangeAcquire InterlockedCompareExchange
-#define InterlockedCompareExchangeRelease InterlockedCompareExchange
-
 Define_InterlockMethod(
     LONGLONG,
     InterlockedCompareExchange64(IN OUT LONGLONG volatile *Destination, IN LONGLONG Exchange, IN LONGLONG Comperand),
@@ -3669,6 +3085,27 @@ Define_InterlockMethod(
 
 #define InterlockedCompareExchangePointer(Destination, ExChange, Comperand) \
     ((PVOID)(UINT_PTR)InterlockedCompareExchange((PLONG)(UINT_PTR)(Destination), (LONG)(UINT_PTR)(ExChange), (LONG)(UINT_PTR)(Comperand)))
+#endif
+
+#if defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+FORCEINLINE uint8_t _InterlockedCompareExchange128(int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
+{
+    __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
+    // TODO-LOONGARCH64: the 128-bit CAS is supported starting from the 3A6000 CPU (ISA1.1).
+    // When running on older hardware that doesn't support native CAS-128, the system falls back
+    // to a mutex-based approach via libatomic, which is not suitable for runtime requirements.
+    //
+    // TODO-RISCV64: double-check if libatomic's emulated CAS-128 works as expected once AOT applications are
+    // functional on linux-riscv64: https://github.com/dotnet/runtime/issues/106223.
+    // CAS-128 is natively supported starting with the Zacas extension in Linux 6.8; however, hardware support
+    // for RVA23 profile is not available at the time of writing.
+    //
+    // See https://github.com/dotnet/runtime/issues/109276.
+    __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow);
+    PAL_InterlockedOperationBarrier();
+    pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
+    return iComparand == iResult;
+}
 #endif
 
 /*++
@@ -3747,15 +3184,6 @@ SetLastError(
          IN DWORD dwErrCode);
 
 PALIMPORT
-LPWSTR
-PALAPI
-GetCommandLineW();
-
-#ifdef UNICODE
-#define GetCommandLine GetCommandLineW
-#endif
-
-PALIMPORT
 VOID
 PALAPI
 RtlRestoreContext(
@@ -3769,11 +3197,6 @@ PALAPI
 RtlCaptureContext(
   OUT PCONTEXT ContextRecord
 );
-
-PALIMPORT
-VOID
-PALAPI
-FlushProcessWriteBuffers();
 
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
 typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);
@@ -3811,16 +3234,6 @@ VOID
 PALAPI
 GetSystemInfo(
           OUT LPSYSTEM_INFO lpSystemInfo);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_SetCurrentThreadAffinity(WORD procNo);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 
 //
 // The types of events that can be logged.
@@ -3883,7 +3296,6 @@ PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
-PALIMPORT FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 inline int _stricmp(const char* a, const char* b)
 {
@@ -3962,30 +3374,9 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
+#ifndef ERANGE
 #define ERANGE          34
-
-/****************PAL Perf functions for PInvoke*********************/
-#if PAL_PERF
-PALIMPORT
-VOID
-PALAPI
-PAL_EnableProcessProfile();
-
-PALIMPORT
-VOID
-PALAPI
-PAL_DisableProcessProfile();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsProcessProfileEnabled();
-
-PALIMPORT
-INT64
-PALAPI
-PAL_GetCpuTickCount();
-#endif // PAL_PERF
+#endif
 
 /******************* PAL functions for exceptions *******/
 
@@ -4002,7 +3393,15 @@ PAL_FreeExceptionRecords(
 #define EXCEPTION_EXECUTE_HANDLER   1
 #define EXCEPTION_CONTINUE_EXECUTION -1
 
-struct PAL_SEHException
+struct
+#ifdef __OpenBSD__
+// OpenBSD's libc++ compares exception type_info by pointer (relying on ld.so to merge
+// type_info across shared objects) instead of falling back to a name compare like Linux's
+// libstdc++. Default visibility lets ld.so merge type_info into one instance so a
+// PAL_SEHException thrown in one PAL DSO is caught in another (e.g. the pal_sxs test).
+__attribute__((visibility("default")))
+#endif
+PAL_SEHException
 {
 private:
     static const SIZE_T NoTargetFrameSp = (SIZE_T)SIZE_MAX;
@@ -4097,6 +3496,11 @@ public:
         ManagedToNativeExceptionCallbackContext = NULL;
     }
 
+    bool HasTargetFrame()
+    {
+        return TargetFrameSp != NoTargetFrameSp;
+    }
+
     CONTEXT* GetContextRecord()
     {
         return ExceptionPointers.ContextRecord;
@@ -4105,16 +3509,6 @@ public:
     EXCEPTION_RECORD* GetExceptionRecord()
     {
         return ExceptionPointers.ExceptionRecord;
-    }
-
-    bool IsFirstPass()
-    {
-        return (TargetFrameSp == NoTargetFrameSp);
-    }
-
-    void SecondPassDone()
-    {
-        TargetFrameSp = NoTargetFrameSp;
     }
 
     bool HasPropagateExceptionCallback()
@@ -4133,7 +3527,6 @@ public:
 
 typedef BOOL (*PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
 typedef BOOL (*PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION)(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
-typedef VOID (*PTERMINATION_REQUEST_HANDLER)(int terminationExitCode);
 typedef DWORD (*PGET_GCMARKER_EXCEPTION_CODE)(LPVOID ip);
 
 PALIMPORT
@@ -4155,12 +3548,6 @@ PALAPI
 PAL_ThrowExceptionFromContext(
     IN CONTEXT* context,
     IN PAL_SEHException* ex);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_SetTerminationRequestHandler(
-    IN PTERMINATION_REQUEST_HANDLER terminationRequestHandler);
 
 PALIMPORT
 VOID
@@ -4202,141 +3589,6 @@ public:
 #define HardwareExceptionHolder
 #endif // FEATURE_ENABLE_HARDWARE_EXCEPTIONS
 
-class NativeExceptionHolderBase;
-
-PALIMPORT
-PALAPI
-NativeExceptionHolderBase **
-PAL_GetNativeExceptionHolderHead();
-
-extern "C++" {
-
-//
-// This is the base class of native exception holder used to provide
-// the filter function to the exception dispatcher. This allows the
-// filter to be called during the first pass to better emulate SEH
-// the xplat platforms that only have C++ exception support.
-//
-class NativeExceptionHolderBase
-{
-    // Save the address of the holder head so the destructor
-    // doesn't have access the slow (on Linux) TLS value again.
-    NativeExceptionHolderBase **m_head;
-
-    // The next holder on the stack
-    NativeExceptionHolderBase *m_next;
-
-protected:
-    NativeExceptionHolderBase()
-    {
-        m_head = nullptr;
-        m_next = nullptr;
-    }
-
-    ~NativeExceptionHolderBase()
-    {
-        // Only destroy if Push was called
-        if (m_head != nullptr)
-        {
-            *m_head = m_next;
-            m_head = nullptr;
-            m_next = nullptr;
-        }
-    }
-
-public:
-    // Calls the holder's filter handler.
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex) = 0;
-
-    // Adds the holder to the "stack" of holders. This is done explicitly instead
-    // of in the constructor was to avoid the mess of move constructors combined
-    // with return value optimization (in CreateHolder).
-    void Push()
-    {
-        NativeExceptionHolderBase **head = PAL_GetNativeExceptionHolderHead();
-        m_head = head;
-        m_next = *head;
-        *head = this;
-    }
-
-    // Given the currentHolder and locals stack range find the next holder starting with this one
-    // To find the first holder, pass nullptr as the currentHolder.
-    static NativeExceptionHolderBase *FindNextHolder(NativeExceptionHolderBase *currentHolder, PVOID frameLowAddress, PVOID frameHighAddress);
-};
-
-//
-// This is the second part of the native exception filter holder. It is
-// templated because the lambda used to wrap the exception filter is a
-// unknown type.
-//
-template<class FilterType>
-class NativeExceptionHolder : public NativeExceptionHolderBase
-{
-    FilterType* m_exceptionFilter;
-
-public:
-    NativeExceptionHolder(FilterType* exceptionFilter)
-        : NativeExceptionHolderBase()
-    {
-        m_exceptionFilter = exceptionFilter;
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return (*m_exceptionFilter)(ex);
-    }
-};
-
-//
-// This is a native exception holder that is used when the catch catches
-// all exceptions.
-//
-class NativeExceptionHolderCatchAll : public NativeExceptionHolderBase
-{
-
-public:
-    NativeExceptionHolderCatchAll()
-        : NativeExceptionHolderBase()
-    {
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-};
-
-// This is a native exception holder that doesn't catch any exceptions.
-class NativeExceptionHolderNoCatch : public NativeExceptionHolderBase
-{
-
-public:
-    NativeExceptionHolderNoCatch()
-        : NativeExceptionHolderBase()
-    {
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-};
-
-//
-// This factory class for the native exception holder is necessary because
-// templated functions don't need the explicit type parameter and can infer
-// the template type from the parameter.
-//
-class NativeExceptionHolderFactory
-{
-public:
-    template<class FilterType>
-    static NativeExceptionHolder<FilterType> CreateHolder(FilterType* exceptionFilter)
-    {
-        return NativeExceptionHolder<FilterType>(exceptionFilter);
-    }
-};
-
 // Start of a try block for exceptions raised by RaiseException
 #define PAL_TRY(__ParamType, __paramDef, __paramRef)                            \
 {                                                                               \
@@ -4364,8 +3616,6 @@ public:
     try                                                                         \
     {                                                                           \
         HardwareExceptionHolder                                                 \
-        auto __exceptionHolder = NativeExceptionHolderFactory::CreateHolder(&exceptionFilter); \
-        __exceptionHolder.Push();                                               \
         tryBlock(__param);                                                      \
     }                                                                           \
     catch (PAL_SEHException& ex)                                                \
@@ -4377,8 +3627,7 @@ public:
         if (disposition == EXCEPTION_CONTINUE_SEARCH)                           \
         {                                                                       \
             throw;                                                              \
-        }                                                                       \
-        ex.SecondPassDone();
+        }
 
 // Start of an exception handler. It works the same way as the PAL_EXCEPT except
 // that the disposition is obtained by calling the specified filter.
@@ -4421,11 +3670,7 @@ public:
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {
 #define PAL_CPP_CATCH_NON_DERIVED(type, ident) } catch (type ident) {
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) } catch (type) {
-#define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
-                                            try { throw; }                                        \
-                                            catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \
-                                            catch (...) {}
-
+#define PAL_CPP_CATCH_ALL               } catch (...) {
 #define PAL_CPP_ENDTRY                  }
 
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason) PAL_TRY(ParamType, paramDef, paramRef)
@@ -4554,8 +3799,10 @@ public:
 
 #define HRESULT_FROM_NT(x)      ((HRESULT) ((x) | FACILITY_NT_BIT))
 
-#ifdef  __cplusplus
-}
+#ifndef TARGET_WASM
+#define _ReturnAddress() __builtin_return_address(0)
+#else
+#define _ReturnAddress() 0
 #endif
 
 #endif // __PAL_H__

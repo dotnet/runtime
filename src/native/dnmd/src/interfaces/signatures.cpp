@@ -11,7 +11,7 @@ namespace
     std::tuple<uint32_t, span<T>> read_compressed_uint(span<T> signature)
     {
         ULONG value = 0;
-        signature = slice(signature, CorSigUncompressData(signature, &value));
+        signature = slice(signature, CorSigUncompressData(signature.data(), &value));
         return std::make_tuple(value, signature);
     }
 
@@ -19,7 +19,7 @@ namespace
     std::tuple<int32_t, span<T>> read_compressed_int(span<T> signature)
     {
         int value = 0;
-        signature = slice(signature, CorSigUncompressSignedInt(signature, &value));
+        signature = slice(signature, CorSigUncompressSignedInt(signature.data(), &value));
         return std::make_tuple(value, signature);
     }
 
@@ -27,7 +27,7 @@ namespace
     std::tuple<mdToken, span<T>> read_compressed_token(span<T> signature)
     {
         mdToken value = mdTokenNil;
-        signature = slice(signature, CorSigUncompressToken(signature, &value));
+        signature = slice(signature, CorSigUncompressToken(signature.data(), &value));
         return std::make_tuple(value, signature);
     }
 
@@ -272,14 +272,14 @@ void GetMethodDefSigFromMethodRefSig(span<uint8_t> methodRefSig, inline_span<uin
     methodDefSig[offset++] = callingConvention;
     if ((callingConvention & IMAGE_CEE_CS_CALLCONV_GENERIC) == IMAGE_CEE_CS_CALLCONV_GENERIC)
     {
-        offset += CorSigCompressData(genericParameterCount, methodDefSig + offset);
+        offset += CorSigCompressData(genericParameterCount, methodDefSig.data() + offset);
     }
-    std::memcpy(methodDefSig + offset, compressedNewParamCount, newParamCountCompressedSize);
+    std::memcpy(methodDefSig.data() + offset, compressedNewParamCount.data(), newParamCountCompressedSize);
     offset += newParamCountCompressedSize;
 
     // Now that we've re-written the parameter count, we can copy the rest of the signature directly from the MethodRefSig
-    assert(returnTypeAndParameters.size() >= methodDefSig - offset);
-    std::memcpy(methodDefSig + offset, returnTypeAndParameters, methodDefSigBufferLength - offset);
+    assert(returnTypeAndParameters.size() >= methodDefSigBufferLength - offset);
+    std::memcpy(methodDefSig.data() + offset, returnTypeAndParameters.data(), methodDefSigBufferLength - offset);
 
     return;
 }
@@ -337,7 +337,7 @@ HRESULT ImportSignatureIntoModule(
     std::function<void(mdcursor_t)> onRowAdded,
     inline_span<uint8_t>& importedSignature)
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
     // We are going to copy over the signature and replace the tokens from the source module in the signature
     // with equivalent tokens in the destination module, creating them if needed.
     std::vector<uint8_t> importedSignatureBuffer;
@@ -436,9 +436,9 @@ HRESULT ImportSignatureIntoModule(
 
     try
     {
-        importedSignature.resize(importedSignature.size());
+        importedSignature.resize(importedSignatureBuffer.size());
     }
-    catch(const std::bad_alloc&)
+    catch (std::bad_alloc const&)
     {
         return E_OUTOFMEMORY;
     }

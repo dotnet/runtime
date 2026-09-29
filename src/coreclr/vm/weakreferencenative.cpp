@@ -45,10 +45,9 @@ void FinalizeWeakReference(Object* obj)
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
 }
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
 
-// static
-extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, INT64 wrapperId, QCall::ObjectHandleOnStack retRcw)
+extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, QCall::ObjectHandleOnStack retRcw, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -57,14 +56,14 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
 
     // If the weak reference was in a state that it had an IWeakReference* for us to use, then we need to find the IUnknown
     // identity of the underlying COM object (assuming that object is still alive).
-    SafeComHolder<IUnknown> pTargetIdentity = nullptr;
+    ReleaseHolder<IUnknown> pTargetIdentity;
 
     // Using the IWeakReference*, get ahold of the target native COM object's IInspectable*.  If this resolve fails, then we
     // assume that the underlying native COM object is no longer alive, and thus we cannot create a new RCW for it.
-    SafeComHolderPreemp<IInspectable> pTarget = nullptr;
+    ReleaseHolder<IInspectable> pTarget;
     if (SUCCEEDED(pComWeakReference->Resolve(IID_IInspectable, &pTarget)))
     {
-        if (!pTarget.IsNull())
+        if (pTarget != nullptr)
         {
             // Get the IUnknown identity for the underlying object
             SafeQueryInterfacePreemp(pTarget, IID_IUnknown, &pTargetIdentity);
@@ -72,31 +71,15 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
     }
 
     // If we were able to get an IUnknown identity for the object, then we can find or create an associated RCW for it.
-    if (!pTargetIdentity.IsNull())
+    if (pTargetIdentity != nullptr)
     {
         GCX_COOP();
         OBJECTREF rcwRef = NULL;
         GCPROTECT_BEGIN(rcwRef);
 
-        if (wrapperId != ComWrappersNative::InvalidWrapperId)
-        {
-            // Try the global COM wrappers
-            if (GlobalComWrappersForTrackerSupport::IsRegisteredInstance(wrapperId))
-            {
-                (void)GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(pTargetIdentity, &rcwRef);
-            }
-            else if (GlobalComWrappersForMarshalling::IsRegisteredInstance(wrapperId))
-            {
-                (void)GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(pTargetIdentity, ObjFromComIP::NONE, &rcwRef);
-            }
-        }
-#ifdef FEATURE_COMINTEROP
-        else
-        {
-            // If the original RCW was not created through ComWrappers, fall back to the built-in system.
-            GetObjectRefFromComIP(&rcwRef, pTargetIdentity);
-        }
-#endif // FEATURE_COMINTEROP
+        // If the original RCW was not created through ComWrappers, fall back to the built-in system.
+        GetObjectRefFromComIP(&rcwRef, pTargetIdentity);
+
         GCPROTECT_END();
         retRcw.Set(rcwRef);
     }
@@ -105,75 +88,47 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
     return;
 }
 
-// static
-extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj, INT64* pWrapperId)
+extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     IWeakReference* pWeakReference = nullptr;
+
     BEGIN_QCALL;
 
-    *pWrapperId = ComWrappersNative::InvalidWrapperId;
-    SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(nullptr);
-    _ASSERTE(obj.m_ppObject != nullptr);
-
+    IWeakReferenceSource* pWeakReferenceSourceRaw = nullptr;
     {
         // COM helpers assume COOP mode and the arguments are protected refs.
         GCX_COOP();
         OBJECTREF objRef = obj.Get();
+        _ASSERTE(objRef != nullptr);
         GCPROTECT_BEGIN(objRef);
 
         // If the object is not an RCW, then we do not want to use a native COM weak reference to it
         // If the object is a managed type deriving from a COM type, then we also do not want to use a native COM
         // weak reference to it.  (Otherwise, we'll wind up resolving IWeakReference-s back into the CLR
         // when we don't want to have reentrancy).
-#ifdef FEATURE_COMINTEROP
         MethodTable* pMT = objRef->GetMethodTable();
         if (pMT->IsComObjectType()
             && (pMT == g_pBaseCOMObject || !pMT->IsExtensibleRCW()))
         {
-            pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(&objRef, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
-        }
-        else
-#endif
-        {
-#ifdef FEATURE_COMWRAPPERS
-            bool isAggregated = false;
-            pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(&objRef, IID_IWeakReferenceSource, pWrapperId, &isAggregated));
-            if (isAggregated)
-            {
-                // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown as the outer IUnknown wraps the managed object.
-                // In this case, don't create a weak reference backed by a COM weak reference.
-                pWeakReferenceSource = nullptr;
-            }
-#endif
+            pWeakReferenceSourceRaw = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(&objRef, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
         }
 
         GCPROTECT_END();
     }
 
+    ReleaseHolder<IWeakReferenceSource> pWeakReferenceSource{ pWeakReferenceSourceRaw };
     if (pWeakReferenceSource != nullptr)
     {
-        SafeComHolderPreemp<IWeakReference> weakReferenceHolder;
+        ReleaseHolder<IWeakReference> weakReferenceHolder;
         if (!FAILED(pWeakReferenceSource->GetWeakReference(&weakReferenceHolder)))
         {
-            weakReferenceHolder.SuppressRelease();
-            pWeakReference = weakReferenceHolder.GetValue();
+            pWeakReference = weakReferenceHolder.Detach();
         }
     }
 
     END_QCALL;
     return pWeakReference;
 }
-
-FCIMPL1(FC_BOOL_RET, ComAwareWeakReferenceNative::HasInteropInfo, Object* pObject)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(pObject != nullptr);
-
-    SyncBlock* pSyncBlock = pObject->PassiveGetSyncBlock();
-    return pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr;
-}
-FCIMPLEND
-
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP

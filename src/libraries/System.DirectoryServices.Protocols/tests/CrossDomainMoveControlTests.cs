@@ -23,7 +23,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(null, new byte[0])]
         [InlineData("", new byte[] { 0, 0 })]
         [InlineData("A", new byte[] { 65, 0, 0 })]
-        public void Ctor_String(string targetDomainController, byte[] expectedValue)
+        public void Ctor_String(string? targetDomainController, byte[] expectedValue)
         {
             var control = new CrossDomainMoveControl(targetDomainController);
             Assert.True(control.IsCritical);

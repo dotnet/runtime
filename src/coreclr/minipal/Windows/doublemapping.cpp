@@ -193,6 +193,10 @@ bool VMToOSInterface::ReleaseDoubleMappedMemory(void *mapperHandle, void* pStart
 {
     LPVOID  result = VirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
     assert(result != NULL);
+    if (result == NULL)
+    {
+        return false;
+    }
     memset(pStart, 0, size);
     return UnmapViewOfFile(pStart);
 }
@@ -209,4 +213,24 @@ void* VMToOSInterface::GetRWMapping(void *mapperHandle, void* pStart, size_t off
 bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
 {
     return UnmapViewOfFile(pStart);
+}
+
+void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
+{
+    return NULL;
+}
+
+bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
+{
+    return false;
+}
+
+void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
+{
+    return NULL;
+}
+
+bool VMToOSInterface::FreeThunksFromTemplate(void* thunks, size_t templateSize)
+{
+    return false;
 }

@@ -57,11 +57,19 @@ add_library(dnmd_interfaces
 set_target_properties(dnmd_interfaces PROPERTIES EXPORT_NAME interfaces)
 add_library(dnmd::interfaces ALIAS dnmd_interfaces)
 
-target_include_directories(dnmd_interfaces_static PUBLIC $<INSTALL_INTERFACE:include>)
-target_include_directories(dnmd_interfaces PUBLIC $<INSTALL_INTERFACE:include>)
+target_include_directories(dnmd_interfaces_static
+  PRIVATE "${CLR_SRC_NATIVE_DIR}/../coreclr/minipal"
+  PUBLIC $<INSTALL_INTERFACE:include>)
+target_include_directories(dnmd_interfaces
+  PRIVATE "${CLR_SRC_NATIVE_DIR}/../coreclr/minipal"
+  PUBLIC $<INSTALL_INTERFACE:include>)
 
 target_compile_definitions(dnmd_interfaces_static PRIVATE COM_NO_WINDOWS_H)
 target_compile_definitions(dnmd_interfaces PRIVATE DNMD_BUILD_SHARED COM_NO_WINDOWS_H)
+
+if(CMAKE_PROJECT_NAME STREQUAL "CoreCLR" AND CLR_CMAKE_TARGET_UNIX)
+  target_compile_definitions(dnmd_interfaces_static PRIVATE DNMD_USE_CORECLR_GUIDS)
+endif()
 
 target_link_libraries(dnmd_interfaces_static
   PUBLIC
@@ -78,32 +86,6 @@ target_link_libraries(dnmd_interfaces
 if(NOT MSVC)
   target_link_libraries(dnmd_interfaces_static PUBLIC minipal_comhdrs)
   target_link_libraries(dnmd_interfaces PRIVATE minipal_comhdrs)
-endif()
-
-if (WIN32)
-  target_link_libraries(dnmd_interfaces_static PUBLIC bcrypt)
-  target_link_libraries(dnmd_interfaces PRIVATE bcrypt)
-elseif(APPLE)
-  find_library(SECURITY_LIBRARY Security REQUIRED)
-  target_link_libraries(dnmd_interfaces_static PUBLIC ${SECURITY_LIBRARY})
-  target_link_libraries(dnmd_interfaces PRIVATE ${SECURITY_LIBRARY})
-
-  include(CheckIncludeFile)
-  check_include_file("CommonCrypto/CommonDigest.h" HAVE_COMMON_DIGEST_H)
-  if (NOT HAVE_COMMON_DIGEST_H)
-    message(FATAL_ERROR "CommonCrypto/CommonDigest.h not found")
-  endif()
-elseif(UNIX)
-  find_package(OpenSSL REQUIRED COMPONENTS Crypto)
-  if (FEATURE_DISTRO_AGNOSTIC_SSL)
-    # When we're building against a distro-agnostic SSL, we need to dynamically load OpenSSL
-    add_compile_definitions(FEATURE_DISTRO_AGNOSTIC_SSL)
-    target_link_libraries(dnmd_interfaces_static PUBLIC ${CMAKE_DL_LIBS})
-    target_link_libraries(dnmd_interfaces PRIVATE ${CMAKE_DL_LIBS})
-  else()
-    target_link_libraries(dnmd_interfaces_static PUBLIC OpenSSL::Crypto)
-    target_link_libraries(dnmd_interfaces PRIVATE OpenSSL::Crypto)
-  endif()
 endif()
 
 set_target_properties(dnmd_interfaces PROPERTIES

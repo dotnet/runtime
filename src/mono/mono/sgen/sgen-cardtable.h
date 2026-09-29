@@ -30,7 +30,7 @@ void sgen_card_table_preclean_mod_union (guint8 *cards, guint8 *cards_preclean, 
 guint8* sgen_get_card_table_configuration (int *shift_bits, gpointer *mask);
 guint8* sgen_get_target_card_table_configuration (int *shift_bits, target_mgreg_t *mask);
 
-void sgen_card_table_init (SgenRememberedSet *remset);
+void sgen_card_table_init (SgenRememberedSet *remset, gboolean consistency_checks);
 
 /*How many bytes a single card covers*/
 #define CARD_BITS 9

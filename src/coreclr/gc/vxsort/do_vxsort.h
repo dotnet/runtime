@@ -6,11 +6,19 @@ enum class InstructionSet
 {
     AVX2 = 0,
     AVX512F = 1,
+    NEON = 2,
 };
 
 void InitSupportedInstructionSet (int32_t configSetting);
 bool IsSupportedInstructionSet (InstructionSet instructionSet);
 
-void do_vxsort_avx2 (uint8_t** low, uint8_t** high, uint8_t *range_low, uint8_t *range_high);
+#if defined(TARGET_AMD64)
 
+void do_vxsort_avx2 (uint8_t** low, uint8_t** high, uint8_t *range_low, uint8_t *range_high);
 void do_vxsort_avx512 (uint8_t** low, uint8_t** high, uint8_t* range_low, uint8_t* range_high);
+
+#elif defined(TARGET_ARM64)
+
+void do_vxsort_neon (uint8_t** low, uint8_t** high, uint8_t* range_low, uint8_t* range_high);
+
+#endif

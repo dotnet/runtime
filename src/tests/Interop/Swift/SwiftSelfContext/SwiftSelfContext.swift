@@ -26,8 +26,12 @@ public struct FrozenEnregisteredStruct
     let a : Int64;
     let b : Int64;
 
-    public func Sum() -> Int64 {
+    public func sum() -> Int64 {
         return a + b
+    }
+
+    public func sumWithExtraArgs(c: Float, d: Float) -> Float {
+        return Float(a + b) + c + d
     }
 }
 
@@ -39,7 +43,11 @@ public struct FrozenNonEnregisteredStruct {
     let d : Int64;
     let e : Int64;
 
-    public func Sum() -> Int64 {
+    public func sum() -> Int64 {
         return a + b + c + d + e
+    }
+
+    public func sumWithExtraArgs(f: Float, g: Float) -> Float {
+        return Float(a + b + c + d + e) + f + g
     }
 }

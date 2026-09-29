@@ -1,14 +1,16 @@
+#ifdef BUILD_WINDOWS
+#include <wil/stl.h>
+#include <wil/registry.h>
+#include <wil/win32_helpers.h>
+#endif
+
 #include "fixtures.h"
 #include "baseline.h"
 #include <pal.hpp>
 #include <algorithm>
 #include <unordered_map>
 
-#ifdef BUILD_WINDOWS
-#include <wil/stl.h>
-#include <wil/registry.h>
-#include <wil/win32_helpers.h>
-#else
+#ifndef BUILD_WINDOWS
 #define THROW_IF_FAILED(x) do { HRESULT hr = (x); if (FAILED(hr)) { throw std::runtime_error("Failed HR when running '" #x "'"); } } while (false)
 #include <dirent.h>
 #endif
@@ -150,7 +152,7 @@ namespace
         THROW_IF_FAILED(image->GetSaveSize(cssAccurate, &size));
 
         malloc_span<uint8_t> imageWithIndirectionTables{ (uint8_t*)malloc(size), size };
-        THROW_IF_FAILED(image->SaveToMemory(imageWithIndirectionTables, size));
+        THROW_IF_FAILED(image->SaveToMemory(imageWithIndirectionTables.data(), size));
 
         return imageWithIndirectionTables;
     }

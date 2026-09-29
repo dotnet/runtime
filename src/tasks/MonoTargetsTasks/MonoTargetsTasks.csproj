@@ -1,26 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
+    <!-- Emit into stable, version-independent folder names instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <OutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <!-- On .NET Framework, make sure we don't include a copy of the MSBuild assemblies with the task. The NETCore version doesn't do it already. -->
-    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" IncludeAssets="compile" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" IncludeAssets="compile" />
-    <!-- These versions should not be newer than what Visual Studio MSBuild uses -->
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" PrivateAssets="All" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" PrivateAssets="all" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" />
-  </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="ILStrip\AssemblyStripper\AssemblyStripper.csproj" />
+    <ProjectReference Include="..\AssemblyStripper\AssemblyStripper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,27 +21,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="EmitBundleTask\*.cs" />
-    <Compile Include="ILStrip\ILStrip.cs" />
     <Compile Include="..\Common\Utils.cs" />
-    <Compile Include="RuntimeConfigParser\RuntimeConfigParser.cs" />
-    <Compile Include="JsonToItemsTaskFactory\JsonToItemsTaskFactory.cs" />
-    <Compile Include="NetTraceToMibcConverterTask\NetTraceToMibcConverter.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
-    <Compile Include="MarshalingPInvokeScanner\MinimalMarshalingTypeCompatibilityProvider.cs" />
-    <Compile Include="MarshalingPInvokeScanner\MarshalingPInvokeScanner.cs" />
-    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
   <!-- GetFilesToPackage assists to place `MonoTargetsTasks.dll` in a NuGet package in Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
-
       <!-- Copies every assembly that is in the artifacts/bin/MonoTargetsTasks/ subfolders.  Be careful not to include too much. -->
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)net\*.dll" TargetPath="tasks\net" />
+      <FilesToPackage Include="$(OutputPath)net\*.pdb" TargetPath="tasks\net" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.dll" TargetPath="tasks\netframework" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.pdb" TargetPath="tasks\netframework" />
     </ItemGroup>
   </Target>
+
 </Project>

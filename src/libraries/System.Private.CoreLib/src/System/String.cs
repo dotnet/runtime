@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -68,11 +67,12 @@ namespace System
          * src/vm/ecall.cpp for instructions on how to add new overloads.
          */
 
+        /// <safety>The runtime FCall builds the string by copying from the supplied managed char array, whose length it reads safely; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char[])")]
 #endif
-        public extern String(char[]? value);
+        public extern safe String(char[]? value);
 
         private static string Ctor(char[]? value)
         {
@@ -89,11 +89,12 @@ namespace System
             return result;
         }
 
+        /// <safety>The runtime FCall validates the start index and length against the managed array's bounds before copying; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
 #endif
-        public extern String(char[] value, int startIndex, int length);
+        public extern safe String(char[] value, int startIndex, int length);
 
         private static string Ctor(char[] value, int startIndex, int length)
         {
@@ -281,11 +282,12 @@ namespace System
             return enc.GetString(new ReadOnlySpan<byte>(pStart, length));
         }
 
+        /// <safety>The runtime FCall builds the string from the character and count values alone; it takes no pointer and touches no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.Char,System.Int32)")]
 #endif
-        public extern String(char c, int count);
+        public extern safe String(char c, int count);
 
         private static string Ctor(char c, int count)
         {
@@ -303,13 +305,14 @@ namespace System
             return result;
         }
 
+        /// <safety>The runtime FCall copies from the bounds-checked managed span; it takes no raw pointer and touches no caller-supplied unmanaged memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if MONO
         [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
 #endif
-        public extern String(ReadOnlySpan<char> value);
+        public extern safe String(ReadOnlySpan<char> value);
 
-        private static unsafe string Ctor(ReadOnlySpan<char> value)
+        private static string Ctor(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)
                 return Empty;
@@ -322,6 +325,10 @@ namespace System
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
             where TState : allows ref struct
         {
+            // To support interop scenarios, the underlying buffer is guaranteed to be at least 1 greater than represented by the span parameter of the action callback.
+            // This additional index represents the null-terminator and, if written, that is the only value supported.
+            // Writing any value other than the null-terminator corrupts the string and is considered undefined behavior.
+
             if (action is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
@@ -391,7 +398,7 @@ namespace System
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
-        public static unsafe string Copy(string str)
+        public static string Copy(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
 
@@ -410,7 +417,7 @@ namespace System
         // sourceIndex + count - 1 to the character array buffer, beginning
         // at destinationIndex.
         //
-        public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
+        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             ArgumentNullException.ThrowIfNull(destination);
 
@@ -461,7 +468,7 @@ namespace System
         public char[] ToCharArray()
         {
             if (Length == 0)
-                return Array.Empty<char>();
+                return [];
 
             char[] chars = new char[Length];
 
@@ -484,7 +491,7 @@ namespace System
             if (length <= 0)
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(length);
-                return Array.Empty<char>();
+                return [];
             }
 
             char[] chars = new char[length];
@@ -522,6 +529,7 @@ namespace System
         public ref readonly char GetPinnableReference() => ref _firstChar;
 
         internal ref char GetRawStringData() => ref _firstChar;
+        internal ref byte GetRawStringDataAsUInt8() => ref Unsafe.As<char, byte>(ref _firstChar);
         internal ref ushort GetRawStringDataAsUInt16() => ref Unsafe.As<char, ushort>(ref _firstChar);
 
         // Helper for encodings so they can talk to our buffer directly
@@ -705,15 +713,6 @@ namespace System
 
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
-            if (Ascii.IsValid(this))
-            {
-                // If its ASCII && one of the 4 main forms, then its already normalized
-                if (normalizationForm == NormalizationForm.FormC ||
-                    normalizationForm == NormalizationForm.FormKC ||
-                    normalizationForm == NormalizationForm.FormD ||
-                    normalizationForm == NormalizationForm.FormKD)
-                    return true;
-            }
             return Normalization.IsNormalized(this, normalizationForm);
         }
 
@@ -724,15 +723,6 @@ namespace System
 
         public string Normalize(NormalizationForm normalizationForm)
         {
-            if (Ascii.IsValid(this))
-            {
-                // If its ASCII && one of the 4 main forms, then its already normalized
-                if (normalizationForm == NormalizationForm.FormC ||
-                    normalizationForm == NormalizationForm.FormKC ||
-                    normalizationForm == NormalizationForm.FormD ||
-                    normalizationForm == NormalizationForm.FormKD)
-                    return this;
-            }
             return Normalization.Normalize(this, normalizationForm);
         }
 
@@ -754,7 +744,7 @@ namespace System
         //
         // This is an intrinsic function so that the JIT can recognise it specially
         // and eliminate checks on character fetches in a loop like:
-        //        for(int i = 0; i < str.Length; i++) str[i]
+        //        for (int i = 0; i < str.Length; i++) str[i]
         // The actual code generated for this will be one instruction and will be inlined.
         //
         public int Length

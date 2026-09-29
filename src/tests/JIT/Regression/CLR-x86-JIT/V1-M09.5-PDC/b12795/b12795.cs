@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-namespace DefaultNamespace
+namespace b12795
 {
     using System;
 
     public class NStructTun
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

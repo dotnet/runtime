@@ -18,7 +18,6 @@ parameters:
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
-  gatherAssetManifests: false
   disableComponentGovernance: ''
   templatePath: 'templates'
 
@@ -58,6 +57,8 @@ jobs:
       agentOs: Ubuntu
     ${{ if eq(parameters.osGroup, 'freebsd') }}:
       agentOs: FreeBSD
+    ${{ if eq(parameters.osGroup, 'openbsd') }}:
+      agentOs: OpenBSD
     ${{ if in(parameters.osGroup, 'osx', 'ios') }}:
       agentOs: MacOS
     ${{ if eq(parameters.osGroup, 'windows') }}:
@@ -68,11 +69,6 @@ jobs:
       disableComponentGovernance: true
     ${{ else }}:
       disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
-
-    # Setting this results in the arcade job template including a step
-    # that gathers asset manifests and publishes them to pipeline
-    # storage. Only relevant for build jobs.
-    enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
 
     artifacts:
       publish:
@@ -107,11 +103,17 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
+    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+      - template: /eng/pipelines/common/select-xcode.yml
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
 
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
+
+    - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
     - ${{ parameters.steps }}

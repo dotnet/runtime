@@ -33,6 +33,12 @@ namespace System.Runtime.Serialization
         {
         }
 
+        internal XmlObjectSerializerWriteContextComplex(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject, ISerializationSurrogateProvider? serializationSurrogateProvider)
+            : base(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject)
+        {
+            _serializationSurrogateProvider = serializationSurrogateProvider;
+        }
+
         internal override bool WriteClrTypeInfo(XmlWriterDelegator xmlWriter, DataContract dataContract)
         {
             return false;

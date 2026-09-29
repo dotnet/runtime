@@ -37,7 +37,8 @@ namespace System.Net.Http
                 {
                     NetworkCredential? credentials = proxyCredentials?.GetCredential(proxyUri, proxyUri.Scheme);
 
-                    if (string.Equals(proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(proxyUri.Scheme, "socks5h", StringComparison.OrdinalIgnoreCase))
                     {
                         await EstablishSocks5TunnelAsync(stream, host, port, credentials, async).ConfigureAwait(false);
                     }
@@ -192,7 +193,7 @@ namespace System.Net.Http
                 VerifyProtocolVersion(ProtocolVersion5, buffer[0]);
                 if (buffer[1] != Socks5_Success)
                 {
-                    throw new SocksException(SR.net_socks_connection_failed);
+                    throw new SocksException(SR.Format(SR.net_socks_connection_failed, buffer[1].ToString("X2")));
                 }
                 int bytesToSkip = buffer[3] switch
                 {
@@ -307,7 +308,7 @@ namespace System.Net.Http
                     case Socks4_AuthFailed:
                         throw new SocksException(SR.net_socks_auth_failed);
                     default:
-                        throw new SocksException(SR.net_socks_connection_failed);
+                        throw new SocksException(SR.Format(SR.net_socks_connection_failed, buffer[1].ToString("X2")));
                 }
                 // response address not used
             }

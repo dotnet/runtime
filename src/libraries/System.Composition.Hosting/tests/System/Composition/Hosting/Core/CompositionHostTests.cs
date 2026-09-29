@@ -105,7 +105,7 @@ namespace System.Composition.Hosting.Core.Tests
         [InlineData(typeof(ExportFactory<int>), new string[] { "1", "2", "3" }, new Type[] { typeof(int), typeof(ExportFactory<int>) })]
         [InlineData(typeof(ExportFactory<int, ParameterlessConstructor>), null, new Type[] { typeof(int), typeof(ExportFactory<int, ParameterlessConstructor>) })]
         [InlineData(typeof(ExportFactory<int, ParameterlessConstructor>), new string[] { "1", "2", "3" }, new Type[] { typeof(int), typeof(ExportFactory<int, ParameterlessConstructor>) })]
-        public void GetExport_ExportFactoryContractWithMetadataConstraints_ReturnsExpected(Type contractType, string[] sharingBoundaryNames, Type[] expectedTypes)
+        public void GetExport_ExportFactoryContractWithMetadataConstraints_ReturnsExpected(Type contractType, string[]? sharingBoundaryNames, Type[] expectedTypes)
         {
             var tracker = new TrackingProvider();
             using (CompositionHost host = CompositionHost.CreateCompositionHost(tracker))

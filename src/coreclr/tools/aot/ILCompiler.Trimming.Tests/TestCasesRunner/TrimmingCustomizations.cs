@@ -5,7 +5,7 @@ using System;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TrimmingCustomizations
-	{
-	}
+    public class TrimmingCustomizations
+    {
+    }
 }

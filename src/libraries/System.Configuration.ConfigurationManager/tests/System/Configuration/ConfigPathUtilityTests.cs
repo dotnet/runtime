@@ -29,7 +29,7 @@ namespace System.ConfigurationTests
             InlineData(@"a/../c", false),
             InlineData(@"a/./c", false)
             ]
-        public void IsValid(string configPath, bool expected)
+        public void IsValid(string? configPath, bool expected)
         {
             Assert.Equal(expected, ConfigPathUtility.IsValid(configPath));
         }

@@ -40,7 +40,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceEmpty()
         {
-            int[] source = { };
+            int[] source = [];
 
             Assert.Empty(source.OrderBy(e => e).ThenBy(e => e));
         }
@@ -116,7 +116,7 @@ namespace System.Linq.Tests
             var source = @"Because I could not stop for Death -
 He kindly stopped for me -
 The Carriage held but just Ourselves -
-And Immortality.".Split(new[] { ' ', '\n', '\r', '-' }, StringSplitOptions.RemoveEmptyEntries);
+And Immortality.".Split([' ', '\n', '\r', '-'], StringSplitOptions.RemoveEmptyEntries);
             var expected = new[]
             {
                 "me", "not", "for", "for", "but", "stop", "held", "just", "could", "kindly", "stopped",
@@ -132,7 +132,7 @@ And Immortality.".Split(new[] { ' ', '\n', '\r', '-' }, StringSplitOptions.Remov
             var source = @"Because I could not stop for Death -
 He kindly stopped for me -
 The Carriage held but just Ourselves -
-And Immortality.".Split(new[] { ' ', '\n', '\r', '-' }, StringSplitOptions.RemoveEmptyEntries);
+And Immortality.".Split([' ', '\n', '\r', '-'], StringSplitOptions.RemoveEmptyEntries);
             var expected = new[]
             {
                 "me", "not", "for", "for", "but", "stop", "held", "just", "could", "kindly", "stopped",

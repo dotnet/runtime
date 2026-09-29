@@ -50,6 +50,7 @@ namespace System.Formats.Cbor
                 throw new ArgumentOutOfRangeException(nameof(definiteLength));
             }
 
+            EnsureMaxDepthNotExceeded();
             WriteUnsignedInteger(CborMajorType.Array, (ulong)definiteLength);
             PushDataItem(CborMajorType.Array, definiteLength);
         }
@@ -61,6 +62,7 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceMode_IndefiniteLengthItemsNotSupported, ConformanceMode));
             }
 
+            EnsureMaxDepthNotExceeded();
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));
             PushDataItem(CborMajorType.Array, definiteLength: null);

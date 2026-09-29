@@ -1,5 +1,8 @@
 TempNugetCache
 publish
 deployment
-inputs
 crash-*
+timeout-*
+*inputs*
+*corpus*
+*coverage-report*

@@ -70,7 +70,7 @@ Disp::DefineScope(
     OptionValue optionForNewScope = m_OptionValue;
 
 
-    LOG((LF_METADATA, LL_INFO10, "Disp::DefineScope(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", rclsid, dwCreateFlags, riid, ppIUnk));
+    LOG((LF_METADATA, LL_INFO10, "Disp::DefineScope(0x%08x, 0x%08x, 0x%08x, %p)\n", rclsid.Data1, dwCreateFlags, riid.Data1, ppIUnk));
 
     if (dwCreateFlags)
         IfFailGo(E_INVALIDARG);
@@ -105,7 +105,7 @@ Disp::DefineScope(
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
-    LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
+    LOG((LOGMD, "{%p} Created new emit scope\n", (void*)pMeta));
 
 ErrExit:
     if (FAILED(hr))
@@ -182,32 +182,9 @@ Disp::OpenRawScope(
     _ASSERTE(!IsOfReserved(dwOpenFlags));
 #endif //!FEATURE_METADATA_LOAD_TRUSTED_IMAGES
 
-    {
-    }
-
     if (IsOfReadOnly(dwOpenFlags) && IsOfReadWrite(dwOpenFlags))
     {   // Invalid combination of flags - ofReadOnly & ofWrite
         IfFailGo(E_INVALIDARG);
-    }
-    // If open-for-read, and there is already an open-for-read copy, return it.
-    if (IsOfReadOnly(dwOpenFlags))
-    {
-        RegMeta::FindCachedReadOnlyEntry(szFileName, dwOpenFlags, &pMeta);
-        if (pMeta != NULL)
-        {
-            // Return the requested interface.
-            hr = pMeta->QueryInterface(riid, (void **) ppIUnk);
-            if (FAILED(hr))
-            {
-                pMeta = NULL; // Don't delete cached RegMeta!
-            }
-            else
-            {
-                pMeta->Release(); // Give back refcount from QI
-            }
-
-            goto ErrExit;
-        }
     }
     // Create a new coclass for this guy.
     pMeta = new (nothrow) RegMeta();
@@ -228,13 +205,7 @@ Disp::OpenRawScope(
     // Obtain the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk) );
 
-    // Add the new RegMeta to the cache.  If this is read-only, any future opens will
-    //  find this entry.  If, due to another thread concurrently opening the same file,
-    //  there is already another copy in the cache, well, then there will be two
-    //  read-only copies in the cache.  This is considered to be somewhat of a corner
-    //  case, and the only harm is temporary memory usage.  All requests will be
-    //  satisfied by one or the other (depending on search algorithm), and eventually,
-    //  the "other" copy will be released.
+    // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
 #if defined(_DEBUG)
@@ -269,7 +240,7 @@ HRESULT Disp::OpenScopeOnMemory(        // Return code.
     IUnknown    **ppIUnk)               // [out] Return interface on success.
 {
     HRESULT     hr;
-    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnMemory(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", pData, cbData, dwOpenFlags, riid, ppIUnk));
+    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnMemory(%p, 0x%08x, 0x%08x, 0x%08x, %p)\n", (void*)pData, cbData, dwOpenFlags, riid.Data1, (void*)ppIUnk));
 
     IMDCommon *pMDCommon = NULL;
 
@@ -308,11 +279,11 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
     IfFailGo(pMeta->SetOption(&m_OptionValue));
 
 
-    PREFIX_ASSUME(pMeta != NULL);
+    _ASSERTE(pMeta != NULL);
     // Always initialize the RegMeta's stgdb.
     IfFailGo(pMeta->OpenExistingMD(0 /* szFileName */, const_cast<void*>(pData), cbData, dwOpenFlags));
 
-    LOG((LOGMD, "{%08x} Opened new scope on memory, pData: %08x    cbData: %08x\n", pMeta, pData, cbData));
+    LOG((LOGMD, "{%p} Opened new scope on memory, pData: %p    cbData: %08x\n", (void*)pMeta, (void*)pData, cbData));
 
     // Return the requested interface.
     IfFailGo( pMeta->QueryInterface(riid, (void **) ppIUnk) );
@@ -417,7 +388,7 @@ Disp::DefinePortablePdbScope(
     RegMeta* pMeta = 0;
     OptionValue optionForNewScope = m_OptionValue;
 
-    LOG((LF_METADATA, LL_INFO10, "Disp::DefinePortablePdbScope(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", rclsid, dwCreateFlags, riid, ppIUnk));
+    LOG((LF_METADATA, LL_INFO10, "Disp::DefinePortablePdbScope(0x%08x, 0x%08x, 0x%08x, %p)\n", rclsid.Data1, dwCreateFlags, riid.Data1, (void*)ppIUnk));
 
     if (dwCreateFlags)
         IfFailGo(E_INVALIDARG);
@@ -449,7 +420,7 @@ Disp::DefinePortablePdbScope(
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
-    LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
+    LOG((LOGMD, "{%p} Created new emit scope\n", (void*)pMeta));
 
 ErrExit:
     if (FAILED(hr))
@@ -465,91 +436,6 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT
 } // Disp::DefineScope
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-
-//*****************************************************************************
-// IMetaDataDispenserCustom
-//*****************************************************************************
-
-HRESULT Disp::OpenScopeOnCustomDataSource(  // S_OK or error
-    IMDCustomDataSource  *pCustomSource, // [in] The scope to open.
-    DWORD                dwOpenFlags,    // [in] Open mode flags.
-    REFIID               riid,           // [in] The interface desired.
-    IUnknown             **ppIUnk)       // [out] Return interface on success.
-{
-    HRESULT     hr;
-    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnCustomDataSource(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", pCustomSource, dwOpenFlags, riid, ppIUnk));
-
-    IMDCommon *pMDCommon = NULL;
-
-    _ASSERTE(!IsOfReserved(dwOpenFlags));
-    if (ppIUnk == NULL)
-        IfFailGo(E_INVALIDARG);
-    *ppIUnk = NULL;
-    IfFailGo(OpenRawScopeOnCustomDataSource(pCustomSource, dwOpenFlags, IID_IMDCommon, (IUnknown**)&pMDCommon));
-    IfFailGo(DeliverScope(pMDCommon, riid, dwOpenFlags, ppIUnk));
-ErrExit:
-    if (pMDCommon)
-        pMDCommon->Release();
-
-    return hr;
-}
-
-
-//*****************************************************************************
-// Open a raw view of existing scope.
-//*****************************************************************************
-HRESULT Disp::OpenRawScopeOnCustomDataSource(        // Return code.
-    IMDCustomDataSource*  pDataSource,  // [in] scope data.
-    DWORD       dwOpenFlags,            // [in] Open mode flags.
-    REFIID      riid,                   // [in] The interface desired.
-    IUnknown    **ppIUnk)               // [out] Return interface on success.
-{
-    HRESULT     hr;
-
-    RegMeta     *pMeta = 0;
-
-    _ASSERTE(!IsOfReserved(dwOpenFlags));
-
-    // Create a new coclass for this guy.
-    pMeta = new (nothrow)RegMeta();
-    IfNullGo(pMeta);
-    IfFailGo(pMeta->SetOption(&m_OptionValue));
-
-
-    PREFIX_ASSUME(pMeta != NULL);
-    // Always initialize the RegMeta's stgdb.
-    // TODO
-    IfFailGo(pMeta->OpenExistingMD(pDataSource, dwOpenFlags));
-
-    LOG((LOGMD, "{%08x} Opened new scope on custom data source, pDataSource: %08x\n", pMeta, pDataSource));
-
-    // Return the requested interface.
-    IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk));
-
-    // Add the new RegMeta to the cache.
-    IfFailGo(pMeta->AddToCache());
-
-#if defined(_DEBUG)
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
-    {
-        int DumpMD_impl(RegMeta *pMD);
-        DumpMD_impl(pMeta);
-    }
-#endif // _DEBUG
-
-ErrExit:
-    if (FAILED(hr))
-    {
-        if (pMeta) delete pMeta;
-        *ppIUnk = 0;
-    }
-
-    return hr;
-} // Disp::OpenRawScopeOnCustomDataSource
-
-#endif
 
 //*****************************************************************************
 // IUnknown
@@ -581,10 +467,8 @@ HRESULT Disp::QueryInterface(REFIID riid, void **ppUnk)
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     else if (riid == IID_IMetaDataDispenserEx2)
         *ppUnk = (IMetaDataDispenserEx2 *) this;
-#endif
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    else if (riid == IID_IMetaDataDispenserCustom)
-        *ppUnk = static_cast<IMetaDataDispenserCustom*>(this);
+    else if (riid == IID_IILAsmPortablePdbWriter)
+        *ppUnk = (IILAsmPortablePdbWriter *) this;
 #endif
     else
         return E_NOINTERFACE;
@@ -624,7 +508,7 @@ Disp::SetOption(
 {
     HRESULT hr = S_OK;
 
-    LOG((LF_METADATA, LL_INFO10, "Disp::SetOption(0x%08x, 0x%08x)\n", optionid, pvalue));
+    LOG((LF_METADATA, LL_INFO10, "Disp::SetOption(0x%08x, %p)\n", optionid.Data1, (void*)pvalue));
 
     if (optionid == MetaDataCheckDuplicatesFor)
     {
@@ -793,7 +677,7 @@ HRESULT Disp::GetOption(                // Return code.
 {
     HRESULT hr = S_OK;
 
-    LOG((LF_METADATA, LL_INFO10, "Disp::GetOption(0x%08x, 0x%08x)\n", optionid, pvalue));
+    LOG((LF_METADATA, LL_INFO10, "Disp::GetOption(0x%08x, %p)\n", optionid.Data1, (void*)pvalue));
 
     _ASSERTE(pvalue);
     if (optionid == MetaDataCheckDuplicatesFor)
@@ -845,27 +729,13 @@ ErrExit:
     return hr;
 } // Disp::GetOption
 
-#if defined(FEATURE_METADATA_IN_VM)
-
-//---------------------------------------------------------------------------------------
-//
-// Process detach destruction.
-// Called from DllMain of clr.dll/RoMetadata.dll/MidlrtMd.dll.
-//
-void DeleteMetaData()
-{
-    LOADEDMODULES::DeleteStatics();
-}
-
-#endif //FEATURE_METADATA_IN_VM
-
 //
 // This is the entrypoint for usages of MetaData that need to start with the dispenser (e.g.
 // mscordbi.dll and profiling API).
 //
 // Notes:
 //    This could be merged with the class factory support.
-HRESULT InternalCreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)
+HRESULT CreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)
 {
     _ASSERTE(pMetaDataDispenserOut != NULL);
     return Disp::CreateObject(riid, pMetaDataDispenserOut);

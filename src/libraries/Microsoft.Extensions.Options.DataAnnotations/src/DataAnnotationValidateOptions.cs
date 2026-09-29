@@ -16,11 +16,18 @@ namespace Microsoft.Extensions.Options
     /// Implementation of <see cref="IValidateOptions{TOptions}"/> that uses DataAnnotation's <see cref="Validator"/> for validation.
     /// </summary>
     /// <typeparam name="TOptions">The instance being validated.</typeparam>
-    public class DataAnnotationValidateOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>
-        : IValidateOptions<TOptions> where TOptions : class
+#if NET11_0_OR_GREATER
+    public partial class DataAnnotationValidateOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>
+        : IValidateOptions<TOptions>, IAsyncValidateOptions<TOptions>
+        where TOptions : class
+#else
+    public partial class DataAnnotationValidateOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>
+        : IValidateOptions<TOptions>
+        where TOptions : class
+#endif
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="DataAnnotationValidateOptions{TOptions}"/> .
         /// </summary>
         /// <param name="name">The name of the option.</param>
         [RequiresUnreferencedCode("The implementation of Validate method on this type will walk through all properties of the passed in options object, and its type cannot be " +
@@ -31,7 +38,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
@@ -53,7 +60,7 @@ namespace Microsoft.Extensions.Options
             }
 
             // Ensure options are provided to validate against
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             var validationResults = new List<ValidationResult>();
             HashSet<object>? visited = null;
@@ -124,9 +131,14 @@ namespace Microsoft.Extensions.Options
                     results ??= new List<ValidationResult>();
 
                     int index = 0;
-                    foreach (object item in enumerable)
+                    foreach (object? item in enumerable)
                     {
-                        res = TryValidateOptions(item, $"{qualifiedName}.{propertyInfo.Name}[{index++}]", results, ref errors, ref visited) && res;
+                        if (item is not null)
+                        {
+                            res = TryValidateOptions(item, $"{qualifiedName}.{propertyInfo.Name}[{index}]", results, ref errors, ref visited) && res;
+                        }
+
+                        index++;
                     }
                 }
             }

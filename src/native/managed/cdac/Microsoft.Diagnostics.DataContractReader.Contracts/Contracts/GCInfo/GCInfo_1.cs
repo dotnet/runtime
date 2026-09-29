@@ -1,0 +1,95 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
+
+namespace Microsoft.Diagnostics.DataContractReader.Contracts;
+
+internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
+{
+    private readonly Target _target;
+
+    internal GCInfo_1(Target target)
+    {
+        _target = target;
+    }
+
+    IGCInfoHandle IGCInfo.DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
+        => new GcInfoDecoder<TTraits>(_target, gcInfoAddress, gcVersion);
+
+    IGCInfoHandle IGCInfo.DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
+        => new GcInfoDecoder<InterpreterGCInfoTraits>(_target, gcInfoAddress, gcVersion);
+
+    GCInfoHeader IGCInfo.GetHeader(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetHeader();
+    }
+
+    uint IGCInfo.GetCodeLength(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetCodeLength();
+    }
+
+    uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetCalleePoppedArgumentsSize();
+    }
+
+    IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetInterruptibleRanges();
+    }
+
+    IReadOnlyList<uint> IGCInfo.GetSafePoints(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSafePoints();
+    }
+
+    IReadOnlyList<GCSlotLifetime> IGCInfo.GetSlotLifetimes(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSlotLifetimes();
+    }
+
+    IReadOnlyList<LiveSlot> IGCInfo.EnumerateLiveSlots(IGCInfoHandle gcInfoHandle, uint instructionOffset, GcSlotEnumerationOptions options)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.EnumerateLiveSlots(instructionOffset, options);
+    }
+
+    bool IGCInfo.IsGcSafe(IGCInfoHandle gcInfoHandle, uint instructionOffset)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.IsGcSafe(instructionOffset);
+    }
+
+    bool IGCInfo.TryGetGenericContextStorage(IGCInfoHandle gcInfoHandle, GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.TryGetGenericContextStorage(contextKind, instructionOffset, out storage);
+    }
+
+    TargetPointer IGCInfo.GetAmbientSP(IGCInfoHandle gcInfoHandle, uint codeOffset, TargetPointer fp, TargetPointer sp)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        if (TTraits.UsesStackPointerAsAmbientSP)
+            return sp;
+
+        return handle.GetAmbientSP(codeOffset, fp, sp);
+    }
+
+    private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
+    {
+        if (gcInfoHandle is not IGCInfoDecoder handle)
+            throw new ArgumentException("Invalid GC info handle", nameof(gcInfoHandle));
+
+        return handle;
+    }
+}

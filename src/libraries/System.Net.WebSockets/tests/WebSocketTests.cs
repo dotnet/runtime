@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.Http.Functional.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -183,6 +184,37 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
+        public async Task SendAsync_FlushAsyncSyncFaulted_WrapsExceptionInWebSocketException()
+        {
+            var underlying = new IOException("flush failed");
+            using var stream = new WebSocketTestStream { FlushException = underlying };
+            using WebSocket ws = WebSocket.CreateFromStream(
+                stream, isServer: false, subProtocol: null, keepAliveInterval: Timeout.InfiniteTimeSpan);
+
+            var buffer = new ArraySegment<byte>(new byte[] { 1, 2, 3 });
+
+            WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(
+                () => ws.SendAsync(buffer, WebSocketMessageType.Binary, endOfMessage: true, CancellationToken.None));
+
+            Assert.Equal(WebSocketError.ConnectionClosedPrematurely, ex.WebSocketErrorCode);
+            Assert.Same(underlying, ex.InnerException);
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_ServerUnmaskedFrame_ThrowsWebSocketException()
+        {
+            byte[] frame = { 0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F };
+            using var stream = new MemoryStream();
+            stream.Write(frame, 0, frame.Length);
+            stream.Position = 0;
+            using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions { IsServer = true });
+            WebSocketException exception = await Assert.ThrowsAsync<WebSocketException>(() =>
+                websocket.ReceiveAsync(new byte[5], CancellationToken.None));
+            Assert.Equal(SR.net_Websockets_ServerReceivedUnmaskedFrame, exception.Message);
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
+        }
+
+        [Fact]
         public async Task ReceiveAsync_WhenDisposedInParallel_DoesNotGetStuck()
         {
             using var stream = new WebSocketTestStream();
@@ -196,9 +228,9 @@ namespace System.Net.WebSockets.Tests
 
             websocket.Dispose();
 
-            await Assert.ThrowsAsync<WebSocketException>(() => r1.WaitAsync(TimeSpan.FromSeconds(1)));
-            await Assert.ThrowsAsync<WebSocketException>(() => r2.WaitAsync(TimeSpan.FromSeconds(1)));
-            await Assert.ThrowsAsync<WebSocketException>(() => r3.WaitAsync(TimeSpan.FromSeconds(1)));
+            await Assert.ThrowsAsync<WebSocketException>(() => r1.WaitAsync(TestHelper.PassingTestTimeout));
+            await Assert.ThrowsAsync<WebSocketException>(() => r2.WaitAsync(TestHelper.PassingTestTimeout));
+            await Assert.ThrowsAsync<WebSocketException>(() => r3.WaitAsync(TestHelper.PassingTestTimeout));
         }
 
         [Fact]
@@ -219,6 +251,74 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(
                 SR.Format(SR.net_WebSockets_InvalidState, "Aborted", "Open, CloseSent"),
                 ex.Message);
+        }
+
+        [Fact]
+        public async Task SendAsync_AlreadyCanceledToken_AbortsConnectionAndThrowsOperationCanceledException()
+        {
+            using var stream = new WebSocketTestStream();
+            using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions());
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                websocket.SendAsync(new byte[] { 1, 2, 3 }, WebSocketMessageType.Binary, endOfMessage: true, cts.Token));
+
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
+        }
+
+        [Fact]
+        public async Task SendAsync_CancelWhileWaitingForSendMutex_AbortsConnectionAndThrowsOperationCanceledException()
+        {
+            using var stream = new GatedWriteStream();
+            using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions());
+
+            // Start a send with a non-cancelable token; it acquires the send mutex synchronously
+            // and then blocks inside the (gated) write, simulating another in-flight send -- e.g. a
+            // keep-alive ping -- holding the mutex.
+            Task firstSend = websocket.SendAsync(new byte[] { 1 }, WebSocketMessageType.Binary, endOfMessage: true, CancellationToken.None);
+            await stream.WriteStarted;
+
+            // Issue a second, cancelable send. Since the mutex is held, it must wait to acquire it.
+            using var cts = new CancellationTokenSource();
+            Task secondSend = websocket.SendAsync(new byte[] { 2 }, WebSocketMessageType.Binary, endOfMessage: true, cts.Token);
+
+            // Cancel while the second send is still waiting on the send mutex.
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => secondSend);
+
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
+
+            // Unblock the first send so it can finish (successfully or not -- that's not what this
+            // test is about) and the test can complete deterministically.
+            stream.ReleaseWrite();
+            try
+            {
+                await firstSend;
+            }
+            catch
+            {
+            }
+        }
+
+        /// <summary>A test stream whose first WriteAsync blocks until released, allowing tests to
+        /// deterministically create contention on the WebSocket's internal send mutex.</summary>
+        private sealed class GatedWriteStream : WebSocketTestStream
+        {
+            private readonly TaskCompletionSource _writeStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource _releaseWrite = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public Task WriteStarted => _writeStarted.Task;
+
+            public void ReleaseWrite() => _releaseWrite.TrySetResult();
+
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            {
+                _writeStarted.TrySetResult();
+                await _releaseWrite.Task.ConfigureAwait(false);
+                await base.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public abstract class ExposeProtectedWebSocket : WebSocket

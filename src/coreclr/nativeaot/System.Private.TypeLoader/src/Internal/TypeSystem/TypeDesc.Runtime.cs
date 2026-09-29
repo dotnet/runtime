@@ -219,22 +219,10 @@ namespace Internal.TypeSystem
             return templateType;
         }
 
-        internal bool IsTemplateUniversal()
-        {
-            TypeDesc templateType = ComputeTemplate(false);
-            if (templateType == null)
-                return false;
-            else
-                return templateType.IsCanonicalSubtype(CanonicalFormKind.Universal);
-        }
-
         internal bool IsTemplateCanonical()
         {
             TypeDesc templateType = ComputeTemplate(false);
-            if (templateType == null)
-                return false;
-            else
-                return !templateType.IsCanonicalSubtype(CanonicalFormKind.Universal);
+            return templateType != null;
         }
     }
 }

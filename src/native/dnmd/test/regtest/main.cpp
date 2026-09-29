@@ -30,7 +30,7 @@ class ThrowListener final : public testing::EmptyTestEventListener
     }
 };
 
-int main(int argc, char** argv)
+int MAIN_CALLCONV main(int argc, char** argv)
 {
     RETURN_IF_FAILED(pal::GetBaselineMetadataDispenser(&TestBaseline::Metadata));
 

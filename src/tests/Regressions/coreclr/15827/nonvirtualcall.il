@@ -6,7 +6,7 @@
 // Corresponds to the C# "base(IFoo).Frob()" syntax.
 //
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core {}
 
 .assembly nonvirtualcall { }

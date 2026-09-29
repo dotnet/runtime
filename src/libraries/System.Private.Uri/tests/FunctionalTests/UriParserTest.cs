@@ -469,6 +469,45 @@ namespace System.PrivateUri.Tests
             Assert.Throws<InvalidOperationException>(() => UriParser.Register(parser, scheme, 2006));
         }
 
+        [Fact]
+        public static void NoQuery()
+        {
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.NoQuery), "no-query-scheme", 123);
+
+            var uri = new Uri("no-query-scheme://host/path?query?#?fragment#");
+            Assert.Equal("host", uri.Host);
+            Assert.Equal(123, uri.Port);
+            Assert.Equal("/path%3Fquery%3F", uri.AbsolutePath);
+            Assert.Equal(string.Empty, uri.Query);
+            Assert.Equal("#?fragment#", uri.Fragment);
+        }
+
+        [Fact]
+        public static void NoFragment()
+        {
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.NoFragment), "no-fragment-scheme", 321);
+
+            var uri = new Uri("no-fragment-scheme://host/path?query?#?fragment#");
+            Assert.Equal("host", uri.Host);
+            Assert.Equal(321, uri.Port);
+            Assert.Equal("/path", uri.AbsolutePath);
+            Assert.Equal("?query?%23?fragment%23", uri.Query);
+            Assert.Equal(string.Empty, uri.Fragment);
+        }
+
+        [Fact]
+        public static void NoQueryOrFragment()
+        {
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.NoQuery | GenericUriParserOptions.NoFragment), "no-queryfragment-scheme", 213);
+
+            var uri = new Uri("no-queryfragment-scheme://host/path?query?#?fragment#");
+            Assert.Equal("host", uri.Host);
+            Assert.Equal(213, uri.Port);
+            Assert.Equal("/path%3Fquery%3F%23%3Ffragment%23", uri.AbsolutePath);
+            Assert.Equal(string.Empty, uri.Query);
+            Assert.Equal(string.Empty, uri.Fragment);
+        }
+
         #endregion UriParser tests
 
         #region GenericUriParser tests
@@ -537,5 +576,50 @@ namespace System.PrivateUri.Tests
             new NetTcpStyleUriParser();
         }
         #endregion UriParser template tests
+
+        [Theory]
+        [InlineData(UriKind.Absolute, true)]
+        [InlineData(UriKind.Absolute, false)]
+        [InlineData(UriKind.RelativeOrAbsolute, true)]
+        [InlineData(UriKind.RelativeOrAbsolute, false)]
+        [InlineData(UriKind.Relative, true)]
+        [InlineData(UriKind.Relative, false)]
+        public static void CustomParserCanRecoverOnInvalidUri(UriKind uriKind, bool recover)
+        {
+            string scheme = $"custom-recover-on-invalid-{uriKind}-{recover}";
+            UriParser.Register(new CustomParser_RecoversOnInvalidUri(recover), scheme, -1);
+
+            var uriString = recover ? $"{scheme}:not a valid host" : $"{scheme}://host";
+
+            if (uriKind == UriKind.Relative)
+            {
+                Assert.Throws<UriFormatException>(() => new Uri(uriString, uriKind));
+                Assert.False(Uri.TryCreate(uriString, uriKind, out _));
+            }
+            else
+            {
+                var uri1 = new Uri(uriString, uriKind);
+                Assert.True(Uri.TryCreate(uriString, uriKind, out Uri? uri2));
+                Assert.Same(uri1.OriginalString, uri2.OriginalString);
+                Assert.Equal("foo", uri1.Host);
+                Assert.Equal("foo", uri2.Host);
+            }
+        }
+
+        private sealed class CustomParser_RecoversOnInvalidUri(bool recover) : GenericUriParser(GenericUriParserOptions.Default)
+        {
+            protected override void InitializeAndValidate(Uri uri, out UriFormatException? parsingError)
+            {
+                base.InitializeAndValidate(uri, out parsingError);
+
+                if (recover)
+                {
+                    Assert.NotNull(parsingError);
+                    parsingError = null;
+                }
+            }
+
+            protected override string GetComponents(Uri uri, UriComponents components, UriFormat format) => "foo";
+        }
     }
 }

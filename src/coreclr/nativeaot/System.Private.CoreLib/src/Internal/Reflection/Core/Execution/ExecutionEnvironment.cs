@@ -19,7 +19,7 @@ using OpenMethodInvoker = System.Reflection.Runtime.MethodInfos.OpenMethodInvoke
 namespace Internal.Reflection.Core.Execution
 {
     //
-    // This class abstracts the underlying Redhawk (or whatever execution engine) runtime and exposes the services
+    // This class abstracts the underlying NativeAOT runtime (or whatever execution engine) runtime and exposes the services
     // that I.R.Core.Execution needs.
     //
     [CLSCompliant(false)]
@@ -53,7 +53,8 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Invoke and field access support.
         //==============================================================================================
-        public abstract MethodBaseInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
+        public abstract void ValidateGenericMethodConstraints(MethodInfo method);
+        public abstract MethodBaseInvoker TryGetMethodInvokerNoConstraintCheck(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
         public abstract FieldAccessor TryGetFieldAccessor(MetadataReader reader, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, FieldHandle fieldHandle);
 
         //==============================================================================================
@@ -76,7 +77,6 @@ namespace Internal.Reflection.Core.Execution
         // Other
         //==============================================================================================
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
-        public abstract void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags);
         public abstract IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker);
         public abstract MethodInfo GetDelegateMethod(Delegate del);
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
@@ -108,7 +108,7 @@ namespace Internal.Reflection.Core.Execution
             {
                 genericMethodTypeArgumentHandles[i] = genericMethodTypeArguments[i].TypeHandle;
             }
-            MethodBaseInvoker methodInvoker = TryGetMethodInvoker(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBaseInvoker methodInvoker = TryGetMethodInvokerNoConstraintCheck(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodInvoker == null)
                 exception = ReflectionCoreExecution.ExecutionEnvironment.CreateNonInvokabilityException(exceptionPertainant);
             return methodInvoker;

@@ -83,6 +83,8 @@ namespace System.Xml.Serialization
             {
                 return _namespaces?.NamespaceList;
             }
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050", Justification = "ToArray is called for known reference types only.")]
             set
             {
                 if (value == null)
@@ -136,6 +138,31 @@ namespace System.Xml.Serialization
         protected static string FromTime(DateTime value)
         {
             return XmlCustomFormatter.FromTime(value);
+        }
+
+        protected static string FromDateOnly(DateOnly value)
+        {
+            return XmlCustomFormatter.FromDateOnly(value);
+        }
+
+        protected static string FromTimeOnly(TimeOnly value)
+        {
+            return XmlCustomFormatter.FromTimeOnly(value);
+        }
+
+        protected static string FromTimeOnlyIgnoreOffset(TimeOnly value)
+        {
+            return XmlCustomFormatter.FromTimeOnlyIgnoreOffset(value);
+        }
+
+        internal static bool TryFormatDateOnly(DateOnly value, Span<char> destination, out int charsWritten)
+        {
+            return XmlCustomFormatter.TryFormatDateOnly(value, destination, out charsWritten);
+        }
+
+        internal static bool TryFormatTimeOnly(TimeOnly value, Span<char> destination, out int charsWritten)
+        {
+            return XmlCustomFormatter.TryFormatTimeOnly(value, destination, out charsWritten);
         }
 
         protected static string FromChar(char value)
@@ -238,6 +265,16 @@ namespace System.Xml.Serialization
                     else if (type == typeof(DateTimeOffset))
                     {
                         typeName = "dateTimeOffset";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (type == typeof(DateOnly))
+                    {
+                        typeName = "dateOnly";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (type == typeof(TimeOnly))
+                    {
+                        typeName = "timeOnly";
                         typeNs = UrtTypes.Namespace;
                     }
                     else if (type == typeof(XmlNode[]))
@@ -364,6 +401,18 @@ namespace System.Xml.Serialization
                     {
                         tryFormatResult = XmlConvert.TryFormat((DateTimeOffset)o, _primitivesBuffer, out charsWritten);
                         type = "dateTimeOffset";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (t == typeof(DateOnly))
+                    {
+                        tryFormatResult = TryFormatDateOnly((DateOnly)o, _primitivesBuffer, out charsWritten);
+                        type = "dateOnly";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (t == typeof(TimeOnly))
+                    {
+                        tryFormatResult = TryFormatTimeOnly((TimeOnly)o, _primitivesBuffer, out charsWritten);
+                        type = "timeOnly";
                         typeNs = UrtTypes.Namespace;
                     }
                     else if (typeof(XmlNode[]).IsAssignableFrom(t))
@@ -3533,6 +3582,11 @@ namespace System.Xml.Serialization
         {
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
 
+            // When the member is an array-like value serialized as XML text (e.g. [XmlText] string[]),
+            // its items are written as a single whitespace-separated list so that the value round-trips.
+            bool isListText = text != null && text.IsList && elements.Length == 0;
+            string listSepName = $"{arrayName}NeedsSep";
+
             if (arrayTypeDesc.IsEnumerable)
             {
                 Writer.Write(typeof(IEnumerator).FullName);
@@ -3578,11 +3632,20 @@ namespace System.Xml.Serialization
                     Writer.Write(RaCodeGen.GetStringForMethodInvoke(arrayName, arrayTypeDesc.CSharpName, "GetEnumerator", arrayTypeDesc.UseReflection));
                     Writer.WriteLine(";");
                 }
+                if (isListText)
+                {
+                    Writer.WriteLine($"bool {listSepName} = false;");
+                }
                 Writer.WriteLine("if (e != null)");
                 Writer.WriteLine("while (e.MoveNext()) {");
                 Writer.Indent++;
                 string arrayTypeFullName = arrayElementTypeDesc.CSharpName;
                 WriteLocalDecl(arrayTypeFullName, $"{arrayName}i", "e.Current", arrayElementTypeDesc.UseReflection);
+                if (isListText)
+                {
+                    Writer.WriteLine($"if ({listSepName}) WriteValue(\" \");");
+                    Writer.WriteLine($"{listSepName} = true;");
+                }
                 WriteElements($"{arrayName}i", $"{choiceName}i", elements, text, choice, $"{arrayName}a", true, true);
             }
             else
@@ -3623,6 +3686,10 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
+                    if (isListText)
+                    {
+                        Writer.WriteLine($"if (i{arrayName} != 0) WriteValue(\" \");");
+                    }
                     WriteElements(RaCodeGen.GetStringForArrayMember(arrayName, $"i{arrayName}", arrayTypeDesc), elements, text, choice, $"{arrayName}a", true, arrayElementTypeDesc.IsNullable);
                 }
             }
@@ -4361,6 +4428,26 @@ namespace System.Xml.Serialization
                     Writer.Write(type.FullName);
                     Writer.Write("(");
                     Writer.Write(((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(")");
+                }
+                else if (type == typeof(DateOnly))
+                {
+                    Writer.Write(" new ");
+                    Writer.Write(type.FullName);
+                    Writer.Write("(");
+                    Writer.Write(((DateOnly)value).Year.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(", ");
+                    Writer.Write(((DateOnly)value).Month.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(", ");
+                    Writer.Write(((DateOnly)value).Day.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(")");
+                }
+                else if (type == typeof(TimeOnly))
+                {
+                    Writer.Write(" new ");
+                    Writer.Write(type.FullName);
+                    Writer.Write("(");
+                    Writer.Write(((TimeOnly)value).Ticks.ToString(CultureInfo.InvariantCulture));
                     Writer.Write(")");
                 }
                 else

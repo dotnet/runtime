@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 project(mono)
 
@@ -130,15 +130,9 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   if(AOT_TARGET_TRIPLE STREQUAL "x86_64-apple-darwin10")
     set(TARGET_SYSTEM_NAME "ios")
     set(TARGET_ARCH "x86_64")
-  elseif(AOT_TARGET_TRIPLE STREQUAL "i386-apple-darwin10")
-    set(TARGET_SYSTEM_NAME "ios")
-    set(TARGET_ARCH "x86")
   elseif(AOT_TARGET_TRIPLE STREQUAL "aarch64-apple-darwin10")
     set(TARGET_SYSTEM_NAME "ios")
     set(TARGET_ARCH "arm64")
-  elseif(AOT_TARGET_TRIPLE STREQUAL "arm-apple-darwin10")
-    set(TARGET_SYSTEM_NAME "ios")
-    set(TARGET_ARCH "arm")
   elseif(AOT_TARGET_TRIPLE STREQUAL "x86_64-apple-maccatalyst")
     set(TARGET_SYSTEM_NAME "darwin")
     set(TARGET_ARCH "x86_64")
@@ -251,9 +245,8 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
   set(HAVE_SYS_RANDOM_H 1)
 elseif(CLR_CMAKE_HOST_OS STREQUAL "wasi")
   set(HOST_WASI 1)
-  add_definitions(-D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
+  add_definitions(-D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_PTHREAD -DHOST_WASI)
   add_definitions(-D_THREAD_SAFE)
-  add_definitions(-DDISABLE_SOCKET_TRANSPORT)
   add_definitions(-DDISABLE_EGD_SOCKET)
   add_definitions(-DDISABLE_EVENTPIPE)
   add_compile_options(-Wno-strict-prototypes)
@@ -281,13 +274,13 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>) # whole program optimization
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT ProgramDatabase) # enable debugging information
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
     add_link_options(/DEBUGTYPE:CV,FIXUP)   # enable fixup debug information
     add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
     add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
-    # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF
+    # the combination of ProgramDatabase debug info format and /DEBUG /OPT:REF /OPT:ICF
     # linker flags is needed to create .pdb output on release builds
   endif()
 elseif(CLR_CMAKE_HOST_OS STREQUAL "sunos")
@@ -331,6 +324,7 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "ios" OR TARGET_SYSTEM_NAME STREQUAL "tvos")
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "android")
   set(TARGET_UNIX 1)
+  set(TARGET_LINUX 1)
   set(TARGET_LINUX_BIONIC 1)
   set(TARGET_ANDROID 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -503,6 +497,19 @@ else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
 endif()
 
+# Default stack size: 2MB for 64-bit, 1MB for 32-bit.
+# Use large (8MB) stack size for s390x/ppc64le due to limited tail call optimization support.
+# On Windows, use 0 to defer to the OS/PE header default.
+if(TARGET_WIN32)
+  set(MONO_DEFAULT_STACKSIZE 0)
+elseif(TARGET_S390X OR TARGET_POWERPC64)
+  set(MONO_DEFAULT_STACKSIZE 8388608)
+elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
+  set(MONO_DEFAULT_STACKSIZE 1048576)
+else()
+  set(MONO_DEFAULT_STACKSIZE 2097152)
+endif()
+
 # arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
 if ((HOST_MACCAT AND HOST_ARM64) OR (TARGET_MACCAT AND TARGET_ARM64))
   set(TARGET_APPLE_MOBILE 1)
@@ -539,8 +546,12 @@ if(GCC)
 
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
-  # We rely on signed overflow to behave
-  append("-fwrapv" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+
+  # Make signed overflow well-defined. Implies the following flags in clang-20 and above.
+  # -fwrapv - Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+  # using twos-complement representation (this is normally undefined according to the C++ spec).
+  # -fwrapv-pointer - The same as -fwrapv but for pointers.
+  append("-fno-strict-overflow" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
   set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wno-format-zero-length -Wno-unused-function")
   set(WARNINGS_C "-Wmissing-prototypes -Wstrict-prototypes -Wnested-externs")
@@ -550,6 +561,27 @@ if(GCC)
 
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array -Wno-asm-operand-widths")
+  endif()
+
+  if (HOST_MACCAT)
+    # Somewhere between CMake 3.17 and 3.19.4, it became impossible to not pass
+    # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
+    # replaced with a default value, and always gets expanded to an OS version.
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
+    # We need to disable the warning that -target replaces -mmacosx-version-min
+    #
+    # With https://github.com/llvm/llvm-project/commit/1c66d08b0137cef7761b8220d3b7cb7833f57cdb clang renamed the option so we need to check for both
+    check_c_compiler_flag("-Wno-overriding-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+    if (COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+      set(WARNINGS "${WARNINGS} -Wno-overriding-option")
+    else()
+      check_c_compiler_flag("-Wno-overriding-t-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+      if (COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+        set(WARNINGS "${WARNINGS} -Wno-overriding-t-option")
+      else()
+        message(FATAL_ERROR "Compiler does not support -Wno-overriding-option or -Wno-overriding-t-option, needed for Mac Catalyst builds.")
+      endif()
+    endif()
   endif()
 
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
@@ -565,7 +597,7 @@ if(GCC)
 
   if(HOST_WASI)
     # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
-    # code (e.g., mono-rand.c:315) to be rejected
+    # code to be rejected
     set(WERROR_C "${WERROR_C} -Wno-incompatible-pointer-types-discards-qualifiers")
   endif()
 
@@ -584,6 +616,13 @@ endif()
 ######################################
 set(LLVM_LIBS)
 if(LLVM_PREFIX)
+  set(MONO_LLVM_ENABLED 1)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 21.0)
+    message(WARNING "Mono llvm support requires clang 21+, found ${CMAKE_CXX_COMPILER_VERSION}. Skipping building Mono llvm support.")
+    set(MONO_LLVM_ENABLED 0)
+  endif()
+endif()
+if(MONO_LLVM_ENABLED)
   if(TARGET_ARCH STREQUAL "x86_64")
     set(llvm_codegen_libs "x86codegen")
   elseif(TARGET_ARCH STREQUAL "x86")
@@ -605,21 +644,21 @@ if(LLVM_PREFIX)
   string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
 
   # IMPORTANT: when bumping LLVM make sure to rerun the llvm-config commands below and update the variables accordingly
-  if (NOT ${llvm_api_version} EQUAL 1900)
+  if (NOT ${llvm_api_version} EQUAL 2300)
     message(FATAL_ERROR "Unexpected LLVM version: ${llvm_api_version}.")
   endif()
 
   # llvm-config --libs analysis core bitwriter mcjit orcjit
-  set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMIRPrinter" "LLVMHipStdPar" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendOffloading" "LLVMCodeGen" "LLVMScalarOpts" "LLVMInstCombine" "LLVMObjCARCOpts" "LLVMCodeGenTypes" "LLVMCFGuard" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMWindowsDriver" "LLVMJITLink" "LLVMOption" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
+  set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMIRPrinter" "LLVMHipStdPar" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMSandboxIR" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendDirective" "LLVMFrontendAtomic" "LLVMFrontendOffloading" "LLVMObjectYAML" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCodeGen" "LLVMScalarOpts" "LLVMInstCombine" "LLVMObjCARCOpts" "LLVMCodeGenTypes" "LLVMCGData" "LLVMCFGuard" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMWindowsDriver" "LLVMJITLink" "LLVMOption" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoCodeView" "LLVMDebugInfoGSYM" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMMC" "LLVMDebugInfoDWARFLowLevel" "LLVMBitReader" "LLVMFrontendHLSL" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
 
   # llvm-config --libs x86codegen
-  set(MONO_llvm_extra_libs_x86codegen "LLVMX86CodeGen" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMInstrumentation" "LLVMIRPrinter" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMCodeGenTypes" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
+  set(MONO_llvm_extra_libs_x86codegen "LLVMX86CodeGen" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMInstrumentation" "LLVMIRPrinter" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMCodeGenTypes" "LLVMCGData" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoCodeView" "LLVMDebugInfoGSYM" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMMC" "LLVMDebugInfoDWARFLowLevel" "LLVMBitReader" "LLVMFrontendHLSL" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
 
   # llvm-config --libs armcodegen
-  set(MONO_llvm_extra_libs_armcodegen "LLVMARMCodeGen" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendOffloading" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMARMDesc" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMMCDisassembler" "LLVMCodeGenTypes" "LLVMARMUtils" "LLVMARMInfo" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
+  set(MONO_llvm_extra_libs_armcodegen "LLVMARMCodeGen" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMSandboxIR" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendDirective" "LLVMFrontendAtomic" "LLVMFrontendOffloading" "LLVMObjectYAML" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMCGData" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoCodeView" "LLVMDebugInfoGSYM" "LLVMDebugInfoDWARF" "LLVMFrontendHLSL" "LLVMARMDesc" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMMCDisassembler" "LLVMCodeGenTypes" "LLVMARMUtils" "LLVMARMInfo" "LLVMMC" "LLVMDebugInfoDWARFLowLevel" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
 
   # llvm-config --libs aarch64codegen
-  set(MONO_llvm_extra_libs_aarch64codegen "LLVMAArch64CodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMBitReader" "LLVMAArch64Desc" "LLVMCodeGenTypes" "LLVMAArch64Utils" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Info" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
+  set(MONO_llvm_extra_libs_aarch64codegen "LLVMAArch64CodeGen" "LLVMPasses" "LLVMIRPrinter" "LLVMHipStdPar" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMSandboxIR" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendDirective" "LLVMFrontendAtomic" "LLVMFrontendOffloading" "LLVMObjectYAML" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMCGData" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoCodeView" "LLVMDebugInfoGSYM" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMBitReader" "LLVMFrontendHLSL" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMCodeGenTypes" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMMC" "LLVMDebugInfoDWARFLowLevel" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
 
   if(HOST_LINUX AND NOT HOST_WASM AND NOT HOST_WASI)
     set(MONO_stdlib "-nostdinc++ -nostdlib++")
@@ -650,6 +689,9 @@ if(LLVM_PREFIX)
   elseif(HOST_OSX)
     # llvm-config --system-libs
     list(APPEND llvm_system_libs "-lm")
+  elseif(HOST_WIN32)
+    # llvm-config --system-libs
+    list(APPEND llvm_system_libs "psapi.lib" "shell32.lib" "ole32.lib" "uuid.lib" "advapi32.lib" "ws2_32.lib" "ntdll.lib")
   endif()
 
   if (CLR_CMAKE_USE_SYSTEM_ZLIB AND (HOST_LINUX OR HOST_OSX))
@@ -822,7 +864,13 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   endif()
 else()
   if(NOT EXISTS "${VERSION_FILE_PATH}")
-    file(WRITE "${VERSION_FILE_PATH}" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+    file(WRITE "${VERSION_FILE_PATH}"
+      "#if defined(__GNUC__) && !defined(__clang__) && defined(__sun) && defined(__x86_64__)\n"
+      "char sccsid[] __attribute__((used, weak)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n"
+      "__asm__(\".pushsection .init_array; .reloc ., R_X86_64_NONE, sccsid; .popsection\");\n"
+      "#else\n"
+      "static char sccsid[] __attribute__((used, retain)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n"
+      "#endif\n")
   endif()
 endif()
 if (NOT EXISTS "${RUNTIME_VERSION_HEADER_PATH}")
@@ -861,8 +909,6 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 
 if(CLR_CMAKE_TARGET_LINUX_MUSL)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on musl-libc for some reason
-  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On musl-libc, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)

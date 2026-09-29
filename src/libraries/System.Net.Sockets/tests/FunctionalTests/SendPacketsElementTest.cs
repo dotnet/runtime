@@ -618,6 +618,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorNormal_Success()
         {
             using (var stream = File.Create(Path.GetTempFileName(), 4096, FileOptions.DeleteOnClose | FileOptions.Asynchronous))
@@ -635,6 +636,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorZeroCountLength_Success()
         {
             using (var stream = File.Create(Path.GetTempFileName(), 4096, FileOptions.DeleteOnClose | FileOptions.Asynchronous))
@@ -662,6 +664,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorNegOffset_ArgumentOutOfRangeException()
         {
             using (var stream = File.Create(Path.GetTempFileName(), 4096, FileOptions.DeleteOnClose | FileOptions.Asynchronous))
@@ -686,6 +689,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorNegCount_ArgumentOutOfRangeException()
         {
             using (var stream = File.Create(Path.GetTempFileName(), 4096, FileOptions.DeleteOnClose | FileOptions.Asynchronous))
@@ -710,6 +714,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // FileStream.IsAsync is always false on Unix for regular files
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorSynchronous_ArgumentException()
         {
             using (var stream = File.Create(Path.GetTempFileName(), 4096, FileOptions.DeleteOnClose))
@@ -724,6 +730,7 @@ namespace System.Net.Sockets.Tests
         // File lengths are validated on send
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorEndOfBufferTrue_Success()
         {
             using (var stream = File.Create(Path.GetTempFileName(), 4096, FileOptions.DeleteOnClose | FileOptions.Asynchronous))
@@ -764,6 +771,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorEndOfBufferFalse_Success()
         {
             using (var stream = File.Create(Path.GetTempFileName(), 4096, FileOptions.DeleteOnClose | FileOptions.Asynchronous))

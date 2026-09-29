@@ -1,13 +1,10 @@
 parameters:
   name: ''
-  publishPackagesCondition: always()
-  publishVSSetupCondition: false
   isOfficialBuild: true
 
 steps:
 - task: CopyFiles@2
   displayName: Prepare job-specific intermediate artifacts subdirectory
-  condition: and(succeeded(), ${{ parameters.publishPackagesCondition }})
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
     Contents: |
@@ -16,19 +13,18 @@ steps:
     TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts/${{ parameters.name }}'
     CleanTargetFolder: true
 
-- task: CopyFiles@2
-  displayName: Prepare job-specific intermediate artifacts subdirectory
-  condition: and(succeeded(), ${{ parameters.publishVSSetupCondition }})
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)/artifacts/VSSetup/$(_BuildConfig)'
-    Contents: |
-      Insertion/**/*
-    TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts/${{ parameters.name }}'
-    CleanTargetFolder: true
-
-- template: /eng/pipelines/common/templates/publish-build-artifacts.yml
-  parameters:
-    isOfficialBuild: ${{ parameters.isOfficialBuild }}
+# NOTE: Uses classic build (container) artifacts because the dotnet/runtimelab consumer relies on
+# multiple jobs merging into one same-named 'IntermediateArtifacts' artifact, which pipeline
+# artifacts don't support. Can be removed/migrated once runtimelab no longer needs this.
+- ${{ if parameters.isOfficialBuild }}:
+  - task: 1ES.PublishBuildArtifacts@1
+    displayName: Publish intermediate artifacts
+    inputs:
+      PathtoPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
+      ArtifactName: IntermediateArtifacts
+      ArtifactType: container
+- ${{ else }}:
+  - task: PublishBuildArtifacts@1
     displayName: Publish intermediate artifacts
     inputs:
       PathtoPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'

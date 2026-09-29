@@ -112,7 +112,7 @@ namespace System.IO.Compression
 
         // Calculate the huffman code for each character based on the code length for each character.
         // This algorithm is described in standard RFC 1951
-        private uint[] CalculateHuffmanCode()
+        private unsafe uint[] CalculateHuffmanCode()
         {
             Span<uint> bitLengthCount = stackalloc uint[17];
             bitLengthCount.Clear();
@@ -246,6 +246,12 @@ namespace System.IO.Compression
                                 array = _right;
                             }
                             index = -value; // go to next node
+
+                            if (index >= array.Length)
+                            {
+                                // prevent an IndexOutOfRangeException from array[index]
+                                throw new InvalidDataException(SR.InvalidHuffmanData);
+                            }
 
                             codeBitMask <<= 1;
                             overflowBits--;

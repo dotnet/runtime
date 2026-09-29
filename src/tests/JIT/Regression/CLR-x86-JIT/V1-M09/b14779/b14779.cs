@@ -7,10 +7,11 @@ using System.Globalization;
 using Xunit;
 
 
-namespace DefaultNamespace
+namespace b14779
 {
     public class cinfo
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

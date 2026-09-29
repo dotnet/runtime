@@ -4,6 +4,7 @@ parameters:
   isWasmOnlyBuild: false
   platforms: []
   extraBuildArgs: ''
+  useHelixMonitor: false
 
 jobs:
 
@@ -29,7 +30,7 @@ jobs:
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
             eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_runtimetests.containsChange'], true))
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_mono_runtimetests.containsChange'], true))
           ]
     jobParameters:
       testGroup: innerloop
@@ -48,5 +49,6 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             testBuildArgs: /p:InstallV8ForTests=false
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

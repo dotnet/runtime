@@ -23,6 +23,13 @@
 #error Expected DN_SIMDHASH_VALUE_T definition i.e. int
 #endif
 
+// If specified, this data will be precalculated/prefetched at the start of scans
+//  and passed to your KEY_EQUALS macro as its first parameter
+#ifndef DN_SIMDHASH_SCAN_DATA_T
+#define DN_SIMDHASH_SCAN_DATA_T uint8_t
+#define DN_SIMDHASH_GET_SCAN_DATA(data) 0
+#endif
+
 // If specified, we pass instance data to the handlers by-value, otherwise we
 //  pass the pointer to the hash itself by-value. This is enough to allow clang
 //  to hoist the load of the instance data out of the key scan loop, though it
@@ -182,7 +189,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 	#define bucket_suffixes (bucket->suffixes)
 #elif !defined(DN_SIMDHASH_USE_SCALAR_FALLBACK)
 	// Perform an eager load of the vector if SIMD is in use, even though we do
-	//  byte loads to extract lanes on non-wasm platforms. It's faster on x64 for
+	//  byte loads to extract lanes on some platforms. It's faster on x64 for
 	//  a reason I can't identify, and it significantly improves wasm codegen
 	dn_simdhash_suffixes bucket_suffixes = bucket->suffixes;
 #else
@@ -190,7 +197,9 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 	//  no good reason.
 	#define bucket_suffixes (bucket->suffixes)
 #endif
+
 	uint8_t count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_COUNT_SLOT),
+	// Loading this late at the point of the if with DN_UNLIKELY doesn't seem to improve codegen or perf
 		overflow_count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT);
 	// We could early-out here when count==0, but it doesn't appear to meaningfully improve
 	//  search performance to do so, and might actually worsen it
@@ -200,18 +209,22 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 	uint32_t index = find_first_matching_suffix_simd(search_vector, bucket_suffixes);
 #endif
 #undef bucket_suffixes
-	for (; index < count; index++) {
-		// FIXME: Could be profitable to manually hoist the data load outside of the loop,
-		//  if not out of SCAN_BUCKET_INTERNAL entirely. Clang appears to do LICM on it.
-		// It's better to index bucket->keys each iteration inside the loop than to precompute
-		//  a pointer outside and bump the pointer, because in many cases the bucket will be
-		//  empty, and in many other cases it will have one match. Putting the index inside the
-		//  loop means that for empty/no-match buckets we don't do the index calculation at all.
-		if (DN_SIMDHASH_KEY_EQUALS(DN_SIMDHASH_GET_DATA(hash), needle, bucket->keys[index]))
-			return index;
+
+	if (DN_LIKELY(index < count)) {
+		DN_SIMDHASH_SCAN_DATA_T scan_data = DN_SIMDHASH_GET_SCAN_DATA(DN_SIMDHASH_GET_DATA(hash));
+		// HACK: Suppress unused variable warning for specializations that don't use scan_data
+		(void)(scan_data);
+
+		DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
+		do {
+			if (DN_SIMDHASH_KEY_EQUALS(scan_data, needle, *key))
+				return index;
+			key++;
+			index++;
+		} while (index < count);
 	}
 
-	if (overflow_count)
+	if (DN_UNLIKELY(overflow_count))
 		return DN_SIMDHASH_SCAN_BUCKET_OVERFLOWED;
 	else
 		return DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW;
@@ -291,17 +304,6 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 
 	return NULL;
 }
-
-typedef enum dn_simdhash_insert_mode {
-	// Ensures that no matching key exists in the hash, then adds the key/value pair
-	DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE,
-	// If a matching key exists in the hash, overwrite its value but leave the key alone
-	DN_SIMDHASH_INSERT_MODE_OVERWRITE_VALUE,
-	// If a matching key exists in the hash, overwrite both the key and the value
-	DN_SIMDHASH_INSERT_MODE_OVERWRITE_KEY_AND_VALUE,
-	// Do not scan for existing matches before adding the new key/value pair.
-	DN_SIMDHASH_INSERT_MODE_REHASHING,
-} dn_simdhash_insert_mode;
 
 static void
 do_overwrite (
@@ -431,7 +433,7 @@ DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
 }
 #endif
 
-uint8_t
+dn_simdhash_add_result
 DN_SIMDHASH_TRY_ADD (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value)
 {
 	check_self(hash);
@@ -440,14 +442,18 @@ DN_SIMDHASH_TRY_ADD (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_
 	return DN_SIMDHASH_TRY_ADD_WITH_HASH(hash, key, key_hash, value);
 }
 
-uint8_t
+dn_simdhash_add_result
 DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value)
 {
 	check_self(hash);
 
 	dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE);
 	if (ok == DN_SIMDHASH_INSERT_NEED_TO_GROW) {
-		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
+		uint8_t grow_ok;
+		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1, &grow_ok);
+		if (!grow_ok)
+			return DN_SIMDHASH_OUT_OF_MEMORY;
+
 		if (old_buffers.buckets) {
 			DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
 			dn_simdhash_free_buffers(old_buffers);
@@ -458,18 +464,19 @@ DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, ui
 	switch (ok) {
 		case DN_SIMDHASH_INSERT_OK_ADDED_NEW:
 			hash->count++;
-			return 1;
+			return DN_SIMDHASH_ADD_INSERTED;
 		case DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING:
 			// This shouldn't happen
 			dn_simdhash_assert(!"Overwrote an existing item while adding");
-			return 1;
+			return DN_SIMDHASH_INTERNAL_ERROR;
 		case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
-			return 0;
+			return DN_SIMDHASH_ADD_FAILED;
 		case DN_SIMDHASH_INSERT_NEED_TO_GROW:
-			// We should always have enough space after growing once.
+			dn_simdhash_assert(!"After growing there was no space for a new item");
+			return DN_SIMDHASH_INTERNAL_ERROR;
 		default:
 			dn_simdhash_assert(!"Failed to add a new item but there was no existing item");
-			return 0;
+			return DN_SIMDHASH_INTERNAL_ERROR;
 	}
 }
 

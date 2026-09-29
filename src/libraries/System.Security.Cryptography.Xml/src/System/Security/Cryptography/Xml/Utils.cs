@@ -33,10 +33,7 @@ namespace System.Security.Cryptography.Xml
         // A helper function that determines if a namespace node is a committed attribute
         internal static bool IsCommittedNamespace(XmlElement element, string prefix, string value)
         {
-            if (element is null)
-            {
-                throw new ArgumentNullException(nameof(element));
-            }
+            ArgumentNullException.ThrowIfNull(element);
 
             string name = ((prefix.Length > 0) ? "xmlns:" + prefix : "xmlns");
             if (element.HasAttribute(name) && element.GetAttribute(name) == value) return true;
@@ -45,10 +42,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static bool IsRedundantNamespace(XmlElement element, string prefix, string value)
         {
-            if (element is null)
-            {
-                throw new ArgumentNullException(nameof(element));
-            }
+            ArgumentNullException.ThrowIfNull(element);
 
             XmlNode? ancestorNode = ((XmlNode)element).ParentNode;
             while (ancestorNode != null)
@@ -196,10 +190,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static XmlDocument PreProcessDocumentInput(XmlDocument document, XmlResolver xmlResolver, string baseUri)
         {
-            if (document is null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
+            ArgumentNullException.ThrowIfNull(document);
 
             MyXmlDocument doc = new MyXmlDocument();
             doc.PreserveWhitespace = document.PreserveWhitespace;
@@ -220,10 +211,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static XmlDocument PreProcessElementInput(XmlElement elem, XmlResolver xmlResolver, string? baseUri)
         {
-            if (elem is null)
-            {
-                throw new ArgumentNullException(nameof(elem));
-            }
+            ArgumentNullException.ThrowIfNull(elem);
 
             MyXmlDocument doc = new MyXmlDocument();
             doc.PreserveWhitespace = true;
@@ -341,7 +329,10 @@ namespace System.Security.Cryptography.Xml
 
         internal static string ExtractIdFromLocalUri(string? uri)
         {
-            string idref = uri!.Substring(1);
+            if (string.IsNullOrEmpty(uri))
+                throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
+
+            string idref = uri.Substring(1);
 
             // Deal with XPointer of type #xpointer(id("ID")). Other XPointer support isn't handled here and is anyway optional
             if (idref.StartsWith("xpointer(id(", StringComparison.Ordinal))
@@ -772,6 +763,5 @@ namespace System.Security.Cryptography.Xml
         }
 
         internal const int MaxTransformsPerReference = 10;
-        internal const int MaxReferencesPerSignedInfo = 100;
     }
 }

@@ -394,12 +394,6 @@ namespace System.IO
             long seconds = time.ToUnixTimeSeconds();
             long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
-#if TARGET_BROWSER || TARGET_WASI
-            buf[0].TvSec = seconds;
-            buf[0].TvNsec = nanoseconds;
-            buf[1].TvSec = seconds;
-            buf[1].TvNsec = nanoseconds;
-#else
             if (isAccessTime)
             {
                 buf[0].TvSec = seconds;
@@ -414,7 +408,6 @@ namespace System.IO
                 buf[1].TvSec = seconds;
                 buf[1].TvNsec = nanoseconds;
             }
-#endif
             int rv = handle is not null
                 ? Interop.Sys.FUTimens(handle, buf)
                 : Interop.Sys.UTimensat(path!, buf);

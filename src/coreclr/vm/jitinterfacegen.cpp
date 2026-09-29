@@ -1,14 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: JITinterfaceGen.CPP
-//
-// This contains the AMD64 version of InitJITHelpers1().
-//
-// ===========================================================================
-
-
 #include "common.h"
 #include "clrtypes.h"
 #include "jitinterface.h"
@@ -17,88 +9,57 @@
 #include "comdelegate.h"
 #include "field.h"
 #include "ecall.h"
+#include "writebarriermanager.h"
 
-#ifdef HOST_64BIT
+static void SetJitHelperAuxiliarySymbol(CorInfoHelpFunc ftnNum, const char* name)
+{
+    LIMITED_METHOD_CONTRACT;
 
-// These are the multi-processor-optimized versions of the allocation helpers
-// that must be written in assembly.
-EXTERN_C Object* JIT_BoxFastMP (CORINFO_CLASS_HANDLE type, void* unboxedData);
+    VMHELPDEF const& helperDef = hlpFuncTable[ftnNum];
+    PCODE pfnHelper = helperDef.pfnHelper;
+    DynamicCorInfoHelpFunc dynamicFtnNum;
+    if (helperDef.IsDynamicHelper(&dynamicFtnNum))
+    {
+        pfnHelper = hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
+    }
 
-// These are the single-processor-optimized versions of the allocation helpers.
-EXTERN_C Object* JIT_TrialAllocSFastSP(CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C Object* JIT_BoxFastUP (CORINFO_CLASS_HANDLE type, void* unboxedData);
-EXTERN_C Object* AllocateStringFastUP (CLR_I4 cch);
+    if (pfnHelper != (PCODE)NULL)
+    {
+        SetAuxiliarySymbol((void*)pfnHelper, name);
+    }
+}
 
-EXTERN_C Object* JIT_NewArr1OBJ_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-EXTERN_C Object* JIT_NewArr1VC_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-
-#ifdef TARGET_AMD64
-extern WriteBarrierManager g_WriteBarrierManager;
-#endif // TARGET_AMD64
-
-#endif // HOST_64BIT
-
-/*********************************************************************/
-// Initialize the part of the JIT helpers that require very little of
-// EE infrastructure to be in place.
-/*********************************************************************/
-#ifndef TARGET_X86
-
-void InitJITHelpers1()
+void InitJITAllocationHelpers()
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
-
-#if defined(TARGET_AMD64)
-
-    g_WriteBarrierManager.Initialize();
-
     // Allocation helpers, faster but non-logging
-    if (!((TrackAllocationsEnabled()) ||
-        (LoggingOn(LF_GCALLOC, LL_INFO10))
-#ifdef _DEBUG
-        || (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP) != 0)
-#endif // _DEBUG
-        ))
+    if (!(TrackAllocationsEnabled() || LoggingOn(LF_GCALLOC, LL_INFO10)))
     {
-#ifdef TARGET_UNIX
-        SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
-        SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
-        SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
-        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
-        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+        SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast);
 
-        ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
-#else // TARGET_UNIX
-        // if (multi-proc || server GC)
-        if (GCHeapUtilities::UseThreadAllocationContexts())
-        {
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+#if defined(FEATURE_64BIT_ALIGNMENT)
+        SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8);
+        SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8_VC, RhpNewFastMisalign);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFastAlign8);
+#endif
 
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
-        }
-        else
-        {
-            // Replace the 1p slow allocation helpers with faster version
-            //
-            // When we're running Workstation GC on a single proc box we don't have
-            // InlineGetThread versions because there is no need to call GetThread
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_TrialAllocSFastSP);
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_TrialAllocSFastSP);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_BoxFastUP);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_UP);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_UP);
-
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastUP), ECall::FastAllocateString);
-        }
-#endif // TARGET_UNIX
+        ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
     }
-#endif // TARGET_AMD64
-}
 
-#endif // !TARGET_X86
+// Debugger depends on new helper names starting with CORINFO_HELP_NEW
+#define SET_NEW_HELPER_AUXILIARY_SYMBOL(code) SetJitHelperAuxiliarySymbol(code, #code);
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWFAST)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWFAST_MAYBEFROZEN)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST_ALIGN8)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST_ALIGN8_VC)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_DIRECT)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_MAYBEFROZEN)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_PTR)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_VC)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_ALIGN8)
+#undef SET_NEW_HELPER_AUXILIARY_SYMBOL
+}

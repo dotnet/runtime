@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Text.Json.Serialization
@@ -33,6 +33,13 @@ namespace System.Text.Json.Serialization
                 PropertyNameCaseInsensitive = true;
                 PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase;
                 NumberHandling = JsonNumberHandling.AllowReadingFromString;
+            }
+            else if (defaults is JsonSerializerDefaults.Strict)
+            {
+                UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+                AllowDuplicateProperties = false;
+                RespectNullableAnnotations = true;
+                RespectRequiredConstructorParameters = true;
             }
             else if (defaults is not JsonSerializerDefaults.General)
             {
@@ -116,6 +123,11 @@ namespace System.Text.Json.Serialization
         public JsonCommentHandling ReadCommentHandling { get; set; }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.ReferenceHandler"/> when set.
+        /// </summary>
+        public JsonKnownReferenceHandler ReferenceHandler { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.RespectNullableAnnotations"/> when set.
         /// </summary>
         public bool RespectNullableAnnotations { get; set; }
@@ -124,6 +136,11 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.RespectRequiredConstructorParameters"/> when set.
         /// </summary>
         public bool RespectRequiredConstructorParameters { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.TypeClassifiers"/> when set.
+        /// </summary>
+        public Type[]? TypeClassifiers { get; set; }
 
         /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.UnknownTypeHandling"/> when set.
@@ -165,5 +182,22 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.NewLine"/> when set.
         /// </summary>
         public string? NewLine { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.AllowDuplicateProperties"/> when set.
+        /// </summary>
+        public bool AllowDuplicateProperties { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.InferClosedTypePolymorphism"/> when set.
+        /// </summary>
+        /// <remarks>
+        /// If a type declares one or more <see cref="JsonDerivedTypeAttribute"/> registrations, inference is
+        /// skipped for that type and only the explicitly registered derived types are used. Polymorphism
+        /// configuration declared on derived types applies to their respective contracts and does not affect
+        /// inference for the base type. Closed derived types are expanded recursively and only terminal derived
+        /// types are registered.
+        /// </remarks>
+        public bool InferClosedTypePolymorphism { get; set; }
     }
 }

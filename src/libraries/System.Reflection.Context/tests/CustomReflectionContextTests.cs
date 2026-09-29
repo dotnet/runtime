@@ -31,7 +31,6 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73356", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void MapType_MemberAttributes_Success()
         {
@@ -47,7 +46,6 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73356", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void MapType_ParameterAttributes_Success()
         {

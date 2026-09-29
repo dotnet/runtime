@@ -14,7 +14,7 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.FileProviders
 {
     /// <summary>
-    /// Looks up files using the on-disk file system
+    /// Looks up files using the on-disk file system.
     /// </summary>
     /// <remarks>
     /// When the environment variable "DOTNET_USE_POLLING_FILE_WATCHER" is set to "1" or "true", calls to
@@ -23,8 +23,6 @@ namespace Microsoft.Extensions.FileProviders
     public class PhysicalFileProvider : IFileProvider, IDisposable
     {
         private const string PollingEnvironmentKey = "DOTNET_USE_POLLING_FILE_WATCHER";
-        private static readonly char[] _pathSeparators = new[]
-            {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar};
 
         private readonly ExclusionFilters _filters;
 
@@ -38,19 +36,19 @@ namespace Microsoft.Extensions.FileProviders
         private bool _disposed;
 
         /// <summary>
-        /// Initializes a new instance of a PhysicalFileProvider at the given root directory.
+        /// Initializes a new instance of the <see cref="PhysicalFileProvider"/> class at the given root directory.
         /// </summary>
-        /// <param name="root">The root directory. This should be an absolute path.</param>
+        /// <param name="root">The root directory. This should be an absolute path. The directory isn't required to exist.</param>
         public PhysicalFileProvider(string root)
             : this(root, ExclusionFilters.Sensitive)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of a PhysicalFileProvider at the given root directory.
+        /// Initializes a new instance of the <see cref="PhysicalFileProvider"/> class at the given root directory.
         /// </summary>
-        /// <param name="root">The root directory. This should be an absolute path.</param>
-        /// <param name="filters">Specifies which files or directories are excluded.</param>
+        /// <param name="root">The root directory. This should be an absolute path. The directory isn't required to exist.</param>
+        /// <param name="filters">A bitwise combination of the enumeration values that specifies which files or directories are excluded.</param>
         public PhysicalFileProvider(string root, ExclusionFilters filters)
         {
             if (!Path.IsPathRooted(root))
@@ -61,10 +59,6 @@ namespace Microsoft.Extensions.FileProviders
             string fullRoot = Path.GetFullPath(root);
             // When we do matches in GetFullPath, we want to only match full directory names.
             Root = PathUtils.EnsureTrailingSlash(fullRoot);
-            if (!Directory.Exists(Root))
-            {
-                throw new DirectoryNotFoundException(Root);
-            }
 
             _filters = filters;
             _fileWatcherFactory = CreateFileWatcher;
@@ -73,17 +67,17 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Gets or sets a value that determines if this instance of <see cref="PhysicalFileProvider"/>
         /// uses polling to determine file changes.
-        /// <para>
-        /// By default, <see cref="PhysicalFileProvider"/>  uses <see cref="FileSystemWatcher"/> to listen to file change events
-        /// for <see cref="Watch(string)"/>. <see cref="FileSystemWatcher"/> is ineffective in some scenarios such as mounted drives.
-        /// Polling is required to effectively watch for file changes.
-        /// </para>
-        /// <seealso cref="UseActivePolling"/>.
         /// </summary>
         /// <value>
         /// The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
-        /// When <c>true</c> or <c>1</c>, this property defaults to <c>true</c>; otherwise false.
+        /// When <see langword="true"/> or <c>1</c>, this property defaults to <see langword="true"/>; otherwise <see langword="false"/>.
         /// </value>
+        /// <remarks>
+        /// By default, <see cref="PhysicalFileProvider"/>  uses <see cref="FileSystemWatcher"/> to listen to file change events
+        /// for <see cref="Watch(string)"/>. <see cref="FileSystemWatcher"/> is ineffective in some scenarios such as mounted drives.
+        /// Polling is required to effectively watch for file changes.
+        /// </remarks>
+        /// <seealso cref="UseActivePolling"/>
         public bool UsePollingFileWatcher
         {
             get
@@ -111,18 +105,18 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Gets or sets a value that determines if this instance of <see cref="PhysicalFileProvider"/>
         /// actively polls for file changes.
-        /// <para>
-        /// When <see langword="true"/>, <see cref="IChangeToken"/> returned by <see cref="Watch(string)"/> will actively poll for file changes
+        /// </summary>
+        /// <value>
+        /// <see langword="true"/> if the <see cref="IChangeToken"/> returned by <see cref="Watch(string)"/> actively polls for file changes
         /// (<see cref="IChangeToken.ActiveChangeCallbacks"/> will be <see langword="true"/>) instead of being passive.
-        /// </para>
+        /// The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
+        /// When <see langword="true"/> or <c>1</c>, this property defaults to <see langword="true"/>; otherwise <see langword="false"/>.
+        /// </value>
+        /// <remarks>
         /// <para>
         /// This property is only effective when <see cref="UsePollingFileWatcher"/> is set.
         /// </para>
-        /// </summary>
-        /// <value>
-        /// The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
-        /// When <c>true</c> or <c>1</c>, this property defaults to <c>true</c>; otherwise false.
-        /// </value>
+        /// </remarks>
         public bool UseActivePolling
         {
             get
@@ -174,7 +168,7 @@ namespace Microsoft.Extensions.FileProviders
 #endif
             {
                 // When UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
-                watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
+                watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher();
             }
 
             return new PhysicalFilesWatcher(root, watcher, UsePollingFileWatcher, _filters)
@@ -207,7 +201,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Disposes the provider.
         /// </summary>
-        /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
+        /// <param name="disposing"><see langword="true"/> if invoked from <see cref="IDisposable.Dispose"/>; otherwise, <see langword="false"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -221,7 +215,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// The root directory for this instance.
+        /// Gets the root directory for this instance.
         /// </summary>
         public string Root { get; }
 
@@ -256,10 +250,10 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// Locate a file at the given path by directly mapping path segments to physical directories.
+        /// Locates a file at the given path by directly mapping path segments to physical directories.
         /// </summary>
-        /// <param name="subpath">A path under the root directory</param>
-        /// <returns>The file information. Caller must check <see cref="IFileInfo.Exists"/> property. </returns>
+        /// <param name="subpath">A path under the root directory.</param>
+        /// <returns>The file information. Caller must check the <see cref="IFileInfo.Exists"/> property.</returns>
         public IFileInfo GetFileInfo(string subpath)
         {
             if (string.IsNullOrEmpty(subpath) || PathUtils.HasInvalidPathChars(subpath))
@@ -268,7 +262,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             // Relative paths starting with leading slashes are okay
-            subpath = subpath.TrimStart(_pathSeparators);
+            subpath = subpath.TrimStart(PathUtils.PathSeparators);
 
             // Absolute paths not permitted.
             if (Path.IsPathRooted(subpath))
@@ -292,14 +286,17 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// Enumerate a directory at the given path, if any.
+        /// Enumerates a directory at the given path, if any.
         /// </summary>
         /// <param name="subpath">A path under the root directory. Leading slashes are ignored.</param>
         /// <returns>
-        /// Contents of the directory. Caller must check <see cref="IDirectoryContents.Exists"/> property. <see cref="NotFoundDirectoryContents" /> if
-        /// <paramref name="subpath" /> is absolute, if the directory does not exist, or <paramref name="subpath" /> has invalid
-        /// characters.
+        /// The contents of the directory.
         /// </returns>
+        /// <remarks>
+        /// <para>The caller must check the <see cref="IDirectoryContents.Exists"/> property.</para>
+        /// <para>Returns <see cref="NotFoundDirectoryContents" /> if <paramref name="subpath" /> is absolute,
+        /// if the directory does not exist, or <paramref name="subpath" /> has invalid characters.</para>
+        /// </remarks>
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
             try
@@ -310,7 +307,7 @@ namespace Microsoft.Extensions.FileProviders
                 }
 
                 // Relative paths starting with leading slashes are okay
-                subpath = subpath.TrimStart(_pathSeparators);
+                subpath = subpath.TrimStart(PathUtils.PathSeparators);
 
                 // Absolute paths not permitted.
                 if (Path.IsPathRooted(subpath))
@@ -337,17 +334,17 @@ namespace Microsoft.Extensions.FileProviders
 
         /// <summary>
         ///     <para>Creates a <see cref="IChangeToken" /> for the specified <paramref name="filter" />.</para>
-        ///     <para>Globbing patterns are interpreted by <seealso cref="Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</para>
+        ///     <para>Globbing patterns are interpreted by <see cref="Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</para>
         /// </summary>
         /// <param name="filter">
-        /// Filter string used to determine what files or folders to monitor. Example: **/*.cs, *.*,
-        /// subFolder/**/*.cshtml.
+        /// A filter string used to determine what files or directories to monitor. Examples: <c>**/*.cs</c>, <c>*.*</c>,
+        /// and <c>subDirectory/**/*.cshtml</c>. The files or directories aren't required to exist when this method is called.
         /// </param>
         /// <returns>
-        /// An <see cref="IChangeToken" /> that is notified when a file matching <paramref name="filter" /> is added,
-        /// modified or deleted. Returns a <see cref="NullChangeToken" /> if <paramref name="filter" /> has invalid filter
+        /// An <see cref="IChangeToken" /> that is notified when a file or directory matching <paramref name="filter" /> is added,
+        /// modified, or deleted. Returns a <see cref="NullChangeToken" /> if <paramref name="filter" /> has invalid filter
         /// characters or if <paramref name="filter" /> is an absolute path or outside the root directory specified in the
-        /// constructor <seealso cref="PhysicalFileProvider(string)" />.
+        /// constructor <see cref="PhysicalFileProvider(string)" />.
         /// </returns>
         public IChangeToken Watch(string filter)
         {
@@ -357,7 +354,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             // Relative paths starting with leading slashes are okay
-            filter = filter.TrimStart(_pathSeparators);
+            filter = filter.TrimStart(PathUtils.PathSeparators);
 
             return FileWatcher.CreateFileChangeToken(filter);
         }

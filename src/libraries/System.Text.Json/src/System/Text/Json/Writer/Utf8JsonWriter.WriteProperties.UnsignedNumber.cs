@@ -53,10 +53,7 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public void WriteNumber(string propertyName, ulong value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteNumber(propertyName.AsSpan(), value);
         }
 
@@ -148,10 +145,7 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public void WriteNumber(string propertyName, uint value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteNumber(propertyName.AsSpan(), (ulong)value);
         }
 
@@ -225,7 +219,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteNumberEscapeProperty(ReadOnlySpan<char> propertyName, ulong value, int firstEscapeIndexProp)
+        private unsafe void WriteNumberEscapeProperty(ReadOnlySpan<char> propertyName, ulong value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
@@ -242,13 +236,13 @@ namespace System.Text.Json
 
             WriteNumberByOptions(escapedPropertyName.Slice(0, written), value);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
         }
 
-        private void WriteNumberEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, ulong value, int firstEscapeIndexProp)
+        private unsafe void WriteNumberEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, ulong value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
@@ -265,7 +259,7 @@ namespace System.Text.Json
 
             WriteNumberByOptions(escapedPropertyName.Slice(0, written), value);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }
@@ -454,7 +448,7 @@ namespace System.Text.Json
         internal void WritePropertyName(uint value)
             => WritePropertyName((ulong)value);
 
-        internal void WritePropertyName(ulong value)
+        internal unsafe void WritePropertyName(ulong value)
         {
             Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatUInt64Length];
 

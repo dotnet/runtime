@@ -48,7 +48,7 @@ public:
     STRINGREF *GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bIsCollectible);
 
 private:
-    // Hash tables that maps a Unicode string to a COM+ string handle.
+    // Hash tables that maps a Unicode string to a CLR string handle.
     EEUnicodeStringLiteralHashTable    *m_StringToEntryHashTable;
 
     // The memorypool for hash entries for this hash table.
@@ -320,7 +320,18 @@ private:
     static StringLiteralEntry      *s_FreeEntryList; // free list chained thru the arrays.
 };
 
-typedef Wrapper<StringLiteralEntry*,DoNothing,StringLiteralEntry::StaticRelease> StringLiteralEntryHolder;
+struct StringLiteralEntryTraits final
+{
+    using Type = StringLiteralEntry*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type pEntry)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (pEntry != NULL)
+            StringLiteralEntry::StaticRelease(pEntry);
+    }
+};
+using StringLiteralEntryHolder = LifetimeHolder<StringLiteralEntryTraits>;
 
 class StringLiteralEntryArray
 {

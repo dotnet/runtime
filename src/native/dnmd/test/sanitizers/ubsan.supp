@@ -1,0 +1,7 @@
+# Suppressions for UndefinedBehaviorSanitizer.
+# CoreCLR's COM objects use C-style vtables that UBSan's vptr check
+# does not recognize as valid C++ objects. Suppress only the vptr
+# check and only for test/tool code that calls into CoreCLR COM interfaces.
+vptr:*/test/regtest/*
+vptr:*/test/regpal/*
+vptr:*/external/dncp/src/inc/dncp.h

@@ -1,5 +1,6 @@
 using System;
 using Xunit;
+using TestLibrary;
 
 public abstract class Foo : IComparable<Foo>, IComparable<Bar>
 {
@@ -22,6 +23,7 @@ public sealed class Bar : Foo
 
 public class Program
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

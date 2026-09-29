@@ -10,13 +10,6 @@
 #include "bitsetasshortlong.h"
 #include "bitsetasuint64inclass.h"
 
-// clang-format off
-unsigned BitSetSupport::BitCountTable[16] = { 0, 1, 1, 2,
-                                              1, 2, 2, 3,
-                                              1, 2, 2, 3,
-                                              2, 3, 3, 4 };
-// clang-format on
-
 #ifdef DEBUG
 template <typename BitSetType, unsigned Uniq, typename Env, typename BitSetTraits>
 void BitSetSupport::RunTests(Env env)
@@ -139,7 +132,7 @@ void BitSetSupport::BitSetOpCounter::RecordOp(BitSetSupport::Operation op)
     {
         if (OpOutputFile == nullptr)
         {
-            OpOutputFile = fopen(m_fileName, "a");
+            OpOutputFile = fopen_utf8(m_fileName, "a");
         }
         fprintf(OpOutputFile, "@ %d total ops.\n", TotalOps);
 

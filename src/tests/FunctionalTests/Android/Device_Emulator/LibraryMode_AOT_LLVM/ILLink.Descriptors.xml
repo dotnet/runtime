@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="Android.Device_Emulator.LibraryMode_Aot_Llvm.Test">
+    <type fullname="Program">
+      <method name="SayHello" />
+    </type>
+  </assembly>
+</linker>

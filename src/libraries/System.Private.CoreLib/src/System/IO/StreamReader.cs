@@ -1,10 +1,11 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +26,6 @@ namespace System.IO
         // saves construction time.  This does break adaptive buffering,
         // but this is slightly faster.
         private const int DefaultBufferSize = 1024;  // Byte buffer size
-        private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
         private readonly Stream _stream;
@@ -72,14 +72,22 @@ namespace System.IO
 
         // We don't guarantee thread safety on StreamReader, but we should at
         // least prevent users from trying to read anything while an Async
-        // read from the same thread is in progress.
+        // read from the same thread is in progress. We track this with the
+        // following fields.
+        //
+        // Generally we prefer to use the bool _asyncIOInProgress, but in
+        // certain cases for async1 this would require introducing a wrapper
+        // state machine, and in those cases we use the Task _asyncReadTask
+        // instead.
+        //
+        private bool _asyncIOInProgress;
         private Task _asyncReadTask = Task.CompletedTask;
 
         private void CheckAsyncTaskInProgress()
         {
-            // We are not locking the access to _asyncReadTask because this is not meant to guarantee thread safety.
+            // We are not locking this access because this is not meant to guarantee thread safety.
             // We are simply trying to deter calling any Read APIs while an async Read from the same thread is in progress.
-            if (!_asyncReadTask.IsCompleted)
+            if (_asyncIOInProgress || !_asyncReadTask.IsCompleted)
             {
                 ThrowAsyncIOInProgress();
             }
@@ -88,6 +96,24 @@ namespace System.IO
         [DoesNotReturn]
         private static void ThrowAsyncIOInProgress() =>
             throw new InvalidOperationException(SR.InvalidOperation_AsyncIOInProgress);
+
+        private ThrowOnReadsScope GuardAgainstOtherReads()
+        {
+            return new ThrowOnReadsScope(this);
+        }
+
+        private readonly struct ThrowOnReadsScope : IDisposable
+        {
+            private readonly StreamReader _reader;
+
+            public ThrowOnReadsScope(StreamReader reader)
+            {
+                reader._asyncIOInProgress = true;
+                _reader = reader;
+            }
+
+            public void Dispose() => _reader._asyncIOInProgress = false;
+        }
 
         // StreamReader by default will ignore illegal UTF8 characters. We don't want to
         // throw here because we want to be able to read ill-formed data without choking.
@@ -102,28 +128,28 @@ namespace System.IO
         }
 
         public StreamReader(Stream stream)
-            : this(stream, true)
+            : this(stream, detectEncodingFromByteOrderMarks: true)
         {
         }
 
         public StreamReader(Stream stream, bool detectEncodingFromByteOrderMarks)
-            : this(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize, false)
+            : this(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize, leaveOpen: false)
         {
         }
 
-        public StreamReader(Stream stream, Encoding encoding)
-            : this(stream, encoding, true, DefaultBufferSize, false)
+        public StreamReader(Stream stream, Encoding? encoding)
+            : this(stream, encoding, detectEncodingFromByteOrderMarks: true, DefaultBufferSize, leaveOpen: false)
         {
         }
 
-        public StreamReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks)
-            : this(stream, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize, false)
+        public StreamReader(Stream stream, Encoding? encoding, bool detectEncodingFromByteOrderMarks)
+            : this(stream, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize, leaveOpen: false)
         {
         }
 
         // Creates a new StreamReader for the given stream.  The
         // character encoding is set by encoding and the buffer size,
-        // in number of 16-bit characters, is set by bufferSize.
+        // in bytes, is set by bufferSize.
         //
         // Note that detectEncodingFromByteOrderMarks is a very
         // loose attempt at detecting the encoding by looking at the first
@@ -131,8 +157,8 @@ namespace System.IO
         // unicode, and big endian unicode text, but that's it.  If neither
         // of those three match, it will use the Encoding you provided.
         //
-        public StreamReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
-            : this(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false)
+        public StreamReader(Stream stream, Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+            : this(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
         {
         }
 
@@ -178,7 +204,7 @@ namespace System.IO
         }
 
         public StreamReader(string path)
-            : this(path, true)
+            : this(path, detectEncodingFromByteOrderMarks: true)
         {
         }
 
@@ -187,35 +213,34 @@ namespace System.IO
         {
         }
 
-        public StreamReader(string path, Encoding encoding)
-            : this(path, encoding, true, DefaultBufferSize)
+        public StreamReader(string path, Encoding? encoding)
+            : this(path, encoding, detectEncodingFromByteOrderMarks: true, DefaultBufferSize)
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+        public StreamReader(string path, Encoding? encoding, bool detectEncodingFromByteOrderMarks)
             : this(path, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
-            : this(ValidateArgsAndOpenPath(path, encoding, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
+        public StreamReader(string path, Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+            : this(ValidateArgsAndOpenPath(path, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
         {
         }
 
         public StreamReader(string path, FileStreamOptions options)
-            : this(path, Encoding.UTF8, true, options)
+            : this(path, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, options)
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, FileStreamOptions options)
-            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
+        public StreamReader(string path, Encoding? encoding, bool detectEncodingFromByteOrderMarks, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, options), encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
         {
         }
 
-        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        private static FileStream ValidateArgsAndOpenPath(string path, FileStreamOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(encoding);
             ArgumentNullException.ThrowIfNull(options);
             if ((options.Access & FileAccess.Read) == 0)
             {
@@ -225,13 +250,16 @@ namespace System.IO
             return new FileStream(path, options);
         }
 
-        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
+        private static FileStream ValidateArgsAndOpenPath(string path, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(encoding);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
+            if (bufferSize != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            }
+
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize);
         }
 
         public override void Close()
@@ -792,7 +820,7 @@ namespace System.IO
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the input stream has been reached.
         //
-        public override string? ReadLine()
+        public override unsafe string? ReadLine()
         {
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
@@ -897,14 +925,13 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string?> task = ReadLineAsyncInternal(cancellationToken);
-            _asyncReadTask = task;
-
-            return new ValueTask<string?>(task);
+            return new ValueTask<string?>(ReadLineAsyncInternal(cancellationToken));
         }
 
         private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
+            using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+
             if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
             {
                 return null;
@@ -1025,14 +1052,13 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string> task = ReadToEndAsyncInternal(cancellationToken);
-            _asyncReadTask = task;
-
-            return task;
+            return ReadToEndAsyncInternal(cancellationToken);
         }
 
         private async Task<string> ReadToEndAsyncInternal(CancellationToken cancellationToken)
         {
+            using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+
             // Call ReadBuffer, then pull data out of charBuffer.
             StringBuilder sb = new StringBuilder(_charLen - _charPos);
             do
@@ -1069,10 +1095,20 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return ReadAsyncInternalWithGuard(new Memory<char>(buffer, index, count), CancellationToken.None);
+            }
+
             Task<int> task = ReadAsyncInternal(new Memory<char>(buffer, index, count), CancellationToken.None).AsTask();
             _asyncReadTask = task;
-
             return task;
+
+            async Task<int> ReadAsyncInternalWithGuard(Memory<char> buffer, CancellationToken cancellationToken)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await ReadAsyncInternal(buffer, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default)
@@ -1280,10 +1316,20 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return ReadBlockAsyncWithGuard(buffer, index, count);
+            }
+
             Task<int> task = base.ReadBlockAsync(buffer, index, count);
             _asyncReadTask = task;
-
             return task;
+
+            async Task<int> ReadBlockAsyncWithGuard(char[] buffer, int index, int count)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await base.ReadBlockAsync(buffer, index, count).ConfigureAwait(false);
+            }
         }
 
         public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default)
@@ -1303,6 +1349,11 @@ namespace System.IO
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return ReadBlockAsyncInternalWithGuard(buffer, cancellationToken);
+            }
+
             ValueTask<int> vt = ReadBlockAsyncInternal(buffer, cancellationToken);
             if (vt.IsCompletedSuccessfully)
             {
@@ -1312,6 +1363,12 @@ namespace System.IO
             Task<int> t = vt.AsTask();
             _asyncReadTask = t;
             return new ValueTask<int>(t);
+
+            async ValueTask<int> ReadBlockAsyncInternalWithGuard(Memory<char> buffer, CancellationToken token)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await ReadBlockAsyncInternal(buffer, token).ConfigureAwait(false);
+            }
         }
 
         private async ValueTask<int> ReadBufferAsync(CancellationToken cancellationToken)

@@ -184,6 +184,19 @@ namespace Server.Contract
         void Pass_Through_LCID(out int lcid);
     }
 
+    // This interface must not be an explicit COM interface to trigger
+    // the dynamic interface map codepath in ComObject.
+    public interface Interface0
+    {
+    }
+
+    [ComVisible(true)]
+    [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IInterface1 : Interface0
+    {
+    }
+
     [ComVisible(true)]
     [Guid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -195,6 +208,9 @@ namespace Server.Contract
         object Marshal_Instance_Variant([MarshalAs(UnmanagedType.LPWStr)] string init);
 
         void Marshal_ByRefVariant(ref object result, object value);
+
+        [return: MarshalAs(UnmanagedType.Interface)]
+        IInterface1 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
     }
 
     public struct HResult
@@ -220,7 +236,8 @@ namespace Server.Contract
 
     public enum IDispatchTesting_Exception
     {
-        Disp,
+        Disp,       // scode
+        DispLegacy, // wCode
         HResult,
         Int,
     }
@@ -238,6 +255,21 @@ namespace Server.Contract
     public struct HRESULT
     {
         public int Value;
+    }
+
+    public sealed class CustomObjectMarshaler : ICustomMarshaler
+    {
+        public static ICustomMarshaler GetInstance(string cookie) => new CustomObjectMarshaler();
+
+        public void CleanUpManagedData(object ManagedObj) => Marshal.ReleaseComObject(ManagedObj);
+
+        public void CleanUpNativeData(IntPtr pNativeData) => Marshal.Release(pNativeData);
+
+        public int GetNativeDataSize() => IntPtr.Size;
+
+        public IntPtr MarshalManagedToNative(object ManagedObj) => Marshal.GetIUnknownForObject(ManagedObj);
+
+        public object MarshalNativeToManaged(IntPtr pNativeData) => Marshal.GetObjectForIUnknown(pNativeData);
     }
 
     [ComVisible(true)]
@@ -265,6 +297,9 @@ namespace Server.Contract
         double Add_Double_ReturnAndUpdateByRef(double a, ref double b);
         void TriggerException(IDispatchTesting_Exception excep, int errorCode);
 
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(CustomObjectMarshaler))]
+        object TriggerCustomMarshaler([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(CustomObjectMarshaler))] object objIn, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(CustomObjectMarshaler))] ref object objRef);
+
         // Special cases
         HFA_4 DoubleHVAValues(ref HFA_4 input);
 
@@ -275,6 +310,16 @@ namespace Server.Contract
 
         [DispId(/*DISPID_NEWENUM*/-4)]
         System.Collections.IEnumerator GetEnumerator();
+
+        int Sum_IntArray_SafeArray([MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)] int[] d);
+
+        // Test matching signatures and different metadata (ie DISPID)
+
+        [DispId(1000)]
+        string GetDispIdAsString();
+
+        [DispId(1001)]
+        string GetDispIdAsString2();
     }
 
     [ComVisible(true)]
@@ -411,6 +456,8 @@ namespace Server.Contract
     internal interface ITrackMyLifetimeTesting
     {
         IntPtr GetAllocationCountCallback();
+        ITrackMyLifetimeTesting CreateAgileInstance();
+        void Method();
     }
 }
 

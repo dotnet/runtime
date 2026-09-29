@@ -101,7 +101,7 @@ namespace Internal.JitInterface
                 return LoweredType.Opaque;
             }
 
-            protected override bool NeedsRecursiveLayout(int offset, TypeDesc fieldType) => fieldType.IsValueType && !fieldType.IsPrimitiveNumeric;
+            protected override bool NeedsRecursiveLayout(TypeDesc fieldType) => fieldType.IsValueType && !fieldType.IsPrimitiveNumeric;
 
             private List<FieldLayoutInterval> CreateConsolidatedIntervals()
             {

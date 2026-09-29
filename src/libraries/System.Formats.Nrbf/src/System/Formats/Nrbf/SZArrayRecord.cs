@@ -34,6 +34,11 @@ public abstract class SZArrayRecord<T> : ArrayRecord
     ///   otherwise, <see langword="false" />.
     /// </param>
     /// <returns>An array filled with the data provided in the serialized records.</returns>
+    /// <remarks>
+    /// Before calling this method, check the total length of the array by using the <see cref="Length"/> property.
+    /// An attacker could have sent you a small payload that requires allocation of a very large array
+    /// that could cause <see cref="OutOfMemoryException"/> and denial of service.
+    /// </remarks>
     public abstract T?[] GetArray(bool allowNulls = true);
 
 #pragma warning disable IL3051 // RequiresDynamicCode is not required in this particualar case

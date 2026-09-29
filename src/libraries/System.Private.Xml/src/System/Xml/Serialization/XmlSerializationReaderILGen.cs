@@ -16,19 +16,31 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
+    [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+    [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
     internal sealed partial class XmlSerializationReaderILGen : XmlSerializationILGen
     {
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
         private readonly Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
-        private Dictionary<string, EnumMapping>? _enums;
         private int _nextIdNumber;
 
-        internal Dictionary<string, EnumMapping> Enums => _enums ??= new Dictionary<string, EnumMapping>();
+        // Static field emitted on the generated reader that holds the char[] separators used to split
+        // whitespace-separated list values ([XmlText]/[XmlAttribute] array-like members). It is
+        // initialized once in the generated type's static constructor (see GenerateEnd) from the
+        // UseLegacyXmlListSeparation switch: null for legacy behavior (String.Split's broader
+        // char.IsWhiteSpace() set) or the four characters the XML spec defines as whitespace (#x20,
+        // #x9, #xA, #xD) otherwise. The field lives on the generated subclass, not the public base,
+        // to avoid adding public API surface.
+        private FieldBuilder? _xmlListSeparatorsField;
+
+        internal Dictionary<string, EnumMapping> Enums => field ??= new Dictionary<string, EnumMapping>();
 
         private static readonly string[] s_checkTypeString = new string[] { "checkType" };
         private static readonly Type[] s_boolType = new Type[] { typeof(bool) };
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private sealed class Member
         {
             private readonly string _source;
@@ -173,13 +185,11 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("Creates XmlSerializationILGen")]
         internal XmlSerializationReaderILGen(TypeScope[] scopes, string access, string className)
             : base(scopes, access, className)
         {
         }
 
-        [RequiresUnreferencedCode("calls WriteReflectionInit")]
         internal void GenerateBegin()
         {
             this.typeBuilder = CodeGenerator.CreateTypeBuilder(
@@ -199,7 +209,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteStructMethod")]
         internal override void GenerateMethod(TypeMapping mapping)
         {
             if (!GeneratedMethods.Add(mapping))
@@ -219,7 +228,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls GenerateReferencedMethods")]
         internal void GenerateEnd()
         {
             GenerateReferencedMethods();
@@ -256,13 +264,80 @@ namespace System.Xml.Serialization
             }
             ilg.EndMethod();
 
+            EmitXmlListSeparatorsInitializer();
+
             this.typeBuilder.DefineDefaultConstructor(
                 CodeGenerator.PublicMethodAttributes);
             Type readerType = this.typeBuilder.CreateType();
             CreatedTypes.Add(readerType.Name, readerType);
         }
 
-        [RequiresUnreferencedCode("calls GenerateMembersElement")]
+        // Lazily defines the static char[] field that holds the list-value separators for the generated
+        // reader. See _xmlListSeparatorsField and EmitXmlListSeparatorsInitializer.
+        private FieldBuilder EnsureXmlListSeparatorsField() =>
+            _xmlListSeparatorsField ??= this.typeBuilder.DefineField(
+                "s_xmlListSeparators",
+                typeof(char[]),
+                FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+
+        // If any list member was generated, emits the generated reader's static constructor to
+        // initialize s_xmlListSeparators from the UseLegacyXmlListSeparation switch. The switch is read
+        // once when the reader type loads (rather than baked in at generation time), so a caller's
+        // opt-out is honored even by pre-generated serializers. Legacy => null (String.Split's broader
+        // char.IsWhiteSpace() set); default => the four characters the XML spec defines as whitespace
+        // (#x20, #x9, #xA, #xD).
+        private void EmitXmlListSeparatorsInitializer()
+        {
+            if (_xmlListSeparatorsField is null)
+            {
+                return;
+            }
+
+            MethodInfo AppContext_TryGetSwitch = typeof(AppContext).GetMethod(
+                "TryGetSwitch",
+                CodeGenerator.StaticBindingFlags,
+                new Type[] { typeof(string), typeof(bool).MakeByRefType() }
+                )!;
+
+            ILGenerator cctorIL = this.typeBuilder.DefineTypeInitializer().GetILGenerator();
+            LocalBuilder useLegacy = cctorIL.DeclareLocal(typeof(bool));
+
+            // AppContext.TryGetSwitch returns false and leaves useLegacy false when the switch is unset,
+            // so the out value alone (ignoring the return) yields the default behavior unless the switch
+            // is explicitly set to true.
+            cctorIL.Emit(OpCodes.Ldstr, "Switch.System.Xml.Serialization.UseLegacyXmlListSeparation");
+            cctorIL.Emit(OpCodes.Ldloca_S, useLegacy);
+            cctorIL.Emit(OpCodes.Call, AppContext_TryGetSwitch);
+            cctorIL.Emit(OpCodes.Pop);
+
+            Label legacyLabel = cctorIL.DefineLabel();
+            Label endLabel = cctorIL.DefineLabel();
+            cctorIL.Emit(OpCodes.Ldloc, useLegacy);
+            cctorIL.Emit(OpCodes.Brtrue, legacyLabel);
+
+            // Default: s_xmlListSeparators = new char[] { ' ', '\t', '\n', '\r' };
+            ReadOnlySpan<char> xmlWhitespace = [' ', '\t', '\n', '\r'];
+            cctorIL.Emit(OpCodes.Ldc_I4, xmlWhitespace.Length);
+            cctorIL.Emit(OpCodes.Newarr, typeof(char));
+            for (int i = 0; i < xmlWhitespace.Length; i++)
+            {
+                cctorIL.Emit(OpCodes.Dup);
+                cctorIL.Emit(OpCodes.Ldc_I4, i);
+                cctorIL.Emit(OpCodes.Ldc_I4, (int)xmlWhitespace[i]);
+                cctorIL.Emit(OpCodes.Stelem_I2);
+            }
+            cctorIL.Emit(OpCodes.Stsfld, _xmlListSeparatorsField);
+            cctorIL.Emit(OpCodes.Br, endLabel);
+
+            // Legacy: s_xmlListSeparators = null;
+            cctorIL.MarkLabel(legacyLabel);
+            cctorIL.Emit(OpCodes.Ldnull);
+            cctorIL.Emit(OpCodes.Stsfld, _xmlListSeparatorsField);
+
+            cctorIL.MarkLabel(endLabel);
+            cctorIL.Emit(OpCodes.Ret);
+        }
+
         internal string? GenerateElement(XmlMapping xmlMapping)
         {
             if (!xmlMapping.IsReadable)
@@ -277,7 +352,6 @@ namespace System.Xml.Serialization
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         private void WriteIsStartTag(string? name, string? ns)
         {
             WriteID(name);
@@ -302,7 +376,6 @@ namespace System.Xml.Serialization
             ilg.If();
         }
 
-        [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WriteUnknownNode(string func, string node, ElementAccessor? e, bool anyIfs)
         {
             if (anyIfs)
@@ -349,7 +422,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls GenerateLiteralMembersElement")]
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             return GenerateLiteralMembersElement(xmlMembersMapping);
@@ -384,7 +456,6 @@ namespace System.Xml.Serialization
             return ReflectionAwareILGen.GetStringForMember(parent, mapping.ChoiceIdentifier.MemberName);
         }
 
-        [RequiresUnreferencedCode("calls InitializeValueTypes")]
         private string GenerateLiteralMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
@@ -614,7 +685,6 @@ namespace System.Xml.Serialization
             return methodName;
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void InitializeValueTypes(string arrayName, MemberMapping[] mappings)
         {
             for (int i = 0; i < mappings.Length; i++)
@@ -630,7 +700,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteMemberElements")]
         private string GenerateTypeElement(XmlTypeMapping xmlTypeMapping)
         {
             ElementAccessor element = xmlTypeMapping.Accessor;
@@ -682,7 +751,6 @@ namespace System.Xml.Serialization
         private string NextIdName(string name) =>
             string.Create(CultureInfo.InvariantCulture, $"id{++_nextIdNumber}_{CodeIdentifier.MakeValidInternal(name)}");
 
-        [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WritePrimitive(TypeMapping mapping, string source)
         {
             System.Diagnostics.Debug.Assert(source == "Reader.ReadElementString()" || source == "Reader.ReadString()"
@@ -943,7 +1011,6 @@ namespace System.Xml.Serialization
             return uniqueName;
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         private string WriteHashtable(EnumMapping mapping, string typeName, out MethodBuilder? get_TableName)
         {
             get_TableName = null;
@@ -1021,7 +1088,6 @@ namespace System.Xml.Serialization
             return propName;
         }
 
-        [RequiresUnreferencedCode("calls WriteHashtable")]
         private void WriteEnumMethod(EnumMapping mapping)
         {
             MethodBuilder? get_TableName = null;
@@ -1138,7 +1204,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls WriteQNameEqual")]
         private void WriteDerivedTypes(StructMapping mapping, bool isTypedReturn, string returnTypeName)
         {
             for (StructMapping? derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
@@ -1178,7 +1243,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteEnumAndArrayTypes()
         {
             foreach (TypeScope scope in Scopes)
@@ -1283,7 +1347,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteElement")]
         private void WriteNullableMethod(NullableMapping nullableMapping)
         {
             string? methodName;
@@ -1329,13 +1392,11 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls WriteLiteralStructMethod")]
         private void WriteStructMethod(StructMapping structMapping)
         {
             WriteLiteralStructMethod(structMapping);
         }
 
-        [RequiresUnreferencedCode("calls WriteEnumAndArrayTypes")]
         private void WriteLiteralStructMethod(StructMapping structMapping)
         {
             string? methodName;
@@ -1706,7 +1767,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         private void WriteQNameEqual(string source, string? name, string? ns)
         {
             WriteID(name);
@@ -1742,12 +1802,10 @@ namespace System.Xml.Serialization
             ilg.MarkLabel(labelEnd);
         }
 
-        [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WriteXmlNodeEqual(string source, string name, string? ns)
         {
             WriteXmlNodeEqual(source, name, ns, true);
         }
-        [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WriteXmlNodeEqual(string source, string name, string? ns, bool doAndIf)
         {
             bool isNameNullOrEmpty = string.IsNullOrEmpty(name);
@@ -1816,7 +1874,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteAttributes(Member[] members, Member? anyAttribute, string elseCall, LocalBuilder firstParam)
         {
             int count = 0;
@@ -2047,7 +2104,6 @@ namespace System.Xml.Serialization
             ilg.WhileEnd();
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteAttribute(Member member)
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
@@ -2086,7 +2142,10 @@ namespace System.Xml.Serialization
             {
                 if (attribute.IsList)
                 {
-                    LocalBuilder locListValues = ilg.DeclareOrGetLocal(typeof(string), "listValues");
+                    // Split the whitespace-separated attribute list into its items using the separator
+                    // set cached in the generated reader's static field (see GenerateEnd), which honors
+                    // UseLegacyXmlListSeparation. A null field value makes String.Split fall back to its
+                    // broader whitespace set (legacy behavior).
                     LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
                     MethodInfo String_Split = typeof(string).GetMethod(
                         "Split",
@@ -2106,9 +2165,7 @@ namespace System.Xml.Serialization
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
                     ilg.Call(XmlReader_get_Value);
-                    ilg.Stloc(locListValues);
-                    ilg.Ldloc(locListValues);
-                    ilg.Load(null);
+                    ilg.LoadMember(EnsureXmlListSeparatorsField());
                     ilg.Call(String_Split);
                     ilg.Stloc(locVals);
                     LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), "i");
@@ -2138,7 +2195,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteMemberBegin(Member[] members)
         {
             for (int i = 0; i < members.Length; i++)
@@ -2245,7 +2301,6 @@ namespace System.Xml.Serialization
             return ReflectionAwareILGen.GetQuotedCSharpString(qnames);
         }
 
-        [RequiresUnreferencedCode("calls WriteMemberElementsIf")]
         private void WriteMemberElements(Member[] members, string elementElseString, string elseString, Member? anyElement, Member? anyText)
         {
             if (anyText != null)
@@ -2281,7 +2336,6 @@ namespace System.Xml.Serialization
             ilg.EndIf();
         }
 
-        [RequiresUnreferencedCode("calls WriteText")]
         private void WriteMemberText(Member anyText)
         {
             ilg.InitElseIf();
@@ -2333,7 +2387,6 @@ namespace System.Xml.Serialization
             Debug.Assert(anyText != null);
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteText(Member member)
         {
             TextAccessor text = member.Mapping.Text!;
@@ -2378,6 +2431,45 @@ namespace System.Xml.Serialization
             }
             else
             {
+                if (member.IsArrayLike && text.IsList)
+                {
+                    // The text content is a whitespace-separated list; split it and add each value to
+                    // the array-like member (mirrors [XmlAttribute] list handling) using the separator
+                    // set cached in the generated reader's static field (see GenerateEnd), which honors
+                    // UseLegacyXmlListSeparation. A null field value makes String.Split fall back to its
+                    // broader whitespace set (legacy behavior).
+                    LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
+                    MethodInfo String_Split = typeof(string).GetMethod(
+                        "Split",
+                        CodeGenerator.InstanceBindingFlags,
+                        new Type[] { typeof(char[]), typeof(StringSplitOptions) }
+                        )!;
+                    MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                        "get_Reader",
+                        CodeGenerator.InstanceBindingFlags,
+                        Type.EmptyTypes
+                        )!;
+                    MethodInfo XmlReader_ReadContentAsString = typeof(XmlReader).GetMethod(
+                        "ReadContentAsString",
+                        CodeGenerator.InstanceBindingFlags,
+                        Type.EmptyTypes
+                        )!;
+                    ilg.Ldarg(0);
+                    ilg.Call(XmlSerializationReader_get_Reader);
+                    ilg.Call(XmlReader_ReadContentAsString);
+                    ilg.LoadMember(EnsureXmlListSeparatorsField());
+                    ilg.Ldc((int)StringSplitOptions.RemoveEmptyEntries);
+                    ilg.Call(String_Split);
+                    ilg.Stloc(locVals);
+                    LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), "i");
+                    ilg.For(localI, 0, locVals);
+                    WriteSourceBegin(member.ArraySource);
+                    WritePrimitive(text.Mapping!, "vals[i]");
+                    WriteSourceEnd(member.ArraySource, text.Mapping!.TypeDesc!.Type!);
+                    ilg.EndFor();
+                    return;
+                }
+
                 if (member.IsArrayLike)
                 {
                     WriteSourceBegin(member.ArraySource);
@@ -2440,7 +2532,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteElement")]
         private void WriteMemberElementsElse(Member? anyElement, string elementElseString)
         {
             if (anyElement != null)
@@ -2472,7 +2563,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        [RequiresUnreferencedCode("calls WriteElement")]
         private void WriteMemberElementsIf(Member[] members, Member? anyElement, string elementElseString)
         {
             int count = 0;
@@ -2635,13 +2725,11 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteMemberEnd")]
         private void WriteMemberEnd(Member[] members)
         {
             WriteMemberEnd(members, false);
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteMemberEnd(Member[] members, bool soapRefs)
         {
             for (int i = 0; i < members.Length; i++)
@@ -2708,10 +2796,10 @@ namespace System.Xml.Serialization
         }
 
         [GeneratedRegex("(?<locA1>[^ ]+) = .+EnsureArrayIndex[(](?<locA2>[^,]+), (?<locI1>[^,]+),[^;]+;(?<locA3>[^[]+)[[](?<locI2>[^+]+)[+][+][]]")]
-        private static partial Regex EnsureArrayIndexRegex();
+        private static partial Regex EnsureArrayIndexRegex { get; }
 
         [GeneratedRegex("(?<a>[^[]+)[[](?<ia>.+)[]]")]
-        private static partial Regex P0Regex();
+        private static partial Regex P0Regex { get; }
 
         private void WriteSourceBegin(string source)
         {
@@ -2733,7 +2821,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // a_0_0 = (global::System.Object[])EnsureArrayIndex(a_0_0, ca_0_0, typeof(global::System.Object));a_0_0[ca_0_0++]
-            Match match = EnsureArrayIndexRegex().Match(source);
+            Match match = EnsureArrayIndexRegex.Match(source);
             if (match.Success)
             {
                 Debug.Assert(match.Groups["locA1"].Value == match.Groups["locA2"].Value);
@@ -2779,7 +2867,7 @@ namespace System.Xml.Serialization
             }
 
             // p[0]
-            match = P0Regex().Match(source);
+            match = P0Regex.Match(source);
             if (match.Success)
             {
                 System.Diagnostics.Debug.Assert(CodeGenerator.GetVariableType(ilg.GetVariable(match.Groups["a"].Value)).IsArray);
@@ -2790,12 +2878,10 @@ namespace System.Xml.Serialization
             throw Globals.NotSupported($"Unexpected: {source}");
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteSourceEnd(string source, Type elementType)
         {
             WriteSourceEnd(source, elementType, elementType);
         }
-        [RequiresUnreferencedCode("string-based IL generation")]
         private void WriteSourceEnd(string source, Type elementType, Type stackType)
         {
             object? variable;
@@ -2825,7 +2911,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // a_0_0 = (global::System.Object[])EnsureArrayIndex(a_0_0, ca_0_0, typeof(global::System.Object));a_0_0[ca_0_0++]
-            Match match = EnsureArrayIndexRegex().Match(source);
+            Match match = EnsureArrayIndexRegex.Match(source);
             if (match.Success)
             {
                 object oVar = ilg.GetVariable(match.Groups["locA1"].Value);
@@ -2861,7 +2947,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // p[0]
-            match = P0Regex().Match(source);
+            match = P0Regex.Match(source);
             if (match.Success)
             {
                 Type varType = CodeGenerator.GetVariableType(ilg.GetVariable(match.Groups["a"].Value));
@@ -2874,7 +2960,91 @@ namespace System.Xml.Serialization
             throw Globals.NotSupported($"Unexpected: {source}");
         }
 
-        [RequiresUnreferencedCode("calls WriteMemberBegin")]
+        // Emits IL that walks the attributes on the current element and raises the
+        // UnknownNode/UnknownAttribute events for any non-namespace attribute. This mirrors the
+        // attribute handling that already happens for elements mapped to structs (via WriteAttributes),
+        // so that unknown attributes on elements mapped to primitives, arrays, and collections are
+        // surfaced consistently.
+        private void WriteHandleUnknownAttributes()
+        {
+            MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                "get_Reader",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlReader_get_HasAttributes = typeof(XmlReader).GetMethod(
+                "get_HasAttributes",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlReader_MoveToNextAttribute = typeof(XmlReader).GetMethod(
+                "MoveToNextAttribute",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlReader_get_Name = typeof(XmlReader).GetMethod(
+                "get_Name",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlSerializationReader_IsXmlnsAttribute = typeof(XmlSerializationReader).GetMethod(
+                "IsXmlnsAttribute",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(string) }
+                )!;
+            MethodInfo XmlSerializationReader_UnknownNode = typeof(XmlSerializationReader).GetMethod(
+                "UnknownNode",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(object) }
+                )!;
+            MethodInfo XmlReader_MoveToElement = typeof(XmlReader).GetMethod(
+                "MoveToElement",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+
+            ilg.Ldarg(0);
+            ilg.Call(XmlSerializationReader_get_Reader);
+            ilg.Call(XmlReader_get_HasAttributes);
+            ilg.If();
+            {
+                // while (Reader.MoveToNextAttribute()) {
+                //     if (!IsXmlnsAttribute(Reader.Name)) {
+                //         UnknownNode(null);
+                //     }
+                // }
+                ilg.WhileBegin();
+                ilg.Ldarg(0);
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Reader);
+                ilg.Call(XmlReader_get_Name);
+                ilg.Call(XmlSerializationReader_IsXmlnsAttribute);
+                ilg.Ldc(false);
+                ilg.If(Cmp.EqualTo);
+                {
+                    ilg.Ldarg(0);
+                    ilg.Load(null);
+                    ilg.Call(XmlSerializationReader_UnknownNode);
+                }
+                ilg.EndIf();
+                ilg.WhileBeginCondition();
+                {
+                    ilg.Ldarg(0);
+                    ilg.Call(XmlSerializationReader_get_Reader);
+                    ilg.Call(XmlReader_MoveToNextAttribute);
+                }
+                ilg.WhileEndCondition();
+                ilg.WhileEnd();
+
+                // Reader.MoveToElement();
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Reader);
+                ilg.Call(XmlReader_MoveToElement);
+                ilg.Pop();
+            }
+            ilg.EndIf();
+        }
+
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int elementIndex)
         {
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
@@ -2886,6 +3056,11 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationReader_ReadNull);
             ilg.IfNot();    // if (!ReadNull()) { // EnterScope
             ilg.EnterScope();
+
+            if (!arrayMapping.IsSoap)
+            {
+                WriteHandleUnknownAttributes();
+            }
 
             MemberMapping memberMapping = new MemberMapping();
             memberMapping.Elements = arrayMapping.Elements;
@@ -2980,18 +3155,17 @@ namespace System.Xml.Serialization
 
             if (isNullable)
             {
-                ilg.ExitScope();    // if(!ReadNull()) { ExitScope
+                ilg.ExitScope();    // if (!ReadNull()) { ExitScope
                 ilg.Else();         // } else { EnterScope
                 ilg.EnterScope();
                 member.IsNullable = true;
                 WriteMemberBegin(members);
                 WriteMemberEnd(members);
             }
-            ilg.ExitScope();    // if(!ReadNull())/else ExitScope
+            ilg.ExitScope();    // if (!ReadNull())/else ExitScope
             ilg.EndIf();
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteElement(string source, string? arrayName, string? choiceSource, ElementAccessor element, ChoiceIdentifierAccessor? choice, string? checkSpecified, bool checkForNull, bool readOnly, int fixupIndex, int elementIndex)
         {
             if (checkSpecified != null && checkSpecified.Length > 0)
@@ -3049,6 +3223,10 @@ namespace System.Xml.Serialization
                     ilg.Else();
                     doEndIf = true;
                 }
+                if (!element.Mapping.IsSoap)
+                {
+                    WriteHandleUnknownAttributes();
+                }
                 if (element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
@@ -3080,7 +3258,8 @@ namespace System.Xml.Serialization
                 {
                 }
 
-                if ((element.Mapping.TypeDesc!.Type == typeof(TimeSpan)) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
+                if ((element.Mapping.TypeDesc!.Type == typeof(TimeSpan)) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset)
+                    || element.Mapping.TypeDesc!.Type == typeof(DateOnly) || element.Mapping.TypeDesc!.Type == typeof(TimeOnly))
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                        "get_Reader",
@@ -3261,6 +3440,8 @@ namespace System.Xml.Serialization
                         ReflectionAwareILGen.ILGenForCreateInstance(ilg, sm.TypeDesc!.Type!, sm.TypeDesc.CannotNew, false);
                         if (sm.TypeDesc.CannotNew)
                             ilg.ConvertValue(typeof(object), typeof(IXmlSerializable));
+                        else if (sm.TypeDesc.IsValueType)
+                            ilg.ConvertValue(sm.TypeDesc.Type!, typeof(IXmlSerializable));
                         if (isWrappedAny)
                             ilg.Ldc(true);
                         ilg.Call(XmlSerializationReader_ReadSerializable);
@@ -3296,7 +3477,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteDerivedSerializable(SerializableMapping head, SerializableMapping? mapping, string source, bool isWrappedAny)
         {
             if (mapping == null)
@@ -3458,7 +3638,6 @@ namespace System.Xml.Serialization
             ilg.Stloc(paramsRead);
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteCreateMapping(TypeMapping mapping, string local)
         {
             string fullTypeName = mapping.TypeDesc!.CSharpName;
@@ -3509,38 +3688,35 @@ namespace System.Xml.Serialization
             ilg.Pop();
         }
 
-        [RequiresUnreferencedCode("calls WriteArrayLocalDecl")]
         private void WriteArrayLocalDecl(string typeName, string variableName, string initValue, TypeDesc arrayTypeDesc)
         {
             ReflectionAwareILGen.WriteArrayLocalDecl(typeName, variableName, new SourceInfo(initValue, initValue, null, arrayTypeDesc.Type, ilg), arrayTypeDesc);
         }
 
-        [RequiresUnreferencedCode("calls WriteCreateInstance")]
         private void WriteCreateInstance(string source, bool ctorInaccessible, Type type)
         {
             ReflectionAwareILGen.WriteCreateInstance(source, ctorInaccessible, type, ilg);
         }
 
-        [RequiresUnreferencedCode("calls WriteLocalDecl")]
         private static void WriteLocalDecl(string variableName, SourceInfo initValue)
         {
             ReflectionAwareILGen.WriteLocalDecl(variableName, initValue);
         }
 
         [GeneratedRegex("UnknownNode[(]null, @[\"](?<qnames>[^\"]*)[\"][)];")]
-        private static partial Regex UnknownNodeNullAnyTypeRegex();
+        private static partial Regex UnknownNodeNullAnyTypeRegex { get; }
 
         [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^,]+), @[\"](?<qnames>[^\"]*)[\"][)];")]
-        private static partial Regex UnknownNodeObjectEmptyRegex();
+        private static partial Regex UnknownNodeObjectEmptyRegex { get; }
 
         [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^,]+), null[)];")]
-        private static partial Regex UnknownNodeObjectNullRegex();
+        private static partial Regex UnknownNodeObjectNullRegex { get; }
 
         [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^)]+)[)];")]
-        private static partial Regex UnknownNodeObjectRegex();
+        private static partial Regex UnknownNodeObjectRegex { get; }
 
         [GeneratedRegex("paramsRead\\[(?<index>[0-9]+)\\]")]
-        private static partial Regex ParamsReadRegex();
+        private static partial Regex ParamsReadRegex { get; }
 
         private void ILGenElseString(string elseString)
         {
@@ -3555,7 +3731,7 @@ namespace System.Xml.Serialization
                   new Type[] { typeof(object), typeof(string) }
                   )!;
             // UnknownNode(null, @":anyType");
-            Match match = UnknownNodeNullAnyTypeRegex().Match(elseString);
+            Match match = UnknownNodeNullAnyTypeRegex.Match(elseString);
             if (match.Success)
             {
                 ilg.Ldarg(0);
@@ -3565,7 +3741,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // UnknownNode((object)o, @"");
-            match = UnknownNodeObjectEmptyRegex().Match(elseString);
+            match = UnknownNodeObjectEmptyRegex.Match(elseString);
             if (match.Success)
             {
                 ilg.Ldarg(0);
@@ -3577,7 +3753,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // UnknownNode((object)o, null);
-            match = UnknownNodeObjectNullRegex().Match(elseString);
+            match = UnknownNodeObjectNullRegex.Match(elseString);
             if (match.Success)
             {
                 ilg.Ldarg(0);
@@ -3589,7 +3765,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // "UnknownNode((object)o);"
-            match = UnknownNodeObjectRegex().Match(elseString);
+            match = UnknownNodeObjectRegex.Match(elseString);
             if (match.Success)
             {
                 ilg.Ldarg(0);
@@ -3603,7 +3779,7 @@ namespace System.Xml.Serialization
         }
         private void ILGenParamsReadSource(string paramsReadSource)
         {
-            Match match = ParamsReadRegex().Match(paramsReadSource);
+            Match match = ParamsReadRegex.Match(paramsReadSource);
             if (match.Success)
             {
                 ilg.Ldloca(ilg.GetLocal("paramsRead"));
@@ -3616,7 +3792,7 @@ namespace System.Xml.Serialization
         }
         private void ILGenParamsReadSource(string paramsReadSource, bool value)
         {
-            Match match = ParamsReadRegex().Match(paramsReadSource);
+            Match match = ParamsReadRegex.Match(paramsReadSource);
             if (match.Success)
             {
                 ilg.Ldloca(ilg.GetLocal("paramsRead"));
@@ -3650,7 +3826,6 @@ namespace System.Xml.Serialization
             throw Globals.NotSupported($"Unexpected: {elementElseString}");
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void ILGenSet(string source, object value)
         {
             WriteSourceBegin(source);

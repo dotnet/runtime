@@ -21,7 +21,7 @@ export PYTHON
 usage_list+=("-pgodatapath: path to profile guided optimization data.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
-usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'iltools', 'nativeaot', and 'spmi'. Can be specified multiple times.")
+usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'alljitscommunity', 'iltools', 'nativeaot', and 'spmi'. Can be specified multiple times.")
 usage_list+=("-subdir: Append a directory with the provided name to the obj and bin paths.")
 
 setup_dirs_local()
@@ -53,7 +53,7 @@ handle_arguments_local() {
             __RequestedBuildComponents="$__RequestedBuildComponents $2"
             __ShiftArgs=1
             ;;
-        
+
         subdir|-subdir)
             __SubDir="$2"
             __ShiftArgs=1
@@ -99,7 +99,6 @@ __SkipRestore=""
 __SourceDir="$__ProjectDir/src"
 __StaticAnalyzer=0
 __UnprocessedBuildArgs=
-__UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __RequestedBuildComponents=""
@@ -122,11 +121,6 @@ __ArtifactsIntermediatesDir="$__ArtifactsObjDir/coreclr"
 __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
-
-if [[ "$__ExplicitHostArch" == 1 ]]; then
-    __IntermediatesDir="$__IntermediatesDir/$__HostArch"
-    __BinDir="$__BinDir/$__HostArch"
-fi
 
 if [[ -n "$__SubDir" ]]; then
     __IntermediatesDir="$__IntermediatesDir/$__SubDir"
@@ -177,10 +171,6 @@ fi
 
 if [[ "$__TargetArch" != "$__HostArch" ]]; then
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__TargetArch $__CMakeArgs"
-fi
-
-if [[ "$USE_SCCACHE" == "true" ]]; then
-    __CMakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache $__CMakeArgs"
 fi
 
 eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"

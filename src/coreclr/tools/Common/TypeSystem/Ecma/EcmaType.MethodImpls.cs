@@ -1,8 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+
+using Internal.Text;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Ecma
@@ -12,10 +16,9 @@ namespace Internal.TypeSystem.Ecma
     public sealed partial class EcmaType : MetadataType
     {
         // Virtual function related functionality
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string declName)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span declName)
         {
             MetadataReader metadataReader = _module.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
             ArrayBuilder<MethodImplRecord> foundRecords = default(ArrayBuilder<MethodImplRecord>);
 
             foreach (var methodImplHandle in _typeDefinition.GetMethodImplementations())
@@ -33,30 +36,14 @@ namespace Internal.TypeSystem.Ecma
                     methodDeclHandleKind = methodDeclCheckHandle.Kind;
                 }
 
-                bool foundRecord = false;
-
-                switch (methodDeclHandleKind)
+                StringHandle foundDeclNameHandle = methodDeclHandleKind switch
                 {
-                    case HandleKind.MethodDefinition:
-                        if (stringComparer.Equals(metadataReader.GetMethodDefinition((MethodDefinitionHandle)methodDeclCheckHandle).Name, declName))
-                        {
-                            foundRecord = true;
-                        }
-                        break;
+                    HandleKind.MethodDefinition => metadataReader.GetMethodDefinition((MethodDefinitionHandle)methodDeclCheckHandle).Name,
+                    HandleKind.MemberReference => metadataReader.GetMemberReference((MemberReferenceHandle)methodDeclCheckHandle).Name,
+                    _ => default
+                };
 
-                    case HandleKind.MemberReference:
-                        if (stringComparer.Equals(metadataReader.GetMemberReference((MemberReferenceHandle)methodDeclCheckHandle).Name, declName))
-                        {
-                            foundRecord = true;
-                        }
-                        break;
-
-                    default:
-                        Debug.Fail("unexpected methodDeclHandleKind");
-                        break;
-                }
-
-                if (foundRecord)
+                if (metadataReader.StringEquals(foundDeclNameHandle, declName))
                 {
                     MethodImplRecord newRecord = new MethodImplRecord(
                         (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration),

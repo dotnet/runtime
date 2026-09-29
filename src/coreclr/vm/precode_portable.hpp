@@ -1,0 +1,304 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
+
+#ifndef __PRECODE_PORTABLE_H__
+#define __PRECODE_PORTABLE_H__
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#error Requires FEATURE_PORTABLE_ENTRYPOINTS to be set
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#include "cdacdata.h"
+
+class PortableEntryPoint final
+{
+public: // static
+    // Returns true if the _pActualCode field of a given PortableEntryPoint is set to a non-null address and that address is the preferred entry point instead of preferring InterpreterCode usage.
+    static bool HasNativeEntryPoint(PCODE addr);
+    static bool HasInterpreterData(PCODE addr);
+
+    static void* GetActualCode(PCODE addr);
+    static void SetActualCode(PCODE addr, void* actualCode);
+    static MethodDesc* GetMethodDesc(PCODE addr);
+    static void* GetInterpreterData(PCODE addr);
+    // Returns the existing data, or interpreterData if this call installs it.
+    static void* SetInterpreterDataInterlocked(PCODE addr, void* interpreterData);
+    static bool PrefersInterpreterEntryPoint(PCODE addr);
+
+private:
+    Volatile<void*> _pActualCode;
+    MethodDesc* _pMD;
+    Volatile<void*> _pInterpreterData;
+
+    enum PortableEntryPointFlag
+    {
+        kNone = 0,
+        kUnmanagedCallersOnly_Has = 0x1,
+        kUnmanagedCallersOnly_Checked = 0x2,
+        kPrefersInterpreterEntryPoint = 0x4,
+        // Set while this entry point is registered on a loader allocator's pending
+        // closed-static-retbuf resolution list, so a redundant registration attempt
+        // can be rejected without a linear scan of that list.
+        kPendingClosedStaticRetBufResolution = 0x8,
+    };
+    Volatile<int32_t> _flags;
+
+    // We keep the canary value last to ensure a stable ABI across build flavors
+    INDEBUG(size_t _canary);
+
+#ifdef _DEBUG
+    bool IsValid() const;
+#endif // _DEBUG
+
+public: // static
+    static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
+
+public:
+    void Init(MethodDesc* pMD);
+    void Init(void* nativeEntryPoint);
+    void Init_WithInterpreterThunk(void* nativeEntryPoint, MethodDesc* pMD);
+    void Init_WithNativeCode(void* nativeEntryPoint, MethodDesc* pMD);
+
+    // Check if the entry point represents a method with the UnmanagedCallersOnly attribute.
+    // If it does, update the entry point to point to the UnmanagedCallersOnly thunk if not
+    // already done.
+    bool EnsureCodeForUnmanagedCallersOnly();
+
+    // Query methods for entry point state.
+    bool HasInterpreterCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pInterpreterData != nullptr;
+    }
+
+    bool HasNativeCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pActualCode != nullptr;
+    }
+
+    // This api can be used on a PortableEntryPoint which has not yet been initted
+    bool HasNativeCodeUnchecked() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _pActualCode != nullptr;
+    }
+
+    bool IsPreparedForNativeCall() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        // State when interpreted method was prepared to be called from R2R compiled code.
+        // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
+        return _pInterpreterData != nullptr && _pActualCode != nullptr;
+    }
+
+    bool PrefersInterpreterEntryPoint() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return (_flags & kPrefersInterpreterEntryPoint) != 0;
+    }
+
+private:
+    void SetFlagsInterlocked(int32_t flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr(reinterpret_cast<LONG volatile*>(&_flags), static_cast<LONG>(flags));
+    }
+    void ClearFlagsInterlocked(int32_t flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedAnd(reinterpret_cast<LONG volatile*>(&_flags), static_cast<LONG>(~flags));
+    }
+public:
+    void ClearPrefersInterpreterEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        ClearFlagsInterlocked(kPrefersInterpreterEntryPoint);
+    }
+
+    bool IsPendingClosedStaticRetBufResolution() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return (_flags & kPendingClosedStaticRetBufResolution) != 0;
+    }
+
+    void SetPendingClosedStaticRetBufResolution()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        SetFlagsInterlocked(kPendingClosedStaticRetBufResolution);
+    }
+
+    void ClearPendingClosedStaticRetBufResolution()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        ClearFlagsInterlocked(kPendingClosedStaticRetBufResolution);
+    }
+
+    // Atomically install an interpreter thunk if _pActualCode is still NULL.
+    // Returns true if the thunk was installed, false if _pActualCode was already set.
+    bool TrySetInterpreterThunk(void* thunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        _ASSERTE(thunk != nullptr);
+        return InterlockedCompareExchangeT(&_pActualCode, thunk, (void*)nullptr) == nullptr;
+    }
+
+    friend struct ::cdac_data<PortableEntryPoint>;
+};
+
+struct VirtualDispatchPortableEntryPoint
+{
+    void* Target;
+    DWORD PackedDispatchOffsets;
+    READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* InitialEntry;
+};
+
+// WasmVirtualDispatchThunkNode accesses these fields at fixed offsets.
+static_assert(offsetof(VirtualDispatchPortableEntryPoint, Target) == 0);
+static_assert(offsetof(VirtualDispatchPortableEntryPoint, PackedDispatchOffsets) == TARGET_POINTER_SIZE);
+static_assert(offsetof(VirtualDispatchPortableEntryPoint, InitialEntry) == 2 * TARGET_POINTER_SIZE);
+
+class UnboxingStubPortableEntryPoint final
+{
+public:
+    Volatile<MethodDesc*> _targetMethodDesc;
+    Volatile<PCODE> _targetEntryPoint;
+    PortableEntryPoint _entryPoint;
+
+    static UnboxingStubPortableEntryPoint* FromEntryPoint(PCODE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return reinterpret_cast<UnboxingStubPortableEntryPoint*>(
+            reinterpret_cast<BYTE*>(PCODEToPINSTR(addr)) - offsetof(UnboxingStubPortableEntryPoint, _entryPoint));
+    }
+
+    PortableEntryPoint* GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &_entryPoint;
+    }
+
+    void Init(MethodDesc* pMD)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _entryPoint.Init(pMD);
+        _targetMethodDesc = nullptr;
+        _targetEntryPoint = (PCODE)nullptr;
+    }
+
+    static void SetStubTargetAndActualCode(
+        PCODE addr,
+        MethodDesc* targetMethodDesc,
+        PCODE targetEntryPoint,
+        void* actualCode)
+    {
+        WRAPPER_NO_CONTRACT;
+        UnboxingStubPortableEntryPoint* entryPoint = FromEntryPoint(addr);
+        entryPoint->_targetMethodDesc = targetMethodDesc;
+        entryPoint->_targetEntryPoint = targetEntryPoint;
+        PortableEntryPoint::SetActualCode(addr, actualCode);
+    }
+};
+
+// Generated unboxing stubs access these fields at fixed negative offsets from the embedded entrypoint.
+static_assert(offsetof(UnboxingStubPortableEntryPoint, _targetEntryPoint) == TARGET_POINTER_SIZE);
+static_assert(offsetof(UnboxingStubPortableEntryPoint, _entryPoint) == 2 * TARGET_POINTER_SIZE);
+
+class ClosedStaticRetBufPortableEntryPoint final
+{
+public:
+    PCODE _targetEntryPoint;
+    PortableEntryPoint _entryPoint;
+    MethodDesc* _delegateInvoke;
+
+    static ClosedStaticRetBufPortableEntryPoint* FromEntryPoint(PCODE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
+            reinterpret_cast<BYTE*>(PCODEToPINSTR(addr)) - offsetof(ClosedStaticRetBufPortableEntryPoint, _entryPoint));
+    }
+
+    PortableEntryPoint* GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &_entryPoint;
+    }
+
+    void Init(MethodDesc* targetMethod, MethodDesc* delegateInvoke, PCODE targetEntryPoint, void* thunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _delegateInvoke = delegateInvoke;
+        _targetEntryPoint = targetEntryPoint;
+        if (thunk != nullptr &&
+            PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
+        {
+            _entryPoint.Init_WithNativeCode(thunk, targetMethod);
+        }
+        else
+        {
+            _entryPoint.Init(targetMethod);
+        }
+    }
+};
+
+// Generated closed-static return-buffer stubs access the target entrypoint at a fixed
+// negative offset from the embedded entrypoint.
+static_assert(offsetof(ClosedStaticRetBufPortableEntryPoint, _entryPoint) == TARGET_POINTER_SIZE);
+
+template<>
+struct cdac_data<PortableEntryPoint>
+{
+    static constexpr size_t MethodDesc = offsetof(PortableEntryPoint, _pMD);
+
+    static_assert(offsetof(PortableEntryPoint, _pActualCode) == 0, "CLR ABI requires _pActualCode to be at offset 0 of PortableEntryPoint");
+};
+
+extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
+
+enum PrecodeType
+{
+    PRECODE_INVALID = -100,
+    PRECODE_STUB,
+    PRECODE_UMENTRY_THUNK,
+    PRECODE_FIXUP,
+    PRECODE_PINVOKE_IMPORT,
+    PRECODE_INTERPRETER,
+};
+
+class StubPrecode
+{
+};
+
+class Precode
+{
+public: // static
+    static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
+        LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+
+public:
+    PrecodeType GetType();
+
+    MethodDesc* GetMethodDesc(BOOL fSpeculative = FALSE);
+
+    PCODE GetEntryPoint();
+
+    void ResetTargetInterlocked();
+
+    BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
+};
+
+void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);
+BOOL DoesSlotCallPrestub(PCODE pCode);
+
+class PrecodeMachineDescriptor { };
+
+#endif // __PRECODE_PORTABLE_H__

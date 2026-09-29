@@ -68,10 +68,10 @@ The other interface involved for profiling is _ICorProfilerInfo_.  The profiler 
 
 The picture so far describes what happens once the application and profiler are running.  But how are the two connected together when an application is started?  The CLR makes the connection during its initialization in each process.  It decides whether to connect to a profiler, and which profiler that should be, depending upon the value for two environment variables, checked one after the other:
 
-- Cor\_Enable\_Profiling - only connect with a profiler if this environment variable exists and is set to a non-zero value.
-- Cor\_Profiler - connect with the profiler with this CLSID or ProgID (which must have been stored previously in the Registry). The Cor\_Profiler environment variable is defined as a string:
-	- set Cor\_Profiler={32E2F4DA-1BEA-47ea-88F9-C5DAF691C94A}, or
-	- set Cor\_Profiler="MyProfiler"
+- CORECLR\_ENABLE\_PROFILING - only connect with a profiler if this environment variable exists and is set to a non-zero value.
+- CORECLR\_PROFILER - connect with the profiler with this CLSID or ProgID (which must have been stored previously in the Registry). The CORECLR\_PROFILER environment variable is defined as a string:
+	- set CORECLR\_PROFILER={32E2F4DA-1BEA-47ea-88F9-C5DAF691C94A}, or
+	- set CORECLR\_PROFILER="MyProfiler"
 - The profiler class is the one that implements _ICorProfilerCallback/ICorProfilerCallback2_. It is required that a profiler implement ICorProfilerCallback2; if it does not, it will not be loaded.
 
 When both checks above pass, the CLR creates an instance of the profiler in a similar fashion to _CoCreateInstance_.  The profiler is not loaded through a direct call to _CoCreateInstance_ so that a call to _CoInitialize_ may be avoided, which requires setting the threading model.  It then calls the _ICorProfilerCallback::Initialize_ method in the profiler.  The signature of this method is:
@@ -118,7 +118,7 @@ A ProcessID is unique system-wide for the lifetime of the process. All other IDs
 
 ### Hierarchy & Containment
 
-ID's are arranged in a hierarchy, mirroring the hierarchy in the process. Processes contain AppDomains contain Assemblies contain Modules contain Classes contain Functions. Threads are contained within Processes, and may move from AppDomain to AppDomain. Objects are mostly contained within AppDomains (a very few objects may be members of more than one AppDomain at a time). Contexts are contained within Processes.
+ID's are arranged in a hierarchy, mirroring the hierarchy in the process. Processes contain the global AppDomain which contains Assemblies which contain Modules which contain Classes which contain Functions. Threads are contained within Processes. Objects are contained within the AppDomain. Contexts are contained within Processes.
 
 ### Lifetime & Stability
 
@@ -139,12 +139,6 @@ ObjectID – Alive beginning with the call to ObjectAllocated. Eligible to chang
 GCHandleID – Alive from the call to HandleCreated until the return from HandleDestroyed.
 
 In addition, any ID returned from a profiling API function will be alive at the time it is returned.
-
-### App-Domain Affinity
-
-There is an AppDomainID for each user-created app-domain in the process, plus the "default" domain, plus a special pseudo-domain used for holding domain-neutral assemblies.
-
-Assembly, Module, Class, Function, and GCHandleIDs have app-domain affinity, meaning that if an assembly is loaded into multiple app domains, it (and all of the modules, classes, and functions contained within it) will have a different ID in each, and operations upon each ID will take effect only in the associated app domain. Domain-neutral assemblies will appear in the special pseudo-domain mentioned above.
 
 ### Special Notes
 
@@ -235,7 +229,7 @@ Profiling is enabled through environment variables, and since NT Services are st
 
 MyComputer -> Properties -> Advanced -> EnvironmentVariables -> System Variables
 
-Both **Cor\_Enable\_Profiling** and **COR\_PROFILER have to be set** , and the user must ensure that the Profiler DLL is registered.  Then, the target machine should be re-booted so that the NT Services pick up those changes.  Note that this will enable profiling on a system-wide basis.  So, to prevent every managed application that is run subsequently from being profiled, the user should delete those system environment variables after the re-boot.
+Both **CORECLR\_ENABLE\_PROFILING** and **CORECLR\_PROFILER have to be set** , and the user must ensure that the Profiler DLL is registered.  Then, the target machine should be re-booted so that the NT Services pick up those changes.  Note that this will enable profiling on a system-wide basis.  So, to prevent every managed application that is run subsequently from being profiled, the user should delete those system environment variables after the re-boot.
 
 Profiling API – High-Level Description
 ======================================
@@ -386,8 +380,8 @@ There are four types of statics. The following table describes what they are and
 
 | **Static Type** | **Definition** | **Identifying in Metadata** |
 | --------------- | -------------- | --------------------------- |
-| AppDomain       | Your basic static field—has a different value in each app domain. | Static field with no attached custom attributes |
-| Thread          | Managed TLS—a static field with a unique value for each thread and each app domain. | Static field with System.ThreadStaticAttribute |
+| AppDomain       | Your basic static field. | Static field with no attached custom attributes |
+| Thread          | Managed TLS—a static field with a unique value for each thread. | Static field with System.ThreadStaticAttribute |
 | RVA             | Process-scoped static field with a home in the module's data section | Static field with hasRVA flag |
 | Context         | Static field with a different value in each COM+ Context | Static field with System.ContextStaticAttribute |
 
@@ -477,7 +471,7 @@ A profiler DLL is an unmanaged DLL that is effectively running as part of the CL
 Combining Managed and Unmanaged Code in a Code Profiler
 =======================================================
 
-A close review of the CLR Profiling API creates the impression that you could write a profiler that has managed and unmanaged components that call to each other through COM Interop or ndirect calls.
+A close review of the CLR Profiling API creates the impression that you could write a profiler that has managed and unmanaged components that call to each other through COM Interop or PInvoke calls.
 
 Although this is possible from a design perspective, the CLR Profiling API does not support it. A CLR profiler is supposed to be purely unmanaged. Attempts to combine managed and unmanaged code from a CLR profiler can cause crashes, hangs and deadlocks. The danger is clear since the managed parts of the profiler will "fire" events back to its unmanaged component, which subsequently would call into the managed part of the profiler etc. The danger at this point is clear.
 

@@ -25,6 +25,8 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000

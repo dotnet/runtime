@@ -26,9 +26,9 @@ namespace System.Collections.Immutable.Tests
             this.TryGetValueTestHelper(ImmutableSortedSet<string>.Empty.WithComparer(StringComparer.OrdinalIgnoreCase));
         }
 
-        internal override IBinaryTree GetRootNode<T>(IImmutableSet<T> set)
+        internal override BinaryTreeProxy GetRootNode<T>(IImmutableSet<T> set)
         {
-            return ((ImmutableSortedSet<T>)set).Root;
+            return ((ImmutableSortedSet<T>)set).GetBinaryTreeProxy();
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace System.Collections.Immutable.Tests
 
             this.EmptyTestHelper(emptySet);
             Assert.Same(emptySet, emptySet.ToImmutableSortedSet(comparer));
-            Assert.Same(comparer ?? Comparer<T>.Default, ((ISortKeyCollection<T>)emptySet).KeyComparer);
+            Assert.Same(comparer ?? Comparer<T>.Default, ((ImmutableSortedSet<T>)emptySet).KeyComparer);
 
             IImmutableSet<T> reemptied = emptySet.Add(value).Clear();
             Assert.Same(reemptied, reemptied.ToImmutableSortedSet(comparer)); //, "Getting the empty set from a non-empty instance did not preserve the comparer.");

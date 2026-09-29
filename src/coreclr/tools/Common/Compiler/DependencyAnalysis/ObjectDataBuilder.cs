@@ -267,6 +267,9 @@ namespace ILCompiler.DependencyAnalysis
             // And add space for the reloc
             switch (relocType)
             {
+                case RelocType.WASM_TABLE_INDEX_I32:
+                case RelocType.WASM_TABLE_INDEX_REL_I32:
+                case RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32:
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
@@ -278,6 +281,15 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     EmitInt(delta);
+                    break;
+                case RelocType.WASM_ASYNC_RESUME_INFO_DELTA_ULEB:
+                    uint value = checked((uint)delta);
+                    for (int i = 0; i < Relocation.GetSize(relocType) - 1; i++)
+                    {
+                        EmitByte((byte)((value & 0x7F) | 0x80));
+                        value >>= 7;
+                    }
+                    EmitByte(checked((byte)value));
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     EmitLong(delta);
@@ -300,11 +312,18 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
 
-                case RelocType.IMAGE_REL_BASED_RISCV64_PC:
+                case RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT:
+                case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I:
+                case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                     Debug.Assert(delta == 0);
                     // Do not vacate space for this kind of relocation, because
                     // the space is embedded in the instruction.
                     break;
+
+                case RelocType.IMAGE_REL_FILE_CHECKSUM_CALLBACK:
+                    EmitZeros(delta);
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -313,6 +332,11 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitPointerReloc(ISymbolNode symbol, int delta = 0)
         {
             EmitReloc(symbol, (_target.PointerSize == 8) ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW, delta);
+        }
+
+        public void EmitChecksumReloc(IChecksumNode checksum)
+        {
+            EmitReloc(checksum, RelocType.IMAGE_REL_FILE_CHECKSUM_CALLBACK, checksum.ChecksumSize);
         }
 
         public ObjectNode.ObjectData ToObjectData()

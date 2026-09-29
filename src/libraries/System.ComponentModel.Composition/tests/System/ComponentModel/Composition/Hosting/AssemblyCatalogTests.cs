@@ -174,7 +174,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor1_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -273,7 +273,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor2_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -349,7 +349,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void Constructor2_NullReflectionContextArgument_ShouldThrowArgumentNull()
         {
             AssemblyCatalogConstructorTests.Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull((rc) =>
@@ -371,7 +371,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor3_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -447,7 +447,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void Constructor3_NullDefinitionOriginArgument_ShouldThrowArgumentNull()
         {
             AssemblyCatalogConstructorTests.Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull((dO) =>
@@ -468,7 +468,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor4_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -544,7 +544,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void Constructor4_NullReflectionContextArgument_ShouldThrowArgumentNull()
         {
             AssemblyCatalogConstructorTests.Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull((rc) =>
@@ -553,7 +553,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void Constructor4_NullDefinitionOriginArgument_ShouldThrowArgumentNull()
         {
             AssemblyCatalogConstructorTests.Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull((dO) =>
@@ -638,7 +638,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void Constructor8_NullReflectionContextArgument_ShouldThrowArgumentNull()
         {
             AssemblyCatalogConstructorTests.Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull((rc) =>
@@ -648,7 +648,7 @@ namespace System.ComponentModel.Composition
         }
 
 #pragma warning disable SYSLIB0012
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void Constructor8_NullDefinitionOriginArgument_ShouldThrowArgumentNull()
         {
             AssemblyCatalogConstructorTests.Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull((dO) =>

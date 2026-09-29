@@ -4,6 +4,7 @@
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using SysTx = System.Transactions;
 
@@ -45,6 +46,7 @@ namespace System.Data.OleDb
 
         private static DbConnectionFactory ConnectionFactory
         {
+            [RequiresDynamicCode(OleDbConnection.TrimWarning)]
             get
             {
                 return _connectionFactory;

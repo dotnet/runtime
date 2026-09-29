@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -22,14 +23,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonPropertyInfo CreatePropertyInfo<T>(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-            if (propertyInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyInfo));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(propertyInfo);
 
             Type? declaringType = propertyInfo.DeclaringType;
             if (declaringType == null)
@@ -38,7 +33,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             string? propertyName = propertyInfo.PropertyName;
-            if (propertyName == null)
+            if (propertyName is null)
             {
                 throw new ArgumentException(nameof(propertyInfo.PropertyName));
             }
@@ -62,16 +57,45 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) where T : notnull
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-            if (objectInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(objectInfo));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(objectInfo);
 
             return CreateCore(options, objectInfo);
+        }
+
+        /// <summary>
+        /// Creates metadata for a union type.
+        /// </summary>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
+        /// <param name="unionInfo">Provides serialization metadata about a union type and its cases.</param>
+        /// <typeparam name="T">The type of the union.</typeparam>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> or <paramref name="unionInfo"/> is null.</exception>
+        /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the union type.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonTypeInfo<T> CreateUnionInfo<T>(JsonSerializerOptions options, JsonUnionInfoValues<T> unionInfo) where T : notnull
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(unionInfo);
+            ArgumentNullException.ThrowIfNull(unionInfo.UnionCases);
+
+            JsonConverter<T> converter = new JsonUnionConverter<T>();
+            var typeInfo = new JsonTypeInfo<T>(converter, options)
+            {
+                UnionConstructor = unionInfo.UnionConstructor,
+                UnionDeconstructor = unionInfo.UnionDeconstructor,
+                TypeClassifier = unionInfo.TypeClassifier,
+            };
+
+            foreach (JsonUnionCaseInfo caseInfo in unionInfo.UnionCases)
+            {
+                typeInfo.UnionCases.Add(caseInfo);
+            }
+
+            typeInfo.TypeClassifierFactory = unionInfo.TypeClassifierFactory;
+            typeInfo.TypeClassifierResolutionPending = true;
+
+            typeInfo.IsCustomized = false;
+            return typeInfo;
         }
 
         /// <summary>
@@ -82,14 +106,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-            if (converter is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(converter));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(converter);
 
             JsonTypeInfo<T> info = CreateCore<T>(converter, options);
             return info;

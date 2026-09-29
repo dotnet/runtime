@@ -37,6 +37,12 @@ C_FUNC(\Name\()_End):
     nop
 .endm
 
+.macro ALTERNATE_ENTRY Name
+        .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
     lla  \HelperReg, \Name
 .endm
@@ -222,8 +228,12 @@ C_FUNC(\Name\()_End):
 //            GPR_a1
 //            GPR_a0
 //
-// General Registers:
+// Callee Saved Registers:
+//            GPR_gp
 //            GPR_tp
+//            GPR_s11
+//            GPR_s10
+//            GPR_s9
 //            GPR_s8
 //            GPR_s7
 //            GPR_s6
@@ -232,7 +242,6 @@ C_FUNC(\Name\()_End):
 //            GPR_s3
 //            GPR_s2
 //            GPR_s1
-//            GPR_s0
 //            GPR_ra
 //            GPR_fp
 //
@@ -251,17 +260,26 @@ C_FUNC(\Name\()_End):
 //            FPR_f8 / fs0
 // Extra:
 //
-.macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1
+// pushCalleeSavedFloatRegs - Optional parameter. If set to 1, the macro will also save
+//                            the callee-saved floating point registers (fs0-fs11) to the stack.
+//                            These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+//
+.macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1, pushCalleeSavedFloatRegs = 0
     __PWTB_SaveFPArgs = \SaveFPRegs
+    __PWTB_PushCalleeSavedFloatRegs = \pushCalleeSavedFloatRegs
 
-    __PWTB_FloatArgumentRegisters = \extraLocals
+    __PWTB_FloatCalleeSavedRegisters = \extraLocals
 
-    // Note, stack (see __PWTB_StackAlloc variable) must be 16 byte aligned,
-    // SIZEOF__FloatArgumentRegisters (0x40) is 16 byte aligned, that mean initial
-    // __PWTB_FloatArgumentRegisters value must be not 16 byte aligned and
-    // after add (120 + 64) provide 16 byte aligned result.
-    .if ((__PWTB_FloatArgumentRegisters % 16) == 0)
-        __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+    // Note, stack (see __PWTB_StackAlloc variable) must be 16 byte aligned.
+    .if ((__PWTB_FloatCalleeSavedRegisters % 16) != 0)
+        __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatCalleeSavedRegisters + 8
+    .endif
+
+    // If pushCalleeSavedFloatRegs is specified, reserve space for fs0-fs11 (12 registers * 8 bytes = 96 bytes)
+    .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+        __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters + 96
+    .else
+        __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters
     .endif
 
     __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
@@ -272,10 +290,10 @@ C_FUNC(\Name\()_End):
 
 
     __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
-    __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120
+    __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120 + 8
 
-    // Including fp, ra, s1-s11, tp, gp, and (a0-a7)arguments. (1+1+11+1+1)*8 + 8*8.
-    __PWTB_StackAlloc = __PWTB_TransitionBlock + 120 + 64
+    // Including fp, ra, s1-s11, tp, gp, padding and (a0-a7)arguments. (1+1+11+1+1)*8 + 8 + 8*8.
+    __PWTB_StackAlloc = __PWTB_TransitionBlock + 120 + 8 + 64
     PROLOG_STACK_ALLOC __PWTB_StackAlloc
     PROLOG_SAVE_REG_PAIR  fp, ra, __PWTB_CalleeSavedRegisters, 1
 
@@ -290,10 +308,25 @@ C_FUNC(\Name\()_End):
         SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
     .endif
 
+    // Save callee-saved floating point registers if requested (fs0-fs11)
+    .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+        fsd     fs0, (__PWTB_FloatCalleeSavedRegisters)(sp)
+        fsd     fs1, (__PWTB_FloatCalleeSavedRegisters + 8)(sp)
+        fsd     fs2, (__PWTB_FloatCalleeSavedRegisters + 16)(sp)
+        fsd     fs3, (__PWTB_FloatCalleeSavedRegisters + 24)(sp)
+        fsd     fs4, (__PWTB_FloatCalleeSavedRegisters + 32)(sp)
+        fsd     fs5, (__PWTB_FloatCalleeSavedRegisters + 40)(sp)
+        fsd     fs6, (__PWTB_FloatCalleeSavedRegisters + 48)(sp)
+        fsd     fs7, (__PWTB_FloatCalleeSavedRegisters + 56)(sp)
+        fsd     fs8, (__PWTB_FloatCalleeSavedRegisters + 64)(sp)
+        fsd     fs9, (__PWTB_FloatCalleeSavedRegisters + 72)(sp)
+        fsd     fs10, (__PWTB_FloatCalleeSavedRegisters + 80)(sp)
+        fsd     fs11, (__PWTB_FloatCalleeSavedRegisters + 88)(sp)
+    .endif
+
 .endm
 
 .macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
     RESTORE_CALLEESAVED_REGISTERS sp, __PWTB_CalleeSavedRegisters
 
     EPILOG_RESTORE_REG_PAIR       fp, ra, __PWTB_CalleeSavedRegisters
@@ -322,6 +355,73 @@ C_FUNC(\Name\()_End):
     EPILOG_STACK_FREE                 __PWTB_StackAlloc
 .endm
 
+// Inlined version of GetThreadEEAllocContext
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+    call    C_FUNC(GetThreadEEAllocContext)
+.endm
+
+// Pushes a TransitionBlock on the stack without saving the argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+.macro PUSH_COOP_PINVOKE_FRAME target
+    // Including fp, ra, s1-s11, tp, gp, padding and (a0-a7)arguments. (1+1+11+1+1)*8 + 8 + 8*8.
+    PROLOG_STACK_ALLOC          192
+    PROLOG_SAVE_REG_PAIR        fp, ra, 0, 1
+    // Spill callee saved registers.  sp=r2.
+    SAVE_CALLEESAVED_REGISTERS  sp, 0
+    mv    \target, sp
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+    RESTORE_CALLEESAVED_REGISTERS sp, 0
+    EPILOG_RESTORE_REG_PAIR       fp, ra, 0
+    EPILOG_STACK_FREE             192
+.endm
+
+// Pushes a full TransitionBlock on the stack including argument registers and
+// floating point argument registers. Used for exception throw helpers where we
+// need to capture the complete register state.
+//
+// Stack layout (from low to high address):
+//   sp+0:     FloatArgumentRegisters (fa0-fa7, 64 bytes)
+//   sp+64:    TransitionBlock start
+//             - CalleeSavedRegisters (fp, ra, s1-s11, tp, gp - 120 bytes)
+//             - padding (8 bytes)
+//             - ArgumentRegisters (a0-a7, 64 bytes)
+//
+// On exit, \target contains the TransitionBlock pointer (sp+160).
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+    // Stack: FPCalleeSaved(96) + FloatArgs(64) + CalleeSaved(120) + pad(8) + Args(64) = 352 bytes
+    PROLOG_STACK_ALLOC 352
+    PROLOG_SAVE_REG_PAIR   fp, ra, 160, 1
+
+    // Save callee-saved registers at offset 160 (after FP callee-saved and FloatArgumentRegisters)
+    SAVE_CALLEESAVED_REGISTERS sp, 160
+
+    // Save argument registers (a0-a7) at offset 288
+    SAVE_ARGUMENT_REGISTERS sp, 288
+
+    // Save floating-point argument registers (fa0-fa7) at offset 96
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
+
+    // Save FP callee-saved registers (fs0-fs11 = f8,f9,f18-f27) at offset 0
+    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
+    fsd   fs0,  0(sp)   // f8
+    fsd   fs1,  8(sp)   // f9
+    fsd   fs2,  16(sp)  // f18
+    fsd   fs3,  24(sp)  // f19
+    fsd   fs4,  32(sp)  // f20
+    fsd   fs5,  40(sp)  // f21
+    fsd   fs6,  48(sp)  // f22
+    fsd   fs7,  56(sp)  // f23
+    fsd   fs8,  64(sp)  // f24
+    fsd   fs9,  72(sp)  // f25
+    fsd   fs10, 80(sp)  // f26
+    fsd   fs11, 88(sp)  // f27
+
+    // Set target to TransitionBlock pointer
+    addi  \target, sp, 160
+.endm
+
 // ------------------------------------------------------------------
 // Macro to generate Redirection Stubs
 //
@@ -348,4 +448,12 @@ C_FUNC(\Name\()_End):
         EMIT_BREAKPOINT
 0:
 #endif
+.endm
+
+#include <riscv64/InlineTls.inc>
+
+// Inlined version of RhpGetThread
+.macro INLINE_GETTHREAD target
+    INLINE_GET_TLS_VAR \target, C_FUNC(t_CurrentThreadInfo)
+    ld \target, OFFSETOF__ThreadLocalInfo__m_pThread(\target)
 .endm

@@ -24,7 +24,7 @@ namespace BINDER_SPACE
         m_pAssemblyName = NULL;
         m_isInTPA = false;
         m_pBinder = NULL;
-        m_domainAssembly = NULL;
+        m_runtimeAssembly = NULL;
     }
 
     Assembly::~Assembly()
@@ -57,7 +57,7 @@ namespace BINDER_SPACE
         m_pPEImage = pPEImage;
 
         // Now take ownership of assembly name
-        m_pAssemblyName = pAssemblyName.Extract();
+        m_pAssemblyName = pAssemblyName.Detach();
 
     Exit:
         return hr;

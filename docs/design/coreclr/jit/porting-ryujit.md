@@ -23,13 +23,18 @@ The following components need to be updated, or target-specific versions created
 * The basics
   * target.h
 * Instruction set architecture:
-  * registerXXX.h
-  * emitXXX.h, emitfmtXXX.h
-  * instrsXXX.h, emitXXX.cpp and targetXXX.cpp
-  * lowerXXX.cpp
-  * lsraXXX.cpp
-  * codegenXXX.cpp and simdcodegenXXX.cpp
-  * unwindXXX.cpp
+  * registerXXX.h - defines all registers used by the architecture and any aliases for them
+  * emitXXX.h - defines signatures for public instruction emission methods (e.g. "emit an instruction which takes a single integer argument") and private architecture-specific helpers
+  * emitXXX.cpp - implementation for emitXXX.h
+  * emitfmtXXX.h - optionally defines validity rules for how instructions should be formatted (e.g. RISC-V has no rules defined)
+  * instrsXXX.h - defines per-architecture instructions in assembly
+  * targetXXX.h - defines architectural constraints used elsewhere, such as "bitmask for all integer registers where callee is saved" or "size in bytes of a floating point register"
+  * targetXXX.cpp - implements ABI classifier for this architecture
+  * lowerXXX.cpp - implements [Lowering](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md#lowering) for this architecture
+  * lsraXXX.cpp - implements register requirement setting based on [GenTree Nodes](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md#gentree-nodes)
+  * codegenXXX.cpp - implements main codegen for this architecture (i.e. generating per-architecture instructions based on [GenTree Nodes](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md#gentree-nodes))
+  * hwintrinsic\*XXX.\* and simdashwintrinsic\*XXX.h - defines and implements hardware intrinsic features, e.g. vector instructions
+  * unwindXXX.cpp - implements public unwinding API and unwind info dumping for debug use
 * Calling Convention and ABI: all over the place
 * 32 vs. 64 bits
   * Also all over the place. Some pointer size-specific data is centralized in target.h, but probably not 100%.

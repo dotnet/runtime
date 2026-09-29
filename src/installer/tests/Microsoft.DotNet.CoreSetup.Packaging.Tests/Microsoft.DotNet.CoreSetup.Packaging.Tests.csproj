@@ -2,8 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
-
+    <OutputType>Exe</OutputType>
+    <!-- Package tests run on the host, not the target -->
+    <RuntimeIdentifier>$(HostRid)</RuntimeIdentifier>
     <IsPackable>false</IsPackable>
+    <TestRunnerName>XUnitV3</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>

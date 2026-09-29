@@ -257,20 +257,25 @@ namespace System.Diagnostics
         /// <param name="array">The one-dimensional Array that is the destination of the elements copied from <see cref="T:System.Diagnostics.TagList" />. The Array must have zero-based indexing.</param>
         /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
         /// <exception cref="T:System.ArgumentNullException"> <paramref name="array" /> is null.</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="arrayIndex " /> is less than 0 or greater that or equal the <paramref name="array" /> length.</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="arrayIndex" /> is less than 0 or greater than the <paramref name="array" /> length.</exception>
         public readonly void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
-            if (array is null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
-            if ((uint)arrayIndex >= array.Length)
+            if ((uint)arrayIndex > (uint)array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
 
-            CopyTo(array.AsSpan(arrayIndex));
+            if (_tagsCount > 0)
+            {
+                if ((uint)arrayIndex >= (uint)array.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+                }
+
+                CopyTo(array.AsSpan(arrayIndex));
+            }
         }
 
         /// <summary>
@@ -416,6 +421,7 @@ namespace System.Diagnostics
         /// Searches for the specified tag and returns the zero-based index of the first occurrence within the entire <see cref="T:System.Diagnostics.TagList" />.
         /// </summary>
         /// <param name="item">The tag to locate in the <see cref="T:System.Diagnostics.TagList" />.</param>
+        /// <returns>The zero-based index of the first occurrence within the <see cref="T:System.Diagnostics.TagList" />, or -1 if there is no such tag.</returns>
         public readonly int IndexOf(KeyValuePair<string, object?> item)
         {
             if (_overflowTags is not null)

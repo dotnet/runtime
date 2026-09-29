@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
 {
+    [ComVisible(true)]
     public class StandardOleMarshalObject : MarshalByRefObject, IMarshal
     {
         private static readonly Guid CLSID_StdMarshal = new Guid("00000017-0000-0000-c000-000000000046");

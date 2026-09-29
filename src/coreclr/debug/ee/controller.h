@@ -17,6 +17,10 @@
 #if !defined(DACCESS_COMPILE)
 
 #include "frameinfo.h"
+#include "executioncontrol.h"
+#ifdef FEATURE_INTERPRETER
+#include "interpreterwalker.h"
+#endif // FEATURE_INTERPRETER
 
 /* ------------------------------------------------------------------------- *
  * Forward declarations
@@ -183,15 +187,12 @@ public:
     //      caller wants information about a specific frame.
     // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null,
     //      we use our temp context.
-    // bool suppressUMChainFromCLRToCOMMethodFrameGeneric - A ridiculous flag that is trying to narrowly
-    //      target a fix for issue 650903.
     // StackTraceTicket - ticket ensuring that we have permission to call this.
     void GetStackInfo(
         StackTraceTicket ticket,
         Thread *thread,
         FramePointer targetFP,
-        CONTEXT *pContext,
-        bool suppressUMChainFromCLRToCOMMethodFrameGeneric = false
+        CONTEXT *pContext
         );
 
     //bool ControllerStackInfo::HasReturnFrame()  Returns
@@ -213,11 +214,6 @@ private:
     bool                    m_activeFound;
     bool                    m_returnFound;
     FrameInfo               m_returnFrame;
-
-    // A ridiculous flag that is targeting a very narrow fix at issue 650903
-    // (4.5.1/Blue).  This is set for the duration of a stackwalk designed to
-    // help us "Step Out" to a managed frame (i.e., managed-only debugging).
-    bool                    m_suppressUMChainFromCLRToCOMMethodFrameGeneric;
 
     // Track if this stackwalk actually happened.
     // This is used by the StackTraceTicket(ControllerStackInfo * info) ticket.
@@ -312,7 +308,11 @@ public:
     UINT_PTR                RipTargetFixup;
 #endif
 
+    const InstructionAttribute& GetInstructionAttrib() { return m_instrAttrib; }
+    void SetInstructionAttrib(const InstructionAttribute& instrAttrib) { m_instrAttrib = instrAttrib; }
+
 private:
+    InstructionAttribute   m_instrAttrib;      // info about the instruction being skipped over
     const static DWORD SentinelValue = 0xffffffff;
     LONG    m_refCount;
 };
@@ -434,6 +434,13 @@ struct DebuggerControllerPatch
     TraceDestination        trace;
     MethodDesc*             pMethodDescFilter; // used for IL Primary patches that should only bind to jitted
                                                // code versions for a single generic instantiation
+#ifdef FEATURE_INTERPRETER
+    // Interpreter opcodes can have value 0 (e.g., INTOP_RET), so we need a separate flag
+    // to track activation state since PRDIsEmpty() returns true for opcode 0.
+    // TODO: We should consider using the activated flag for all patches and stop using opcode == 0 as a special case for "not active".
+    // https://github.com/dotnet/runtime/issues/124499
+    bool                    m_interpActivated;
+#endif // FEATURE_INTERPRETER
 private:
     DebuggerPatchKind       kind;
     int                     refCount;
@@ -533,6 +540,15 @@ public:
 
     bool IsActivated()
     {
+#ifdef FEATURE_INTERPRETER
+        // m_interpActivated is set only by InterpreterExecutionControl::ApplyPatch
+        if (m_interpActivated)
+        {
+            _ASSERTE(address != NULL);
+            return TRUE;
+        }
+#endif // FEATURE_INTERPRETER
+
         // Patch is activate if we've stored a non-zero opcode
         // Note: this might be a problem as opcode 0 may be a valid opcode (see issue 366221).
         if( PRDIsEmpty(opcode) ) {
@@ -550,9 +566,12 @@ public:
     // Is this patch at a position at which it's safe to take a stack?
     bool IsSafeForStackTrace();
 
+#ifndef DACCESS_COMPILE
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // gets a pointer to the shared buffer
     SharedPatchBypassBuffer* GetOrCreateSharedPatchBypassBuffer();
+
+    void CopyInstructionBlock(BYTE *to, const BYTE* from);
 
     // entry point for general initialization when the controller is being created
     void Initialize()
@@ -567,6 +586,7 @@ public:
             m_pSharedPatchBypassBuffer->Release();
     }
 #endif // !FEATURE_EMULATE_SINGLESTEP
+#endif // !DACCESS_COMPILE
 
     void LogInstance()
     {
@@ -592,6 +612,13 @@ public:
 };
 
 typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
+
+// Determines whether a breakpoint patch should be bound to a given MethodDesc.
+// When pMethodDescFilter is NULL, the default filtering policy is applied which
+// excludes async thunk methods (they should not have user breakpoints bound to them).
+// When pMethodDescFilter is non-NULL, the patch is explicitly targeting that specific
+// MethodDesc and no default filtering is applied.
+bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter);
 
 /* class DebuggerPatchTable:  This is the table that contains
  *  information about the patches (breakpoints) maintained by the
@@ -640,6 +667,8 @@ typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
 class DebuggerPatchTable : private CHashTableAndData<CNewZeroData>
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerPatchTable);
+
+    friend struct ::cdac_data<DebuggerPatchTable>;
 
 public:
     virtual ~DebuggerPatchTable() = default;
@@ -895,6 +924,13 @@ public:
     int GetNumberOfPatches();
 };
 
+template<>
+struct cdac_data<DebuggerPatchTable>
+{
+    static constexpr size_t Entries = offsetof(DebuggerPatchTable, m_pcEntries);
+    static constexpr size_t Count = offsetof(DebuggerPatchTable, m_iEntries);
+};
+
 typedef VPTR(class DebuggerPatchTable) PTR_DebuggerPatchTable;
 
 
@@ -1028,6 +1064,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 class DebuggerController
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerController);
+    friend struct ::cdac_data<DebuggerController>;
 
 #if !defined(DACCESS_COMPILE)
 
@@ -1072,7 +1109,12 @@ class DebuggerController
     static bool DispatchNativeException(EXCEPTION_RECORD *exception,
                                         CONTEXT *context,
                                         DWORD code,
-                                        Thread *thread);
+                                        Thread *thread
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                        ,
+                                        DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                        );
 
     static bool DispatchUnwind(Thread *thread,
                                MethodDesc *fd, DebuggerJitInfo * pDJI, SIZE_T offset,
@@ -1089,6 +1131,8 @@ class DebuggerController
     // pIP is the ip right after the prolog of the method we've entered.
     // fp is the frame pointer for that method.
     static void DispatchMethodEnter(void * pIP, FramePointer fp);
+    static void DispatchMulticastDelegate(DELEGATEREF pbDel, INT32 countDel);
+    static void DispatchExternalMethodFixup(PCODE addr);
 
 
     // Delete any patches that exist for a specific module and optionally a specific AppDomain.
@@ -1113,13 +1157,23 @@ class DebuggerController
 
     static DebuggerPatchSkip *ActivatePatchSkip(Thread *thread,
                                                 const BYTE *eip,
-                                                BOOL fForEnC);
+                                                BOOL fForEnC
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                ,
+                                                DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                                );
 
 
     static DPOSS_ACTION DispatchPatchOrSingleStep(Thread *thread,
                                           CONTEXT *context,
                                           CORDB_ADDRESS_TYPE *ip,
-                                          SCAN_TRIGGER which);
+                                          SCAN_TRIGGER which
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                          ,
+                                          DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                          );
 
 
     static int GetNumberOfPatches()
@@ -1192,13 +1246,13 @@ private:
     static bool UnapplyPatch(DebuggerControllerPatch *patch);
     static bool IsPatched(CORDB_ADDRESS_TYPE *address, BOOL native);
 
-    static void ActivatePatch(DebuggerControllerPatch *patch);
+    static bool ActivatePatch(DebuggerControllerPatch *patch);
     static void DeactivatePatch(DebuggerControllerPatch *patch);
 
     static void ApplyTraceFlag(Thread *thread);
     static void UnapplyTraceFlag(Thread *thread);
 
-    virtual void DebuggerDetachClean();
+    virtual bool DebuggerDetachClean();
 
   public:
     static const BYTE *GetILPrestubDestination(const BYTE *prestub);
@@ -1261,7 +1315,7 @@ public:
                   AppDomain *pAppDomain);
 
     // Add a patch at the start of a not-yet-jitted method.
-    void AddPatchToStartOfLatestMethod(MethodDesc * fd);
+    BOOL AddPatchToStartOfLatestMethod(MethodDesc * fd);
 
 
     // This version is particularly useful b/c it doesn't assume that the
@@ -1298,6 +1352,12 @@ public:
     bool IsMethodEnterEnabled();
     void EnableMethodEnter();
     void DisableMethodEnter();
+
+    void EnableMultiCastDelegate();
+    void DisableMultiCastDelegate();
+
+    void EnableExternalMethodFixup();
+    void DisableExternalMethodFixup();
 
     void DisableAll();
 
@@ -1398,6 +1458,9 @@ public:
                                     const BYTE * ip,
                                     FramePointer fp);
 
+    virtual void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
+
+    virtual void TriggerExternalMethodFixup(PCODE target);
 
     // Send the managed debug event.
     // This is called after TriggerPatch/TriggerSingleStep actually trigger.
@@ -1437,12 +1500,36 @@ private:
     int                 m_eventQueuedCount;
     bool                m_deleted;
     bool                m_fEnableMethodEnter;
+    bool                m_multicastDelegateHelper;
+    bool                m_externalMethodFixup;
 
 #endif // !DACCESS_COMPILE
 };
 
-
 #if !defined(DACCESS_COMPILE)
+
+template<>
+struct cdac_data<DebuggerController>
+{
+    static constexpr DebuggerPatchTable **PatchTable = &DebuggerController::g_patches;
+};
+
+// this structure stores useful information about single-stepping over a call instruction
+// it is used to communicate the patch skip opcode and current state between the controller on left side and HandleSetThreadContextNeeded on the right side
+class DebuggerSteppingInfo
+{
+    bool fIsInPlaceSingleStep = false;
+    PRD_TYPE opcode = 0;
+
+public:
+    bool IsInPlaceSingleStep() { return fIsInPlaceSingleStep; }
+    PRD_TYPE GetOpcode() { return opcode; }
+    void EnableInPlaceSingleStepOverCall(PRD_TYPE opcode)
+    {
+        this->fIsInPlaceSingleStep = true;
+        this->opcode = opcode;
+    }
+};
 
 /* ------------------------------------------------------------------------- *
  * DebuggerPatchSkip routines
@@ -1470,15 +1557,16 @@ class DebuggerPatchSkip : public DebuggerController
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
         { return DEBUGGER_CONTROLLER_PATCH_SKIP; }
 
-    void CopyInstructionBlock(BYTE *to, const BYTE* from);
-
     void DecodeInstruction(CORDB_ADDRESS_TYPE *code);
 
-    void DebuggerDetachClean();
+    bool DebuggerDetachClean();
 
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump
     InstructionAttribute     m_instrAttrib;      // info about the instruction being skipped over
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    bool                     m_fInPlaceSS;       // is this an in-place single-step instruction?
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // this is shared among all the skippers and the controller. see the comments
     // right before the definition of SharedPatchBypassBuffer for lifetime info.
@@ -1491,7 +1579,23 @@ public:
         BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
         return (CORDB_ADDRESS_TYPE *)patchBypass;
     }
+
 #endif // !FEATURE_EMULATE_SINGLESTEP
+
+    BOOL IsInPlaceSingleStep()
+    {
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#ifndef FEATURE_EMULATE_SINGLESTEP
+        // only in-place single steps over call intructions are supported at this time
+        _ASSERTE(!m_fInPlaceSS || m_instrAttrib.m_fIsCall);
+        return m_fInPlaceSS;
+#else
+#error only non-emulated single-steps with OUT_OF_PROCESS_SETTHREADCONTEXT enabled are supported
+#endif
+#else
+        return false;
+#endif
+    }
 };
 
 /* ------------------------------------------------------------------------- *
@@ -1575,6 +1679,9 @@ protected:
                       TraceDestination *pTD);
 
     bool TrapStep(ControllerStackInfo *info, bool in);
+#ifdef FEATURE_INTERPRETER
+    bool TrapInterpreterCodeStep(ControllerStackInfo *info, bool in, DebuggerJitInfo *ji);
+#endif
 
     // @todo - must remove that fForceTraditional flag. Need a way for a JMC stepper
     // to do a Trad step out.
@@ -1638,7 +1745,8 @@ protected:
 
 
     virtual void TriggerMethodEnter(Thread * thread, DebuggerJitInfo * dji, const BYTE * ip, FramePointer fp);
-
+    void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
+    void TriggerExternalMethodFixup(PCODE target);
 
     void ResetRange();
 
@@ -1675,7 +1783,6 @@ protected:
     COR_DEBUG_STEP_RANGE *  m_range; // Ranges for active steppers are always in native offsets.
 
     SIZE_T                  m_rangeCount;
-    SIZE_T                  m_realRangeCount; // @todo - delete b/c only used for CodePitching & Old-Enc
 
     // The original step intention.
     // As the stepper moves through code, it may change its other members.
@@ -1697,11 +1804,9 @@ protected:
     // This is the only frame that the ranges are valid in.
     FramePointer            m_fp;
 
-#if defined(FEATURE_EH_FUNCLETS)
     // This frame pointer is used for funclet stepping.
     // See IsRangeAppropriate() for more information.
     FramePointer            m_fpParentMethod;
-#endif // FEATURE_EH_FUNCLETS
 
     //m_fpException is 0 if we haven't stepped into an exception,
     //  and is ignored.  If we get a TriggerUnwind while mid-step, we note
@@ -1771,6 +1876,66 @@ protected:
 private:
 
 };
+
+
+#ifdef FEATURE_INTERPRETER
+/* ------------------------------------------------------------------------- *
+ * InterpreterStepHelper
+ * ------------------------------------------------------------------------- */
+// InterpreterStepHelper: Implements stepping through interpreter code using
+// control flow prediction and breakpoint patches.
+//
+// The interpreter runtime doesn't support single-stepping, nor do we emulate
+// it in a general-purpose way (cf. FEATURE_EMULATE_SINGLESTEP for ARM).
+// Instead we've implemented alternate solutions for debugger scenarios that
+// traditionally rely upon it:
+//
+//   - For breakpoint skipping the interpreter allows executing an alternate
+//     opcode on a per-thread basis (see BypassPatch in ActivatePatchSkip).
+//   - For stepping we primarily use control flow prediction + breakpoints:
+//     we analyze the current bytecode instruction and place breakpoint patches
+//     at all possible next instruction locations.
+//   - For step-in on calls (both direct and indirect) we rely on JMC
+//     method-enter backstops. The interpreter's INTOP_DEBUG_METHOD_ENTER fires
+//     for all interpreted methods (not just JMC), so this reliably catches
+//     entry into any interpreted target. A step-over patch is also placed as
+//     fallback in case the target doesn't trigger MethodEnter.
+//
+class InterpreterStepHelper
+{
+public:
+    // Result of SetupStep operation
+    enum StepSetupResult
+    {
+        SSR_Success,            // Breakpoints placed, step can proceed
+        SSR_NeedStepIn,         // Caller should handle step-in (call target available)
+        SSR_NeedStepOut,        // Caller should invoke TrapStepOut (return/throw)
+        SSR_Failed              // Could not set up step
+    };
+
+    InterpreterStepHelper(DebuggerStepper* pStepper,
+                           ControllerStackInfo* pInfo,
+                           DebuggerJitInfo* pJitInfo);
+
+    // Analyze instruction at current IP and set up breakpoints for stepping.
+    // Returns result indicating how caller should proceed.
+    StepSetupResult SetupStep(bool stepIn);
+
+    // Get the walk type of the current instruction (for logging/debugging)
+    WALK_TYPE GetWalkType() const { return m_walkType; }
+
+private:
+    // Add a breakpoint patch at the given interpreter bytecode address
+    void AddInterpreterPatch(const int32_t* pIP);
+
+    DebuggerStepper*        m_pStepper;
+    ControllerStackInfo*    m_pInfo;
+    DebuggerJitInfo*        m_pJitInfo;
+    PCODE                   m_currentPC;
+    InterpMethod*           m_pInterpMethod;
+    WALK_TYPE               m_walkType;
+};
+#endif // FEATURE_INTERPRETER
 
 
 /* ------------------------------------------------------------------------- *

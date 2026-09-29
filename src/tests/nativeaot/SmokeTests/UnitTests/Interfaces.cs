@@ -4,6 +4,7 @@
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
@@ -16,6 +17,9 @@ public class Interfaces
     public static int Run()
     {
         if (TestInterfaceCache() == Fail)
+            return Fail;
+
+        if (TestSharedDescriptorCells() == Fail)
             return Fail;
 
         if (TestAVInInterfaceCache() == Fail)
@@ -38,10 +42,14 @@ public class Interfaces
 
         TestPublicAndNonpublicDifference.Run();
         TestDefaultInterfaceMethods.Run();
+        TestDefaultInterfaceMethodsDevirtNoInline.Run();
+        TestDefaultInterfaceMethodsNoDevirt.Run();
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
         TestSharedInterfaceMethods.Run();
         TestGenericAnalysis.Run();
+        TestRuntime108229Regression.Run();
+        TestRuntime109893Regression.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -57,6 +65,9 @@ public class Interfaces
         TestDefaultDynamicStaticNonGeneric.Run();
         TestDefaultDynamicStaticGeneric.Run();
         TestDynamicStaticGenericVirtualMethods.Run();
+        TestRuntime109496Regression.Run();
+        TestRuntime113664Regression.Run();
+        TestRuntime125577Regression.Run();
 
         return Pass;
     }
@@ -154,6 +165,27 @@ public class Interfaces
 
         return 100;
     }
+
+    private static int TestSharedDescriptorCells()
+    {
+        MyInterface instance = new Foo7();
+        return CallSharedDescriptor0(instance) +
+            CallSharedDescriptor1(instance) +
+            CallSharedDescriptor2(instance) +
+            CallSharedDescriptor3(instance) == 28 ? Pass : Fail;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor0(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor1(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor2(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor3(MyInterface instance) => instance.GetAnInt();
 
     private static int TestAVInInterfaceCache()
     {
@@ -580,6 +612,147 @@ public class Interfaces
         }
     }
 
+    class TestDefaultInterfaceMethodsDevirtNoInline
+    {
+        interface IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            int GetNumber() => 42;
+        }
+
+        interface IBar : IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            int IFoo.GetNumber() => 43;
+        }
+
+        class Foo : IFoo { }
+        class Bar : IBar { }
+
+        class Baz : IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public int GetNumber() => 100;
+        }
+
+        interface IFoo<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            Type GetInterfaceType() => typeof(IFoo<T>);
+        }
+
+        class Foo<T> : IFoo<T> { }
+
+        class Base : IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            int IFoo.GetNumber() => 100;
+        }
+
+        class Derived : Base, IBar { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing default interface methods that can be devirtualized but not inlined...");
+
+            typeof(IFoo).ToString();
+
+            if (((IFoo)new Foo()).GetNumber() != 42)
+                throw new Exception();
+
+            if (((IFoo)new Bar()).GetNumber() != 43)
+                throw new Exception();
+
+            if (((IFoo)new Baz()).GetNumber() != 100)
+                throw new Exception();
+
+            if (((IFoo)new Derived()).GetNumber() != 100)
+                throw new Exception();
+
+            if (((IFoo<object>)new Foo<object>()).GetInterfaceType() != typeof(IFoo<object>))
+                throw new Exception();
+
+            if (((IFoo<int>)new Foo<int>()).GetInterfaceType() != typeof(IFoo<int>))
+                throw new Exception();
+        }
+    }
+
+    class TestDefaultInterfaceMethodsNoDevirt
+    {
+        interface IFoo
+        {
+            int GetNumber() => 42;
+        }
+
+        interface IBar : IFoo
+        {
+            int IFoo.GetNumber() => 43;
+        }
+
+        class Foo : IFoo { }
+        class Bar : IBar { }
+
+        class Baz : IFoo
+        {
+            public int GetNumber() => 100;
+        }
+
+        interface IFoo<T>
+        {
+            Type GetInterfaceType() => typeof(IFoo<T>);
+        }
+
+        class Foo<T> : IFoo<T> { }
+
+        class Base : IFoo
+        {
+            int IFoo.GetNumber() => 100;
+        }
+
+        class Derived : Base, IBar { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing default interface methods that cannot be devirtualized...");
+
+            if (GetFoo().GetNumber() != 42)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo GetFoo() => new Foo();
+
+            if (GetBar().GetNumber() != 43)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo GetBar() => new Bar();
+
+            if (GetBaz().GetNumber() != 100)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo GetBaz() => new Baz();
+
+            if (GetDerived().GetNumber() != 100)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo GetDerived() => new Derived();
+
+            if (GetFooObject().GetInterfaceType() != typeof(IFoo<object>))
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo<object> GetFooObject() => new Foo<object>();
+
+            if (GetFooInt().GetInterfaceType() != typeof(IFoo<int>))
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo<int> GetFooInt() => new Foo<int>();
+        }
+    }
+
     class TestDefaultInterfaceVariance
     {
         class Foo : IVariant<string>, IVariant<object>
@@ -702,6 +875,58 @@ public class Interfaces
                 throw new Exception();
             if (s_c3b.Method(null) != "Method(object)")
                 throw new Exception();
+        }
+    }
+
+    class TestRuntime108229Regression
+    {
+        class Shapeshifter : IDynamicInterfaceCastable
+        {
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Is(object o) => o is IEnumerable<object>;
+
+        public static void Run()
+        {
+            object o = new Shapeshifter();
+
+            // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
+            if (!Is(o) || !Is(o) || !Is(o))
+                throw new Exception();
+        }
+    }
+
+    class TestRuntime109893Regression
+    {
+        class Type<T> : IType<T>;
+
+        class MyVisitor : IVisitor
+        {
+            public object? Visit<T>(IType<T> _) => typeof(T);
+        }
+
+        interface IType
+        {
+            object? Accept(IVisitor visitor);
+        }
+
+        interface IType<T> : IType
+        {
+            object? IType.Accept(IVisitor visitor) => visitor.Visit(this);
+        }
+
+        interface IVisitor
+        {
+            object? Visit<T>(IType<T> type);
+        }
+
+        public static void Run()
+        {
+            IType type = new Type<object>();
+            type.Accept(new MyVisitor());
         }
     }
 
@@ -886,6 +1111,16 @@ public class Interfaces
         [DynamicInterfaceCastableImplementation]
         interface IInterfaceIndirectCastableImpl : IInterfaceImpl { }
 
+        interface IInterfaceImpl<T> : IInterface
+        {
+            string IInterface.GetCookie() => typeof(T).Name;
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        interface IInterfaceIndirectCastableImpl<T> : IInterfaceImpl<T> { }
+
+        class Atom { }
+
         public static void Run()
         {
             Console.WriteLine("Testing IDynamicInterfaceCastable...");
@@ -920,6 +1155,18 @@ public class Interfaces
             {
                 IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<int>>();
                 if (o.GetCookie() != "Int32")
+                    throw new Exception();
+            }
+
+            {
+                IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<Atom>>();
+                if (o.GetCookie() != "Atom")
+                    throw new Exception();
+            }
+
+            {
+                IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceIndirectCastableImpl<Atom>>();
+                if (o.GetCookie() != "Atom")
                     throw new Exception();
             }
         }
@@ -1703,4 +1950,151 @@ public class Interfaces
             Console.WriteLine(s_entry.Enter1<SimpleCallStruct<object>>("One"));
         }
     }
+
+    class TestRuntime109496Regression
+    {
+        class CastableThing : IDynamicInterfaceCastable
+        {
+            RuntimeTypeHandle IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
+                => Type.GetTypeFromHandle(interfaceType).GetCustomAttribute<TypeAttribute>().TheType.TypeHandle;
+            bool IDynamicInterfaceCastable.IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+                => Type.GetTypeFromHandle(interfaceType).IsDefined(typeof(TypeAttribute));
+        }
+
+        [Type(typeof(IMyInterfaceImpl))]
+        interface IMyInterface
+        {
+            int Method();
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        interface IMyInterfaceImpl : IMyInterface
+        {
+            int IMyInterface.Method() => 42;
+        }
+
+        [Type(typeof(IMyGenericInterfaceImpl<int>))]
+        interface IMyGenericInterface
+        {
+            int Method();
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        interface IMyGenericInterfaceImpl<T> : IMyGenericInterface
+        {
+            int IMyGenericInterface.Method() => typeof(T).Name.Length;
+        }
+
+        class TypeAttribute : Attribute
+        {
+            public Type TheType { get; }
+
+            public TypeAttribute(Type t) => TheType = t;
+        }
+
+        public static void Run()
+        {
+            object o = new CastableThing();
+
+            if (((IMyInterface)o).Method() != 42)
+                throw new Exception();
+
+            if (((IMyGenericInterface)o).Method() != 5)
+                throw new Exception();
+        }
+    }
+
+    class TestRuntime113664Regression
+    {
+        class Unit;
+        class Atom1;
+        class Atom2;
+
+        class Gen<T>;
+
+        interface IFoo<T>
+        {
+            static abstract string Frob<U>();
+        }
+
+        class ImplementedDirectly<T> : IFoo<T>
+        {
+            static string IFoo<T>.Frob<U>() => $"ImplementedDirectly: {typeof(T).Name}-{typeof(U).Name}";
+        }
+
+        class Base<T>
+        {
+            public static string Frob<U>() => $"Base: {typeof(T).Name}<{typeof(T).GetGenericArguments()[0].Name}>-{typeof(U).Name}";
+        }
+
+        class ImplementedInBase<T> : Base<Gen<T>>, IFoo<T>
+        {
+        }
+
+        public static void Run()
+        {
+            if (Frob<ImplementedDirectly<Atom1>, Atom1, Unit>() != "ImplementedDirectly: Atom1-Unit")
+                throw new Exception();
+
+            if (Frob<ImplementedInBase<Atom1>, Atom1, Unit>() != "Base: Gen`1<Atom1>-Unit")
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom2() => typeof(Atom2);
+
+            {
+                MethodInfo mi = typeof(TestRuntime113664Regression).GetMethod(nameof(FrobDirectWrapper)).MakeGenericMethod(GetAtom2(), typeof(Unit));
+                if ((string)mi.Invoke(null, []) != "ImplementedDirectly: Atom2-Unit")
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo mi = typeof(TestRuntime113664Regression).GetMethod(nameof(FrobBaseWrapper)).MakeGenericMethod(GetAtom2(), typeof(Unit));
+                if ((string)mi.Invoke(null, []) != "Base: Gen`1<Atom2>-Unit")
+                    throw new Exception();
+            }
+        }
+
+        public static string FrobDirectWrapper<T, U>() where T : class where U : class
+        {
+            return Frob<ImplementedDirectly<T>, T, U>();
+        }
+
+        public static string FrobBaseWrapper<T, U>() where T : class where U : class
+        {
+            return Frob<ImplementedInBase<T>, T, U>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string Frob<T, U, V>() where T : class, IFoo<U> where U : class where V : class
+        {
+            return T.Frob<V>();
+        }
+    }
+
+    class TestRuntime125577Regression
+    {
+        class Shapeshifter : IDynamicInterfaceCastable
+        {
+            bool _result;
+            public Shapeshifter(bool result) => _result = result;
+
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => _result;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Is(object o, bool expected) => o is IEnumerable<object> == expected;
+
+        public static void Run()
+        {
+            // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
+            if (!Is(new Shapeshifter(true), true)
+                || !Is(new Shapeshifter(false), false)
+                || !Is(new Shapeshifter(true), true)
+                || !Is(new Shapeshifter(false), false))
+                throw new Exception();
+        }
+    }
+
 }

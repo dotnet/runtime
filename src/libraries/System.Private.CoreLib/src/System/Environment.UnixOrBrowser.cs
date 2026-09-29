@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -21,7 +21,7 @@ namespace System
             set => Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirError: true);
         }
 
-        private static string ExpandEnvironmentVariablesCore(string name)
+        private static unsafe string ExpandEnvironmentVariablesCore(string name)
         {
             var result = new ValueStringBuilder(stackalloc char[128]);
 
@@ -93,5 +93,9 @@ namespace System
                 return new ProcessCpuUsage { UserTime = new TimeSpan((long)userTime100Nanoseconds), PrivilegedTime = new TimeSpan((long)kernelTime100Nanoseconds) };
             }
         }
+
+        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
+        /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
+        public static long TickCount64 => Interop.Sys.GetLowResolutionTimestamp();
     }
 }

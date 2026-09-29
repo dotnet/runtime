@@ -47,10 +47,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteBase64String(string propertyName, ReadOnlySpan<byte> bytes)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteBase64String(propertyName.AsSpan(), bytes);
         }
 
@@ -134,7 +131,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteBase64EscapeProperty(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> bytes, int firstEscapeIndexProp)
+        private unsafe void WriteBase64EscapeProperty(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> bytes, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
@@ -151,13 +148,13 @@ namespace System.Text.Json
 
             WriteBase64ByOptions(escapedPropertyName.Slice(0, written), bytes);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
         }
 
-        private void WriteBase64EscapeProperty(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> bytes, int firstEscapeIndexProp)
+        private unsafe void WriteBase64EscapeProperty(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> bytes, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
@@ -174,7 +171,7 @@ namespace System.Text.Json
 
             WriteBase64ByOptions(escapedPropertyName.Slice(0, written), bytes);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }

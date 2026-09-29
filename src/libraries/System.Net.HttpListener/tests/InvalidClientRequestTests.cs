@@ -74,6 +74,11 @@ namespace System.Net.Tests
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Length: -9223372036854775809" }, "\r\n", "Bad Request" };
 
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Length: 1", "Content-Length: 2" }, "\r\n", "Bad Request" };
+            if (Helpers.IsManagedImplementation)
+            {
+                yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Content-Length: 9223372036854775808" }, "\r\n", "Bad Request" }; // long.MaxValue + 1
+                yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Content-Length: 18446744073709551615" }, "\r\n", "Bad Request" }; // ulong.MaxValue
+            }
 
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Transfer-Encoding: garbage" }, "\r\n", "Not Implemented" };
             yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Transfer-Encoding: garbage" }, "\r\n", "Not Implemented" };
@@ -84,6 +89,13 @@ namespace System.Net.Tests
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { ":" }, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "\0:value" }, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "value:\0" }, null, "Bad Request" };
+            if (Helpers.IsManagedImplementation)
+            {
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { " Header: value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "\tHeader: value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header : value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header\t: value" }, null, "Bad Request" };
+            }
 
             yield return new object[] { "GET {path} HTTP/1.1", "", null, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", "Host: \r\n", null, null, "Bad Request" };
@@ -129,16 +141,17 @@ namespace System.Net.Tests
                     string fullRequest = $"{requestLineWithPathAndQuery}\r\n{host}{string.Join("\r\n", headers ?? new string[0])}{content}\r\n";
 
                     Task<HttpListenerContext> serverTask = Factory.GetListener().GetContextAsync();
-                    client.Send(Encoding.Default.GetBytes(fullRequest));
+                    await client.SendAsync(Encoding.Default.GetBytes(fullRequest));
 
                     byte[] errorMessageBytes = new byte[512];
-                    Task<int> clientTask = Task.Run(() => client.Receive(errorMessageBytes));
+                    Task<int> clientTask = client.ReceiveAsync(errorMessageBytes);
 
                     Task completedTask = await Task.WhenAny(clientTask, serverTask);
 
                     // Ignore the specific error message - just make sure that this failed.
                     Assert.Same(clientTask, completedTask);
-                    string errorMessage = Encoding.Default.GetString(errorMessageBytes, 0, clientTask.Result);
+                    int bytesReceived = await clientTask;
+                    string errorMessage = Encoding.Default.GetString(errorMessageBytes, 0, bytesReceived);
                     Assert.Contains(expectedMessage, errorMessage);
 
                     Assert.False(serverTask.IsCompleted, $"Server task was completed: {serverTask.Status}");

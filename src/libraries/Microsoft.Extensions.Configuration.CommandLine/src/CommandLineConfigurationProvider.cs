@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration.CommandLine
 {
     /// <summary>
-    /// A command line based <see cref="ConfigurationProvider"/>.
+    /// Provides configuration key-value pairs that are obtained from the command line.
     /// </summary>
     public class CommandLineConfigurationProvider : ConfigurationProvider
     {
@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// <param name="switchMappings">The switch mappings.</param>
         public CommandLineConfigurationProvider(IEnumerable<string> args, IDictionary<string, string>? switchMappings = null)
         {
-            ThrowHelper.ThrowIfNull(args);
+            ArgumentNullException.ThrowIfNull(args);
 
             Args = args;
 
@@ -31,12 +31,12 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         }
 
         /// <summary>
-        /// The command line arguments.
+        /// Gets the command-line arguments.
         /// </summary>
         protected IEnumerable<string> Args { get; }
 
         /// <summary>
-        /// Loads the configuration data from the command line args.
+        /// Loads the configuration data from the command-line arguments.
         /// </summary>
         public override void Load()
         {
@@ -54,11 +54,11 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                     {
                         keyStartIndex = 2;
                     }
-                    else if (currentArg.StartsWith("-"))
+                    else if (currentArg.StartsWith('-'))
                     {
                         keyStartIndex = 1;
                     }
-                    else if (currentArg.StartsWith("/"))
+                    else if (currentArg.StartsWith('/'))
                     {
                         // "/SomeSwitch" is equivalent to "--SomeSwitch" when interpreting switch mappings
                         // So we do a conversion to simplify later processing
@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             foreach (KeyValuePair<string, string> mapping in switchMappings)
             {
                 // Only keys start with "--" or "-" are acceptable
-                if (!mapping.Key.StartsWith("-") && !mapping.Key.StartsWith("--"))
+                if (!mapping.Key.StartsWith('-'))
                 {
                     throw new ArgumentException(
                         SR.Format(SR.Error_InvalidSwitchMapping, mapping.Key),

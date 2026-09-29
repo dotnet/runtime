@@ -218,8 +218,8 @@ namespace System.IO
         {
             FileAccess access = 0;
 
-            if ((rights & FileSystemRights.FullControl) != 0 ||
-                (rights & FileSystemRights.Modify) != 0)
+            if ((rights & FileSystemRights.FullControl) == FileSystemRights.FullControl ||
+                (rights & FileSystemRights.Modify) == FileSystemRights.Modify)
             {
                 return FileAccess.ReadWrite;
             }
@@ -269,11 +269,7 @@ namespace System.IO
 
             SafeFileHandle handle;
 
-            var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-            {
-                nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                bInheritHandle = ((share & FileShare.Inheritable) != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-            };
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((share & FileShare.Inheritable) != 0);
 
             if (security != null)
             {
@@ -290,7 +286,7 @@ namespace System.IO
 
             return handle;
 
-            static unsafe SafeFileHandle CreateFileHandleInternal(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, int flagsAndAttributes, Interop.Kernel32.SECURITY_ATTRIBUTES* secAttrs)
+            static SafeFileHandle CreateFileHandleInternal(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, int flagsAndAttributes, Interop.Kernel32.SECURITY_ATTRIBUTES* secAttrs)
             {
                 SafeFileHandle handle;
                 using (DisableMediaInsertionPrompt.Create())

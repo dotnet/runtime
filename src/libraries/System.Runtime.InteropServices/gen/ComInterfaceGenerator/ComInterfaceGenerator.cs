@@ -2,229 +2,166 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Microsoft.Interop.SyntaxFactoryExtensions;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
     [Generator]
     public sealed partial class ComInterfaceGenerator : IIncrementalGenerator
     {
-        public static class StepNames
-        {
-            public const string CalculateStubInformation = nameof(CalculateStubInformation);
-            public const string GenerateManagedToNativeStub = nameof(GenerateManagedToNativeStub);
-            public const string GenerateNativeToManagedStub = nameof(GenerateNativeToManagedStub);
-            public const string GenerateManagedToNativeInterfaceImplementation = nameof(GenerateManagedToNativeInterfaceImplementation);
-            public const string GenerateNativeToManagedVTableMethods = nameof(GenerateNativeToManagedVTableMethods);
-            public const string GenerateNativeToManagedVTable = nameof(GenerateNativeToManagedVTable);
-            public const string GenerateInterfaceInformation = nameof(GenerateInterfaceInformation);
-            public const string GenerateIUnknownDerivedAttribute = nameof(GenerateIUnknownDerivedAttribute);
-            public const string GenerateShadowingMethods = nameof(GenerateShadowingMethods);
-        }
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            var stubEnvironment = context.CreateStubEnvironmentProvider();
             // Get all types with the [GeneratedComInterface] attribute.
             var attributedInterfaces = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.GeneratedComInterfaceAttribute,
                     static (node, ct) => node is InterfaceDeclarationSyntax,
                     static (context, ct) => context.TargetSymbol is INamedTypeSymbol interfaceSymbol
-                        ? new { Syntax = (InterfaceDeclarationSyntax)context.TargetNode, Symbol = interfaceSymbol }
-                        : null)
-                .Where(
-                    static modelData => modelData is not null);
-            var stubEnvironment = context.CreateStubEnvironmentProvider();
-            var interfaceSymbolOrDiagnostics = attributedInterfaces.Combine(stubEnvironment).Select(static (data, ct) =>
-            {
-                return ComInterfaceInfo.From(data.Left.Symbol, data.Left.Syntax, data.Right, ct);
-            });
-            var interfaceSymbolsToGenerateWithoutDiagnostics = context.FilterAndReportDiagnostics(interfaceSymbolOrDiagnostics);
-
-            var externalInterfaceSymbols = attributedInterfaces.SelectMany(static (data, ct) =>
-            {
-                return ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(data.Symbol);
-            });
-
-            var interfaceSymbolsWithoutDiagnostics = interfaceSymbolsToGenerateWithoutDiagnostics.Concat(externalInterfaceSymbols);
-
-            var interfaceContextsOrDiagnostics = interfaceSymbolsWithoutDiagnostics
-                .Select((data, ct) => data.InterfaceInfo!)
+                        ? ((InterfaceDeclarationSyntax)context.TargetNode, interfaceSymbol)
+                        : default)
                 .Collect()
-                .SelectMany(ComInterfaceContext.GetContexts);
-
-            // Filter down interface symbols to remove those with diagnostics from GetContexts
-            (var interfaceContexts, interfaceSymbolsWithoutDiagnostics) = context.FilterAndReportDiagnostics(interfaceContextsOrDiagnostics, interfaceSymbolsWithoutDiagnostics);
-
-            var comMethodsAndSymbolsOrDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
-            var methodInfoAndSymbolGroupedByInterface = context
-                .FilterAndReportDiagnostics<(ComMethodInfo MethodInfo, IMethodSymbol Symbol)>(comMethodsAndSymbolsOrDiagnostics);
-
-            var methodInfosGroupedByInterface = methodInfoAndSymbolGroupedByInterface
-                .Select(static (methods, ct) =>
-                    methods.Select(pair => pair.MethodInfo).ToSequenceEqualImmutableArray());
-            // Create list of methods (inherited and declared) and their owning interface
-            var comMethodContextBuilders = interfaceContexts
-                .Zip(methodInfosGroupedByInterface)
-                .Collect()
-                .SelectMany(static (data, ct) =>
-                {
-                    return data.GroupBy(data => data.Left.GetTopLevelBase());
-                })
-                .SelectMany(static (data, ct) =>
-                {
-                    return ComMethodContext.CalculateAllMethods(data, ct);
-                })
-                // Now that we've determined method offsets, we can remove all externally defined methods.
-                // We'll also filter out methods originally declared on externally defined base interfaces
-                // as we may not be able to emit them into our assembly.
-                .Where(context => !context.Method.OriginalDeclaringInterface.IsExternallyDefined);
-
-            // Now that we've determined method offsets, we can remove all externally defined interfaces.
-            var interfaceContextsToGenerate = interfaceContexts.Where(context => !context.IsExternallyDefined);
-
-            // A dictionary isn't incremental, but it will have symbols, so it will never be incremental anyway.
-            var methodInfoToSymbolMap = methodInfoAndSymbolGroupedByInterface
-                .SelectMany((data, ct) => data)
-                .Collect()
-                .Select((data, ct) => data.ToDictionary(static x => x.MethodInfo, static x => x.Symbol));
-            var comMethodContexts = comMethodContextBuilders
-                .Combine(methodInfoToSymbolMap)
                 .Combine(stubEnvironment)
-                .Select((param, ct) =>
-                {
-                    var ((data, symbolMap), env) = param;
-                    return new ComMethodContext(
-                        data.Method,
-                        data.OwningInterface,
-                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.OwningInterface.Info.Type, ct));
-                }).WithTrackingName(StepNames.CalculateStubInformation);
+                .Select(
+                    // Do all the work to get to the IncrementalComInterfaceContext in one step
+                    // Intermediate results with symbols won't be incremental, and considering the overhead of setting up the incremental
+                    // steps for projects that don't use the generator, we make this tradeoff.
+                    static (input, ct) =>
+                    {
+                        if (input.Left.Length == 0)
+                        {
+                            return
+                            (
+                                InterfaceContexts: ImmutableArray<ComInterfaceContext>.Empty.ToSequenceEqual(),
+                                MethodContexts: ImmutableArray<ComMethodContext>.Empty.ToSequenceEqual()
+                            );
+                        }
+                        StubEnvironment stubEnvironment = input.Right;
+                        List<(ComInterfaceInfo, INamedTypeSymbol)> interfaceInfos = new();
+                        HashSet<(ComInterfaceInfo, INamedTypeSymbol)> externalIfaces = new(ComInterfaceInfo.EqualityComparerForExternalIfaces.Instance);
+                        foreach (var (syntax, symbol) in input.Left)
+                        {
+                            var cii = ComInterfaceInfo.From(symbol, syntax, stubEnvironment, CancellationToken.None);
+                            if (cii.HasValue)
+                                interfaceInfos.Add(cii.Value);
+                            var externalBase = ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(symbol);
+                            // Avoid adding duplicates if multiple interfaces derive from the same external interface.
+                            if (!externalBase.IsDefaultOrEmpty)
+                            {
+                                foreach (var b in externalBase)
+                                {
+                                    externalIfaces.Add(b);
+                                }
+                            }
+                        }
+                        interfaceInfos.AddRange(externalIfaces);
+
+                        var comInterfaceContexts = ComInterfaceContext.GetContexts(interfaceInfos.Select(i => i.Item1).ToImmutableArray(), ct);
+
+                        // Get all valid methods from all interfaces
+                        Dictionary<ComMethodInfo, IMethodSymbol> methodSymbols = new();
+                        List<List<ComMethodInfo>> methods = new();
+                        foreach (var cii in interfaceInfos)
+                        {
+                            var cmi = ComMethodInfo.GetMethodsFromInterface(cii, ct);
+                            var inner = new List<ComMethodInfo>();
+                            foreach (var m in cmi)
+                            {
+                                if (m.HasValue)
+                                {
+                                    inner.Add(m.Value.ComMethod);
+                                    methodSymbols.Add(m.Value.ComMethod, m.Value.Symbol);
+                                }
+                            }
+                            methods.Add(inner);
+                        }
+
+                        List<(ComInterfaceContext, SequenceEqualImmutableArray<ComMethodInfo>)> ifaceCtxs = new();
+                        for (int i = 0; i < interfaceInfos.Count; i++)
+                        {
+                            var cic = comInterfaceContexts[i];
+                            if (cic.HasValue)
+                            {
+                                ifaceCtxs.Add((cic.Value, methods[i].ToSequenceEqualImmutableArray()));
+                            }
+                        }
+
+                        var result = ComMethodContext.CalculateAllMethods(ifaceCtxs, ct);
+
+                        List<ComMethodContext> methodContexts = new();
+                        foreach (var data in result)
+                        {
+                            methodContexts.Add(new ComMethodContext(
+                                data.Method,
+                                data.OwningInterface,
+                                CalculateStubInformation(
+                                    data.Method.MethodInfo.Syntax,
+                                    methodSymbols[data.Method.MethodInfo],
+                                    data.Method.Index,
+                                    stubEnvironment,
+                                    data.OwningInterface.Info,
+                                    ct)));
+                        }
+
+                        return
+                        (
+                            InterfaceContexts: ifaceCtxs.Select(x => x.Item1).Where(x => !x.IsExternallyDefined).ToSequenceEqualImmutableArray(),
+                            MethodContexts: methodContexts.ToSequenceEqualImmutableArray()
+                        );
+                    });
+
+            // Create list of methods (inherited and declared) and their owning interface
+            var interfaceContextsToGenerate = attributedInterfaces.SelectMany(static (a, ct) => a.InterfaceContexts);
+            var comMethodContexts = attributedInterfaces.Select(static (a, ct) => a.MethodContexts);
 
             var interfaceAndMethodsContexts = comMethodContexts
-                .Collect()
                 .Combine(interfaceContextsToGenerate.Collect())
-                .SelectMany((data, ct) => GroupComContextsForInterfaceGeneration(data.Left, data.Right, ct));
+                .SelectMany(static (data, ct) =>
+                    GroupComContextsForInterfaceGeneration(data.Left.Array, data.Right, ct));
 
-            // Generate the code for the managed-to-unmanaged stubs.
-            var managedToNativeInterfaceImplementations = interfaceAndMethodsContexts
-                .Select(GenerateImplementationInterface)
-                .WithTrackingName(StepNames.GenerateManagedToNativeInterfaceImplementation)
-                .WithComparer(SyntaxEquivalentComparer.Instance)
-                .SelectNormalized();
-
-            // Generate the code for the unmanaged-to-managed stubs.
-            var nativeToManagedVtableMethods = interfaceAndMethodsContexts
-                .Select(GenerateImplementationVTableMethods)
-                .WithTrackingName(StepNames.GenerateNativeToManagedVTableMethods)
-                .WithComparer(SyntaxEquivalentComparer.Instance)
-                .SelectNormalized();
-
-            // Report diagnostics for managed-to-unmanaged and unmanaged-to-managed stubs, deduplicating diagnostics that are reported for both.
-            context.RegisterDiagnostics(
-                interfaceAndMethodsContexts
-                    .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.ManagedToUnmanagedStub.Diagnostics).Union(data.DeclaredMethods.SelectMany(m => m.UnmanagedToManagedStub.Diagnostics))));
-
-            // Generate the native interface metadata for each [GeneratedComInterface]-attributed interface.
-            var nativeInterfaceInformation = interfaceContextsToGenerate
-                .Select(static (data, ct) => data.Info)
-                .Select(GenerateInterfaceInformation)
-                .WithTrackingName(StepNames.GenerateInterfaceInformation)
-                .WithComparer(SyntaxEquivalentComparer.Instance)
-                .SelectNormalized();
-
-            var shadowingMethodDeclarations = interfaceAndMethodsContexts
-                .Select((data, ct) =>
-                {
-                    var context = data.Interface.Info;
-                    var methods = data.ShadowingMethods.Select(m => m.Shadow);
-                    var typeDecl = TypeDeclaration(context.ContainingSyntax.TypeKind, context.ContainingSyntax.Identifier)
-                        .WithModifiers(context.ContainingSyntax.Modifiers)
-                        .WithTypeParameterList(context.ContainingSyntax.TypeParameters)
-                        .WithMembers(List<MemberDeclarationSyntax>(methods));
-                    return data.Interface.Info.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(typeDecl);
-                })
-                .WithTrackingName(StepNames.GenerateShadowingMethods)
-                .WithComparer(SyntaxEquivalentComparer.Instance)
-                .SelectNormalized();
-
-            // Generate a method named CreateManagedVirtualFunctionTable on the native interface implementation
-            // that allocates and fills in the memory for the vtable.
-            var nativeToManagedVtables = interfaceAndMethodsContexts
-                .Select(GenerateImplementationVTable)
-                .WithTrackingName(StepNames.GenerateNativeToManagedVTable)
-                .WithComparer(SyntaxEquivalentComparer.Instance)
-                .SelectNormalized();
-
-            var iUnknownDerivedAttributeApplication = interfaceContextsToGenerate
-                .Select(static (data, ct) => data.Info)
-                .Select(GenerateIUnknownDerivedAttributeApplication)
-                .WithTrackingName(StepNames.GenerateIUnknownDerivedAttribute)
-                .WithComparer(SyntaxEquivalentComparer.Instance)
-                .SelectNormalized();
-
-            var filesToGenerate = interfaceContextsToGenerate
-                .Zip(nativeInterfaceInformation)
-                .Zip(managedToNativeInterfaceImplementations)
-                .Zip(nativeToManagedVtableMethods)
-                .Zip(nativeToManagedVtables)
-                .Zip(iUnknownDerivedAttributeApplication)
-                .Zip(shadowingMethodDeclarations)
-                .Select(static (data, ct) =>
-                {
-                    var ((((((interfaceContext, interfaceInfo), managedToNativeStubs), nativeToManagedStubs), nativeToManagedVtable), iUnknownDerivedAttribute), shadowingMethod) = data;
-
-                    using StringWriter source = new();
-                    source.WriteLine("// <auto-generated />");
-                    source.WriteLine("#pragma warning disable CS0612, CS0618"); // Suppress warnings about [Obsolete] member usage in generated code.
-                    interfaceInfo.WriteTo(source);
-                    // Two newlines looks cleaner than one
-                    source.WriteLine();
-                    source.WriteLine();
-                    // TODO: Merge the three InterfaceImplementation partials? We have them all right here.
-                    managedToNativeStubs.WriteTo(source);
-                    source.WriteLine();
-                    source.WriteLine();
-                    nativeToManagedStubs.WriteTo(source);
-                    source.WriteLine();
-                    source.WriteLine();
-                    nativeToManagedVtable.WriteTo(source);
-                    source.WriteLine();
-                    source.WriteLine();
-                    iUnknownDerivedAttribute.WriteTo(source);
-                    source.WriteLine();
-                    source.WriteLine();
-                    shadowingMethod.WriteTo(source);
-                    return new { TypeName = interfaceContext.Info.Type.FullTypeName, Source = source.ToString() };
-                });
-
-            context.RegisterSourceOutput(filesToGenerate, (context, data) =>
+            var generatedInterfaces = interfaceAndMethodsContexts.Select(static (data, _) =>
             {
-                context.AddSource(data.TypeName.Replace(TypeNames.GlobalAlias, ""), data.Source);
-            });
+                ComInterfaceContext interfaceContext = data.Interface;
+
+                var writer = new IndentedTextWriter();
+                writer.WriteLine("// <auto-generated />");
+                writer.WriteLine("#pragma warning disable CS0612, CS0618, CS0649, CS1591"); // Suppress warnings about [Obsolete], "lack of assignment", and missing XML documentation in generated code.
+
+                // If the user has specified 'ManagedObjectWrapper', it means that the COM interface will never be used to marshal a native
+                // object as an RCW (eg. the IDIC vtable will also not be generated, nor any additional supporting code). To reduce binary
+                // size, we're not emitting the interface methods on the implementation interface that has '[DynamicInterfaceCastableImplementation]'
+                // on it. However, doing so will cause the CA2256 warning to be produced. We can't remove the attribute, as that would cause
+                // the wrong exception to be thrown when trying an IDIC cast with this interface (not 'InvalidCastException'). Because this is
+                // a niche scenario, and we don't want to regress perf or size, we can just disable the warning instead.
+                if (interfaceContext.Options is ComInterfaceOptions.ManagedObjectWrapper)
+                {
+                    writer.WriteLine("#pragma warning disable CA2256");
+                }
+
+                writer.WriteLine();
+                WriteImplementationVTableStruct(writer, data);
+                writer.WriteLine();
+                WriteInterfaceInformation(writer, interfaceContext.Info);
+                writer.WriteLine();
+                WriteInterfaceImplementation(writer, data);
+                writer.WriteLine();
+                WriteIUnknownDerivedOriginalInterfacePart(writer, data);
+
+                // Identifier escape markers belong in declarations, but are not valid in hint names.
+                return (HintName: interfaceContext.Info.Type.FullTypeName.Replace(TypeNames.GlobalAlias, "").Replace("@", ""), Source: writer.ToString());
+            }).WithTrackingName("GeneratedComInterface");
+
+            context.RegisterSourceOutput(generatedInterfaces, static (context, data) => context.AddSource(data.HintName, data.Source));
         }
-
-        private static readonly AttributeSyntax s_iUnknownDerivedAttributeTemplate =
-            Attribute(
-                GenericName(TypeNames.GlobalAlias + TypeNames.IUnknownDerivedAttribute)
-                    .AddTypeArgumentListArguments(
-                        IdentifierName("InterfaceInformation"),
-                        IdentifierName("InterfaceImplementation")));
-
-        private static MemberDeclarationSyntax GenerateIUnknownDerivedAttributeApplication(ComInterfaceInfo context, CancellationToken _)
-            => context.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(
-                TypeDeclaration(context.ContainingSyntax.TypeKind, context.ContainingSyntax.Identifier)
-                    .WithModifiers(context.ContainingSyntax.Modifiers)
-                    .WithTypeParameterList(context.ContainingSyntax.TypeParameters)
-                    .AddAttributeLists(AttributeList(SingletonSeparatedList(s_iUnknownDerivedAttributeTemplate))));
 
         private static bool IsHResultLikeType(ManagedTypeInfo type)
         {
@@ -233,12 +170,22 @@ namespace Microsoft.Interop
                 || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
+        /// <summary>
+        /// Calculates the shared information needed for both source-available and sourceless stub generation.
+        /// </summary>
+        private static IncrementalMethodStubGenerationContext CalculateSharedStubInformation(
+            IMethodSymbol symbol,
+            int index,
+            StubEnvironment environment,
+            ISignatureDiagnosticLocations diagnosticLocations,
+            ComInterfaceInfo owningInterfaceInfo,
+            CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
             INamedTypeSymbol? suppressGCTransitionAttrType = environment.SuppressGCTransitionAttrType;
             INamedTypeSymbol? unmanagedCallConvAttrType = environment.UnmanagedCallConvAttrType;
+
             // Get any attributes of interest on the method
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;
@@ -259,8 +206,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            var locations = new MethodSignatureDiagnosticLocations(syntax);
-            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), diagnosticLocations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             if (lcidConversionAttr is not null)
             {
@@ -270,8 +216,16 @@ namespace Microsoft.Interop
 
             GeneratedComInterfaceCompilationData.TryGetGeneratedComInterfaceAttributeFromInterface(symbol.ContainingType, out var generatedComAttribute);
             var generatedComInterfaceAttributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComAttribute);
-            // Create the stub.
 
+            bool preserveSig = symbol.MethodImplementationFlags.HasFlag(MethodImplAttributes.PreserveSig);
+            ErrorHandlingInfo? errorHandlingInfo = preserveSig
+                ? null
+                : new ErrorHandlingInfo(
+                    SpecialTypeInfo.Int32,
+                    new ManagedHResultExceptionMarshallingInfo(owningInterfaceInfo.InterfaceId),
+                    ErrorHandlingLocation.HiddenReturnValue);
+
+            // Create the stub.
             var signatureContext = SignatureContext.Create(
                 symbol,
                 DefaultMarshallingInfoParser.Create(
@@ -282,55 +236,19 @@ namespace Microsoft.Interop
                     generatedComAttribute),
                 environment,
                 new CodeEmitOptions(SkipInit: true),
-                typeof(VtableIndexStubGenerator).Assembly);
+                typeof(ComInterfaceGenerator).Assembly,
+                errorHandlingInfo);
 
-            if (!symbol.MethodImplementationFlags.HasFlag(MethodImplAttributes.PreserveSig))
+            if (!preserveSig)
             {
-                // Search for the element information for the managed return value.
-                // We need to transform it such that any return type is converted to an out parameter at the end of the parameter list.
-                ImmutableArray<TypePositionInfo> returnSwappedSignatureElements = signatureContext.ElementTypeInformation;
-                for (int i = 0; i < returnSwappedSignatureElements.Length; ++i)
+                TypePositionInfo? managedReturnInfo = signatureContext.ElementTypeInformation.FirstOrDefault(e => e.IsManagedReturnPosition);
+                if (managedReturnInfo is not null
+                    && ((managedReturnInfo.ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 or SpecialType.System_Enum } or EnumTypeInfo
+                            && managedReturnInfo.MarshallingAttributeInfo.Equals(NoMarshallingInfo.Instance))
+                        || IsHResultLikeType(managedReturnInfo.ManagedType)))
                 {
-                    if (returnSwappedSignatureElements[i].IsManagedReturnPosition)
-                    {
-                        if (returnSwappedSignatureElements[i].ManagedType == SpecialTypeInfo.Void)
-                        {
-                            // Return type is void, just remove the element from the signature list.
-                            // We don't introduce an out parameter.
-                            returnSwappedSignatureElements = returnSwappedSignatureElements.RemoveAt(i);
-                        }
-                        else
-                        {
-                            if ((returnSwappedSignatureElements[i].ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Int32 or SpecialType.System_Enum } or EnumTypeInfo
-                                    && returnSwappedSignatureElements[i].MarshallingAttributeInfo.Equals(NoMarshallingInfo.Instance))
-                                || (IsHResultLikeType(returnSwappedSignatureElements[i].ManagedType)))
-                            {
-                                generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable, symbol.Locations[0]));
-                            }
-                            // Convert the current element into an out parameter on the native signature
-                            // while keeping it at the return position in the managed signature.
-                            var managedSignatureAsNativeOut = returnSwappedSignatureElements[i] with
-                            {
-                                RefKind = RefKind.Out,
-                                ManagedIndex = TypePositionInfo.ReturnIndex,
-                                NativeIndex = symbol.Parameters.Length
-                            };
-                            returnSwappedSignatureElements = returnSwappedSignatureElements.SetItem(i, managedSignatureAsNativeOut);
-                        }
-                        break;
-                    }
+                    generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.ComMethodManagedReturnWillBeOutVariable, symbol.Locations[0]));
                 }
-
-                signatureContext = signatureContext with
-                {
-                    // Add the HRESULT return value in the native signature.
-                    // This element does not have any influence on the managed signature, so don't assign a managed index.
-                    ElementTypeInformation = returnSwappedSignatureElements.Add(
-                        new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
-                        {
-                            NativeIndex = TypePositionInfo.ReturnIndex
-                        })
-                };
             }
             else
             {
@@ -364,32 +282,142 @@ namespace Microsoft.Interop
                     GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue);
             }
 
-            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
-
-            var methodSyntaxTemplate = new ContainingSyntax(new SyntaxTokenList(syntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword))).StripAccessibilityModifiers(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
-
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = VirtualMethodPointerStubGenerator.GenerateCallConvSyntaxFromAttributes(
+            ImmutableArray<string> callConv = VirtualMethodPointerStubGenerator.GetCallingConventionsFromAttributes(
                 suppressGCTransitionAttribute,
                 unmanagedCallConvAttribute,
-                ImmutableArray.Create(FunctionPointerUnmanagedCallingConvention(Identifier("MemberFunction"))));
+                ImmutableArray.Create("MemberFunction"));
 
             var declaringType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
-            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com);
+            MarshallingInfo exceptionMarshallingInfo;
+            if (generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller is null)
+            {
+                exceptionMarshallingInfo = new ComExceptionMarshalling();
+            }
+            else
+            {
+                exceptionMarshallingInfo = CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
+                    environment.Compilation.GetTypeByMetadataName(TypeNames.System_Exception),
+                    (INamedTypeSymbol)generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller,
+                    generatedComAttribute,
+                    environment.Compilation,
+                    generatorDiagnostics);
+            }
 
             return new IncrementalMethodStubGenerationContext(
                 signatureContext,
+                diagnosticLocations,
+                callConv.ToSequenceEqual(),
+                new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com),
+                exceptionMarshallingInfo,
+                environment.EnvironmentFlags,
+                owningInterfaceInfo.Type,
+                declaringType,
+                generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
+                ComInterfaceDispatchMarshallingInfo.Instance,
+                ClassifyMemberKind(symbol));
+        }
+
+        private static StubMemberKind ClassifyMemberKind(IMethodSymbol symbol) => (symbol.MethodKind, symbol.AssociatedSymbol) switch
+        {
+            (MethodKind.PropertyGet, IPropertySymbol { IsIndexer: true }) => StubMemberKind.IndexerGetter,
+            (MethodKind.PropertySet, IPropertySymbol { IsIndexer: true }) => StubMemberKind.IndexerSetter,
+            (MethodKind.PropertyGet, _) => StubMemberKind.PropertyGetter,
+            (MethodKind.PropertySet, _) => StubMemberKind.PropertySetter,
+            _ => StubMemberKind.Method,
+        };
+
+        internal static IncrementalMethodStubGenerationContext CalculateStubInformation(MemberDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
+        {
+            ISignatureDiagnosticLocations locations = syntax switch
+            {
+                null => NoneSignatureDiagnosticLocations.Instance,
+                MethodDeclarationSyntax methodSyntax => new MethodSignatureDiagnosticLocations(methodSyntax),
+                PropertyDeclarationSyntax propertySyntax => CreatePropertyAccessorDiagnosticLocations(propertySyntax, symbol),
+                IndexerDeclarationSyntax indexerSyntax => CreateIndexerAccessorDiagnosticLocations(indexerSyntax, symbol),
+                _ => throw new UnreachableException(),
+            };
+
+            var sourcelessStubInformation = CalculateSharedStubInformation(
+                symbol,
+                index,
+                environment,
+                locations,
+                owningInterface,
+                ct);
+
+            if (syntax is null)
+                return sourcelessStubInformation;
+
+            ContainingSyntaxContext containingSyntaxContext = syntax.GetContainingSyntaxContext();
+            DeclarationHeader methodSyntaxTemplate = syntax switch
+            {
+                MethodDeclarationSyntax methodSyntax => new DeclarationHeader(
+                    ContainingTypeUtilities.GetModifiers(methodSyntax.Modifiers)
+                        .Where(static modifier => modifier is not ("new" or "partial" or "virtual" or "public" or "private" or "protected" or "internal"))
+                        .ToImmutableArray(),
+                    "",
+                    CodeWriterHelpers.EscapeIdentifier(symbol.Name)),
+                // Property / indexer accessors are emitted as plain methods named e.g. 'get_Foo' / 'set_Foo'
+                // ('get_Item' / 'set_Item' for indexers, or the [IndexerName]-renamed value).
+                PropertyDeclarationSyntax or IndexerDeclarationSyntax => new DeclarationHeader(
+                    ImmutableArray<string>.Empty,
+                    "",
+                    symbol.Name),
+                _ => throw new UnreachableException(),
+            };
+
+            StubMemberKind memberKind = ClassifyMemberKind(symbol);
+
+            return new SourceAvailableIncrementalMethodStubGenerationContext(
+                sourcelessStubInformation.SignatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
                 locations,
-                callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
-                virtualMethodIndexData,
-                new ComExceptionMarshalling(),
-                environment.EnvironmentFlags,
-                owningInterface,
-                declaringType,
-                generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
-                ComInterfaceDispatchMarshallingInfo.Instance);
+                sourcelessStubInformation.CallingConvention,
+                sourcelessStubInformation.VtableIndexData,
+                sourcelessStubInformation.ExceptionMarshallingInfo,
+                sourcelessStubInformation.EnvironmentFlags,
+                sourcelessStubInformation.TypeKeyOwner,
+                sourcelessStubInformation.DeclaringType,
+                sourcelessStubInformation.Diagnostics,
+                ComInterfaceDispatchMarshallingInfo.Instance,
+                memberKind);
+        }
+
+        // For a property accessor, the user-visible source location is the property's identifier.
+        // The getter has no managed parameters; the setter has the implicit 'value' parameter which we report at
+        // the property identifier (it has no source location of its own).
+        private static MethodSignatureDiagnosticLocations CreatePropertyAccessorDiagnosticLocations(PropertyDeclarationSyntax propertySyntax, IMethodSymbol accessor)
+        {
+            Location identifierLocation = propertySyntax.Identifier.GetLocation();
+            ImmutableArray<Location> parameterLocations = accessor.MethodKind is MethodKind.PropertySet
+                ? ImmutableArray.Create(identifierLocation)
+                : ImmutableArray<Location>.Empty;
+            return new MethodSignatureDiagnosticLocations(accessor.Name, parameterLocations, identifierLocation);
+        }
+
+        // For an indexer accessor, the user-visible source location is the 'this' keyword (indexers have no
+        // identifier token). Diagnostics that index into ManagedParameterLocations must see one entry per
+        // index parameter, plus the implicit 'value' parameter for the setter, with 'value' falling back to
+        // the 'this' location since it has no syntactic representation.
+        private static MethodSignatureDiagnosticLocations CreateIndexerAccessorDiagnosticLocations(IndexerDeclarationSyntax indexerSyntax, IMethodSymbol accessor)
+        {
+            Location thisLocation = indexerSyntax.ThisKeyword.GetLocation();
+            var indexParameters = indexerSyntax.ParameterList.Parameters;
+            int parameterCount = accessor.MethodKind is MethodKind.PropertySet
+                ? indexParameters.Count + 1
+                : indexParameters.Count;
+            var builder = ImmutableArray.CreateBuilder<Location>(parameterCount);
+            foreach (var parameter in indexParameters)
+            {
+                builder.Add(parameter.GetLocation());
+            }
+            if (accessor.MethodKind is MethodKind.PropertySet)
+            {
+                builder.Add(thisLocation);
+            }
+            return new MethodSignatureDiagnosticLocations(accessor.Name, builder.MoveToImmutable(), thisLocation);
         }
 
         private static MarshalDirection GetDirectionFromOptions(ComInterfaceOptions options)
@@ -475,223 +503,484 @@ namespace Microsoft.Interop
             }
         }
 
-        private static readonly InterfaceDeclarationSyntax ImplementationInterfaceTemplate = InterfaceDeclaration("InterfaceImplementation")
-                .WithModifiers(TokenList(Token(SyntaxKind.FileKeyword), Token(SyntaxKind.UnsafeKeyword), Token(SyntaxKind.PartialKeyword)));
-
-        private static InterfaceDeclarationSyntax GenerateImplementationInterface(ComInterfaceAndMethodsContext interfaceGroup, CancellationToken _)
+        private static void WriteImplementationVTableStruct(IndentedTextWriter writer, ComInterfaceAndMethodsContext interfaceMethods)
         {
-            var definingType = interfaceGroup.Interface.Info.Type;
-            var shadowImplementations = interfaceGroup.InheritedMethods.Select(m => (Method: m, ManagedToUnmanagedStub: m.ManagedToUnmanagedStub))
-                .Where(p => p.ManagedToUnmanagedStub is GeneratedStubCodeContext)
-                .Select(ctx => ((GeneratedStubCodeContext)ctx.ManagedToUnmanagedStub).Stub.Node
-                .WithExplicitInterfaceSpecifier(
-                    ExplicitInterfaceSpecifier(ParseName(definingType.FullTypeName))));
-            var inheritedStubs = interfaceGroup.InheritedMethods.Select(m => m.UnreachableExceptionStub);
-            return ImplementationInterfaceTemplate
-                .AddBaseListTypes(SimpleBaseType(definingType.Syntax))
-                .WithMembers(
-                    List<MemberDeclarationSyntax>(
-                        interfaceGroup.DeclaredMethods
-                        .Select(m => m.ManagedToUnmanagedStub)
-                        .OfType<GeneratedStubCodeContext>()
-                        .Select(ctx => ctx.Stub.Node)
-                        .Concat(shadowImplementations)
-                        .Concat(inheritedStubs)))
-                .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute))));
-        }
-
-        private static InterfaceDeclarationSyntax GenerateImplementationVTableMethods(ComInterfaceAndMethodsContext comInterfaceAndMethods, CancellationToken _)
-        {
-            return ImplementationInterfaceTemplate
-                .WithMembers(
-                    List<MemberDeclarationSyntax>(
-                        comInterfaceAndMethods.DeclaredMethods
-                            .Select(m => m.UnmanagedToManagedStub)
-                            .OfType<GeneratedStubCodeContext>()
-                            .Where(context => context.Diagnostics.All(diag => diag.Descriptor.DefaultSeverity != DiagnosticSeverity.Error))
-                            .Select(context => context.Stub.Node)));
-        }
-
-        private const string CreateManagedVirtualFunctionTableMethodName = "CreateManagedVirtualFunctionTable";
-
-        private static readonly MethodDeclarationSyntax CreateManagedVirtualFunctionTableMethodTemplate = MethodDeclaration(TypeSyntaxes.VoidStarStar, CreateManagedVirtualFunctionTableMethodName)
-            .AddModifiers(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword));
-
-        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ComInterfaceAndMethodsContext interfaceMethods, CancellationToken _)
-        {
-            if (!interfaceMethods.Interface.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
+            writer.WriteLine("[global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]");
+            // The 'unsafe' modifier goes on each field rather than on the type: a field-level modifier makes the
+            // pointer legal to name under the legacy rules and has a meaning under the updated ones, whereas a
+            // type-level modifier is meaningless under the updated rules and warns (CS9377).
+            writer.WriteLine("file struct InterfaceImplementationVtable");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, global::System.Guid*, void**, int> QueryInterface_0;");
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, uint> AddRef_1;");
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, uint> Release_2;");
+            if (interfaceMethods.Interface.Base is not null)
             {
-                return ImplementationInterfaceTemplate;
-            }
-
-            const string vtableLocalName = "vtable";
-            var interfaceType = interfaceMethods.Interface.Info.Type;
-
-            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <max(vtableIndex) + 1>);
-            var vtableDeclarationStatement =
-                Declare(
-                    TypeSyntaxes.VoidStarStar,
-                    vtableLocalName,
-                    CastExpression(TypeSyntaxes.VoidStarStar,
-                        MethodInvocation(
-                            TypeSyntaxes.System_Runtime_CompilerServices_RuntimeHelpers,
-                            IdentifierName("AllocateTypeAssociatedMemory"),
-                            Argument(TypeOfExpression(interfaceType.Syntax)),
-                            Argument(
-                                BinaryExpression(
-                                    SyntaxKind.MultiplyExpression,
-                                    SizeOfExpression(TypeSyntaxes.VoidStar),
-                                    IntLiteral(3 + interfaceMethods.Methods.Length))))));
-
-            BlockSyntax fillBaseInterfaceSlots;
-
-
-            if (interfaceMethods.Interface.Base is null)
-            {
-                // If we don't have a base interface, we need to manually fill in the base iUnknown slots.
-                fillBaseInterfaceSlots = Block()
-                    .AddStatements(
-                        // nint v0, v1, v2;
-                        LocalDeclarationStatement(VariableDeclaration(ParseTypeName("nint"))
-                            .AddVariables(
-                                VariableDeclarator("v0"),
-                                VariableDeclarator("v1"),
-                                VariableDeclarator("v2")
-                            )),
-                        // ComWrappers.GetIUnknownImpl(out v0, out v1, out v2);
-                        MethodInvocationStatement(
-                            TypeSyntaxes.System_Runtime_InteropServices_ComWrappers,
-                            IdentifierName("GetIUnknownImpl"),
-                            OutArgument(IdentifierName("v0")),
-                            OutArgument(IdentifierName("v1")),
-                            OutArgument(IdentifierName("v2"))),
-                        // m_vtable[0] = (void*)v0;
-                        AssignmentStatement(
-                            IndexExpression(
-                                IdentifierName(vtableLocalName),
-                                Argument(IntLiteral(0))),
-                            CastExpression(TypeSyntaxes.VoidStar, IdentifierName("v0"))),
-                        // m_vtable[1] = (void*)v1;
-                        AssignmentStatement(
-                            IndexExpression(
-                                IdentifierName(vtableLocalName),
-                                Argument(IntLiteral(1))),
-                            CastExpression(TypeSyntaxes.VoidStar, IdentifierName("v1"))),
-                        // m_vtable[2] = (void*)v2;
-                        AssignmentStatement(
-                            IndexExpression(
-                                IdentifierName(vtableLocalName),
-                                Argument(IntLiteral(2))),
-                            CastExpression(TypeSyntaxes.VoidStar, IdentifierName("v2"))));
-            }
-            else
-            {
-                // NativeMemory.Copy(StrategyBasedComWrappers.DefaultIUnknownInteraceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<baseInterfaceType>).TypeHandle).ManagedVirtualMethodTable, vtable, (nuint)(sizeof(void*) * <startingOffset>));
-                fillBaseInterfaceSlots = Block(
-                        MethodInvocationStatement(
-                            TypeSyntaxes.System_Runtime_InteropServices_NativeMemory,
-                            IdentifierName("Copy"),
-                            Argument(
-                                MethodInvocation(
-                                    TypeSyntaxes.StrategyBasedComWrappers
-                                        .Dot(IdentifierName("DefaultIUnknownInterfaceDetailsStrategy")),
-                                    IdentifierName("GetIUnknownDerivedDetails"),
-                                    Argument( //baseInterfaceTypeInfo.BaseInterface.FullTypeName)),
-                                        TypeOfExpression(ParseTypeName(interfaceMethods.Interface.Base.Info.Type.FullTypeName))
-                                            .Dot(IdentifierName("TypeHandle"))))
-                                    .Dot(IdentifierName("ManagedVirtualMethodTable"))),
-                            Argument(IdentifierName(vtableLocalName)),
-                            Argument(CastExpression(IdentifierName("nuint"),
-                                ParenthesizedExpression(
-                                    BinaryExpression(SyntaxKind.MultiplyExpression,
-                                        SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
-                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethods.InheritedMethods.Count() + 3))))))));
-            }
-
-            var vtableSlotAssignments = VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(
-                interfaceMethods.DeclaredMethods
-                    .Where(context => context.UnmanagedToManagedStub.Diagnostics.All(diag => diag.Descriptor.DefaultSeverity != DiagnosticSeverity.Error))
-                    .Select(context => context.GenerationContext),
-                vtableLocalName,
-                ComInterfaceGeneratorHelpers.GetGeneratorResolver);
-
-            return ImplementationInterfaceTemplate
-                .AddMembers(
-                    CreateManagedVirtualFunctionTableMethodTemplate
-                        .WithBody(
-                            Block(
-                                vtableDeclarationStatement,
-                                fillBaseInterfaceSlots,
-                                vtableSlotAssignments,
-                                ReturnStatement(IdentifierName(vtableLocalName)))));
-        }
-
-        private static readonly ClassDeclarationSyntax InterfaceInformationTypeTemplate =
-            ClassDeclaration("InterfaceInformation")
-            .AddModifiers(Token(SyntaxKind.FileKeyword), Token(SyntaxKind.UnsafeKeyword))
-            .AddBaseListTypes(SimpleBaseType(TypeSyntaxes.IIUnknownInterfaceType));
-
-        private static ClassDeclarationSyntax GenerateInterfaceInformation(ComInterfaceInfo context, CancellationToken _)
-        {
-            ClassDeclarationSyntax interfaceInformationType = InterfaceInformationTypeTemplate
-                .AddMembers(
-                    // public static System.Guid Iid { get; } = new(<embeddedDataBlob>);
-                    PropertyDeclaration(TypeSyntaxes.System_Guid, "Iid")
-                        .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
-                        .AddAccessorListAccessors(
-                            AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(Token(SyntaxKind.SemicolonToken)))
-                        .WithInitializer(
-                            EqualsValueClause(
-                                ImplicitObjectCreationExpression()
-                                    .AddArgumentListArguments(
-                                        Argument(CreateEmbeddedDataBlobCreationStatement(context.InterfaceId.ToByteArray())))))
-                        .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
-
-            if (context.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
-            {
-                const string vtableFieldName = "_vtable";
-                return interfaceInformationType.AddMembers(
-                        // private static void** _vtable;
-                        FieldDeclaration(VariableDeclaration(TypeSyntaxes.VoidStarStar, SingletonSeparatedList(VariableDeclarator(vtableFieldName))))
-                            .AddModifiers(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.StaticKeyword)),
-                        // public static void* VirtualMethodTableManagedImplementation => _vtable != null ? _vtable : (_vtable = InterfaceImplementation.CreateManagedVirtualMethodTable());
-                        PropertyDeclaration(TypeSyntaxes.VoidStarStar, "ManagedVirtualMethodTable")
-                            .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
-                            .WithExpressionBody(
-                                ArrowExpressionClause(
-                                    ConditionalExpression(
-                                        BinaryExpression(SyntaxKind.NotEqualsExpression,
-                                            IdentifierName(vtableFieldName),
-                                            LiteralExpression(SyntaxKind.NullLiteralExpression)),
-                                        IdentifierName(vtableFieldName),
-                                        ParenthesizedExpression(
-                                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                                IdentifierName(vtableFieldName),
-                                                MethodInvocation(
-                                                    IdentifierName("InterfaceImplementation"),
-                                                    IdentifierName(CreateManagedVirtualFunctionTableMethodName)))))))
-                            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
-            }
-
-            return interfaceInformationType.AddMembers(
-                PropertyDeclaration(TypeSyntaxes.VoidStarStar, "ManagedVirtualMethodTable")
-                    .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
-                    .WithExpressionBody(ArrowExpressionClause(LiteralExpression(SyntaxKind.NullLiteralExpression)))
-                    .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
-
-
-            static ExpressionSyntax CreateEmbeddedDataBlobCreationStatement(ReadOnlySpan<byte> bytes)
-            {
-                var literals = new CollectionElementSyntax[bytes.Length];
-
-                for (int i = 0; i < bytes.Length; i++)
+                foreach (ComMethodContext inheritedMethod in interfaceMethods.InheritedMethods)
                 {
-                    literals[i] = ExpressionElement(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(bytes[i])));
+                    string functionPointerType = VirtualMethodPointerStubGenerator.GenerateUnmanagedFunctionPointerTypeForMethod(
+                        inheritedMethod.GenerationContext,
+                        ComInterfaceGeneratorHelpers.GetGeneratorResolver);
+
+                    writer.WriteLine($"public unsafe {functionPointerType} {inheritedMethod.MethodInfo.MethodName}_{inheritedMethod.GenerationContext.VtableIndexData.Index};");
+                }
+            }
+
+            foreach (ComMethodContext declaredMethod in
+                interfaceMethods.DeclaredMethods
+                    .Where(context => context.UnmanagedToManagedStub.Diagnostics.All(diag => diag.Descriptor.DefaultSeverity != DiagnosticSeverity.Error)))
+            {
+                string functionPointerType = VirtualMethodPointerStubGenerator.GenerateUnmanagedFunctionPointerTypeForMethod(
+                    declaredMethod.GenerationContext,
+                    ComInterfaceGeneratorHelpers.GetGeneratorResolver);
+
+                writer.WriteLine($"public unsafe {functionPointerType} {declaredMethod.MethodInfo.MethodName}_{declaredMethod.GenerationContext.VtableIndexData.Index};");
+            }
+
+            writer.Indent--;
+            writer.WriteLine('}');
+        }
+
+        private static void WriteInterfaceInformation(IndentedTextWriter writer, ComInterfaceInfo interfaceInfo)
+        {
+            writer.WriteLine("file sealed class InterfaceInformation : global::System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine($"public static global::System.Guid Iid {{ get; }} = new({ComInterfaceGeneratorHelpers.CreateEmbeddedDataBlobExpression(interfaceInfo.InterfaceId.ToByteArray())});");
+            // The modifier makes the pointer type legal to name; the accessor still needs an unsafe context of
+            // its own, since under the updated rules a member modifier opens none for the body.
+            writer.WriteLine("public static unsafe void** ManagedVirtualMethodTable");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine("get");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine("unsafe");
+            writer.WriteLine('{');
+            writer.Indent++;
+            writer.WriteLine($"return {(interfaceInfo.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper) ? "(void**)global::System.Runtime.CompilerServices.Unsafe.AsPointer(in InterfaceImplementation.Vtable)" : "null")};");
+            writer.Indent--;
+            writer.WriteLine('}');
+            writer.Indent--;
+            writer.WriteLine('}');
+            writer.Indent--;
+            writer.WriteLine('}');
+            writer.Indent--;
+            writer.WriteLine('}');
+        }
+
+        private static void WriteInterfaceImplementation(IndentedTextWriter writer, ComInterfaceAndMethodsContext data)
+        {
+            writer.WriteLine("[global::System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute]");
+            // This type holds the stubs that explicitly implement the user's interface members. Those stubs copy
+            // their modifiers from the user's declaration and cannot be marked 'unsafe' on their own without
+            // failing to implement a safe member (CS9366), so under the legacy rules the type modifier is what
+            // makes their pointer parameters legal to name.
+            string unsafeModifier = data.Interface.Info.UseUpdatedMemorySafetyRules ? "" : "unsafe ";
+            writer.WriteLine($"file {unsafeModifier}interface InterfaceImplementation : {data.Interface.Info.Type.FullTypeName}");
+            writer.WriteLine('{');
+            writer.Indent++;
+
+            if (data.Interface.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
+            {
+                writer.WriteLine("[global::System.Runtime.CompilerServices.FixedAddressValueTypeAttribute]");
+                writer.WriteLine("public static readonly InterfaceImplementationVtable Vtable;");
+                writer.WriteLine();
+                writer.WriteLine("static InterfaceImplementation()");
+                writer.WriteLine('{');
+                writer.Indent++;
+                // The initialization takes addresses and writes through pointers, so it opens its own unsafe
+                // context rather than relying on one from the containing type.
+                writer.WriteLine("unsafe");
+                writer.WriteLine('{');
+                writer.Indent++;
+
+                if (data.Interface.Base is { } baseInterface)
+                {
+                    writer.WriteLine("global::System.Runtime.InteropServices.NativeMemory.Copy(");
+                    writer.Indent++;
+                    writer.WriteLine($"global::System.Runtime.InteropServices.Marshalling.StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof({baseInterface.Info.Type.FullTypeName}).TypeHandle).ManagedVirtualMethodTable,");
+                    writer.WriteLine("global::System.Runtime.CompilerServices.Unsafe.AsPointer(ref Vtable),");
+                    writer.WriteLine($"(nuint)(sizeof(void*) * {data.BaseVTableSize}));");
+                    writer.Indent--;
+                }
+                else
+                {
+                    // If we don't have a base interface, we need to manually fill in the base IUnknown slots.
+                    writer.WriteLine("global::System.Runtime.InteropServices.ComWrappers.GetIUnknownImpl(");
+                    writer.Indent++;
+                    writer.WriteLine("out *(nint*)&((InterfaceImplementationVtable*)global::System.Runtime.CompilerServices.Unsafe.AsPointer(ref Vtable))->QueryInterface_0,");
+                    writer.WriteLine("out *(nint*)&((InterfaceImplementationVtable*)global::System.Runtime.CompilerServices.Unsafe.AsPointer(ref Vtable))->AddRef_1,");
+                    writer.WriteLine("out *(nint*)&((InterfaceImplementationVtable*)global::System.Runtime.CompilerServices.Unsafe.AsPointer(ref Vtable))->Release_2);");
+                    writer.Indent--;
                 }
 
-                // [ <byte literals> ]
-                return CollectionExpression(SeparatedList(literals));
+                writer.WriteLine();
+
+                foreach (ComMethodContext declaredMethodContext in data.DeclaredMethods
+                    .Where(context => context.UnmanagedToManagedStub.Diagnostics.All(diag => diag.Descriptor.DefaultSeverity != DiagnosticSeverity.Error)))
+                {
+                    writer.WriteLine($"Vtable.{declaredMethodContext.MethodInfo.MethodName}_{declaredMethodContext.GenerationContext.VtableIndexData.Index} = &{((SourceAvailableIncrementalMethodStubGenerationContext)declaredMethodContext.GenerationContext).AbiMethodIdentifier};");
+                }
+
+                writer.Indent--;
+                writer.WriteLine('}');
+
+                writer.Indent--;
+                writer.WriteLine('}');
             }
+
+            string derivedInterfaceName = data.Interface.Info.Type.FullTypeName;
+            (GeneratedComMember Member, string ExplicitInterface)? bufferedDeclaredGetter = null;
+            foreach (ComMethodContext declaredMethod in data.DeclaredMethods)
+            {
+                if (declaredMethod.ManagedToUnmanagedStub is GeneratedStubCodeContext managedToUnmanagedContext)
+                {
+                    EmitMemberHonoringPropertyMerge(writer, managedToUnmanagedContext.Stub, derivedInterfaceName, ref bufferedDeclaredGetter);
+                }
+
+                if (declaredMethod.UnmanagedToManagedStub is GeneratedStubCodeContext unmanagedToManagedContext &&
+                    unmanagedToManagedContext.Diagnostics.All(static d => d.Descriptor.DefaultSeverity != DiagnosticSeverity.Error))
+                {
+                    writer.WriteLine();
+                    unmanagedToManagedContext.Stub.WriteTo(writer);
+                }
+            }
+            FlushBufferedPropertyGetter(writer, ref bufferedDeclaredGetter);
+
+            (GeneratedComMember Member, string ExplicitInterface)? bufferedShadowGetter = null;
+            foreach (ComMethodContext inheritedStub in data.InheritedMethods)
+            {
+                if (inheritedStub is not { IsExternallyDefined: false, ManagedToUnmanagedStub: GeneratedStubCodeContext shadowImplementationContextContext })
+                {
+                    continue;
+                }
+
+                EmitMemberHonoringPropertyMerge(writer, shadowImplementationContextContext.Stub, derivedInterfaceName, ref bufferedShadowGetter);
+            }
+            FlushBufferedPropertyGetter(writer, ref bufferedShadowGetter);
+
+            (GeneratedComMember Member, string ExplicitInterface)? bufferedUnreachableGetter = null;
+            foreach (ComMethodContext inheritedStub in data.InheritedMethods)
+            {
+                if (inheritedStub.IsExternallyDefined)
+                {
+                    continue;
+                }
+
+                EmitMemberHonoringPropertyMerge(
+                    writer,
+                    CreateUnreachableInheritedMember(inheritedStub),
+                    inheritedStub.OriginalDeclaringInterface.Info.Type.FullTypeName,
+                    ref bufferedUnreachableGetter);
+            }
+            FlushBufferedPropertyGetter(writer, ref bufferedUnreachableGetter);
+
+            writer.Indent--;
+            writer.WriteLine('}');
+        }
+
+        private static void EmitMemberHonoringPropertyMerge(
+            IndentedTextWriter writer,
+            GeneratedComMember member,
+            string explicitInterface,
+            ref (GeneratedComMember Member, string ExplicitInterface)? bufferedGetter)
+        {
+            // Property and indexer accessor stubs arrive one per accessor (get then set when both exist).
+            // An explicit implementation must combine matching halves into a single declaration.
+            if (member.Kind.IsPropertyOrIndexerAccessor())
+            {
+                if (!member.Kind.IsAccessorSetter())
+                {
+                    FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+                    bufferedGetter = (member, explicitInterface);
+                    return;
+                }
+                if (bufferedGetter is { } getter
+                    && getter.ExplicitInterface == explicitInterface
+                    && getter.Member.HasSameAccessorTarget(member))
+                {
+                    writer.WriteLine();
+                    getter.Member.WriteTo(writer, explicitInterface, member);
+                    bufferedGetter = null;
+                    return;
+                }
+            }
+
+            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+            writer.WriteLine();
+            member.WriteTo(writer, explicitInterface);
+        }
+
+        private static GeneratedComMember CreateUnreachableInheritedMember(ComMethodContext inheritedStub)
+        {
+            IncrementalMethodStubGenerationContext genCtx = inheritedStub.GenerationContext;
+            string name = genCtx.MemberKind.IsPropertyOrIndexerAccessor()
+                ? IncrementalMethodStubGenerationContext.GetPropertyNameFromAccessor(inheritedStub.MethodInfo.MethodName)
+                : inheritedStub.MethodInfo.MethodName;
+
+            return new GeneratedComMember(
+                genCtx.MemberKind,
+                CodeWriterHelpers.EscapeIdentifier(name),
+                VirtualMethodPointerStubGenerator.GetManagedSignature(genCtx),
+                ImmutableArray<string>.Empty.ToSequenceEqual(),
+                "throw new global::System.Diagnostics.UnreachableException()",
+                IsExpressionBody: true);
+        }
+
+        private static void FlushBufferedPropertyGetter(IndentedTextWriter writer, ref (GeneratedComMember Member, string ExplicitInterface)? bufferedGetter)
+        {
+            if (bufferedGetter is not { } getter)
+            {
+                return;
+            }
+            writer.WriteLine();
+            getter.Member.WriteTo(writer, getter.ExplicitInterface);
+            bufferedGetter = null;
+        }
+
+        private static void WriteIUnknownDerivedOriginalInterfacePart(IndentedTextWriter writer, ComInterfaceAndMethodsContext data)
+        {
+            data.Interface.Info.TypeDefinitionContext.WriteToWithUnsafeModifier(data.Interface.Info.UseUpdatedMemorySafetyRules, writer, (data.Interface.Info.ContainingSyntax, data.ShadowingMethods, data.Interface.Info.UseUpdatedMemorySafetyRules), static (writer, data) =>
+            {
+                (DeclarationHeader syntax, IEnumerable<ComMethodContext>? shadowingMethods, bool useUpdatedMemorySafetyRules) = data;
+
+                writer.WriteLine("[global::System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute<InterfaceInformation, InterfaceImplementation>]");
+                ImmutableArray<string> typeModifiers = useUpdatedMemorySafetyRules
+                    ? syntax.Modifiers
+                    : CodeWriterHelpers.AddModifier(syntax.Modifiers, "unsafe");
+                writer.WriteLine($"{string.Join(" ", typeModifiers)} {syntax.Keyword} {syntax.Name}");
+                writer.WriteLine('{');
+                writer.Indent++;
+
+                // Buffered getter state for merging consecutive get+set pairs into one declaration.
+                // For ordinary properties IndexParamList / IndexArgList are null; for indexers they hold
+                // the formatted parameter list (e.g. "int i, string s") and the argument-forwarding list
+                // (e.g. "i, s") respectively. The parameter list also serves as part of the merge identity
+                // so that overloaded indexers do not accidentally cross-pair.
+                (string? PropName, string? DeclaringType, string? PropType,
+                    SequenceEqualImmutableArray<AttributeInfo> PropAttrs,
+                    string? IndexParamList, string? IndexArgList, bool IsUnsafe) pendingGetter = default;
+
+                foreach (ComMethodContext shadow in shadowingMethods)
+                {
+                    IncrementalMethodStubGenerationContext generationContext = shadow.GenerationContext;
+                    SignatureContext sigContext = generationContext.SignatureContext;
+
+                    // A shadow forwards to a member of the base interface. When that member declares itself
+                    // caller-unsafe the shadow has to say the same thing, or it would silently widen the
+                    // contract and its implementation could no longer implement it, and the forwarding call
+                    // needs an unsafe context of its own.
+                    bool isUnsafe = shadow.MethodInfo.Syntax is { } shadowedSyntax
+                        && shadowedSyntax.Modifiers.Any(SyntaxKind.UnsafeKeyword);
+
+                    if (generationContext.MemberKind.IsPropertyOrIndexerAccessor())
+                    {
+                        bool isSetter = generationContext.MemberKind.IsAccessorSetter();
+                        bool isIndexer = generationContext.MemberKind.IsIndexerAccessor();
+                        string accessorName = shadow.MethodInfo.MethodName;
+                        string propName = CodeWriterHelpers.EscapeIdentifier(IncrementalMethodStubGenerationContext.GetPropertyNameFromAccessor(accessorName));
+                        string declaringType = shadow.OriginalDeclaringInterface.Info.Type.FullTypeName;
+
+                        // Materialize the parameter sequences once — StubParameters / ManagedParameters
+                        // are IEnumerable<T>, not lists.
+                        ImmutableArray<GeneratedParameter> stubParams = sigContext.StubParameters.ToImmutableArray();
+                        ImmutableArray<TypePositionInfo> managedParams = sigContext.ManagedParameters.ToImmutableArray();
+
+                        // The value type for an accessor is the StubReturnType for a getter and the LAST
+                        // managed parameter type for a setter (the implicit 'value'). For both ordinary
+                        // properties (one managed parameter) and indexer setters (index params + value),
+                        // the value entry is always last.
+                        string propType = isSetter
+                            ? stubParams[stubParams.Length - 1].Type
+                            : sigContext.StubReturnType;
+                        SequenceEqualImmutableArray<AttributeInfo> propAttrs = shadow.MethodInfo.AssociatedAttributes;
+
+                        string? indexParamList = null;
+                        string? indexArgList = null;
+                        if (isIndexer)
+                        {
+                            // For indexers the index parameter list is the StubParameters minus the
+                            // implicit value entry (for setters). For getters, all StubParameters are
+                            // index parameters.
+                            int indexCount = isSetter ? stubParams.Length - 1 : stubParams.Length;
+                            indexParamList = string.Join(", ", stubParams.Take(indexCount));
+                            indexArgList = string.Join(", ", managedParams.Take(indexCount).Select(mp => $"{(mp.IsByRef ? $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(mp)} " : "")}{mp.InstanceIdentifier}"));
+                        }
+
+                        if (!isSetter)
+                        {
+                            FlushPendingGetter(writer, ref pendingGetter);
+                            pendingGetter = (propName, declaringType, propType, propAttrs, indexParamList, indexArgList, isUnsafe);
+                            continue;
+                        }
+
+                        // Setter: try to pair with a buffered getter. Identity includes the index parameter
+                        // list so overloaded indexers (same name, different param types) stay separate.
+                        if (pendingGetter.PropName == propName
+                            && pendingGetter.DeclaringType == declaringType
+                            && pendingGetter.IndexParamList == indexParamList)
+                        {
+                            EmitPropertyAttributes(writer, pendingGetter.PropAttrs);
+                            EmitDeclarationHead(writer, pendingGetter.PropType!, pendingGetter.PropName!, pendingGetter.IndexParamList, pendingGetter.IsUnsafe || isUnsafe);
+                            writer.WriteLine('{');
+                            writer.Indent++;
+                            EmitAccessor(writer, isSetter: false, pendingGetter.DeclaringType!, pendingGetter.PropName!, pendingGetter.IndexArgList, pendingGetter.IsUnsafe);
+                            EmitAccessor(writer, isSetter: true, pendingGetter.DeclaringType!, pendingGetter.PropName!, pendingGetter.IndexArgList, isUnsafe);
+                            writer.Indent--;
+                            writer.WriteLine('}');
+                            pendingGetter = default;
+                            continue;
+                        }
+
+                        FlushPendingGetter(writer, ref pendingGetter);
+                        EmitPropertyAttributes(writer, propAttrs);
+                        EmitDeclarationHead(writer, propType, propName, indexParamList, isUnsafe);
+                        writer.WriteLine('{');
+                        writer.Indent++;
+                        EmitAccessor(writer, isSetter: true, declaringType, propName, indexArgList, isUnsafe);
+                        writer.Indent--;
+                        writer.WriteLine('}');
+                        continue;
+                    }
+
+                    FlushPendingGetter(writer, ref pendingGetter);
+
+                    // AssociatedAttributes is currently populated only for property/indexer accessors;
+                    // ordinary method stubs must not carry any. If this fires, a new producer is feeding
+                    // the field for a non-property member and the emitter needs to decide how to consume it.
+                    Debug.Assert(shadow.MethodInfo.AssociatedAttributes.Array.IsEmpty);
+
+                    foreach (string additionalAttr in sigContext.AdditionalAttributes)
+                    {
+                        writer.WriteLine($"[{additionalAttr}]");
+                    }
+
+                    foreach (AttributeInfo attrInfo in shadow.MethodInfo.Attributes)
+                    {
+                        writer.WriteLine($"[{attrInfo.Type}({string.Join(", ", attrInfo.Arguments)})]");
+                    }
+
+                    string methodName = CodeWriterHelpers.EscapeIdentifier(shadow.MethodInfo.MethodName);
+                    writer.Write($"new {(isUnsafe ? "unsafe " : "")}{sigContext.StubReturnType} {methodName}");
+                    writer.Write($"({string.Join(", ", sigContext.StubParameters)})");
+                    string forwardingCall = $"(({shadow.OriginalDeclaringInterface.Info.Type.FullTypeName})this).{methodName}"
+                        + $"({string.Join(", ", sigContext.ManagedParameters.Select(mp => $"{(mp.IsByRef ? $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(mp)} " : "")}{mp.InstanceIdentifier}"))})";
+
+                    if (isUnsafe)
+                    {
+                        // An expression body cannot host the required unsafe context: the 'unsafe(...)'
+                        // expression form is not one of the forms a statement may consist of.
+                        bool returnsVoid = sigContext.StubReturnType == "void";
+                        writer.WriteLine();
+                        writer.WriteLine('{');
+                        writer.Indent++;
+                        writer.WriteLine("unsafe");
+                        writer.WriteLine('{');
+                        writer.Indent++;
+                        writer.WriteLine($"{(returnsVoid ? "" : "return ")}{forwardingCall};");
+                        writer.Indent--;
+                        writer.WriteLine('}');
+                        writer.Indent--;
+                        writer.WriteLine('}');
+                    }
+                    else
+                    {
+                        writer.WriteLine($" => {forwardingCall};");
+                    }
+                }
+
+                FlushPendingGetter(writer, ref pendingGetter);
+
+                writer.Indent--;
+                writer.WriteLine('}');
+
+                static void FlushPendingGetter(IndentedTextWriter writer, ref (string? PropName, string? DeclaringType, string? PropType, SequenceEqualImmutableArray<AttributeInfo> PropAttrs, string? IndexParamList, string? IndexArgList, bool IsUnsafe) pending)
+                {
+                    if (pending.PropName is null)
+                    {
+                        return;
+                    }
+                    EmitPropertyAttributes(writer, pending.PropAttrs);
+                    EmitDeclarationHead(writer, pending.PropType!, pending.PropName!, pending.IndexParamList, pending.IsUnsafe);
+                    writer.WriteLine('{');
+                    writer.Indent++;
+                    EmitAccessor(writer, isSetter: false, pending.DeclaringType!, pending.PropName!, pending.IndexArgList, pending.IsUnsafe);
+                    writer.Indent--;
+                    writer.WriteLine('}');
+                    pending = default;
+                }
+
+                // Writes either `new T Name` (property) or `new T this[<paramList>]` (indexer) on its own line.
+                static void EmitDeclarationHead(IndentedTextWriter writer, string propType, string propName, string? indexParamList, bool isUnsafe)
+                {
+                    string modifiers = isUnsafe ? "new unsafe" : "new";
+                    if (indexParamList is null)
+                    {
+                        writer.WriteLine($"{modifiers} {propType} {propName}");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"{modifiers} {propType} this[{indexParamList}]");
+                    }
+                }
+
+                // Writes either `get => ((Base)this).Name;` / `set => ((Base)this).Name = value;` for properties
+                // or `get => ((Base)this)[<argList>];` / `set => ((Base)this)[<argList>] = value;` for indexers.
+                // For indexers the propName isn't part of the access expression (the IL-level naming comes
+                // from `[IndexerName]` propagated via AssociatedAttributes).
+                static void EmitAccessor(IndentedTextWriter writer, bool isSetter, string declaringType, string propName, string? indexArgList, bool isUnsafe)
+                {
+                    string access = indexArgList is null
+                        ? $"(({declaringType})this).{propName}"
+                        : $"(({declaringType})this)[{indexArgList}]";
+
+                    if (!isUnsafe)
+                    {
+                        writer.WriteLine(isSetter
+                            ? $"set => {access} = value;"
+                            : $"get => {access};");
+                        return;
+                    }
+
+                    // Forwarding to a caller-unsafe member needs an unsafe context, which an expression-bodied
+                    // accessor has nowhere to put.
+                    writer.WriteLine(isSetter ? "set" : "get");
+                    writer.WriteLine('{');
+                    writer.Indent++;
+                    writer.WriteLine("unsafe");
+                    writer.WriteLine('{');
+                    writer.Indent++;
+                    writer.WriteLine(isSetter ? $"{access} = value;" : $"return {access};");
+                    writer.Indent--;
+                    writer.WriteLine('}');
+                    writer.Indent--;
+                    writer.WriteLine('}');
+                }
+
+                static void EmitPropertyAttributes(IndentedTextWriter writer, SequenceEqualImmutableArray<AttributeInfo> attrs)
+                {
+                    // The derived-interface property shadow is a pure C# forwarder: its accessors are
+                    // `get => ((Base)this).Prop;` / `set => ((Base)this).Prop = value;`, with no COM call
+                    // and therefore no marshalling. Marshalling attributes declared on the source property
+                    // are intentionally suppressed here so the shadow only carries semantically-meaningful
+                    // user attributes (e.g. attributes used for documentation, tooling, or reflection).
+                    //
+                    // `[IndexerName("X")]` (for indexers) is NOT marshalling and must be propagated so the
+                    // shadow's IL accessor names (get_X / set_X) match the source's — otherwise the runtime
+                    // sees `get_Item` / `set_Item` and the shadow loses identity with the base indexer.
+                    foreach (AttributeInfo attrInfo in attrs)
+                    {
+                        if (attrInfo.Type is "global::" + TypeNames.MarshalUsingAttribute
+                            or "global::" + TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)
+                        {
+                            continue;
+                        }
+                        writer.WriteLine($"[{attrInfo.Type}({string.Join(", ", attrInfo.Arguments)})]");
+                    }
+                }
+            });
         }
     }
 }

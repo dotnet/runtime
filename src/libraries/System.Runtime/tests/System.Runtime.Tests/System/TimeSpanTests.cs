@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Text;
 using Xunit;
 
@@ -108,6 +109,32 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes + 1, max.Seconds, max.Milliseconds, max.Microseconds));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds + 1, max.Milliseconds, max.Microseconds));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds, max.Milliseconds, max.Microseconds + 1));
+        }
+
+        [Theory]
+        [InlineData(4, 213_503_983, 0, 0, 0, 0, 0)]
+        [InlineData(4, -213_503_983, 0, 0, 0, 0, 0)]
+        [InlineData(6, 213_503_982, 8, 1, 49, 551, 616)]
+        [InlineData(5, 213_503_983, 0, 0, 0, 0, 0)]
+        [InlineData(6, 213_503_983, 0, 0, 0, 0, 0)]
+        public static void Ctor_DayBased_Overflow_Invalid(int argumentCount, int days, int hours, int minutes, int seconds, int milliseconds, int microseconds)
+        {
+            Action action = argumentCount switch
+            {
+                4 => () => new TimeSpan(days, hours, minutes, seconds),
+                5 => () => new TimeSpan(days, hours, minutes, seconds, milliseconds),
+                6 => () => new TimeSpan(days, hours, minutes, seconds, milliseconds, microseconds),
+                _ => throw new ArgumentOutOfRangeException(nameof(argumentCount)),
+            };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, action);
+        }
+
+        [Fact]
+        public static void Ctor_DayBased_Boundary_Valid()
+        {
+            Assert.Equal(TimeSpan.FromDays(TimeSpan.MaxValue.Days), new TimeSpan(TimeSpan.MaxValue.Days, 0, 0, 0));
+            Assert.Equal(TimeSpan.FromDays(TimeSpan.MinValue.Days), new TimeSpan(TimeSpan.MinValue.Days, 0, 0, 0));
         }
 
         [Theory]
@@ -631,7 +658,7 @@ namespace System.Tests
         [InlineData(0, -(maxSeconds + 1), 0, 0)]
         [InlineData(0, 0, maxMilliseconds + 1, 0)]
         [InlineData(0, 0, -(maxMilliseconds + 1), 0)]
-        [InlineData(0, 0, 0, maxMicroseconds + 1)]        
+        [InlineData(0, 0, 0, maxMicroseconds + 1)]
         [InlineData(0, 0, 0, -(maxMicroseconds + 1))]
         public static void FromMinutes_Int_ShouldOverflow(long minutes, long seconds, long milliseconds, long microseconds)
         {
@@ -713,7 +740,16 @@ namespace System.Tests
             long ticksFromMicroseconds = microseconds * TimeSpan.TicksPerMicrosecond;
             var expected = TimeSpan.FromTicks(ticksFromMilliseconds + ticksFromMicroseconds);
             Assert.Equal(expected, TimeSpan.FromMilliseconds(milliseconds, microseconds));
+
+            expected = TimeSpan.FromTicks(ticksFromMilliseconds);
+            Assert.Equal(expected, TimeSpan.FromMilliseconds(milliseconds));
+
+            // The following exist to ensure compilation of the expressions
+            Expression<Action> a = () => TimeSpan.FromMilliseconds(milliseconds);
+            Expression<Action> b = () => TimeSpan.FromMilliseconds(milliseconds, microseconds);
+            Expression<Action> c = () => TimeSpan.FromMilliseconds((double)milliseconds);
         }
+
         [Theory]
         [InlineData(maxMilliseconds + 1, 0)]
         [InlineData(-(maxMilliseconds + 1), 0)]
@@ -730,6 +766,11 @@ namespace System.Tests
         public static void FromMilliseconds_Int_ShouldOverflow(long milliseconds, long microseconds)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromMilliseconds(milliseconds, microseconds));
+
+            if (microseconds == 0)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromMilliseconds(milliseconds));
+            }
         }
 
         [Theory]
@@ -1760,7 +1801,7 @@ namespace System.Tests
         [Theory, MemberData(nameof(MultiplicationTestData))]
         public static void Division(TimeSpan timeSpan, double factor, TimeSpan expected)
         {
-            Assert.Equal(factor, expected / timeSpan, 14);
+            AssertExtensions.Equal(factor, expected / timeSpan, 1e-14);
             double divisor = 1.0 / factor;
             Assert.Equal(expected, timeSpan / divisor);
         }
@@ -1803,7 +1844,7 @@ namespace System.Tests
         [Theory, MemberData(nameof(MultiplicationTestData))]
         public static void NamedDivision(TimeSpan timeSpan, double factor, TimeSpan expected)
         {
-            Assert.Equal(factor, expected.Divide(timeSpan), 14);
+            AssertExtensions.Equal(factor, expected.Divide(timeSpan), 1e-14);
             double divisor = 1.0 / factor;
             Assert.Equal(expected, timeSpan.Divide(divisor));
         }
@@ -1870,6 +1911,41 @@ namespace System.Tests
                 Assert.Equal(expected, Encoding.UTF8.GetString(dst.Slice(0, dst.Length - 1)));
                 Assert.Equal(0, dst[dst.Length - 1]);
             }
+        }
+
+        [Theory]
+        [InlineData("'é'", "é")]
+        [InlineData("'\\é'", "é")]
+        [InlineData("\\é", "é")]
+        [InlineData("'\U0001F600'", "\U0001F600")]
+        [InlineData("'\\\U0001F600'", "\U0001F600")]
+        [InlineData("\\\U0001F600", "\U0001F600")]
+        public static void TryFormat_CustomFormatWithUnicodeLiteral(string format, string expected)
+        {
+            Span<char> chars = new char[expected.Length];
+            Assert.True(TimeSpan.Zero.TryFormat(chars, out int charsWritten, format));
+            Assert.Equal(expected, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = new byte[Encoding.UTF8.GetByteCount(expected)];
+            Assert.True(TimeSpan.Zero.TryFormat(bytes, out int bytesWritten, format));
+            Assert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryFormat_CustomFormatWithUnpairedSurrogate(bool highSurrogate)
+        {
+            string literal = new(highSurrogate ? '\uD83D' : '\uDE00', 1);
+            string format = $"'{literal}'";
+
+            Span<char> chars = new char[literal.Length];
+            Assert.True(TimeSpan.Zero.TryFormat(chars, out int charsWritten, format));
+            Assert.Equal(literal, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = stackalloc byte[3];
+            Assert.True(TimeSpan.Zero.TryFormat(bytes, out int bytesWritten, format));
+            Assert.Equal("\uFFFD", Encoding.UTF8.GetString(bytes[..bytesWritten]));
         }
 
         [Theory]

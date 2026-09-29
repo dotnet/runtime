@@ -182,7 +182,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // Browser PNSE: Cannot wait on monitors
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Browser PNSE: Cannot wait on monitors
         [PlatformSpecific(TestPlatforms.Windows)]
         public Task ManyConcurrentWriteAsyncs()
         {
@@ -197,7 +197,7 @@ namespace System.IO.Tests
                 numWrites: 10);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [PlatformSpecific(TestPlatforms.Windows)] // testing undocumented feature that's legacy in the Windows implementation
         [MemberData(nameof(MemberData_FileStreamAsyncWriting))]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer

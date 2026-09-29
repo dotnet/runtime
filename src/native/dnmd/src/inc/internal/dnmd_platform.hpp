@@ -3,14 +3,19 @@
 
 #ifdef BUILD_WINDOWS
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <Windows.h>
+
+#define MAIN_CALLCONV __cdecl
 
 #else
 
 #include <sys/stat.h>
 #include "dnmd_peimage.h"
 
+#define MAIN_CALLCONV
 #endif // !BUILD_WINDOWS
 
 // Machine code masks for native (R2R) images

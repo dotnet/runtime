@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
     {
         #region Test Cases
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(NewLine_Property), nameof(HasNullModem))]
         public void NewLine_Default()
         {
             using (SerialPort com1 = new SerialPort())
@@ -25,14 +25,14 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(NewLine_Property), nameof(HasNullModem))]
         public void NewLine_null()
         {
             Debug.WriteLine("Verifying null NewLine");
             VerifyException(null, typeof(ArgumentNullException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(NewLine_Property), nameof(HasNullModem))]
         public void NewLine_empty_string()
         {
             Debug.WriteLine("Verifying empty string NewLine");

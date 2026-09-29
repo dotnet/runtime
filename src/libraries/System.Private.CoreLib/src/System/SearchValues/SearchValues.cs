@@ -3,7 +3,9 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
@@ -72,8 +74,8 @@ namespace System.Buffers
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
-        /// /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
-        public static SearchValues<char> Create(params ReadOnlySpan<char> values)
+        /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
+        public static unsafe SearchValues<char> Create(params ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
             {
@@ -135,7 +137,7 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && PackedSpanHelpers.PackedIndexOfIsSupported &&
                 maxInclusive < 128 && values.Length == 4 && minInclusive > 0)
             {
-                Span<char> copy = stackalloc char[4];
+                Span<char> copy = ['\0', '\0', '\0', '\0'];
                 values.CopyTo(copy);
                 copy.Sort();
 
@@ -240,21 +242,12 @@ namespace System.Buffers
         }
 
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
-            where T : struct, INumber<T>, IMinMaxValue<T>
+            where T : struct, INumber<T>
         {
-            T min = T.MaxValue;
-            T max = T.MinValue;
+            minInclusive = values.Min();
+            maxInclusive = values.Max();
 
-            foreach (T value in values)
-            {
-                min = T.Min(min, value);
-                max = T.Max(max, value);
-            }
-
-            minInclusive = min;
-            maxInclusive = max;
-
-            uint range = uint.CreateChecked(max - min) + 1;
+            uint range = uint.CreateChecked(maxInclusive - minInclusive) + 1;
             if (range > values.Length)
             {
                 return false;
@@ -266,7 +259,7 @@ namespace System.Buffers
 
             foreach (T value in values)
             {
-                int offset = int.CreateChecked(value - min);
+                int offset = int.CreateChecked(value - minInclusive);
                 seenValues[offset] = true;
             }
 
@@ -291,6 +284,23 @@ namespace System.Buffers
         internal readonly struct FalseConst : IRuntimeConst
         {
             public static bool Value => false;
+        }
+
+        /// <summary>
+        /// Same as <see cref="Vector128.ShuffleNative(Vector128{byte}, Vector128{byte})"/>, except that we guarantee that <see cref="Ssse3.Shuffle(Vector128{byte}, Vector128{byte})"/> is used when available.
+        /// Some logic in <see cref="SearchValues"/> relies on this exact behavior (implicit AND 0xF, and zeroing when the high bit is set).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompHasFallback]
+        internal static Vector128<byte> ShuffleNativeModified(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(vector, indices);
+            }
+
+            return Vector128.Shuffle(vector, indices);
         }
     }
 }

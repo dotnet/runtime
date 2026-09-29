@@ -8,12 +8,12 @@ using System.IO;
 namespace Microsoft.Extensions.Configuration.Ini
 {
     /// <summary>
-    /// An INI file based <see cref="StreamConfigurationProvider"/>.
+    /// Provides configuration key-value pairs that are obtained from an INI stream.
     /// </summary>
     public class IniStreamConfigurationProvider : StreamConfigurationProvider
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="IniStreamConfigurationProvider"/>.
         /// </summary>
         /// <param name="source">The <see cref="IniStreamConfigurationSource"/>.</param>
         public IniStreamConfigurationProvider(IniStreamConfigurationSource source) : base(source) { }
@@ -85,9 +85,9 @@ namespace Microsoft.Extensions.Configuration.Ini
         }
 
         /// <summary>
-        /// Loads INI configuration key/values from a stream into a provider.
+        /// Loads INI configuration key-value pairs from a stream into a provider.
         /// </summary>
-        /// <param name="stream">The <see cref="Stream"/> to load ini configuration data from.</param>
+        /// <param name="stream">The <see cref="Stream"/> to load INI configuration data from.</param>
         public override void Load(Stream stream)
         {
             Data = Read(stream);

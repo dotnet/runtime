@@ -30,10 +30,10 @@ inline void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     g_theGCToCLR->SuspendEE(reason);
 }
 
-inline void GCToEEInterface::RestartEE(bool bFinishedGC)
+inline void GCToEEInterface::RestartEE(bool bUnused)
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->RestartEE(bFinishedGC);
+    g_theGCToCLR->RestartEE(/* bUnused */ true);
 }
 
 inline void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
@@ -70,6 +70,26 @@ inline bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
     assert(g_theGCToCLR != nullptr);
     return g_theGCToCLR->RefCountedHandleCallbacks(pObject);
+}
+
+inline void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+    assert(g_theGCToCLR != nullptr);
+    if (g_runtimeSupportedVersion.MajorVersion >= 4)
+    {
+        g_theGCToCLR->TriggerClientBridgeProcessing(args);
+    }
+}
+
+inline bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    assert(g_theGCToCLR != nullptr);
+    if (g_runtimeSupportedVersion.MajorVersion >= 5)
+    {
+        return g_theGCToCLR->IsClientBridgeProcessingActive();
+    }
+
+    return false;
 }
 
 inline void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -322,6 +342,18 @@ inline void GCToEEInterface::LogErrorToHost(const char *message)
     if (g_runtimeSupportedVersion.MajorVersion >= 1)
     {
         g_theGCToCLR->LogErrorToHost(message);
+    }
+}
+
+inline uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    if (g_runtimeSupportedVersion.MajorVersion >= 3)
+    {
+        return g_theGCToCLR->GetThreadOSThreadId(thread);
+    }
+    else
+    {
+        return 0;
     }
 }
 

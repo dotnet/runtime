@@ -34,8 +34,8 @@ namespace System.Net
         public static void DumpBuffer(object? thisOrContextObject, ReadOnlySpan<byte> buffer, [CallerMemberName] string? memberName = null) =>
             Log.DumpBuffer(IdOf(thisOrContextObject), memberName, buffer.Slice(0, Math.Min(buffer.Length, MaxDumpSize)).ToArray());
 
-        [Event(DumpArrayEventId, Level = EventLevel.Verbose, Keywords = Keywords.Debug)]
-        private unsafe void DumpBuffer(string thisOrContextObject, string? memberName, byte[] buffer) =>
+        [Event(DumpArrayEventId, Level = EventLevel.Verbose)]
+        private void DumpBuffer(string thisOrContextObject, string? memberName, byte[] buffer) =>
             WriteEvent(DumpArrayEventId, thisOrContextObject, memberName ?? MissingMember, buffer);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",

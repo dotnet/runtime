@@ -8,12 +8,16 @@
 #ifndef RIGHT_SIDE_COMPILE
 #include <utilcode.h>
 #include <crst.h>
-
 #endif // !RIGHT_SIDE_COMPILE
+
+#include <minipal/mutex.h>
+#include <minipal/conditionvariable.h>
+#include <minipal/guid.h>
+#include "debugwait.h"
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
-#include <twowaypipe.h>
+#include "processdescriptor.h"
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  DbgTransportSession was originally designed around cross-machine debugging via sockets and it is supposed to
@@ -269,7 +273,7 @@ inline UINT32 DBGIPC_HTONL(UINT32 x)
 
 // Lock abstraction (we can't use the same lock implementation on LS and RS since we really want a Crst on the
 // LS and this isn't available in the RS environment).
-class DbgTransportLock
+class DbgTransportLock final
 {
 public:
     void Init();
@@ -277,12 +281,39 @@ public:
     void Enter();
     void Leave();
 
+#ifdef RIGHT_SIDE_COMPILE
+    minipal_mutex& GetMutex()
+    {
+        return m_sLock;
+    }
+#endif // RIGHT_SIDE_COMPILE
+
 private:
 #ifdef RIGHT_SIDE_COMPILE
-    CRITICAL_SECTION    m_sLock;
+    minipal_mutex       m_sLock;
 #else // RIGHT_SIDE_COMPILE
     CrstExplicitInit    m_sLock;
 #endif // RIGHT_SIDE_COMPILE
+};
+
+class TransportLockHolder final
+{
+    DbgTransportLock& _lock;
+public:
+    TransportLockHolder(DbgTransportLock& lock)
+        : _lock(lock)
+    {
+        _lock.Enter();
+    }
+    ~TransportLockHolder()
+    {
+        _lock.Leave();
+    }
+
+    TransportLockHolder(TransportLockHolder const&) = delete;
+    TransportLockHolder& operator=(TransportLockHolder const&) = delete;
+    TransportLockHolder(TransportLockHolder&& other) = delete;
+    TransportLockHolder&& operator=(TransportLockHolder&&) = delete;
 };
 
 // The transport has only one queue for IPC events, but each IPC event can be marked as one of two types.
@@ -296,6 +327,25 @@ enum IPCEventType
    IPCET_OldStyle,
    IPCET_DebugEvent,
    IPCET_Max,
+};
+
+struct DECLSPEC_UUID("0498eef8-7a24-44a7-8141-dc401904ce25") DECLSPEC_NOVTABLE
+IDebugChannel : public IUnknown
+{
+public:
+    virtual HRESULT STDMETHODCALLTYPE WaitForConnection(
+        /* [in] */ DWORD timeoutMilliseconds,
+        /* [out] */ BOOL *isConnected) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE CloseConnection() = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE Read(
+        /* [out] */ BYTE *buffer,
+        /* [in] */ DWORD size) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE Write(
+        /* [in] */ BYTE *data,
+        /* [in] */ DWORD size) = 0;
 };
 
 // The class that encapsulates all the state for a single session on either the right or left side. The left
@@ -317,9 +367,9 @@ public:
     // requires the addresses of a couple of runtime data structures to service certain debugger requests that
     // may be delivered once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-    HRESULT Init(const ProcessDescriptor& pd, HANDLE hProcessExited);
+    HRESULT Init(const ProcessDescriptor& pd, const WaitHandle& processExited);
 #else
-    HRESULT Init(DebuggerIPCControlBlock * pDCB, AppDomainEnumerationIPCBlock * pADB);
+    HRESULT Init(DebuggerIPCControlBlock * pDCB);
 #endif // RIGHT_SIDE_COMPILE
 
     // Drive the session to the SS_Closed state, which will deallocate all remaining transport resources
@@ -334,11 +384,6 @@ public:
     // Used by debugger side (RS) to cleanup the target (LS) named pipes
     // and semaphores when the debugger detects the debuggee process  exited.
     void CleanupTargetProcess();
-#else
-    // Cleans up the named pipe connection so no tmp files are left behind. Does only
-    // the minimum and must be safe to call at any time. Called during PAL ExitProcess,
-    // TerminateProcess and for unhandled native exceptions and asserts.
-    void AbortConnection();
 #endif // RIGHT_SIDE_COMPILE
 
     LONG AddRef()
@@ -388,8 +433,8 @@ public:
 
     // Retrieves the auto-reset handle which is signalled by the session each time a new event is received
     // from the other side.
-    HANDLE GetIPCEventReadyEvent();
-    HANDLE GetDebugEventReadyEvent();
+    WaitEvent *GetIPCEventReadyEvent();
+    WaitEvent *GetDebugEventReadyEvent();
 
     // Copies the last event received from the other side into the provided buffer. This should only be called
     // (once) after the event returned from GetIPCEventReadyEvent()/GetDebugEventReadyEvent() has been signalled.
@@ -399,14 +444,10 @@ public:
     // Read and write memory on the LS from the RS.
     HRESULT ReadMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, SIZE_T cbBuffer);
     HRESULT WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, SIZE_T cbBuffer);
-    HRESULT VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context);
 
     // Read and write the debugger control block on the LS from the RS.
     HRESULT GetDCB(DebuggerIPCControlBlock *pDCB);
     HRESULT SetDCB(DebuggerIPCControlBlock *pDCB);
-
-    // Read the AppDomain control block on the LS from the RS.
-    HRESULT GetAppDomainCB(AppDomainEnumerationIPCBlock *pADB);
 
 #endif // RIGHT_SIDE_COMPILE
 
@@ -446,10 +487,8 @@ private:
         // Misc management operations.
         MT_ReadMemory,      // RS <-> LS : RS wants to read LS memory block (or LS is replying to such a request)
         MT_WriteMemory,     // RS <-> LS : RS wants to write LS memory block (or LS is replying to such a request)
-        MT_VirtualUnwind,   // RS <-> LS : RS wants to LS unwind a stack frame (or LS is replying to such a request)
         MT_GetDCB,          // RS <-> LS : RS wants to read LS DCB (or LS is replying to such a request)
         MT_SetDCB,          // RS <-> LS : RS wants to write LS DCB (or LS is replying to such a request)
-        MT_GetAppDomainCB,  // RS <-> LS : RS wants to read LS AppDomainCB (or LS is replying to such a request)
     };
 
     // Reasons the LS can give for rejecting a session. These codes should *not* be changed other than by
@@ -519,7 +558,7 @@ private:
     // Struct defining the format of the data block sent with a SessionRequest.
     struct SessionRequestData
     {
-        GUID            m_sSessionID;   // Unique session ID. Treated as byte blob so no endian-ness
+        GUID  m_sSessionID;   // Unique session ID. Treated as byte blob so no endian-ness
     };
 
     // Struct used to track a message that is being (or will soon be) sent but has not yet been acknowledged.
@@ -530,7 +569,7 @@ private:
         MessageHeader   m_sHeader;       // Inline message header
         PBYTE           m_pbDataBlock;   // Pointer to optional message data block (or NULL)
         DWORD           m_cbDataBlock;   // Count of bytes in above block if it's non-NULL
-        HANDLE          m_hReplyEvent;   // Optional event to signal if this message is replied to (or NULL)
+        WaitEvent   *m_hReplyEvent; // Optional event to signal if this message is replied to (or NULL)
         PBYTE           m_pbReplyBlock;  // Optional buffer to place data block from reply into (or NULL)
         DWORD           m_cbReplyBlock;  // Size in bytes of the above buffer if it is non-NULL
         Message        *m_pOrigMessage;  // Used when we need to find the original message from a copy
@@ -553,25 +592,111 @@ private:
         }
     };
 
-    // Holder class used to take a transport lock in a given scope and automatically release it once that
-    // scope is exited.
-    class TransportLockHolder
-    {
-    public:
-        TransportLockHolder(DbgTransportLock *pLock)
-        {
-            m_pLock = pLock;
-            m_pLock->Enter();
-        }
+    // Reference count
+    LONG m_ref;
 
-        ~TransportLockHolder()
-        {
-            m_pLock->Leave();
-        }
+    // Some flags used to record how far we got in Init() (used for cleanup in Shutdown()).
+    bool m_fInitStateLock = false;
 
-    private:
-        DbgTransportLock   *m_pLock;
-    };
+    // Protocol version. This consists of two parts. The major version is incremented on incompatible protocol
+    // updates. That is, a session between left and right sides that cannot use a protocol with the exact same
+    // major version cannot be formed. The minor version number is incremented on compatible protocol updates.
+    // These are usually associated with optional extensions to the protocol (e.g. a V1.2 endpoint might set
+    // previously unused fields in a message header to indicate some optional hint about the message that a
+    // V1.1 client won't notice at all).
+    //
+    // The right side has a hard-coded version number it sends in the SessionRequest message. The left side
+    // must support the same major version or reply with a SessionReject message containing the highest
+    // version it does support. For this reason the format of a SessionReject message can never change at all.
+    // On a SessionAccept the left side sends back the version number and can choose to lower the minor
+    // version to the highest it knows about. This gives the right side a hint as to the capabilities of the
+    // left side (though it must be prepared to interact with a left side with any minor version number).
+    //
+    // If necessary (and the SessionReject message sent by an incompatible left side indicates a major version
+    // the right side can also support), the right side can re-attempt a SessionRequest with a lower major
+    // version.
+    DWORD           m_dwMajorVersion;
+    DWORD           m_dwMinorVersion;
+
+    // Session ID randomly allocated by the right side and sent over in the SessionRequest message. This
+    // serves to disambiguate a re-send of the SessionRequest due to a network error versus a SessionRequest
+    // from a different debugger.
+    GUID  m_sSessionID;
+
+    // Lock used to synchronize sending messages and updating the session state. This ensures message bytes
+    // don't become interleaved on the transport connection, the send queue is updated consistently across
+    // multiple threads and that we never attempt to use a connection that is being deallocated on another
+    // thread due to a state change. Receives don't need this since they're performed only on the transport
+    // thread (which is also the only thread allowed to deallocate the connection).
+    DbgTransportLock m_sStateLock;
+
+    // Queue of messages that have been sent over the connection but not acknowledged yet or are waiting to be
+    // sent (because another message is using the connection or we're in a SessionResync state). You must hold
+    // m_sStateLock in order to access this queue.
+    Message        *m_pSendQueueFirst;
+    Message        *m_pSendQueueLast;
+
+    // Message IDs. These are monotonically increasing numbers starting from 0 that are used to stamp each
+    // non-session management message sent on this session. If a low-level network error occurs and we must
+    // abandon and re-form the underlying transport connection the left and right sides send SessionResync
+    // messages with the ID of the last message they received (and processed). This allows us to determine
+    // which messages we still have in our send queue must be re-sent over the new transport connection.
+    // Allocate a new message ID by post incrementing m_dwNextMessageId under the state lock.
+    DWORD           m_dwNextMessageId;      // Next ID we'll give to a message we're sending
+    DWORD           m_dwLastMessageIdSeen;  // Last ID we saw in an incoming, fully received message
+
+    // The current session state. This is updated atomically under m_sStateLock.
+    SessionState    m_eState;
+
+#ifdef RIGHT_SIDE_COMPILE
+    // Notified whenever the session reaches a state that resolves WaitForSessionToOpen().
+    minipal_condition_variable m_sessionStateCondition;
+    bool m_fInitSessionStateCondition = false;
+#endif // RIGHT_SIDE_COMPILE
+
+    // Thread responsible for initial Connect()/Accept() on a low level transport connection and
+    // subsequently for all message reception on that connection. Any error will cause the thread to reset
+    // back into the Connect()/Accept() phase (along with the resulting session state change).
+    HANDLE          m_hTransportThread = NULL;
+
+    IDebugChannel* m_channel = NULL;
+
+#ifdef RIGHT_SIDE_COMPILE
+    // On the RS the transport thread needs to know the IP address and port number to Connect() to.
+    ProcessDescriptor m_pd;                  // Descriptor of a process we're talking to.
+
+    WaitHandle *m_hProcessExited = NULL;     // wait which will be signaled when the debuggee is terminated
+
+    bool              m_fDebuggerAttached;
+#endif
+
+    // Debugger event handling. To improve performance we allow the debugger to send as many events as it
+    // likes without acknowledgement from its peer. While not strictly adhering to the semantic provided by
+    // the shared memory buffer transport (where the buffer could not be written again until the receiver had
+    // explicitly released it) it turns out that no debugging code relies on this. In particular, the most
+    // common scenario where this makes sense is the left side sending large scale update events (such as the
+    // groups of appdomain create, module load etc. events sent during an attach). Here the right hand side
+    // queues the events for later processing and releases the buffers right away.
+    // We gain performance since its no longer necessary to send (or wait on) event acknowledgment messages.
+    // This lowers both network bandwidth and latency (especially when one side is trying to send a continuous
+    // stream of events).
+    // From the transport standpoint this design mainly impacts event receipt. We maintain a dynamically sized
+    // pool of event receipt buffers (the size is determined by the maximum number of unread events we've seen
+    // at any one time). The buffer is a circular array: clients read from the buffer at head index which is
+    // followed by some number of valid buffers (wrapping around to the start of the array if necessary). New
+    // events are added after these (and grow the array if the tail would touch the head otherwise).
+    DbgEventBufferEntry * m_pEventBuffers = NULL;           // Pointer to array of incoming debugger events
+    DWORD           m_cEventBuffers;                        // Size of the array above (in events)
+    DWORD           m_cValidEventBuffers;                   // Number of events that actually contain data
+    DWORD           m_idxEventBufferHead;                   // Index of the first valid event
+    DWORD           m_idxEventBufferTail;                   // Index of the first invalid event
+    WaitEvent *m_rghEventReadyEvent[IPCET_Max] = {};        // The event signalled when a new event arrives
+
+#ifndef RIGHT_SIDE_COMPILE
+    // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.
+    // These are provided by the runtime at initialization time.
+    DebuggerIPCControlBlock *m_pDCB;
+#endif // !RIGHT_SIDE_COMPILE
 
 #ifdef _DEBUG
     // Store statistics for various session activities that will be useful for performance analysis and tracking
@@ -587,10 +712,8 @@ private:
         LONG        m_cSentEvent;
         LONG        m_cSentReadMemory;
         LONG        m_cSentWriteMemory;
-        LONG        m_cSentVirtualUnwind;
         LONG        m_cSentGetDCB;
         LONG        m_cSentSetDCB;
-        LONG        m_cSentGetAppDomainCB;
         LONG        m_cSentDDMessage;
 
         // Message type counts for receives.
@@ -602,10 +725,8 @@ private:
         LONG        m_cReceivedEvent;
         LONG        m_cReceivedReadMemory;
         LONG        m_cReceivedWriteMemory;
-        LONG        m_cReceivedVirtualUnwind;
         LONG        m_cReceivedGetDCB;
         LONG        m_cReceivedSetDCB;
-        LONG        m_cReceivedGetAppDomainCB;
         LONG        m_cReceivedDDMessage;
 
         // Low level block counts.
@@ -641,116 +762,6 @@ private:
 #define DBG_TRANSPORT_ADD_STAT(_name, _amount)
 
 #endif // _DEBUG
-
-    // Reference count
-    LONG m_ref;
-
-    // Some flags used to record how far we got in Init() (used for cleanup in Shutdown()).
-    bool m_fInitStateLock;
-#ifndef RIGHT_SIDE_COMPILE
-    bool m_fInitWSA;
-#endif // !RIGHT_SIDE_COMPILE
-
-    // Protocol version. This consists of two parts. The major version is incremented on incompatible protocol
-    // updates. That is, a session between left and right sides that cannot use a protocol with the exact same
-    // major version cannot be formed. The minor version number is incremented on compatible protocol updates.
-    // These are usually associated with optional extensions to the protocol (e.g. a V1.2 endpoint might set
-    // previously unused fields in a message header to indicate some optional hint about the message that a
-    // V1.1 client won't notice at all).
-    //
-    // The right side has a hard-coded version number it sends in the SessionRequest message. The left side
-    // must support the same major version or reply with a SessionReject message containing the highest
-    // version it does support. For this reason the format of a SessionReject message can never change at all.
-    // On a SessionAccept the left side sends back the version number and can choose to lower the minor
-    // version to the highest it knows about. This gives the right side a hint as to the capabilities of the
-    // left side (though it must be prepared to interact with a left side with any minor version number).
-    //
-    // If necessary (and the SessionReject message sent by an incompatible left side indicates a major version
-    // the right side can also support), the right side can re-attempt a SessionRequest with a lower major
-    // version.
-    DWORD           m_dwMajorVersion;
-    DWORD           m_dwMinorVersion;
-
-    // Session ID randomly allocated by the right side and sent over in the SessionRequest message. This
-    // serves to disambiguate a re-send of the SessionRequest due to a network error versus a SessionRequest
-    // from a different debugger.
-    GUID            m_sSessionID;
-
-    // Lock used to synchronize sending messages and updating the session state. This ensures message bytes
-    // don't become interleaved on the transport connection, the send queue is updated consistently across
-    // multiple threads and that we never attempt to use a connection that is being deallocated on another
-    // thread due to a state change. Receives don't need this since they're performed only on the transport
-    // thread (which is also the only thread allowed to deallocate the connection).
-    DbgTransportLock m_sStateLock;
-
-    // Queue of messages that have been sent over the connection but not acknowledged yet or are waiting to be
-    // sent (because another message is using the connection or we're in a SessionResync state). You must hold
-    // m_sStateLock in order to access this queue.
-    Message        *m_pSendQueueFirst;
-    Message        *m_pSendQueueLast;
-
-    // Message IDs. These are monotonically increasing numbers starting from 0 that are used to stamp each
-    // non-session management message sent on this session. If a low-level network error occurs and we must
-    // abandon and re-form the underlying transport connection the left and right sides send SessionResync
-    // messages with the ID of the last message they received (and processed). This allows us to determine
-    // which messages we still have in our send queue must be re-sent over the new transport connection.
-    // Allocate a new message ID by post incrementing m_dwNextMessageId under the state lock.
-    DWORD           m_dwNextMessageId;      // Next ID we'll give to a message we're sending
-    DWORD           m_dwLastMessageIdSeen;  // Last ID we saw in an incoming, fully received message
-
-    // The current session state. This is updated atomically under m_sStateLock.
-    SessionState    m_eState;
-
-#ifdef RIGHT_SIDE_COMPILE
-    // Manual reset event that is signalled whenever the session state is SS_Open or SS_Closed (after waiting
-    // on this event the caller should check to see which state it was).
-    HANDLE          m_hSessionOpenEvent;
-#endif // RIGHT_SIDE_COMPILE
-
-    // Thread responsible for initial Connect()/Accept() on a low level transport connection and
-    // subsequently for all message reception on that connection. Any error will cause the thread to reset
-    // back into the Connect()/Accept() phase (along with the resulting session state change).
-    HANDLE          m_hTransportThread;
-
-    TwoWayPipe      m_pipe;
-
-#ifdef RIGHT_SIDE_COMPILE
-    // On the RS the transport thread needs to know the IP address and port number to Connect() to.
-    ProcessDescriptor m_pd;                  // Descriptor of a process we're talking to.
-
-    HANDLE            m_hProcessExited;       // event which will be signaled when the debuggee is terminated
-
-    bool              m_fDebuggerAttached;
-#endif
-
-    // Debugger event handling. To improve performance we allow the debugger to send as many events as it
-    // likes without acknowledgement from its peer. While not strictly adhering to the semantic provided by
-    // the shared memory buffer transport (where the buffer could not be written again until the receiver had
-    // explicitly released it) it turns out that no debugging code relies on this. In particular, the most
-    // common scenario where this makes sense is the left side sending large scale update events (such as the
-    // groups of appdomain create, module load etc. events sent during an attach). Here the right hand side
-    // queues the events for later processing and releases the buffers right away.
-    // We gain performance since its no longer necessary to send (or wait on) event acknowledgment messages.
-    // This lowers both network bandwidth and latency (especially when one side is trying to send a continuous
-    // stream of events).
-    // From the transport standpoint this design mainly impacts event receipt. We maintain a dynamically sized
-    // pool of event receipt buffers (the size is determined by the maximum number of unread events we've seen
-    // at any one time). The buffer is a circular array: clients read from the buffer at head index which is
-    // followed by some number of valid buffers (wrapping around to the start of the array if necessary). New
-    // events are added after these (and grow the array if the tail would touch the head otherwise).
-    DbgEventBufferEntry * m_pEventBuffers;                  // Pointer to array of incoming debugger events
-    DWORD           m_cEventBuffers;                        // Size of the array above (in events)
-    DWORD           m_cValidEventBuffers;                   // Number of events that actually contain data
-    DWORD           m_idxEventBufferHead;                   // Index of the first valid event
-    DWORD           m_idxEventBufferTail;                   // Index of the first invalid event
-    HANDLE          m_rghEventReadyEvent[IPCET_Max];        // The event signalled when a new event arrives
-
-#ifndef RIGHT_SIDE_COMPILE
-    // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.
-    // These are provided by the runtime at initialization time.
-    DebuggerIPCControlBlock *m_pDCB;
-    AppDomainEnumerationIPCBlock *m_pADB;
-#endif // !RIGHT_SIDE_COMPILE
 
     HRESULT SendEventWorker(DebuggerIPCEvent * pEvent, IPCEventType type);
 
@@ -809,6 +820,8 @@ private:
     // Initialize all session state to correct starting values. Used during Init() and on the LS when we
     // gracefully close one session and prepare for another.
     void InitSessionState();
+    void SetSessionState(SessionState state);
+    void SetSessionStateUnderLock(SessionState state);
 
     // The entry point of the transport worker thread. This one's static, so we immediately dispatch to an
     // instance method version defined below for convenience in the implementation.
@@ -839,9 +852,14 @@ private:
 // The one and only transport instance for the left side. Allocated and initialized during EE startup (from
 // Debugger::Startup() in debugger.cpp).
 extern DbgTransportSession *g_pDbgTransport;
-#endif // !RIGHT_SIDE_COMPILE
 
-#define DBG_GET_LAST_WSA_ERROR() WSAGetLastError()
+#ifdef HOST_UNIX
+// Callback set by TwoWayPipe::CreateServer() once server pipe names are initialized.
+// Called from Debugger::CleanupTransportSocket() to unlink the server pipes.
+// NULL until CreateServer() has been called.
+extern void (*g_pfnAbortTransportCallback)(void);
+#endif // HOST_UNIX
+#endif // !RIGHT_SIDE_COMPILE
 
 #endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 

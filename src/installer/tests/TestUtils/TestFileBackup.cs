@@ -68,37 +68,31 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void Dispose()
         {
-            if (Directory.Exists(_backupPath))
+            RetryOnIOError(() =>
             {
-                CopyOverDirectory(_backupPath, _basePath);
-
-                // Directory.Delete sometimes fails with error that the directory is not empty.
-                // This is a known problem where the actual Delete call is not 100% synchronous
-                // the OS reports a success but the file/folder is not fully removed yet.
-                // So implement a simple retry with a short timeout.
-                IOException exception = null;
-                for (int retryCount = 5; retryCount > 0; retryCount--)
+                if (Directory.Exists(_backupPath))
                 {
-                    try
-                    {
-                        Directory.Delete(_backupPath, recursive: true);
-                        if (!Directory.Exists(_backupPath))
-                        {
-                            return;
-                        }
-                    }
-                    catch (IOException ex)
-                    {
-                        exception = ex;
-                    }
-
-                    System.Threading.Thread.Sleep(200);
+                    // Copying may fail if the file is still mapped from a process that is exiting
+                    CopyOverDirectory(_backupPath, _basePath);
                 }
-                
-                throw new Exception(
-                    $"Failed to delete the backup folder {_backupPath} even after retries.\r\n"
-                    + (exception == null ? "" : exception.ToString()));
-            }
+                return true;
+            }, $"Failed to restore files from the backup directory {_backupPath} even after retries");
+
+            RetryOnIOError(() =>
+                {
+                    if (Directory.Exists(_backupPath))
+                    {
+                        // Directory.Delete sometimes fails with error that the directory is not empty.
+                        // This is a known problem where the actual Delete call is not 100% synchronous
+                        // the OS reports a success but the file/folder is not fully removed yet.
+                        // So implement a simple retry with a short timeout.
+                        Directory.Delete(_backupPath, recursive: true);
+                        return !Directory.Exists(_backupPath);
+                    }
+                    return true;
+                },
+                $"Failed to delete the backup folder {_backupPath} even after retries."
+            );
         }
 
         private static void CopyOverDirectory(string source, string destination)
@@ -110,8 +104,44 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             foreach (string file in Directory.GetFiles(source))
             {
-                File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
+                // Some files may still be reported as in use my the OS - for example immediately after
+                // process exit. Simple retry to separate this case from a file being intentionally locked.
+                RetryOnIOError(() =>
+                    {
+                        File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
+                        return true;
+                    },
+                    $"Failed to restore file {Path.GetFileName(file)}"
+                );
             }
+        }
+
+        private static void RetryOnIOError(Func<bool> action, string errorMessage, int maxRetries = 25)
+        {
+            IOException exception = null;
+            for (int i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    if (action())
+                    {
+                        return;
+                    }
+                }
+                catch (IOException e)
+                {
+                    exception = e;
+                }
+
+                System.Threading.Thread.Sleep(200);
+            }
+
+            throw new Exception(
+                $"""
+                {errorMessage}
+                {(exception == null ? "" : exception.ToString())}
+                """);
+
         }
     }
 }

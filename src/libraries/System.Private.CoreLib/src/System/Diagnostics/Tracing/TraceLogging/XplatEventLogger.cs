@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -20,6 +21,9 @@ namespace System.Diagnostics.Tracing
 
         private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName));
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial char* EventSource_GetClrConfig(string configName);
 
@@ -40,10 +44,16 @@ namespace System.Diagnostics.Tracing
             return null;
         }
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsEventSourceLoggingEnabled();
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
@@ -75,7 +85,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private static string Serialize(ReadOnlyCollection<string>? payloadName, ReadOnlyCollection<object?>? payload, string? eventMessage)
+        private static unsafe string Serialize(ReadOnlyCollection<string>? payloadName, ReadOnlyCollection<object?>? payload, string? eventMessage)
         {
             if (payloadName == null || payload == null)
                 return string.Empty;

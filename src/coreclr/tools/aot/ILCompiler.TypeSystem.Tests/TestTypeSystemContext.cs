@@ -26,6 +26,7 @@ namespace TypeSystemTests
 
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
+        private DecimalFieldLayoutAlgorithm _decimalFieldLayoutAlgorithm;
 
         private MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
@@ -37,8 +38,9 @@ namespace TypeSystemTests
         public TestTypeSystemContext(TargetArchitecture arch, TargetOS targetOS = TargetOS.Unknown)
             : base(new TargetDetails(arch, targetOS, TargetAbi.Unknown))
         {
-            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayout, true);
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayout);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayout);
+            _decimalFieldLayoutAlgorithm = new DecimalFieldLayoutAlgorithm(_metadataFieldLayout);
         }
 
         public ModuleDesc GetModuleForSimpleName(string simpleName)
@@ -79,13 +81,17 @@ namespace TypeSystemTests
             {
                 return _int128FieldLayoutAlgorithm;
             }
+            else if (DecimalFieldLayoutAlgorithm.IsDecimalFloatingPointType(type))
+            {
+                return _decimalFieldLayoutAlgorithm;
+            }
 
             return _metadataFieldLayout;
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
-            _arrayOfTRuntimeInterfacesAlgorithm ??= new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System", "Array`1"));
+            _arrayOfTRuntimeInterfacesAlgorithm ??= new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System"u8, "Array`1"u8));
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 

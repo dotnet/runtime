@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal;
 using Internal.NativeFormat;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -43,9 +44,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 for (; ; )
                 {
                     TypeDefinition defType = defTypeInfo.MetadataReader.GetTypeDefinition(defTypeHandle);
-                    string namespaceName = defTypeInfo.MetadataReader.GetString(defType.Namespace);
-                    string typeName = defTypeInfo.MetadataReader.GetString(defType.Name);
-                    hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                    ReadOnlySpan<byte> namespaceName = defTypeInfo.MetadataReader.GetStringBytes(defType.Namespace);
+                    ReadOnlySpan<byte> typeName = defTypeInfo.MetadataReader.GetStringBytes(defType.Name);
+                    hashCode ^= VersionResilientHashCode.NameHashCode(namespaceName, typeName);
                     if (!defType.Attributes.IsNested())
                     {
                         break;
@@ -62,9 +63,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 for (; ;)
                 {
                     ExportedType expType = expTypeInfo.MetadataReader.GetExportedType(expTypeHandle);
-                    string namespaceName = expTypeInfo.MetadataReader.GetString(expType.Namespace);
-                    string typeName = expTypeInfo.MetadataReader.GetString(expType.Name);
-                    hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                    ReadOnlySpan<byte> namespaceName = expTypeInfo.MetadataReader.GetStringBytes(expType.Namespace);
+                    ReadOnlySpan<byte> typeName = expTypeInfo.MetadataReader.GetStringBytes(expType.Name);
+                    hashCode ^= VersionResilientHashCode.NameHashCode(namespaceName, typeName);
                     if (expType.Implementation.Kind != HandleKind.ExportedType)
                     {
                         // Not a nested class

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace b89797;
+
 using System;
 using Xunit;
 public unsafe class testout1
@@ -26,6 +29,7 @@ public unsafe class testout1
         return retval_1;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

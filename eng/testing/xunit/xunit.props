@@ -3,6 +3,9 @@
     <!-- Microsoft.Net.Test.Sdk brings a lot of satellite assemblies in. -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <TestRunnerConfigPath>$(MSBuildThisFileDirectory)xunit.runner.json</TestRunnerConfigPath>
+    <!-- xUnit1051 recommends TestContext.Current.CancellationToken (v3 pattern) which
+         is not yet adopted; suppress until a full v3 migration is performed. -->
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

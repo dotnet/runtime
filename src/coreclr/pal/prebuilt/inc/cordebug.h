@@ -373,18 +373,11 @@ typedef interface ICorDebugProcess10 ICorDebugProcess10;
 #endif  /* __ICorDebugProcess10_FWD_DEFINED__ */
 
 
-#ifndef __ICorDebugMemoryRangeEnum_FWD_DEFINED__
-#define __ICorDebugMemoryRangeEnum_FWD_DEFINED__
-typedef interface ICorDebugMemoryRangeEnum ICorDebugMemoryRangeEnum;
+#ifndef __ICorDebugProcess12_FWD_DEFINED__
+#define __ICorDebugProcess12_FWD_DEFINED__
+typedef interface ICorDebugProcess12 ICorDebugProcess12;
 
-#endif  /* __ICorDebugMemoryRangeEnum_FWD_DEFINED__ */
-
-
-#ifndef __ICorDebugProcess11_FWD_DEFINED__
-#define __ICorDebugProcess11_FWD_DEFINED__
-typedef interface ICorDebugProcess11 ICorDebugProcess11;
-
-#endif  /* __ICorDebugProcess11_FWD_DEFINED__ */
+#endif  /* __ICorDebugProcess12_FWD_DEFINED__ */
 
 
 #ifndef __ICorDebugModuleDebugEvent_FWD_DEFINED__
@@ -8345,96 +8338,58 @@ EXTERN_C const IID IID_ICorDebugProcess10;
 #endif  /* __ICorDebugProcess10_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0045 */
-/* [local] */
+#ifndef __ICorDebugProcess12_INTERFACE_DEFINED__
+#define __ICorDebugProcess12_INTERFACE_DEFINED__
 
-typedef struct _COR_MEMORY_RANGE
-    {
-    CORDB_ADDRESS start;
-    CORDB_ADDRESS end;
-    }   COR_MEMORY_RANGE;
-
-
-
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0045_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0045_v0_0_s_ifspec;
-
-#ifndef __ICorDebugMemoryRangeEnum_INTERFACE_DEFINED__
-#define __ICorDebugMemoryRangeEnum_INTERFACE_DEFINED__
-
-/* interface ICorDebugMemoryRangeEnum */
+/* interface ICorDebugProcess12 */
 /* [unique][uuid][local][object] */
 
 
-EXTERN_C const IID IID_ICorDebugMemoryRangeEnum;
-
+EXTERN_C const IID IID_ICorDebugProcess12;
 #if defined(__cplusplus) && !defined(CINTERFACE)
 
-    MIDL_INTERFACE("D1A0BCFC-5865-4437-BE3F-36F022951F8A")
-    ICorDebugMemoryRangeEnum : public ICorDebugEnum
+    MIDL_INTERFACE("4dcd6fb9-3cf0-43f0-9edf-e833070fe644")
+    ICorDebugProcess12 : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE Next(
-            /* [in] */ ULONG celt,
-            /* [length_is][size_is][out] */ COR_MEMORY_RANGE objects[  ],
-            /* [out] */ ULONG *pceltFetched) = 0;
+        virtual HRESULT STDMETHODCALLTYPE GetAsyncStack(
+            /* [in] */ CORDB_ADDRESS continuationAddress,
+            /* [out] */ ICorDebugStackWalk **ppStackWalk) = 0;
 
     };
 
 
 #else   /* C style interface */
 
-    typedef struct ICorDebugMemoryRangeEnumVtbl
+    typedef struct ICorDebugProcess12Vtbl
     {
         BEGIN_INTERFACE
 
         DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
-            ICorDebugMemoryRangeEnum * This,
+            ICorDebugProcess12 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */
             _COM_Outptr_  void **ppvObject);
 
         DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )(
-            ICorDebugMemoryRangeEnum * This);
+            ICorDebugProcess12 * This);
 
         DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )(
-            ICorDebugMemoryRangeEnum * This);
-
-        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
-        HRESULT ( STDMETHODCALLTYPE *Skip )(
-            ICorDebugMemoryRangeEnum * This,
-            /* [in] */ ULONG celt);
-
-        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
-        HRESULT ( STDMETHODCALLTYPE *Reset )(
-            ICorDebugMemoryRangeEnum * This);
-
-        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
-        HRESULT ( STDMETHODCALLTYPE *Clone )(
-            ICorDebugMemoryRangeEnum * This,
-            /* [out] */ ICorDebugEnum **ppEnum);
-
-        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
-        HRESULT ( STDMETHODCALLTYPE *GetCount )(
-            ICorDebugMemoryRangeEnum * This,
-            /* [out] */ ULONG *pcelt);
-
-        DECLSPEC_XFGVIRT(ICorDebugMemoryRangeEnum, Next)
-        HRESULT ( STDMETHODCALLTYPE *Next )(
-            ICorDebugMemoryRangeEnum * This,
-            /* [in] */ ULONG celt,
-            /* [length_is][size_is][out] */ COR_MEMORY_RANGE objects[  ],
-            /* [out] */ ULONG *pceltFetched);
-
+            ICorDebugProcess12 * This);
+        DECLSPEC_XFGVIRT(ICorDebugProcess12, GetAsyncStack)
+        HRESULT ( STDMETHODCALLTYPE *GetAsyncStack )(
+            ICorDebugProcess12 * This,
+            /* [in] */ CORDB_ADDRESS continuationAddress,
+            /* [out] */ ICorDebugStackWalk **ppStackWalk);
         END_INTERFACE
-    } ICorDebugMemoryRangeEnumVtbl;
+    } ICorDebugProcess12Vtbl;
 
-    interface ICorDebugMemoryRangeEnum
+    interface ICorDebugProcess12
     {
-        CONST_VTBL struct ICorDebugMemoryRangeEnumVtbl *lpVtbl;
+        CONST_VTBL struct ICorDebugProcess12Vtbl *lpVtbl;
     };
 
 
@@ -8442,31 +8397,18 @@ EXTERN_C const IID IID_ICorDebugMemoryRangeEnum;
 #ifdef COBJMACROS
 
 
-#define ICorDebugMemoryRangeEnum_QueryInterface(This,riid,ppvObject)    \
+#define ICorDebugProcess12_QueryInterface(This,riid,ppvObject)  \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
 
-#define ICorDebugMemoryRangeEnum_AddRef(This)   \
+#define ICorDebugProcess12_AddRef(This) \
     ( (This)->lpVtbl -> AddRef(This) )
 
-#define ICorDebugMemoryRangeEnum_Release(This)  \
+#define ICorDebugProcess12_Release(This)    \
     ( (This)->lpVtbl -> Release(This) )
 
 
-#define ICorDebugMemoryRangeEnum_Skip(This,celt)    \
-    ( (This)->lpVtbl -> Skip(This,celt) )
-
-#define ICorDebugMemoryRangeEnum_Reset(This)    \
-    ( (This)->lpVtbl -> Reset(This) )
-
-#define ICorDebugMemoryRangeEnum_Clone(This,ppEnum) \
-    ( (This)->lpVtbl -> Clone(This,ppEnum) )
-
-#define ICorDebugMemoryRangeEnum_GetCount(This,pcelt)   \
-    ( (This)->lpVtbl -> GetCount(This,pcelt) )
-
-
-#define ICorDebugMemoryRangeEnum_Next(This,celt,objects,pceltFetched)   \
-    ( (This)->lpVtbl -> Next(This,celt,objects,pceltFetched) )
+#define ICorDebugProcess12_GetAsyncStack(This,continuationAddress,ppStackWalk)  \
+    ( (This)->lpVtbl -> GetAsyncStack(This,continuationAddress,ppStackWalk) )
 
 #endif /* COBJMACROS */
 
@@ -8476,91 +8418,8 @@ EXTERN_C const IID IID_ICorDebugMemoryRangeEnum;
 
 
 
-#endif  /* __ICorDebugMemoryRangeEnum_INTERFACE_DEFINED__ */
+#endif  /* __ICorDebugProcess12_INTERFACE_DEFINED__ */
 
-
-#ifndef __ICorDebugProcess11_INTERFACE_DEFINED__
-#define __ICorDebugProcess11_INTERFACE_DEFINED__
-
-/* interface ICorDebugProcess11 */
-/* [unique][uuid][local][object] */
-
-
-EXTERN_C const IID IID_ICorDebugProcess11;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-
-    MIDL_INTERFACE("344B37AA-F2C0-4D3B-9909-91CCF787DA8C")
-    ICorDebugProcess11 : public IUnknown
-    {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE EnumerateLoaderHeapMemoryRegions(
-            /* [out] */ ICorDebugMemoryRangeEnum **ppRanges) = 0;
-
-    };
-
-
-#else   /* C style interface */
-
-    typedef struct ICorDebugProcess11Vtbl
-    {
-        BEGIN_INTERFACE
-
-        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
-            ICorDebugProcess11 * This,
-            /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */
-            _COM_Outptr_  void **ppvObject);
-
-        DECLSPEC_XFGVIRT(IUnknown, AddRef)
-        ULONG ( STDMETHODCALLTYPE *AddRef )(
-            ICorDebugProcess11 * This);
-
-        DECLSPEC_XFGVIRT(IUnknown, Release)
-        ULONG ( STDMETHODCALLTYPE *Release )(
-            ICorDebugProcess11 * This);
-
-        DECLSPEC_XFGVIRT(ICorDebugProcess11, EnumerateLoaderHeapMemoryRegions)
-        HRESULT ( STDMETHODCALLTYPE *EnumerateLoaderHeapMemoryRegions )(
-            ICorDebugProcess11 * This,
-            /* [out] */ ICorDebugMemoryRangeEnum **ppRanges);
-
-        END_INTERFACE
-    } ICorDebugProcess11Vtbl;
-
-    interface ICorDebugProcess11
-    {
-        CONST_VTBL struct ICorDebugProcess11Vtbl *lpVtbl;
-    };
-
-
-
-#ifdef COBJMACROS
-
-
-#define ICorDebugProcess11_QueryInterface(This,riid,ppvObject)  \
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
-
-#define ICorDebugProcess11_AddRef(This) \
-    ( (This)->lpVtbl -> AddRef(This) )
-
-#define ICorDebugProcess11_Release(This)    \
-    ( (This)->lpVtbl -> Release(This) )
-
-
-#define ICorDebugProcess11_EnumerateLoaderHeapMemoryRegions(This,ppRanges)  \
-    ( (This)->lpVtbl -> EnumerateLoaderHeapMemoryRegions(This,ppRanges) )
-
-#endif /* COBJMACROS */
-
-
-#endif  /* C style interface */
-
-
-
-
-#endif  /* __ICorDebugProcess11_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorDebugModuleDebugEvent_INTERFACE_DEFINED__

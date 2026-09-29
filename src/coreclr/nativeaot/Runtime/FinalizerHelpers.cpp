@@ -27,17 +27,34 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
-static HANDLE g_lowMemoryNotification = NULL;
+#ifdef TARGET_WINDOWS
+static CLREventStatic g_lowMemoryNotification;
+static bool g_ComAndFlsInitSucceeded = false;
+#endif
 
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
-// Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we can't run managed code. Instead this method waits
+// Unmanaged front-end to the finalizer thread. We require this because at the point when this thread is
+// created we can't run managed code. Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
 // managed portion of the thread at that point
 uint32_t WINAPI FinalizerStart(void* pContext)
 {
-    HANDLE hFinalizerEvent = (HANDLE)pContext;
+#ifdef TARGET_WINDOWS
+    g_ComAndFlsInitSucceeded = PalInitComAndFlsSlot();
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    bool res = g_FinalizerDoneEvent.Set();
+    ASSERT(res);
+
+    // if FLS initialization failed do not attach the current thread and just exit instead.
+    // we are going to fail the runtime initialization.
+    if (!g_ComAndFlsInitSucceeded)
+        return 0;
+#endif // TARGET_WINDOWS
+
+    CLREventStatic* finalizerEvent = static_cast<CLREventStatic*>(pContext);
+
+    PalSetCurrentThreadName(".NET Finalizer");
 
     ThreadStore::AttachCurrentThread();
     Thread * pThread = ThreadStore::GetCurrentThread();
@@ -49,12 +66,12 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     g_pFinalizerThread = PTR_Thread(pThread);
 
     // Wait for a finalization request.
-    uint32_t uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
+    uint32_t uResult = finalizerEvent->Wait(INFINITE, false, false);
     ASSERT(uResult == WAIT_OBJECT_0);
 
     // Since we just consumed the request (and the event is auto-reset) we must set the event again so the
     // managed finalizer code will immediately start processing the queue when we run it.
-    UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
+    bool fResult = finalizerEvent->Set();
     ASSERT(fResult);
 
     // Run the managed portion of the finalizer. This call will never return.
@@ -75,21 +92,34 @@ bool RhInitializeFinalization()
         return false;
     if (!g_FinalizerDoneEvent.CreateManualEventNoThrow(false))
         return false;
-    g_lowMemoryNotification = PalCreateLowMemoryResourceNotification();
+#ifdef TARGET_WINDOWS
+    HANDLE lowMemoryNotification = PalCreateLowMemoryResourceNotification();
+    if (lowMemoryNotification != NULL)
+    {
+        bool success = g_lowMemoryNotification.CreateFromOSHandle(lowMemoryNotification);
+        CloseHandle(lowMemoryNotification);
+        if (!success)
+            return false;
+    }
+#endif
 
     // Create the finalizer thread itself.
-    if (!PalStartFinalizerThread(FinalizerStart, (void*)g_FinalizerEvent.GetOSEvent()))
+    if (!PalStartFinalizerThread(FinalizerStart, &g_FinalizerEvent))
         return false;
 
     return true;
 }
 
-void RhEnableFinalization()
+#ifdef TARGET_WINDOWS
+bool RhWaitForFinalizerThreadStart()
 {
-    g_FinalizerEvent.Set();
+    g_FinalizerDoneEvent.Wait(INFINITE, FALSE, false);
+    g_FinalizerDoneEvent.Reset();
+    return g_ComAndFlsInitSucceeded;
 }
+#endif
 
-EXTERN_C void QCALLTYPE RhInitializeFinalizerThread()
+void RhEnableFinalization()
 {
     g_FinalizerEvent.Set();
 }
@@ -167,12 +197,23 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
     // two second timeout expires.
     do
     {
-        HANDLE  lowMemEvent = g_lowMemoryNotification;
+#ifdef TARGET_WINDOWS
+        HANDLE lowMemEvent = g_lowMemoryNotification.IsValid()
+            ? (HANDLE)g_lowMemoryNotification.GetOSEvent()
+            : NULL;
+#else
+        HANDLE lowMemEvent = NULL;
+#endif
         HANDLE  rgWaitHandles[] = { g_FinalizerEvent.GetOSEvent(), lowMemEvent };
         uint32_t  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         uint32_t  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
-        uint32_t uResult = PalCompatibleWaitAny(/*alertable=*/ FALSE, uTimeout, cWaitHandles, rgWaitHandles, /*allowReentrantWait=*/ FALSE);
+#ifdef TARGET_WINDOWS
+        uint32_t uResult = WaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, false, uTimeout, false);
+#else
+        ASSERT(cWaitHandles == 1);
+        uint32_t uResult = g_FinalizerEvent.Wait(uTimeout);
+#endif
 
         switch (uResult)
         {
@@ -205,7 +246,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             break;
 
         default:
-            ASSERT(!"Unexpected PalWaitForMultipleObjectsEx() result");
+            ASSERT(!"Unexpected event wait result");
             return FALSE;
         }
     } while (true);
@@ -238,5 +279,11 @@ FCIMPL0(OBJECTREF, RhpGetNextFinalizableObject)
         // We've found the first finalizable object, return it to the caller.
         return refNext;
     }
+}
+FCIMPLEND
+
+FCIMPL0(FC_BOOL_RET, RhpCurrentThreadIsFinalizerThread)
+{
+    FC_RETURN_BOOL(ThreadStore::GetCurrentThread() == g_pFinalizerThread);
 }
 FCIMPLEND

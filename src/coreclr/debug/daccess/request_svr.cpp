@@ -225,7 +225,9 @@ HRESULT
 ClrDataAccess::ServerGCInterestingInfoData(CLRDATA_ADDRESS addr, DacpGCInterestingInfoData *interestingInfoData)
 {
 #ifdef GC_CONFIG_DRIVEN
-    dac_gc_heap *pHeap = __DPtr<dac_gc_heap>(TO_TADDR(addr));
+    TADDR heapAddress = TO_TADDR(addr);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
+    dac_gc_heap* pHeap = &heap;
 
     size_t* dataPoints = (size_t*)&(pHeap->interesting_data_per_heap);
     for (int i = 0; i < NUM_GC_DATA_POINTS; i++)
@@ -472,8 +474,8 @@ void DacFreeRegionEnumerator::AddServerRegions()
             continue;
 
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
-        for (int i = 0; i < count_free_region_kinds; i++)
-            AddSegmentList(heap.free_regions[i].head_free_region, FreeRegionKind::FreeRegion, i);
+        for (int kind = 0; kind < count_free_region_kinds; kind++)
+            AddSegmentList(heap.free_regions[kind].head_free_region, FreeRegionKind::FreeRegion, i);
 
         AddSegmentList(heap.freeable_soh_segment, FreeRegionKind::FreeSohSegment, i);
         AddSegmentList(heap.freeable_uoh_segment, FreeRegionKind::FreeUohSegment, i);

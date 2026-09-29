@@ -9,6 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly 'b31283' {}
 .assembly extern xunit.core {}
 .class public ILGEN_0xdba5be7f {
@@ -30,19 +31,19 @@
 //END INIT LOCALS
 
 //BEGIN INIT OF STATIC FIELDS
-ldc.r8 float64(0x466567315d8b58f3) 
+ldc.r8 float64(0x466567315d8b58f3)
 stsfld float64 ILGEN_0xdba5be7f::field_0x0
 ldc.i4 255
- newarr [mscorlib]System.Int16 
+ newarr [mscorlib]System.Int16
  stsfld int16[] ILGEN_0xdba5be7f::field_0x1
-ldc.i4 0x425d2d05 
+ldc.i4 0x425d2d05
 stsfld int32 ILGEN_0xdba5be7f::field_0x2
 ldc.i4 255
- newarr [mscorlib]System.Single 
+ newarr [mscorlib]System.Single
  stsfld float32[] ILGEN_0xdba5be7f::field_0x3
-ldc.r4 float32(0x5b5164d8) 
+ldc.r4 float32(0x5b5164d8)
 stsfld float32 ILGEN_0xdba5be7f::field_0x4
-ldc.r4 float32(0x6546ddc) 
+ldc.r4 float32(0x6546ddc)
 stsfld float32 ILGEN_0xdba5be7f::field_0x5
 
 //END INIT OF STATIC FIELDS
@@ -260,6 +261,10 @@ ret
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+    string('Needs triage')
+    int32(0x2) // Mono
+}
 .entrypoint
 .maxstack	2
 .try {

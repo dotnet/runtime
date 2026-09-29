@@ -1,0 +1,144 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Diagnostics;
+
+namespace Microsoft.Diagnostics.DataContractReader.Contracts;
+
+internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi
+{
+    public static TargetPointer StubPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        TargetPointer stubPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
+        return stubPrecodeData.SecretParam;
+    }
+
+    public static TargetPointer FixupPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        TargetPointer fixupPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.FixupPrecodeData fixupPrecodeData = target.ProcessedData.GetOrAdd<Data.FixupPrecodeData>(fixupPrecodeDataAddress);
+        return fixupPrecodeData.MethodDesc;
+    }
+
+    public static TargetPointer ThisPtrRetBufPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        TargetPointer stubPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
+        Data.ThisPtrRetBufPrecodeData thisPtrRetBufPrecodeData = target.ProcessedData.GetOrAdd<Data.ThisPtrRetBufPrecodeData>(stubPrecodeData.SecretParam);
+        return thisPtrRetBufPrecodeData.MethodDesc;
+    }
+
+    public static TargetPointer InterpreterPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        TargetPointer dataAddr = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.InterpreterPrecodeData precodeData = target.ProcessedData.GetOrAdd<Data.InterpreterPrecodeData>(dataAddr);
+        Data.InterpByteCodeStart byteCodeStart = target.ProcessedData.GetOrAdd<Data.InterpByteCodeStart>(precodeData.ByteCodeAddr);
+        Data.InterpMethod interpMethod = target.ProcessedData.GetOrAdd<Data.InterpMethod>(byteCodeStart.Method);
+
+        return interpMethod.MethodDesc;
+    }
+
+    private static Data.StubPrecodeData_2 GetStubPrecodeData(TargetPointer stubInstrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        TargetPointer stubPrecodeDataAddress = stubInstrPointer + precodeMachineDescriptor.StubCodePageSize;
+        return target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
+    }
+
+    public static KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        if (ReadBytesAndCompare(instrPointer, precodeMachineDescriptor.StubBytes!, precodeMachineDescriptor.StubIgnoredBytes!, target))
+        {
+            // get the actual type from the StubPrecodeData
+            Data.StubPrecodeData_2 stubPrecodeData = GetStubPrecodeData(instrPointer, target, precodeMachineDescriptor);
+            byte exactPrecodeType = stubPrecodeData.Type;
+            if (exactPrecodeType == 0)
+                return null;
+
+            if (exactPrecodeType == precodeMachineDescriptor.StubPrecodeType)
+            {
+                return KnownPrecodeType.Stub;
+            }
+            else if (precodeMachineDescriptor.PInvokeImportPrecodeType is byte compareByte1 && compareByte1 == exactPrecodeType)
+            {
+                return KnownPrecodeType.PInvokeImport;
+            }
+            else if (precodeMachineDescriptor.ThisPointerRetBufPrecodeType is byte compareByte2 && compareByte2 == exactPrecodeType)
+            {
+                return KnownPrecodeType.ThisPtrRetBuf;
+            }
+            else if (precodeMachineDescriptor.UMEntryPrecodeType is byte compareByte3 && compareByte3 == exactPrecodeType)
+            {
+                return KnownPrecodeType.UMEntry;
+            }
+            else if (precodeMachineDescriptor.InterpreterPrecodeType is byte compareByte4 && compareByte4 == exactPrecodeType)
+            {
+                return KnownPrecodeType.Interpreter;
+            }
+            else if (precodeMachineDescriptor.DynamicHelperPrecodeType is byte compareByte5 && compareByte5 == exactPrecodeType)
+            {
+                return KnownPrecodeType.DynamicHelper;
+            }
+        }
+        else if (ReadBytesAndCompare(instrPointer, precodeMachineDescriptor.FixupBytes!, precodeMachineDescriptor.FixupIgnoredBytes!, target))
+        {
+            return KnownPrecodeType.Fixup;
+        }
+        return null;
+
+        static bool ReadBytesAndCompare(TargetPointer instrAddress, byte[] expectedBytePattern, byte[] bytesToIgnore, Target target)
+        {
+            for (ulong i = 0; i < (ulong)expectedBytePattern.Length; i++)
+            {
+                if (bytesToIgnore[i] == 0)
+                {
+                    byte targetBytePattern = target.Read<byte>(new TargetPointer((instrAddress.Value + (ulong)i)));
+                    if (expectedBytePattern[i] != targetBytePattern)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+    }
+}
+
+internal sealed class PrecodeStubs_1 : PrecodeStubsCommon<PrecodeStubs_1_Impl>
+{
+    public PrecodeStubs_1(Target target) : base(target) { }
+
+    public override TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(
+        TargetCodePointer entryPoint)
+    {
+        try
+        {
+            TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);
+            if (!Target.IsAlignedToPointerSize(instrPointer))
+                return entryPoint;
+
+            if (PrecodeStubs_1_Impl.TryGetKnownPrecodeType(
+                    instrPointer,
+                    Target,
+                    MachineDescriptor) is not KnownPrecodeType.Interpreter)
+            {
+                return entryPoint;
+            }
+
+            TargetPointer dataAddress =
+                instrPointer + MachineDescriptor.StubCodePageSize;
+            Data.InterpreterPrecodeData precodeData =
+                Target.ProcessedData.GetOrAdd<Data.InterpreterPrecodeData>(
+                    dataAddress);
+            return precodeData.ByteCodeAddr == TargetPointer.Null
+                ? entryPoint
+                : new TargetCodePointer(precodeData.ByteCodeAddr);
+        }
+        catch (VirtualReadException)
+        {
+            return entryPoint;
+        }
+    }
+}

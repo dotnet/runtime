@@ -14,9 +14,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map of generic virtual method implementations.
     /// </summary>
-    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private Dictionary<MethodDesc, Dictionary<TypeDesc, MethodDesc>> _gvmImplementations;
 
@@ -31,7 +30,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__gvm_table"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -53,11 +51,10 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
             MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();
 
-            var openCallingMethodNameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(openCallingMethod);
-            var openImplementationMethodNameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(openImplementationMethod);
-
-            dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openCallingMethodNameAndSig), "gvm table calling method signature"));
-            dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openImplementationMethodNameAndSig), "gvm table implementation method signature"));
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openCallingMethod);
+            dependencies.Add(factory.NecessaryTypeSymbol(openCallingMethod.OwningType), "Owning type of GVM declaration");
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openImplementationMethod);
+            dependencies.Add(factory.NecessaryTypeSymbol(openImplementationMethod.OwningType), "Owning type of GVM implementation");
         }
 
         private void AddGenericVirtualMethodImplementation(MethodDesc callingMethod, MethodDesc implementationMethod)
@@ -116,11 +113,11 @@ namespace ILCompiler.DependencyAnalysis
                     uint targetTypeId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(implementationType));
                     vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant(targetTypeId));
 
-                    var nameAndSig = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(callingMethod));
-                    vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)nameAndSig.SavedVertex.VertexOffset));
+                    int callingMethodToken = factory.MetadataManager.GetMetadataHandleForMethod(factory, callingMethod);
+                    vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)callingMethodToken));
 
-                    nameAndSig = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(implementationMethod));
-                    vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)nameAndSig.SavedVertex.VertexOffset));
+                    int implementationMethodToken = factory.MetadataManager.GetMetadataHandleForMethod(factory, implementationMethod);
+                    vertex = nativeFormatWriter.GetTuple(vertex, nativeFormatWriter.GetUnsignedConstant((uint)implementationMethodToken));
 
                     int hashCode = callingMethod.OwningType.GetHashCode();
                     hashCode = ((hashCode << 13) ^ hashCode) ^ implementationType.GetHashCode();
@@ -133,8 +130,6 @@ namespace ILCompiler.DependencyAnalysis
             _gvmImplementations = null;
 
             byte[] streamBytes = nativeFormatWriter.Save();
-
-            _size = streamBytes.Length;
 
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

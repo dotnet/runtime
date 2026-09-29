@@ -11,6 +11,8 @@
 #include <ex.h>
 #include <contract.h>
 
+#include <minipal/debugger.h>
+
 #ifdef _DEBUG
 size_t CHECK::s_cLeakedBytes = 0;
 size_t CHECK::s_cNumFailures = 0;
@@ -34,16 +36,12 @@ BOOL BaseContract::s_alwaysEnforceContracts = 1;
 #define SPECIALIZE_CONTRACT_VIOLATION_HOLDER(mask)                              \
 template<> void ContractViolationHolder<mask>::Enter()                          \
 {                                                                               \
-    SCAN_SCOPE_BEGIN;                                                           \
-    ANNOTATION_VIOLATION(mask);                                                 \
     EnterInternal(mask);                                                        \
 };
 
 #define SPECIALIZE_AUTO_CLEANUP_CONTRACT_VIOLATION_HOLDER(mask)                                                 \
 template<> AutoCleanupContractViolationHolder<mask>::AutoCleanupContractViolationHolder(BOOL fEnterViolation)   \
 {                                                                                                               \
-    SCAN_SCOPE_BEGIN;                                                                                           \
-    ANNOTATION_VIOLATION(mask);                                                                                 \
     EnterInternal(fEnterViolation ? mask : 0);                                                                  \
 };
 
@@ -51,45 +49,25 @@ template<> AutoCleanupContractViolationHolder<mask>::AutoCleanupContractViolatio
     SPECIALIZE_CONTRACT_VIOLATION_HOLDER(mask);                                 \
     SPECIALIZE_AUTO_CLEANUP_CONTRACT_VIOLATION_HOLDER(mask)
 
-// There is a special case that requires 0... Why??? Who knows, let's fix that case.
-
-SPECIALIZED_VIOLATION(0);
 
 // Basic Specializations
-
 SPECIALIZED_VIOLATION(AllViolation);
 SPECIALIZED_VIOLATION(ThrowsViolation);
 SPECIALIZED_VIOLATION(GCViolation);
 SPECIALIZED_VIOLATION(ModeViolation);
-SPECIALIZED_VIOLATION(FaultViolation);
-SPECIALIZED_VIOLATION(FaultNotFatal);
-SPECIALIZED_VIOLATION(TakesLockViolation);
 SPECIALIZED_VIOLATION(LoadsTypeViolation);
+SPECIALIZED_VIOLATION(TakesLockViolation);
 
 // Other Specializations used by the RUNTIME, if you get a compile time error you need
 // to add the specific specialization that you are using here.
 
 SPECIALIZED_VIOLATION(ThrowsViolation|GCViolation);
+SPECIALIZED_VIOLATION(ThrowsViolation|GCViolation|ModeViolation);
+SPECIALIZED_VIOLATION(ThrowsViolation|GCViolation|LoadsTypeViolation|TakesLockViolation);
 SPECIALIZED_VIOLATION(ThrowsViolation|GCViolation|TakesLockViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|ModeViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultNotFatal);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|TakesLockViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|TakesLockViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|TakesLockViolation|LoadsTypeViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|ModeViolation);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|ModeViolation|FaultNotFatal);
-SPECIALIZED_VIOLATION(ThrowsViolation|FaultViolation|GCViolation|ModeViolation|FaultNotFatal|TakesLockViolation);
-SPECIALIZED_VIOLATION(GCViolation|FaultViolation);
-SPECIALIZED_VIOLATION(GCViolation|FaultNotFatal|ModeViolation);
-SPECIALIZED_VIOLATION(GCViolation|FaultNotFatal|TakesLockViolation);
-SPECIALIZED_VIOLATION(GCViolation|FaultNotFatal|TakesLockViolation|ModeViolation);
 SPECIALIZED_VIOLATION(GCViolation|ModeViolation);
-SPECIALIZED_VIOLATION(FaultViolation|FaultNotFatal);
-SPECIALIZED_VIOLATION(FaultNotFatal|TakesLockViolation);
-
-
+SPECIALIZED_VIOLATION(GCViolation|ModeViolation|TakesLockViolation);
+SPECIALIZED_VIOLATION(GCViolation|TakesLockViolation);
 
 #undef SPECIALIZED_VIOLATION
 #undef SPECIALIZE_AUTO_CLEANUP_CONTRACT_VIOLATION_HOLDER
@@ -110,7 +88,6 @@ void CHECK::Trigger(LPCSTR reason)
 
     EX_TRY
     {
-        FAULT_NOT_FATAL();
         pMessage = new StackSString();
 
         pMessage->AppendASCII(reason);
@@ -119,7 +96,7 @@ void CHECK::Trigger(LPCSTR reason)
             pMessage->AppendASCII((m_message != (LPCSTR)1) ? m_message : "<runtime check failure>");
 
 #if _DEBUG
-        pMessage->AppendASCII("FAILED: ");
+        pMessage->AppendASCII("\nFAILED: ");
         pMessage->AppendASCII(m_condition);
 #endif
 
@@ -129,7 +106,7 @@ void CHECK::Trigger(LPCSTR reason)
     {
         messageString = "<exception occurred while building failure description>";
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #if _DEBUG
     DbgAssertDialog((char*)m_file, m_line, (char *)messageString);
@@ -167,7 +144,6 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
     {
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             // Try to build a stack of condition failures
 
             StackSString context;
@@ -184,12 +160,12 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
         {
             // If anything goes wrong, we don't push extra context
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 #endif
 
 #if defined(_DEBUG_IMPL)
-    if (IsInAssert() && IsDebuggerPresent())
+    if (IsInAssert() && minipal_is_native_debugger_present())
     {
         DebugBreak();
     }
@@ -221,7 +197,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
     {
         // This path is only run in debug.  TakesLockViolation suppresses
         // problems with SString below.
-        CONTRACT_VIOLATION(FaultNotFatal|TakesLockViolation);
+        CONTRACT_VIOLATION(TakesLockViolation);
 
         EX_TRY
         {
@@ -244,7 +220,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
             // If anything goes wrong, just use the format string.
             result = messageFormat;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return result;

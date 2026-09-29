@@ -50,7 +50,7 @@ namespace System.Net.Mime.Tests
         [InlineData(typeof(ArgumentNullException), null)]
         [InlineData(typeof(FormatException), "inline; creation-date=\"" + InvalidDate + "\";")]
         [InlineData(typeof(FormatException), "inline; size=\"notANumber\"")]
-        public static void Ctor_InvalidThrows(Type exceptionType, string contentDisposition)
+        public static void Ctor_InvalidThrows(Type exceptionType, string? contentDisposition)
         {
             Assert.Throws(exceptionType, () => new ContentDisposition(contentDisposition));
         }
@@ -58,7 +58,7 @@ namespace System.Net.Mime.Tests
         [Theory]
         [InlineData(typeof(ArgumentNullException), null)]
         [InlineData(typeof(ArgumentException), "")]
-        public static void DispositionType_SetValue_InvalidThrows(Type exceptionType, string contentDisposition)
+        public static void DispositionType_SetValue_InvalidThrows(Type exceptionType, string? contentDisposition)
         {
             Assert.Throws(exceptionType, () => new ContentDisposition().DispositionType = contentDisposition);
         }
@@ -90,6 +90,17 @@ namespace System.Net.Mime.Tests
             cd.FileName = string.Empty;
             Assert.Null(cd.FileName);
             Assert.Empty(cd.Parameters);
+        }
+
+        [Fact]
+        public static void ToString_EncodedWordWithinInvalidParameterValue_DoesNotBypassEncoding()
+        {
+            var cd = new ContentDisposition();
+            cd.FileName = "report\r\nX-Test: injected =?utf-8?B?YQ?=";
+
+            string value = cd.ToString();
+
+            Assert.DoesNotContain("\r\nX-Test:", value, StringComparison.Ordinal);
         }
 
         [Fact]

@@ -10,7 +10,7 @@ namespace System.Text.Json.Schema
     /// </summary>
     public readonly struct JsonSchemaExporterContext
     {
-        private readonly string[] _path;
+        internal readonly string[] _path;
 
         internal JsonSchemaExporterContext(
             JsonTypeInfo typeInfo,

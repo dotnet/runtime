@@ -41,15 +41,15 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -122,24 +122,19 @@ namespace System.Formats.Asn1
         ///   value of the Bit String;
         ///   otherwise, <see langword="false"/>.
         /// </returns>
-        /// <remarks>
-        ///   The least significant bits in the last byte which are reported as "unused" by the
-        ///   <paramref name="unusedBitCount"/> value will be copied into <paramref name="destination"/>
-        ///   as unset bits, irrespective of their value in the encoded representation.
-        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -151,6 +146,11 @@ namespace System.Formats.Asn1
         ///
         ///   <paramref name="destination"/> overlaps <paramref name="source"/>.
         /// </exception>
+        /// <remarks>
+        ///   The least significant bits in the last byte that are reported as "unused" by the
+        ///   <paramref name="unusedBitCount"/> value will be copied into <paramref name="destination"/>
+        ///   as unset bits, irrespective of their value in the encoded representation.
+        /// </remarks>
         /// <seealso cref="TryReadPrimitiveBitString"/>
         /// <seealso cref="ReadBitString"/>
         public static bool TryReadBitString(
@@ -244,24 +244,19 @@ namespace System.Formats.Asn1
         /// <returns>
         ///   An array containing the contents of the Bit String value.
         /// </returns>
-        /// <remarks>
-        ///   The least significant bits in the last byte which are reported as "unused" by the
-        ///   <paramref name="unusedBitCount"/> value will be copied into the return value
-        ///   as unset bits, irrespective of their value in the encoded representation.
-        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -269,6 +264,11 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
+        /// <remarks>
+        ///   The least significant bits in the last byte that are reported as "unused" by the
+        ///   <paramref name="unusedBitCount"/> value will be copied into the return value
+        ///   as unset bits, irrespective of their value in the encoded representation.
+        /// </remarks>
         /// <seealso cref="TryReadPrimitiveBitString"/>
         /// <seealso cref="TryReadBitString"/>
         public static byte[] ReadBitString(
@@ -689,22 +689,22 @@ namespace System.Formats.Asn1
         ///   corresponding to the value of the BIT STRING.
         /// </param>
         /// <param name="expectedTag">
-        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
         ///   <see langword="true"/> and advances the reader if the BIT STRING value had a primitive encoding,
         ///   <see langword="false"/> and does not advance the reader if it had a constructed encoding.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -752,7 +752,7 @@ namespace System.Formats.Asn1
         ///   On success, receives the number of bytes written to <paramref name="destination"/>.
         /// </param>
         /// <param name="expectedTag">
-        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
         ///   <see langword="true"/> and advances the reader if <paramref name="destination"/> had sufficient
@@ -760,15 +760,15 @@ namespace System.Formats.Asn1
         ///   <see langword="false"/> and the reader does not advance.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -810,21 +810,21 @@ namespace System.Formats.Asn1
         ///   "unused" by the writer.
         /// </param>
         /// <param name="expectedTag">
-        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
         ///   A copy of the value in a newly allocated, precisely sized, array.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -838,6 +838,175 @@ namespace System.Formats.Asn1
         {
             byte[] ret = AsnDecoder.ReadBitString(
                 _data.Span,
+                RuleSet,
+                out unusedBitCount,
+                out int consumed,
+                expectedTag);
+
+            _data = _data.Slice(consumed);
+            return ret;
+        }
+    }
+
+    public ref partial struct ValueAsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a BIT STRING with a specified tag, returning the contents
+        ///   as a <see cref="ReadOnlySpan{T}"/> over the original data.
+        /// </summary>
+        /// <param name="unusedBitCount">
+        ///   On success, receives the number of bits in the last byte which were reported as
+        ///   "unused" by the writer.
+        /// </param>
+        /// <param name="value">
+        ///   On success, receives a <see cref="ReadOnlySpan{T}"/> over the original data
+        ///   corresponding to the value of the BIT STRING.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> and advances the reader if the BIT STRING value had a primitive encoding,
+        ///   <see langword="false"/> and does not advance the reader if it had a constructed encoding.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <seealso cref="TryReadBitString"/>
+        public bool TryReadPrimitiveBitString(
+            out int unusedBitCount,
+            out ReadOnlySpan<byte> value,
+            Asn1Tag? expectedTag = null)
+        {
+            bool ret = AsnDecoder.TryReadPrimitiveBitString(
+                _data,
+                RuleSet,
+                out unusedBitCount,
+                out value,
+                out int consumed,
+                expectedTag);
+
+            if (ret)
+            {
+                _data = _data.Slice(consumed);
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        ///   Reads the next value as a BIT STRING with a specified tag, copying the value
+        ///   into a provided destination buffer.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="unusedBitCount">
+        ///   On success, receives the number of bits in the last byte which were reported as
+        ///   "unused" by the writer.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   length to receive the value, otherwise
+        ///   <see langword="false"/> and the reader does not advance.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <seealso cref="TryReadPrimitiveBitString"/>
+        /// <seealso cref="ReadBitString"/>
+        public bool TryReadBitString(
+            Span<byte> destination,
+            out int unusedBitCount,
+            out int bytesWritten,
+            Asn1Tag? expectedTag = null)
+        {
+            bool ret = AsnDecoder.TryReadBitString(
+                _data,
+                destination,
+                RuleSet,
+                out unusedBitCount,
+                out int consumed,
+                out bytesWritten,
+                expectedTag);
+
+            if (ret)
+            {
+                _data = _data.Slice(consumed);
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        ///   Reads the next value as a BIT STRING with a specified tag, returning the value
+        ///   in a byte array.
+        /// </summary>
+        /// <param name="unusedBitCount">
+        ///   On success, receives the number of bits in the last byte which were reported as
+        ///   "unused" by the writer.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
+        /// </param>
+        /// <returns>
+        ///   A copy of the value in a newly allocated, precisely sized, array.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        /// <seealso cref="TryReadPrimitiveBitString"/>
+        /// <seealso cref="TryReadBitString"/>
+        public byte[] ReadBitString(out int unusedBitCount, Asn1Tag? expectedTag = null)
+        {
+            byte[] ret = AsnDecoder.ReadBitString(
+                _data,
                 RuleSet,
                 out unusedBitCount,
                 out int consumed,

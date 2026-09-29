@@ -5,20 +5,14 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
+    <PublishTrimmed Condition="'$(SelfContained)' != 'false'">true</PublishTrimmed>
+    <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
+    <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true' And '$(SelfContained)' != 'false'">true</PublishSingleFile>
     <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
-    <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
-    <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
   </PropertyGroup>
 
   <ItemGroup>
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
     <Compile Include="$(MSBuildThisFileDirectory)XUnitLogChecker.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)../Coreclr.TestWrapper/CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)../Coreclr.TestWrapper/MobileAppHandler.cs" Link="MobileAppHandler.cs" />
   </ItemGroup>
 
 </Project>

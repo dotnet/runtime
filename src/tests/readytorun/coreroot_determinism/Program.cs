@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -104,6 +105,8 @@ public class Program
         return 0 == process.ExitCode;
     }
 
+    [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
+    [SkipOnCoreClr("Running Crossgen2 under GC stress takes too long.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

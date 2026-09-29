@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class Test
 {    
@@ -12,7 +13,8 @@ public class Test
     static ManualResetEvent _mre;
     static AutoResetEvent _are = new AutoResetEvent(false);
 
-    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/102544", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         Thread th = new Thread(new ThreadStart(Thread2));
@@ -123,4 +125,3 @@ public class Test
         }
     }
 }
-

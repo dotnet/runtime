@@ -12,17 +12,14 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of array types generated into the image.
     /// </summary>
-    internal sealed class ArrayMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ArrayMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ExternalReferencesTableNode _externalReferences;
-        private int? _size;
 
         public ArrayMapNode(ExternalReferencesTableNode externalReferences)
         {
             _externalReferences = externalReferences;
         }
-
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -49,15 +46,14 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
             {
                 if (!type.IsArray)
                     continue;
 
                 var arrayType = (ArrayType)type;
 
-                // Look at the constructed type symbol. If a constructed type wasn't emitted, then the array map entry isn't valid for use
-                IEETypeNode arrayTypeSymbol = factory.ConstructedTypeSymbol(arrayType);
+                IEETypeNode arrayTypeSymbol = factory.NecessaryTypeSymbol(arrayType);
 
                 Vertex vertex = writer.GetUnsignedConstant(_externalReferences.GetIndex(arrayTypeSymbol));
 
@@ -66,8 +62,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
-
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

@@ -4,17 +4,16 @@ parameters:
   artifactFileName: ''
   artifactName: ''
   displayName: ''
+  overwriteExistingFiles: false
 
 steps:
   # Download artifact
-  - task: DownloadBuildArtifacts@0
+  - task: DownloadPipelineArtifact@2
     displayName: 'Download ${{ parameters.displayName }}'
     inputs:
       buildType: current
-      downloadType: single
-      downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
-      checkDownloadedFiles: true
+      targetPath: '$(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}'
 
   # Unzip artifact
   - task: ExtractFiles@1
@@ -23,3 +22,4 @@ steps:
       archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/**/${{ parameters.artifactFileName }}
       destinationFolder: ${{ parameters.unpackFolder }}
       cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}
+      overwriteExistingFiles: ${{ parameters.overwriteExistingFiles }}

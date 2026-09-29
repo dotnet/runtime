@@ -45,20 +45,23 @@
 #include "mono/utils/mono-tls-inline.h"
 
 #ifdef TARGET_WIN32
-#include <windows.h>
 static void (*restore_stack) (void);
 static MonoW32ExceptionHandler fpe_handler;
 static MonoW32ExceptionHandler ill_handler;
 static MonoW32ExceptionHandler segv_handler;
-static MonoW32ExceptionHandler term_handler = NULL;
-
-extern gboolean mono_term_signaled;
 
 LPTOP_LEVEL_EXCEPTION_FILTER mono_old_win_toplevel_exception_filter;
 void *mono_win_vectored_exception_handle;
 
 #define W32_SEH_HANDLE_EX(_ex) \
 	if (_ex##_handler) _ex##_handler(er->ExceptionCode, &info, ctx)
+
+static void
+seh_restore_context (void)
+{
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+	mono_restore_context (&jit_tls->ex_ctx);
+}
 
 static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 {
@@ -160,8 +163,10 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 				/* need to restore stack protection once stack is unwound
 				 * restore_stack will restore stack protection and then
 				 * resume control to the saved stack_restore_ctx */
-				mono_sigctx_to_monoctx (ctx, &jit_tls->stack_restore_ctx);
-				ctx->Rip = (guint64)restore_stack;
+				jit_tls->stack_restore_ctx = jit_tls->ex_ctx;
+				MONO_CONTEXT_SET_IP (&jit_tls->ex_ctx, restore_stack);
+				MONO_CONTEXT_SET_SP (&jit_tls->ex_ctx,
+					ALIGN_DOWN_TO ((guint64)MONO_CONTEXT_GET_SP (&jit_tls->ex_ctx), 16) - 8);
 			}
 		} else {
 			info.handled = FALSE;
@@ -218,31 +223,6 @@ void win32_seh_cleanup(void)
 	g_assert (ret);
 }
 
-BOOL WINAPI mono_win_ctrl_handler(DWORD fdwCtrlType)
-{
-	switch (fdwCtrlType) {
-	case CTRL_C_EVENT:
-		if (term_handler != NULL)
-			term_handler(0, NULL, NULL);
-		return TRUE;
-		break;
-	case CTRL_CLOSE_EVENT:
-		return TRUE;
-		break;
-	case CTRL_BREAK_EVENT:
-		return FALSE;
-		break;
-	case CTRL_LOGOFF_EVENT:
-		return FALSE;
-		break;
-	case CTRL_SHUTDOWN_EVENT:
-		return FALSE;
-		break;
-	default:
-		return FALSE;
-	}
-}
-
 void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 {
 	switch (type) {
@@ -254,11 +234,6 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 		break;
 	case SIGSEGV:
 		segv_handler = handler;
-		break;
-	case SIGTERM:
-		term_handler = handler;
-		if (!SetConsoleCtrlHandler(mono_win_ctrl_handler, TRUE))
-			fprintf(stderr,"Cannot set control handler\n");
 		break;
 	default:
 		break;
@@ -859,6 +834,19 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 	mono_sigctx_to_monoctx (sigctx, &mctx);
 
 	mono_handle_exception (&mctx, obj);
+
+#ifdef TARGET_WIN32
+	/*
+	 * Windows validates exception continuation IPs when hardware stack protection is
+	 * enabled. Resume in native runtime code rather than an unregistered JIT handler.
+	 * Keep the handler context in TLS and provide the native entry point with an
+	 * aligned stack, a return-address slot, and the Win64 argument home area.
+	 */
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+	jit_tls->ex_ctx = mctx;
+	MONO_CONTEXT_SET_IP (&mctx, seh_restore_context);
+	MONO_CONTEXT_SET_SP (&mctx, ALIGN_DOWN_TO ((guint64)MONO_CONTEXT_GET_SP (&mctx), 16) - 40);
+#endif
 
 	mono_monoctx_to_sigctx (&mctx, sigctx);
 

@@ -31,7 +31,9 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public CspKeyContainerInfo CspKeyContainerInfo => default!;
 
+        [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Decrypt(byte[] rgb, bool fOAEP) => default!;
+        [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Encrypt(byte[] rgb, bool fOAEP) => default!;
         public byte[] ExportCspBlob(bool includePrivateParameters) => default!;
         public override RSAParameters ExportParameters(bool includePrivateParameters) => default;

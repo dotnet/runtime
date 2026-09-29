@@ -99,7 +99,7 @@ bool MethodContextIterator::MoveNext()
             }
         }
 
-        if (!MethodContext::Initialize(m_methodContextNumber, m_hFile, &m_mc))
+        if (!MethodContext::Initialize(m_methodContextNumber, m_hFile, /* readCompileResults */ true, &m_mc))
             return false;
 
         // If we have an array of indexes, skip the loaded indexes that have not been specified.

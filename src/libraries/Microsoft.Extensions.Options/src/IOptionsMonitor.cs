@@ -7,13 +7,20 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Used for notifications when <typeparamref name="TOptions"/> instances change.
+    /// Monitors changes on a <typeparamref name="TOptions"/> instance.
     /// </summary>
     /// <typeparam name="TOptions">The options type.</typeparam>
+    /// <remarks>
+    /// The default implementation, <see cref="OptionsMonitor{TOptions}"/>, recreates and validates options
+    /// synchronously after change notifications. It does not invoke
+    /// <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/>. The built-in asynchronous validators therefore
+    /// cause reload to fail and prevent registered change listeners from being called; no asynchronous last-known-good
+    /// guarantee is provided.
+    /// </remarks>
     public interface IOptionsMonitor<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] out TOptions>
     {
         /// <summary>
-        /// Returns the current <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
+        /// Gets the current <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
         /// </summary>
         TOptions CurrentValue { get; }
 

@@ -1,4 +1,6 @@
 #include "emit.hpp"
+#include <atomic>
+#include <thread>
 
 TEST(TypeDef, Define)
 {
@@ -155,6 +157,109 @@ TEST(TypeDef, NestedDefine)
     mdTypeDef enclosing;
     ASSERT_EQ(S_OK, import->GetNestedClassProps(typeDef, &enclosing));
     EXPECT_EQ(outerTypeDef, enclosing);
+}
+
+TEST(TypeDef, NestedInsideModule)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+
+    mdTypeDef nestedType;
+    mdToken implements = mdTokenNil;
+    mdTypeDef moduleType = TokenFromRid(1, mdtTypeDef);
+    WSTR_string name = W("NestedInModule");
+    ASSERT_EQ(S_OK, emit->DefineNestedType(name.c_str(), tdNestedPublic, mdTypeDefNil, &implements, moduleType, &nestedType));
+
+    minipal::com_ptr<IMetaDataImport> import;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
+
+    mdTypeDef enclosingType;
+    ASSERT_EQ(S_OK, import->GetNestedClassProps(nestedType, &enclosingType));
+    EXPECT_EQ(moduleType, enclosingType);
+
+    mdTypeDef foundType;
+    ASSERT_EQ(S_OK, import->FindTypeDefByName(name.c_str(), moduleType, &foundType));
+    EXPECT_EQ(nestedType, foundType);
+}
+
+TEST(TypeDef, DefineExtendedLayout)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+
+    WSTR_string name = W("ExtendedLayout");
+    mdTypeDef typeDef;
+    mdToken implements = mdTokenNil;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(name.c_str(), tdExtendedLayout, mdTypeDefNil, &implements, &typeDef));
+
+    minipal::com_ptr<IMetaDataImport> import;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
+
+    WSTR_string readName(name.size() + 1, 0);
+    ULONG nameLength;
+    DWORD flags;
+    mdToken extends;
+    ASSERT_EQ(S_OK, import->GetTypeDefProps(typeDef, &readName[0], (ULONG)readName.size(), &nameLength, &flags, &extends));
+    EXPECT_EQ(tdExtendedLayout, flags & tdLayoutMask);
+    EXPECT_EQ(name, readName.substr(0, nameLength - 1));
+
+    ASSERT_EQ(S_OK, emit->SetTypeDefProps(typeDef, tdSequentialLayout, mdTypeDefNil, nullptr));
+    ASSERT_EQ(S_OK, import->GetTypeDefProps(typeDef, &readName[0], (ULONG)readName.size(), &nameLength, &flags, &extends));
+    EXPECT_EQ(tdSequentialLayout, flags & tdLayoutMask);
+
+    ASSERT_EQ(S_OK, emit->SetTypeDefProps(typeDef, tdExtendedLayout, mdTypeDefNil, nullptr));
+    ASSERT_EQ(S_OK, import->GetTypeDefProps(typeDef, &readName[0], (ULONG)readName.size(), &nameLength, &flags, &extends));
+    EXPECT_EQ(tdExtendedLayout, flags & tdLayoutMask);
+}
+
+TEST(TypeDef, ThreadSafeReadDuringEmit)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateThreadSafeEmit(emit));
+
+    mdToken implements = mdTokenNil;
+    mdTypeDef stableType;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("Stable"), tdPublic, mdTypeDefNil, &implements, &stableType));
+
+    minipal::com_ptr<IMetaDataImport> import;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
+
+    std::atomic<bool> start{false};
+    std::atomic<bool> succeeded{true};
+    std::thread writer([&]
+    {
+        while (!start.load())
+            std::this_thread::yield();
+
+        for (int i = 0; i < 256; ++i)
+        {
+            mdToken interfaces = mdTokenNil;
+            mdTypeDef typeDef;
+            if (emit->DefineTypeDef(W("Other"), tdPublic, mdTypeDefNil, &interfaces, &typeDef) != S_OK)
+            {
+                succeeded = false;
+                break;
+            }
+        }
+    });
+
+    start = true;
+    for (int i = 0; i < 256; ++i)
+    {
+        WCHAR name[16];
+        ULONG nameLength;
+        DWORD flags;
+        mdToken extends;
+        if (import->GetTypeDefProps(stableType, name, 16, &nameLength, &flags, &extends) != S_OK
+            || nameLength != 7 || flags != tdPublic)
+        {
+            succeeded = false;
+            break;
+        }
+    }
+
+    writer.join();
+    EXPECT_TRUE(succeeded);
 }
 
 TEST(TypeDef, SetProps)

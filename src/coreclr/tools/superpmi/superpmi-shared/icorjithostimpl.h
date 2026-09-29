@@ -29,15 +29,15 @@ void* allocateMemory(size_t size);
 void freeMemory(void* block);
 
 // Return an integer config value for the given key, if any exists.
-int getIntConfigValue(const WCHAR* name, int defaultValue);
+int getIntConfigValue(const char* name, int defaultValue);
 
 // Return a string config value for the given key, if any exists.
-const WCHAR* getStringConfigValue(const WCHAR* name);
+const char* getStringConfigValue(const char* name);
 
 // Free a string ConfigValue returned by the runtime.
 // JITs using the getStringConfigValue query are required
 // to return the string values to the runtime for deletion.
 // This avoids leaking the memory in the JIT.
-void freeStringConfigValue(const WCHAR* value);
+void freeStringConfigValue(const char* value);
 
 #endif

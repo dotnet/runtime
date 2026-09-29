@@ -21,9 +21,9 @@
 	],
 	"settings": {
 		"omnisharp.enableMsBuildLoadProjectsOnDemand": true,
-		"omnisharp.defaultLaunchSolution": "${workspaceFolder}sln/WasmBuild.sln",
+		"omnisharp.defaultLaunchSolution": "${workspaceFolder}sln/WasmBuild.slnx",
 		"omnisharp.enableRoslynAnalyzers": true,
 		"cSpell.enabled": false,
-		"dotnet.defaultSolution": "wasm/sln/WasmBuild.sln"
+		"dotnet.defaultSolution": "wasm/sln/WasmBuild.slnx"
 	}
 }

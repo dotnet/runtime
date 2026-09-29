@@ -3,6 +3,7 @@
 //
 
 #include "common.h"
+#include <minipal/time.h>
 
 #include "mscoree.h"
 #include "corhost.h"
@@ -115,7 +116,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     // JIT_PatchedCode. Thus, their pages have the same protection, they live
     //  in the same region (and thus, its size is the same).
     //
-    // In EEStartupHelper, when we setup the UEF and then invoke InitJitHelpers1 and InitJitHelpers2,
+    // In EEStartupHelper, when we setup the UEF and then invoke InitJITWriteBarrierHelpers,
     // they perform some optimizations that result in the memory page protection being changed. When
     // the UEF is to be invoked, the OS does the check on the UEF's cached details against the current
     // memory pages. This check used to fail when on 64bit retail builds when JIT_PatchedCode was
@@ -165,9 +166,9 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
                 //
                 // because the section following UEF will also be included in the region size
                 // if it has the same protection as the UEF section.
-                DWORD dwUEFSectionPageCount = ((pUEFSection->Misc.VirtualSize + GetOsPageSize() - 1) / GetOsPageSize());
+                DWORD dwUEFSectionPageCount = (DWORD)((pUEFSection->Misc.VirtualSize + minipal_getpagesize() - 1) / minipal_getpagesize());
 
-                BYTE* pAddressOfFollowingSection = pStartOfUEFSection + (GetOsPageSize() * dwUEFSectionPageCount);
+                BYTE* pAddressOfFollowingSection = pStartOfUEFSection + (minipal_getpagesize() * dwUEFSectionPageCount);
 
                 // Ensure that the section following us is having different memory protection
                 MEMORY_BASIC_INFORMATION nextSectionInfo;
@@ -210,12 +211,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
 
-DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
-{
-    WRAPPER_NO_CONTRACT;
-    return ::SleepEx(dwMilliseconds, bAlertable);
-}
-
 // non-zero return value if this function causes the OS to switch to another thread
 // See file:spinlock.h#SwitchToThreadSpinning for an explanation of dwSwitchCount
 BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
@@ -232,7 +227,7 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
 
     if (dwSleepMSec > 0)
     {
-        ClrSleepEx(dwSleepMSec,FALSE);
+        minipal_sleep(dwSleepMSec);
         return TRUE;
     }
 
@@ -259,7 +254,7 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
     _ASSERTE(CALLER_LIMITS_SPINNING < SLEEP_START_THRESHOLD);
     if (dwSwitchCount >= SLEEP_START_THRESHOLD)
     {
-        ClrSleepEx(1, FALSE);
+        minipal_sleep(1);
     }
 
     return SwitchToThread();
@@ -315,7 +310,7 @@ CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags) {
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // Note: we'll return NULL if the create fails. That's a true NULL, not a poisoned NULL.
     return ret;
@@ -350,8 +345,6 @@ DEBUG_NOINLINE void ClrEnterCriticalSection(CRITSEC_COOKIE cookie) {
     }
     CONTRACTL_END;
 
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-
     Crst *pCrst = CookieToCrst(cookie);
     _ASSERTE(pCrst);
 
@@ -366,8 +359,6 @@ DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
     Crst *pCrst = CookieToCrst(cookie);
     _ASSERTE(pCrst);

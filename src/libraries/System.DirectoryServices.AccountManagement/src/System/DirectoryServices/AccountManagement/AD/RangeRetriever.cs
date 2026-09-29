@@ -221,7 +221,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 // Technically, should throw an InvalidOperationException if the enumerator is positioned before
                 // the beginning or after the end, but this will only be used internally.
-                Debug.Assert(_currentResult != null && _endReached == false);
+                Debug.Assert(_currentResult != null && !_endReached);
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "Current: currentResult={0}", _currentResult.ToString());
                 return _currentResult;
             }

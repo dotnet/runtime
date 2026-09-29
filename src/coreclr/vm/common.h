@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// common.h - precompiled headers include for the COM+ Execution Engine
-//
 
 //
-
+// common.h - precompiled headers include for the CLR Execution Engine
+//
 
 #ifndef _common_h_
 #define _common_h_
@@ -16,44 +14,9 @@
 #define COMMON_TURNED_FPO_ON 1
 #endif
 
-#define USE_COM_CONTEXT_DEF
-
 #if defined(_DEBUG)
 #define DEBUG_REGDISPLAY
 #endif
-
-#ifdef _MSC_VER
-
-    // These don't seem useful, so turning them off is no big deal
-#pragma warning(disable:4201)   // nameless struct/union
-#pragma warning(disable:4512)   // can't generate assignment constructor
-#pragma warning(disable:4211)   // nonstandard extension used (char name[0] in structs)
-#pragma warning(disable:4268)   // 'const' static/global data initialized with compiler generated default constructor fills the object with zeros
-#pragma warning(disable:4238)   // nonstandard extension used : class rvalue used as lvalue
-#pragma warning(disable:4291)   // no matching operator delete found
-#pragma warning(disable:4345)   // behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
-
-    // Depending on the code base, you may want to not disable these
-#pragma warning(disable:4245)   // assigning signed / unsigned
-#pragma warning(disable:4127)   // conditional expression is constant
-#pragma warning(disable:4100)   // unreferenced formal parameter
-
-#pragma warning(1:4189)   // local variable initialized but not used
-
-#ifndef DEBUG
-#pragma warning(disable:4505)   // unreferenced local function has been removed
-#pragma warning(disable:4313)   // 'format specifier' in format string conflicts with argument %d of type 'type'
-#endif // !DEBUG
-
-    // CONSIDER put these back in
-#pragma warning(disable:4063)   // bad switch value for enum (only in Disasm.cpp)
-#pragma warning(disable:4710)   // function not inlined
-#pragma warning(disable:4527)   // user-defined destructor required
-#pragma warning(disable:4513)   // destructor could not be generated
-#endif // _MSC_VER
-
-#define _CRT_DEPENDENCY_   //this code depends on the crt file functions
-
 
 #include <stdint.h>
 #include <stddef.h>
@@ -70,8 +33,14 @@
 #include <time.h>
 #include <limits.h>
 #include <assert.h>
+#include <cstdint>
+#include <functional>
 
 #include <olectl.h>
+
+#if defined(HOST_AMD64) || defined(HOST_X86)
+#include <xmmintrin.h>
+#endif
 
 using std::max;
 using std::min;
@@ -87,15 +56,16 @@ using std::min;
 
 //-----------------------------------------------------------------------------------------------------------
 
-#include "stdmacros.h"
+#define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:0xCCCCCCCCCCCCCCCCLL))
 
-#define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:I64(0xCCCCCCCCCCCCCCCC)))
-
+#include <contract.h>
 #include "switches.h"
 #include "holder.h"
 #include "classnames.h"
 #include "util.hpp"
 #include "corpriv.h"
+
+#include <stdmacros.h>
 
 #include <daccess.h>
 
@@ -113,18 +83,21 @@ typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
 typedef DPTR(class CLRToCOMCallMethodDesc) PTR_CLRToCOMCallMethodDesc;
 typedef VPTR(class DebugInterface)      PTR_DebugInterface;
 typedef DPTR(class Dictionary)          PTR_Dictionary;
-typedef DPTR(class DomainAssembly)      PTR_DomainAssembly;
 typedef DPTR(struct FailedAssembly)     PTR_FailedAssembly;
 typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
 typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
+#ifdef FEATURE_INTERPRETER
+typedef VPTR(class InterpreterCodeManager) PTR_InterpreterCodeManager;
+typedef DPTR(struct InterpThreadContext) PTR_InterpThreadContext;
+#endif
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
 typedef VPTR(class EEDbgInterfaceImpl)  PTR_EEDbgInterfaceImpl;
 typedef VPTR(class DebugInfoManager)    PTR_DebugInfoManager;
 typedef DPTR(class FieldDesc)           PTR_FieldDesc;
-typedef VPTR(class Frame)               PTR_Frame;
+typedef DPTR(class Frame)               PTR_Frame;
 typedef DPTR(class GCFrame)             PTR_GCFrame;
 typedef VPTR(class ICodeManager)        PTR_ICodeManager;
 typedef VPTR(class IJitManager)         PTR_IJitManager;
@@ -137,7 +110,7 @@ typedef DPTR(class MethodImpl)          PTR_MethodImpl;
 typedef DPTR(class MethodTable)         PTR_MethodTable;
 typedef DPTR(class CoreLibBinder)      PTR_CoreLibBinder;
 typedef VPTR(class Module)              PTR_Module;
-typedef DPTR(class NDirectMethodDesc)   PTR_NDirectMethodDesc;
+typedef DPTR(class PInvokeMethodDesc)   PTR_PInvokeMethodDesc;
 typedef DPTR(class Thread)              PTR_Thread;
 typedef DPTR(class Object)              PTR_Object;
 typedef DPTR(PTR_Object)                PTR_PTR_Object;
@@ -197,35 +170,16 @@ Thread * const CURRENT_THREAD = NULL;
     (void)CURRENT_THREAD_AVAILABLE; /* silence "local variable initialized but not used" warning */ \
 
 #ifndef DACCESS_COMPILE
-EXTERN_C AppDomain* STDCALL GetAppDomain();
+AppDomain* GetAppDomain();
 #endif //!DACCESS_COMPILE
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
-
-#ifndef memcpyUnsafe_f
-#define memcpyUnsafe_f
-
-// use this when you want to memcpy something that contains GC refs
-FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
-{
-    WRAPPER_NO_CONTRACT;
-    return memcpy(dest, src, len);
-}
-
-#endif // !memcpyUnsafe_f
 
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {
     WRAPPER_NO_CONTRACT;
     return memcpy(dest, src, len);
 }
-
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    // You should be using CopyValueClass if you are doing an memcpy
-    // in the GC heap.
-    extern "C" void *  __cdecl GCSafeMemCpy(void *, const void *, size_t);
-#define memcpy(dest, src, len) GCSafeMemCpy(dest, src, len)
-#endif // _DEBUG && !DACCESS_COMPILE
 
 namespace Loader
 {
@@ -241,7 +195,7 @@ namespace Loader
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "stgpool.h"
+#include "memorystreams.h"
 
 // src/vm
 #include "gcenv.interlocked.h"
@@ -257,7 +211,6 @@ namespace Loader
 #include "cgensys.h"
 #include "ceemain.h"
 #include "hash.h"
-#include "eecontract.h"
 #include "pedecoder.h"
 #include "sstring.h"
 #include "slist.h"
@@ -277,16 +230,13 @@ namespace Loader
 #include "eehash.h"
 
 #include "vars.hpp"
-#include "eventstore.hpp"
 
 #include "synch.h"
 #include "regdisp.h"
 #include "stackframe.h"
-#include "gms.h"
 #include "fcall.h"
 #include "syncblk.h"
 #include "gcdesc.h"
-#include "specialstatics.h"
 #include "object.h"  // <NICE> We should not really need to put this so early... </NICE>
 #include "gchelpers.h"
 #include "peassembly.h"
@@ -303,6 +253,7 @@ namespace Loader
 #include "threads.h"
 #include "clrex.inl"
 #include "loaderallocator.hpp"
+#include "callcounting.h"
 #include "appdomain.hpp"
 #include "appdomain.inl"
 #include "assembly.hpp"
@@ -322,6 +273,7 @@ namespace Loader
 #include "dynamicmethod.h"
 
 #include "gcstress.h"
+#include "cdacstress.h"
 
 HRESULT EnsureRtlFunctions();
 
@@ -348,6 +300,14 @@ void* GetClrModuleBase();
 // use this when you want to memcpy something that contains GC refs
 void memmoveGCRefs(void *dest, const void *src, size_t len);
 
+// Struct often used as a parameter to callbacks.
+typedef struct
+{
+    promote_func*  f;
+    ScanContext*   sc;
+    CrawlFrame *   cf;
+    SetSHash<Object**, PtrSetSHashTraits<Object**> > *pScannedSlots;
+} GCCONTEXT;
 
 #if defined(_DEBUG)
 
@@ -373,7 +333,6 @@ extern DummyGlobalContract ___contract;
 #include "object.inl"
 #include "clsload.inl"
 #include "method.inl"
-#include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
 #include "eventtrace.inl"
@@ -384,8 +343,8 @@ extern DummyGlobalContract ___contract;
 #undef FPO_ON
 #endif
 
-void LogErrorToHost(const char* format, ...);
+#include <minipal/types.h>
+void LogErrorToHost(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 
 #endif // !_common_h_
-
 

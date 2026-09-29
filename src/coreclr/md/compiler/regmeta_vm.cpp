@@ -26,18 +26,10 @@
 
 #include <metamodelrw.h>
 
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
-
 #if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
 
 //*****************************************************************************
 // Call this after initialization is complete.
@@ -68,61 +60,6 @@ ErrExit:
 
 
 //*****************************************************************************
-// Search the cached RegMetas for a given scope.
-//*****************************************************************************
-HRESULT RegMeta::FindCachedReadOnlyEntry(
-    LPCWSTR     szName,                 // Name of the desired file.
-    DWORD       dwOpenFlags,            // Flags the new file is opened with.
-    RegMeta     **ppMeta)               // Put found RegMeta here.
-{
-#if defined(FEATURE_METADATA_IN_VM)
-    return LOADEDMODULES::FindCachedReadOnlyEntry(szName, dwOpenFlags, ppMeta);
-#else // FEATURE_METADATA_IN_VM
-    // No cache support in standalone version.
-    *ppMeta = NULL;
-    return S_FALSE;
-#endif // FEATURE_METADATA_IN_VM
-} // RegMeta::FindCachedReadOnlyEntry
-
-
-#ifdef FEATURE_METADATA_EMIT_ALL
-
-//*****************************************************************************
-// Helper function to startup the EE
-//
-// Notes:
-//    This is called by code:RegMeta.DefineSecurityAttributeSet.
-//*****************************************************************************
-HRESULT RegMeta::StartupEE()
-{
-    UNREACHABLE_MSG_RET("About to CoCreateInstance!  This code should not be "
-                        "reachable or needs to be reimplemented for CoreCLR!");
-}
-
-#endif //FEATURE_METADATA_EMIT_ALL
-
-#ifdef FEATURE_METADATA_EMIT
-
-//*****************************************************************************
-// Persist a set of security custom attributes into a set of permission set
-// blobs on the same class or method.
-//
-// Notes:
-//    Only in the full version because this is an emit operation.
-//*****************************************************************************
-HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
-    mdToken     tkObj,                  // [IN] Class or method requiring security attributes.
-    COR_SECATTR rSecAttrs[],            // [IN] Array of security attribute descriptions.
-    ULONG       cSecAttrs,              // [IN] Count of elements in above array.
-    ULONG       *pulErrorAttr)          // [OUT] On error, index of attribute causing problem.
-{
-    return E_NOTIMPL;
-} // RegMeta::DefineSecurityAttributeSet
-
-#endif //FEATURE_METADATA_EMIT
-
-
-//*****************************************************************************
 // Implementation of IMetaDataImport::ResolveTypeRef to resolve a typeref across scopes.
 //
 // Arguments:
@@ -139,11 +76,11 @@ HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
 // This resolve (type-ref, this cope) --> (type-def=*ptd, other scope=*ppIScope)
 //
 // However, this resolution requires knowing what modules have been loaded, which is not decided
-// until runtime via loader / fusion policy. Thus this interface can't possibly be correct since
-// it doesn't have that knowledge. Furthermore, when inspecting metadata from another process
-// (such as a debugger inspecting the debuggee's metadata), this API can be truly misleading.
+// until runtime via loader. Thus this interface can't possibly be correct since it doesn't have
+// that knowledge. Furthermore, when inspecting metadata from another process (such as a debugger
+// inspecting the debuggee's metadata), this API can be truly misleading.
 //
-// This API usage should be avoided.
+// This API usage should be avoided. It is kept to avoid breaking profilers.
 //
 //*****************************************************************************
 STDMETHODIMP
@@ -157,7 +94,7 @@ RegMeta::ResolveTypeRef(
     HRESULT hr;
 
     TypeRefRec * pTypeRefRec;
-    WCHAR        wzNameSpace[_MAX_PATH];
+    WCHAR        wzNameSpace[MAX_PATH];
     CMiniMdRW *  pMiniMd = NULL;
 
     LOCKREAD();
@@ -206,9 +143,6 @@ RegMeta::ResolveTypeRef(
         wzNameSpace[STRING_LENGTH(wzNameSpace)] = 0;
     }
 
-    //***********************
-    // before we go off to CORPATH, check the loaded modules!
-    //***********************
     if (LOADEDMODULES::ResolveTypeRefWithLoadedModules(
         tr,
         this,

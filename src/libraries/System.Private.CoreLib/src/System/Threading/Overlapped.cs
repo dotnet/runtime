@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
@@ -184,10 +185,8 @@ namespace System.Threading
                 _pNativeOverlapped = pNativeOverlapped;
 
 #if FEATURE_PERFTRACING
-#if !((TARGET_BROWSER || TARGET_WASI) && !FEATURE_WASM_MANAGED_THREADS)
                 if (NativeRuntimeEventSource.Log.IsEnabled())
                     NativeRuntimeEventSource.Log.ThreadPoolIOPack(pNativeOverlapped);
-#endif
 #endif
 
                 NativeOverlapped* pRet = pNativeOverlapped;

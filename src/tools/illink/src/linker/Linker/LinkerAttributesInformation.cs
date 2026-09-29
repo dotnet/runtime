@@ -11,122 +11,141 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	readonly struct LinkerAttributesInformation
-	{
-		readonly List<(Type Type, List<Attribute> Attributes)>? _linkerAttributes;
+    readonly struct LinkerAttributesInformation
+    {
+        readonly List<(Type Type, List<Attribute> Attributes)>? _linkerAttributes;
 
-		private LinkerAttributesInformation (List<(Type Type, List<Attribute> Attributes)>? cache)
-		{
-			this._linkerAttributes = cache;
-		}
+        private LinkerAttributesInformation(List<(Type Type, List<Attribute> Attributes)>? cache)
+        {
+            this._linkerAttributes = cache;
+        }
 
-		private static bool TryFindAttributeList (List<(Type Type, List<Attribute> Attributes)> list, Type type, [NotNullWhen (returnValue: true)] out List<Attribute>? foundAttributes)
-		{
-			foreach (var item in list) {
-				if (item.Type == type) {
-					foundAttributes = item.Attributes;
-					return true;
-				}
-			}
-			foundAttributes = null;
-			return false;
-		}
+        private static bool TryFindAttributeList(List<(Type Type, List<Attribute> Attributes)> list, Type type, [NotNullWhen(returnValue: true)] out List<Attribute>? foundAttributes)
+        {
+            foreach (var item in list)
+            {
+                if (item.Type == type)
+                {
+                    foundAttributes = item.Attributes;
+                    return true;
+                }
+            }
+            foundAttributes = null;
+            return false;
+        }
 
-		public static LinkerAttributesInformation Create (LinkContext context, IMemberDefinition provider)
-		{
-			Debug.Assert (context.CustomAttributes.HasAny (provider));
+        public static LinkerAttributesInformation Create(LinkContext context, IMemberDefinition provider)
+        {
+            Debug.Assert(context.CustomAttributes.HasAny(provider));
 
-			List<(Type Type, List<Attribute> Attributes)>? cache = null;
+            List<(Type Type, List<Attribute> Attributes)>? cache = null;
 
-			foreach (var customAttribute in context.CustomAttributes.GetCustomAttributes (provider)) {
-				var attributeType = customAttribute.AttributeType;
+            foreach (var customAttribute in context.CustomAttributes.GetCustomAttributes(provider))
+            {
+                var attributeType = customAttribute.AttributeType;
 
-				Attribute? attributeValue;
-				bool allowMultiple = false;
-				switch (attributeType.Name) {
-				case "RequiresUnreferencedCodeAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
-					attributeValue = ProcessRequiresUnreferencedCodeAttribute (context, provider, customAttribute);
-					break;
-				case "DynamicDependencyAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
-					attributeValue = DynamicDependency.ProcessAttribute (context, provider, customAttribute);
-					allowMultiple = true;
-					break;
-				case "RemoveAttributeInstancesAttribute":
-					if (provider is not TypeDefinition td)
-						continue;
+                Attribute? attributeValue;
+                bool allowMultiple = false;
+                switch (attributeType.Name)
+                {
+                    case "RequiresUnreferencedCodeAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
+                        attributeValue = ProcessRequiresUnreferencedCodeAttribute(context, provider, customAttribute);
+                        break;
+                    case "DynamicDependencyAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
+                        attributeValue = DynamicDependency.ProcessAttribute(context, provider, customAttribute);
+                        allowMultiple = true;
+                        break;
+                    case "RemoveAttributeInstancesAttribute":
+                        if (provider is not TypeDefinition td)
+                            continue;
 
-					// The attribute is never removed if it's explicitly preserved (e.g. via xml descriptor)
-					if (context.Annotations.TryGetPreserve (td, out TypePreserve preserve) && preserve != TypePreserve.Nothing)
-						continue;
+                        // The attribute is never removed if it's explicitly preserved (e.g. via xml descriptor)
+                        if (context.Annotations.TryGetPreserve(td, out TypePreserve preserve) && preserve != TypePreserve.Nothing)
+                            continue;
 
-					attributeValue = new RemoveAttributeInstancesAttribute (customAttribute.ConstructorArguments);
-					allowMultiple = true;
-					break;
-				default:
-					continue;
-				}
+                        attributeValue = new RemoveAttributeInstancesAttribute(customAttribute.ConstructorArguments);
+                        allowMultiple = true;
+                        break;
+                    default:
+                        continue;
+                }
 
-				if (attributeValue == null)
-					continue;
+                if (attributeValue == null)
+                    continue;
 
-				cache ??= new List<(Type Type, List<Attribute> Attributes)> ();
+                cache ??= new List<(Type Type, List<Attribute> Attributes)>();
 
-				Type attributeValueType = attributeValue.GetType ();
+                Type attributeValueType = attributeValue.GetType();
 
-				if (!TryFindAttributeList (cache, attributeValueType, out var attributeList)) {
-					attributeList = new List<Attribute> ();
-					cache.Add ((attributeValueType, attributeList));
-				} else if (!allowMultiple) {
-					context.LogWarning (provider, DiagnosticId.AttributeShouldOnlyBeUsedOnceOnMember, attributeValueType.FullName ?? "", (provider is MemberReference memberRef) ? memberRef.GetDisplayName () : provider.FullName);
-					continue;
-				}
+                if (!TryFindAttributeList(cache, attributeValueType, out var attributeList))
+                {
+                    attributeList = new List<Attribute>();
+                    cache.Add((attributeValueType, attributeList));
+                }
+                else if (!allowMultiple)
+                {
+                    context.LogWarning(provider, DiagnosticId.AttributeShouldOnlyBeUsedOnceOnMember, attributeValueType.FullName ?? "", (provider is MemberReference memberRef) ? memberRef.GetDisplayName() : provider.FullName);
+                    continue;
+                }
 
-				attributeList.Add (attributeValue);
-			}
+                attributeList.Add(attributeValue);
+            }
 
-			return new LinkerAttributesInformation (cache);
-		}
+            return new LinkerAttributesInformation(cache);
+        }
 
-		public bool HasAttribute<T> () where T : Attribute
-		{
-			return _linkerAttributes != null && TryFindAttributeList (_linkerAttributes, typeof (T), out _);
-		}
+        public bool HasAttribute<T>() where T : Attribute
+        {
+            return _linkerAttributes != null && TryFindAttributeList(_linkerAttributes, typeof(T), out _);
+        }
 
-		public IEnumerable<T> GetAttributes<T> () where T : Attribute
-		{
-			if (_linkerAttributes == null)
-				return Enumerable.Empty<T> ();
+        public IEnumerable<T> GetAttributes<T>() where T : Attribute
+        {
+            if (_linkerAttributes == null)
+                return Enumerable.Empty<T>();
 
-			if (!TryFindAttributeList (_linkerAttributes, typeof (T), out var attributeList))
-				return Enumerable.Empty<T> ();
+            if (!TryFindAttributeList(_linkerAttributes, typeof(T), out var attributeList))
+                return Enumerable.Empty<T>();
 
-			if (attributeList.Count == 0)
-				throw new InvalidOperationException ("Unexpected list of attributes.");
+            if (attributeList.Count == 0)
+                throw new InvalidOperationException("Unexpected list of attributes.");
 
-			return attributeList.Cast<T> ();
-		}
+            return attributeList.Cast<T>();
+        }
 
-		static RequiresUnreferencedCodeAttribute? ProcessRequiresUnreferencedCodeAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
-		{
-			if (!(provider is MethodDefinition || provider is TypeDefinition))
-				return null;
+        static RequiresUnreferencedCodeAttribute? ProcessRequiresUnreferencedCodeAttribute(LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
+        {
+            if (!(provider is MethodDefinition || provider is TypeDefinition))
+                return null;
 
-			if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is string message) {
-				var ruca = new RequiresUnreferencedCodeAttribute (message);
-				if (customAttribute.HasProperties) {
-					foreach (var prop in customAttribute.Properties) {
-						if (prop.Name == "Url") {
-							ruca.Url = prop.Argument.Value as string;
-							break;
-						}
-					}
-				}
+            if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is string message)
+            {
+                string? url = null;
+                bool excludeStatics = false;
+                if (customAttribute.HasProperties)
+                {
+                    foreach (var prop in customAttribute.Properties)
+                    {
+                        if (prop.Name == "Url")
+                        {
+                            url = prop.Argument.Value as string;
+                        }
+                        else if (prop.Name == "ExcludeStatics" && prop.Argument.Value is true)
+                        {
+                            excludeStatics = true;
+                        }
+                    }
+                }
 
-				return ruca;
-			}
+                return new RequiresUnreferencedCodeAttribute(message)
+                {
+                    Url = url,
+                    ExcludeStatics = excludeStatics
+                };
+            }
 
-			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (RequiresUnreferencedCodeAttribute).FullName ?? "");
-			return null;
-		}
-	}
+            context.LogWarning((IMemberDefinition)provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof(RequiresUnreferencedCodeAttribute).FullName ?? "");
+            return null;
+        }
+    }
 }

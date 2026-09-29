@@ -107,8 +107,10 @@ namespace System.Tests
             Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/mono/mono/issues/15140", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/130796", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         public static void ThrowStatementDoesNotResetExceptionStackLineSameMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
@@ -136,9 +138,11 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.HasAssemblyFiles))]
         // [ActiveIssue(https://github.com/dotnet/runtime/issues/1871)] can't use ActiveIssue for archs
         [ActiveIssue("https://github.com/mono/mono/issues/15141", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsX64Process), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/130796", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         public static void ThrowStatementDoesNotResetExceptionStackLineOtherMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
@@ -173,21 +177,69 @@ namespace System.Tests
             throw new Exception("Boom!");
         }
 
+        [Fact]
+        public static void FirstCatch_ThrowFromCatch_HandledByOuterCatch()
+        {
+            // Seed the frame slot with a valid resume ID from a previous invocation.
+            ThrowFromCatch(catchCount: 1, throwFromCatch: null);
+
+            bool caught = false;
+
+            try
+            {
+                ThrowFromCatch(catchCount: 1, throwFromCatch: 0);
+            }
+            catch (InvalidOperationException)
+            {
+                caught = true;
+            }
+
+            Assert.True(caught);
+        }
+
+        [Fact]
+        public static void RepeatedCatch_ThrowFromSecondCatch_HandledByOuterCatch()
+        {
+            bool caught = false;
+
+            try
+            {
+                ThrowFromCatch(catchCount: 2, throwFromCatch: 1);
+            }
+            catch (InvalidOperationException)
+            {
+                caught = true;
+            }
+
+            Assert.True(caught);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowFromCatch(int catchCount, int? throwFromCatch)
+        {
+            for (int i = 0; i < catchCount; i++)
+            {
+                try
+                {
+                    throw new Exception();
+                }
+                catch
+                {
+                    if (i == throwFromCatch)
+                    {
+                        throw new InvalidOperationException();
+                    }
+                }
+            }
+        }
+
         private static void VerifyCallStack(
             (string CallerMemberName, string SourceFilePath, int SourceLineNumber) expectedStackFrame,
             string reportedCallStack, int skipFrames)
         {
             try
             {
-                string frameParserRegex;
-                if (PlatformDetection.IsLineNumbersSupported)
-                {
-                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
-                }
-                else
-                {
-                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)";
-                }
+                string frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
 
                 using (var sr = new StringReader(reportedCallStack))
                 {
@@ -198,12 +250,8 @@ namespace System.Tests
                     var match = Regex.Match(frame, frameParserRegex);
                     Assert.True(match.Success);
                     Assert.Equal(expectedStackFrame.CallerMemberName, match.Groups["memberName"].Value);
-
-                    if (PlatformDetection.IsLineNumbersSupported)
-                    {
-                        Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
-                        Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
-                    }
+                    Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
+                    Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
                 }
             }
             catch

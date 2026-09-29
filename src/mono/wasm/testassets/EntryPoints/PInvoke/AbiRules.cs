@@ -1,0 +1,124 @@
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+public struct SingleFloatStruct {
+    public float Value;
+}
+public struct SingleDoubleStruct {
+    public struct Nested1 {
+        // This field is private on purpose to ensure we treat visibility correctly
+        double Value;
+    }
+    public Nested1 Value;
+}
+public struct SingleI64Struct {
+    public Int64 Value;
+}
+public struct WasmAppBuilderTestsPairStruct {
+    public int A, B;
+}
+public unsafe struct MyFixedArray {
+    public fixed int elements[2];
+}
+[System.Runtime.CompilerServices.InlineArray(2)]
+public struct MyInlineArray {
+    public int element0;
+}
+
+public enum U64Enum : ulong { A = 0, B = 0xFF00FF00FF00FF00UL }
+public enum I64Enum : long { A = 0, B = -3 }
+
+public class Test
+{
+    public static unsafe int Main(string[] argv)
+    {
+        var i64_a = 0xFF00FF00FF00FF0L;
+        var i64_b = ~i64_a;
+        var resI = direct64(i64_a);
+        Console.WriteLine("TestOutput -> l (l)=" + resI);
+
+        var sis = new SingleI64Struct { Value = i64_a };
+        var resSI = indirect64(sis);
+        Console.WriteLine("TestOutput -> s (s)=" + resSI.Value);
+
+        var resF = direct(3.14);
+        Console.WriteLine("TestOutput -> f (d)=" + resF);
+
+        SingleDoubleStruct sds = default;
+        Unsafe.As<SingleDoubleStruct, double>(ref sds) = 3.14;
+
+        resF = indirect_arg(sds);
+        Console.WriteLine("TestOutput -> f (s)=" + resF);
+
+        var res = indirect(sds);
+        Console.WriteLine("TestOutput -> s (s)=" + res.Value);
+
+        var pair = new WasmAppBuilderTestsPairStruct { A = 1, B = 2 };
+        var paires = accept_and_return_pair(pair);
+        Console.WriteLine("TestOutput -> paires.B=" + paires.B);
+
+        // This test is split into methods to simplify debugging issues with it
+        var ia = InlineArrayTest1();
+        var iares = InlineArrayTest2(ia);
+        Console.WriteLine($"TestOutput -> iares[0]={iares[0]} iares[1]={iares[1]}");
+
+        MyFixedArray fa = new ();
+        for (int i = 0; i < 2; i++)
+            fa.elements[i] = i;
+        var fares = accept_and_return_fixedarray(fa);
+        Console.WriteLine("TestOutput -> fares.elements[1]=" + fares.elements[1]);
+
+        // Regression test for https://github.com/dotnet/runtime/issues/112262: a pinvoke
+        // with a 64-bit enum argument must not be routed through the pointer-sized fast
+        // icall path on wasm, otherwise the native call traps with a signature mismatch.
+        var euRes = direct_enum_u64(U64Enum.B);
+        Console.WriteLine("TestOutput -> eu (eu)=" + (ulong)euRes);
+        var eiRes = direct_enum_i64(I64Enum.B);
+        Console.WriteLine("TestOutput -> ei (ei)=" + (long)eiRes);
+
+        int exitCode = (int)res.Value;
+        return exitCode;
+    }
+
+    public static unsafe MyInlineArray InlineArrayTest1 () {
+        MyInlineArray ia = new ();
+        for (int i = 0; i < 2; i++)
+            ia[i] = i;
+        return ia;
+    }
+
+    public static unsafe MyInlineArray InlineArrayTest2 (MyInlineArray ia) {
+        return accept_and_return_inlinearray(ia);
+    }
+
+    [DllImport("wasm-abi", EntryPoint="accept_double_struct_and_return_float_struct")]
+    public static extern SingleFloatStruct indirect(SingleDoubleStruct arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_double_struct_and_return_float_struct")]
+    public static extern float indirect_arg(SingleDoubleStruct arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_double_struct_and_return_float_struct")]
+    public static extern float direct(double arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_i64_struct")]
+    public static extern SingleI64Struct indirect64(SingleI64Struct arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_i64_struct")]
+    public static extern Int64 direct64(Int64 arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_pair")]
+    public static extern WasmAppBuilderTestsPairStruct accept_and_return_pair(WasmAppBuilderTestsPairStruct arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_fixedarray")]
+    public static extern MyFixedArray accept_and_return_fixedarray(MyFixedArray arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_inlinearray")]
+    public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_ulong")]
+    public static extern U64Enum direct_enum_u64(U64Enum arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_long")]
+    public static extern I64Enum direct_enum_i64(I64Enum arg);
+}

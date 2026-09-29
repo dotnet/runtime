@@ -1,15 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <!-- Needed for GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Finalizer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="GCUtil_HeapExpansion.csproj" />
   </ItemGroup>
 </Project>

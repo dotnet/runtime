@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
+    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
     internal sealed class Select
     {
         internal const string RequiresUnreferencedCodeMessage = "Members of types used in the filter expression might be trimmed.";
@@ -36,7 +37,6 @@ namespace System.Data
         private int _nCandidates;
         private int _matchedCandidates;
 
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public Select(DataTable table, string? filterExpression, string? sort, DataViewRowState recordStates)
         {
             _table = table;
@@ -370,19 +370,13 @@ namespace System.Data
                             if (canColumn == null || canColumn.flag)
                             { // if sort column is not a filter col , or not processed
                                 ndxFields[j++] = _indexFields[i];
-                                if (canColumn != null)
-                                {
-                                    canColumn.flag = false;
-                                }
+                                canColumn?.flag = false;
                             }
                         }
 
                         for (i = 0; i < _candidateColumns.Length; i++)
                         {
-                            if (_candidateColumns[i] != null)
-                            {
-                                _candidateColumns[i].flag = false; // same as before, it is false when it returns
-                            }
+                            _candidateColumns[i]?.flag = false; // same as before, it is false when it returns
                         }
 
                         // Debug.Assert(j == candidatesNotInIndex, "Whole ndxDesc should be filled!");
@@ -404,8 +398,7 @@ namespace System.Data
                         {
                             ndxFields[i] = _indexFields[i];
                             ColumnInfo canColumn = _candidateColumns[_indexFields[i].Column.Ordinal];
-                            if (canColumn != null)
-                                canColumn.flag = true;
+                            canColumn?.flag = true;
                         }
                         j = i;
                         for (i = 0; i < lenCanColumns; i++)
@@ -441,10 +434,7 @@ namespace System.Data
                         }
                         for (i = 0; i < _candidateColumns.Length; i++)
                         {
-                            if (_candidateColumns[i] != null)
-                            {
-                                _candidateColumns[i].flag = false; // same as before, it is false when it returns
-                            }
+                            _candidateColumns[i]?.flag = false; // same as before, it is false when it returns
                         }
                     }
                 }
@@ -599,8 +589,6 @@ namespace System.Data
             return newRows;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "All constructors are marked as unsafe.")]
         private bool AcceptRecord(int record)
         {
             DataRow? row = _table._recordManager[record];
@@ -635,8 +623,6 @@ namespace System.Data
             return result;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "All constructors are marked as unsafe.")]
         private int Eval(BinaryNode expr, DataRow row, DataRowVersion version)
         {
             if (expr._op == Operators.And)

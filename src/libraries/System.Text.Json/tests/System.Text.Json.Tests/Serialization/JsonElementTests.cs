@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,20 +53,22 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Streams need to read ahead when they hit objects or arrays that are assigned to JsonElement or object.
 
-            byte[] data = Encoding.UTF8.GetBytes(@"{""Data"":[1,true,{""City"":""MyCity""},null,""foo""]}");
+            byte[] data = Encoding.UTF8.GetBytes("""{"Data":[1,true,{"City":"MyCity"},null,"foo"]}""");
             MemoryStream stream = new MemoryStream(data);
             JsonElement obj = JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
 
-            data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""]");
+            data = Encoding.UTF8.GetBytes("""[1,true,{"City":"MyCity"},null,"foo"]""");
             stream = new MemoryStream(data);
             obj = JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
 
             // Ensure we fail with incomplete data
-            data = Encoding.UTF8.GetBytes(@"{""Data"":[1,true,{""City"":""MyCity""},null,""foo""]");
+            data = Encoding.UTF8.GetBytes("""{"Data":[1,true,{"City":"MyCity"},null,"foo"]""");
             stream = new MemoryStream(data);
             Assert.Throws<JsonException>(() => JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
 
-            data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""");
+            data = Encoding.UTF8.GetBytes("""
+                [1,true,{"City":"MyCity"},null,"foo"
+                """);
             stream = new MemoryStream(data);
             Assert.Throws<JsonException>(() => JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
         }
@@ -115,14 +118,14 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "x" : 1, "x" : 2 }""", """{ "x" : 1, "x" : 2 }""")]
         [InlineData("""{ "x" : 1, "y" : null, "x" : 2 }""", """{ "y" : null, "x" : 1, "x" : 2 }""")]
         [InlineData("""{ "x" : 1, "y" : null, "x" : 2 }""", """{ "x" : 1, "x" : 2, "y" : null }""")]
-        [InlineData("""[]""", """ [ ]""")]
-        [InlineData("""[1, 2, 3]""", """ [1,  2,  3  ]""")]
+        [InlineData("[]", " [ ]")]
+        [InlineData("[1, 2, 3]", " [1,  2,  3  ]")]
         [InlineData("""[null, false, 3.14, "ABC", { "x" : 1, "y" : 2 }, []]""",
                     """[null, false, 314e-2, "\u0041\u0042\u0043", { "y" : 2, "x" : 1 }, [ ] ]""")]
         public static void DeepEquals_EqualValuesReturnTrue(string value1, string value2)
         {
-            JsonElement element1 = JsonDocument.Parse(value1).RootElement;
-            JsonElement element2 = JsonDocument.Parse(value2).RootElement;
+            JsonElement element1 = JsonElement.Parse(value1);
+            JsonElement element2 = JsonElement.Parse(value2);
 
             // Reflexivity
             Assert.True(JsonElement.DeepEquals(element1, element2));
@@ -203,10 +206,14 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "Prop1" : 1, "Prop2": {}, "Prop3": false }""", """{ "Prop1" : 1, "Prop2" : { "c" : null }, "Prop3" : false }""")]
         [InlineData("""{ "Prop1" : 1, "Prop2": {}, "Prop3": false }""", """{ "Prop1" : 1, "Prop3" : true, "Prop2" : {} }""")]
         [InlineData("""{ "Prop3" : null, "Prop1" : 1, "Prop1" : 2 }""", """{ "Prop1" : 2, "Prop1" : 1, "Prop3" : null }""")]
+        [InlineData("""{"test1":null}""", """{"test2":null}""")]
+        [InlineData("""{"test1":null, "test2":null}""", """{"test3":null, "test4":null}""")]
+        [InlineData("""{"test1":null, "test2":null}""", """{"test3":null}""")]
+        [InlineData("""{"test1":null}""", """{"test2":[null]}""")]
         public static void DeepEquals_NotEqualValuesReturnFalse(string value1, string value2)
         {
-            JsonElement element1 = JsonDocument.Parse(value1).RootElement;
-            JsonElement element2 = JsonDocument.Parse(value2).RootElement;
+            JsonElement element1 = JsonElement.Parse(value1);
+            JsonElement element2 = JsonElement.Parse(value2);
 
             // Reflexivity
             Assert.True(JsonElement.DeepEquals(element1, element1));
@@ -229,7 +236,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(JsonElement.DeepEquals(element, element));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsNotMonoInterpreter))]
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public static async Task DeepEquals_TooDeepJsonDocument_ThrowsInsufficientExecutionStackException()
         {
             var tcs = new TaskCompletionSource<bool>();
@@ -287,6 +295,78 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonDocumentOptions options = new JsonDocumentOptions { MaxDepth = depth };
             return JsonDocument.Parse(bufferWriter.WrittenSpan.ToArray(), options);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonElementWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicateProperty<JsonElement>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonElementArrayWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicateProperty<JsonElement>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void DserializeJsonElementDeeplyNestedWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicateProperty<JsonElement>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonElementClassWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"Object":{{jsonPayload}}}""";
+            AssertDuplicateProperty<JsonElementClass>(jsonPayload, isValidJson);
+        }
+
+        private static void AssertDuplicateProperty<T>(string jsonPayload, bool isValidJson)
+        {
+            if (isValidJson)
+            {
+                _ = JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties); // Assert no throw
+            }
+            else
+            {
+                Exception ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties));
+                Assert.Contains("Duplicate", ex.Message);
+            }
+
+            _ = JsonSerializer.Deserialize<T>(jsonPayload); // Assert no throw
+        }
+
+        [Fact]
+        public void DserializeJsonElement_CaseInsensitiveWithDuplicatePropertiesNoThrow()
+        {
+            string jsonPayload = """{"a": 1, "A": 2}""";
+
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+            JsonElement obj = JsonSerializer.Deserialize<JsonElement>(jsonPayload, options);
+
+            // JsonElement is always case-sensitive
+            Assert.Equal(1, obj.GetProperty("a").GetInt32());
+            Assert.Equal(2, obj.GetProperty("A").GetInt32());
+        }
+
+        [Fact]
+        public void DserializeJsonElementWrapper_CaseInsensitiveWithDuplicatePropertiesNoThrow()
+        {
+            string jsonPayload = """{"object": {"a": 1, "A": 2}}""";
+
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+            JsonElementClass obj = JsonSerializer.Deserialize<JsonElementClass>(jsonPayload, options);
+
+            // JsonElement is always case-sensitive
+            Assert.Equal(1, obj.Object.GetProperty("a").GetInt32());
+            Assert.Equal(2, obj.Object.GetProperty("A").GetInt32());
         }
     }
 }

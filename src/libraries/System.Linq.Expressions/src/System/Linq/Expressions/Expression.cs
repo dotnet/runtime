@@ -29,7 +29,7 @@ namespace System.Linq.Expressions
         internal const string DelegateCreationRequiresDynamicCode = "Delegate creation requires dynamic code generation.";
 
         private static readonly CacheDict<Type, MethodInfo> s_lambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
-        private static volatile CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? s_lambdaFactories;
+        private static CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? s_lambdaFactories;
 
         // For 4.0, many frequently used Expression nodes have had their memory
         // footprint reduced by removing the Type and NodeType fields. This has

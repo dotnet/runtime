@@ -46,7 +46,7 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(socket);
 
-            if (!socket.Blocking)
+            if (!OperatingSystem.IsWasi() && !socket.Blocking)
             {
                 // Stream.Read*/Write* are incompatible with the semantics of non-blocking sockets, and
                 // allowing non-blocking sockets could result in non-deterministic failures from those
@@ -118,6 +118,8 @@ namespace System.Net.Sockets
         {
             get
             {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+
                 int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!;
                 if (timeout == 0)
                 {
@@ -127,6 +129,8 @@ namespace System.Net.Sockets
             }
             set
             {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+
                 if (value <= 0 && value != System.Threading.Timeout.Infinite)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
@@ -141,6 +145,8 @@ namespace System.Net.Sockets
         {
             get
             {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+
                 int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!;
                 if (timeout == 0)
                 {
@@ -150,6 +156,8 @@ namespace System.Net.Sockets
             }
             set
             {
+                if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+
                 if (value <= 0 && value != System.Threading.Timeout.Infinite)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
@@ -218,6 +226,8 @@ namespace System.Net.Sockets
         //     Number of bytes we read, or 0 if the socket is closed.
         public override int Read(byte[] buffer, int offset, int count)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
             if (!CanRead)
@@ -237,6 +247,8 @@ namespace System.Net.Sockets
 
         public override int Read(Span<byte> buffer)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             if (GetType() != typeof(NetworkStream))
             {
                 // NetworkStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
@@ -260,6 +272,8 @@ namespace System.Net.Sockets
 
         public override unsafe int ReadByte()
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             byte b;
             return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
         }
@@ -282,6 +296,8 @@ namespace System.Net.Sockets
         //     way to indicate an error.
         public override void Write(byte[] buffer, int offset, int count)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
             if (!CanWrite)
@@ -303,6 +319,8 @@ namespace System.Net.Sockets
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             if (GetType() != typeof(NetworkStream))
             {
                 // NetworkStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
@@ -414,6 +432,8 @@ namespace System.Net.Sockets
         //     An IASyncResult, representing the read.
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
             if (!CanRead)
@@ -447,6 +467,8 @@ namespace System.Net.Sockets
         //     The number of bytes read. May throw an exception.
         public override int EndRead(IAsyncResult asyncResult)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(asyncResult);
 
@@ -476,6 +498,8 @@ namespace System.Net.Sockets
         //     An IASyncResult, representing the write.
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
             if (!CanWrite)
@@ -506,6 +530,8 @@ namespace System.Net.Sockets
         // Returns:  The number of bytes read. May throw an exception.
         public override void EndWrite(IAsyncResult asyncResult)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(asyncResult);
 
@@ -659,6 +685,8 @@ namespace System.Net.Sockets
         private int _currentWriteTimeout = -1;
         internal void SetSocketTimeoutOption(SocketShutdown mode, int timeout, bool silent)
         {
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/108151
+
             if (timeout < 0)
             {
                 timeout = 0; // -1 becomes 0 for the winsock stack

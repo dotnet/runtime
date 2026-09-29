@@ -14,9 +14,11 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class L171
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

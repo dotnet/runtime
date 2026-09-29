@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Tests
                 exportedPrivate = rsa.ExportParameters(true);
             }
 
-            ImportExport.AssertKeyEquals(parameters, exportedPrivate);
+            RSATestHelpers.AssertKeyEquals(parameters, exportedPrivate);
         }
 
         [Fact]
@@ -75,6 +75,21 @@ namespace System.Security.Cryptography.Tests
             RSAParameters parameters = TestData.RSA1032Parameters;
             parameters.Exponent = null;
             Assert.Throws<CryptographicException>(() => RSA.Create(parameters));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        public static void CreateWithMismatchedPQ_ThrowsCryptographicException()
+        {
+            RSAParameters parameters = TestData.RSA1032Parameters;
+
+            // Flip a bit in P so that p * q != n
+            // This is an error that is not caught in the managed layer, but will be caught in the native layer.
+            parameters.P = (byte[])parameters.P.Clone();
+            parameters.P[0] ^= 1;
+            CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
+                () => RSA.Create(parameters));
+
+            Assert.Contains("n does not equal p q", ex.Message);
         }
     }
 }

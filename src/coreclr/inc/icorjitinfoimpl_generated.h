@@ -24,6 +24,9 @@ public:
 bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
+bool canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 bool notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn) override;
 
@@ -95,14 +98,17 @@ void getMethodVTableOffset(
 bool resolveVirtualMethod(
           CORINFO_DEVIRTUALIZATION_INFO* info) override;
 
-CORINFO_METHOD_HANDLE getUnboxedEntry(
+CORINFO_METHOD_HANDLE getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg) override;
+          bool* variantIsThunk) override;
 
 CORINFO_CLASS_HANDLE getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
 CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
+          CORINFO_CLASS_HANDLE elemType) override;
+
+CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
 void expandRawHandleIntrinsic(
@@ -181,6 +187,10 @@ CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
           CORINFO_CLASS_HANDLE cls,
           unsigned index) override;
 
+CORINFO_CLASS_HANDLE getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
+          unsigned index) override;
+
 size_t printClassName(
           CORINFO_CLASS_HANDLE cls,
           char* buffer,
@@ -207,10 +217,10 @@ bool getIsClassInitedFlagAddress(
           CORINFO_CONST_LOOKUP* addr,
           int* offset) override;
 
-size_t getClassThreadStaticDynamicInfo(
+void* getClassThreadStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr) override;
 
-size_t getClassStaticDynamicInfo(
+void* getClassStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr) override;
 
 bool getStaticBaseAddress(
@@ -269,9 +279,6 @@ CorInfoHelpFunc getSharedCCtorHelper(
 CORINFO_CLASS_HANDLE getTypeForBox(
           CORINFO_CLASS_HANDLE cls) override;
 
-CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
-          CORINFO_CLASS_HANDLE cls) override;
-
 CorInfoHelpFunc getBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -294,7 +301,6 @@ CORINFO_CLASS_HANDLE getObjectType(
 
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup) override;
@@ -444,6 +450,12 @@ void reportRichMappings(
           ICorDebugInfo::RichOffsetMapping* mappings,
           uint32_t numMappings) override;
 
+void reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars) override;
+
 void reportMetadata(
           const char* key,
           const void* value,
@@ -486,7 +498,20 @@ bool runWithSPMIErrorTrap(
 void getEEInfo(
           CORINFO_EE_INFO* pEEInfoOut) override;
 
-const char16_t* getJitTimeLogFilename() override;
+void getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
+
+CORINFO_METHOD_HANDLE getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg) override;
+
+CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg) override;
 
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
@@ -519,15 +544,25 @@ void getFpStructLowering(
           CORINFO_CLASS_HANDLE structHnd,
           CORINFO_FPSTRUCT_LOWERING* pLowering) override;
 
+CorInfoWasmType getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd) override;
+
+uint32_t getAddressAlignment(
+          void* address) override;
+
+void getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) override;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 
 int32_t* getAddrOfCaptureThreadGlobal(
           void** ppIndirection) override;
 
-void* getHelperFtn(
+void getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection) override;
+          CORINFO_CONST_LOOKUP* pNativeEntrypoint,
+          CORINFO_METHOD_HANDLE* pMethod) override;
 
 void getFunctionEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
@@ -538,13 +573,6 @@ void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
-
-void* getMethodSync(
-          CORINFO_METHOD_HANDLE ftn,
-          void** ppIndirection) override;
-
-CorInfoHelpFunc getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle) override;
 
 CORINFO_MODULE_HANDLE embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
@@ -576,11 +604,7 @@ void getAddressOfPInvokeTarget(
           CORINFO_METHOD_HANDLE method,
           CORINFO_CONST_LOOKUP* pLookup) override;
 
-void* GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection) override;
-
-bool canGetCookieForPInvokeCalliSig(
+void* GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;
 
 CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(
@@ -618,10 +642,8 @@ CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
 
 CORINFO_VARARGS_HANDLE getVarArgsHandle(
           CORINFO_SIG_INFO* pSig,
+          CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection) override;
-
-bool canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig) override;
 
 InfoAccessType constructStringLiteral(
           CORINFO_MODULE_HANDLE module,
@@ -650,13 +672,22 @@ bool getTailCallHelpers(
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
 
+CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize) override;
+
+CORINFO_METHOD_HANDLE getAsyncResumptionStub(
+          void** entryPoint) override;
+
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool mustConvert) override;
 
 bool notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled) override;
+          bool supportEnabled,
+          bool preserveNegativeDependency) override;
 
 void updateEntryPointForTailCall(
           CORINFO_CONST_LOOKUP* entryPoint) override;
@@ -720,14 +751,17 @@ void recordCallSite(
           CORINFO_SIG_INFO* callSig,
           CORINFO_METHOD_HANDLE methodHandle) override;
 
+void recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig) override;
+
 void recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta) override;
 
-uint16_t getRelocTypeHint(
+CorInfoReloc getRelocTypeHint(
           void* target) override;
 
 uint32_t getExpectedTargetArchitecture() override;
@@ -735,6 +769,10 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(
+          CorInfoWasmType* types,
+          size_t typesSize) override;
 
 CORINFO_METHOD_HANDLE getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type) override;

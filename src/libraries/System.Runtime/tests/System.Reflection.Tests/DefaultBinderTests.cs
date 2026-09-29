@@ -182,7 +182,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("")]
         [InlineData(null)]
-        public static void InvokeWithCreateInstance(string name)
+        public static void InvokeWithCreateInstance(string? name)
         {
             Assert.IsType<Sample>(typeof(Sample).InvokeMember(name, BindingFlags.CreateInstance, null, null, null));
         }

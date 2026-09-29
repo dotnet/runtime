@@ -17,9 +17,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         public WildcardPathSegment(string beginsWith, List<string> contains, string endsWith, StringComparison comparisonType)
         {
-            ThrowHelper.ThrowIfNull(beginsWith);
-            ThrowHelper.ThrowIfNull(contains);
-            ThrowHelper.ThrowIfNull(endsWith);
+            ArgumentNullException.ThrowIfNull(beginsWith);
+            ArgumentNullException.ThrowIfNull(contains);
+            ArgumentNullException.ThrowIfNull(endsWith);
 
             _comparisonType = comparisonType switch
             {

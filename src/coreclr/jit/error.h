@@ -9,6 +9,8 @@
 #include <corjit.h>   // for CORJIT_INTERNALERROR
 #include <safemath.h> // For FitsIn, used by SafeCvt methods.
 
+#include <minipal/debugger.h>
+
 #define FATAL_JIT_EXCEPTION 0x02345678
 class Compiler;
 
@@ -64,6 +66,7 @@ extern void DECLSPEC_NORETURN badCode();
 extern void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, _In_z_ const char* file, unsigned line);
 extern void DECLSPEC_NORETURN noWay();
 extern void DECLSPEC_NORETURN implLimitation();
+extern void DECLSPEC_NORETURN implReadyToRunUnsupported();
 extern void DECLSPEC_NORETURN NOMEM();
 extern void DECLSPEC_NORETURN fatal(int errCode);
 
@@ -78,14 +81,13 @@ extern void ANALYZER_NORETURN noWayAssertBodyConditional();
 extern void ANALYZER_NORETURN noWayAssertBodyConditional(const char* cond, const char* file, unsigned line);
 
 // Define MEASURE_NOWAY to 1 to enable code to count and rank individual noway_assert calls by occurrence.
-// These asserts would be dynamically executed, but not necessarily fail. The provides some insight into
+// These asserts would be dynamically executed, but not necessarily fail. This provides some insight into
 // the dynamic prevalence of these (if not a direct measure of their cost), which exist in non-DEBUG as
-// well as DEBUG builds.
-#ifdef DEBUG
-#define MEASURE_NOWAY 1
-#else // !DEBUG
+// well as DEBUG builds. This is off by default, including in DEBUG builds, to avoid bloating every
+// noway_assert.
+#ifndef MEASURE_NOWAY
 #define MEASURE_NOWAY 0
-#endif // !DEBUG
+#endif // !defined(MEASURE_NOWAY)
 
 #if MEASURE_NOWAY
 extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const char* condStr);
@@ -165,6 +167,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_X86)
 
@@ -174,6 +177,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_ARM)
 
@@ -183,6 +187,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_ARM64)
 
@@ -192,6 +197,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  NYIRAW("NYI_ARM64: " msg)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_LOONGARCH64)
 #define NYI_AMD64(msg)  do { } while (0)
@@ -200,6 +206,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) NYIRAW("NYI_LOONGARCH64: " msg)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_RISCV64)
 #define NYI_AMD64(msg)  do { } while (0)
@@ -208,6 +215,19 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) NYIRAW("NYI_RISCV64: " msg)
+#define NYI_WASM(msg) do { } while (0)
+
+#elif defined(TARGET_WASM)
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_X86(msg)    do { } while (0)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
+#define NYI_RISCV64(msg) do { } while (0)
+
+#define NYI_WASM(msg) do { if (JitConfig.JitWasmNyiToR2RUnsupported() > 0) \
+   { JITDUMP("NYI_WASM: " msg); implReadyToRunUnsupported(); } \
+   else { NYIRAW("NYI_WASM: " msg); } } while (0)
 
 #else
 
@@ -247,7 +267,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define BreakIfDebuggerPresent()                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (IsDebuggerPresent())                                                                                       \
+        if (minipal_is_native_debugger_present())                                                                      \
             DebugBreak();                                                                                              \
     } while (0)
 #endif

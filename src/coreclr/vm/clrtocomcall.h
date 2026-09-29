@@ -18,54 +18,20 @@
 
 #include "util.hpp"
 
+class ILStubResolver;
+
 class CLRToCOMCall
 {
     public:
-        //---------------------------------------------------------
-        // Debugger helper function
-        //---------------------------------------------------------
-        static TADDR GetFrameCallIP(FramedMethodFrame *frame);
+        // Generates the transient IL implementation for a CLR->COM call.
+        static COR_ILMETHOD_DECODER* CreateCLRToCOMCallMethodIL(MethodDesc* pMD, DynamicResolver** ppResolver);
 
-        static MethodDesc* GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags);
-        static PCODE       GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD);
+        // Returns the user-provided IL stub method for this CLR->COM call, or NULL if there isn't one.
+        static MethodDesc* GetPredefinedILStubMethod(MethodDesc* pMD);
 
         static CLRToCOMCallInfo *PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags);
-
-#ifdef TARGET_X86
-        static void Init();
-        static LPVOID GetRetThunk(UINT numStackBytes);
-#endif // TARGET_X86
     private:
         CLRToCOMCall();     // prevent "new"'s on this class
-
-#ifdef TARGET_X86
-    struct RetThunkCacheElement
-    {
-        RetThunkCacheElement()
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_cbStack = 0;
-            m_pRetThunk = NULL;
-        }
-
-        UINT m_cbStack;
-        LPVOID m_pRetThunk;
-    };
-
-    class RetThunkSHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits<RetThunkCacheElement> >
-    {
-    public:
-        typedef UINT key_t;
-        static key_t GetKey(element_t e)       { LIMITED_METHOD_CONTRACT; return e.m_cbStack; }
-        static BOOL Equals(key_t k1, key_t k2) { LIMITED_METHOD_CONTRACT; return (k1 == k2); }
-        static count_t Hash(key_t k)           { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)k; }
-        static const element_t Null()          { LIMITED_METHOD_CONTRACT; return RetThunkCacheElement(); }
-        static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return (e.m_pRetThunk == NULL); }
-    };
-
-    static SHash<RetThunkSHashTraits> *s_pRetThunkCache;
-    static CrstStatic s_RetThunkCacheCrst;
-#endif // TARGET_X86
 };
 
 #endif // __CLRTOCOMCALL_H__

@@ -16,15 +16,13 @@
 
   <ItemGroup Condition="'$(IsWasmTestProject)' != 'false'">
     <Compile Include="Program.cs" />
-    <Content Include="index.html" CopyToOutputDirectory="Always" />
-    <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraFilesToDeploy Include="main.js" />
+    <Content Include="index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="main.js" Link="wwwroot\main.js" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputPath>$(RepoRoot)artifacts\bin\$(MSBuildProjectName)</OutputPath>
-    <_InTreeEmSdk>$(BrowserProjectRoot)emsdk</_InTreeEmSdk>
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists($(_InTreeEmSdk))">$(_InTreeEmSdk)</EMSDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</EMSDK_PATH>
   </PropertyGroup>
 </Project>

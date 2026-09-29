@@ -6,6 +6,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using Xunit;
 using static DelegateTestNative;
+using TestLibrary;
 
 [SkipOnMono("needs triage")]
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]

@@ -548,8 +548,7 @@ namespace System.Xml.Schema
 
         internal static bool IsXdrSchema(string uri)
         {
-            return uri.Length >= x_schema.Length &&
-                   0 == string.Compare(uri, 0, x_schema, 0, x_schema.Length, StringComparison.Ordinal) &&
+            return uri.StartsWith(x_schema, StringComparison.Ordinal) &&
                    !uri.StartsWith("x-schema:#", StringComparison.Ordinal);
         }
 

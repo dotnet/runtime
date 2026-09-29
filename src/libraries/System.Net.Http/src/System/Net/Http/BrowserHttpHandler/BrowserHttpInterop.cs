@@ -11,19 +11,34 @@ namespace System.Net.Http
 {
     internal static partial class BrowserHttpInterop
     {
-        [JSImport("INTERNAL.http_wasm_supports_streaming_request")]
-        public static partial bool SupportsStreamingRequest();
+        private static bool? _SupportsStreamingRequest;
+        private static bool? _SupportsStreamingResponse;
 
-        [JSImport("INTERNAL.http_wasm_supports_streaming_response")]
-        public static partial bool SupportsStreamingResponse();
+        public static bool SupportsStreamingRequest()
+        {
+            _SupportsStreamingRequest ??= SupportsStreamingRequestImpl();
+            return _SupportsStreamingRequest.Value;
+        }
 
-        [JSImport("INTERNAL.http_wasm_create_controller")]
+        public static bool SupportsStreamingResponse()
+        {
+            _SupportsStreamingResponse ??= SupportsStreamingResponseImpl();
+            return _SupportsStreamingResponse.Value;
+        }
+
+        [JSImport("INTERNAL.httpSupportsStreamingRequest")]
+        public static partial bool SupportsStreamingRequestImpl();
+
+        [JSImport("INTERNAL.httpSupportsStreamingResponse")]
+        public static partial bool SupportsStreamingResponseImpl();
+
+        [JSImport("INTERNAL.httpCreateController")]
         public static partial JSObject CreateController();
 
-        [JSImport("INTERNAL.http_wasm_abort")]
+        [JSImport("INTERNAL.httpAbort")]
         public static partial void Abort(JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_transform_stream_write")]
+        [JSImport("INTERNAL.httpTransformStreamWrite")]
         public static partial Task TransformStreamWrite(
             JSObject httpController,
             IntPtr bufferPtr,
@@ -32,23 +47,23 @@ namespace System.Net.Http
         public static unsafe Task TransformStreamWriteUnsafe(JSObject httpController, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
             => TransformStreamWrite(httpController, (nint)handle.Pointer, buffer.Length);
 
-        [JSImport("INTERNAL.http_wasm_transform_stream_close")]
+        [JSImport("INTERNAL.httpTransformStreamClose")]
         public static partial Task TransformStreamClose(
             JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_get_response_header_names")]
+        [JSImport("INTERNAL.httpGetResponseHeaderNames")]
         private static partial string[] _GetResponseHeaderNames(
             JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_get_response_header_values")]
+        [JSImport("INTERNAL.httpGetResponseHeaderValues")]
         private static partial string[] _GetResponseHeaderValues(
             JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_get_response_status")]
+        [JSImport("INTERNAL.httpGetResponseStatus")]
         public static partial int GetResponseStatus(
             JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_get_response_type")]
+        [JSImport("INTERNAL.httpGetResponseType")]
         public static partial string GetResponseType(
             JSObject httpController);
 
@@ -68,7 +83,7 @@ namespace System.Net.Http
             }
         }
 
-        [JSImport("INTERNAL.http_wasm_fetch")]
+        [JSImport("INTERNAL.httpFetch")]
         public static partial Task Fetch(
             JSObject httpController,
             string uri,
@@ -77,7 +92,7 @@ namespace System.Net.Http
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues);
 
-        [JSImport("INTERNAL.http_wasm_fetch_stream")]
+        [JSImport("INTERNAL.httpFetchStream")]
         public static partial Task FetchStream(
             JSObject httpController,
             string uri,
@@ -86,7 +101,7 @@ namespace System.Net.Http
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues);
 
-        [JSImport("INTERNAL.http_wasm_fetch_bytes")]
+        [JSImport("INTERNAL.httpFetchBytes")]
         private static partial Task FetchBytes(
             JSObject httpController,
             string uri,
@@ -102,7 +117,7 @@ namespace System.Net.Http
             return FetchBytes(httpController, uri, headerNames, headerValues, optionNames, optionValues, (IntPtr)pinBuffer.Pointer, bodyLength);
         }
 
-        [JSImport("INTERNAL.http_wasm_get_streamed_response_bytes")]
+        [JSImport("INTERNAL.httpGetStreamedResponseBytes")]
         public static partial Task<int> GetStreamedResponseBytes(
             JSObject fetchResponse,
             IntPtr bufferPtr,
@@ -112,11 +127,11 @@ namespace System.Net.Http
             => GetStreamedResponseBytes(jsController, (IntPtr)handle.Pointer, buffer.Length);
 
 
-        [JSImport("INTERNAL.http_wasm_get_response_length")]
+        [JSImport("INTERNAL.httpGetResponseLength")]
         public static partial Task<int> GetResponseLength(
             JSObject fetchResponse);
 
-        [JSImport("INTERNAL.http_wasm_get_response_bytes")]
+        [JSImport("INTERNAL.httpGetResponseBytes")]
         public static partial int GetResponseBytes(
             JSObject fetchResponse,
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
@@ -124,14 +139,15 @@ namespace System.Net.Http
 
         public static async Task CancellationHelper(Task promise, CancellationToken cancellationToken, JSObject jsController)
         {
-            Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
-
             if (promise.IsCompletedSuccessfully)
             {
+                Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                 return;
             }
             try
             {
+                // the promise is already in flight, so it has to be awaited even when the token is
+                // already cancelled - otherwise its later rejection is never observed
                 using (var operationRegistration = cancellationToken.Register(static s =>
                 {
                     (Task _promise, JSObject _jsController) = ((Task, JSObject))s!;
@@ -144,6 +160,7 @@ namespace System.Net.Http
                 {
                     await promise.ConfigureAwait(false);
                 }
+                Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
             {
@@ -166,9 +183,9 @@ namespace System.Net.Http
 
         public static async Task<T> CancellationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject jsController)
         {
-            Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             if (promise.IsCompletedSuccessfully)
             {
+                Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                 return promise.Result;
             }
             await CancellationHelper((Task)promise, cancellationToken, jsController).ConfigureAwait(false);

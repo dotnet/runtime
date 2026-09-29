@@ -4,8 +4,7 @@ add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 add_definitions(-D_FEATURE_NO_HOST)
 add_definitions(-D__ILDASM__)
-
-add_definitions(-DFEATURE_CORECLR)
+add_definitions(-DSELF_NO_HOST)
 
 include_directories(..)
 
@@ -50,12 +49,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-
-    # The following linked options can be inserted into the linker libraries list to
-    # ensure proper resolving of circular references between a subset of the libraries.
-    set(START_LIBRARY_GROUP -Wl,--start-group)
-    set(END_LIBRARY_GROUP -Wl,--end-group)
+    add_link_options(LINKER:-Bsymbolic)
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
 add_executable_clr(ildasm
@@ -64,13 +58,11 @@ add_executable_clr(ildasm
 )
 
 set(ILDASM_LINK_LIBRARIES
-    ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
+    # Use the hostless _ppdb metadata flavor (SELF_NO_HOST) rather than the
+    # contract-enabled _wks flavor that coreclr links.
+    # libraries that have circular references
+    $<LINK_GROUP:RESCAN,mdcompiler_ppdb,mdruntime_ppdb,mdruntimerw_ppdb>
     utilcodestaticnohost
-    mdcompiler_wks
-    mdruntime_wks
-    mdruntimerw_wks
-    mdstaticapi
-    ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     corguids
 )
 
@@ -87,14 +79,12 @@ if(CLR_CMAKE_HOST_WIN32)
         version.lib
         shlwapi.lib
         bcrypt.lib
-        RuntimeObject.lib
         coreclrminipal
     )
 else()
     list(APPEND ILDASM_LINK_LIBRARIES
         coreclrpal
         mscorrc
-        palrt
         coreclrminipal
     )
 endif(CLR_CMAKE_HOST_WIN32)
@@ -105,7 +95,6 @@ if(CLR_CMAKE_HOST_UNIX)
         ${ILDASM_LINK_LIBRARIES}
         mscorrc
         coreclrpal
-        palrt
         ${CMAKE_DL_LIBS}
     )
 else()

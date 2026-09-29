@@ -11,15 +11,16 @@ set(CORDBEE_SOURCES_DAC_AND_WKS
   debugger.cpp
   debuggermessagebox.cpp
   debuggermodule.cpp
+  executioncontrol.cpp
   functioninfo.cpp
 )
 
 set(CORDBEE_HEADERS_DAC_AND_WKS
   controller.h
   controller.inl
-  datatest.h
   debugger.h
   debugger.inl
+  executioncontrol.h
 )
 
 set(CORDBEE_SOURCES_WKS
@@ -49,8 +50,13 @@ set(CORDBEE_HEADERS_DAC
 
 list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/walker.cpp)
 
+if(FEATURE_INTERPRETER)
+  list(APPEND CORDBEE_SOURCES_WKS interpreterwalker.cpp)
+  list(APPEND CORDBEE_HEADERS_WKS interpreterwalker.h)
+endif(FEATURE_INTERPRETER)
+
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
-  list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/debuggerregdisplayhelper.cpp)
+  list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/regdisplayhelper.cpp)
 endif ()
 
 convert_to_absolute_path(CORDBEE_SOURCES_DAC ${CORDBEE_SOURCES_DAC})

@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-            Debug.Assert(jsonTypeInfo is JsonTypeInfo<T> typeInfo && typeInfo.SerializeHandler != null);
+            Debug.Assert(jsonTypeInfo is JsonTypeInfo<T> typeInfo && typeInfo.SerializeHandler is not null);
 
             if (!state.SupportContinuation &&
                 jsonTypeInfo.CanUseSerializeHandler &&
@@ -70,5 +70,8 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling)
             => Converter.GetSchema(numberHandling);
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling)
+            => Converter.GetSupportedJsonValueTypes(numberHandling);
     }
 }

@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers
@@ -17,6 +18,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static (Vector128<byte> Result, Vector128<byte> Prev0) ProcessInputN2(
             Vector128<byte> input,
             Vector128<byte> prev0,
@@ -66,7 +68,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         public static (Vector512<byte> Result, Vector512<byte> Prev0) ProcessInputN2(
             Vector512<byte> input,
             Vector512<byte> prev0,
@@ -90,6 +92,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static (Vector128<byte> Result, Vector128<byte> Prev0, Vector128<byte> Prev1) ProcessInputN3(
             Vector128<byte> input,
             Vector128<byte> prev0, Vector128<byte> prev1,
@@ -183,7 +186,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         public static (Vector512<byte> Result, Vector512<byte> Prev0, Vector512<byte> Prev1) ProcessInputN3(
             Vector512<byte> input,
             Vector512<byte> prev0, Vector512<byte> prev1,
@@ -207,23 +210,47 @@ namespace System.Buffers
             return (result, match0, match1);
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector128&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector128&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static Vector128<byte> LoadAndPack16AsciiChars(ref char source)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref source);
             Vector128<ushort> source1 = Vector128.LoadUnsafe(ref source, (nuint)Vector128<ushort>.Count);
 
-            return Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate(source0.AsInt16(), source1.AsInt16())
-                : AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0), source1);
+            if (Sse2.IsSupported)
+            {
+                return Sse2.PackUnsignedSaturate(source0.AsInt16(), source1.AsInt16());
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.ConvertNarrowingSaturateUnsigned(source0.AsInt16(), source1.AsInt16());
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector256&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector256&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         public static Vector256<byte> LoadAndPack32AsciiChars(ref char source)
@@ -236,8 +263,12 @@ namespace System.Buffers
             return PackedSpanHelpers.FixUpPackedVector256Result(packed);
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector512&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector512&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         public static Vector512<byte> LoadAndPack64AsciiChars(ref char source)
@@ -253,10 +284,13 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static (Vector128<byte> Low, Vector128<byte> High) GetNibbles(Vector128<byte> input)
         {
             // 'low' is not strictly correct here, but we take advantage of Ssse3.Shuffle's behavior
-            // of doing an implicit 'AND 0xF' in order to skip the redundant AND.
+            // of doing an implicit 'AND 0xF' in order to skip the redundant AND. PackedSimd.Swizzle
+            // and AdvSimd's table lookup return 0 for indices >= 16 (instead of masking the low 4
+            // bits), so they need the explicit AND.
             Vector128<byte> low = Ssse3.IsSupported
                 ? input
                 : input & Vector128.Create((byte)0xF);
@@ -293,9 +327,10 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> Shuffle(Vector128<byte> maskLow, Vector128<byte> maskHigh, Vector128<byte> low, Vector128<byte> high)
         {
-            return Vector128.ShuffleUnsafe(maskLow, low) & Vector128.ShuffleUnsafe(maskHigh, high);
+            return SearchValues.ShuffleNativeModified(maskLow, low) & Vector128.ShuffleNative(maskHigh, high);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -315,6 +350,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> RightShift1(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -323,14 +359,38 @@ namespace System.Buffers
             // We want to shift the last element of left (15) to be the first element of the result
             // result: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 
-            return Ssse3.IsSupported
-                ? Ssse3.AlignRight(right, left, 15)
-                : AdvSimd.ExtractVector128(left, right, 15);
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.AlignRight(right, left, 15);
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractVector128(left, right, 15);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                // Call PackedSimd.Swizzle directly (i8x16.swizzle) rather than through
+                // Vector128.ShuffleNative's dispatcher chain, which the Mono SIMD intrinsic
+                // recognizer doesn't always lower cleanly. Swizzle clamps out-of-range
+                // indices (>= 16) to 0 so we can compose the two halves with OR.
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
+                    Vector128.Create((byte)15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF));
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
+                    Vector128.Create((byte)0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
+                return leftPart | rightPart;
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> RightShift2(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -339,9 +399,28 @@ namespace System.Buffers
             // We want to shift the last two elements of left (14, 15) to be the first elements of the result
             // result: [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
 
-            return Ssse3.IsSupported
-                ? Ssse3.AlignRight(right, left, 14)
-                : AdvSimd.ExtractVector128(left, right, 14);
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.AlignRight(right, left, 14);
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractVector128(left, right, 14);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
+                    Vector128.Create((byte)14, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF));
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
+                    Vector128.Create((byte)0xFF, 0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13));
+                return leftPart | rightPart;
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -381,7 +460,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private static Vector512<byte> RightShift1(Vector512<byte> left, Vector512<byte> right)
         {
             // Given input vectors like
@@ -389,28 +468,21 @@ namespace System.Buffers
             // right:   64,  65,  66,  67,  68,  69, ... , 122, 123, 124, 125, 126, 127
             // We want to shift the last element of left (63) to be the first element of the result
             // result: [63], 64,  65,  66,  67,  68, ... , 121, 122, 123, 124, 125, 126
-            //
-            // Avx512BW.AlignRight acts like four separate Ssse3.AlignRight calls on each 128-bit pair of the of the source operands.
-            // Result of Avx512BW.AlignRight(right, left, 15) is
-            // lower: [15],  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78, [31],  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,
-            // upper: [47],  96,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, [63], 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126
-            // note how elements at indexes 0, 16, 32 and 48 are off by 48 places.
-            // We want to read 63 instead of 15, 79 instead of 31, 95 instead of 47, and 111 instead of 63.
-            //
-            // Similar to Avx2 above, we create a temporary value where we shift these positions by 48 places - shift 8-byte values by 6 places (PermuteVar8x64x2).
-            // The indices vector below could be [6, 7, 8, 9, 10, 11, 12, 13], but we only care about the last byte in each 128-bit block (positions with value 0 don't affect the result).
 
-            Vector512<byte> leftShifted = Avx512F.PermuteVar8x64x2(left.AsInt64(), Vector512.Create(0, 7, 0, 9, 0, 11, 0, 13), right.AsInt64()).AsByte();
-            return Avx512BW.AlignRight(right, leftShifted, 15);
+            return Avx512Vbmi.PermuteVar64x8x2(left, Vector512.CreateSequence<byte>(63, 1), right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private static Vector512<byte> RightShift2(Vector512<byte> left, Vector512<byte> right)
         {
-            // See comments in 'RightShift1(Vector512<byte> left, Vector512<byte> right)' above.
-            Vector512<byte> leftShifted = Avx512F.PermuteVar8x64x2(left.AsInt64(), Vector512.Create(0, 7, 0, 9, 0, 11, 0, 13), right.AsInt64()).AsByte();
-            return Avx512BW.AlignRight(right, leftShifted, 14);
+            // Given input vectors like
+            // left:     0,   1,   2,   3,   4,   5, ... ,  58,  59,  60,  61, [62], [63]
+            // right:   64,  65,  66,  67,  68,  69, ... , 122, 123, 124, 125, 126, 127
+            // We want to shift the last two elements of left (62, 63) to be the first elements of the result
+            // result: [62], [63], 64,  65,  66,  67,  68, ... , 121, 122, 123, 124, 125
+
+            return Avx512Vbmi.PermuteVar64x8x2(left, Vector512.CreateSequence<byte>(62, 1), right);
         }
     }
 }

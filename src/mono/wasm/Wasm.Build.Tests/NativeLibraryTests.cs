@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -10,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class NativeLibraryTests : TestMainJsTestBase
+    public class NativeLibraryTests : WasmTemplateTestsBase
     {
         public NativeLibraryTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -19,154 +20,165 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [BuildAndRun(aot: true)]
-        public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
+        public Task ProjectWithNativeReference(Configuration config, bool aot) =>
+            ProjectWithNativeReferenceCore(config, aot);
+
+        [Theory]
+        [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native"), TestCategory("mono")]
+        public Task ProjectWithNativeReference_AOT(Configuration config, bool aot) =>
+            ProjectWithNativeReferenceCore(config, aot);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Release)]
+        [TestCategory("native"), TestCategory("coreclr"), TestCategory("workload")]
+        public Task ProjectWithNativeReference_ReadyToRun(Configuration config) =>
+            ProjectWithNativeReferenceCore(config, aot: false, readyToRun: true);
+
+        private async Task ProjectWithNativeReferenceCore(Configuration config, bool aot, bool readyToRun = false)
         {
-            string projectName = $"AppUsingNativeLib-a";
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
+            string objectFilename = "native-lib.o";
+            string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
+            string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
+            if (readyToRun)
+                extraProperties += "<PublishReadyToRun>true</PublishReadyToRun>";
+            string insertAtEnd = readyToRun
+                ? """
+                    <Target Name="PrintReadyToRunPInvokeModules" AfterTargets="_WasmConfigureReadyToRunPInvokes">
+                      <Message Text="** ReadyToRunPInvokeModules: @(_WasmReadyToRunPInvokeModule)" Importance="High" />
+                    </Target>
+                    """
+                : string.Empty;
 
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? _))
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot,
+                TestAsset.WasmBasicTestApp,
+                "AppUsingNativeLib-a",
+                extraItems: extraItems,
+                extraProperties: extraProperties,
+                insertAtEnd: insertAtEnd);
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
+            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
+            DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
+            // The AppUsingNativeLib program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
+
+            string extraArgs = readyToRun ? GetCrossgen2PathArgument(config) : string.Empty;
+            (string _, string buildOutput) = PublishProject(
+                info,
+                config,
+                new PublishOptions(AOT: aot, ExtraMSBuildArgs: extraArgs, AssertAppBundle: !readyToRun),
+                isNativeBuild: true);
+            if (readyToRun)
             {
-                InitPaths(id);
-                if (Directory.Exists(_projectDir))
-                    Directory.Delete(_projectDir, recursive: true);
-
-                Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir);
-                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
+                Assert.Contains("Linking CoreCLR WASM", buildOutput);
+                Assert.Contains("** ReadyToRunPInvokeModules: native-lib;", buildOutput);
             }
 
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(DotnetWasmFromRuntimePack: false));
+            RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));
 
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
-                                test: output => {},
-                                host: host, id: id);
+            Assert.Contains(output.TestOutput, m => m.Contains("print_line: 100"));
+            Assert.Contains(output.TestOutput, m => m.Contains("from pinvoke: 142"));
+        }
 
-            Assert.Contains("print_line: 100", output);
-            Assert.Contains("from pinvoke: 142", output);
+        private static string GetCrossgen2PathArgument(Configuration config)
+        {
+            string? baseDir = EnvironmentVariables.BaseDir;
+            if (string.IsNullOrEmpty(baseDir))
+                return string.Empty;
+
+            string hostArch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+            string executableName = OperatingSystem.IsWindows() ? "crossgen2.exe" : "crossgen2";
+            string crossgen2Path = Path.Combine(baseDir, "coreclr", $"browser.wasm.{config}", hostArch, "crossgen2", executableName);
+            return File.Exists(crossgen2Path) ? $"-p:Crossgen2Path=\"{crossgen2Path}\"" : string.Empty;
         }
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [BuildAndRun(aot: true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
-        public void ProjectUsingSkiaSharp(BuildArgs buildArgs, RunHost host, string id)
+        public Task ProjectUsingSkiaSharp(Configuration config, bool aot) =>
+            ProjectUsingSkiaSharpCore(config, aot);
+
+        [Theory]
+        [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native"), TestCategory("mono")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
+        public Task ProjectUsingSkiaSharp_AOT(Configuration config, bool aot) =>
+            ProjectUsingSkiaSharpCore(config, aot);
+
+        private async Task ProjectUsingSkiaSharpCore(Configuration config, bool aot)
         {
-            string projectName = $"AppUsingSkiaSharp";
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs,
-                            extraItems: @$"
+            string prefix = $"AppUsingSkiaSharp";
+            string extraItems = @$"
                                 {GetSkiaSharpReferenceItems()}
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
-                            ");
+                            ";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraItems: extraItems);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SkiaSharp.cs"));
 
-            string programText = @"
-using System;
-using SkiaSharp;
-
-public class Test
-{
-    public static int Main()
-    {
-        using SKFileStream skfs = new SKFileStream(""mono.png"");
-        using SKImage img = SKImage.FromEncodedData(skfs);
-
-        Console.WriteLine ($""Size: {skfs.Length} Height: {img.Height}, Width: {img.Width}"");
-        return 0;
-    }
-}";
-
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(
-                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                                DotnetWasmFromRuntimePack: false));
-
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
-                                test: output => {},
-                                host: host, id: id,
-                                args: "mono.png");
-
-            Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
-        }
-
-        [Theory]
-        [BuildAndRun(aot: false, host: RunHost.Chrome)]
-        [BuildAndRun(aot: true, host: RunHost.Chrome)]
-        public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)
-        {
-            string projectName = $"AppUsingBrowserNativeCrypto";
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs);
-
-            string programText = @"
-using System;
-using System.Security.Cryptography;
-
-public class Test
-{
-    public static int Main()
-    {
-        using (SHA256 mySHA256 = SHA256.Create())
-        {
-            byte[] data = { (byte)'H', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
-            byte[] hashed = mySHA256.ComputeHash(data);
-            string asStr = string.Join(' ', hashed);
-            Console.WriteLine(""Hashed: "" + asStr);
-            return 0;
-        }
-    }
-}";
-
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(
-                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                                DotnetWasmFromRuntimePack: !buildArgs.AOT && buildArgs.Config != "Release"));
-
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
-                                test: output => {},
-                                host: host, id: id);
-
-            Assert.Contains(
-                "Hashed: 24 95 141 179 34 113 254 37 245 97 166 252 147 139 46 38 67 6 236 48 78 218 81 128 7 209 118 72 38 56 25 105",
-                output);
-
-            string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
-            Assert.DoesNotContain(cryptoInitMsg, output);
+            PublishProject(info, config, new PublishOptions(AOT: aot));
+            BrowserRunOptions runOptions = new(config, ExtraArgs: "mono.png");
+            RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 0));
+            Assert.Contains(output.TestOutput, m => m.Contains("Size: 26462 Height: 599, Width: 499"));
         }
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [BuildAndRun(aot: true)]
-        public void ProjectWithNativeLibrary(BuildArgs buildArgs, RunHost host, string id)
+        public Task ProjectUsingBrowserNativeCrypto(Configuration config, bool aot) =>
+            ProjectUsingBrowserNativeCryptoCore(config, aot);
+
+        [Theory]
+        [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native"), TestCategory("mono")]
+        public Task ProjectUsingBrowserNativeCrypto_AOT(Configuration config, bool aot) =>
+            ProjectUsingBrowserNativeCryptoCore(config, aot);
+
+        private async Task ProjectUsingBrowserNativeCryptoCore(Configuration config, bool aot)
         {
-            string projectName = $"AppUsingNativeLibrary-a";
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeLibrary Include=\"native-lib.o\" />\n<NativeLibrary Include=\"DoesNotExist.o\" />");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "AppUsingBrowserNativeCrypto");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeCrypto.cs"));
 
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? _))
-            {
-                InitPaths(id);
-                if (Directory.Exists(_projectDir))
-                    Directory.Delete(_projectDir, recursive: true);
+            (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot));
+            RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 0));
 
-                Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir);
-                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
-            }
+            string hash = "Hashed: 24 95 141 179 34 113 254 37 245 97 166 252 147 139 46 38 67 6 236 48 78 218 81 128 7 209 118 72 38 56 25 105";
+            Assert.Contains(output.TestOutput, m => m.Contains(hash));
 
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(DotnetWasmFromRuntimePack: false));
+            string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
+            Assert.All(output.TestOutput, m => Assert.DoesNotContain(cryptoInitMsg, m));
+        }
 
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
-                                test: output => {},
-                                host: host, id: id);
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public Task ProjectWithNativeLibrary(Configuration config, bool aot) =>
+            ProjectWithNativeLibraryCore(config, aot);
 
-            Assert.Contains("print_line: 100", output);
-            Assert.Contains("from pinvoke: 142", output);
+        [Theory]
+        [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native"), TestCategory("mono")]
+        public Task ProjectWithNativeLibrary_AOT(Configuration config, bool aot) =>
+            ProjectWithNativeLibraryCore(config, aot);
+
+        private async Task ProjectWithNativeLibraryCore(Configuration config, bool aot)
+        {
+            string extraItems = "<NativeLibrary Include=\"native-lib.o\" />\n<NativeLibrary Include=\"DoesNotExist.o\" />";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "AppUsingNativeLib-a", extraItems: extraItems);
+            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
+            DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
+            // The AppUsingNativeLib program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
+
+            (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
+            RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 0));
+
+            Assert.Contains(output.TestOutput, m => m.Contains("print_line: 100"));
+            Assert.Contains(output.TestOutput, m => m.Contains("from pinvoke: 142"));
         }
     }
 }

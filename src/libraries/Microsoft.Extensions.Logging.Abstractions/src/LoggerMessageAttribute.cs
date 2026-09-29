@@ -6,16 +6,17 @@ using System;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Provides information to guide the production of a strongly-typed logging method.
+    /// Provides information to guide the production of a strongly typed logging method.
     /// </summary>
     /// <remarks>
     /// <para>The method this attribute is applied to:</para>
     /// <para>   - Must be a partial method.</para>
     /// <para>   - Must return <c>void</c>.</para>
-    /// <para>   - Must not be generic.</para>
-    /// <para>   - Must have an <see cref="ILogger"/> as one of its parameters.</para>
-    /// <para>   - Must have a <see cref="Microsoft.Extensions.Logging.LogLevel"/> as one of its parameters.</para>
-    /// <para>   - None of the parameters can be generic.</para>
+    /// <para>   - Must have a <see cref="Microsoft.Extensions.Logging.LogLevel"/> as one of its parameters, if the attribute does not specify it.</para>
+    /// <para>   - Must have access to an <see cref="ILogger"/>: as a parameter (which is required when the method is <c>static</c>), or, for an instance method, through an <see cref="ILogger"/> field or primary constructor parameter on the containing type.</para>
+    /// <para>   - Must not have a name that starts with an underscore, or any parameter whose name starts with an underscore.</para>
+    /// <para>   - Can be generic, but its type parameters cannot use the <c>allows ref struct</c> constraint.</para>
+    /// <para>   - Must not have parameters that use the <c>params</c>, <c>scoped</c>, or <c>out</c> modifiers, or that are <c>ref struct</c> types.</para>
     /// </remarks>
     /// <example>
     /// <format type="text/markdown"><![CDATA[
@@ -33,15 +34,15 @@ namespace Microsoft.Extensions.Logging
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
-        /// which is used to guide the production of a strongly-typed logging method.
+        /// that's used to guide the production of a strongly typed logging method.
         /// </summary>
         public LoggerMessageAttribute() { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
-        /// which is used to guide the production of a strongly-typed logging method.
+        /// that's used to guide the production of a strongly typed logging method.
         /// </summary>
-        /// <param name="eventId">The log event Id.</param>
+        /// <param name="eventId">The log event ID.</param>
         /// <param name="level">The log level.</param>
         /// <param name="message">Format string of the log message.</param>
         public LoggerMessageAttribute(int eventId, LogLevel level, string message)
@@ -53,7 +54,7 @@ namespace Microsoft.Extensions.Logging
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
-        /// which is used to guide the production of a strongly-typed logging method.
+        /// that's used to guide the production of a strongly typed logging method.
         /// </summary>
         /// <param name="level">The log level.</param>
         /// <param name="message">Format string of the log message.</param>
@@ -65,7 +66,7 @@ namespace Microsoft.Extensions.Logging
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
-        /// which is used to guide the production of a strongly-typed logging method.
+        /// that's used to guide the production of a strongly typed logging method.
         /// </summary>
         /// <param name="level">The log level.</param>
         public LoggerMessageAttribute(LogLevel level)
@@ -75,7 +76,7 @@ namespace Microsoft.Extensions.Logging
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
-        /// which is used to guide the production of a strongly-typed logging method.
+        /// that's used to guide the production of a strongly typed logging method.
         /// </summary>
         /// <param name="message">Format string of the log message.</param>
         public LoggerMessageAttribute(string message)
@@ -84,7 +85,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Gets the logging event id for the logging method.
+        /// Gets or sets the logging event ID for the logging method.
         /// </summary>
         public int EventId { get; set; } = -1;
 
@@ -97,17 +98,21 @@ namespace Microsoft.Extensions.Logging
         public string? EventName { get; set; }
 
         /// <summary>
-        /// Gets the logging level for the logging method.
+        /// Gets or sets the logging level for the logging method.
         /// </summary>
         public LogLevel Level { get; set; } = LogLevel.None;
 
         /// <summary>
-        /// Gets the message text for the logging method.
+        /// Gets or sets the message text for the logging method.
         /// </summary>
+        /// <remarks>
+        /// When omitted or empty, no message is formatted and the logging method's parameters are
+        /// captured as structured state only.
+        /// </remarks>
         public string Message { get; set; } = "";
 
         /// <summary>
-        /// Gets the flag to skip IsEnabled check for the logging method.
+        /// Gets or sets the flag to skip IsEnabled check for the logging method.
         /// </summary>
         public bool SkipEnabledCheck { get; set; }
     }

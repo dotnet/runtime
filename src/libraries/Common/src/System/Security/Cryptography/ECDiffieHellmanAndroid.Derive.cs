@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
             /// <summary>
             /// Get the secret agreement generated between two parties
             /// </summary>
-            private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
+            private unsafe byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
                 Debug.Assert(otherPartyPublicKey != null);
                 Debug.Assert(_key is not null); // Callers should have checked for null
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography
                     // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
                     const int StackAllocMax = 66;
 
-                    if (secretLength > StackAllocMax)
+                    if ((uint)secretLength > StackAllocMax)
                     {
                         rented = CryptoPool.Rent(secretLength);
                         secret = new Span<byte>(rented, 0, secretLength);

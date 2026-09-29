@@ -10,8 +10,9 @@ using System.Text.Json;
 using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using WasmAppBuilder;
 using JoinedString;
+
+namespace Microsoft.WebAssembly.Build.Tasks;
 
 internal sealed class IcallTableGenerator
 {
@@ -206,11 +207,8 @@ internal sealed class IcallTableGenerator
 
         void AddSignature(Type type, MethodInfo method)
         {
-            string? signature = SignatureMapper.MethodToSignature(method, Log);
-            if (signature == null)
-            {
-                throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
-            }
+            string signature = Mono.SignatureMapper.MethodToSignature(method, Log)
+                ?? throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
 
             if (_signatures.Add(signature))
                 Log.LogMessage(MessageImportance.Low, $"Adding icall signature {signature} for method '{type.FullName}.{method.Name}'");

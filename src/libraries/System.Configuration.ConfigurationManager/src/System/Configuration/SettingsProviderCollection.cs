@@ -9,10 +9,7 @@ namespace System.Configuration
     {
         public override void Add(ProviderBase provider)
         {
-            if (provider is null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
 
             if (!(provider is SettingsProvider))
             {

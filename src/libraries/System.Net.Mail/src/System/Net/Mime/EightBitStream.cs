@@ -3,6 +3,9 @@
 
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Buffers;
 
 namespace System.Net.Mime
 {
@@ -23,14 +26,13 @@ namespace System.Net.Mime
     /// </summary>
     internal sealed class EightBitStream : DelegatedStream, IEncodableStream
     {
-        private WriteStateInfoBase? _writeState;
-
         // Should we do RFC 2821 Section 4.5.2 encoding of leading dots on a line?
         // We make this optional because this stream may be used recursively and
         // the encoding should only be done once.
         private readonly bool _shouldEncodeLeadingDots;
+        private bool _lastWriteEndedWithCr;
 
-        private WriteStateInfoBase WriteState => _writeState ??= new WriteStateInfoBase();
+        private WriteStateInfoBase WriteState => field ??= new WriteStateInfoBase();
 
         /// <summary>
         /// ctor.
@@ -43,59 +45,48 @@ namespace System.Net.Mime
             _shouldEncodeLeadingDots = shouldEncodeLeadingDots;
         }
 
-        /// <summary>
-        /// Writes the specified content to the underlying stream
-        /// </summary>
-        /// <param name="buffer">Buffer to write</param>
-        /// <param name="offset">Offset within buffer to start writing</param>
-        /// <param name="count">Count of bytes to write</param>
-        /// <param name="callback">Callback to call when write completes</param>
-        /// <param name="state">State to pass to callback</param>
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+        public override bool CanRead => false;
+        public override bool CanWrite => BaseStream.CanWrite;
+
+        protected override int ReadInternal(Span<byte> buffer)
         {
-            ValidateBufferArguments(buffer, offset, count);
-
-            IAsyncResult result;
-            if (_shouldEncodeLeadingDots)
-            {
-                EncodeLines(buffer, offset, count);
-                result = base.BeginWrite(WriteState.Buffer, 0, WriteState.Length, callback, state);
-            }
-            else
-            {
-                // Note: for legacy reasons we are not enforcing buffer[i] <= 127.
-                result = base.BeginWrite(buffer, offset, count, callback, state);
-            }
-
-            return result;
+            throw new NotImplementedException();
         }
 
-        public override void EndWrite(IAsyncResult asyncResult)
+        protected override ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            base.EndWrite(asyncResult);
-            WriteState.BufferFlushed();
+            throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Writes the specified content to the underlying stream
-        /// </summary>
-        /// <param name="buffer">Buffer to write</param>
-        /// <param name="offset">Offset within buffer to start writing</param>
-        /// <param name="count">Count of bytes to write</param>
-        public override void Write(byte[] buffer, int offset, int count)
+        // Implement abstract Write methods
+        protected override void WriteInternal(ReadOnlySpan<byte> buffer)
         {
-            ValidateBufferArguments(buffer, offset, count);
-
             if (_shouldEncodeLeadingDots)
             {
-                EncodeLines(buffer, offset, count);
-                base.Write(WriteState.Buffer, 0, WriteState.Length);
+                EncodeLines(buffer);
+                BaseStream.Write(WriteState.Buffer.AsSpan(0, WriteState.Length));
                 WriteState.BufferFlushed();
             }
             else
             {
                 // Note: for legacy reasons we are not enforcing buffer[i] <= 127.
-                base.Write(buffer, offset, count);
+                BaseStream.Write(buffer);
+            }
+        }
+
+        protected override ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (_shouldEncodeLeadingDots)
+            {
+                EncodeLines(buffer.Span);
+                ValueTask task = BaseStream.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken);
+                WriteState.BufferFlushed(); // Reset state after initiating async write
+                return task;
+            }
+            else
+            {
+                // Note: for legacy reasons we are not enforcing buffer[i] <= 127.
+                return BaseStream.WriteAsync(buffer, cancellationToken);
             }
         }
 
@@ -103,36 +94,89 @@ namespace System.Net.Mime
 
         // Despite not having to encode content, we still have to implement
         // RFC 2821 Section 4.5.2 about leading dots on a line
-        private void EncodeLines(byte[] buffer, int offset, int count)
+        private void EncodeLines(ReadOnlySpan<byte> buffer)
         {
-            for (int i = offset; (i < offset + count) && (i < buffer.Length); i++)
+            for (int i = 0; i < buffer.Length; i++)
             {
                 // Note: for legacy reasons we are not enforcing buffer[i] <= 127.
 
-                // Detect CRLF line endings
-                if ((buffer[i] == '\r') && ((i + 1) < (offset + count)) && (buffer[i + 1] == '\n'))
+                if (_lastWriteEndedWithCr)
                 {
-                    WriteState.AppendCRLF(false); // Resets CurrentLineLength to 0
-                    i++; // Skip past the recorded CRLF
+                    _lastWriteEndedWithCr = false;
+
+                    // Detect CRLF line endings
+                    if (buffer[i] == '\n')
+                    {
+                        WriteState.AppendCRLF(false); // Resets CurrentLineLength to 0
+                        continue;
+                    }
+                    else
+                    {
+                        // Write the delayed CR since it wasn't part of a CRLF sequence
+                        WriteState.Append((byte)'\r');
+                    }
                 }
-                else if ((WriteState.CurrentLineLength == 0) && (buffer[i] == '.'))
+
+                if (buffer[i] == '\n')
+                {
+                    // Bare LF (not preceded by CR). Some SMTP servers may interpret a bare
+                    // "\n.\n" sequence as the "CRLF.CRLF" end-of-data marker, which would
+                    // corrupt the message. Canonicalize the bare LF to CRLF and reset the
+                    // line state so subsequent leading dots are still dot-stuffed.
+                    WriteState.AppendCRLF(false); // Resets CurrentLineLength to 0
+                    continue;
+                }
+
+                if ((WriteState.CurrentLineLength == 0) && (buffer[i] == '.'))
                 {
                     // RFC 2821 Section 4.5.2: We must pad leading dots on a line with an extra dot
                     // This is the only 'encoding' change we make to the data in this method
                     WriteState.Append((byte)'.');
-                    WriteState.Append(buffer[i]);
                 }
-                else
+
+                if (buffer[i] == '\r')
                 {
-                    // Just regular seven bit data
-                    WriteState.Append(buffer[i]);
+                    // defer writing CR until we see if it's followed by LF
+                    _lastWriteEndedWithCr = true;
+                    continue;
                 }
+
+                // Regular data byte, pass it through unchanged.
+                WriteState.Append(buffer[i]);
             }
         }
 
-        public int DecodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
+        public override void Close()
+        {
+            if (_lastWriteEndedWithCr)
+            {
+                // Write the delayed CR before the underlying stream is closed.
+                // DelegatedStream.Close() closes the underlying stream, so this
+                // must happen before we delegate to the base implementation.
+                _lastWriteEndedWithCr = false;
+                BaseStream.WriteByte((byte)'\r');
+            }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
+            base.Close();
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (_lastWriteEndedWithCr)
+            {
+                // write the delayed CR
+                _lastWriteEndedWithCr = false;
+                await BaseStream.WriteAsync(new byte[] { (byte)'\r' }, CancellationToken.None).ConfigureAwait(false);
+            }
+
+            // DelegatedStream does not override DisposeAsync, so the base implementation
+            // falls back to synchronous Dispose(), which disposes the underlying stream.
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+
+        public int DecodeBytes(Span<byte> buffer) { throw new NotImplementedException(); }
+
+        public int EncodeBytes(ReadOnlySpan<byte> buffer) { throw new NotImplementedException(); }
 
         public int EncodeString(string value, Encoding encoding) { throw new NotImplementedException(); }
 

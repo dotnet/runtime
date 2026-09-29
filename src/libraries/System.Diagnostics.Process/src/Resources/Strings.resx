@@ -1,16 +1,17 @@
-﻿<root>
-  <!--
-    Microsoft ResX Schema
-
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -25,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -137,6 +138,9 @@
   <data name="MissingProcess" xml:space="preserve">
     <value>Process with an Id of {0} is not running.</value>
   </data>
+  <data name="OpenProcessAccessDenied" xml:space="preserve">
+    <value>Access denied when opening process with an Id of {0}.</value>
+  </data>
   <data name="BadMinWorkset" xml:space="preserve">
     <value>Minimum working set size is invalid. It must be less than or equal to the maximum working set size.</value>
   </data>
@@ -208,6 +212,30 @@
   </data>
   <data name="CantRedirectStreams" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to redirect IO streams.</value>
+  </data>
+  <data name="Arg_InvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="CantSetHandleAndRedirect" xml:space="preserve">
+    <value>The StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties cannot be used together with the corresponding RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties.</value>
+  </data>
+  <data name="InheritedHandlesRequiresCreateProcess" xml:space="preserve">
+    <value>The InheritedHandles property cannot be used with UseShellExecute or UserName.</value>
+  </data>
+  <data name="KillOnParentExitCannotBeUsedWithUseShellExecute" xml:space="preserve">
+    <value>The KillOnParentExit property cannot be used with UseShellExecute.</value>
+  </data>
+  <data name="CantSetRedirectForSafeProcessHandleStart" xml:space="preserve">
+    <value>The RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties cannot be used by SafeProcessHandle.Start or Process.StartAndForget. Use the StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties.</value>
+  </data>
+  <data name="StartDetachedNotCompatible" xml:space="preserve">
+    <value>The StartDetached property cannot be used with UseShellExecute set to true.</value>
+  </data>
+  <data name="StartSuspendedNotCompatible" xml:space="preserve">
+    <value>The StartSuspended property cannot be used with UseShellExecute set to true.</value>
+  </data>
+  <data name="ProcessNotStartedSuspended" xml:space="preserve">
+    <value>Resume can only be called on a process that was started with StartSuspended set to true.</value>
   </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
@@ -290,6 +318,9 @@
   <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
     <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
   </data>
+  <data name="Argument_NullCharInEnvVar" xml:space="preserve">
+    <value>Environment variable cannot contain a null character.</value>
+  </data>
   <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
     <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
   </data>
@@ -320,9 +351,6 @@
   <data name="ArgumentAndArgumentListInitialized" xml:space="preserve">
     <value>Only one of Arguments or ArgumentList may be used.</value>
   </data>
-  <data name="ArgumentListMayNotContainNull" xml:space="preserve">
-    <value>ArgumentList may not contain null.</value>
-  </data>
   <data name="KillEntireProcessTree_DisallowedBecauseTreeContainsCallingProcess" xml:space="preserve">
     <value>Cannot be used to terminate a process tree containing the calling process.</value>
   </data>
@@ -330,6 +358,42 @@
     <value>Not all processes in process tree could be terminated.</value>
   </data>
   <data name="InvalidSysctl" xml:space="preserve">
-    <value>sysctl {0} failed with {1} error.</value>
+    <value>sysctl ({0}) failed with {1} error.</value>
+  </data>
+  <data name="InvalidPerfData" xml:space="preserve">
+    <value>Invalid performance counter data with type '{0}'.</value>
+  </data>
+  <data name="InvalidProcessHandle" xml:space="preserve">
+    <value>Invalid process handle.</value>
+  </data>
+  <data name="InheritedHandles_OnlySelectedSafeHandlesAreSupported" xml:space="preserve">
+    <value>InheritedHandles only supports SafeFileHandle and SafePipeHandle. Other handle types are not supported.</value>
+  </data>
+  <data name="InheritedHandles_MustNotContainStandardHandles" xml:space="preserve">
+    <value>InheritedHandles must not contain standard handles. They are always inherited.</value>
+  </data>
+  <data name="InheritedHandles_MustNotContainDuplicates" xml:space="preserve">
+    <value>InheritedHandles must not contain duplicates.</value>
+  </data>
+  <data name="UseShellExecuteNotSupportedForScenario" xml:space="preserve">
+    <value>UseShellExecute is not supported by Process.{0}. On Windows, shell execution may not create a new process, which would make it impossible to return a valid process ID.</value>
+  </data>
+  <data name="RedirectStandardOutputAndErrorRequired" xml:space="preserve">
+    <value>RedirectStandardOutput and RedirectStandardError must both be set to true when calling Process.{0} with a ProcessStartInfo.</value>
+  </data>
+  <data name="NotSupportedForNonChildProcess" xml:space="preserve">
+    <value>On Unix, it's impossible to obtain the exit status of a non-child process.</value>
+  </data>
+  <data name="Argument_InvalidProcessHandle" xml:space="preserve">
+    <value>The callback must return a valid process handle for the newly created process.</value>
+  </data>
+  <data name="Argument_InvalidProcessId" xml:space="preserve">
+    <value>The callback must return a positive process ID for the newly created process.</value>
+  </data>
+  <data name="UseShellExecuteVerbNotSupported" xml:space="preserve">
+    <value>The verb '{0}' is not supported for UseShellExecute on this platform. Only the default verb (an empty string or "open") is supported.</value>
+  </data>
+  <data name="UseShellExecuteNoOpenProgram" xml:space="preserve">
+    <value>No program was found to handle opening files or URLs with UseShellExecute on this platform. Ensure one such as 'xdg-open' or 'open' is installed and available on the PATH.</value>
   </data>
 </root>

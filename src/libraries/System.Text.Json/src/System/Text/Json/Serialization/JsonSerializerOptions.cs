@@ -39,13 +39,8 @@ namespace System.Text.Json
         {
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-            get
-            {
-                return s_defaultOptions ?? GetOrCreateSingleton(ref s_defaultOptions, JsonSerializerDefaults.General);
-            }
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.General);
         }
-
-        private static JsonSerializerOptions? s_defaultOptions;
 
         /// <summary>
         /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the web configuration.
@@ -59,13 +54,23 @@ namespace System.Text.Json
         {
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-            get
-            {
-                return s_webOptions ?? GetOrCreateSingleton(ref s_webOptions, JsonSerializerDefaults.Web);
-            }
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.Web);
         }
 
-        private static JsonSerializerOptions? s_webOptions;
+        /// <summary>
+        /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the strict configuration.
+        /// </summary>
+        /// <remarks>
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
+        /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
+        /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
+        /// </remarks>
+        public static JsonSerializerOptions Strict
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get => field ?? GetOrCreateSingleton(ref field, JsonSerializerDefaults.Strict);
+        }
 
         // For any new option added, consider adding it to the options copied in the copy constructor below
         // and consider updating the EqualtyComparer used for comparing CachingContexts.
@@ -76,6 +81,7 @@ namespace System.Text.Json
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
         private ConverterList? _converters;
+        private TypeClassifierList? _typeClassifiers;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonObjectCreationHandling _preferredObjectCreationHandling;
@@ -97,6 +103,8 @@ namespace System.Text.Json
         private bool _writeIndented;
         private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
         private int _indentSize = JsonConstants.DefaultIndentSize;
+        private bool _allowDuplicateProperties = true;
+        private bool _inferClosedTypePolymorphism;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -115,10 +123,7 @@ namespace System.Text.Json
         /// </exception>
         public JsonSerializerOptions(JsonSerializerOptions options)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             // The following fields are not copied intentionally:
             // 1. _cachingContext can only be set in immutable options instances.
@@ -130,6 +135,7 @@ namespace System.Text.Json
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
             _converters = options._converters is { } converters ? new(this, converters) : null;
+            _typeClassifiers = options._typeClassifiers is { } TypeClassifiers ? new(this, TypeClassifiers) : null;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
@@ -152,6 +158,8 @@ namespace System.Text.Json
             _writeIndented = options._writeIndented;
             _indentCharacter = options._indentCharacter;
             _indentSize = options._indentSize;
+            _allowDuplicateProperties = options._allowDuplicateProperties;
+            _inferClosedTypePolymorphism = options._inferClosedTypePolymorphism;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
@@ -172,6 +180,13 @@ namespace System.Text.Json
                 _propertyNameCaseInsensitive = true;
                 _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                 _numberHandling = JsonNumberHandling.AllowReadingFromString;
+            }
+            else if (defaults == JsonSerializerDefaults.Strict)
+            {
+                _unmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+                _allowDuplicateProperties = false;
+                _respectNullableAnnotations = true;
+                _respectRequiredConstructorParameters = true;
             }
             else if (defaults != JsonSerializerDefaults.General)
             {
@@ -234,9 +249,9 @@ namespace System.Text.Json
 
                 if (_typeInfoResolverChain is { } resolverChain && !ReferenceEquals(resolverChain, value))
                 {
-                    // User is setting a new resolver; invalidate the resolver chain if already created.
-                    resolverChain.Clear();
-                    resolverChain.AddFlattened(value);
+                    // User is setting a new resolver; detach the resolver chain if already created.
+                    resolverChain.DetachFromOptions();
+                    _typeInfoResolverChain = null;
                 }
 
                 _typeInfoResolver = value;
@@ -753,7 +768,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _referenceHandler = value;
-                ReferenceHandlingStrategy = value?.HandlingStrategy ?? ReferenceHandlingStrategy.None;
+                ReferenceHandlingStrategy = value?.HandlingStrategy ?? JsonKnownReferenceHandler.Unspecified;
             }
         }
 
@@ -837,6 +852,59 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Defines whether duplicate property names are allowed when deserializing JSON objects.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// By default, it's set to true. If set to false, <see cref="JsonException"/> is thrown
+        /// when a duplicate property name is encountered during deserialization.
+        /// </para>
+        /// <para>
+        /// Duplicate property names are not allowed in serialization.
+        /// </para>
+        /// </remarks>
+        public bool AllowDuplicateProperties
+        {
+            get => _allowDuplicateProperties;
+            set
+            {
+                VerifyMutable();
+                _allowDuplicateProperties = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether polymorphic serialization metadata is inferred for
+        /// types that the compiler has marked as closed type hierarchies.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// By default, it's set to <see langword="false"/>. When set to <see langword="true"/>, types that
+        /// declare a closed set of derived types (and that do not specify an explicit
+        /// <see cref="Serialization.JsonDerivedTypeAttribute"/> list) are treated as polymorphic. Closed
+        /// derived types are expanded recursively, and each terminal derived type is registered using its
+        /// simple name, equivalent to the result of <c>nameof</c>, as its type discriminator.
+        /// If a type declares one or more <see cref="Serialization.JsonDerivedTypeAttribute"/> registrations,
+        /// inference is skipped for that type and only the explicitly registered derived types are used.
+        /// Polymorphism configuration declared on derived types applies to their respective contracts and does
+        /// not affect inference for the base type.
+        /// </remarks>
+        public bool InferClosedTypePolymorphism
+        {
+            get => _inferClosedTypePolymorphism;
+            set
+            {
+                VerifyMutable();
+                _inferClosedTypePolymorphism = value;
+            }
+        }
+
+        /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -845,7 +913,7 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                Debug.Assert(TypeInfoResolver != null);
+                Debug.Assert(TypeInfoResolver is not null);
                 return _canUseFastPathSerializationLogic ??= TypeInfoResolver.IsCompatibleWithOptions(this);
             }
         }
@@ -853,7 +921,7 @@ namespace System.Text.Json
         private bool? _canUseFastPathSerializationLogic;
 
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semantics or None of them.
-        internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
+        internal JsonKnownReferenceHandler ReferenceHandlingStrategy = JsonKnownReferenceHandler.Unspecified;
 
         /// <summary>
         /// Specifies whether the current instance has been locked for user modification.
@@ -964,7 +1032,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_JsonSerializerIsReflectionDisabled();
             }
 
-            Debug.Assert(_typeInfoResolver != null);
+            Debug.Assert(_typeInfoResolver is not null);
             // NB preserve write order.
             _isReadOnly = true;
             _isConfiguredForJsonSerializer = true;
@@ -991,7 +1059,7 @@ namespace System.Text.Json
 
             JsonTypeInfo? info = resolver.GetTypeInfo(type, this);
 
-            if (info != null)
+            if (info is not null)
             {
                 if (info.Type != type)
                 {
@@ -1023,9 +1091,10 @@ namespace System.Text.Json
         {
             return new JsonDocumentOptions
             {
+                AllowDuplicateProperties = AllowDuplicateProperties,
                 AllowTrailingCommas = AllowTrailingCommas,
                 CommentHandling = ReadCommentHandling,
-                MaxDepth = MaxDepth
+                MaxDepth = MaxDepth,
             };
         }
 
@@ -1063,6 +1132,21 @@ namespace System.Text.Json
             };
         }
 
+        // Per JSON Lines spec (https://jsonlines.org/) every value must occupy a single line.
+        // Indentation must be suppressed regardless of the user-configured WriteIndented setting,
+        // and the JsonWriterOptions.NewLine setting is irrelevant when Indented is false.
+        internal JsonWriterOptions GetWriterOptionsForJsonLines()
+        {
+            return new JsonWriterOptions
+            {
+                Encoder = Encoder,
+                MaxDepth = EffectiveMaxDepth,
+#if !DEBUG
+                SkipValidation = true
+#endif
+            };
+        }
+
         internal void VerifyMutable()
         {
             if (_isReadOnly)
@@ -1085,9 +1169,23 @@ namespace System.Text.Json
             protected override void OnCollectionModifying() => _options.VerifyMutable();
         }
 
-        private sealed class OptionsBoundJsonTypeInfoResolverChain : JsonTypeInfoResolverChain
+        private sealed class TypeClassifierList : ConfigurationList<JsonTypeClassifierFactory>
         {
             private readonly JsonSerializerOptions _options;
+
+            public TypeClassifierList(JsonSerializerOptions options, IList<JsonTypeClassifierFactory>? source = null)
+                : base(source)
+            {
+                _options = options;
+            }
+
+            public override bool IsReadOnly => _options.IsReadOnly;
+            protected override void OnCollectionModifying() => _options.VerifyMutable();
+        }
+
+        private sealed class OptionsBoundJsonTypeInfoResolverChain : JsonTypeInfoResolverChain
+        {
+            private JsonSerializerOptions? _options;
 
             public OptionsBoundJsonTypeInfoResolverChain(JsonSerializerOptions options)
             {
@@ -1095,11 +1193,18 @@ namespace System.Text.Json
                 AddFlattened(options._typeInfoResolver);
             }
 
-            public override bool IsReadOnly => _options.IsReadOnly;
+            public void DetachFromOptions()
+            {
+                _options = null;
+            }
+
+            public override bool IsReadOnly => _options?.IsReadOnly is true;
 
             protected override void ValidateAddedValue(IJsonTypeInfoResolver item)
             {
-                if (ReferenceEquals(item, this) || ReferenceEquals(item, _options._typeInfoResolver))
+                Debug.Assert(item is not null);
+
+                if (ReferenceEquals(item, this) || ReferenceEquals(item, _options?._typeInfoResolver))
                 {
                     // Cannot add the instances in TypeInfoResolver or TypeInfoResolverChain to the chain itself.
                     ThrowHelper.ThrowInvalidOperationException_InvalidChainedResolver();
@@ -1108,14 +1213,14 @@ namespace System.Text.Json
 
             protected override void OnCollectionModifying()
             {
-                _options.VerifyMutable();
+                _options?.VerifyMutable();
             }
 
             protected override void OnCollectionModified()
             {
                 // Collection modified by the user: replace the main
                 // resolver with the resolver chain as our source of truth.
-                _options._typeInfoResolver = this;
+                _options?._typeInfoResolver = this;
             }
         }
 

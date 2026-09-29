@@ -10,7 +10,13 @@ being generated.
     manifests for `wasm-tools*`, but does not have the workload installed.
     Typically installed in `artifacts/bin/dotnet-none`.
 
-- On CI, both workload, and no-workload cases are tested
+- On CI, both workload, and no-workload cases are tested, for both the Mono and
+  the CoreCLR runtime flavor. The `wasm-tools` workload supports both flavors, so
+  the two flavors run the same two lanes; only the set of test classes differs.
+  That set is discovered from the built test assembly (see the `GenerateHelixJobsList`
+  target in `Wasm.Build.Tests.csproj`), and classes or test methods marked
+  `[TestCategory("mono")]` or `[TestCategory("coreclr")]` are left out of the other
+  flavor's runs.
 
 - Running:
 
@@ -18,7 +24,8 @@ Linux/macOS: `$ make -C src/mono/(browser|wasi) run-build-tests`
 Windows: `.\dotnet.cmd build .\src\mono\wasm\Wasm.Build.Tests\Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm`
 
 - Specific tests can be run via `XUnitClassName`, and `XUnitMethodName`
-  - eg. `XUnitClassName=Wasm.Build.Tests.BlazorWasmTests`
+  - e.g. `XUnitClassName=Wasm.Build.Tests.BlazorWasmTests` for running class of tests
+  - e.g. `XUnitMethodName=Wasm.Build.Tests.Blazor.MiscTests3.WithDllImportInMainAssembly` for running a specific test.
 
 ## Running on helix
 
@@ -32,9 +39,9 @@ Most of the tests are structured on the idea that for a given case (or
 combination of options), we want to:
 
 1. build once
-2. run the same build with different hosts, eg. V8, Chrome, Firefox etc.
+2. run the same build with different hosts, eg. Chrome, Firefox etc.
 
-For this, the builds get cached using `BuildArgs` as the key.
+For this, the builds get cached using `ProjectInfo` as the key.
 
 ## notes:
 
@@ -53,10 +60,15 @@ For this, the builds get cached using `BuildArgs` as the key.
   use the build bits from the usual locations in artifacts, without requiring
   regenerating the nugets, and workload re-install.
 
-- Each test gets a randomly generated "id". This `id` can be used to find the
-  binlogs, or the test directories.
+- Each test is saved in directory with randomly generated name and unique `ProjectInfo`. `ProjectInfo` can be used to find the binlogs, or cached builds.
 
 ## Useful environment variables
 
 - `SHOW_BUILD_OUTPUT` - will show the build output to the console
 - `SKIP_PROJECT_CLEANUP` - won't remove the temporary project directories generated for the tests
+
+## How to add tests
+
+Blazor specific tests should be located in `Blazor` directory. New test classes are picked up automatically - the per-class Helix work item list is generated from the built test assembly, so there is no list to update. Annotate classes and test methods that only apply to one runtime with `[TestCategory("mono")]` or `[TestCategory("coreclr")]`, and they will be left out of the other flavor's runs. If you are adding a new test to an existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
+
+If you want to test templating mechanism, use `CreateWasmTemplateProject`. Otherwise, use `CopyTestAsset` with either `WasmBasicTestApp` or `BlazorBasicTestApp`, adding your custom `TestScenario` or using a generic `DotnetRun` scenario in case of WASM app and adding a page with test in case of Blazor app. Bigger snippets of code should be saved in `src/mono/wasm/testassets` and placed in the application using methods: `ReplaceFile` or `File.Move`. Replacing existing small parts of code with custom lines is done with `UpdateFile`.

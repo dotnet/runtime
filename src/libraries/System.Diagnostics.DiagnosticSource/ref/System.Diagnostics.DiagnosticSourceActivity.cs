@@ -26,16 +26,17 @@ namespace System.Diagnostics
         }
 
         public bool HasRemoteParent { get { throw null; } }
-        public bool IsAllDataRequested { get { throw null; } set { throw null; } }
+        public bool IsAllDataRequested { get { throw null; } set { } }
         public bool IsStopped { get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }
         public System.Diagnostics.ActivityKind Kind  { get { throw null; } }
         public string OperationName { get { throw null; } }
-        public string DisplayName { get { throw null; } set { throw null; } }
+        public string DisplayName { get { throw null; } set { } }
         public System.Diagnostics.ActivitySource Source { get { throw null; } }
         public System.Diagnostics.Activity? Parent { get { throw null; } }
         public string? ParentId { get { throw null; } }
         public System.Diagnostics.ActivitySpanId ParentSpanId { get { throw null; } }
+        public bool HasRandomizedTraceId { get { throw null; } }
         public bool Recorded { get { throw null; } }
         public string? RootId { get { throw null; } }
         public System.Diagnostics.ActivitySpanId SpanId { get { throw null; } }
@@ -59,7 +60,7 @@ namespace System.Diagnostics
         public string? GetBaggageItem(string key) { throw null; }
         public object? GetTagItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
-        public static Func<System.Diagnostics.ActivityTraceId>? TraceIdGenerator { get { throw null; } set { throw null; } }
+        public static Func<System.Diagnostics.ActivityTraceId>? TraceIdGenerator { get { throw null; } set { } }
         public System.Diagnostics.Activity SetIdFormat(System.Diagnostics.ActivityIdFormat format) { throw null; }
         public System.Diagnostics.Activity SetParentId(System.Diagnostics.ActivityTraceId traceId, System.Diagnostics.ActivitySpanId spanId, System.Diagnostics.ActivityTraceFlags activityTraceFlags = System.Diagnostics.ActivityTraceFlags.None) { throw null; }
         public System.Diagnostics.Activity SetParentId(string parentId) { throw null; }
@@ -149,14 +150,17 @@ namespace System.Diagnostics
         public string ToHexString() { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed class ActivitySource : IDisposable
+    public class ActivitySource : IDisposable
     {
         public ActivitySource(string name) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public ActivitySource(string name, string? version = "") { throw null; }
         public ActivitySource(string name, string? version = "", System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default) { throw null; }
+        public ActivitySource(ActivitySourceOptions options) { throw null; }
         public string Name { get { throw null; } }
         public string? Version { get { throw null; } }
+        public object? Scope { get { throw null; } }
+        public string? TelemetrySchemaUrl { get; }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; } }
         public bool HasListeners() { throw null; }
         public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind) { throw null; }
@@ -168,12 +172,32 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity? StartActivity(System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, DateTimeOffset startTime = default, [System.Runtime.CompilerServices.CallerMemberName] string name = "") { throw null; }
         public static void AddActivityListener(System.Diagnostics.ActivityListener listener) { throw null; }
         public void Dispose() { throw null; }
+        protected virtual void Dispose(bool disposing) { throw null; }
+    }
+    public class ActivitySourceOptions
+    {
+        public ActivitySourceOptions(string name) { throw null; }
+        public string Name { get { throw null; } set { } }
+        public string? Version { get { throw null; } set { } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; } set { } }
+        public object? Scope { get { throw null; } set { } }
+        public string? TelemetrySchemaUrl { get { throw null; } set { } }
+    }
+    public abstract partial class ActivitySourceFactory : System.IDisposable
+    {
+        protected ActivitySourceFactory() { }
+        public System.Diagnostics.ActivitySource Create(System.Diagnostics.ActivitySourceOptions options) { throw null; }
+        public System.Diagnostics.ActivitySource Create(string name, string? version = "", System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { throw null; }
+        protected abstract System.Diagnostics.ActivitySource CreateCore(System.Diagnostics.ActivitySourceOptions options);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
     }
     [System.FlagsAttribute]
     public enum ActivityTraceFlags
     {
         None = 0,
         Recorded = 1,
+        RandomTraceId = 2,
     }
     public readonly partial struct ActivityTraceId : System.IEquatable<System.Diagnostics.ActivityTraceId>
     {
@@ -281,12 +305,13 @@ namespace System.Diagnostics
     public sealed class ActivityListener : IDisposable
     {
         public ActivityListener() { throw null; }
-        public System.Action<System.Diagnostics.Activity>? ActivityStarted { get { throw null; } set { throw null; } }
-        public System.Action<System.Diagnostics.Activity>? ActivityStopped { get { throw null; } set { throw null; } }
-        public System.Diagnostics.ExceptionRecorder? ExceptionRecorder { get { throw null; } set { throw null; } }
-        public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get { throw null; } set { throw null; } }
-        public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get { throw null; } set { throw null; } }
-        public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { throw null; } }
+        public System.Action<System.Diagnostics.Activity>? ActivityStarted { get { throw null; } set { } }
+        public System.Action<System.Diagnostics.Activity>? ActivityStopped { get { throw null; } set { } }
+        public System.Diagnostics.ExceptionRecorder? ExceptionRecorder { get { throw null; } set { } }
+        public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get { throw null; } set { } }
+        public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get { throw null; } set { } }
+        public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { } }
+        public void RefreshSources() { throw null; }
         public void Dispose() { throw null; }
     }
     public abstract class DistributedContextPropagator
@@ -301,6 +326,8 @@ namespace System.Diagnostics
       public static DistributedContextPropagator CreateDefaultPropagator() { throw null; }
       public static DistributedContextPropagator CreatePassThroughPropagator() { throw null; }
       public static DistributedContextPropagator CreateNoOutputPropagator() { throw null; }
+      public static DistributedContextPropagator CreatePreW3CPropagator() { throw null; }
+      public static DistributedContextPropagator CreateW3CPropagator() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct TagList : System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>
@@ -565,6 +592,7 @@ namespace System.Diagnostics.Metrics
         public string? Version { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; }  }
         public object? Scope { get { throw null; }  }
+        public string? TelemetrySchemaUrl { get { throw null; }  }
     }
     public static class MeterFactoryExtensions
     {
@@ -575,8 +603,8 @@ namespace System.Diagnostics.Metrics
         public object? DisableMeasurementEvents(Instrument instrument) { throw null; }
         public void Dispose() { throw null; }
         public void EnableMeasurementEvents(Instrument instrument, object? state = null) { throw null; }
-        public Action<Instrument, MeterListener>? InstrumentPublished { get { throw null; } set { throw null; } }
-        public Action<Instrument, object?>? MeasurementsCompleted { get { throw null; } set { throw null; } }
+        public Action<Instrument, MeterListener>? InstrumentPublished { get { throw null; } set { } }
+        public Action<Instrument, object?>? MeasurementsCompleted { get { throw null; } set { } }
         public MeterListener() { throw null; }
         public void RecordObservableInstruments() { throw null; }
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct { throw null; }
@@ -584,10 +612,11 @@ namespace System.Diagnostics.Metrics
     }
     public class MeterOptions
     {
-        public string Name { get { throw null;} set { throw null;} }
-        public string? Version { get { throw null;} set { throw null;} }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object?>>? Tags { get { throw null;} set { throw null;} }
-        public object? Scope { get { throw null;} set { throw null;} }
+        public string Name { get { throw null;} set { } }
+        public string? Version { get { throw null;} set { } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object?>>? Tags { get { throw null;} set { } }
+        public object? Scope { get { throw null;} set { } }
+        public string? TelemetrySchemaUrl { get { throw null;} set { } }
         public MeterOptions(string name) { throw null;}
     }
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct

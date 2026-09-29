@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
@@ -19,10 +20,7 @@ namespace System.ServiceModel.Syndication
         // Reader must be positioned at an element
         public XmlSyndicationContent(XmlReader reader)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             SyndicationFeedFormatter.MoveToStartElement(reader);
             if (reader.HasAttributes)
@@ -53,12 +51,16 @@ namespace System.ServiceModel.Syndication
             _contentBuffer.Close();
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public XmlSyndicationContent(string type, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
             Extension = new SyndicationElementExtension(dataContractExtension, dataContractSerializer);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public XmlSyndicationContent(string type, object xmlSerializerExtension, XmlSerializer serializer)
         {
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
@@ -67,10 +69,7 @@ namespace System.ServiceModel.Syndication
 
         public XmlSyndicationContent(string type, SyndicationElementExtension extension)
         {
-            if (extension is null)
-            {
-                throw new ArgumentNullException(nameof(extension));
-            }
+            ArgumentNullException.ThrowIfNull(extension);
 
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
             Extension = extension;
@@ -96,8 +95,12 @@ namespace System.ServiceModel.Syndication
             return _contentBuffer.GetReader(0);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public TContent ReadContent<TContent>() => ReadContent<TContent>((DataContractSerializer)null);
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public TContent ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
         {
             dataContractSerializer ??= new DataContractSerializer(typeof(TContent));
@@ -117,6 +120,8 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public TContent ReadContent<TContent>(XmlSerializer serializer)
         {
             serializer ??= new XmlSerializer(typeof(TContent));
@@ -139,10 +144,7 @@ namespace System.ServiceModel.Syndication
         // does not write start element or type attribute, writes other attributes and rest of content
         protected override void WriteContentsTo(XmlWriter writer)
         {
-            if (writer is null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             if (Extension != null)
             {

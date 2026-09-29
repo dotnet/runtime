@@ -3,22 +3,16 @@
 #include "common.h"
 #include "threadstatics.h"
 
-struct InFlightTLSData
-{
 #ifndef DACCESS_COMPILE
-    InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), hTLSData(0) { }
-    ~InFlightTLSData()
+InFlightTLSData::InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), hTLSData(0) { }
+InFlightTLSData::~InFlightTLSData()
     {
         if (!IsHandleNullUnchecked(hTLSData))
         {
             DestroyTypedHandle(hTLSData);
         }
     }
-#endif // !DACCESS_COMPILE
-    PTR_InFlightTLSData pNext; // Points at the next in-flight TLS data
-    TLSIndex tlsIndex; // The TLS index for the static
-    OBJECTHANDLE hTLSData; // The TLS data for the static
-};
+#endif
 
 
 struct ThreadLocalLoaderAllocator
@@ -31,7 +25,7 @@ typedef DPTR(ThreadLocalLoaderAllocator) PTR_ThreadLocalLoaderAllocator;
 #ifndef DACCESS_COMPILE
 static TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
 static TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
-static PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
+static PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, pThread) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 
 static uint32_t g_NextTLSSlot = 1;
 static uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
@@ -125,8 +119,8 @@ int32_t IndexOffsetToDirectThreadLocalIndex(int32_t indexOffset)
     LIMITED_METHOD_CONTRACT;
 
     int32_t adjustedIndexOffset = indexOffset + OFFSETOF__CORINFO_Array__data;
-    _ASSERTE(((uint32_t)adjustedIndexOffset) >= offsetof(ThreadLocalData, ThreadBlockingInfo_First));
-    int32_t directThreadLocalIndex = adjustedIndexOffset - offsetof(ThreadLocalData, ThreadBlockingInfo_First);
+    _ASSERTE(((uint32_t)adjustedIndexOffset) >= offsetof(ThreadLocalData, pThread));
+    int32_t directThreadLocalIndex = adjustedIndexOffset - offsetof(ThreadLocalData, pThread);
     _ASSERTE(((uint32_t)directThreadLocalIndex) < (sizeof(g_pMethodTablesForDirectThreadLocalData) / sizeof(g_pMethodTablesForDirectThreadLocalData[0])));
     _ASSERTE(directThreadLocalIndex >= 0);
     return directThreadLocalIndex;
@@ -140,7 +134,7 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -170,6 +164,7 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
     }
     CONTRACTL_END;
 
+    // This method is called without the g_TLSCrst lock being held
     PTR_MethodTable retVal;
     if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
@@ -179,7 +174,7 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
     {
         *pIsGCStatic = false;
         *pIsCollectible = false;
-        retVal = g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(index.GetIndexOffset())];
+        retVal = VolatileLoadWithoutBarrier(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(index.GetIndexOffset())]);
     }
     else
     {
@@ -207,6 +202,7 @@ void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 
     // Report non-collectible object array
     fn(&pThreadLocalData->pNonCollectibleTlsArrayData, sc, 0);
+
 }
 #endif // DACCESS_COMPILE
 
@@ -236,8 +232,8 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
             memcpy(newMap, pMap, m_maxIndex * sizeof(TADDR));
             // Don't delete the old map in case some other thread is reading from it, this won't waste significant amounts of memory, since this map cannot grow indefinitely
         }
-        pMap = newMap;
-        m_maxIndex = newSize;
+        VolatileStore(&pMap, newMap); // Use a volatile store, so that the memcpy is guaranteed to be visible before the new pMap is visible on other threads.  This is paired with VolatileLoad in the Lookup functions although it probably could be a VolatileLoadWithoutBarrier and take advantage of data dependency.
+        VolatileStore(&m_maxIndex, newSize); // Use a volatile store so that any thread that reads the size will also have a consistent view of a map at least as big as newSize. This is paired with VolatileLoad in the Lookup functions.
     }
 
     TADDR rawValue = dac_cast<TADDR>(pMT);
@@ -251,7 +247,12 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
         m_collectibleEntries++;
     }
     _ASSERTE(pMap[index.GetIndexOffset()] == 0 || IsClearedValue(pMap[index.GetIndexOffset()]));
-    pMap[index.GetIndexOffset()] = rawValue;
+    // This VolatileStore does not have a clear consumer-producer relationship. Notably, the MethodTable is always considered to have been
+    // fully published by the time its pointer is stored in the map, so there is no need for a memory barrier to ensure visibility of the MethodTable's contents.
+    // However, we have had issues with race safety in this codebase, and we fixed them by adding several VolatileStore which we believe are actually critical
+    // but this is a scenario which AI indicated should also have a VolatileStore. We've chosen to add the VolatileStore as a defensive measure, as this is very
+    // rarely run code.
+    VolatileStore(&pMap[index.GetIndexOffset()], rawValue); 
 }
 
 void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
@@ -271,7 +272,7 @@ void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
     {
         m_collectibleEntries--;
     }
-    pMap[index.GetIndexOffset()] = (whenCleared << 2) | 0x3;
+    VolatileStore(&pMap[index.GetIndexOffset()], (TADDR)((whenCleared << 2) | 0x3));
     _ASSERTE(GetClearedMarker(pMap[index.GetIndexOffset()]) == whenCleared);
     _ASSERTE(IsClearedValue(pMap[index.GetIndexOffset()]));
 }
@@ -309,6 +310,8 @@ void InitializeThreadStaticData()
 
     g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::Collectible);
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
+    CoreLibBinder::GetClass(CLASS__DIRECTONTHREADLOCALDATA);
+    CoreLibBinder::GetClass(CLASS__THREADID);
     g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
 }
 
@@ -319,6 +322,7 @@ void InitializeCurrentThreadsStaticData(Thread* pThread)
     t_ThreadStatics.pThread = pThread;
     t_ThreadStatics.pThread->m_ThreadLocalDataPtr = &t_ThreadStatics;
     t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, FALSE);
+    t_ThreadStatics.managedThreadId = pThread->GetThreadId();
 }
 
 void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
@@ -329,7 +333,6 @@ void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(pMT->HasBoxedThreadStatics());
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -377,7 +380,7 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
 #endif
         for (const auto& entry : g_pThreadStaticCollectibleTypeIndices->CollectibleEntries())
         {
-            _ASSERTE((entry.TlsIndex.GetIndexOffset() <= pThread->cLoaderHandles) || allRemainingIndicesAreNotValid);
+            _ASSERTE((entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles) || !allRemainingIndicesAreNotValid);
             if (entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles)
             {
 #ifndef _DEBUG
@@ -390,7 +393,9 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
             {
                 if (pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] != (LOADERHANDLE)NULL)
                 {
-                    entry.pMT->GetLoaderAllocator()->FreeHandle(pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()]);
+                    LoaderAllocator *pLoaderAllocator = entry.pMT->GetLoaderAllocator();
+                    if (pLoaderAllocator->IsExposedObjectLive())
+                        pLoaderAllocator->FreeHandle(pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()]);
                     pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = (LOADERHANDLE)NULL;
                 }
             }
@@ -620,7 +625,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         if (gcBaseAddresses.pTLSBaseAddress == (TADDR)NULL)
         {
             // Now we need to actually allocate the TLS data block
-            struct 
+            struct
             {
                 PTRARRAYREF ptrRef;
                 OBJECTREF tlsEntry;
@@ -713,11 +718,16 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     {
         bool usedDirectOnThreadLocalDataPath = false;
 
-        if (!gcStatic && ((pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO)) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
+        if (!gcStatic && (pMT == CoreLibBinder::GetExistingClass(CLASS__THREADID) || pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
         {
-            if (pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO))
+            if (pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
             {
-                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, ThreadBlockingInfo_First) - OFFSETOF__CORINFO_Array__data);
+                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, pThread) - OFFSETOF__CORINFO_Array__data);
+                usedDirectOnThreadLocalDataPath = true;
+            }
+            else if (pMT == CoreLibBinder::GetExistingClass(CLASS__THREADID))
+            {
+                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, managedThreadId) - OFFSETOF__CORINFO_Array__data);
                 usedDirectOnThreadLocalDataPath = true;
             }
             else
@@ -728,13 +738,13 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                 uint32_t alignment;
                 if (bytesNeeded >= 8)
                     alignment = 8;
-                if (bytesNeeded >= 4)
+                else if (bytesNeeded >= 4)
                     alignment = 4;
                 else if (bytesNeeded >= 2)
                     alignment = 2;
-                else 
+                else
                     alignment = 1;
-                
+
                 uint32_t actualIndexOffset = AlignDown(indexOffsetWithoutAlignment, alignment);
                 uint32_t alignmentAdjust = indexOffsetWithoutAlignment - actualIndexOffset;
                 if (alignmentAdjust <= newBytesAvailable)
@@ -745,7 +755,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                 usedDirectOnThreadLocalDataPath = true;
             }
             if (usedDirectOnThreadLocalDataPath)
-                VolatileStoreWithoutBarrier(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);
+                VolatileStore(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);
         }
 
         if (!usedDirectOnThreadLocalDataPath)
@@ -768,7 +778,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
         pMT->GetLoaderAllocator()->GetTLSIndexList().Append(newTLSIndex);
     }
 
-    *pIndex = newTLSIndex;
+    pIndex->VolatileStore(newTLSIndex); // Use a volatile store so that any other thread that sees the allocated index will also see the writes throughout this path.
 }
 
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
@@ -797,30 +807,84 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
 static void* GetTlsIndexObjectAddress();
 
-#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(TARGET_APPLE) && defined(TARGET_UNIX) && !defined(TARGET_ANDROID) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 extern "C" size_t GetTLSResolverAddress();
-#endif // !TARGET_OSX && TARGET_UNIX && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
-bool CanJITOptimizeTLSAccess()
+// Check if the resolver address retrieval code is expected. We verify the exact
+// code sequence for all the instructions. However, for two instructions adrp/ldr,
+// we make sure that the instruction's opcode and registers matches.
+// If the resolver address retrieval code is correct, we invoke it to determine if
+// it is a static or dynamic resolver. TLS optimization is enabled only for for static
+// resolver. That's because for static resolver, the TP offset is same for all threads.
+// For dynamic resolver, TP offset returned is for the current thread and will be
+// different for the other threads.
+static bool IsValidTLSResolver()
 {
-    LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_ARM64)
+#define READ_CODE(p, code)                                      \
+    code = (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];    \
+    p += 4;
 
-    bool optimizeThreadStaticAccess = false;
-#if defined(TARGET_ARM)
-    // Optimization is disabled for linux/windows arm
-#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
-    // Optimization is disabled for linux/x86
-#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
-    // Optimization is disabled for linux musl arm64
-#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
-    // Optimization is disabled for FreeBSD/arm64
-#elif defined(FEATURE_INTERPRETER)
-    // Optimization is disabled when interpreter may be used
-#elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
-    // Optimization is enabled for linux/arm64 only for static resolver.
-    // For static resolver, the TP offset is same for all threads.
-    // For dynamic resolver, TP offset returned is for the current thread and
-    // will be different for the other threads.
+    uint32_t code;
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTLSResolverAddress);
+
+    // stp     x29, x30, [sp, #-32]!
+    READ_CODE(p, code)
+    if (code != 0xA9BE7BFD)
+    {
+        return false;
+    }
+
+    // mov     x29, sp
+    READ_CODE(p, code)
+    if (code != 0x910003FD)
+    {
+        return false;
+    }
+
+    // adrp    x0, <address>
+    // 28:24 have 0x10 for adrp
+    // 4:0 should have x0
+    READ_CODE(p, code)
+    if ((code & 0x9F00001F) != 0x90000000)
+    {
+        return false;
+    }
+
+    // ldr     x0, [x0, <offet>]
+    READ_CODE(p, code)
+    // 31:24 have 0xf9 for ldr
+    // 23:22 have 01
+    // 9:5 have 0 for x0
+    // 4:0 have 1 for x1
+    if ((code & 0xFFC003FF) != 0xF9400001)
+    {
+        return false;
+    }
+
+    // mov     x0, x1
+    READ_CODE(p, code)
+    if (code != 0xAA0103E0)
+    {
+        return false;
+    }
+
+    // ldp     x29, x30, [sp], #32
+    READ_CODE(p, code)
+    if (code != 0xA8C27BFD)
+    {
+        return false;
+    }
+
+    // ret
+    READ_CODE(p, code)
+    if (code != 0xD65F03C0)
+    {
+        return false;
+    }
+
+    // Now invoke the code to retrieve the resolver address
+    // and verify if that is as expected.
     uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
     int ip = 0;
     if ((resolverAddress[ip] == 0xd503201f) || (resolverAddress[ip] == 0xd503241f))
@@ -838,19 +902,97 @@ bool CanJITOptimizeTLSAccess()
         (resolverAddress[ip + 1] == 0xd65f03c0)
     )
     {
-        optimizeThreadStaticAccess = true;
-#ifdef _DEBUG
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
-        {
-            _ASSERTE(!"Detected static resolver in use when not expected");
-        }
-#endif
+        return true;
     }
+
+    return false;
 #elif defined(TARGET_LOONGARCH64)
-    // Optimization is enabled for linux/loongarch64 only for static resolver.
-    // For static resolver, the TP offset is same for all threads.
-    // For dynamic resolver, TP offset returned is for the current thread and
-    // will be different for the other threads.
+#define READ_CODE(p, code)                                      \
+    code = (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];    \
+    p += 4;
+
+    uint32_t code;
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTLSResolverAddress);
+
+    // addi.d  $sp, $sp, -16
+    READ_CODE(p, code)
+    if (code != 0x02FFC063)
+    {
+        return false;
+    }
+
+    // st.d $fp, $sp, 0
+    READ_CODE(p, code)
+    if (code != 0x29C00076)
+    {
+        return false;
+    }
+
+    // st.d $ra, $sp, 8
+    READ_CODE(p, code)
+    if (code != 0x29C02061)
+    {
+        return false;
+    }
+
+    // ori $fp, $sp, 0
+    READ_CODE(p, code)
+    if (code != 0x03800076)
+    {
+        return false;
+    }
+
+    // pcalau12i $a0, %desc_pc_hi20(t_ThreadStatics)
+    READ_CODE(p, code)
+    if ((code & 0xFE00001F) != 0x1A000004)
+    {
+        return false;
+    }
+
+    // addi.d $a0, $a0, %desc_pc_lo12(t_ThreadStatics)
+    READ_CODE(p, code)
+    if ((code & 0xFFC003FF) != 0x02C00084)
+    {
+        return false;
+    }
+
+    // ld.d $a0, $a0, %desc_ld(t_ThreadStatics)
+    READ_CODE(p, code)
+    if ((code & 0xFFC003FF) != 0x28C00084)
+    {
+        return false;
+    }
+
+    // ld.d $ra, $sp, 8
+    READ_CODE(p, code)
+    if (code != 0x28C02061)
+    {
+        return false;
+    }
+
+    // ld.d $fp, $sp, 0
+    READ_CODE(p, code)
+    if (code != 0x28C00076)
+    {
+        return false;
+    }
+
+    // addi.d $sp, $sp, 16
+    READ_CODE(p, code)
+    if (code != 0x02C04063)
+    {
+        return false;
+    }
+
+    // ret
+    READ_CODE(p, code)
+    if (code != 0x4c000020)
+    {
+        return false;
+    }
+
+    // Now invoke the code to retrieve the resolver address
+    // and verify if that is as expected.
     uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
 
     if (
@@ -860,28 +1002,58 @@ bool CanJITOptimizeTLSAccess()
         (resolverAddress[1] == 0x4c000020)
     )
     {
+        return true;
+    }
+
+    return false;
+#endif
+}
+#endif // !TARGET_APPLE && TARGET_UNIX && !TARGET_ANDROID && (TARGET_ARM64 || TARGET_LOONGARCH64)
+
+bool CanJITOptimizeTLSAccess()
+{
+    LIMITED_METHOD_CONTRACT;
+    if (g_pConfig->DisableOptimizedThreadStaticAccess())
+    {
+        return false;
+    }
+
+    bool optimizeThreadStaticAccess = false;
+#if defined(TARGET_ARM)
+    // Optimization is disabled for linux/windows arm
+#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
+    // Optimization is disabled for linux/x86
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
+    // Optimization is disabled for linux musl arm64
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_RISCV64)
+    // Optimization is disabled for linux musl riscv64
+#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
+    // Optimization is disabled for FreeBSD/arm64
+#elif defined(TARGET_ANDROID)
+    // Optimation is disabled for Android until emulated TLS is supported.
+#elif defined(TARGET_OPENBSD)
+    // Optimization is disabled for OpenBSD, which has no addressable __tls_get_addr.
+#elif !defined(TARGET_APPLE) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+    bool tlsResolverValid = IsValidTLSResolver();
+    if (tlsResolverValid)
+    {
         optimizeThreadStaticAccess = true;
 #ifdef _DEBUG
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
         {
             _ASSERTE(!"Detected static resolver in use when not expected");
         }
-#endif
+#endif // _DEBUG
     }
 #else
     optimizeThreadStaticAccess = true;
-#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
+#if !defined(TARGET_APPLE) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
     // For linux/x64, check if compiled coreclr as .so file and not single file.
     // For single file, the `tls_index` might not be accurate.
     // Do not perform this optimization in such case.
     optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
-#endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
+#endif // !TARGET_APPLE && TARGET_UNIX && TARGET_AMD64
 #endif
-
-    if (g_pConfig->DisableOptimizedThreadStaticAccess())
-    {
-        optimizeThreadStaticAccess = false;
-    }
 
     return optimizeThreadStaticAccess;
 }
@@ -902,7 +1074,7 @@ static uint32_t ThreadLocalOffset(void* p)
     uint8_t* pOurTls = pTls[_tls_index];
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
-#elif defined(TARGET_OSX)
+#elif defined(TARGET_APPLE)
 extern "C" void* GetThreadVarsAddress();
 
 static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
@@ -977,15 +1149,17 @@ static void* GetTlsIndexObjectAddress()
     return GetThreadStaticDescriptor(p);
 }
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif !defined(TARGET_ANDROID) && defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 extern "C" size_t GetThreadStaticsVariableOffset();
 
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // !TARGET_ANDROID && TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 #endif // TARGET_WINDOWS
 
 void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
+
+#if !defined(TARGET_ANDROID)
     STANDARD_VM_CONTRACT;
     size_t threadStaticBaseOffset = 0;
 
@@ -996,31 +1170,39 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
     threadStaticBaseOffset = ThreadLocalOffset(&t_ThreadStatics);
 
-#elif defined(TARGET_OSX)
+#elif defined(TARGET_APPLE)
 
     pInfo->threadVarsSection = GetThreadVarsSectionAddress();
 
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) && !defined(TARGET_OPENBSD)
 
     // For Linux/x64, get the address of tls_get_addr system method and the base address
     // of struct that we will pass to it.
     pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
     pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
 
+#elif defined(TARGET_OPENBSD)
+
+    // Unreachable: TLS optimization is disabled on OpenBSD (no addressable __tls_get_addr).
+
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // For Linux arm64/loongarch64/riscv64, just get the offset of thread static variable, and during execution,
     // this offset, arm64 taken from trpid_elp0 system register gives back the thread variable address.
     // this offset, loongarch64 taken from $tp register gives back the thread variable address.
+#if !(defined(TARGET_LINUX_MUSL) && defined(TARGET_RISCV64))
+    // On musl riscv64, this optimization is disabled due to initial-exec TLS incompatibility.
     threadStaticBaseOffset = GetThreadStaticsVariableOffset();
+#endif
 
 #else
-    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86 and Android");
 #endif // TARGET_WINDOWS
 
     pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, cNonCollectibleTlsData));
     pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, pNonCollectibleTlsArrayData));
     pInfo->offsetOfBaseOfThreadLocalData = (uint32_t)threadStaticBaseOffset;
+#endif // !TARGET_ANDROID
 }
 #endif // !DACCESS_COMPILE
 

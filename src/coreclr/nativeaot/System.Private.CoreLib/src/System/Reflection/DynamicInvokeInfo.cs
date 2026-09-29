@@ -22,7 +22,6 @@ namespace System.Reflection
         private readonly int _argumentCount;
         private readonly bool _isStatic;
         // private readonly bool _isValueTypeInstanceMethod;
-        private readonly bool _needsCopyBack;
         private readonly Transform _returnTransform;
         private readonly MethodTable* _returnType;
         private readonly ArgumentInfo[] _arguments;
@@ -74,21 +73,19 @@ namespace System.Reflection
                 {
                     Transform transform = default;
 
-                    var argumentType = (RuntimeType)parameters[i].ParameterType;
+                    Type argumentType = parameters[i].ParameterType;
                     if (argumentType.IsByRef)
                     {
-                        _needsCopyBack = true;
                         transform |= Transform.ByRef;
-                        argumentType = (RuntimeType)argumentType.GetElementType()!;
+                        argumentType = argumentType.GetElementType()!;
                     }
                     Debug.Assert(!argumentType.IsByRef);
 
-                    // This can return a null MethodTable for reference types.
-                    // The compiler makes sure it returns a non-null MT for everything else.
-                    MethodTable* eeArgumentType = argumentType.ToMethodTableMayBeNull();
-                    if (argumentType.IsValueType)
+                    MethodTable* eeArgumentType = argumentType.TypeHandle.ToMethodTable();
+
+                    if (eeArgumentType->IsValueType)
                     {
-                        Debug.Assert(eeArgumentType->IsValueType);
+                        Debug.Assert(argumentType.IsValueType);
 
                         if (eeArgumentType->IsByRefLike)
                             _argumentCount = ArgumentCount_NotSupported_ByRefLike;
@@ -96,15 +93,15 @@ namespace System.Reflection
                         if (eeArgumentType->IsNullable)
                             transform |= Transform.Nullable;
                     }
-                    else if (argumentType.IsPointer)
+                    else if (eeArgumentType->IsPointer)
                     {
-                        Debug.Assert(eeArgumentType->IsPointer);
+                        Debug.Assert(argumentType.IsPointer);
 
                         transform |= Transform.Pointer;
                     }
-                    else if (argumentType.IsFunctionPointer)
+                    else if (eeArgumentType->IsFunctionPointer)
                     {
-                        Debug.Assert(eeArgumentType->IsFunctionPointer);
+                        Debug.Assert(argumentType.IsFunctionPointer);
 
                         transform |= Transform.FunctionPointer;
                     }
@@ -122,18 +119,19 @@ namespace System.Reflection
             {
                 Transform transform = default;
 
-                var returnType = (RuntimeType)methodInfo.ReturnType;
+                Type returnType = methodInfo.ReturnType;
                 if (returnType.IsByRef)
                 {
                     transform |= Transform.ByRef;
-                    returnType = (RuntimeType)returnType.GetElementType()!;
+                    returnType = returnType.GetElementType()!;
                 }
                 Debug.Assert(!returnType.IsByRef);
 
-                MethodTable* eeReturnType = returnType.ToMethodTableMayBeNull();
-                if (returnType.IsValueType)
+                MethodTable* eeReturnType = returnType.TypeHandle.ToMethodTable();
+
+                if (eeReturnType->IsValueType)
                 {
-                    Debug.Assert(eeReturnType->IsValueType);
+                    Debug.Assert(returnType.IsValueType);
 
                     if (returnType != typeof(void))
                     {
@@ -152,17 +150,17 @@ namespace System.Reflection
                             _argumentCount = ArgumentCount_NotSupported; // ByRef to void return
                     }
                 }
-                else if (returnType.IsPointer)
+                else if (eeReturnType->IsPointer)
                 {
-                    Debug.Assert(eeReturnType->IsPointer);
+                    Debug.Assert(returnType.IsPointer);
 
                     transform |= Transform.Pointer;
                     if ((transform & Transform.ByRef) == 0)
                         transform |= Transform.AllocateReturnBox;
                 }
-                else if (returnType.IsFunctionPointer)
+                else if (eeReturnType->IsFunctionPointer)
                 {
-                    Debug.Assert(eeReturnType->IsFunctionPointer);
+                    Debug.Assert(returnType.IsFunctionPointer);
 
                     transform |= Transform.FunctionPointer;
                     if ((transform & Transform.ByRef) == 0)
@@ -419,7 +417,9 @@ namespace System.Reflection
                 RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
 
                 Span<object?> copyOfParameters = new(ref Unsafe.As<IntPtr, object?>(ref *pStorage), argCount);
-                CheckArguments(copyOfParameters, pByRefStorage, parameters, binderBundle);
+                Span<bool> shouldCopyBack = stackalloc bool[argCount];
+                shouldCopyBack.Clear();
+                bool needsCopyBack = CheckArguments(copyOfParameters, pByRefStorage, parameters, binderBundle, shouldCopyBack);
 
                 try
                 {
@@ -430,11 +430,9 @@ namespace System.Reflection
                 {
                     throw new TargetInvocationException(e);
                 }
-                finally
-                {
-                    if (_needsCopyBack)
-                        CopyBackToArray(ref Unsafe.As<IntPtr, object?>(ref *pStorage), parameters);
-                }
+
+                if (needsCopyBack)
+                    CopyBackToArray(ref Unsafe.As<IntPtr, object?>(ref *pStorage), parameters, shouldCopyBack);
             }
             finally
             {
@@ -468,13 +466,15 @@ namespace System.Reflection
                 RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
 
                 Span<object?> copyOfParameters = new(ref Unsafe.As<IntPtr, object?>(ref *pStorage), argCount);
-                CheckArguments(copyOfParameters, pByRefStorage, parameters);
+                Span<bool> shouldCopyBack = stackalloc bool[argCount];
+                shouldCopyBack.Clear();
+                bool needsCopyBack = CheckArguments(copyOfParameters, pByRefStorage, parameters, shouldCopyBack);
 
                 ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
 
-                if (_needsCopyBack)
-                    CopyBackToSpan(copyOfParameters, parameters);
+                if (needsCopyBack)
+                    CopyBackToSpan(copyOfParameters, parameters, shouldCopyBack);
             }
             finally
             {
@@ -496,8 +496,10 @@ namespace System.Reflection
             Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
             void* pByRefStorage = (ByReference*)&byrefStorage;
+            ArgumentData<bool> copyBackStorage = default;
+            Span<bool> shouldCopyBack = ((Span<bool>)copyBackStorage).Slice(0, _argumentCount);
 
-            CheckArguments(copyOfParameters, pByRefStorage, parameters, binderBundle);
+            bool needsCopyBack = CheckArguments(copyOfParameters, pByRefStorage, parameters, binderBundle, shouldCopyBack);
 
             try
             {
@@ -508,11 +510,9 @@ namespace System.Reflection
             {
                 throw new TargetInvocationException(e);
             }
-            finally
-            {
-                if (_needsCopyBack)
-                    CopyBackToArray(ref copyOfParameters[0], parameters);
-            }
+
+            if (needsCopyBack)
+                CopyBackToArray(ref copyOfParameters[0], parameters, shouldCopyBack);
 
             return ref ret;
         }
@@ -528,19 +528,16 @@ namespace System.Reflection
             Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
             void* pByRefStorage = (ByReference*)&byrefStorage;
+            ArgumentData<bool> copyBackStorage = default;
+            Span<bool> shouldCopyBack = ((Span<bool>)copyBackStorage).Slice(0, _argumentCount);
 
-            CheckArguments(copyOfParameters, pByRefStorage, parameters);
+            bool needsCopyBack = CheckArguments(copyOfParameters, pByRefStorage, parameters, shouldCopyBack);
 
-            try
-            {
-                ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
-                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-            }
-            finally
-            {
-                if (_needsCopyBack)
-                    CopyBackToSpan(copyOfParameters, parameters);
-            }
+            ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+
+            if (needsCopyBack)
+                CopyBackToSpan(copyOfParameters, parameters, shouldCopyBack);
 
             return ref ret;
         }
@@ -560,7 +557,7 @@ namespace System.Reflection
             ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
 
-            // No need to call CopyBack here since there are no ref values.
+            // No need to call CopyBack here since no copy of the arguments was made.
 
             return ref ret;
         }
@@ -585,23 +582,25 @@ namespace System.Reflection
             return defaultValue;
         }
 
-        private void ThrowForNeverValidNonNullArgument(MethodTable* srcEEType, int index)
-        {
-            Debug.Assert(index != 0 || _isStatic);
-            throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, Method.GetParametersAsSpan()[index - (_isStatic ? 0 : 1)].ParameterType, destinationIsByRef: false);
-        }
-
-        private unsafe void CheckArguments(
+        private unsafe bool CheckArguments(
             Span<object?> copyOfParameters,
             void* byrefParameters,
             object?[] parameters,
-            BinderBundle? binderBundle)
+            BinderBundle? binderBundle,
+            Span<bool> shouldCopyBack)
         {
+            bool needsCopyBack = false;
+
             for (int i = 0; i < parameters.Length; i++)
             {
                 object? arg = parameters[i];
 
                 ref readonly ArgumentInfo argumentInfo = ref _arguments[i];
+                if ((argumentInfo.Transform & Transform.ByRef) != 0)
+                {
+                    shouldCopyBack[i] = true;
+                    needsCopyBack = true;
+                }
 
             Again:
                 if (arg is null)
@@ -621,8 +620,9 @@ namespace System.Reflection
                         // Missing is substited by metadata default value
                         arg = GetCoercedDefaultValue(i, in argumentInfo);
 
-                        // The metadata default value is written back into the parameters array
-                        parameters[i] = arg;
+                        // The metadata default value is written back into the parameters array after invocation.
+                        shouldCopyBack[i] = true;
+                        needsCopyBack = true;
                         if (arg is null)
                             goto Again; // Redo the argument handling to deal with null
                     }
@@ -630,24 +630,21 @@ namespace System.Reflection
                     MethodTable* srcEEType = arg.GetMethodTable();
                     MethodTable* dstEEType = argumentInfo.Type;
 
-                    if (srcEEType != dstEEType)
-                    {
-                        // Destination type can be null if we don't have a MethodTable for this type. This means one cannot
-                        // possibly pass a valid non-null object instance here.
-                        if (dstEEType == null)
-                        {
-                            ThrowForNeverValidNonNullArgument(srcEEType, i);
-                        }
-
-                        if (!(RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
-                            (dstEEType->IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
+                    if (!(srcEEType == dstEEType ||
+                        RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                        (dstEEType->IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
                             && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
-                        {
-                            // ByRefs have to be exact match
-                            if ((argumentInfo.Transform & Transform.ByRef) != 0)
-                                throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+                    {
+                        // ByRefs have to be exact match
+                        if ((argumentInfo.Transform & Transform.ByRef) != 0)
+                            throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
 
-                            arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
+                        bool copyBack;
+                        arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle, out copyBack);
+                        if (copyBack)
+                        {
+                            shouldCopyBack[i] = true;
+                            needsCopyBack = true;
                         }
                     }
 
@@ -679,6 +676,8 @@ namespace System.Reflection
                     ref Unsafe.As<object?, byte>(ref copyOfParameters[i]) : ref arg.GetRawData());
 #pragma warning restore 9094
             }
+
+            return needsCopyBack;
         }
 
         // This method is equivalent to the one above except that it takes 'Span<object>' instead of 'object[]'
@@ -688,11 +687,31 @@ namespace System.Reflection
             void* byrefParameters,
             Span<object?> parameters)
         {
+            Debug.Assert(parameters.Length <= MaxStackAllocArgCount);
+
+            ArgumentData<bool> copyBackStorage = default;
+            Span<bool> shouldCopyBack = ((Span<bool>)copyBackStorage).Slice(0, parameters.Length);
+            CheckArguments(copyOfParameters, byrefParameters, parameters, shouldCopyBack);
+        }
+
+        private unsafe bool CheckArguments(
+            Span<object?> copyOfParameters,
+            void* byrefParameters,
+            Span<object?> parameters,
+            Span<bool> shouldCopyBack)
+        {
+            bool needsCopyBack = false;
+
             for (int i = 0; i < parameters.Length; i++)
             {
                 object? arg = parameters[i];
 
                 ref readonly ArgumentInfo argumentInfo = ref _arguments[i];
+                if ((argumentInfo.Transform & Transform.ByRef) != 0)
+                {
+                    shouldCopyBack[i] = true;
+                    needsCopyBack = true;
+                }
 
                 if (arg is null)
                 {
@@ -707,25 +726,16 @@ namespace System.Reflection
                     MethodTable* srcEEType = arg.GetMethodTable();
                     MethodTable* dstEEType = argumentInfo.Type;
 
-                    if (srcEEType != dstEEType)
-                    {
-                        // Destination type can be null if we don't have a MethodTable for this type. This means one cannot
-                        // possibly pass a valid non-null object instance here.
-                        if (dstEEType == null)
-                        {
-                            ThrowForNeverValidNonNullArgument(srcEEType, i);
-                        }
-
-                        if (!(RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
-                            (dstEEType->IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
+                    if (!(srcEEType == dstEEType ||
+                        RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                        (dstEEType->IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
                             && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
-                        {
-                            // ByRefs have to be exact match
-                            if ((argumentInfo.Transform & Transform.ByRef) != 0)
-                                throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+                    {
+                        // ByRefs have to be exact match
+                        if ((argumentInfo.Transform & Transform.ByRef) != 0)
+                            throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
 
-                            arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle: null);
-                        }
+                        arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle: null);
                     }
 
                     if ((argumentInfo.Transform & Transform.Reference) == 0)
@@ -756,44 +766,45 @@ namespace System.Reflection
                     ref Unsafe.As<object?, byte>(ref copyOfParameters[i]) : ref arg.GetRawData());
 #pragma warning restore 9094
             }
+
+            return needsCopyBack;
         }
 
-        private unsafe void CopyBackToArray(ref object? src, object?[] dest)
+        private unsafe void CopyBackToArray(ref object? src, object?[] dest, Span<bool> shouldCopyBack)
         {
             ArgumentInfo[] arguments = _arguments;
 
-            for (int i = 0; i < arguments.Length; i++)
+            for (int i = 0; i < dest.Length; i++)
             {
-                ref readonly ArgumentInfo argumentInfo = ref arguments[i];
-
-                Transform transform = argumentInfo.Transform;
-
-                if ((transform & Transform.ByRef) == 0)
-                    continue;
-
-                object? obj = Unsafe.Add(ref src, i);
-
-                if ((transform & (Transform.Pointer | Transform.FunctionPointer | Transform.Nullable)) != 0)
+                if (shouldCopyBack[i])
                 {
-                    if ((transform & Transform.Pointer) != 0)
-                    {
-                        Type type = Type.GetTypeFromMethodTable(argumentInfo.Type);
-                        Debug.Assert(type.IsPointer);
-                        obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
-                    }
-                    else
-                    {
-                        obj = RuntimeImports.RhBox(
-                            (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
-                            ref obj.GetRawData());
-                    }
-                }
+                    ref readonly ArgumentInfo argumentInfo = ref arguments[i];
 
-                dest[i] = obj;
+                    object? obj = Unsafe.Add(ref src, i);
+
+                    Transform transform = argumentInfo.Transform;
+                    if ((transform & (Transform.Pointer | Transform.FunctionPointer | Transform.Nullable)) != 0)
+                    {
+                        if ((transform & Transform.Pointer) != 0)
+                        {
+                            Type type = Type.GetTypeFromMethodTable(argumentInfo.Type);
+                            Debug.Assert(type.IsPointer);
+                            obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
+                        }
+                        else
+                        {
+                            obj = RuntimeExports.RhBox(
+                                (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
+                                ref obj.GetRawData());
+                        }
+                    }
+
+                    dest[i] = obj;
+                }
             }
         }
 
-        private unsafe void CopyBackToSpan(Span<object?> src, Span<object?> dest)
+        private unsafe void CopyBackToSpan(Span<object?> src, Span<object?> dest, Span<bool> shouldCopyBack)
         {
             ArgumentInfo[] arguments = _arguments;
 
@@ -801,30 +812,29 @@ namespace System.Reflection
             {
                 ref readonly ArgumentInfo argumentInfo = ref arguments[i];
 
-                Transform transform = argumentInfo.Transform;
-
-                if ((transform & Transform.ByRef) == 0)
-                    continue;
-
-                object? obj = src[i];
-
-                if ((transform & (Transform.Pointer | Transform.FunctionPointer | Transform.Nullable)) != 0)
+                if (shouldCopyBack[i])
                 {
-                    if ((transform & Transform.Pointer) != 0)
-                    {
-                        Type type = Type.GetTypeFromMethodTable(argumentInfo.Type);
-                        Debug.Assert(type.IsPointer);
-                        obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
-                    }
-                    else
-                    {
-                        obj = RuntimeImports.RhBox(
-                            (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
-                            ref obj.GetRawData());
-                    }
-                }
+                    object? obj = src[i];
 
-                dest[i] = obj;
+                    Transform transform = argumentInfo.Transform;
+                    if ((transform & (Transform.Pointer | Transform.FunctionPointer | Transform.Nullable)) != 0)
+                    {
+                        if ((transform & Transform.Pointer) != 0)
+                        {
+                            Type type = Type.GetTypeFromMethodTable(argumentInfo.Type);
+                            Debug.Assert(type.IsPointer);
+                            obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
+                        }
+                        else
+                        {
+                            obj = RuntimeExports.RhBox(
+                                (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
+                                ref obj.GetRawData());
+                        }
+                    }
+
+                    dest[i] = obj;
+                }
             }
         }
 
@@ -849,7 +859,7 @@ namespace System.Reflection
             else if ((_returnTransform & Transform.FunctionPointer) != 0)
             {
                 Debug.Assert(Type.GetTypeFromMethodTable(_returnType).IsFunctionPointer);
-                obj = RuntimeImports.RhBox(MethodTable.Of<IntPtr>(), ref byref);
+                obj = RuntimeExports.RhBox(MethodTable.Of<IntPtr>(), ref byref);
             }
             else if ((_returnTransform & Transform.Reference) != 0)
             {
@@ -859,7 +869,7 @@ namespace System.Reflection
             else
             {
                 Debug.Assert((_returnTransform & (Transform.ByRef | Transform.Nullable)) != 0);
-                obj = RuntimeImports.RhBox(_returnType, ref byref);
+                obj = RuntimeExports.RhBox(_returnType, ref byref);
             }
             return obj;
         }

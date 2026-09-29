@@ -22,6 +22,7 @@ internal static partial class Interop
             PP_UNIQUE_CONTAINER = 36
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSetProvParam(
@@ -30,6 +31,7 @@ internal static partial class Interop
             IntPtr pbData,
             int dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSetProvParam(
@@ -38,6 +40,7 @@ internal static partial class Interop
             ref IntPtr pbData,
             int dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptGetProvParam(

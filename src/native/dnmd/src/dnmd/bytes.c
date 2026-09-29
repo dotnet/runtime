@@ -72,7 +72,31 @@ static bool read_le(uint8_t const** data, size_t* data_len, void* o, size_t o_si
         return false;
     }
 
-    memcpy(o, &integer, o_size);
+    // Copy from a value of the requested width so this also works on big-endian hosts.
+    switch (o_size)
+    {
+    case 8:
+        memcpy(o, &integer, sizeof(integer));
+        break;
+    case 4:
+    {
+        uint32_t value = (uint32_t)integer;
+        memcpy(o, &value, sizeof(value));
+        break;
+    }
+    case 2:
+    {
+        uint16_t value = (uint16_t)integer;
+        memcpy(o, &value, sizeof(value));
+        break;
+    }
+    case 1:
+    {
+        uint8_t value = (uint8_t)integer;
+        memcpy(o, &value, sizeof(value));
+        break;
+    }
+    }
     *data = d;
     *data_len -= o_size;
     return true;
@@ -165,67 +189,67 @@ bool read_i64(uint8_t const** data, size_t* data_len, int64_t* o)
 #else
 bool read_u16(uint8_t const** data, size_t* data_len, uint16_t* o)
 {
-    if (*data_len < 2)
+    if (*data_len < sizeof(*o))
         return false;
 
-    *o = *(uint16_t const*)*data;
-    *data += 2;
-    *data_len -= 2;
+    memcpy(o, *data, sizeof(*o));
+    *data += sizeof(*o);
+    *data_len -= sizeof(*o);
     return true;
 }
 
 bool read_i16(uint8_t const** data, size_t* data_len, int16_t* o)
 {
-    if (*data_len < 2)
+    if (*data_len < sizeof(*o))
         return false;
 
-    *o = *(int16_t const*)*data;
-    *data += 2;
-    *data_len -= 2;
+    memcpy(o, *data, sizeof(*o));
+    *data += sizeof(*o);
+    *data_len -= sizeof(*o);
     return true;
 }
 
 bool read_u32(uint8_t const** data, size_t* data_len, uint32_t* o)
 {
-    if (*data_len < 4)
+    if (*data_len < sizeof(*o))
         return false;
 
-    *o = *(uint32_t const*)*data;
-    *data += 4;
-    *data_len -= 4;
+    memcpy(o, *data, sizeof(*o));
+    *data += sizeof(*o);
+    *data_len -= sizeof(*o);
     return true;
 }
 
 bool read_i32(uint8_t const** data, size_t* data_len, int32_t* o)
 {
-    if (*data_len < 4)
+    if (*data_len < sizeof(*o))
         return false;
 
-    *o = *(int32_t const*)*data;
-    *data += 4;
-    *data_len -= 4;
+    memcpy(o, *data, sizeof(*o));
+    *data += sizeof(*o);
+    *data_len -= sizeof(*o);
     return true;
 }
 
 bool read_u64(uint8_t const** data, size_t* data_len, uint64_t* o)
 {
-    if (*data_len < 8)
+    if (*data_len < sizeof(*o))
         return false;
 
-    *o = *(uint64_t const*)*data;
-    *data += 8;
-    *data_len -= 8;
+    memcpy(o, *data, sizeof(*o));
+    *data += sizeof(*o);
+    *data_len -= sizeof(*o);
     return true;
 }
 
 bool read_i64(uint8_t const** data, size_t* data_len, int64_t* o)
 {
-    if (*data_len < 8)
+    if (*data_len < sizeof(*o))
         return false;
 
-    *o = *(int64_t const*)*data;
-    *data += 8;
-    *data_len -= 8;
+    memcpy(o, *data, sizeof(*o));
+    *data += sizeof(*o);
+    *data_len -= sizeof(*o);
     return true;
 }
 
@@ -276,6 +300,9 @@ bool write_i64(uint8_t** data, size_t* data_len, int64_t o)
 bool decompress_u32(uint8_t const** data, size_t* data_len, uint32_t* o)
 {
     assert(data != NULL && data_len != NULL && o != NULL);
+    if (*data_len == 0)
+        return false;
+
     uint8_t const* s = *data;
     assert(s != NULL);
 

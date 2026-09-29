@@ -115,26 +115,40 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <param name="propertyName">The name of the property to return.</param>
         /// <param name="jsonNode">The JSON value of the property with the specified name.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="propertyName"/> is <see langword="null"/>.
+        /// </exception>
         /// <returns>
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode)
-        {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) => TryGetPropertyValue(propertyName, out jsonNode, out _);
 
-            return Dictionary.TryGetValue(propertyName, out jsonNode);
+        /// <summary>
+        ///   Gets the value associated with the specified property name.
+        /// </summary>
+        /// <param name="propertyName">The property name of the value to get.</param>
+        /// <param name="jsonNode">
+        ///   When this method returns, it contains the value associated with the specified property name, if the property name is found;
+        ///   otherwise <see langword="null"/>.
+        /// </param>
+        /// <param name="index">The index of <paramref name="propertyName"/> if found; otherwise, -1.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="propertyName"/> is <see langword="null"/>.
+        /// </exception>
+        /// <returns>
+        ///   <see langword="true"/> if the <see cref="JsonObject"/> contains an element with the specified property name; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode, out int index)
+        {
+            ArgumentNullException.ThrowIfNull(propertyName);
+
+            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
         }
 
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
@@ -146,7 +160,30 @@ namespace System.Text.Json.Nodes
             else
             {
                 writer.WriteStartObject();
+                WriteContentsTo(writer, options);
+                writer.WriteEndObject();
+            }
+        }
 
+        /// <summary>
+        /// Writes the properties of this JsonObject to the writer without the surrounding braces.
+        /// This is used for extension data serialization where the properties should be flattened
+        /// into the parent object.
+        /// </summary>
+        internal void WriteContentsTo(Utf8JsonWriter writer, JsonSerializerOptions? options)
+        {
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
+
+            if (dictionary is null && jsonElement.HasValue)
+            {
+                // Write properties from the underlying JsonElement without converting to nodes.
+                foreach (JsonProperty property in jsonElement.Value.EnumerateObject())
+                {
+                    property.WriteTo(writer);
+                }
+            }
+            else
+            {
                 foreach (KeyValuePair<string, JsonNode?> entry in Dictionary)
                 {
                     writer.WritePropertyName(entry.Key);
@@ -160,8 +197,6 @@ namespace System.Text.Json.Nodes
                         entry.Value.WriteTo(writer, options);
                     }
                 }
-
-                writer.WriteEndObject();
             }
         }
 
@@ -187,9 +222,7 @@ namespace System.Text.Json.Nodes
 
                     foreach (KeyValuePair<string, JsonNode?> item in currentDict)
                     {
-                        otherDict.TryGetValue(item.Key, out JsonNode? jsonNode);
-
-                        if (!DeepEquals(item.Value, jsonNode))
+                        if (!otherDict.TryGetValue(item.Key, out JsonNode? jsonNode) || !DeepEquals(item.Value, jsonNode))
                         {
                             return false;
                         }
@@ -204,10 +237,7 @@ namespace System.Text.Json.Nodes
 
         internal JsonNode? GetItem(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
@@ -222,13 +252,13 @@ namespace System.Text.Json.Nodes
         {
             Parent?.GetPath(ref path, this);
 
-            if (child != null)
+            if (child is not null)
             {
                 string propertyName = FindValue(child)!.Value.Key;
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Append("['");
-                    path.Append(propertyName);
+                    path.AppendEscapedPropertyName(propertyName);
                     path.Append("']");
                 }
                 else
@@ -241,35 +271,32 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
-            if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))
+            if (!dict.TryAdd(propertyName, value, out int index))
             {
+                Debug.Assert(index >= 0);
+                JsonNode? replacedValue = dict.GetAt(index).Value;
+
                 if (ReferenceEquals(value, replacedValue))
                 {
                     return;
                 }
 
                 DetachParent(replacedValue);
+                dict.SetAt(index, value);
             }
 
-            dict[propertyName] = value;
             value?.AssignParent(this);
         }
 
         private void DetachParent(JsonNode? item)
         {
-            Debug.Assert(_dictionary != null, "Cannot have detachable nodes without a materialized dictionary.");
+            Debug.Assert(_dictionary is not null, "Cannot have detachable nodes without a materialized dictionary.");
 
-            if (item != null)
-            {
-                item.Parent = null;
-            }
+            item?.Parent = null;
         }
 
         private KeyValuePair<string, JsonNode?>? FindValue(JsonNode? value)
@@ -332,7 +359,7 @@ namespace System.Text.Json.Nodes
                 {
                     get
                     {
-                        if (Value == null)
+                        if (Value is null)
                         {
                             return $"{PropertyName} = null";
                         }

@@ -63,8 +63,8 @@ namespace System.Linq.Tests
             Assert.False(list.Contains(42));
             Assert.Equal(-1, list.IndexOf(42));
 
-            list.CopyTo(Array.Empty<int>(), 0);
-            AssertExtensions.Throws<ArgumentException>("destinationArray", () => list.CopyTo(Array.Empty<int>(), 1));
+            list.CopyTo([], 0);
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => list.CopyTo([], 1));
             int[] array = [42];
             list.CopyTo(array, 0);
             Assert.Equal(42, array[0]);

@@ -136,9 +136,28 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(polymorphicAttribute?.IgnoreUnrecognizedTypeDiscriminators ?? false, polyOptions.IgnoreUnrecognizedTypeDiscriminators);
                 Assert.Equal(polymorphicAttribute?.UnknownDerivedTypeHandling ?? default, polyOptions.UnknownDerivedTypeHandling);
                 Assert.Equal(polymorphicAttribute?.TypeDiscriminatorPropertyName ?? "$type", polyOptions.TypeDiscriminatorPropertyName);
-                Assert.Equal(
-                    expected: derivedTypeAttributes.Select(attr => (attr.DerivedType, attr.TypeDiscriminator)),
-                    actual: polyOptions.DerivedTypes.Select(attr => (attr.DerivedType, attr.TypeDiscriminator)));
+                Assert.Equal(derivedTypeAttributes.Length, polyOptions.DerivedTypes.Count);
+
+                for (int i = 0; i < derivedTypeAttributes.Length; i++)
+                {
+                    JsonDerivedTypeAttribute attr = derivedTypeAttributes[i];
+                    JsonDerivedType derivedType = polyOptions.DerivedTypes[i];
+                    Assert.Equal(attr.TypeDiscriminator, derivedType.TypeDiscriminator);
+
+                    if (attr.DerivedType is { IsGenericTypeDefinition: true })
+                    {
+                        // Open generic derived types are resolved by the reflection resolver
+                        // to closed types: verify the resolved type is closed and is a
+                        // constructed-form of the original open generic definition.
+                        Assert.False(derivedType.DerivedType.IsGenericTypeDefinition);
+                        Assert.True(derivedType.DerivedType.IsGenericType);
+                        Assert.Equal(attr.DerivedType, derivedType.DerivedType.GetGenericTypeDefinition());
+                    }
+                    else
+                    {
+                        Assert.Equal(attr.DerivedType, derivedType.DerivedType);
+                    }
+                }
             }
         }
     }

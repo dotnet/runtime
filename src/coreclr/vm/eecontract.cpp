@@ -3,11 +3,6 @@
 
 // ---------------------------------------------------------------------------
 // EEContract.cpp
-//
-
-// ! I am the owner for issues in the contract *infrastructure*, not for every
-// ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
-// ! CONTRACT_VIOLATION, you will become the new owner of this file.
 // ---------------------------------------------------------------------------
 
 
@@ -24,11 +19,6 @@ void EEContract::Disable()
 
 void EEContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
-    SCAN_IGNORE_THROW;      // Tell the static contract analyzer to ignore contract violations
-    SCAN_IGNORE_FAULT;      // due to the contract checking logic itself.
-    SCAN_IGNORE_TRIGGER;
-    SCAN_IGNORE_LOCK;
-
     // Many of the checks below result in calls to GetThread()
     // that work just fine if GetThread() returns NULL, so temporarily
     // allow such calls.

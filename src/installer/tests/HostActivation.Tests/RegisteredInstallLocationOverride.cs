@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.NET.HostModel;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -56,7 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // On Linux/macOS the install location is registered in a file which is normally
                 // located in /etc/dotnet/install_location
                 // So we need to redirect it to a different place here.
-                string directory = Path.Combine(TestContext.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
+                string directory = Path.Combine(HostTestContext.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
                 if (Directory.Exists(directory))
                     Directory.Delete(directory, true);
                 Directory.CreateDirectory(directory);
@@ -98,10 +99,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
             else
             {
-                if (File.Exists(PathValueOverride))
+                RetryUtil.RetryOnIOError(() =>
                 {
-                    File.Delete(PathValueOverride);
-                }
+                    if (File.Exists(PathValueOverride))
+                    {
+                        File.Delete(PathValueOverride);
+                    }
+                });
             }
 
             if (_testOnlyProductBehavior != null)

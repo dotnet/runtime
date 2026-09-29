@@ -59,7 +59,6 @@ namespace System.Runtime.InteropServices.JavaScript
             [FieldOffset(13)]
             internal MarshalerType ElementType;
 
-#if FEATURE_WASM_MANAGED_THREADS
             [FieldOffset(16)]
             internal IntPtr ContextHandle;
 
@@ -71,7 +70,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(28)]
             internal IntPtr SyncDoneSemaphorePtr;
-#endif
         }
 
         /// <summary>
@@ -80,7 +78,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void Initialize()
+        public void Initialize()
         {
             slot.Type = MarshalerType.None;
 #if FEATURE_WASM_MANAGED_THREADS
@@ -88,8 +86,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // also this is called multiple times
             JSProxyContext.JSImportWithUnknownContext();
             slot.ContextHandle = IntPtr.Zero;
-            slot.ReceiverShouldFree = false;
 #endif
+            slot.ReceiverShouldFree = false;
         }
 
 #if FEATURE_WASM_MANAGED_THREADS

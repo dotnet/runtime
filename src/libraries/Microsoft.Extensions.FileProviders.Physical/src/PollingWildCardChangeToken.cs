@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
@@ -20,19 +22,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// </summary>
     public class PollingWildCardChangeToken : IPollingChangeToken
     {
-        private static readonly byte[] Separator = Encoding.Unicode.GetBytes("|");
         private readonly object _enumerationLock = new();
         private readonly DirectoryInfoBase _directoryInfo;
         private readonly Matcher _matcher;
         private bool _changed;
-        private DateTime? _lastScanTimeUtc;
+        private DateTime _lastScanTimeUtc;
+#if !NET
         private byte[]? _byteBuffer;
+#endif
         private byte[]? _previousHash;
         private CancellationTokenSource? _tokenSource;
         private CancellationChangeToken? _changeToken;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="PollingWildCardChangeToken"/>.
+        /// Initializes a new instance of the <see cref="PollingWildCardChangeToken"/> class.
         /// </summary>
         /// <param name="root">The root of the file system.</param>
         /// <param name="pattern">The pattern to watch.</param>
@@ -90,7 +93,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 if (_changed)
                 {
-                    return _changed;
+                    return true;
                 }
 
                 if (ShouldRefresh())
@@ -112,35 +115,61 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private bool CalculateChanges()
         {
-            PatternMatchingResult result = _matcher.Execute(_directoryInfo);
-
-            IOrderedEnumerable<FilePatternMatch> files = result.Files.OrderBy(f => f.Path, StringComparer.Ordinal);
-            using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
+            try
             {
-                foreach (FilePatternMatch file in files)
+                PatternMatchingResult result = _matcher.Execute(_directoryInfo);
+                IOrderedEnumerable<FilePatternMatch> files = result.Files.OrderBy(f => f.Path, StringComparer.Ordinal);
+                using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
                 {
-                    DateTime lastWriteTimeUtc = GetLastWriteUtc(file.Path);
-                    if (_lastScanTimeUtc != null && _lastScanTimeUtc < lastWriteTimeUtc)
+                    foreach (FilePatternMatch file in files)
                     {
-                        // _lastScanTimeUtc is the greatest timestamp that any last writes could have been.
-                        // If a file has a newer timestamp than this value, it must've changed.
-                        return true;
+                        DateTime lastWriteTimeUtc = GetLastWriteUtc(file.Path);
+                        if (_previousHash is not null && _lastScanTimeUtc < lastWriteTimeUtc)
+                        {
+                            // _lastScanTimeUtc is the greatest timestamp that any last writes could have been.
+                            // If a file has a newer timestamp than this value, it must've changed.
+                            // A non-null hash means a scan completed, so there is something to compare against.
+                            return true;
+                        }
+
+                        ComputeHash(sha256, file.Path, lastWriteTimeUtc);
                     }
 
-                    ComputeHash(sha256, file.Path, lastWriteTimeUtc);
+#if NET
+                    Span<byte> currentHash = stackalloc byte[256 / 8];
+                    sha256.GetHashAndReset(currentHash);
+                    if (_previousHash is null)
+                    {
+                        _previousHash = currentHash.ToArray(); // First run
+                    }
+                    else if (!_previousHash.AsSpan().SequenceEqual(currentHash))
+                    {
+                        return true;
+                    }
+#else
+                    byte[] currentHash = sha256.GetHashAndReset();
+                    if (_previousHash is null)
+                    {
+                        _previousHash = currentHash; // First run
+                    }
+                    else if (!_previousHash.AsSpan().SequenceEqual(currentHash.AsSpan()))
+                    {
+                        return true;
+                    }
+#endif
+
+                    _lastScanTimeUtc = Clock.UtcNow;
                 }
 
-                byte[] currentHash = sha256.GetHashAndReset();
-                if (!ArrayEquals(_previousHash, currentHash))
-                {
-                    return true;
-                }
-
-                _previousHash = currentHash;
-                _lastScanTimeUtc = Clock.UtcNow;
+                return false;
             }
-
-            return false;
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+            {
+                // The directory couldn't be scanned, for example because a network share went down or
+                // the directory became inaccessible. Report no change and try again on the next poll.
+                _lastScanTimeUtc = Clock.UtcNow;
+                return false;
+            }
         }
 
         /// <summary>
@@ -154,41 +183,28 @@ namespace Microsoft.Extensions.FileProviders.Physical
             return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(filePath) ?? File.GetLastWriteTimeUtc(filePath);
         }
 
-        private static bool ArrayEquals(byte[]? previousHash, byte[] currentHash)
+#if NET
+        private static void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
         {
-            if (previousHash == null)
-            {
-                // First run
-                return true;
-            }
-
-            Debug.Assert(previousHash.Length == currentHash.Length);
-            return previousHash.AsSpan().SequenceEqual(currentHash.AsSpan());
+            sha256.AppendData(MemoryMarshal.AsBytes(path.AsSpan()));
+            sha256.AppendData(MemoryMarshal.AsBytes([lastChangedUtc]));
         }
-
+#else
         private void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
         {
-            int byteCount = Encoding.Unicode.GetByteCount(path);
+            int byteCount = path.Length * 2;
             if (_byteBuffer == null || byteCount > _byteBuffer.Length)
             {
                 _byteBuffer = new byte[Math.Max(byteCount, 256)];
             }
 
-            int length = Encoding.Unicode.GetBytes(path, 0, path.Length, _byteBuffer, 0);
-            sha256.AppendData(_byteBuffer, 0, length);
-            sha256.AppendData(Separator, 0, Separator.Length);
+            MemoryMarshal.AsBytes(path.AsSpan()).CopyTo(_byteBuffer.AsSpan());
+            sha256.AppendData(_byteBuffer, 0, byteCount);
 
-            Debug.Assert(_byteBuffer.Length > sizeof(long));
-            unsafe
-            {
-                fixed (byte* b = _byteBuffer)
-                {
-                    *((long*)b) = lastChangedUtc.Ticks;
-                }
-            }
+            BinaryPrimitives.WriteInt64LittleEndian(_byteBuffer, lastChangedUtc.Ticks);
             sha256.AppendData(_byteBuffer, 0, sizeof(long));
-            sha256.AppendData(Separator, 0, Separator.Length);
         }
+#endif
 
         IDisposable IChangeToken.RegisterChangeCallback(Action<object?> callback, object? state)
         {

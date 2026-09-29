@@ -1,6 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Runtime;
+
+using Internal.Runtime.Augments;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.CompilerHelpers
@@ -12,15 +17,15 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public static unsafe MethodTable* GetOrdinalInterface(MethodTable* pType, ushort interfaceIndex)
         {
-            Debug.Assert(interfaceIndex <= pType->NumInterfaces);
+            Debug.Assert(interfaceIndex < pType->NumInterfaces);
             return pType->InterfaceMap[interfaceIndex];
         }
 
-        public static unsafe MethodTable* GetCurrentSharedThunkContext()
+        public static unsafe MethodTable* GetClassHandleFromMethodParam(IntPtr pDictionary)
         {
-            // TODO: We should return the current context from the ThunkPool
-            // https://github.com/dotnet/runtimelab/issues/1442
-            return null;
+            bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetOwningTypeForMethodDictionary(pDictionary, out RuntimeTypeHandle th);
+            Debug.Assert(success);
+            return th.ToMethodTable();
         }
     }
 }

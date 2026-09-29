@@ -24,7 +24,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void SinCosPi<T>(ReadOnlySpan<T> x, Span<T> sinPiDestination, Span<T> cosPiDestination)
             where T : ITrigonometricFunctions<T> =>
-            InvokeSpanIntoSpan_TwoOutputs<T, SinCosPiOperator<T>>(x, sinPiDestination, cosPiDestination);
+            InvokeSpanIntoSpanSpan<T, SinCosPiOperator<T>>(x, sinPiDestination, cosPiDestination);
 
         /// <summary>T.SinCosPi(x)</summary>
         private readonly struct SinCosPiOperator<T> : IUnaryInputBinaryOutput<T> where T : ITrigonometricFunctions<T>

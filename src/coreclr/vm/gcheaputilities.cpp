@@ -36,12 +36,15 @@ GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-uint8_t* g_sw_ww_table = nullptr;
+uint8_t* g_write_watch_table = nullptr;
 bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-GVAL_IMPL_INIT(gc_alloc_context, g_global_alloc_context, {});
+// Unused - kept for GC data contract c1 compatibility, see datadescriptor/datadescriptor.inc.
+GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
+
+thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
 
 enum GC_LOAD_STATUS {
     GC_LOAD_STATUS_BEFORE_START,
@@ -63,8 +66,6 @@ VersionInfo g_gc_version_info;
 
 // The module that contains the GC.
 PTR_VOID g_gc_module_base;
-
-bool GCHeapUtilities::s_useThreadAllocationContexts;
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
@@ -182,12 +183,17 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     //
     if (!ValidateModuleName(libFileName))
     {
-        LOG((LF_GC, LL_INFO100, "Invalid GC name found %s\n", libFileName));
+        MAKE_UTF8PTR_FROMWIDE(libFileNameUtf8, libFileName);
+        LOG((LF_GC, LL_INFO100, "Invalid GC name found %s\n", libFileNameUtf8));
         return nullptr;
     }
 
+    // The APP_CONTEXT_BASE_DIRECTORY is always set by the host. In cases
+    // where the runtime is activated as a component, the base directory
+    // will be an empty string. If the base directory is an empty string, skip it.
     SString appBase;
-    if (HostInformation::GetProperty("APP_CONTEXT_BASE_DIRECTORY", appBase))
+    if (HostInformation::GetProperty("APP_CONTEXT_BASE_DIRECTORY", appBase)
+        && u16_strlen(appBase.GetUnicode()) != 0)
     {
         PathString libPath = appBase.GetUnicode();
         libPath.Append(libFileName);
@@ -201,7 +207,8 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     if (result == nullptr)
     {
         // Look for the standalone GC module next to the clr binary
-        PathString libPath = GetInternalSystemDirectory();
+        PathString libPath;
+        IfFailThrow(GetClrModuleDirectory(libPath));
         libPath.Append(libFileName);
 
         LOG((LF_GC, LL_INFO100, "Loading standalone GC by coreclr %s\n", libPath.GetUTF8()));
@@ -362,19 +369,6 @@ HRESULT InitializeDefaultGC()
 HRESULT GCHeapUtilities::LoadAndInitialize()
 {
     LIMITED_METHOD_CONTRACT;
-
-    // When running on a single-proc Intel system, it's more efficient to use a single global
-    // allocation context for SOH allocations than to use one for every thread.
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
-#if DEBUG
-    bool useGlobalAllocationContext = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCUseGlobalAllocationContext) != 0);
-#else
-    bool useGlobalAllocationContext = false;
-#endif
-    s_useThreadAllocationContexts = !useGlobalAllocationContext && (IsServerHeap() || ::g_SystemInfo.dwNumberOfProcessors != 1 || CPUGroupInfo::CanEnableGCCPUGroups());
-#else
-    s_useThreadAllocationContexts = true;
-#endif
 
     // we should only call this once on startup. Attempting to load a GC
     // twice is an error.

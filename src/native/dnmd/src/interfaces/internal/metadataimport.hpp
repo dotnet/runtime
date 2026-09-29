@@ -16,7 +16,7 @@ class IMetaModelCommon;
 
 class InternalMetadataImportRO final : public TearOffBase<IMDInternalImport>
 {
-    std::atomic_uint32_t _refCount = 1;
+    std::atomic_uint32_t _refCount{1};
     mdhandle_view m_handle;
 protected:
     virtual bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
@@ -530,7 +530,6 @@ public: // IMDInternalImport
     STDMETHOD(GetUserString)(
         mdString stk,                   // [IN] the string token.
         ULONG   *pchString,             // [OUT] count of characters in the string.
-        BOOL    *pbIs80Plus,            // [OUT] specifies where there are extended characters >= 0x80.
         LPCWSTR *pwszUserString) override;
 
     //*****************************************************************************
@@ -663,9 +662,9 @@ public: // IMDInternalImport
     STDMETHOD_(IUnknown *, GetCachedPublicInterface)(BOOL fWithLock) override;   // return the cached public interface
     __checkReturn
     STDMETHOD(SetCachedPublicInterface)(IUnknown *pUnk) override;  // no return value
-    STDMETHOD_(UTSemReadWrite*, GetReaderWriterLock)() override;   // return the reader writer lock
+    STDMETHOD_(minipal_rwlock*, GetReaderWriterLock)() override;   // return the reader writer lock
     __checkReturn
-    STDMETHOD(SetReaderWriterLock)(UTSemReadWrite * pSem) override;
+    STDMETHOD(SetReaderWriterLock)(minipal_rwlock * pLock) override;
 
     STDMETHOD_(mdModule, GetModuleFromScope)() override;             // [OUT] Put mdModule token here.
 
@@ -758,20 +757,6 @@ public: // IMDInternalImport
         LPCSTR          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
         LPCSTR          *pszName) override;    // [OUT] Name of Custom Attribute.
 
-    STDMETHOD(SetOptimizeAccessForSpeed)(// S_OK or error
-        BOOL    fOptSpeed) override;
-
-    STDMETHOD(SetVerifiedByTrustedSource)(// S_OK or error
-        BOOL    fVerified) override;
-
-    STDMETHOD(GetRvaOffsetData)(
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount             // [OUT] Number of records in FieldRVA table.
-        ) override;
 };
 
 #endif // _SRC_INTERFACES_INTERNAL_METADATAIMPORT_HPP_

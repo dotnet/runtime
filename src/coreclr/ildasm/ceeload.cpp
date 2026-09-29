@@ -186,9 +186,9 @@ BOOL PELoader::getCOMHeader(IMAGE_COR20_HEADER **ppCorHeader)
     {
         PIMAGE_NT_HEADERS32     pImageHeader;
         // Get the image header from the image, then get the directory location
-        // of the COM+ header which may or may not be filled out.
+        // of the CLR header which may or may not be filled out.
         pImageHeader = (PIMAGE_NT_HEADERS32)Cor_RtlImageNtHeader(m_hMod, (ULONG) m_FileSize);
-        PREFIX_ASSUME(pImageHeader != NULL);
+        _ASSERTE(pImageHeader != NULL);
         pSectionHeader = (PIMAGE_SECTION_HEADER) Cor_RtlImageRvaToVa32(pImageHeader, (PBYTE)m_hMod,
             VAL32(pImageHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER].VirtualAddress),
             (DWORD)m_FileSizeAligned /* FileLength */);
@@ -198,9 +198,9 @@ BOOL PELoader::getCOMHeader(IMAGE_COR20_HEADER **ppCorHeader)
         PIMAGE_NT_HEADERS64     pImageHeader;
 
         // Get the image header from the image, then get the directory location
-        // of the COM+ header which may or may not be filled out.
+        // of the CLR header which may or may not be filled out.
         pImageHeader = (PIMAGE_NT_HEADERS64)Cor_RtlImageNtHeader(m_hMod, (ULONG) m_FileSize);
-        PREFIX_ASSUME(pImageHeader != NULL);
+        _ASSERTE(pImageHeader != NULL);
         pSectionHeader = (PIMAGE_SECTION_HEADER) Cor_RtlImageRvaToVa64(pImageHeader, (PBYTE)m_hMod,
             VAL32(pImageHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COMHEADER].VirtualAddress),
             (DWORD)m_FileSizeAligned /* FileLength */);
@@ -212,7 +212,7 @@ BOOL PELoader::getCOMHeader(IMAGE_COR20_HEADER **ppCorHeader)
         *ppCorHeader = (IMAGE_COR20_HEADER *) pSectionHeader;
         return TRUE;
     }
-    // If there is no COM+ Data in this image, return false.
+    // If there is no CLR Data in this image, return false.
     else
         return FALSE;
 }
@@ -225,10 +225,10 @@ BOOL PELoader::getVAforRVA(DWORD rva,void **ppva)
     if (m_bIsPE32)
     {
         // Get the image header from the image, then get the directory location
-        // of the COM+ header which may or may not be filled out.
+        // of the CLR header which may or may not be filled out.
         PIMAGE_NT_HEADERS32     pImageHeader;
         pImageHeader = (PIMAGE_NT_HEADERS32) Cor_RtlImageNtHeader(m_hMod, (ULONG) m_FileSize);
-        PREFIX_ASSUME(pImageHeader != NULL);
+        _ASSERTE(pImageHeader != NULL);
         pSectionHeader = (PIMAGE_SECTION_HEADER) Cor_RtlImageRvaToVa32(pImageHeader, (PBYTE)m_hMod,
             rva, (DWORD)m_FileSizeAligned /* FileLength */);
     }
@@ -236,7 +236,7 @@ BOOL PELoader::getVAforRVA(DWORD rva,void **ppva)
     {
         PIMAGE_NT_HEADERS64     pImageHeader;
         pImageHeader = (PIMAGE_NT_HEADERS64) Cor_RtlImageNtHeader(m_hMod, (ULONG) m_FileSize);
-        PREFIX_ASSUME(pImageHeader != NULL);
+        _ASSERTE(pImageHeader != NULL);
         pSectionHeader = (PIMAGE_SECTION_HEADER) Cor_RtlImageRvaToVa64(pImageHeader, (PBYTE)m_hMod,
             rva, (DWORD)m_FileSizeAligned /* FileLength */);
     }
@@ -247,7 +247,7 @@ BOOL PELoader::getVAforRVA(DWORD rva,void **ppva)
         *ppva = pSectionHeader;
         return TRUE;
     }
-    // If there is no COM+ Data in this image, return false.
+    // If there is no CLR Data in this image, return false.
     else
         return FALSE;
 }

@@ -9,6 +9,9 @@
     <Compile Include="Delegates002.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="DelegatesLib.ilproj" />
   </ItemGroup>
 </Project>

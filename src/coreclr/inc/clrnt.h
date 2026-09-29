@@ -33,10 +33,6 @@
 #define STATUS_LONGJUMP        ((NTSTATUS)0x80000026L)
 #endif
 
-#ifndef LOCALE_NAME_MAX_LENGTH
-#define LOCALE_NAME_MAX_LENGTH 85
-#endif // !LOCALE_NAME_MAX_LENGTH
-
 #ifndef IMAGE_FILE_MACHINE_RISCV64
 #define IMAGE_FILE_MACHINE_RISCV64        0x5064  // RISCV64
 #endif // !IMAGE_FILE_MACHINE_RISCV64
@@ -211,7 +207,7 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     )
 {
-    PUNWIND_INFO pUnwindInfo = (PUNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
+    DPTR(UNWIND_INFO) pUnwindInfo = dac_cast<DPTR(UNWIND_INFO)>(ImageBase + FunctionEntry->UnwindData);
 
     return FunctionEntry->BeginAddress + pUnwindInfo->FunctionLength;
 }
@@ -337,7 +333,7 @@ RtlpGetFunctionEndAddress (
     else
     {
         // Get from the xdata record.
-        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
+        FunctionLength = *(PTR_uint64_t)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
     return FunctionEntry->BeginAddress + 4 * FunctionLength;
@@ -367,6 +363,21 @@ RtlVirtualUnwind(
     OUT PVOID *HandlerData,
     OUT PULONG64 EstablisherFrame,
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
+    );
+
+EXTERN_C
+PEXCEPTION_ROUTINE
+NTAPI
+RtlVirtualUnwindWithSpForPacSign(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PT_RUNTIME_FUNCTION FunctionEntry,
+    IN OUT PT_CONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
+    OUT PULONG64 SpForPacSign OPTIONAL
     );
 
 // Mirror the XSTATE_ARM64_SVE flags from winnt.h
@@ -411,7 +422,7 @@ RtlpGetFunctionEndAddress (
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
-        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
+        FunctionLength = *(PTR_uint64_t)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
     return FunctionEntry->BeginAddress + 4 * FunctionLength;
@@ -467,10 +478,10 @@ RtlpGetFunctionEndAddress (
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
-        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
+        FunctionLength = *(PTR_uint64_t)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
-    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+    return FunctionEntry->BeginAddress + 2 * FunctionLength;
 }
 
 #define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
@@ -500,5 +511,47 @@ RtlVirtualUnwind(
     );
 
 #endif // TARGET_RISCV64
+
+#ifdef TARGET_WASM
+//
+// Define unwind information flags.
+//
+
+#define UNW_FLAG_NHANDLER               0x0             /* any handler */
+#define UNW_FLAG_EHANDLER               0x1             /* filter handler */
+#define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
+
+PEXCEPTION_ROUTINE
+RtlVirtualUnwind (
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
+    __inout PT_CONTEXT ContextRecord,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
+    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    );
+
+UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData);
+
+ULONG
+RtlpGetFunctionEndAddress (
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ TADDR ImageBase
+    );
+
+#define RUNTIME_FUNCTION__IsFunclet(FunctionEntry) ((FunctionEntry)->BeginAddress & 0x80000000)
+#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress & 0x7FFFFFFF)
+#define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))
+
+#define RUNTIME_FUNCTION__EndAddress(FunctionEntry, ImageBase)      (RtlpGetFunctionEndAddress(FunctionEntry, (ULONG64)(ImageBase)))
+
+#define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf,address)         do { (prf)->UnwindData = (address); } while (0)
+
+typedef struct _UNWIND_INFO {
+    // dummy
+} UNWIND_INFO, *PUNWIND_INFO;
+#endif
 
 #endif  // CLRNT_H_

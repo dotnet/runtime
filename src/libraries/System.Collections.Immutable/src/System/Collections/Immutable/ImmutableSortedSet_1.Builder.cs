@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Collections.Immutable
 {
@@ -28,7 +29,7 @@ namespace System.Collections.Immutable
         /// </remarks>
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableSortedSetBuilderDebuggerProxy<>))]
-        public sealed class Builder : ISortKeyCollection<T>, IReadOnlyCollection<T>, ISet<T>, ICollection
+        public sealed class Builder : IReadOnlyCollection<T>, ISet<T>, ICollection
         {
             /// <summary>
             /// The root of the binary tree that stores the collection.  Contents are typically not entirely frozen.
@@ -50,11 +51,6 @@ namespace System.Collections.Immutable
             /// A number that increments every time the builder changes its contents.
             /// </summary>
             private int _version;
-
-            /// <summary>
-            /// The object callers may use to synchronize access to this collection.
-            /// </summary>
-            private object? _syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Builder"/> class.
@@ -505,18 +501,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <returns>An object that can be used to synchronize access to the <see cref="ICollection"/>.</returns>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            object ICollection.SyncRoot
-            {
-                get
-                {
-                    if (_syncRoot == null)
-                    {
-                        Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
-                    }
-
-                    return _syncRoot;
-                }
-            }
+            object ICollection.SyncRoot =>
+                 field ?? Interlocked.CompareExchange(ref field, new object(), null) ?? field;
             #endregion
         }
     }

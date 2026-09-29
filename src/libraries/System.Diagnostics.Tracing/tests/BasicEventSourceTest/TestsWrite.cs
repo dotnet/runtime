@@ -20,43 +20,39 @@ namespace BasicEventSourceTests
 
     public partial class TestsWrite
     {
-
         [EventData]
         private struct PartB_UserInfo
         {
             public string UserName { get; set; }
         }
 
-        /// <summary>
-        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
-        /// Tests the EventListener code path
-        /// </summary>
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21564", TargetFrameworkMonikers.NetFramework)]
-        public void Test_Write_T_EventListener()
+        public static TheoryData<Listener> GetListeners()
         {
-            using (var listener = new EventListenerListener())
+            TheoryData<Listener> data = new TheoryData<Listener>();
+
+            if (PlatformDetection.IsNetCore && PlatformDetection.IsNotAndroid && PlatformDetection.IsNotBrowser && 
+                (PlatformDetection.IsNotMonoRuntime || PlatformDetection.IsMacCatalyst))
             {
-                Test_Write_T(listener);
+                data.Add(new EventPipeListener());
             }
+            data.Add(new EventListenerListener());
+            data.Add(new EventListenerListener(true));
+            return data;
         }
 
-        /// <summary>
-        /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
-        /// Tests the EventListener code path using events instead of virtual callbacks.
-        /// </summary>
-        [Fact]
+        [Theory]
+        [MemberData(nameof(GetListeners))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21564", TargetFrameworkMonikers.NetFramework)]
-        public void Test_Write_T_EventListener_UseEvents()
+        public void Test_Write_T(Listener listener)
         {
-            Test_Write_T(new EventListenerListener(true));
+            Test_Write_T_Helper(listener);
         }
 
         /// <summary>
         /// Te
         /// </summary>
         /// <param name="listener"></param>
-        private void Test_Write_T(Listener listener)
+        private void Test_Write_T_Helper(Listener listener)
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
 
@@ -109,7 +105,9 @@ namespace BasicEventSourceTests
                     }));
                 /*************************************************************************/
                 byte[] byteArray = { 0, 1, 2, 3 };
-                tests.Add(new SubTest("Write/Basic/byte[]",
+                if (!listener.IsEventPipe) // EventPipe does not format metadata correctly for scalar arrays
+                {
+                    tests.Add(new SubTest("Write/Basic/byte[]",
                     delegate ()
                     {
                         logger.Write("Bytes", new { bytes = byteArray });
@@ -120,68 +118,73 @@ namespace BasicEventSourceTests
                         Assert.Equal("Bytes", evt.EventName);
 
                         var eventArray = evt.PayloadValue(0, "bytes");
-                        Array.Equals(eventArray, byteArray);
+                        Assert.Equal(eventArray, byteArray);
                     }));
-                /*************************************************************************/
-                int? nullableInt = 12;
-                tests.Add(new SubTest("Write/Basic/int?/12",
-                    delegate ()
-                    {
-                        logger.Write("Int12", new { nInteger = nullableInt });
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("Int12", evt.EventName);
+                }
 
-                        var payload = evt.PayloadValue(0, "nInteger");
-                        Assert.Equal(nullableInt, TestUtilities.UnwrapNullable<int>(payload));
-                    }));
-                /*************************************************************************/
-                int? nullableInt2 = null;
-                tests.Add(new SubTest("Write/Basic/int?/null",
-                    delegate ()
-                    {
-                        logger.Write("IntNull", new { nInteger = nullableInt2 });
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("IntNull", evt.EventName);
+                if (listener.IsSelfDescribingNullableSupported)
+                {
+                    /*************************************************************************/
+                    int? nullableInt = 12;
+                    tests.Add(new SubTest("Write/Basic/int?/12",
+                        delegate ()
+                        {
+                            logger.Write("Int12", new { nInteger = nullableInt });
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("Int12", evt.EventName);
 
-                        var payload = evt.PayloadValue(0, "nInteger");
-                        Assert.Equal(nullableInt2, TestUtilities.UnwrapNullable<int>(payload));
-                    }));
-                ///*************************************************************************/
-                DateTime? nullableDate = DateTime.Now;
-                tests.Add(new SubTest("Write/Basic/DateTime?/Now",
-                    delegate ()
-                    {
-                        logger.Write("DateTimeNow", new { nowTime = nullableDate });
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("DateTimeNow", evt.EventName);
+                            var payload = evt.PayloadValue(0, "nInteger");
+                            Assert.Equal(nullableInt, TestUtilities.UnwrapNullable<int>(payload));
+                        }));
+                    /*************************************************************************/
+                    int? nullableInt2 = null;
+                    tests.Add(new SubTest("Write/Basic/int?/null",
+                        delegate ()
+                        {
+                            logger.Write("IntNull", new { nInteger = nullableInt2 });
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("IntNull", evt.EventName);
 
-                        var payload = evt.PayloadValue(0, "nowTime");
-                        Assert.Equal(nullableDate, TestUtilities.UnwrapNullable<DateTime>(payload));
-                    }));
-                /*************************************************************************/
-                DateTime? nullableDate2 = null;
-                tests.Add(new SubTest("Write/Basic/DateTime?/Null",
-                    delegate ()
-                    {
-                        logger.Write("DateTimeNull", new { nowTime = nullableDate2 });
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("DateTimeNull", evt.EventName);
+                            var payload = evt.PayloadValue(0, "nInteger");
+                            Assert.Equal(nullableInt2, TestUtilities.UnwrapNullable<int>(payload));
+                        }));
+                    ///*************************************************************************/
+                    DateTime? nullableDate = DateTime.Now;
+                    tests.Add(new SubTest("Write/Basic/DateTime?/Now",
+                        delegate ()
+                        {
+                            logger.Write("DateTimeNow", new { nowTime = nullableDate });
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("DateTimeNow", evt.EventName);
 
-                        var payload = evt.PayloadValue(0, "nowTime");
-                        Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(payload));
-                    }));
+                            var payload = evt.PayloadValue(0, "nowTime");
+                            Assert.Equal(nullableDate, TestUtilities.UnwrapNullable<DateTime>(payload));
+                        }));
+                    /*************************************************************************/
+                    DateTime? nullableDate2 = null;
+                    tests.Add(new SubTest("Write/Basic/DateTime?/Null",
+                        delegate ()
+                        {
+                            logger.Write("DateTimeNull", new { nowTime = nullableDate2 });
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("DateTimeNull", evt.EventName);
+
+                            var payload = evt.PayloadValue(0, "nowTime");
+                            Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(payload));
+                        }));
+                }
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/PartBOnly",
                     delegate ()
@@ -241,21 +244,25 @@ namespace BasicEventSourceTests
 
                 /*************************************************************************/
 
-                GenerateArrayTest<bool>(ref tests, logger, new bool[] { false, true, false });
-                GenerateArrayTest<byte>(ref tests, logger, new byte[] { 1, 10, 100 });
-                GenerateArrayTest<sbyte>(ref tests, logger, new sbyte[] { 1, 10, 100 });
-                GenerateArrayTest<short>(ref tests, logger, new short[] { 1, 10, 100 });
-                GenerateArrayTest<ushort>(ref tests, logger, new ushort[] { 1, 10, 100 });
-                GenerateArrayTest<int>(ref tests, logger, new int[] { 1, 10, 100 });
-                GenerateArrayTest<uint>(ref tests, logger, new uint[] { 1, 10, 100 });
-                GenerateArrayTest<long>(ref tests, logger, new long[] { 1, 10, 100 });
-                GenerateArrayTest<ulong>(ref tests, logger, new ulong[] { 1, 10, 100 });
-                GenerateArrayTest<char>(ref tests, logger, new char[] { 'a', 'c', 'b' });
-                GenerateArrayTest<double>(ref tests, logger, new double[] { 1, 10, 100 });
-                GenerateArrayTest<float>(ref tests, logger, new float[] { 1, 10, 100 });
-                GenerateArrayTest<IntPtr>(ref tests, logger, new IntPtr[] { (IntPtr)1, (IntPtr)10, (IntPtr)100 });
-                GenerateArrayTest<UIntPtr>(ref tests, logger, new UIntPtr[] { (UIntPtr)1, (UIntPtr)10, (UIntPtr)100 });
-                GenerateArrayTest<Guid>(ref tests, logger, new Guid[] { Guid.Empty, new Guid("121a11ee-3bcb-49cc-b425-f4906fb14f72") });
+                // EventPipe doesn't format metadata correctly for scalar arrays
+                if (!listener.IsEventPipe)
+                {
+                    GenerateArrayTest<bool>(ref tests, logger, new bool[] { false, true, false });
+                    GenerateArrayTest<byte>(ref tests, logger, new byte[] { 1, 10, 100 });
+                    GenerateArrayTest<sbyte>(ref tests, logger, new sbyte[] { 1, 10, 100 });
+                    GenerateArrayTest<short>(ref tests, logger, new short[] { 1, 10, 100 });
+                    GenerateArrayTest<ushort>(ref tests, logger, new ushort[] { 1, 10, 100 });
+                    GenerateArrayTest<int>(ref tests, logger, new int[] { 1, 10, 100 });
+                    GenerateArrayTest<uint>(ref tests, logger, new uint[] { 1, 10, 100 });
+                    GenerateArrayTest<long>(ref tests, logger, new long[] { 1, 10, 100 });
+                    GenerateArrayTest<ulong>(ref tests, logger, new ulong[] { 1, 10, 100 });
+                    GenerateArrayTest<char>(ref tests, logger, new char[] { 'a', 'c', 'b' });
+                    GenerateArrayTest<double>(ref tests, logger, new double[] { 1, 10, 100 });
+                    GenerateArrayTest<float>(ref tests, logger, new float[] { 1, 10, 100 });
+                    GenerateArrayTest<IntPtr>(ref tests, logger, new IntPtr[] { (IntPtr)1, (IntPtr)10, (IntPtr)100 });
+                    GenerateArrayTest<UIntPtr>(ref tests, logger, new UIntPtr[] { (UIntPtr)1, (UIntPtr)10, (UIntPtr)100 });
+                    GenerateArrayTest<Guid>(ref tests, logger, new Guid[] { Guid.Empty, new Guid("121a11ee-3bcb-49cc-b425-f4906fb14f72") });
+                }
 
                 /*************************************************************************/
                 /*********************** DICTIONARY TESTING ******************************/
@@ -264,91 +271,97 @@ namespace BasicEventSourceTests
                 var dict = new Dictionary<string, string>() { { "elem1", "10" }, { "elem2", "20" } };
                 var dictInt = new Dictionary<string, int>() { { "elem1", 10 }, { "elem2", 20 } };
 
-                /*************************************************************************/
-                tests.Add(new SubTest("Write/Dict/EventWithStringDict_C",
-                    delegate ()
-                    {
-                        // log a dictionary
-                        logger.Write("EventWithStringDict_C", new
+                // EventPipe doesn't serialize metadata for dictionary correctly
+                if (!listener.IsEventPipe)
+                {
+                    /*************************************************************************/
+                    tests.Add(new SubTest("Write/Dict/EventWithStringDict_C",
+                        delegate ()
                         {
-                            myDict = dict,
-                            s = "end"
-                        });
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("EventWithStringDict_C", evt.EventName);
-
-                        var keyValues = evt.PayloadValue(0, "myDict");
-                        IDictionary<string, object> vDict = GetDictionaryFromKeyValueArray(keyValues);
-                        Assert.Equal("10", vDict["elem1"]);
-                        Assert.Equal("20", vDict["elem2"]);
-                        Assert.Equal("end", evt.PayloadValue(1, "s"));
-                    }));
-                /*************************************************************************/
-                tests.Add(new SubTest("Write/Dict/EventWithStringDict_BC",
-                    delegate ()
-                    {
-                        // log a PartB and a dictionary as a PartC
-                        logger.Write("EventWithStringDict_BC", new
+                            // log a dictionary
+                            logger.Write("EventWithStringDict_C", new
+                            {
+                                myDict = dict,
+                                s = "end"
+                            });
+                        },
+                        delegate (Event evt)
                         {
-                            PartB_UserInfo = new { UserName = "Me", LogTime = "Now" },
-                            PartC_Dict = dict,
-                            s = "end"
-                        });
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("EventWithStringDict_BC", evt.EventName);
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("EventWithStringDict_C", evt.EventName);
 
-                        var structValue = evt.PayloadValue(0, "PartB_UserInfo");
-                        var structValueAsDictionary = structValue as IDictionary<string, object>;
-                        Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal("Me", structValueAsDictionary["UserName"]);
-                        Assert.Equal("Now", structValueAsDictionary["LogTime"]);
-
-                        var keyValues = evt.PayloadValue(1, "PartC_Dict");
-                        var vDict = GetDictionaryFromKeyValueArray(keyValues);
-                        Assert.NotNull(dict);
-                        Assert.Equal("10", vDict["elem1"]);    // string values.
-                        Assert.Equal("20", vDict["elem2"]);
-
-                        Assert.Equal("end", evt.PayloadValue(2, "s"));
-                    }));
-                /*************************************************************************/
-                tests.Add(new SubTest("Write/Dict/EventWithIntDict_BC",
-                    delegate ()
-                    {
-                        // log a Dict<string, int> as a PartC
-                        logger.Write("EventWithIntDict_BC", new
+                            var keyValues = evt.PayloadValue(0, "myDict");
+                            IDictionary<string, object> vDict = GetDictionaryFromKeyValueArray(keyValues);
+                            Assert.Equal("10", vDict["elem1"]);
+                            Assert.Equal("20", vDict["elem2"]);
+                            Assert.Equal("end", evt.PayloadValue(1, "s"));
+                        }));
+                    /*************************************************************************/
+                    tests.Add(new SubTest("Write/Dict/EventWithStringDict_BC",
+                        delegate ()
                         {
-                            PartB_UserInfo = new { UserName = "Me", LogTime = "Now" },
-                            PartC_Dict = dictInt,
-                            s = "end"
-                        });
+                            // log a PartB and a dictionary as a PartC
+                            logger.Write("EventWithStringDict_BC", new
+                            {
+                                PartB_UserInfo = new { UserName = "Me", LogTime = "Now" },
+                                PartC_Dict = dict,
+                                s = "end"
+                            });
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("EventWithStringDict_BC", evt.EventName);
 
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("EventWithIntDict_BC", evt.EventName);
+                            var structValue = evt.PayloadValue(0, "PartB_UserInfo");
+                            var structValueAsDictionary = structValue as IDictionary<string, object>;
+                            Assert.NotNull(structValueAsDictionary);
+                            Assert.Equal("Me", structValueAsDictionary["UserName"]);
+                            Assert.Equal("Now", structValueAsDictionary["LogTime"]);
 
-                        var structValue = evt.PayloadValue(0, "PartB_UserInfo");
-                        var structValueAsDictionary = structValue as IDictionary<string, object>;
-                        Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal("Me", structValueAsDictionary["UserName"]);
-                        Assert.Equal("Now", structValueAsDictionary["LogTime"]);
+                            var keyValues = evt.PayloadValue(1, "PartC_Dict");
+                            var vDict = GetDictionaryFromKeyValueArray(keyValues);
+                            Assert.NotNull(dict);
+                            Assert.Equal("10", vDict["elem1"]);    // string values.
+                            Assert.Equal("20", vDict["elem2"]);
 
-                        var keyValues = evt.PayloadValue(1, "PartC_Dict");
-                        var vDict = GetDictionaryFromKeyValueArray(keyValues);
-                        Assert.NotNull(vDict);
-                        Assert.Equal(10, vDict["elem1"]);  // Notice they are integers, not strings.
-                        Assert.Equal(20, vDict["elem2"]);
+                            Assert.Equal("end", evt.PayloadValue(2, "s"));
+                        }));
+                    /*************************************************************************/
+                    tests.Add(new SubTest("Write/Dict/EventWithIntDict_BC",
+                        delegate ()
+                        {
+                            // log a Dict<string, int> as a PartC
+                            logger.Write("EventWithIntDict_BC", new
+                            {
+                                PartB_UserInfo = new { UserName = "Me", LogTime = "Now" },
+                                PartC_Dict = dictInt,
+                                s = "end"
+                            });
 
-                        Assert.Equal("end", evt.PayloadValue(2, "s"));
-                    }));
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("EventWithIntDict_BC", evt.EventName);
+
+                            var structValue = evt.PayloadValue(0, "PartB_UserInfo");
+                            var structValueAsDictionary = structValue as IDictionary<string, object>;
+                            Assert.NotNull(structValueAsDictionary);
+                            Assert.Equal("Me", structValueAsDictionary["UserName"]);
+                            Assert.Equal("Now", structValueAsDictionary["LogTime"]);
+
+                            var keyValues = evt.PayloadValue(1, "PartC_Dict");
+                            var vDict = GetDictionaryFromKeyValueArray(keyValues);
+                            Assert.NotNull(vDict);
+                            Assert.Equal(10, vDict["elem1"]);  // Notice they are integers, not strings.
+                            Assert.Equal(20, vDict["elem2"]);
+
+                            Assert.Equal("end", evt.PayloadValue(2, "s"));
+                        }));
+                }
+
+                
                 /*************************************************************************/
                 /**************************** Empty Event TESTING ************************/
                 /*************************************************************************/
@@ -486,7 +499,9 @@ namespace BasicEventSourceTests
                     {
                         listener.OnEvent = delegate (Event data)
                         { events.Add(data); };
-                        listener.EventSourceSynchronousEnable(logger);
+                        listener.EventSourceCommand(logger.Name, EventCommand.Enable);
+                        listener.Start();
+                        listener.WaitForEventSourceStateChange(logger, true);
 
                         // Use the Write<T> API.   This is OK
                         logger.Write("MyTestEvent", new { arg1 = 3, arg2 = "hi" });
@@ -516,14 +531,14 @@ namespace BasicEventSourceTests
                 Assert.Equal(logger.Name, evt.ProviderName);
                 Assert.Equal("EnumEvent" + subTestName, evt.EventName);
                 Assert.Equal("start", evt.PayloadValue(0, "b"));
-                if (evt.IsEtw)
+                if (!evt.IsEnumValueStronglyTyped(selfDescribing:true, writeEvent:false))
                 {
                     var value = evt.PayloadValue(1, "v");
                     Assert.Equal(2, int.Parse(value.ToString()));          // Green has the int value of 2.
                 }
                 else
                 {
-                    Assert.Equal(evt.PayloadValue(1, "v"), enumValue);
+                    Assert.Equal(enumValue, evt.PayloadValue(1, "v"));
                 }
                 Assert.Equal("end", evt.PayloadValue(2, "s"));
             }));

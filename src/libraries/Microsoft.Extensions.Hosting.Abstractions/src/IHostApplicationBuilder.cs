@@ -39,7 +39,7 @@ public interface IHostApplicationBuilder
     ILoggingBuilder Logging { get; }
 
     /// <summary>
-    /// Allows enabling metrics and directing their output.
+    /// Gets a builder that allows enabling metrics and directing their output.
     /// </summary>
     IMetricsBuilder Metrics { get; }
 

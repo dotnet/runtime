@@ -1,142 +1,45 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Runtime.InteropServices.JavaScript;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal sealed class TaskJSGenerator : BaseJSGenerator
+    internal sealed class TaskJSGenerator(TypePositionInfo info, StubCodeContext context, MarshalerType resultMarshalerType) : BaseJSGenerator(info, context)
     {
-        private readonly MarshalerType _resultMarshalerType;
-
-        public TaskJSGenerator(TypePositionInfo info, StubCodeContext context, MarshalerType resultMarshalerType)
-            : base(MarshalerType.Task, new Forwarder().Bind(info, context))
+        public override void Generate(IndentedTextWriter writer, StubIdentifierContext context)
         {
-            _resultMarshalerType = resultMarshalerType;
-        }
+            base.Generate(writer, context);
 
-        public override IEnumerable<ExpressionSyntax> GenerateBind()
-        {
-            var jsty = (JSTaskTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;
-            if (jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void))
+            MarshalDirection marshalDirection = MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext);
+
+            if (marshalDirection == MarshalDirection.UnmanagedToManaged
+                && ((context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)
+                    || (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged)))
             {
-                yield return InvocationExpression(MarshalerTypeName(MarshalerType.Task), ArgumentList());
-            }
-            else
-            {
-                yield return InvocationExpression(MarshalerTypeName(MarshalerType.Task),
-                    ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(_resultMarshalerType)))));
-            }
-        }
-
-        public override IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
-        {
-            var jsty = (JSTaskTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;
-
-            string argName = context.GetAdditionalIdentifier(TypeInfo, "js_arg");
-            var target = TypeInfo.IsManagedReturnPosition
-                ? Constants.ArgumentReturn
-                : argName;
-
-            var source = TypeInfo.IsManagedReturnPosition
-                ? Argument(IdentifierName(context.GetIdentifiers(TypeInfo).native))
-                : _inner.AsArgument(context);
-
-            if (context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && TypeInfo.IsManagedReturnPosition)
-            {
-                yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
-                    ? ToManagedMethodVoid(target, source)
-                    : ToManagedMethod(target, source, jsty.ResultTypeInfo.Syntax);
+                WriteMarshal(writer, context, toManaged: true);
             }
 
-            if (context.CurrentStage == StubIdentifierContext.Stage.Marshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && TypeInfo.IsManagedReturnPosition)
+            if (marshalDirection == MarshalDirection.ManagedToUnmanaged
+                && ((context.CurrentStage == StubIdentifierContext.Stage.Marshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged)
+                    || (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)))
             {
-                yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
-                    ? ToJSMethodVoid(target, source)
-                    : ToJSMethod(target, source, jsty.ResultTypeInfo.Syntax);
-            }
-
-            foreach (var x in base.Generate(context))
-            {
-                yield return x;
-            }
-
-            if (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && !TypeInfo.IsManagedReturnPosition)
-            {
-                yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
-                    ? ToJSMethodVoid(target, source)
-                    : ToJSMethod(target, source, jsty.ResultTypeInfo.Syntax);
-            }
-
-            if (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && !TypeInfo.IsManagedReturnPosition)
-            {
-                yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
-                    ? ToManagedMethodVoid(target, source)
-                    : ToManagedMethod(target, source, jsty.ResultTypeInfo.Syntax);
+                WriteMarshal(writer, context, toManaged: false);
             }
         }
 
-        private ExpressionStatementSyntax ToManagedMethodVoid(string target, ArgumentSyntax source)
+        private void WriteMarshal(IndentedTextWriter writer, StubIdentifierContext context, bool toManaged)
         {
-            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(target), GetToManagedMethod(Type)))
-                    .WithArgumentList(ArgumentList(SingletonSeparatedList(source.WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))));
-        }
-
-        private ExpressionStatementSyntax ToJSMethodVoid(string target, ArgumentSyntax source)
-        {
-            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(target), GetToJSMethod(Type)))
-                    .WithArgumentList(ArgumentList(SingletonSeparatedList(source))));
-        }
-
-        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
-        {
-            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(target), GetToManagedMethod(Type)))
-                .WithArgumentList(ArgumentList(SeparatedList(new[]{
-                    source.WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)),
-                    Argument(ParenthesizedLambdaExpression()
-                    .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)))
-                    .WithParameterList(ParameterList(SeparatedList(new[]{
-                        Parameter(Identifier("__task_result_arg"))
-                        .WithModifiers(TokenList(Token(SyntaxKind.RefKeyword)))
-                        .WithType(IdentifierName(Constants.JSMarshalerArgumentGlobal)),
-                        Parameter(Identifier("__task_result"))
-                        .WithModifiers(TokenList(Token(SyntaxKind.OutKeyword)))
-                        .WithType(sourceType)})))
-                    .WithBlock(Block(SingletonList<StatementSyntax>(ExpressionStatement(
-                        InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName("__task_result_arg"), GetToManagedMethod(_resultMarshalerType)))
-                        .WithArgumentList(ArgumentList(SeparatedList(new[]{
-                            Argument(IdentifierName("__task_result")).WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)),
-                        }))))))))}))));
-        }
-
-        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
-        {
-            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(target), GetToJSMethod(Type)))
-                .WithArgumentList(ArgumentList(SeparatedList(new[]{
-                    source,
-                    Argument(ParenthesizedLambdaExpression()
-                    .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)))
-                    .WithParameterList(ParameterList(SeparatedList(new[]{
-                        Parameter(Identifier("__task_result_arg"))
-                        .WithModifiers(TokenList(Token(SyntaxKind.RefKeyword)))
-                        .WithType(IdentifierName(Constants.JSMarshalerArgumentGlobal)),
-                        Parameter(Identifier("__task_result"))
-                        .WithType(sourceType)})))
-                    .WithBlock(Block(SingletonList<StatementSyntax>(ExpressionStatement(
-                        InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName("__task_result_arg"), GetToJSMethod(_resultMarshalerType)))
-                        .WithArgumentList(ArgumentList(SeparatedList(new[]{
-                            Argument(IdentifierName("__task_result")),
-                        }))))))))}))));
+            var taskType = (JSTaskTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;
+            var (managed, js) = context.GetIdentifiers(TypeInfo);
+            string method = toManaged ? GetToManagedMethod(MarshalerType.Task) : GetToJSMethod(MarshalerType.Task);
+            writer.Write($"{js}.{method}({(toManaged ? "out " : "")}{managed}");
+            if (taskType.ResultTypeInfo.KnownType != KnownManagedType.Void)
+            {
+                writer.Write(", ");
+                WriteMarshallingLambda(writer, taskType.ResultTypeInfo.FullTypeName, "__task_result_arg", "__task_result", resultMarshalerType, toManaged);
+            }
+            writer.WriteLine(");");
         }
     }
 }

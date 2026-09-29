@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EEConfig.CPP
-//
 
+// EEConfig.CPP
 //
 // Fetched configuration data from the registry (should we Jit, run GC checks ...)
 //
-//
-
 
 #include "common.h"
 #include "eeconfig.h"
@@ -34,14 +31,13 @@ int GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 // Poor mans narrow
 LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
 {
-    CONTRACT (LPUTF8)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(str, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     if (str != 0) {
         LPCWSTR fromPtr = str;
@@ -50,9 +46,9 @@ LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
         while(*fromPtr != 0)
             *toPtr++ = (char) *fromPtr++;
         *toPtr = 0;
-        RETURN result;
+        return result;
     }
-    RETURN NULL;
+    return NULL;
 }
 
 /**************************************************************/
@@ -103,7 +99,6 @@ HRESULT EEConfig::Init()
     dwSpinLimitProcFactor = 0x4E20;
     dwSpinLimitConstant = 0x0;
     dwSpinRetryCount = 0xA;
-    dwMonitorSpinCount = 0;
 
     dwJitHostMaxSlabCache = 0;
 
@@ -112,14 +107,15 @@ HRESULT EEConfig::Init()
     fJitMinOpts = false;
     fJitEnableOptionalRelocs = false;
     fDisableOptimizedThreadStaticAccess = false;
+    fIsWriteBarrierCopyEnabled = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
-    fForceEnc = false;
 
     INDEBUG(fStressLog = true;)
 
     fDebuggable = false;
+    modifiableAssemblies = MODIFIABLE_ASSM_UNSET;
 
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
@@ -133,7 +129,6 @@ HRESULT EEConfig::Init()
     pszBreakOnComToClrNativeInfoInit = 0;
     pszBreakOnStructMarshalSetup = 0;
     fJitVerificationDisable= false;
-    fVerifierOff           = false;
 
 #ifdef ENABLE_STARTUP_DELAY
     iStartupDelayMS = 0;
@@ -143,12 +138,6 @@ HRESULT EEConfig::Init()
     pPerfTypesToLog = NULL;
     iFastGCStress = 0;
     iInjectFatalError = 0;
-#ifdef TEST_DATA_CONSISTENCY
-    // indicates whether to run the self test to determine that we are detecting when a lock is held by the
-    // LS in DAC builds. Initialized via the environment variable TestDataConsistency
-    fTestDataConsistency = false;
-#endif
-
     // In Thread::SuspendThread(), default the timeout to 2 seconds.  If the suspension
     // takes longer, assert (but keep trying).
     m_SuspendThreadDeadlockTimeoutMs = 2000;
@@ -171,11 +160,6 @@ HRESULT EEConfig::Init()
 
     fSuppressChecks = false;
     fConditionalContracts = false;
-    fEnableFullDebug = false;
-#endif
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
 
 #ifdef _DEBUG
@@ -184,18 +168,13 @@ HRESULT EEConfig::Init()
 #endif
 
 #ifdef _DEBUG
-    fShouldInjectFault = 0;
     testThreadAbort = 0;
 #endif
 
     m_fInteropValidatePinnedObjects = false;
     m_fInteropLogArguments = false;
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = FALSE;
-#endif
-
-#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
+#if defined(_DEBUG)
     fSuppressLockViolationsOnReentryFromOS = false;
 #endif
 
@@ -253,7 +232,6 @@ HRESULT EEConfig::Init()
 HRESULT EEConfig::Cleanup()
 {
     CONTRACTL {
-        FORBID_FAULT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -313,7 +291,6 @@ HRESULT EEConfig::sync()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT (return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     ETWOnStartup (EEConfigSync_V1, EEConfigSyncEnd_V1);
@@ -425,6 +402,8 @@ HRESULT EEConfig::sync()
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
 #endif // FEATURE_CONSERVATIVE_GC
 
+    fCheckDoubleReporting = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_CheckDoubleReporting, iGCStress ? 1 : 0) != 0);
+
 #ifdef HOST_64BIT
     iGCAllowVeryLargeObjects = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_gcAllowVeryLargeObjects) != 0);
 #endif
@@ -448,19 +427,64 @@ HRESULT EEConfig::sync()
     }
 #endif
     fStressLog        =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
-    fForceEnc         =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ForceEnc) != 0;
 
     {
         NewArrayHolder<WCHAR> wszModifiableAssemblies;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
         if (wszModifiableAssemblies)
-            fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
+        {
+            if (_wcsicmp(wszModifiableAssemblies, W("debug")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_DEBUG;
+            }
+            else if (_wcsicmp(wszModifiableAssemblies, W("none")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_NONE;
+            }
+        }
     }
 
     pReadyToRunExcludeList = NULL;
 
+#ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    LPWSTR interpreterConfig;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
+    if (interpreterConfig == NULL)
+    {
+        if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0))
+        {
+            enableInterpreter = true;
+        }
+    }
+    else
+    {
+        enableInterpreter = true;
+    }
+#else
+    enableInterpreter = true;
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // FEATURE_INTERPRETER
+
+    enableHWIntrinsic = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) != 0);
+#ifdef FEATURE_INTERPRETER
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+    {
+        // InterpMode 3 disables all hw intrinsics
+        enableHWIntrinsic = false;
+    }
+#endif // FEATURE_INTERPRETER
+
 #if defined(FEATURE_READYTORUN)
     fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+#if defined(FEATURE_INTERPRETER)
+    if (fReadyToRun && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) >= 2)
+    {
+        // ReadyToRun and Interpreter modes 2 and 3 are mutually exclusive.
+        // If both are set, Interpreter wins.
+        fReadyToRun = false;
+    }
+#endif // defined(FEATURE_INTERPRETER)
 
     if (fReadyToRun)
     {
@@ -470,10 +494,6 @@ HRESULT EEConfig::sync()
             pReadyToRunExcludeList = new AssemblyNamesList(wszReadyToRunExcludeList);
     }
 #endif // defined(FEATURE_READYTORUN)
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
-#endif
 
 #ifdef _DEBUG
     IfFailRet (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnClassLoad, (LPWSTR*) &pszBreakOnClassLoad));
@@ -494,7 +514,6 @@ HRESULT EEConfig::sync()
     dwSpinLimitProcFactor = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinLimitProcFactor);
     dwSpinLimitConstant = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinLimitConstant);
     dwSpinRetryCount = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinRetryCount);
-    dwMonitorSpinCount = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Monitor_SpinCount);
 
     dwJitHostMaxSlabCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitHostMaxSlabCache);
 
@@ -505,6 +524,8 @@ HRESULT EEConfig::sync()
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
     fDisableOptimizedThreadStaticAccess = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableOptimizedThreadStaticAccess) != 0;
+
+    fIsWriteBarrierCopyEnabled = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_UseGCWriteBarrierCopy) != 0;
 
 #ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
@@ -559,10 +580,6 @@ HRESULT EEConfig::sync()
     Contract::SetUnconditionalContractEnforcement(!fConditionalContracts);
 #endif
 
-    fEnableFullDebug = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableFullDebug) != 0);
-
-    fVerifierOff    = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VerifierOff) != 0);
-
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
 #endif
 
@@ -598,10 +615,6 @@ HRESULT EEConfig::sync()
 
 #ifdef _DEBUG
 
-#ifdef TEST_DATA_CONSISTENCY
-    fTestDataConsistency = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TestDataConsistency) !=0);
-#endif
-
     m_SuspendThreadDeadlockTimeoutMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendThreadDeadlockTimeoutMs);
     m_SuspendDeadlockTimeout = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendDeadlockTimeout);
 #endif // _DEBUG
@@ -620,8 +633,6 @@ HRESULT EEConfig::sync()
     iPerfNumAllocsThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfNumAllocsThreshold);
     iPerfAllocsSizeThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfAllocsSizeThreshold);
 
-    fShouldInjectFault = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault);
-
     testThreadAbort = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HostTestThreadAbort);
 
 #endif //_DEBUG
@@ -629,12 +640,8 @@ HRESULT EEConfig::sync()
     m_fInteropValidatePinnedObjects = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_InteropValidatePinnedObjects) != 0);
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);
 
-#if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
+#if defined(_DEBUG)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
-#endif
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_StubLinkerUnwindInfoVerificationOn) != 0);
 #endif
 
 #if defined(_DEBUG) && defined(TARGET_AMD64)
@@ -650,6 +657,25 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);
+
+#if defined(FEATURE_INTERPRETER)
+    if (fTieredCompilation)
+    {
+        // Disable tiered compilation for interpreter testing. Tiered compilation and interpreter
+        // do not work well together currently.
+        LPWSTR pwzInterpreterMaybe;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &pwzInterpreterMaybe));
+        if (pwzInterpreterMaybe && pwzInterpreterMaybe[0] != 0)
+        {
+            fTieredCompilation = false;
+        }
+        else if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0)
+        {
+            fTieredCompilation = false;
+        }
+    }
+#endif
+
     if (fTieredCompilation)
     {
         fTieredCompilation_QuickJit =
@@ -687,7 +713,7 @@ HRESULT EEConfig::sync()
 
         tieredCompilation_CallCountingDelayMs =
             Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
-        
+
         bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
         {
@@ -745,11 +771,35 @@ HRESULT EEConfig::sync()
         }
     #endif
 
+#ifdef FEATURE_PGO
+        if (fTieredPGO)
+        {
+            // Initial tier for R2R is always just OptimizationTier0
+            // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
+            // OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
+            // OptimizationTier0Instrumented - instrument all ILOnly code
+            if (g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+            }
+            else
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0Instrumented;
+            }
+        }
+        else
+#endif
+        {
+            tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+        }
+
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
         {
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
+#else // !FEATURE_TIERED_COMPILATION
+    tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTierOptimized;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -775,6 +825,11 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
 #endif
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
     return hr;
 }
 
@@ -800,7 +855,6 @@ HRESULT EEConfig::ParseMethList(_In_z_ LPWSTR str, MethodNamesList** out) {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(str, NULL_OK));
         PRECONDITION(CheckPointer(out));
     } CONTRACTL_END;
@@ -853,25 +907,24 @@ bool EEConfig::IsInMethList(MethodNamesList* list, MethodDesc* pMD)
     } CONTRACTL_END;
 
     if (list == 0)
-        return(false);
-    else
-    {
-        DefineFullyQualifiedNameForClass();
+        return false;
 
-        LPCUTF8 name = pMD->GetName();
-        if (name == NULL)
-        {
-            return false;
-        }
-        LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
-        if (className == NULL)
-        {
-            return false;
-        }
-        PCCOR_SIGNATURE sig = pMD->GetSig();
+    DefineFullyQualifiedNameForClass();
 
-        return list->IsInList(name, className, sig);
-    }
+    LPCUTF8 name = pMD->GetName();
+    if (name == NULL)
+        return false;
+
+    LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
+    if (className == NULL)
+        return false;
+
+    SigPointer sig = pMD->GetSigPointer();
+    uint32_t argCount = 0;
+    if (FAILED(sig.SkipMethodHeaderSignature(&argCount)))
+        return false;
+
+    return list->IsInList(name, className, (int32_t)argCount);
 }
 
 // Ownership of the string buffer passes to ParseTypeList
@@ -884,7 +937,6 @@ HRESULT EEConfig::ParseTypeList(_In_z_ LPWSTR str, TypeNamesList** out)
         MODE_ANY;
         PRECONDITION(CheckPointer(out));
         PRECONDITION(CheckPointer(str, NULL_OK));
-        INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     HRESULT hr = S_OK;
@@ -1006,9 +1058,7 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
         PRECONDITION(CheckPointer(str));
-        INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     pNames = NULL;
@@ -1090,7 +1140,6 @@ TypeNamesList::~TypeNamesList()
 {
     CONTRACTL {
         NOTHROW;
-        FORBID_FAULT;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;

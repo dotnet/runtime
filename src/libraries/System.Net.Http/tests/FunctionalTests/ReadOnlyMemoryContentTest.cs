@@ -226,6 +226,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(2, true, true)] // ReadAsync(byte[], ...)
         [InlineData(3, true, true)] // ReadAsync(Memory<byte>,...)
         [InlineData(4, true, true)] // Begin/EndRead(byte[],...)
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous and APM (Begin/EndRead) stream reads are not supported on Wasi")]
         public async Task ReadAsStreamAsync_ReadMultipleBytes_MatchesInput(int mode, bool useArray, bool readStreamAsync)
         {
             const int ContentLength = 1024;

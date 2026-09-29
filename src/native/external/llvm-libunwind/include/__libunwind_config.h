@@ -53,6 +53,9 @@
 #    else
 #      define _LIBUNWIND_CURSOR_SIZE 66
 #    endif
+#  elif defined(__ILP32__)
+#    define _LIBUNWIND_CONTEXT_SIZE 21
+#    define _LIBUNWIND_CURSOR_SIZE 28
 #  else
 #    define _LIBUNWIND_CONTEXT_SIZE 38
 #    define _LIBUNWIND_CURSOR_SIZE 50
@@ -151,7 +154,7 @@
 #  else
 #   define RISCV_FLEN 0
 #  endif
-#  define _LIBUNWIND_CONTEXT_SIZE (32 * (__riscv_xlen + RISCV_FLEN) / 64)
+#  define _LIBUNWIND_CONTEXT_SIZE (32 * (__riscv_xlen + RISCV_FLEN) / 64) + 32
 #  if __riscv_xlen == 32
 #   define _LIBUNWIND_CURSOR_SIZE (_LIBUNWIND_CONTEXT_SIZE + 7)
 #  elif __riscv_xlen == 64
@@ -185,6 +188,10 @@
 #endif
 #define _LIBUNWIND_HIGHEST_DWARF_REGISTER                                      \
   _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH
+#elif defined(__wasm__)
+// Unused
+#define _LIBUNWIND_CONTEXT_SIZE 0
+#define _LIBUNWIND_CURSOR_SIZE 0
 # else
 #  error "Unsupported architecture."
 # endif
@@ -209,5 +216,14 @@
 # define _LIBUNWIND_CURSOR_SIZE 204
 # define _LIBUNWIND_HIGHEST_DWARF_REGISTER 287
 #endif // _LIBUNWIND_IS_NATIVE_ONLY
+
+#if defined(__has_feature)
+#  if __has_feature(ptrauth_calls) && __has_feature(ptrauth_returns)
+#    define _LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING 1
+#  elif __has_feature(ptrauth_calls) != __has_feature(ptrauth_returns)
+#    error "Either both or none of ptrauth_calls and ptrauth_returns "\
+           "is allowed to be enabled"
+#  endif
+#endif
 
 #endif // ____LIBUNWIND_CONFIG_H__

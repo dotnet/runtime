@@ -6,9 +6,11 @@ parameters:
   isWasmOnlyBuild: false
   nameSuffix: ''
   platforms: []
-  scenarios: ['WasmTestOnV8']
+  scenarios: ['WasmTestOnChrome']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
+  useHelixMonitor: false
+  runOnlyOnChromeVersionUpdate: false
 
 jobs:
 
@@ -80,17 +82,23 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTests${{ parameters.nameSuffix }}
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoEnableAssertMessages=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoEnableAssertMessages=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) /maxcpucount:1 ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
       #     - then run only if it would not have run on default pipelines (based
       #       on path changes)
       #     - else run based on path changes
-      condition: >-
-        or(
-          eq(variables['alwaysRunVar'], true),
-          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      ${{ if eq(parameters.runOnlyOnChromeVersionUpdate, true) }}:
+        condition: >-
+          or(
+            eq(variables['alwaysRunVar'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true))
+      ${{ else }}:
+        condition: >-
+          or(
+            eq(variables['alwaysRunVar'], true),
+            eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
@@ -99,3 +107,4 @@ jobs:
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}

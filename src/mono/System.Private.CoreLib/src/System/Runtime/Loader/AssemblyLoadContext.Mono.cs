@@ -43,16 +43,13 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-#pragma warning disable IDE0060
-        private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
+        private Assembly InternalLoadFromPath(string? assemblyPath)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
             assemblyPath = assemblyPath?.Replace('\\', Path.DirectorySeparatorChar);
-            // TODO: Handle nativeImagePath
             return InternalLoadFile(NativeALC, assemblyPath, ref stackMark);
         }
-#pragma warning restore IDE0060
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         internal Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
@@ -140,26 +137,26 @@ namespace System.Runtime.Loader
             return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 
-        private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext)
+        private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchAssemblyLoadContext)
         {
             AssemblyLoadContext context;
             // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchManagedAssemblyLoadContext == IntPtr.Zero)
+            if (gchAssemblyLoadContext == IntPtr.Zero)
                 context = Default;
             else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
             return context;
         }
 
-        private static void MonoResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext, ref IntPtr dll)
+        private static void MonoResolveUnmanagedDll(string unmanagedDllName, IntPtr gchAssemblyLoadContext, ref IntPtr dll)
         {
-            AssemblyLoadContext context = GetAssemblyLoadContext(gchManagedAssemblyLoadContext);
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchAssemblyLoadContext);
             dll = context.LoadUnmanagedDll(unmanagedDllName);
         }
 
-        private static void MonoResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchManagedAssemblyLoadContext, ref IntPtr dll)
+        private static void MonoResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchAssemblyLoadContext, ref IntPtr dll)
         {
-            AssemblyLoadContext context = GetAssemblyLoadContext(gchManagedAssemblyLoadContext);
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchAssemblyLoadContext);
             dll = context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
         }
 

@@ -108,7 +108,7 @@ namespace Tests.System
             yield return new object[] { new FastClock(),     600  }; // At least 4-periods of of 150ms. fast clock cut time by half
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TimersProvidersData))]
         public void TestProviderTimer(TimeProvider provider, int minMilliseconds)
         {
@@ -143,7 +143,9 @@ namespace Tests.System
             state.TokenSource.Token.WaitHandle.WaitOne(Timeout.InfiniteTimeSpan);
             state.TokenSource.Dispose();
 
-            Assert.Equal(4, state.Counter);
+            // In normal conditions, the timer callback should be called 4 times. Sometimes the timer callback could be queued and fired after the timer was disposed.
+            Assert.True(state.Counter >= 4, $"The timer callback was expected to be called at least 4 times, but was called {state.Counter} times");
+
             Assert.Equal(400, state.Period);
             Assert.True(minMilliseconds <= state.Stopwatch.ElapsedMilliseconds, $"The total fired periods {state.Stopwatch.ElapsedMilliseconds}ms expected to be greater then the expected min {minMilliseconds}ms");
         }
@@ -211,7 +213,7 @@ namespace Tests.System
         }
 #endif // NETFRAMEWORK
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TimersProvidersListData))]
         public static void CancellationTokenSourceWithTimer(TimeProvider provider)
         {
@@ -292,7 +294,7 @@ namespace Tests.System
             cts.Dispose();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TimersProvidersWithTaskFactorData))]
         public static void RunDelayTests(TimeProvider provider, ITestTaskFactory taskFactory)
         {
@@ -331,7 +333,7 @@ namespace Tests.System
             Assert.False(task4.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TimersProvidersWithTaskFactorData))]
         public static async Task RunWaitAsyncTests(TimeProvider provider, ITestTaskFactory taskFactory)
         {
@@ -394,7 +396,7 @@ namespace Tests.System
         }
 
 #if !NETFRAMEWORK
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TimersProvidersListData))]
         public static async Task PeriodicTimerTests(TimeProvider provider)
         {
@@ -660,7 +662,7 @@ namespace Tests.System
 #endif // TESTEXTENSIONS
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TaskFactoryData))]
         public async Task TestDelayTaskContinuation(ITestTaskFactory taskFactory)
         {

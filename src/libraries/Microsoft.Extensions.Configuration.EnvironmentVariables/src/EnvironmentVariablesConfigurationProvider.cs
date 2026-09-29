@@ -8,25 +8,35 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 {
     /// <summary>
-    /// An environment variable based <see cref="ConfigurationProvider"/>.
+    /// Provides configuration key-value pairs that are obtained from environment variables.
     /// </summary>
     public class EnvironmentVariablesConfigurationProvider : ConfigurationProvider
     {
+        // Connection string prefixes for various services. These prefixes are used to identify connection strings in environment variables.
+        // az webapp config connection-string set: https://learn.microsoft.com/en-us/cli/azure/webapp/config/connection-string?view=azure-cli-latest#az-webapp-config-connection-string-set
+        // Environment variables and app settings in Azure App Service: https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#variable-prefixes
         private const string MySqlServerPrefix = "MYSQLCONNSTR_";
         private const string SqlAzureServerPrefix = "SQLAZURECONNSTR_";
         private const string SqlServerPrefix = "SQLCONNSTR_";
         private const string CustomConnectionStringPrefix = "CUSTOMCONNSTR_";
+        private const string PostgreSqlServerPrefix = "POSTGRESQLCONNSTR_";
+        private const string ApiHubPrefix = "APIHUBCONNSTR_";
+        private const string DocDbPrefix = "DOCDBCONNSTR_";
+        private const string EventHubPrefix = "EVENTHUBCONNSTR_";
+        private const string NotificationHubPrefix = "NOTIFICATIONHUBCONNSTR_";
+        private const string RedisCachePrefix = "REDISCACHECONNSTR_";
+        private const string ServiceBusPrefix = "SERVICEBUSCONNSTR_";
 
         private readonly string _prefix;
         private readonly string _normalizedPrefix;
+        private readonly Func<string, string> _transformation;
 
         /// <summary>
         /// Initializes a new instance.
         /// </summary>
         public EnvironmentVariablesConfigurationProvider()
+            : this(null, null)
         {
-            _prefix = string.Empty;
-            _normalizedPrefix = string.Empty;
         }
 
         /// <summary>
@@ -34,8 +44,20 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// </summary>
         /// <param name="prefix">A prefix used to filter the environment variables.</param>
         public EnvironmentVariablesConfigurationProvider(string? prefix)
+            : this(prefix, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance with the specified prefix and variable name transformation.
+        /// </summary>
+        /// <param name="prefix">A prefix used to filter the environment variables.</param>
+        /// <param name="variableNameTransformation">A function that transforms environment variable names.
+        /// When <see langword="null"/>, <see cref="EnvironmentVariablesConfigurationSource.DefaultTransformation"/> is used.</param>
+        public EnvironmentVariablesConfigurationProvider(string? prefix, Func<string, string>? variableNameTransformation)
         {
             _prefix = prefix ?? string.Empty;
+            _transformation = variableNameTransformation ?? EnvironmentVariablesConfigurationSource.DefaultTransformation;
             _normalizedPrefix = Normalize(_prefix);
         }
 
@@ -48,7 +70,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// <summary>
         /// Generates a string representing this provider name and relevant details.
         /// </summary>
-        /// <returns> The configuration name. </returns>
+        /// <returns>The configuration name.</returns>
         public override string ToString()
         {
             string s = GetType().Name;
@@ -82,6 +104,34 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                     else if (key.StartsWith(SqlServerPrefix, StringComparison.OrdinalIgnoreCase))
                     {
                         HandleMatchedConnectionStringPrefix(data, SqlServerPrefix, "System.Data.SqlClient", key, value);
+                    }
+                    else if (key.StartsWith(PostgreSqlServerPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, PostgreSqlServerPrefix, "Npgsql", key, value);
+                    }
+                    else if (key.StartsWith(ApiHubPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, ApiHubPrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(DocDbPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, DocDbPrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(EventHubPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, EventHubPrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(NotificationHubPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, NotificationHubPrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(RedisCachePrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, RedisCachePrefix, null, key, value);
+                    }
+                    else if (key.StartsWith(ServiceBusPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        HandleMatchedConnectionStringPrefix(data, ServiceBusPrefix, null, key, value);
                     }
                     else if (key.StartsWith(CustomConnectionStringPrefix, StringComparison.OrdinalIgnoreCase))
                     {
@@ -121,6 +171,16 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             }
         }
 
-        private static string Normalize(string key) => key.Replace("__", ConfigurationPath.KeyDelimiter);
+        private string Normalize(string key)
+        {
+            string? transformed = _transformation(key);
+
+            if (transformed is null)
+            {
+                throw new InvalidOperationException($"The variable name transformation returned null for environment variable name '{key}'.");
+            }
+
+            return transformed;
+        }
     }
 }

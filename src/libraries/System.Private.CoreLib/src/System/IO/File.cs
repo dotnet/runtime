@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -20,10 +20,9 @@ namespace System.IO
     public static partial class File
     {
         private const int ChunkSize = 8192;
-        private static Encoding? s_UTF8NoBOM;
 
         // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.
-        private static Encoding UTF8NoBOM => s_UTF8NoBOM ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        private static Encoding UTF8NoBOM => field ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         internal const int DefaultBufferSize = 4096;
 
@@ -171,12 +170,41 @@ namespace System.IO
             return SafeFileHandle.Open(Path.GetFullPath(path), mode, access, share, options, preallocationSize);
         }
 
+        /// <summary>
+        /// Opens a handle to the system's null device.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> to the system's null device.</returns>
+        /// <remarks>
+        /// <para>
+        /// On Windows, this opens a handle to "NUL". On Unix-based systems, this opens a handle to "/dev/null".
+        /// </para>
+        /// <para>
+        /// The null device is a special file that discards all data written to it and provides no data (EOF)
+        /// when read from. This is useful for redirecting unwanted output or providing empty input to processes.
+        /// </para>
+        /// <para>
+        /// The returned handle supports both reading and writing. All read operations return 0 (EOF), and all
+        /// write operations succeed without storing any data.
+        /// </para>
+        /// <para>
+        /// For scenarios that don't require raw file handles or descriptors, consider using <see cref="Stream.Null"/> instead.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="IOException">An I/O error occurred while opening the null device.</exception>
+        public static SafeFileHandle OpenNullHandle()
+        {
+            return SafeFileHandle.Open(NullDevicePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None, preallocationSize: 0);
+        }
+
         // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
         // ToUniversalTime treats this as local.
         internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)
-            => dateTime.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
-                : dateTime.ToUniversalTime();
+        {
+            if (dateTime.Kind == DateTimeKind.Local)
+                dateTime = dateTime.ToUniversalTime();
+
+            return new DateTimeOffset(dateTime.Ticks, default);
+        }
 
         public static void SetCreationTime(string path, DateTime creationTime)
             => FileSystem.SetCreationTime(Path.GetFullPath(path), creationTime, asDirectory: false);
@@ -714,7 +742,9 @@ namespace System.IO
 
                 int index = 0;
                 int count = (int)fileLength;
-                byte[] bytes = new byte[count];
+                // The entire array is overwritten by the read loop below (an exception is thrown
+                // if the file is truncated before all the bytes are read), so it does not need to be zeroed.
+                byte[] bytes = GC.AllocateUninitializedArray<byte>(count);
                 while (count > 0)
                 {
                     int n = RandomAccess.ReadAtOffset(sfh, bytes.AsSpan(index, count), index);
@@ -819,6 +849,7 @@ namespace System.IO
         /// <param name="path">The file to append to.</param>
         /// <param name="bytes">The bytes to append to the file.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="bytes"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
@@ -837,6 +868,7 @@ namespace System.IO
         /// <param name="path">The file to append to.</param>
         /// <param name="bytes">The bytes to append to the file.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
         /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
@@ -1183,9 +1215,11 @@ namespace System.IO
             fileLength = 0; // improve the test coverage for InternalReadAllBytesUnknownLengthAsync
 #endif
 
+#pragma warning disable CA2025
             return fileLength > 0 ?
                 InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken) :
                 InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken);
+#pragma warning restore
         }
 
         private static async Task<byte[]> InternalReadAllBytesAsync(SafeFileHandle sfh, int count, CancellationToken cancellationToken)
@@ -1193,7 +1227,9 @@ namespace System.IO
             using (sfh)
             {
                 int index = 0;
-                byte[] bytes = new byte[count];
+                // The entire array is overwritten by the read loop below (an exception is thrown
+                // if the file is truncated before all the bytes are read), so it does not need to be zeroed.
+                byte[] bytes = GC.AllocateUninitializedArray<byte>(count);
                 do
                 {
                     int n = await RandomAccess.ReadAtOffsetAsync(sfh, bytes.AsMemory(index), index, cancellationToken).ConfigureAwait(false);
@@ -1405,6 +1441,29 @@ namespace System.IO
             WriteAllLinesAsync(path, contents, encoding, append: true, cancellationToken);
 
         /// <summary>
+        /// Creates a hard link located in <paramref name="path"/> that refers to the same file content as <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="path">The path where the hard link should be created.</param>
+        /// <param name="pathToTarget">The path of the hard link target.</param>
+        /// <returns>A <see cref="FileInfo"/> instance that wraps the newly created file.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains a null character.</exception>
+        /// <exception cref="FileNotFoundException">The file specified by <paramref name="pathToTarget"/> does not exist.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public static FileSystemInfo CreateHardLink(string path, string pathToTarget)
+        {
+            string fullPath = Path.GetFullPath(path);
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+
+            FileSystem.CreateHardLink(path, pathToTarget);
+            return new FileInfo(originalPath: path, fullPath: fullPath, isNormalized: true);
+        }
+
+        /// <summary>
         /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
         /// </summary>
         /// <param name="path">The path where the symbolic link should be created.</param>
@@ -1450,7 +1509,7 @@ namespace System.IO
             ArgumentNullException.ThrowIfNull(encoding);
         }
 
-        private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
+        private static unsafe byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
         {
             byte[]? rentedArray = null;
             Span<byte> buffer = stackalloc byte[512];
@@ -1495,7 +1554,7 @@ namespace System.IO
             }
         }
 
-        private static void WriteToFile(string path, FileMode mode, ReadOnlySpan<char> contents, Encoding encoding)
+        private static unsafe void WriteToFile(string path, FileMode mode, ReadOnlySpan<char> contents, Encoding encoding)
         {
             ReadOnlySpan<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;
@@ -1513,9 +1572,9 @@ namespace System.IO
                 return;
             }
 
-            int bytesNeeded = preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize));
+            int bytesNeeded = checked(preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize)));
             byte[]? rentedBytes = null;
-            Span<byte> bytes = bytesNeeded <= 1024 ? stackalloc byte[1024] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
+            Span<byte> bytes = (uint)bytesNeeded <= 1024 ? stackalloc byte[1024] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
 
             try
             {

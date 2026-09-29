@@ -126,34 +126,107 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(1, 2, true)]
-        [InlineData(1, 127, true)]
-        [InlineData(254, 255, true)]
-        [InlineData(10, 256, true)]
-        [InlineData(1, 440, true)]
-        [InlineData(2, 1, false)]
-        [InlineData(2, 2, false)]
-        [InlineData(1000, 1000, false)]
-        public async Task MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(int maxSize, int contentLength, bool exceptionExpected)
+        [InlineData(1, 2)]
+        [InlineData(1, 127)]
+        [InlineData(254, 255)]
+        [InlineData(10, 256)]
+        [InlineData(1, 440)]
+        [InlineData(2, 1)]
+        [InlineData(2, 2)]
+        [InlineData(1000, 1000)]
+        [InlineData(1000, int.MaxValue)]
+        [InlineData(1000, int.MaxValue * 2L)]
+        [InlineData(int.MaxValue, int.MaxValue + 1L)]
+        public async Task MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(long maxSize, long contentLength)
         {
-            var content = new CustomContent(async s =>
+            bool exceptionExpected = maxSize < contentLength;
+
+            await TestAsync(client => client.GetStringAsync(CreateFakeUri()));
+            await TestAsync(client => client.GetByteArrayAsync(CreateFakeUri()));
+            await TestAsync(client => client.GetAsync(CreateFakeUri()));
+            await TestAsync(client => client.PostAsync(CreateFakeUri(), new StringContent("foo")));
+            await TestAsync(client => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())));
+
+            await TestAsync(async client =>
             {
-                await s.WriteAsync(TestHelper.GenerateRandomContent(contentLength));
+                using HttpResponseMessage response = await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseHeadersRead);
+                await response.Content.LoadIntoBufferAsync(maxSize);
             });
 
-            var handler = new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage() { Content = content }));
+            // Methods on HttpContent don't know about HttpClient's MaxResponseContentBufferSize, so they won't throw.
+            exceptionExpected = false;
 
-            using (var client = new HttpClient(handler))
+            if (contentLength > 1000)
             {
-                client.MaxResponseContentBufferSize = maxSize;
+                // While the test would could with larger sizes, avoid allocating such buffers.
+                return;
+            }
 
-                if (exceptionExpected)
+            await TestAsync(async client =>
+            {
+                using HttpResponseMessage response = await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseHeadersRead);
+                await response.Content.LoadIntoBufferAsync();
+            });
+
+            await TestAsync(async client =>
+            {
+                using HttpResponseMessage response = await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseHeadersRead);
+                await response.Content.ReadAsStringAsync();
+            });
+
+            await TestAsync(async client =>
+            {
+                using HttpResponseMessage response = await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseHeadersRead);
+                await response.Content.ReadAsByteArrayAsync();
+            });
+
+            await TestAsync(async client =>
+            {
+                using HttpResponseMessage response = await client.GetAsync(CreateFakeUri(), HttpCompletionOption.ResponseHeadersRead);
+                using Stream stream = await response.Content.ReadAsStreamAsync();
+                await stream.CopyToAsync(Stream.Null);
+            });
+
+            async Task TestAsync(Func<HttpClient, Task> clientAction)
+            {
+                foreach (bool setContentLength in BoolValues)
                 {
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(CreateFakeUri()));
-                }
-                else
-                {
-                    await client.GetAsync(CreateFakeUri());
+                    if (!setContentLength && contentLength > 1000)
+                    {
+                        // While the test could work with larger sizes, avoid allocating such buffers.
+                        continue;
+                    }
+
+                    bool wroteContent = false;
+
+                    var content = new CustomContent(async s =>
+                    {
+                        wroteContent = true;
+                        Assert.True(contentLength <= 1000);
+                        await s.WriteAsync(TestHelper.GenerateRandomContent((int)contentLength));
+                    });
+
+                    if (setContentLength)
+                    {
+                        content.Headers.ContentLength = contentLength;
+                    }
+
+                    var handler = new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage() { Content = content }));
+
+                    using var client = new HttpClient(handler);
+                    client.MaxResponseContentBufferSize = maxSize;
+
+                    if (exceptionExpected)
+                    {
+                        HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => clientAction(client));
+                        Assert.Equal(HttpRequestError.ConfigurationLimitExceeded, ex.HttpRequestError);
+                        Assert.NotEqual(setContentLength, wroteContent);
+                    }
+                    else
+                    {
+                        await clientAction(client);
+                        Assert.True(wroteContent);
+                    }
                 }
             }
         }
@@ -173,7 +246,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("/something.html")]
-        public void GetAsync_NoBaseAddress_InvalidUri_ThrowsException(string uri)
+        public void GetAsync_NoBaseAddress_InvalidUri_ThrowsException(string? uri)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
@@ -184,7 +257,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("/")]
-        public async Task GetAsync_BaseAddress_ValidUri_Success(string uri)
+        public async Task GetAsync_BaseAddress_ValidUri_Success(string? uri)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
@@ -222,6 +295,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public async Task GetContentAsync_WhenCannotConnect_ExceptionContainsHostInfo()
         {
             const string Host = "localhost:1234";
@@ -692,6 +766,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void CancelAllPending_AllPendingOperationsCanceled(bool withInfiniteTimeout)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -710,6 +785,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -747,6 +823,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -943,6 +1020,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_SingleThread_Loopback_Succeeds(HttpCompletionOption completionOption)
         {
             string content = "Test content";
@@ -998,6 +1076,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_CancelledRequestContent_Throws()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -1044,10 +1123,10 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39056")]
-        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Browser, "Synchronous Send is not supported on Android or Browser")]
         public async Task Send_TimeoutRequestContent_Throws()
         {
+            var semaphore = new SemaphoreSlim(0);
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -1073,12 +1152,14 @@ namespace System.Net.Http.Functional.Tests
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
                     Assert.IsType<TimeoutException>(ex.InnerException);
+                    semaphore.Release();
                 },
                 async server =>
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await IgnoreExceptions(connection.ReadRequestDataAsync());
+                        await semaphore.WaitAsync();
                     });
                 });
         }
@@ -1087,6 +1168,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_CancelledResponseContent_Throws()
         {
             string content = "Test content";
@@ -1139,6 +1221,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Synchronous Send is not supported on Wasi")]
         public async Task Send_TimeoutResponseContent_Throws()
         {
             const string Content = "Test content";
@@ -1197,6 +1280,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Version is ignored on Wasi")]
         public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(
@@ -1247,6 +1331,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Version is ignored on Wasi")]
         public async Task SendAsync_CorrectVersionSelected_ExternalServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             RemoteServer remoteServer = null;
@@ -1321,6 +1406,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData((HttpVersionPolicy)(-1))]
+        [InlineData((HttpVersionPolicy)3)]
+        [InlineData((HttpVersionPolicy)int.MaxValue)]
+        public void DefaultVersionPolicy_SetInvalidValue_ThrowsArgumentException(HttpVersionPolicy invalidValue)
+        {
+            using (var client = new HttpClient())
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => client.DefaultVersionPolicy = invalidValue);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact; // still usable after
+                Assert.Equal(HttpVersionPolicy.RequestVersionExact, client.DefaultVersionPolicy);
+            }
+        }
+
         [Fact]
         public async Task DefaultRequestVersion_SetAfterUse_Throws()
         {
@@ -1364,7 +1463,7 @@ namespace System.Net.Http.Functional.Tests
             return default(T);
         }
 
-        private sealed class CustomResponseHandler : HttpMessageHandler
+        internal sealed class CustomResponseHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _func;
 
@@ -1459,7 +1558,7 @@ namespace System.Net.Http.Functional.Tests
             public static IEnumerable<object[]> Send_InnerHandlerThrows_OuterExceptionIsCaptured_MemberData() =>
                 Enum.GetValues<ExceptionScenario>().Select(e => new object[] { e });
 
-            [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+            [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
             [MemberData(nameof(Send_InnerHandlerThrows_OuterExceptionIsCaptured_MemberData))]
             public async Task Send_InnerHandlerThrows_OriginalExceptionInformationIsCaptured(ExceptionScenario scenario)
             {
@@ -1564,6 +1663,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [SkipOnPlatform(TestPlatforms.Android, "The Send method is not implemented on mobile platforms")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public void Send_NullRequest_ThrowsException()
         {
             using var client = new CustomHttpClient();

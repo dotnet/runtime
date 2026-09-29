@@ -12,6 +12,7 @@ namespace System.Diagnostics
     /// Links can be used to represent batched operations where a Activity was initiated by multiple initiating Activities,
     /// each representing a single incoming item being processed in the batch.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplayString,nq}")]
     public readonly partial struct ActivityLink : IEquatable<ActivityLink>
     {
         private readonly Activity.TagsLinkedList? _tags;
@@ -37,6 +38,8 @@ namespace System.Diagnostics
         /// Retrieve the key-value pair list of tags attached with the <see cref="ActivityContext"/>.
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>>? Tags => _tags;
+
+        private string DebuggerDisplayString => $"TraceId = {Context.TraceId}, SpanId = {Context.SpanId}";
 
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is ActivityLink link) && this.Equals(link);
 

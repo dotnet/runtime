@@ -357,19 +357,23 @@ namespace System.IO
                         else
                         {
                             // Name surrogate reparse point, don't recurse, simply remove the directory.
-                            // If a mount point, we have to delete the mount point first.
+                            // If a volume mount point, we have to delete the mount point first.
+                            // Note that IO_REPARSE_TAG_MOUNT_POINT is used for both volume mount points
+                            // and directory junctions. DeleteVolumeMountPoint only works for volume mount
+                            // points; for directory junctions, RemoveDirectory handles removal directly.
+                            Exception? mountPointException = null;
                             if (findData.dwReserved0 == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                             {
                                 // Mount point. Unmount using full path plus a trailing '\'.
                                 // (Note: This doesn't remove the underlying directory)
                                 string mountPoint = Path.Join(fullPath, fileName, PathInternal.DirectorySeparatorCharAsString);
-                                if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint) && exception == null)
+                                if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint))
                                 {
                                     errorCode = Marshal.GetLastPInvokeError();
                                     if (errorCode != Interop.Errors.ERROR_SUCCESS &&
                                         errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                     {
-                                        exception = Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
+                                        mountPointException = Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
                                     }
                                 }
                             }
@@ -380,9 +384,15 @@ namespace System.IO
                                 errorCode = Marshal.GetLastPInvokeError();
                                 if (errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                 {
-                                    exception = Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
+                                    // For a true volume mount point, use its error (it indicates why the
+                                    // unmount step failed). If this is a directory junction, RemoveDirectory
+                                    // succeeds and this code path is not reached.
+                                    exception = mountPointException ?? Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
                                 }
                             }
+                            // If RemoveDirectory succeeded, mountPointException is discarded. This correctly
+                            // handles directory junctions: DeleteVolumeMountPoint fails for them (since they
+                            // are not volume mount points), but RemoveDirectory removes them successfully.
                         }
                     }
                 } while (Interop.Kernel32.FindNextFile(handle, ref findData));
@@ -466,12 +476,10 @@ namespace System.IO
             bool asDirectory,
             long creationTime = 0,
             long lastAccessTime = 0,
-            long lastWriteTime = 0,
-            long changeTime = 0,
-            uint fileAttributes = 0)
+            long lastWriteTime = 0)
         {
             using SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory);
-            SetFileTime(handle, fullPath, creationTime, lastAccessTime, lastWriteTime, changeTime, fileAttributes);
+            SetFileTime(handle, fullPath, creationTime, lastAccessTime, lastWriteTime);
         }
 
         private static unsafe void SetFileTime(
@@ -479,17 +487,13 @@ namespace System.IO
             string? fullPath = null,
             long creationTime = 0,
             long lastAccessTime = 0,
-            long lastWriteTime = 0,
-            long changeTime = 0,
-            uint fileAttributes = 0)
+            long lastWriteTime = 0)
         {
             var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO
             {
                 CreationTime = creationTime,
                 LastAccessTime = lastAccessTime,
                 LastWriteTime = lastWriteTime,
-                ChangeTime = changeTime,
-                FileAttributes = fileAttributes
             };
 
             if (!Interop.Kernel32.SetFileInformationByHandle(fileHandle, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
@@ -522,6 +526,11 @@ namespace System.IO
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
+        }
+
+        internal static void CreateHardLink(string path, string pathToTarget)
+        {
+            Interop.Kernel32.CreateHardLink(path, pathToTarget);
         }
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)

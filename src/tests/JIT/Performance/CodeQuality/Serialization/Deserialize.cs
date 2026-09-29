@@ -10,6 +10,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using Newtonsoft.Json.Bson;
 using Xunit;
+using TestLibrary;
 
 namespace Serialization
 {
@@ -150,6 +151,10 @@ public class JsonBenchmarks
         }
     }
 
+    [ActiveIssue("Needs xunit.performance", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/54906", TestPlatforms.Android)]
+    [ActiveIssue("System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint() {
         var tests = new JsonBenchmarks();

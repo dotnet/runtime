@@ -803,7 +803,10 @@ interp_compute_eh_vars (TransformData *td)
 				c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			InterpBasicBlock *bb = td->offset_to_bb [c->try_offset];
 			int try_end = c->try_offset + c->try_len;
-			g_assert (bb);
+			// If the bblock is detected as dead while traversing the IL code, the mapping for
+			// it is cleared. We can skip it.
+			if (!bb)
+				continue;
 			while (bb->il_offset != -1 && bb->il_offset < try_end) {
 				for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 					if (mono_interp_op_dregs [ins->opcode])
@@ -1058,7 +1061,7 @@ interp_compute_pruned_ssa_liveness (TransformData *td)
 			mono_bitset_foreach_bit (bb->live_in_set, i, td->renamable_vars_size) {
 				g_print (" %d", td->renamable_vars [i].var_index);
 			}
-			g_print (" }\n\tLIVE_OUT = {", bb->index);
+			g_print (" }\n\tLIVE_OUT = {");
 			mono_bitset_foreach_bit (bb->live_out_set, i, td->renamable_vars_size) {
 				g_print (" %d", td->renamable_vars [i].var_index);
 			}
@@ -3124,6 +3127,7 @@ retry_instruction:
 						ins->data [2] = GINT_TO_UINT16 (ldsize);
 
 						interp_clear_ins (ins->prev);
+						td->var_values [ins->dreg].def = ins;
 					}
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
@@ -3204,6 +3208,7 @@ retry_instruction:
 						ins->data [2] = vtsize;
 
 						interp_clear_ins (ins->prev);
+						td->var_values [ins->dreg].def = ins;
 
 						// MINT_MOV_DST_OFF doesn't work if dreg is allocated at the same location as the
 						// field value to be stored, because its behavior is not atomic in nature. We first
@@ -3400,9 +3405,11 @@ interp_super_instructions (TransformData *td)
 		current_liveness.bb_dfs_index = bb->dfs_index;
 		current_liveness.ins_index = 0;
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
-			int opcode = ins->opcode;
+			int opcode;
 			if (bb->dfs_index >= td->bblocks_count_no_eh || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
 				current_liveness.ins_index++;
+retry_ins:
+			opcode = ins->opcode;
 			if (MINT_IS_NOP (opcode))
 				continue;
 
@@ -3801,9 +3808,7 @@ interp_super_instructions (TransformData *td)
 								g_print ("superins: ");
 								interp_dump_ins (ins, td->data_items);
 							}
-							// The newly added opcode could be part of further superinstructions. Retry
-							ins = ins->prev;
-							continue;
+							goto retry_ins;
 						}
 					}
 				}
@@ -3844,9 +3849,12 @@ interp_super_instructions (TransformData *td)
 					if (def->opcode != MINT_DEF_ARG && def->opcode != MINT_PHI && def->opcode != MINT_DEF_TIER_VAR &&
 							!(def->flags & INTERP_INST_FLAG_PROTECTED_NEWOBJ)) {
 						int dreg = ins->dreg;
+						if (var_has_indirects (td, dreg)) {
+							// Don't bother with indirect locals
+						}
 						// if var is not ssa or it is a renamed fixed, then we can't replace the dreg
 						// since there can be conflicting liveness, unless the instructions are adjacent
-						if ((var_is_ssa_form (td, dreg) && !td->vars [dreg].renamed_ssa_fixed) ||
+						else if ((var_is_ssa_form (td, dreg) && !td->vars [dreg].renamed_ssa_fixed) ||
 								interp_prev_ins (ins) == def) {
 							def->dreg = dreg;
 

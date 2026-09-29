@@ -17,7 +17,7 @@ To build the runtime tests for Mono JIT or interpreter:
 
 ```
 cd src/tests
-./build.sh mono <release|debug>
+./build.sh mono <release|debug> /p:LibrariesConfiguration=<release|debug>
 ```
 
 To build an individual test, test directory, or a whole subdirectory tree, use the `-test:`, `-dir:` or `-tree:` options (without the src/tests prefix).
@@ -62,7 +62,7 @@ The last few lines of the build log should contain something like this:
 ### Android:
 Build the runtime tests for Android x64/ARM64
 ```
-$(REPO_ROOT)/src/tests/build.sh -mono os android <x64/arm64> <Release/Debug>
+$(REPO_ROOT)/src/tests/build.sh -mono -os android -arch <x64/arm64> <Release/Debug>
 ```
 
 Run one test wrapper from repo root

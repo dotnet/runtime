@@ -4,7 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
+using System.Text;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -38,12 +40,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1ObjectFree")]
         internal static partial void Asn1ObjectFree(IntPtr o);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeAsn1BitString")]
-        internal static partial SafeAsn1BitStringHandle DecodeAsn1BitString(byte[] buf, int len);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1BitStringFree")]
-        internal static partial void Asn1BitStringFree(IntPtr o);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1OctetStringNew")]
         internal static partial SafeAsn1OctetStringHandle Asn1OctetStringNew();
 
@@ -73,7 +69,7 @@ internal static partial class Interop
 
             if (bytesNeeded < StackCapacity)
             {
-                return Marshal.PtrToStringUTF8((IntPtr)bufStack, bytesNeeded);
+                return Encoding.UTF8.GetString(bufStack, bytesNeeded);
             }
 
             // bytesNeeded does not count the \0 which will be written on the end (based on OpenSSL 1.0.1f),
@@ -99,7 +95,7 @@ internal static partial class Interop
                     throw new CryptographicException();
                 }
 
-                return Marshal.PtrToStringUTF8((IntPtr)buf, bytesNeeded);
+                return Encoding.UTF8.GetString(buf, bytesNeeded);
             }
         }
     }

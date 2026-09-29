@@ -145,6 +145,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_X86 and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_X86 and TARGET_WASM32
+#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -160,6 +163,9 @@
 #endif
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_AMD64 and TARGET_RISCV64
+#endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_AMD64 and TARGET_WASM32
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -177,6 +183,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_ARM and TARGET_WASM32
+#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -192,6 +201,9 @@
 #endif
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM64 and TARGET_RISCV64
+#endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_ARM64 and TARGET_WASM32
 #endif
 #elif defined(TARGET_LOONGARCH64)
 #if defined(TARGET_X86)
@@ -209,6 +221,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_LOONGARCH64 and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_WASM32
+#endif
 #elif defined(TARGET_RISCV64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_RISCV64 and TARGET_X86
@@ -225,6 +240,29 @@
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_RISCV64 and TARGET_LOONGARCH64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_RISCV64 and TARGET_WASM32
+#endif
+
+#elif defined(TARGET_WASM32)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_WASM32 and TARGET_X86
+#endif
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_WASM32 and TARGET_AMD64
+#endif
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_WASM32 and TARGET_ARM
+#endif
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_WASM32 and TARGET_ARM64
+#endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_WASM32 and TARGET_LOONGARCH64
+#endif
+#if defined(TARGET_RISCV64)
+#error Cannot define both TARGET_WASM32 and TARGET_RISCV64
+#endif
 
 #else
 #error Unsupported or unset target architecture
@@ -236,6 +274,9 @@
 #endif // TARGET_X86
 #ifdef TARGET_ARM
 #error Cannot define both TARGET_ARM and TARGET_64BIT
+#endif // TARGET_ARM
+#ifdef TARGET_WASM32
+#error Cannot define both TARGET_WASM32 and TARGET_64BIT
 #endif // TARGET_ARM
 #endif // TARGET_64BIT
 
@@ -259,26 +300,6 @@
 #if !defined(TARGET_X86)
 #error When UNIX_X86_ABI is defined you must define TARGET_X86 defined as well.
 #endif
-#endif
-
-// --------------------------------------------------------------------------------
-// IMAGE_FILE_MACHINE_TARGET
-// --------------------------------------------------------------------------------
-
-#if defined(TARGET_X86)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_I386
-#elif defined(TARGET_AMD64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_AMD64
-#elif defined(TARGET_ARM)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARMNT
-#elif defined(TARGET_ARM64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARM64 // 0xAA64
-#elif defined(TARGET_LOONGARCH64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
-#elif defined(TARGET_RISCV64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5064
-#else
-#error Unsupported or unset target architecture
 #endif
 
 typedef ptrdiff_t ssize_t;
@@ -323,6 +344,12 @@ typedef ptrdiff_t ssize_t;
 #define DEBUGARG(x)
 #endif
 
+#if defined(DEBUG) || defined(TARGET_WASM)
+#define INDEBUG_OR_WASM(x) x
+#else
+#define INDEBUG_OR_WASM(x)
+#endif
+
 #if defined(DEBUG) || defined(LATE_DISASM)
 #define INDEBUG_LDISASM_COMMA(x) x,
 #else
@@ -344,11 +371,6 @@ typedef ptrdiff_t ssize_t;
 #define UNIX_LOONGARCH64_ONLY_ARG(x)
 #define UNIX_LOONGARCH64_ONLY(x)
 #endif // TARGET_LOONGARCH64
-
-#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) ||       \
-    defined(TARGET_RISCV64)
-#define FEATURE_PUT_STRUCT_ARG_STK 1
-#endif
 
 #if defined(UNIX_AMD64_ABI)
 #define UNIX_AMD64_ABI_ONLY_ARG(x) , x
@@ -493,11 +515,8 @@ public:
 
 #define CALL_ARG_STATS 0 // Collect stats about calls and call arguments.
 #define COUNT_BASIC_BLOCKS                                                                                             \
-    0 // Create a histogram of basic block sizes, and a histogram of IL sizes in the simple
-      // case of single block methods.
-#define COUNT_LOOPS                                                                                                    \
-    0                         // Collect stats about loops, such as the total number of natural loops, a histogram of
-                              // the number of loop exits, etc.
+    0                         // Create a histogram of basic block sizes, and a histogram of IL sizes in the simple
+                              // case of single block methods.
 #define DISPLAY_SIZES       0 // Display generated code, data, and GC information sizes.
 #define MEASURE_BLOCK_SIZE  0 // Collect stats about basic block and FlowEdge node sizes and memory allocations.
 #define MEASURE_FATAL       0 // Count the number of calls to fatal(), including NYIs and noway_asserts.
@@ -507,13 +526,13 @@ public:
 #define NODEBASH_STATS      0 // Collect stats on changed gtOper values in GenTree's.
 #define COUNT_AST_OPERS     0 // Display use counts for GenTree operators.
 
+#include "jitshared.h" // Defines MEASURE_MEM_ALLOC
+
 #ifdef DEBUG
-#define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
 #define LOOP_HOIST_STATS  1 // Collect loop hoisting stats.
 #define TRACK_LSRA_STATS  1 // Collect LSRA stats
 #define TRACK_ENREG_STATS 1 // Collect enregistration stats
 #else
-#define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
 #define LOOP_HOIST_STATS  0 // You can set this to 1 to get loop hoist stats in retail, as well
 #define TRACK_LSRA_STATS  0 // You can set this to 1 to get LSRA stats in retail, as well
 #define TRACK_ENREG_STATS 0
@@ -596,6 +615,11 @@ const bool dspGCtbls = true;
 #define DISPTREERANGE(range, t)                                                                                        \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->gtDispTreeRange(range, t);
+#define LABELEDDISPTREERANGE(label, range, t)                                                                          \
+    JITDUMP(label ":\n");                                                                                              \
+    if (JitTls::GetCompiler()->verbose)                                                                                \
+        JitTls::GetCompiler()->gtDispTreeRange(range, t);                                                              \
+    JITDUMP("\n");
 #define DISPBLOCK(b)                                                                                                   \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
@@ -614,6 +638,7 @@ const bool dspGCtbls = true;
 #define DISPSTMT(t)
 #define DISPRANGE(range)
 #define DISPTREERANGE(range, t)
+#define LABELEDDISPTREERANGE(title, range, t)
 #define DISPBLOCK(b)
 #define VERBOSE 0
 #endif // !DEBUG
@@ -636,12 +661,16 @@ const bool dspGCtbls = true;
 
 #ifdef DEBUG
 
-// Forward declarations for UninitializedWord and IsUninitialized are needed by alloc.h
-template <typename T>
-inline T UninitializedWord(Compiler* comp);
+// The byte that the JIT fills uninitialized memory with in DEBUG builds. Used by alloc.h.
+const unsigned char UninitializedFillByte = 0xcd;
 
+// Returns a word filled with UninitializedFillByte.
 template <typename T>
-inline bool IsUninitialized(T data);
+inline T UninitializedWord()
+{
+    const uint64_t word = 0x0101010101010101ULL * UninitializedFillByte;
+    return (T)word;
+}
 
 #endif // DEBUG
 
@@ -706,12 +735,12 @@ inline size_t unsigned_abs(ssize_t x)
     return ((size_t)std::abs((int64_t)x));
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline size_t unsigned_abs(int64_t x)
 {
     return ((size_t)std::abs(x));
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 #endif // TARGET_64BIT
 
 /*****************************************************************************/
@@ -740,16 +769,9 @@ inline size_t unsigned_abs(int64_t x)
 #define FEATURE_TAILCALL_OPT_SHARED_RETURN 0
 #endif // !FEATURE_TAILCALL_OPT
 
-#define CLFLG_CODESIZE   0x00001
-#define CLFLG_CODESPEED  0x00002
-#define CLFLG_CSE        0x00004
-#define CLFLG_REGVAR     0x00008
-#define CLFLG_RNGCHKOPT  0x00010
-#define CLFLG_DEADSTORE  0x00020
-#define CLFLG_CODEMOTION 0x00040
-#define CLFLG_QMARK      0x00080
-#define CLFLG_TREETRANS  0x00100
-#define CLFLG_INLINING   0x00200
+#define CLFLG_REGVAR    0x00008
+#define CLFLG_TREETRANS 0x00100
+#define CLFLG_INLINING  0x00200
 
 #if FEATURE_STRUCTPROMOTE
 #define CLFLG_STRUCTPROMOTE 0x00400
@@ -763,10 +785,7 @@ inline size_t unsigned_abs(int64_t x)
 #define FEATURE_LOOP_ALIGN 0
 #endif
 
-#define CLFLG_MAXOPT                                                                                                   \
-    (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADSTORE | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS | \
-     CLFLG_INLINING | CLFLG_STRUCTPROMOTE)
-
+#define CLFLG_MAXOPT (CLFLG_REGVAR | CLFLG_TREETRANS | CLFLG_INLINING | CLFLG_STRUCTPROMOTE)
 #define CLFLG_MINOPT (CLFLG_TREETRANS)
 
 /*****************************************************************************/
@@ -820,40 +839,6 @@ public:
 //  Include the definition of Compiler for use by these template functions
 //
 #include "compiler.h"
-
-//****************************************************************************
-//
-//  Returns a word filled with the JITs allocator default fill value.
-//
-template <typename T>
-inline T UninitializedWord(Compiler* comp)
-{
-    unsigned char defaultFill = 0xdd;
-    if (comp == nullptr)
-    {
-        comp = JitTls::GetCompiler();
-    }
-    defaultFill = Compiler::compGetJitDefaultFill(comp);
-    assert(defaultFill <= 0xff);
-    int64_t word = 0x0101010101010101LL * defaultFill;
-    return (T)word;
-}
-
-//****************************************************************************
-//
-//  Tries to determine if this value is coming from uninitialized JIT memory
-//    - Returns true if the value matches what we initialized the memory to.
-//
-//  Notes:
-//    - Asserts that use this are assuming that the UninitializedWord value
-//      isn't a legal value for 'data'.  Thus using a default fill value of
-//      0x00 will often trigger such asserts.
-//
-template <typename T>
-inline bool IsUninitialized(T data)
-{
-    return data == UninitializedWord<T>(JitTls::GetCompiler());
-}
 
 #pragma warning(push)
 #pragma warning(disable : 4312)

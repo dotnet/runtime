@@ -21,9 +21,9 @@ namespace System.Collections.Immutable
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
 #if NET
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #else
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #endif
     {
         /// <summary>
@@ -119,24 +119,12 @@ namespace System.Collections.Immutable
 
         #endregion
 
-        #region ISortKeyCollection<T> Properties
-
         /// <summary>
-        /// See the <see cref="ISortKeyCollection{T}"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public IComparer<T> KeyComparer
         {
             get { return _comparer; }
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Gets the root node (for testing purposes).
-        /// </summary>
-        internal IBinaryTree Root
-        {
-            get { return _root; }
         }
 
         #region IReadOnlyList<T> Indexers
@@ -387,24 +375,56 @@ namespace System.Collections.Immutable
                 return true;
             }
 
+            switch (other)
+            {
+                case ImmutableSortedSet<T> otherAsImmutableSortedSet:
+                    if (EqualityComparer<IComparer<T>>.Default.Equals(this.KeyComparer, otherAsImmutableSortedSet.KeyComparer))
+                    {
+                        if (otherAsImmutableSortedSet.Count != this.Count)
+                        {
+                            return false;
+                        }
+                        return SetEqualsWithImmutableSortedSet(otherAsImmutableSortedSet, this);
+                    }
+
+                    if (otherAsImmutableSortedSet.Count < this.Count)
+                    {
+                        return false;
+                    }
+                    break;
+
+                case SortedSet<T> otherAsSortedSet:
+                    if (EqualityComparer<IComparer<T>>.Default.Equals(this.KeyComparer, otherAsSortedSet.Comparer))
+                    {
+                        if (otherAsSortedSet.Count != this.Count)
+                        {
+                            return false;
+                        }
+                        return SetEqualsWithSortedSet(otherAsSortedSet, this);
+                    }
+
+                    if (otherAsSortedSet.Count < this.Count)
+                    {
+                        return false;
+                    }
+                    break;
+
+                case ICollection<T> otherAsICollectionGeneric:
+                    // We check for < instead of != because other is not guaranteed to be a set; it could be a collection with duplicates.
+                    if (otherAsICollectionGeneric.Count < this.Count)
+                    {
+                        return false;
+                    }
+                    break;
+            }
+
             var otherSet = new SortedSet<T>(other, this.KeyComparer);
-            if (this.Count != otherSet.Count)
+            if (otherSet.Count != this.Count)
             {
                 return false;
             }
 
-            int matches = 0;
-            foreach (T item in otherSet)
-            {
-                if (!this.Contains(item))
-                {
-                    return false;
-                }
-
-                matches++;
-            }
-
-            return matches == this.Count;
+            return SetEqualsWithSortedSet(otherSet, this);
         }
 
         /// <summary>
@@ -1091,6 +1111,42 @@ namespace System.Collections.Immutable
             return this.Wrap(result);
         }
 
+        private static bool SetEqualsWithImmutableSortedSet(ImmutableSortedSet<T> other, ImmutableSortedSet<T> source)
+        {
+            // We can use a linear scan because both sets are sorted using the same comparer.
+            using var e = other.GetEnumerator();
+            foreach (T item in source)
+            {
+                bool eHasMore = e.MoveNext();
+                Debug.Assert(eHasMore);
+
+                if (source.KeyComparer.Compare(item, e.Current) != 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool SetEqualsWithSortedSet(SortedSet<T> other, ImmutableSortedSet<T> source)
+        {
+           // We can use a linear scan because both sets are sorted using the same comparer.
+            using var e = other.GetEnumerator();
+            foreach (T item in source)
+            {
+                bool eHasMore = e.MoveNext();
+                Debug.Assert(eHasMore);
+
+                if (source.KeyComparer.Compare(item, e.Current) != 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Creates a wrapping collection type around a root node.
         /// </summary>
@@ -1169,7 +1225,7 @@ namespace System.Collections.Immutable
             list.RemoveRange(index, list.Count - index);
 
             // Use the now sorted list of unique items to construct a new sorted set.
-            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
+            Node root = Node.NodeTreeFromList(list.AsReadOnlyList(), 0, list.Count);
             return this.Wrap(root);
         }
 
@@ -1203,14 +1259,8 @@ namespace System.Collections.Immutable
                 list = new List<T>(this.Count + addedItems.Length);
                 list.AddRange(this);
             }
-#if NET8_0_OR_GREATER
+
             list.AddRange(addedItems);
-#else
-            foreach (var item in addedItems)
-            {
-                list.Add(item);
-            }
-#endif
             Debug.Assert(list.Count > 0);
 
             // Sort the list and remove duplicate entries.
@@ -1227,7 +1277,7 @@ namespace System.Collections.Immutable
             list.RemoveRange(index, list.Count - index);
 
             // Use the now sorted list of unique items to construct a new sorted set.
-            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
+            Node root = Node.NodeTreeFromList(list.AsReadOnlyList(), 0, list.Count);
             return this.Wrap(root);
         }
 

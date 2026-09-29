@@ -163,7 +163,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private sealed class TypeStoreItem : StoreItem
         {
-            internal const DynamicallyAccessedMemberTypes DynamicallyAccessedTypes = DynamicallyAccessedMemberTypes.All;
+            internal const DynamicallyAccessedMemberTypes DynamicallyAccessedTypes = AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces;
 
             private readonly object _syncRoot = new object();
             [DynamicallyAccessedMembers(DynamicallyAccessedTypes)]

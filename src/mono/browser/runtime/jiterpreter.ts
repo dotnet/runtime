@@ -3,8 +3,8 @@
 
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { getU16 } from "./memory";
+import { mono_assert, runtimeHelpers } from "./globals";
+import { free, getU16 } from "./memory";
 import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -26,6 +26,7 @@ import { mono_jiterp_free_method_data_interp_entry } from "./jiterpreter-interp-
 import { mono_jiterp_free_method_data_jit_call } from "./jiterpreter-jit-call";
 import { mono_log_error, mono_log_info, mono_log_warn } from "./logging";
 import { utf8ToString } from "./strings";
+import { mono_wasm_profiler_free_method } from "./profiler";
 
 // Controls miscellaneous diagnostic output.
 export const trace = 0;
@@ -116,7 +117,7 @@ export class TraceInfo {
     isVerbose: boolean;
 
     constructor (ip: MintOpcodePtr, index: number, isVerbose: number) {
-        this.ip = ip;
+        this.ip = ip as any >>> 0 as any;
         this.index = index;
         this.isVerbose = !!isVerbose;
     }
@@ -288,6 +289,8 @@ function getTraceImports () {
         ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
+        importDef("scalbn", getRawCwrap("scalbn")),
+        importDef("scalbnf", getRawCwrap("scalbnf")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -297,6 +300,12 @@ function getTraceImports () {
 
     if (nullCheckValidation)
         traceImports.push(importDef("notnull", assert_not_null));
+
+    if (runtimeHelpers.emscriptenBuildOptions.enableEventPipe || runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
+        traceImports.push(importDef("prof_enter", getRawCwrap("mono_jiterp_prof_enter")));
+        traceImports.push(importDef("prof_samplepoint", getRawCwrap("mono_jiterp_prof_samplepoint")));
+        traceImports.push(importDef("prof_leave", getRawCwrap("mono_jiterp_prof_leave")));
+    }
 
     const pushMathOps = (list: string[], type: string) => {
         for (let i = 0; i < list.length; i++) {
@@ -443,6 +452,22 @@ function initialize_builder (builder: WasmBuilder) {
         WasmValtype.f64, true
     );
     builder.defineType(
+        "scalbnf",
+        {
+            "x": WasmValtype.f32,
+            "n": WasmValtype.i32,
+        },
+        WasmValtype.f32, true
+    );
+    builder.defineType(
+        "scalbn",
+        {
+            "x": WasmValtype.f64,
+            "n": WasmValtype.i32,
+        },
+        WasmValtype.f64, true
+    );
+    builder.defineType(
         "trace_eip",
         {
             "traceId": WasmValtype.i32,
@@ -580,6 +605,30 @@ function initialize_builder (builder: WasmBuilder) {
         WasmValtype.void, true
     );
     builder.defineType(
+        "prof_enter",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "prof_samplepoint",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "prof_leave",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
         "hashcode",
         {
             "ppObj": WasmValtype.i32,
@@ -700,18 +749,12 @@ function generate_wasm (
     traceIndex: number, methodFullName: string | undefined,
     backwardBranchTable: Uint16Array | null, presetFunctionPointer: number
 ): number {
-    // Pre-allocate a decent number of constant slots - this adds fixed size bloat
-    //  to the trace but will make the actual pointer constants in the trace smaller
-    // If we run out of constant slots it will transparently fall back to i32_const
-    // For System.Runtime.Tests we only run out of slots ~50 times in 9100 test cases
-    const constantSlotCount = 8;
-
     let builder = traceBuilder;
     if (!builder) {
-        traceBuilder = builder = new WasmBuilder(constantSlotCount);
+        traceBuilder = builder = new WasmBuilder();
         initialize_builder(builder);
     } else
-        builder.clear(constantSlotCount);
+        builder.clear();
 
     mostRecentOptions = builder.options;
 
@@ -844,7 +887,7 @@ function generate_wasm (
             return 0;
         }
 
-        const traceModule = new WebAssembly.Module(buffer);
+        const traceModule = new WebAssembly.Module(buffer as BufferSource);
         const wasmImports = builder.getWasmImports();
         const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
@@ -914,7 +957,7 @@ function generate_wasm (
                     builder.endSection();
             } catch {
                 // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                ;
+
             }
 
             const buf = builder.getArrayView(false, true);
@@ -980,6 +1023,10 @@ export function mono_interp_tier_prepare_jiterpreter (
     presetFunctionPointer: number
 ): number {
     mono_assert(ip, "expected instruction pointer");
+    ip = ip as any >>> 0 as any;
+    frame = frame as any >>> 0 as any;
+    method = method as any >>> 0 as any;
+    startOfBody = startOfBody as any >>> 0 as any;
     if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
@@ -1004,7 +1051,7 @@ export function mono_interp_tier_prepare_jiterpreter (
     ) {
         const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
         methodFullName = utf8ToString(pMethodName);
-        Module._free(<any>pMethodName);
+        free(<any>pMethodName);
     }
     const methodName = utf8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
@@ -1050,9 +1097,16 @@ export function mono_interp_tier_prepare_jiterpreter (
 
 // NOTE: This will potentially be called once for every trace entry point
 //  in a given method, not just once per method
-export function mono_jiterp_free_method_data_js (
+export function mono_wasm_free_method_data (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
+    method = method as any >>> 0 as any;
+    imethod = imethod >>> 0;
+
+    if (runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
+        mono_wasm_profiler_free_method(method);
+    }
+
     // TODO: Uninstall the trace function pointer from the function pointer table,
     //  so that the compiled trace module can be freed by the browser eventually
     // Release the trace info object, if present
@@ -1148,7 +1202,7 @@ export function jiterpreter_dump_stats (concise?: boolean): void {
                 const pMethodName = cwraps.mono_wasm_method_get_full_name(<any>targetMethod);
                 const targetMethodName = utf8ToString(pMethodName);
                 const hitCount = callTargetCounts[<any>targetMethod];
-                Module._free(<any>pMethodName);
+                free(<any>pMethodName);
                 mono_log_info(`${targetMethodName} ${hitCount}`);
             }
         }

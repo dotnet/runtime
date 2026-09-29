@@ -57,25 +57,31 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Private Static FCalls
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParentType")]
         private static partial void SetParentType(QCallModule module, int tdTypeDef, int tkParent);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_AddInterfaceImpl")]
         private static partial void AddInterfaceImpl(QCallModule module, int tdTypeDef, int tkInterface);
         #endregion
 
         #region Internal Static FCalls
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethod", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineMethod(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             MethodAttributes attributes);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSpec")]
         internal static partial int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineField", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineField(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             FieldAttributes attributes);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodIL")]
         private static partial void SetMethodIL(QCallModule module, int tk, [MarshalAs(UnmanagedType.Bool)] bool isInitLocals,
             byte[]? body, int bodyLength,
@@ -84,6 +90,7 @@ namespace System.Reflection.Emit
             ExceptionHandler[]? exceptions, int numExceptions,
             int[]? tokenFixups, int numTokenFixups);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineCustomAttribute")]
         private static partial void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
             ReadOnlySpan<byte> attr, int attrLength);
@@ -95,39 +102,50 @@ namespace System.Reflection.Emit
                 attr, attr.Length);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineProperty(QCallModule module, int tkParent, string name, PropertyAttributes attributes,
             byte[] signature, int sigLength);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineEvent", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSemantics")]
         internal static partial void DefineMethodSemantics(QCallModule module, int tkAssociation,
             MethodSemanticsAttributes semantics, int tkMethod);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodImpl")]
         internal static partial void DefineMethodImpl(QCallModule module, int tkType, int tkBody, int tkDecl);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodImpl")]
         internal static partial void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParamInfo", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int SetParamInfo(QCallModule module, int tkMethod, int iSequence,
             ParameterAttributes iParamAttributes, string? strParamName);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_GetTokenFromSig")]
         internal static partial int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetFieldLayoutOffset")]
         internal static partial void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetClassLayout")]
         internal static partial void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetConstantValue")]
         private static unsafe partial void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void SetPInvokeData(QCallModule module, string DllName, string name, int token, int linkFlags);
 
@@ -249,7 +267,7 @@ namespace System.Reflection.Emit
                         throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                 }
 
-                CorElementType corType = RuntimeTypeHandle.GetCorElementType((RuntimeType)type);
+                CorElementType corType = ((RuntimeType)type).GetCorElementType();
 
                 switch (corType)
                 {
@@ -519,12 +537,6 @@ namespace System.Reflection.Emit
                 }
             }
 
-            // Verify that the layout mask is valid.
-            if (((attr & TypeAttributes.LayoutMask) != TypeAttributes.AutoLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.SequentialLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.ExplicitLayout))
-            {
-                throw new ArgumentException(SR.Argument_BadTypeAttrInvalidLayout);
-            }
-
             // Check if the user attempted to set any reserved bits.
             if ((attr & TypeAttributes.ReservedMask) != 0)
             {
@@ -539,14 +551,17 @@ namespace System.Reflection.Emit
         #endregion
 
         #region FCalls
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineType", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineType(QCallModule module,
             string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineGenericParam", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineGenericParam(QCallModule module,
             string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_TermCreateClass")]
         private static partial void TermCreateClass(QCallModule module, int tk, ObjectHandleOnStack type);
         #endregion
@@ -636,7 +651,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
@@ -983,7 +998,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, (typeof(object) as RuntimeType)!, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(m_bakedRuntimeType, (typeof(object) as RuntimeType)!, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -996,7 +1011,7 @@ namespace System.Reflection.Emit
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -1009,7 +1024,7 @@ namespace System.Reflection.Emit
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
 
         #endregion
@@ -1259,13 +1274,13 @@ namespace System.Reflection.Emit
 
                 if (inst is TypeBuilderInstantiation)
                     con = GetConstructor(inst, genericTypeDefinition.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null)!);
                 else
                     con = inst.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null);
             }
 
-            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null);
 
             if (con == null)
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
@@ -1586,16 +1601,6 @@ namespace System.Reflection.Emit
                 }
 
                 MethodAttributes methodAttrs = meth.Attributes;
-
-                // Any of these flags in the implementation flags is set, we will not attach the IL method body
-                if (((meth.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
-                    ((methodAttrs & MethodAttributes.PinvokeImpl) != (MethodAttributes)0))
-                {
-                    continue;
-                }
-
-                byte[] localSig = meth.GetLocalSignature(out int sigLength);
-
                 // Check that they haven't declared an abstract method on a non-abstract class
                 if (((methodAttrs & MethodAttributes.Abstract) != 0) && ((m_iAttr & TypeAttributes.Abstract) == 0))
                 {
@@ -1603,35 +1608,31 @@ namespace System.Reflection.Emit
                 }
 
                 byte[]? body = meth.GetBody();
-
-                // If this is an abstract method or an interface, we don't need to set the IL.
-
                 if ((methodAttrs & MethodAttributes.Abstract) != 0)
                 {
                     // We won't check on Interface because we can have class static initializer on interface.
                     // We will just let EE or validator to catch the problem.
-
-                    // ((m_iAttr & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface))
-
                     if (body != null)
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, meth.Name));
                 }
-                else if (body == null || body.Length == 0)
+                else if (body == null)
                 {
                     // If it's not an abstract or an interface, set the IL.
                     if (meth.m_ilGenerator != null)
                     {
                         // we need to bake the method here.
                         meth.CreateMethodBodyHelper(((RuntimeILGenerator)meth.GetILGenerator()));
+                        body = meth.GetBody();
                     }
 
-                    body = meth.GetBody();
-
-                    if ((body == null || body.Length == 0) && !meth.m_canBeRuntimeImpl)
-                        throw new InvalidOperationException(
-                            SR.Format(SR.InvalidOperation_BadEmptyMethodBody, meth.Name));
+                    // No IL body means we can avoid attempting to set method IL.
+                    if (body == null)
+                    {
+                        continue;
+                    }
                 }
 
+                byte[] localSig = meth.GetLocalSignature(out int sigLength);
                 int maxStack = meth.GetMaxStack();
 
                 ExceptionHandler[]? exceptions = meth.GetExceptionHandlers();

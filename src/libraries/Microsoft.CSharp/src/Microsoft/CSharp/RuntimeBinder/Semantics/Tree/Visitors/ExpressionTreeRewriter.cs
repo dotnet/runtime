@@ -7,6 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class ExpressionTreeRewriter : ExprVisitorBase
     {
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
@@ -228,6 +229,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
+        // PM_EXPRESSION_ARRAYINDEX2 is resolved by reflection through PredefinedMembers and is never called directly.
+        [DynamicDependency("ArrayIndex(System.Linq.Expressions.Expression,System.Linq.Expressions.Expression[])", typeof(System.Linq.Expressions.Expression))]
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitARRAYINDEX(ExprArrayIndex pExpr)
         {

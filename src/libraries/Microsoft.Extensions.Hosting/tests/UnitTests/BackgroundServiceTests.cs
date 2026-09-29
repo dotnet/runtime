@@ -4,14 +4,18 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
 {
     public class BackgroundServiceTests
     {
+        public static bool IsThreadingAndRemoteExecutorSupported =>
+            PlatformDetection.IsMultithreadingSupported && RemoteExecutor.IsSupported;
+
         [Fact]
-        public void StartReturnsCompletedTaskIfLongRunningTaskIsIncomplete()
+        public void StartReturnsCompletedTask()
         {
             var tcs = new TaskCompletionSource<object>();
             var service = new MyBackgroundService(tcs.Task);
@@ -26,28 +30,17 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void StartReturnsCompletedTaskIfCancelled()
+        public async Task StartCancelledThrowsTaskCanceledException()
         {
-            var tcs = new TaskCompletionSource<object>();
-            tcs.TrySetCanceled();
-            var service = new MyBackgroundService(tcs.Task);
+            var ct = new CancellationToken(true);
+            var service = new TrackingBackgroundService();
 
-            var task = service.StartAsync(CancellationToken.None);
+            Task startTask = service.StartAsync(ct);
 
-            Assert.True(task.IsCompleted);
-            Assert.Same(task, service.ExecuteTask);
-        }
-
-        [Fact]
-        public async Task StartReturnsLongRunningTaskIfFailed()
-        {
-            var tcs = new TaskCompletionSource<object>();
-            tcs.TrySetException(new Exception("fail!"));
-            var service = new MyBackgroundService(tcs.Task);
-
-            var exception = await Assert.ThrowsAsync<Exception>(() => service.StartAsync(CancellationToken.None));
-
-            Assert.Equal("fail!", exception.Message);
+            Assert.True(startTask.IsCompleted);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteTask);
+            Assert.True(service.ExecuteTask.IsCanceled);
+            Assert.False(service.ExecuteInvocation.IsCompleted);
         }
 
         [Fact]
@@ -74,7 +67,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.True(service.ExecuteTask.IsCompleted);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task StopAsyncStopsEvenIfTaskNeverEnds()
         {
             var service = new IgnoreCancellationService();
@@ -85,12 +78,13 @@ namespace Microsoft.Extensions.Hosting.Tests
             await service.StopAsync(cts.Token);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task StopAsyncThrowsIfCancellationCallbackThrows()
         {
             var service = new ThrowOnCancellationService();
 
             await service.StartAsync(CancellationToken.None);
+            await service.WaitForExecuteTask;
 
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             await Assert.ThrowsAsync<AggregateException>(() => service.StopAsync(cts.Token));
@@ -116,6 +110,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var service = new WaitForCancelledTokenService();
 
             await service.StartAsync(tokenSource.Token);
+            await service.WaitForExecuteTask;
 
             tokenSource.Cancel();
 
@@ -130,19 +125,138 @@ namespace Microsoft.Extensions.Hosting.Tests
             service.Dispose();
         }
 
+        [Fact]
+        public async Task StartSynchronousAndStop()
+        {
+            var tokenSource = new CancellationTokenSource();
+            var service = new MySynchronousBackgroundService();
+
+            // should not block the start thread;
+            await service.StartAsync(tokenSource.Token);
+            await service.WaitForExecuteTask;
+            await service.StopAsync(CancellationToken.None);
+
+            Assert.True(service.WaitForEndExecuteTask.IsCompleted);
+        }
+
+        [Fact]
+        public async Task StartSynchronousExecuteShouldBeCancelable()
+        {
+            var tokenSource = new CancellationTokenSource();
+            var service = new MySynchronousBackgroundService();
+
+            await service.StartAsync(tokenSource.Token);
+            await service.WaitForExecuteTask;
+
+            tokenSource.Cancel();
+
+            await service.WaitForEndExecuteTask;
+        }
+
+        [ConditionalTheory(typeof(BackgroundServiceTests), nameof(IsThreadingAndRemoteExecutorSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExecuteAsyncRunsWhenImmediatelyStoppedOrDisposed(bool dispose)
+        {
+            var options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_ThreadPool_UseWindowsThreadPool"] = "0";
+
+            using var _ = RemoteExecutor.Invoke((string disposeString) =>
+            {
+                ThreadPool.GetMinThreads(out int originalMinWorkerThreads, out int originalMinCompletionPortThreads);
+                ThreadPool.GetMaxThreads(out int originalMaxWorkerThreads, out int originalMaxCompletionPortThreads);
+                Assert.True(ThreadPool.SetMinThreads(1, originalMinCompletionPortThreads));
+                Assert.True(ThreadPool.SetMaxThreads(1, originalMaxCompletionPortThreads));
+
+                using var blockerEntered = new ManualResetEventSlim();
+                using var releaseBlocker = new ManualResetEventSlim();
+
+                try
+                {
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        blockerEntered.Set();
+                        releaseBlocker.Wait();
+                    });
+                    Assert.True(blockerEntered.Wait(RemoteExecutor.FailWaitTimeoutMilliseconds));
+
+                    int startThreadId = Environment.CurrentManagedThreadId;
+                    var service = new TrackingBackgroundService();
+                    service.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+                    Task stopTask;
+                    if (bool.Parse(disposeString))
+                    {
+                        service.Dispose();
+                        stopTask = service.ExecuteTask;
+                    }
+                    else
+                    {
+                        stopTask = service.StopAsync(CancellationToken.None);
+                    }
+
+                    releaseBlocker.Set();
+                    stopTask.GetAwaiter().GetResult();
+
+                    (int invocationCount, int threadId, bool isThreadPoolThread, bool isCancellationRequested) =
+                        service.ExecuteInvocation.GetAwaiter().GetResult();
+                    Assert.Equal(1, invocationCount);
+                    Assert.NotEqual(startThreadId, threadId);
+                    Assert.True(isThreadPoolThread);
+                    Assert.True(isCancellationRequested);
+                }
+                finally
+                {
+                    releaseBlocker.Set();
+                    ThreadPool.SetMaxThreads(originalMaxWorkerThreads, originalMaxCompletionPortThreads);
+                    ThreadPool.SetMinThreads(originalMinWorkerThreads, originalMinCompletionPortThreads);
+                }
+            }, dispose.ToString(), options);
+        }
+
+        private sealed class TrackingBackgroundService : BackgroundService
+        {
+            private readonly TaskCompletionSource<(int InvocationCount, int ThreadId, bool IsThreadPoolThread, bool IsCancellationRequested)> _executeInvocation =
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
+            private int _invocationCount;
+
+            public Task<(int InvocationCount, int ThreadId, bool IsThreadPoolThread, bool IsCancellationRequested)> ExecuteInvocation => _executeInvocation.Task;
+
+            protected override Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                _executeInvocation.SetResult((
+                    Interlocked.Increment(ref _invocationCount),
+                    Environment.CurrentManagedThreadId,
+                    Thread.CurrentThread.IsThreadPoolThread,
+                    stoppingToken.IsCancellationRequested));
+                return Task.CompletedTask;
+            }
+        }
+
         private class WaitForCancelledTokenService : BackgroundService
         {
+            private TaskCompletionSource<object> _waitForExecuteTask = new TaskCompletionSource<object>();
+
             public Task ExecutingTask { get; private set; }
+
+            public Task WaitForExecuteTask => _waitForExecuteTask.Task;
 
             protected override Task ExecuteAsync(CancellationToken stoppingToken)
             {
                 ExecutingTask = Task.Delay(Timeout.Infinite, stoppingToken);
+
+                _waitForExecuteTask.TrySetResult(null);
+
                 return ExecutingTask;
             }
         }
 
         private class ThrowOnCancellationService : BackgroundService
         {
+            private TaskCompletionSource<object> _waitForExecuteTask = new TaskCompletionSource<object>();
+
+            public Task WaitForExecuteTask => _waitForExecuteTask.Task;
+
             public int TokenCalls { get; set; }
 
             protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -157,6 +271,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                 {
                     TokenCalls++;
                 });
+
+                _waitForExecuteTask.TrySetResult(null);
 
                 return new TaskCompletionSource<object>().Task;
             }
@@ -190,6 +306,25 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 await task;
             }
+        }
+
+        private class MySynchronousBackgroundService : BackgroundService
+        {
+            private TaskCompletionSource<object> _waitForExecuteTask = new TaskCompletionSource<object>();
+            private TaskCompletionSource<object> _waitForEndExecuteTask = new TaskCompletionSource<object>();
+
+            public Task WaitForExecuteTask => _waitForExecuteTask.Task;
+            public Task WaitForEndExecuteTask => _waitForEndExecuteTask.Task;
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                _waitForExecuteTask.TrySetResult(null);
+                stoppingToken.WaitHandle.WaitOne();
+                _waitForEndExecuteTask.TrySetResult(null);
+            }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+
         }
     }
 }

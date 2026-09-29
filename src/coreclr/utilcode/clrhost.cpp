@@ -62,7 +62,13 @@ DWORD GetClrModulePathName(SString& buffer)
 #ifdef HOST_WINDOWS
     return WszGetModuleFileName((HINSTANCE)GetClrModuleBase(), buffer);
 #else
-    return WszGetModuleFileName(PAL_GetPalHostModule(), buffer);
+#ifndef HOST_WASM
+    HMODULE hModule = PAL_GetPalHostModule();
+#else
+    // on wasm the PAL library is statically linked
+    HMODULE hModule = nullptr;
+#endif
+    return WszGetModuleFileName(hModule, buffer);
 #endif
 }
 
@@ -131,7 +137,6 @@ LoadsTypeHolder::LoadsTypeHolder(BOOL       fConditional,
     // This fcn makes non-scoped changes to ClrDebugState so we cannot use a runtime CONTRACT here.
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     m_fConditional = fConditional;
@@ -182,7 +187,6 @@ LoadsTypeHolder::~LoadsTypeHolder()
     // This fcn makes non-scoped changes to ClrDebugState so we cannot use a runtime CONTRACT here.
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 
     if (m_fConditional)

@@ -133,6 +133,33 @@ namespace System.Text.Json.SourceGeneration
         public required bool HasJsonInclude { get; init; }
 
         /// <summary>
+        /// Whether the property can use UnsafeAccessor for its getter/setter.
+        /// This is true for non-generic types on .NET 8+ and for generic types on .NET 9+
+        /// (using a generic wrapper class). False when UnsafeAccessorAttribute is not available.
+        /// </summary>
+        public required bool CanUseUnsafeAccessors { get; init; }
+
+        /// <summary>
+        /// When <see cref="CanUseUnsafeAccessors"/> is true and the declaring type is generic,
+        /// contains the FQN of the declaring type using open type parameters
+        /// (e.g., "global::TestApp.MyGenericType&lt;T&gt;").
+        /// </summary>
+        public string? OpenDeclaringTypeFQN { get; init; }
+
+        /// <summary>
+        /// The type parameter names of the generic declaring type (e.g., ["T"]).
+        /// Null when the declaring type is not generic.
+        /// </summary>
+        public ImmutableEquatableArray<string>? DeclaringTypeParameterNames { get; init; }
+
+        /// <summary>
+        /// The combined type parameter constraint clauses of the generic declaring type
+        /// (e.g., "where T : notnull, global::MyNamespace.MyBase where U : struct").
+        /// Null when the declaring type is not generic or has no constraints.
+        /// </summary>
+        public string? DeclaringTypeParameterConstraintClauses { get; init; }
+
+        /// <summary>
         /// Whether the property has the JsonExtensionDataAttribute.
         /// </summary>
         public required bool IsExtensionData { get; init; }
@@ -148,9 +175,25 @@ namespace System.Text.Json.SourceGeneration
         public required TypeRef DeclaringType { get; init; }
 
         /// <summary>
+        /// The zero-based position of <see cref="DeclaringType"/> in the inheritance hierarchy
+        /// of the containing <see cref="TypeGenerationSpec"/>.
+        /// The contract type comes first, followed by its base types in most-derived-first order.
+        /// </summary>
+        public required int DeclaringTypeIndex { get; init; }
+
+        /// <summary>
         /// Design-time specified custom converter type.
         /// </summary>
         public required TypeRef? ConverterType { get; init; }
+
+        /// <summary>
+        /// When <see cref="CanUseUnsafeAccessors"/> is true and the declaring type is generic,
+        /// contains the FQN of the property or field type using the open type parameters
+        /// described by <see cref="DeclaringTypeParameterNames"/>
+        /// (e.g., "global::System.Collections.Generic.List&lt;T[]&gt;").
+        /// Null when the member type does not contain generic parameters.
+        /// </summary>
+        public string? OpenPropertyTypeFQN { get; init; }
 
         /// <summary>
         /// Determines if the specified property should be included in the fast-path method body.
@@ -163,8 +206,9 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
-            // Discard properties without getters
-            if (!CanUseGetter)
+            // Discard properties without getters, unless they have [JsonInclude]
+            // in which case we use UnsafeAccessor or reflection to read the value.
+            if (!CanUseGetter && !HasJsonInclude)
             {
                 return false;
             }

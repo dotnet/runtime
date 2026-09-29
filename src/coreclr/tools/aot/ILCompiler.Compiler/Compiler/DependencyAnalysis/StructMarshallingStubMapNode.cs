@@ -14,9 +14,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of struct marshalling stub types generated into the image.
     /// </summary>
-    internal sealed class StructMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class StructMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private readonly ExternalReferencesTableNode _externalReferences;
         private readonly InteropStateManager _interopStateManager;
 
@@ -25,8 +24,6 @@ namespace ILCompiler.DependencyAnalysis
             _externalReferences = externalReferences;
             _interopStateManager = interopStateManager;
         }
-
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -90,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
                     for (int i = 0; i < nativeType.Fields.Length; i++)
                     {
                         var row = writer.GetTuple(
-                            writer.GetStringConstant(nativeType.Fields[i].Name),
+                            writer.GetStringConstant(nativeType.Fields[i].GetName()),
                             writer.GetUnsignedConstant((uint)nativeType.Fields[i].Offset.AsInt)
                             );
 
@@ -122,8 +119,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
-
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
@@ -198,6 +200,42 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void CanBindConfigurationKeyNamesRequiringEscaping()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"quoted\"key", "Quoted"},
+                {@"path\key", "Backslash"},
+                {"line\nbreak", "Newline"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<OptionsWithEscapedConfigurationKeyNames>();
+
+            Assert.Equal("Quoted", options.QuotedKey);
+            Assert.Equal("Backslash", options.BackslashKey);
+            Assert.Equal("Newline", options.NewlineKey);
+        }
+
+        [Fact]
+        public void CanIgnoreConfigurationAttributes()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"IgnoredProperty", "Ignored"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>();
+
+            Assert.Equal("Default", options.IgnoredProperty);
+        }
+
+        [Fact]
         public void EmptyStringIsNullable()
         {
             var dic = new Dictionary<string, string>
@@ -208,14 +246,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            // Ensure exception messages are in sync
-            Assert.Throws<InvalidOperationException>(() => config.GetValue<bool?>("empty"));
-            Assert.Throws<InvalidOperationException>(() => config.GetValue<int?>("empty"));
-#else
             Assert.Null(config.GetValue<bool?>("empty"));
             Assert.Null(config.GetValue<int?>("empty"));
-#endif
         }
 
         [Fact]
@@ -326,8 +358,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         [Fact]
         public void GetNullValue()
         {
-            #nullable enable
-            #pragma warning disable IDE0004 // Cast is redundant
+#nullable enable
+#pragma warning disable IDE0004 // Cast is redundant
 
             var dic = new Dictionary<string, string?>
             {
@@ -377,8 +409,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(0, config.GetSection("Nested:Integer").Get<int>());
             Assert.Null(config.GetSection("Object").Get<ComplexOptions>());
 
-            #pragma warning restore IDE0004
-            #nullable restore
+#pragma warning restore IDE0004
+#nullable restore
         }
 
         [Fact]
@@ -479,6 +511,78 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
 
             Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [Fact]
+        public void DoesNotThrowWhenConfigKeyMatchesConfigurationKeyNameAttribute()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Named_Property", "Yo"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+            config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true);
+
+            Assert.Equal("Yo", instance.NamedProperty);
+        }
+
+        [Fact]
+        public void DoesNotThrowWhenConfigKeyMatchesConfigurationIgnoreAttribute()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"IgnoredProperty", "Ignored"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+            config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true);
+
+            Assert.Equal("Default", instance.IgnoredProperty);
+        }
+
+        [Fact]
+        public void DoesNotThrowWhenConfigKeyMatchesReadOnlyPropertyWithErrorOnUnknownConfiguration()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ReadOnly", "stuff"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+            config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true);
+
+            Assert.Null(instance.ReadOnly);
+        }
+
+        [Fact]
+        public void DoesNotThrowWhenConfigKeyMatchesSetOnlyPropertyWithErrorOnUnknownConfiguration()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"SetOnly", "42"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SetOnlyPoco>(o => o.ErrorOnUnknownConfiguration = true);
+            Assert.False(options.AnyCalled);
         }
 
         [Fact]
@@ -619,13 +723,13 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.NotNull(exception.InnerException);
             Assert.NotNull(getException.InnerException);
             Assert.Equal(
-                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, type),
                 exception.Message);
             Assert.Equal(
-                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, type),
                 getException.Message);
             Assert.Equal(
-                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, type),
                 getValueException.Message);
         }
 
@@ -649,7 +753,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(options));
 
-            Assert.Equal(SR.Format(SR.Error_FailedBinding, ConfigKey, typeof(int)),
+            Assert.Equal(SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, typeof(int)),
                 exception.Message);
         }
 
@@ -1019,6 +1123,163 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 SR.Format(SR.Error_ParameterHasNoMatchingConfig, typeof(Line), nameof(Line.Thickness)),
                 exception.Message);
         }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType)]
+        [InlineData(ConstructorParameterKind.ObjectType)]
+        [InlineData(ConstructorParameterKind.NullableValueType)]
+        [InlineData(ConstructorParameterKind.ComplexType)]
+        [InlineData(ConstructorParameterKind.ArrayType)]
+        public void ConstructorParameterBindsNullWhenConfigurationValueIsNull(ConstructorParameterKind kind)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": null }""");
+
+            Assert.Null(GetConstructorParameterValue(config, kind));
+        }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType)]
+        [InlineData(ConstructorParameterKind.ObjectType)]
+        [InlineData(ConstructorParameterKind.NullableValueType)]
+        [InlineData(ConstructorParameterKind.ComplexType)]
+        [InlineData(ConstructorParameterKind.ArrayType)]
+        public void ConstructorParameterBindsNullWhenConfigurationKeyIsMissing(ConstructorParameterKind kind)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Unrelated": "value" }""");
+
+            Assert.Null(GetConstructorParameterValue(config, kind));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExceptionWhenConstructorParameterCannotBeNullAndConfigurationValueIsEmpty(bool hasDefaultValue)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+            {
+                if (hasDefaultValue)
+                {
+                    config.Get<RecordWithDefaultedIntValue>();
+                }
+                else
+                {
+                    config.Get<RecordWithIntValue>();
+                }
+            });
+
+            Assert.Equal(
+                SR.Format(SR.Error_FailedBinding, string.Empty, nameof(RecordWithIntValue.Value), typeof(int)),
+                exception.Message);
+        }
+
+        [Theory]
+        [InlineData("""{ "Value": null }""")]
+        [InlineData("""{ "Unrelated": "value" }""")]
+        public void ConstructorParameterUsesItsDefaultValueWhenValueTypeHasNoConfigurationValue(string json)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            Assert.Equal(42, config.Get<RecordWithDefaultedIntValue>().Value);
+        }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType, false)]
+        [InlineData(ConstructorParameterKind.ObjectType, false)]
+        [InlineData(ConstructorParameterKind.NullableValueType, false)]
+        [InlineData(ConstructorParameterKind.ComplexType, false)]
+        [InlineData(ConstructorParameterKind.ArrayType, false)]
+        [InlineData(ConstructorParameterKind.StringType, true)]
+        [InlineData(ConstructorParameterKind.ObjectType, true)]
+        [InlineData(ConstructorParameterKind.NullableValueType, true)]
+        [InlineData(ConstructorParameterKind.ComplexType, true)]
+        [InlineData(ConstructorParameterKind.ArrayType, true)]
+        public void ConstructorParameterBindsToEmptyValueWhenConfigurationValueIsEmpty(ConstructorParameterKind kind, bool hasDefaultValue)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            object? value = GetConstructorParameterValue(config, kind, hasDefaultValue);
+
+            switch (kind)
+            {
+                // An empty string is a value in its own right for these types.
+                case ConstructorParameterKind.StringType:
+                case ConstructorParameterKind.ObjectType:
+                    Assert.Equal(string.Empty, value);
+                    break;
+                case ConstructorParameterKind.ArrayType:
+                    Assert.Empty((string[])value);
+                    break;
+                // An empty value converts to null for Nullable<T>, so a declared default takes over.
+                case ConstructorParameterKind.NullableValueType when hasDefaultValue:
+                    Assert.Equal(42, value);
+                    break;
+                default:
+                    Assert.Null(value);
+                    break;
+            }
+        }
+
+        [Theory]
+        [InlineData("""{ "Value": null }""")]
+        [InlineData("""{ "Unrelated": "value" }""")]
+        public void ExceptionWhenConstructorParameterCannotBeNullAndHasNoConfigurationValue(string json)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            var exception = Assert.Throws<InvalidOperationException>(() => config.Get<RecordWithIntValue>());
+            Assert.Equal(
+                SR.Format(SR.Error_ParameterHasNoMatchingConfig, typeof(RecordWithIntValue), nameof(RecordWithIntValue.Value)),
+                exception.Message);
+        }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType, "fallback")]
+        [InlineData(ConstructorParameterKind.ObjectType, null)]
+        [InlineData(ConstructorParameterKind.NullableValueType, 42)]
+        [InlineData(ConstructorParameterKind.ComplexType, null)]
+        [InlineData(ConstructorParameterKind.ArrayType, null)]
+        public void ConstructorParameterUsesItsDefaultValueWhenConfigurationValueIsNull(ConstructorParameterKind kind, object? expected)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": null }""");
+
+            Assert.Equal(expected, GetConstructorParameterValue(config, kind, hasDefaultValue: true));
+        }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType, "fallback")]
+        [InlineData(ConstructorParameterKind.ObjectType, null)]
+        [InlineData(ConstructorParameterKind.NullableValueType, 42)]
+        [InlineData(ConstructorParameterKind.ComplexType, null)]
+        [InlineData(ConstructorParameterKind.ArrayType, null)]
+        public void ConstructorParameterUsesItsDefaultValueWhenConfigurationKeyIsMissing(ConstructorParameterKind kind, object? expected)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Unrelated": "value" }""");
+
+            Assert.Equal(expected, GetConstructorParameterValue(config, kind, hasDefaultValue: true));
+        }
+
+        private static object? GetConstructorParameterValue(IConfiguration config, ConstructorParameterKind kind, bool hasDefaultValue = false) =>
+            hasDefaultValue
+                ? kind switch
+                {
+                    ConstructorParameterKind.StringType => config.Get<RecordWithDefaultedStringValue>().Value,
+                    ConstructorParameterKind.ObjectType => config.Get<RecordWithDefaultedObjectValue>().Value,
+                    ConstructorParameterKind.NullableValueType => config.Get<RecordWithDefaultedNullableIntValue>().Value,
+                    ConstructorParameterKind.ComplexType => config.Get<RecordWithDefaultedComplexValue>().Value,
+                    ConstructorParameterKind.ArrayType => config.Get<RecordWithDefaultedArrayValue>().Value,
+                    _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+                }
+                : kind switch
+                {
+                    ConstructorParameterKind.StringType => config.Get<RecordWithStringValue>().Value,
+                    ConstructorParameterKind.ObjectType => config.Get<RecordWithObjectValue>().Value,
+                    ConstructorParameterKind.NullableValueType => config.Get<RecordWithNullableIntValue>().Value,
+                    ConstructorParameterKind.ComplexType => config.Get<RecordWithComplexValue>().Value,
+                    ConstructorParameterKind.ArrayType => config.Get<RecordWithArrayValue>().Value,
+                    _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+                };
 
         [Fact]
         public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()
@@ -1431,6 +1692,45 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void ThrowOnClassWithPrimaryCtorAndIgnoredProperty()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ClassWithPrimaryCtorAndIgnoredProperty>());
+
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWithPrimaryCtorAndIgnoredProperty), "color"),
+                ex.Message);
+        }
+
+        [Fact]
+        public void ThrowOnClassWithPrimaryCtorAndIgnoredPropertyWithUnknownConfigurationValidation()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => config.Get<ClassWithPrimaryCtorAndIgnoredProperty>(o => o.ErrorOnUnknownConfiguration = true));
+
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWithPrimaryCtorAndIgnoredProperty), "color"),
+                ex.Message);
+        }
+
+        [Fact]
         public void CanBindClassWithPrimaryCtorWithDefaultValues()
         {
             var dic = new Dictionary<string, string>
@@ -1523,6 +1823,24 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("the color is Green", options.Color);
         }
 
+        [Fact]
+        public void CanBindOnParametersAndProperties_DifferentlyCasedConstructorParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.ColorFromCtor);
+            Assert.Equal("the color is Green", options.Color);
+        }
+
         /// <summary>
         /// This test to ensure the binding of the constructor/property array is done once and not duplicating values in the array.
         /// </summary>
@@ -1544,6 +1862,195 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
         }
 
+        /// <summary>
+        /// When a constructor parameter populates a matching collection property, the binder must bind the collection
+        /// once (through the constructor) and must not bind it again through the property, which would otherwise
+        /// duplicate the collection items. This must hold whether the parameter name matches the property name exactly
+        /// or differs only by case. This test checks the different case scenario, the next one the same name scenario.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_GetterOnlyCollectionWithCaseMismatchedConstructorParameter()
+        {
+            string json = """
+            {
+                "Instances": [ "first", "second" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+            string[] expected = new[] { "first", "second" };
+
+            Assert.Equal(expected, config.Get<GetterOnlyCollectionWithCaseMismatchedCtorParameter>().Instances);
+            Assert.Equal(expected, config.Get<SettableCollectionWithCaseMismatchedCtorParameter>().Instances);
+            Assert.Equal(expected, config.Get<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>().Instances);
+            Assert.Equal(expected, config.Get<ParamsCollectionCtor>().Instances);
+        }
+
+        /// <summary>
+        /// A type whose constructor parameters have the same name as the matching collection properties (as in the
+        /// canonical record/primary-constructor pattern) must also bind each collection only once.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_CollectionsWithSameCasedConstructorParameters()
+        {
+            string json = """
+            {
+                "source": {
+                    "name": "DemoService",
+                    "addresses": [ "127.0.0.1" ],
+                    "ints": [ 1, 2, 3, 4, 5 ],
+                    "strings": [ "one", "two", "three" ]
+                }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            SourceWithCollectionCtorParameters source = config.GetSection("source").Get<SourceWithCollectionCtorParameters>();
+
+            Assert.Equal("DemoService", source.Name);
+            Assert.Equal(new[] { "127.0.0.1" }, source.Addresses);
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Ints);
+            Assert.Equal(new[] { "one", "two", "three" }, source.Strings);
+        }
+
+        /// <summary>
+        /// A dictionary whose value type is created through a parameterized constructor that populates a collection
+        /// property must bind each element's collection only once, even though dictionary elements are bound through a
+        /// separate code path from top-level and property binding.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_DictionaryValueWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "map": {
+                    "first": { "Instances": [ "a", "b" ] },
+                    "second": { "Instances": [ "c" ] }
+                }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            Dictionary<string, GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter> map =
+                config.GetSection("map").Get<Dictionary<string, GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>>();
+
+            Assert.Equal(new[] { "a", "b" }, map["first"].Instances);
+            Assert.Equal(new[] { "c" }, map["second"].Instances);
+        }
+
+        /// <summary>
+        /// A list whose element type has a collection populated through a constructor parameter must bind each
+        /// element's collection only once. List and array elements are constructed through a separate code path
+        /// (enumerable-with-add) from top-level, property, and dictionary binding.
+        /// </summary>
+        [Fact]
+        public void CanBind_ListOfTypeWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "Items": [ { "Instances": [ "a", "b" ] }, { "Instances": [ "c" ] } ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            List<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter> result =
+                config.GetSection("Items").Get<List<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>>();
+
+            Assert.Equal(new[] { "a", "b" }, result[0].Instances);
+            Assert.Equal(new[] { "c" }, result[1].Instances);
+        }
+
+        /// <summary>
+        /// A nested property whose type has a collection populated through a constructor parameter is bound through the
+        /// null-check assignment (<c>??=</c>) path, where whether the instance was created through its constructor is
+        /// decided at run time. The collection must still be bound only once.
+        /// </summary>
+        [Fact]
+        public void CanBind_NestedTypeWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "Child": { "Instances": [ "a", "b" ] }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ContainerWithCtorCollectionChild result = config.Get<ContainerWithCtorCollectionChild>();
+
+            Assert.Equal(new[] { "a", "b" }, result.Child.Instances);
+        }
+
+        /// <summary>
+        /// When binding into an existing instance (which is not created through its constructor), a settable collection
+        /// property backed by a constructor parameter must still be bound. This guards against the deferral logic
+        /// over-skipping and silently not binding such properties.
+        /// </summary>
+        [Fact]
+        public void CanBindExistingInstance_BindsCtorMatchedCollection()
+        {
+            string json = """
+            {
+                "Instances": [ "first", "second" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+            var instance = new SettableCollectionWithCaseMismatchedCtorParameter(new List<string>());
+
+            config.Bind(instance);
+
+            Assert.Equal(new[] { "first", "second" }, instance.Instances);
+        }
+
+        /// <summary>
+        /// An init-only (or required) collection property that is not backed by a constructor parameter is bound in the
+        /// generated Initialize method (through the object initializer). It must not be bound again in BindCore when the
+        /// instance was created there, or the collection items would be duplicated.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_InitOnlyCollectionWithoutConstructorParameter()
+        {
+            string json = """
+            {
+                "Number": 7,
+                "Items": [ "a", "b" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ClassWithInitOnlyCollectionNoCtorParam result = config.Get<ClassWithInitOnlyCollectionNoCtorParam>();
+
+            Assert.Equal(7, result.Number);
+            Assert.Equal(new[] { "a", "b" }, result.Items);
+        }
+
+        /// <summary>
+        /// An init-only complex (non-collection) property that is not backed by a constructor parameter is bound in the
+        /// generated Initialize method. The generator must not emit a self-assignment for it (which would produce a
+        /// CS1717 compile error), and the property must still be bound correctly.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_InitOnlyComplexPropertyWithoutConstructorParameter()
+        {
+            string json = """
+            {
+                "Number": 7,
+                "Child": { "Value": "hello" }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ClassWithInitOnlyComplexNoCtorParam result = config.Get<ClassWithInitOnlyComplexNoCtorParam>();
+
+            Assert.Equal(7, result.Number);
+            Assert.Equal("hello", result.Child.Value);
+        }
 
         public static IEnumerable<object[]> Configuration_TestData()
         {
@@ -1793,10 +2300,9 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var exception = Assert.Throws<InvalidOperationException>(
-                () => config.Get<ByteArrayOptions>());
+            var exception = Assert.Throws<InvalidOperationException>(() => config.Get<ByteArrayOptions>());
             Assert.Equal(
-                SR.Format(SR.Error_FailedBinding, "MyByteArray", typeof(byte[])),
+                SR.Format(SR.Error_FailedBinding, "(not a valid base64 string)", "MyByteArray", typeof(byte[])),
                 exception.Message);
         }
 
@@ -2028,12 +2534,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.True(options.WasOtherCodeStringSet);
             Assert.Equal("default", options.PocoWithDefault.Example);
             Assert.Equal(1, options.PocoListWithDefault.Count);
-
-#if !BUILDING_SOURCE_GENERATOR_TESTS
-            // Source generator omits calls to setters for nested objects and collections
             Assert.True(options.WasPocoWithDefaultSet);
             Assert.True(options.WasPocoListWithDefaultSet);
-#endif
 
             // These don't exist in configuration and setters are not called since they are nullable.
             Assert.Equal(0, options.OtherCodeNullable);
@@ -2208,7 +2710,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(CultureInfo.GetCultureInfoByIetfLanguageTag("yo-NG"), obj.Prop17);
             Assert.Equal(DateTime.Parse("2023-03-29T18:23:43.9977489+00:00", CultureInfo.InvariantCulture), obj.Prop19);
             Assert.Equal(DateTimeOffset.Parse("2023-03-29T18:21:22.8046981+00:00", CultureInfo.InvariantCulture), obj.Prop20);
-            Assert.Equal((decimal)5.3, obj.Prop21);
+            Assert.Equal(5.3m, obj.Prop21);
             Assert.Equal(TimeSpan.Parse("10675199.02:48:05.4775807", CultureInfo.InvariantCulture), obj.Prop23);
             Assert.Equal(Guid.Parse("e905a75b-d195-494d-8938-e55dcee44574"), obj.Prop24);
             Uri.TryCreate("https://microsoft.com", UriKind.RelativeOrAbsolute, out Uri? value);
@@ -2379,7 +2881,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public void TraceSwitchTest()
         {
             var dic = new Dictionary<string, string>
@@ -2409,7 +2911,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         [Fact]
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
 #endif
         public void TestGraphWithUnsupportedMember()
         {
@@ -2618,6 +3120,85 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public static void Bind_GetterOnlyProperties_WithNonNullValues_BindsExistingInstances()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Nested": { "Integer": 1 },
+                    "Collection": [ "item" ],
+                    "Abstract": { "Value": 2 }
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: true);
+
+            configuration.Bind(instance);
+
+            Assert.NotNull(instance.Nested);
+            Assert.Equal(1, instance.Nested.Integer);
+            Assert.NotNull(instance.Collection);
+            Assert.Equal(["existing", "item"], instance.Collection);
+            Assert.NotNull(instance.Abstract);
+            Assert.Equal(2, instance.Abstract.Value);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyProperties_WithNullValues_IgnoresConfiguration()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Nested": { "Integer": 1 },
+                    "Collection": [ "item" ]
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: false);
+
+            configuration.Bind(instance);
+
+            Assert.Null(instance.Nested);
+            Assert.Null(instance.Collection);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyProperties_WithMissingConfiguration_LeavesExistingInstancesUnchanged()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString("{}");
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: true);
+            Assert.NotNull(instance.Nested);
+            Assert.NotNull(instance.Collection);
+            Assert.NotNull(instance.Abstract);
+            NestedOptions nested = instance.Nested;
+            List<string> collection = instance.Collection;
+            AbstractBase abstractInstance = instance.Abstract;
+
+            configuration.Bind(instance);
+
+            Assert.Same(nested, instance.Nested);
+            Assert.Equal(0, nested.Integer);
+            Assert.Same(collection, instance.Collection);
+            Assert.Equal(["existing"], collection);
+            Assert.Same(abstractInstance, instance.Abstract);
+            Assert.Equal(0, abstractInstance.Value);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyAbstractProperty_WithNullValue_IgnoresConfiguration()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Abstract": { "Value": 2 }
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: false);
+
+            configuration.Bind(instance);
+
+            Assert.Null(instance.Abstract);
+        }
+
+        [Fact]
         public void GetIConfigurationSection()
         {
             var configuration = TestHelpers.GetConfigurationFromJsonString("""
@@ -2813,7 +3394,300 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal("John,Jane,Stephen", result.Names);
             Assert.True(result.Enabled);
-            Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
+            Assert.Equal(new[] { "new", "class", "rosebud" }, result.Keywords);
+        }
+
+        [Fact]
+        public void TestDictionaryWithNullableEnumValueType()
+        {
+            var builder = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Settings:Dictionary:Key1", "Value2" },
+                    { "Settings:List:1", "Value3" },
+                });
+            var config = builder.Build();
+
+            var settingsSection = config.GetSection("Settings");
+            OptionsWithCollectionsWithNullableEnum settings = settingsSection.Get<OptionsWithCollectionsWithNullableEnum>()!;
+
+            Assert.NotNull(settings.Dictionary);
+            Assert.Equal(1, settings.Dictionary.Count);
+            Assert.Equal(MyValue.Value2, settings.Dictionary["Key1"]);
+
+            Assert.NotNull(settings.List);
+            Assert.Equal(1, settings.List.Count);
+            Assert.Equal(MyValue.Value3, settings.List[0]);
+        }
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [Fact]
+        public void EnsureThrowingWithCollectionAndErrorOnUnknownConfigurationOption()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = "not-an-array-of-string" }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+
+            configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = "" }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+
+            configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = null }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+        }
+
+        internal class TestSettings { public Dictionary<DayOfWeek, string[]> Values { get; init; } = []; }
+#endif
+
+        [Fact]
+        public void BindWithNullValues()
+        {
+            //
+            // Try json provider first which used to replace the null configuration values with empty strings.
+            // Now it should be able to bind null values correctly and not replacing them.
+            //
+
+            string jsonConfig = @"
+            {
+                ""NullConfiguration"": {
+                    ""StringProperty1"": ""New Value!"",
+                    ""StringProperty2"": null,
+                    ""StringProperty3"": """",
+                    ""IntProperty1"": 42,
+                    ""IntProperty2"": null,
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build().GetSection("NullConfiguration");
+
+            NullConfiguration result = configuration.Get<NullConfiguration>();
+
+            Assert.NotNull(result);
+            Assert.Equal("New Value!", result.StringProperty1);
+            Assert.Null(result.StringProperty2);
+            Assert.Null(result.IntProperty2);
+            Assert.Equal("", result.StringProperty3);
+            Assert.Equal(42, result.IntProperty1);
+
+            //
+            // Test with in-memory configuration provider which never replaced the null values with empty strings.
+            // But the binder used to treat the null values as non-existing values and not bind them at all.
+            //
+
+            var inMemoryConfiguration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "NullConfiguration:StringProperty1", "New Value!" },
+                    { "NullConfiguration:StringProperty2", null },
+                    { "NullConfiguration:StringProperty3", "" },
+                    { "NullConfiguration:IntProperty1", "42" },
+                    { "NullConfiguration:IntProperty2", null }
+                })
+                .Build().GetSection("NullConfiguration");
+
+            NullConfiguration inMemoryResult = inMemoryConfiguration.Get<NullConfiguration>();
+
+            Assert.NotNull(inMemoryResult);
+
+            Assert.Equal("New Value!", inMemoryResult.StringProperty1);
+
+            Assert.Null(inMemoryResult.StringProperty2);
+            Assert.Null(inMemoryResult.IntProperty2);
+            Assert.Equal("", inMemoryResult.StringProperty3);
+            Assert.Equal(42, inMemoryResult.IntProperty1);
+        }
+
+        [Fact]
+        public void BindArraysWithNullAndOtherValues()
+        {
+            // Arrays like other collection when binding, it will merge the existing values with the new ones we get from the configuration.
+            // Ensure null, empty, and other values work as expected.
+
+            string jsonConfig = @"
+            {
+                ""ArraysContainer"": {
+                    ""StringArray1"": [""Value1"", ""Value2""],
+                    ""StringArray2"": null,
+                    ""StringArray3"": """", // should result empty array
+
+                    // We can bind byte array values from base64 strings too. Let's cover this case too.
+                    ""ByteArray1"": null,
+                    ""ByteArray2"": """",
+                    ""ByteArray3"": ""AAECAwQFBgcICQo="" // encode byte values [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build().GetSection("ArraysContainer");
+
+            ArraysContainer instance = new(); // all properties are initialized to null.
+            configuration.Bind(instance);
+
+            Assert.NotNull(instance);
+            Assert.Equal(["Value1", "Value2"], instance.StringArray1);
+            Assert.Null(instance.StringArray2);
+
+            Assert.Empty(instance.StringArray3); // empty string should result in empty array
+            Assert.Empty(instance.ByteArray2); // empty string should result in empty array
+
+            Assert.Null(instance.ByteArray1);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+
+            // Bind one more time and ensure the values are accumulated correctly.
+            configuration.Bind(instance);
+            Assert.Equal(["Value1", "Value2", "Value1", "Value2"], instance.StringArray1);
+            Assert.Null(instance.StringArray2);
+            Assert.Empty(instance.StringArray3); // empty string should result in empty array
+            Assert.Empty(instance.ByteArray2); // empty string should result in empty array
+
+            Assert.Null(instance.ByteArray1);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Source gen has different behavior with the byte array which should be addressed later
+            // Source gen override the existing array instead of merging the values.
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+#else
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+#endif
+
+            // Test the same accumulation behavior with in-memory configuration
+            var inMemoryConfiguration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    // String arrays - use indexed keys for array elements
+                    { "ArraysContainer:StringArray1:0", "Value1" },
+                    { "ArraysContainer:StringArray1:1", "Value2" },
+                    { "ArraysContainer:StringArray2", null },
+                    { "ArraysContainer:StringArray3", "" },
+
+                    // Byte arrays
+                    { "ArraysContainer:ByteArray1", null },
+                    { "ArraysContainer:ByteArray2", "" },
+                    { "ArraysContainer:ByteArray3", "AAECAwQFBgcICQo=" } // encode byte values [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                })
+                .Build().GetSection("ArraysContainer");
+
+            ArraysContainer inMemoryInstance = new();
+            inMemoryConfiguration.Bind(inMemoryInstance);
+            Assert.Equal(["Value1", "Value2"], inMemoryInstance.StringArray1);
+            Assert.Null(inMemoryInstance.StringArray2);
+            Assert.Empty(inMemoryInstance.StringArray3); // empty string should result in empty array
+            Assert.Empty(inMemoryInstance.ByteArray2); // empty string should result in empty array
+
+            Assert.Null(inMemoryInstance.ByteArray1);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], inMemoryInstance.ByteArray3);
+
+            // Bind one more time and ensure the values are accumulated correctly.
+            inMemoryConfiguration.Bind(inMemoryInstance);
+            Assert.Equal(["Value1", "Value2", "Value1", "Value2"], inMemoryInstance.StringArray1);
+            Assert.Null(inMemoryInstance.StringArray2);
+            Assert.Empty(inMemoryInstance.StringArray3); // empty string should result in empty array
+            Assert.Empty(inMemoryInstance.ByteArray2); // empty string should result in empty array
+
+            Assert.Null(inMemoryInstance.ByteArray1);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Source gen has different behavior with the byte array which should be addressed later
+            // Source gen override the existing array instead of merging the values.
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+#else
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+#endif
+        }
+
+        [Fact]
+        public void TestProvidersOrder()
+        {
+            string jsonConfig1 = @"
+            {
+                ""SimplePoco"": {
+                    ""A"": ""Provider1A"",
+                    ""B"": ""Provider1B"",
+                },
+            }";
+
+            // Missing B in the second provider should not override the value from the first provider.
+            string jsonConfig2 = @"
+            {
+                ""SimplePoco"": {
+                    ""A"": ""Provider2A"",
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig2)))
+                        .Build().GetSection("SimplePoco");
+
+            SimplePoco? result = configuration.Get<SimplePoco>();
+
+            Assert.NotNull(result);
+            Assert.Equal("Provider2A", result.A); // Value should come from the last provider
+            Assert.Equal("Provider1B", result.B); // B should not be overridden by the second provider
+        }
+
+        [Fact]
+        public void TestBindingEmptyArrayToNullIEnumerable()
+        {
+            string jsonConfig1 = @"
+            {
+                ""MyService"": {
+                    ""IEnumerableProperty"": [],
+                    ""StringArray"": []
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .Build().GetSection("MyService");
+
+            MyOptionsWithNullableEnumerable? result = configuration.Get<MyOptionsWithNullableEnumerable>();
+
+            Assert.NotNull(result);
+            Assert.Equal(Array.Empty<int>(), result.IEnumerableProperty);
+            Assert.Equal(Array.Empty<string>(), result.StringArray);
+        }
+
+        [Fact]
+        public void TestBindingEmptyArrayToConstructorParameter()
+        {
+            string jsonConfig = """
+                {
+                    "ArrayField": []
+                }
+                """;
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            ClassWithArrayConstructorParameter result = configuration.Get<ClassWithArrayConstructorParameter>();
+
+            Assert.NotNull(result);
+            Assert.Empty(result.ArrayField);
+        }
+
+        [Fact]
+        public void TestBindingNestedIEnumerable()
+        {
+            string jsonConfig1 = """
+                {
+                  "source": {
+                    "name": "DemoService",
+                    "addresses": [ "127.0.0.1" ]
+                  }
+                }
+                """;
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .Build();
+
+            ContainingIEnumerable? result = configuration.Get<ContainingIEnumerable>();
+
+            Assert.NotNull(result);
+            Assert.Equal("DemoService", result.Source.Name);
+            Assert.Equal(1, result.Source.Addresses.Count());
+            Assert.Equal("127.0.0.1", result.Source.Addresses.First());
         }
     }
 }

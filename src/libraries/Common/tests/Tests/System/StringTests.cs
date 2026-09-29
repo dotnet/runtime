@@ -150,7 +150,7 @@ namespace System.Tests
         [InlineData(new char[] { '\u041F', '\u0420', '\u0418', '\u0412', '\u0415', '\u0422' }, 0, 6, "\u041F\u0420\u0418\u0412\u0415\u0422")]
         [InlineData(new char[0], 0, 0, "")]
         [InlineData(null, 0, 0, "")]
-        public static void Ctor_CharArray(char[] value, int startIndex, int length, string expected)
+        public static void Ctor_CharArray(char[]? value, int startIndex, int length, string expected)
         {
             if (value == null)
             {
@@ -317,9 +317,11 @@ namespace System.Tests
             Validate(string.Concat((ReadOnlySpan<string?>)values));
             Validate(string.Concat((IEnumerable<string>)values));
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
+            Validate(string.Concat(values.Select(s => s)));
+            Validate(string.Concat(new List<string?>(values)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // mini-stress test that likely runs for several seconds
         public static void Concat_String_ConcurrencySafe()
         {
@@ -1011,7 +1013,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void CompareToNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1035,24 +1036,29 @@ namespace System.Tests
                     var secondSpan = new ReadOnlySpan<char>(second);
                     Assert.True(0 > firstSpan.CompareTo(secondSpan, StringComparison.Ordinal));
 
-                    // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
-                    // However, the sign will match, which is what defines correctness.
-                    Assert.Equal(
-                        Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
-                        Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques
+                    // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    {
+                        // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
+                        // However, the sign will match, which is what defines correctness.
+                        Assert.Equal(
+                            Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
+                            Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
 
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -1286,7 +1292,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void ContainsNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1312,19 +1317,24 @@ namespace System.Tests
 
                     Assert.False(firstSpan.Contains(secondSpan, StringComparison.OrdinalIgnoreCase));
 
-                    // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques
+                    // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    {
+                        // Different behavior depending on OS
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -2113,7 +2123,8 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
         public static void EndsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -2136,18 +2147,14 @@ namespace System.Tests
                     Assert.False(s1.EndsWith(s2, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.CurrentCulture),
-                        s1.EndsWith(s2, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        s1.EndsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.InvariantCulture),
-                        s1.EndsWith(s2, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        s1.EndsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                    foreach (StringComparison comp in new[] { StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase, StringComparison.InvariantCulture, StringComparison.InvariantCultureIgnoreCase })
+                    {
+                        bool expected = s1.ToString().EndsWith(s2.ToString(), comp);
+                        bool actual = s1.EndsWith(s2, comp);
+                        Assert.True(expected == actual,
+                            $"String.EndsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
+                    }
 
                     var firstSpan = new ReadOnlySpan<char>(first);
                     var secondSpan = new ReadOnlySpan<char>(second);
@@ -2156,18 +2163,14 @@ namespace System.Tests
                     Assert.False(firstSpan.EndsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.EndsWith(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.EndsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.EndsWith(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.EndsWith(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    foreach (StringComparison comp in new[] { StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase, StringComparison.InvariantCulture, StringComparison.InvariantCultureIgnoreCase })
+                    {
+                        bool expected = firstSpan.ToString().EndsWith(secondSpan.ToString(), comp);
+                        bool actual = firstSpan.EndsWith(secondSpan, comp);
+                        Assert.True(expected == actual,
+                            $"Span.EndsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
+                    }
                 }
             }
         }
@@ -2548,7 +2551,7 @@ namespace System.Tests
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("123", 123, StringComparison.OrdinalIgnoreCase, false)] // Not a string
         [InlineData("\0AAAAAAAAA", "\0BBBBBBBBBBBB", StringComparison.OrdinalIgnoreCase, false)]
-        public static void EqualsTest(string s1, object obj, StringComparison comparisonType, bool expected)
+        public static void EqualsTest(string? s1, object? obj, StringComparison comparisonType, bool expected)
         {
             string s2 = obj as string;
             if (s1 != null)
@@ -2665,6 +2668,9 @@ namespace System.Tests
             yield return new object[] { null, "Foo {{{0}", new object[] { 1 }, "Foo {1" }; // Escaped open curly braces
             yield return new object[] { null, "Foo }}{0}", new object[] { 1 }, "Foo }1" }; // Escaped closed curly braces
             yield return new object[] { null, "Foo {0} {{0}}", new object[] { 1 }, "Foo 1 {0}" }; // Escaped placeholder
+            yield return new object[] { null, "{{", new object[0], "{" }; // Escaped open curly brace only
+            yield return new object[] { null, "}}", new object[0], "}" }; // Escaped close curly brace only
+            yield return new object[] { null, "{{text}}", new object[0], "{text}" }; // Escaped braces around text
 
             yield return new object[] { null, "Foo {0}", new object[] { null }, "Foo " }; // Values has null only
             yield return new object[] { null, "Foo {0} {1} {2}", new object[] { "Bar", null, "Baz" }, "Foo Bar  Baz" }; // Values has null
@@ -2849,7 +2855,7 @@ namespace System.Tests
         [MemberData(nameof(Format_Invalid_FormatExceptionFromArgs_MemberData))]
         [InlineData(null, "{10000000}", new object[] { null })]
         [InlineData(null, "{0,10000000}", new string[] { null })]
-        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider provider, string format, object[] args)
+        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider? provider, string format, object[] args)
         {
             if (provider is null)
             {
@@ -3220,8 +3226,7 @@ namespace System.Tests
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target));
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-                    Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
 
@@ -3229,8 +3234,7 @@ namespace System.Tests
 
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
 
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-                    Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.OrdinalIgnoreCase));
             }
@@ -3799,7 +3803,7 @@ namespace System.Tests
         [InlineData("", true)]
         [InlineData("foo", false)]
         [InlineData("   ", false)]
-        public static void IsNullOrEmpty(string value, bool expected)
+        public static void IsNullOrEmpty(string? value, bool expected)
         {
             Assert.Equal(expected, string.IsNullOrEmpty(value));
 
@@ -3964,7 +3968,7 @@ namespace System.Tests
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 0, 3, "Foo$$Bar$$Baz")]
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 3, 0, "")]
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 1, 1, "Bar")]
-        public static void Join_StringArray(string separator, string[] values, int startIndex, int count, string expected)
+        public static void Join_StringArray(string? separator, string[] values, int startIndex, int count, string expected)
         {
             if (startIndex + count == values.Length && count != 0)
             {
@@ -4028,6 +4032,50 @@ namespace System.Tests
                 }
             }
             Assert.Equal(expected, string.Join(separator, values, startIndex, count));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(2, 0)]
+        [InlineData(2, 1)]
+        [InlineData(4000, 0)]
+        [InlineData(4000, 1)]
+        [OuterLoop]
+        public static void Join_StringArray_ConcurrencySafe(int separatorLength, int mutationIndex)
+        {
+            string separator = new string(',', separatorLength);
+            string value = new string('x', separatorLength);
+            var values = new string?[3];
+            string withoutValue = separator + separator;
+            string withValue = mutationIndex == 0 ? value + withoutValue : separator + value + separator;
+
+            using var cts = new CancellationTokenSource();
+            using var barrier = new Barrier(2);
+            Task mutator = Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                while (!cts.IsCancellationRequested)
+                {
+                    Volatile.Write(ref values[mutationIndex], value);
+                    Volatile.Write(ref values[mutationIndex], null);
+                }
+            });
+
+            try
+            {
+                barrier.SignalAndWait();
+                for (int i = 0; i < 10000; i++)
+                {
+                    string result = string.Join(separator, values);
+                    Assert.True(result == withoutValue || result == withValue);
+                }
+            }
+            finally
+            {
+                cts.Cancel();
+                mutator.GetAwaiter().GetResult();
+            }
         }
 
         [Fact]
@@ -4886,7 +4934,7 @@ namespace System.Tests
         [InlineData("Aa1Bbb1Cccc1Ddddd1Eeeeee1Fffffff", "1", "23", "Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff")]
         [InlineData("11111111111111111111111", "1", "11", "1111111111111111111111111111111111111111111111")] //  Checks if we handle the max # of matches
         [InlineData("11111111111111111111111", "1", "", "")] // Checks if we handle the max # of matches
-        public static void Replace_String_String(string s, string oldValue, string newValue, string expected)
+        public static void Replace_String_String(string s, string oldValue, string? newValue, string expected)
         {
             Assert.Equal(expected, s.Replace(oldValue, newValue));
         }
@@ -5418,7 +5466,6 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToLower_Culture()
         {
             foreach (object[] testdata in ToLower_Culture_TestData())
@@ -5936,7 +5983,6 @@ namespace System.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(ToUpper_Culture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToUpper_Culture(string actual, string expected, CultureInfo culture)
         {
             Assert.Equal(expected, actual.ToUpper(culture));
@@ -6145,7 +6191,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void Trim(string s, char[] trimChars, string expected)
+        public static void Trim(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6160,7 +6206,6 @@ namespace System.Tests
             }
 
             Assert.Equal(expected, s.Trim(trimChars));
-            Assert.Equal(expected, s.Trim((ReadOnlySpan<char>)trimChars));
             Assert.Equal(expected, s.AsSpan().Trim(trimChars).ToString());
         }
 
@@ -6176,7 +6221,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void TrimEnd(string s, char[] trimChars, string expected)
+        public static void TrimEnd(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6191,7 +6236,6 @@ namespace System.Tests
             }
 
             Assert.Equal(expected, s.TrimEnd(trimChars));
-            Assert.Equal(expected, s.TrimEnd((ReadOnlySpan<char>)trimChars));
             Assert.Equal(expected, s.AsSpan().TrimEnd(trimChars).ToString());
         }
 
@@ -6207,7 +6251,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void TrimStart(string s, char[] trimChars, string expected)
+        public static void TrimStart(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6222,7 +6266,6 @@ namespace System.Tests
             }
 
             Assert.Equal(expected, s.TrimStart(trimChars));
-            Assert.Equal(expected, s.TrimStart((ReadOnlySpan<char>)trimChars));
             Assert.Equal(expected, s.AsSpan().TrimStart(trimChars).ToString());
         }
 
@@ -6453,27 +6496,18 @@ namespace System.Tests
             Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
             Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
             Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
-            Assert.True(s1.SequenceEqual(s1.Trim((ReadOnlySpan<char>)trimCharsString)));
-            Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)trimCharsString)));
-            Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)trimCharsString)));
 
             char[] chars = { 'a', 'b', 'c', 'd', 'e' };
             trimCharsString = chars;
             Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
             Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
             Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
-            Assert.True(s1.SequenceEqual(s1.Trim((ReadOnlySpan<char>)trimCharsString)));
-            Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)trimCharsString)));
-            Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)trimCharsString)));
 
             string emptyString = string.Empty;
             char[] trimCharsArrayFromString = "abcde".ToCharArray();
             Assert.True(emptyString.SequenceEqual(emptyString.Trim(trimCharsArrayFromString)));
             Assert.True(emptyString.SequenceEqual(emptyString.TrimStart(trimCharsArrayFromString)));
             Assert.True(emptyString.SequenceEqual(emptyString.TrimEnd(trimCharsArrayFromString)));
-            Assert.True(emptyString.SequenceEqual(emptyString.Trim((ReadOnlySpan<char>)trimCharsArrayFromString)));
-            Assert.True(emptyString.SequenceEqual(emptyString.TrimStart((ReadOnlySpan<char>)trimCharsArrayFromString)));
-            Assert.True(emptyString.SequenceEqual(emptyString.TrimEnd((ReadOnlySpan<char>)trimCharsArrayFromString)));
 
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
@@ -6509,9 +6543,6 @@ namespace System.Tests
                 Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
                 Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
                 Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
-                Assert.True(s1.SequenceEqual(s1.Trim((ReadOnlySpan<char>)trimCharsString)));
-                Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)trimCharsString)));
-                Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)trimCharsString)));
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(span.SequenceEqual(span.Trim(trimChars)));
@@ -6531,9 +6562,6 @@ namespace System.Tests
                 Assert.True(s2.SequenceEqual(s2.Trim(chars)));
                 Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
                 Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
-                Assert.True(s2.SequenceEqual(s2.Trim((ReadOnlySpan<char>)chars)));
-                Assert.True(s2.SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)chars)));
-                Assert.True(s2.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)chars)));
 
                 ReadOnlySpan<char> span = s2.AsSpan();
                 Assert.True(span.SequenceEqual(span.Trim(chars)));
@@ -6546,9 +6574,6 @@ namespace System.Tests
             Assert.True(s3.SequenceEqual(s3.Trim(trimCharsFromString)));
             Assert.True(s3.SequenceEqual(s3.TrimStart(trimCharsFromString)));
             Assert.True(s3.SequenceEqual(s3.TrimEnd(trimCharsFromString)));
-            Assert.True(s3.SequenceEqual(s3.Trim((ReadOnlySpan<char>)trimCharsFromString)));
-            Assert.True(s3.SequenceEqual(s3.TrimStart((ReadOnlySpan<char>)trimCharsFromString)));
-            Assert.True(s3.SequenceEqual(s3.TrimEnd((ReadOnlySpan<char>)trimCharsFromString)));
 
             ReadOnlySpan<char> stringSpan = s3.AsSpan();
             ReadOnlySpan<char> trimCharsFromStringSpan = trimCharsFromString.AsSpan();
@@ -6573,9 +6598,6 @@ namespace System.Tests
                 Assert.True(string.Empty.SequenceEqual(s1.Trim(chars)), "G: " + length);
                 Assert.True(string.Empty.SequenceEqual(s1.TrimStart(chars)), "H: " + length);
                 Assert.True(string.Empty.SequenceEqual(s1.TrimEnd(chars)), "I: " + length);
-                Assert.True(string.Empty.SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)), "G: " + length);
-                Assert.True(string.Empty.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)), "H: " + length);
-                Assert.True(string.Empty.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)), "I: " + length);
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.Trim(chars)), "G: " + length);
@@ -6588,9 +6610,6 @@ namespace System.Tests
             Assert.True(string.Empty.SequenceEqual(s2.Trim(trimCharsString)), "J");
             Assert.True(string.Empty.SequenceEqual(s2.TrimStart(trimCharsString)), "K");
             Assert.True(string.Empty.SequenceEqual(s2.TrimEnd(trimCharsString)), "L");
-            Assert.True(string.Empty.SequenceEqual(s2.Trim((ReadOnlySpan<char>)trimCharsString)), "J");
-            Assert.True(string.Empty.SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)trimCharsString)), "K");
-            Assert.True(string.Empty.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)trimCharsString)), "L");
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
             ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
@@ -6615,9 +6634,6 @@ namespace System.Tests
                 Assert.True(s1.Substring(1).SequenceEqual(s1.Trim(chars)), "A: " + length);
                 Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart(chars)), "B: " + length);
                 Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)), "C: " + length);
-                Assert.True(s1.Substring(1).SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)), "A: " + length);
-                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)), "B: " + length);
-                Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)), "C: " + length);
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(span.Slice(1).SequenceEqual(span.Trim(chars)), "A: " + length);
@@ -6630,9 +6646,6 @@ namespace System.Tests
             Assert.True(s2.Substring(3).SequenceEqual(s2.Trim(trimCharsString)), "D");
             Assert.True(s2.Substring(3).SequenceEqual(s2.TrimStart(trimCharsString)), "E");
             Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)), "F");
-            Assert.True(s2.Substring(3).SequenceEqual(s2.Trim((ReadOnlySpan<char>)trimCharsString)), "D");
-            Assert.True(s2.Substring(3).SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)trimCharsString)), "E");
-            Assert.True(s2.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)trimCharsString)), "F");
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
             ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
@@ -6658,9 +6671,6 @@ namespace System.Tests
                 Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.Trim(chars)));
                 Assert.True(s1.SequenceEqual(s1.TrimStart(chars)));
                 Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd(chars)));
-                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)));
-                Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)));
-                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)));
 
                 ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);
                 Assert.True(span.Slice(0, length - 1).SequenceEqual(span.Trim(chars)));
@@ -6698,9 +6708,6 @@ namespace System.Tests
                 Assert.True(s1.Substring(1, length - 2).SequenceEqual(s1.Trim(chars)));
                 Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart(chars)));
                 Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd(chars)));
-                Assert.True(s1.Substring(1, length - 2).SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)));
-                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)));
-                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)));
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(span.Slice(1, length - 2).SequenceEqual(span.Trim(chars)));
@@ -6712,9 +6719,6 @@ namespace System.Tests
             Assert.True(s2.Substring(5, 5).SequenceEqual(s2.Trim(chars)));
             Assert.True(s2.Substring(5).SequenceEqual(s2.TrimStart(chars)));
             Assert.True(s2.Substring(0, 10).SequenceEqual(s2.TrimEnd(chars)));
-            Assert.True(s2.Substring(5, 5).SequenceEqual(s2.Trim((ReadOnlySpan<char>)chars)));
-            Assert.True(s2.Substring(5).SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)chars)));
-            Assert.True(s2.Substring(0, 10).SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
             ReadOnlySpan<char> trimChars = chars.AsSpan();
@@ -6740,9 +6744,6 @@ namespace System.Tests
                 Assert.True(s1.SequenceEqual(s1.Trim(chars)));
                 Assert.True(s1.SequenceEqual(s1.TrimStart(chars)));
                 Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)));
-                Assert.True(s1.SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)));
-                Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)));
-                Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)));
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(span.SequenceEqual(span.Trim(chars)));
@@ -6754,9 +6755,6 @@ namespace System.Tests
             Assert.True(s2.SequenceEqual(s2.Trim(chars)));
             Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
             Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
-            Assert.True(s2.SequenceEqual(s2.Trim((ReadOnlySpan<char>)chars)));
-            Assert.True(s2.SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)chars)));
-            Assert.True(s2.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
             ReadOnlySpan<char> trimChars = chars.AsSpan();
@@ -6792,19 +6790,6 @@ namespace System.Tests
                 Assert.True(trimStartResultString.SequenceEqual(trimStartResultString.TrimStart(chars)));
                 Assert.True(trimEndResultString.SequenceEqual(trimEndResultString.TrimEnd(chars)));
 
-                s1 = new string(a);
-                trimResultString = s1.Trim((ReadOnlySpan<char>)chars);
-                trimStartResultString = s1.TrimStart((ReadOnlySpan<char>)chars);
-                trimEndResultString = s1.TrimEnd((ReadOnlySpan<char>)chars);
-                Assert.True(s1.Substring(1, length - 2).SequenceEqual(trimResultString));
-                Assert.True(s1.Substring(1).SequenceEqual(trimStartResultString));
-                Assert.True(s1.Substring(0, length - 1).SequenceEqual(trimEndResultString));
-
-                // 2nd attempt should do nothing
-                Assert.True(trimResultString.SequenceEqual(trimResultString.Trim((ReadOnlySpan<char>)chars)));
-                Assert.True(trimStartResultString.SequenceEqual(trimStartResultString.TrimStart((ReadOnlySpan<char>)chars)));
-                Assert.True(trimEndResultString.SequenceEqual(trimEndResultString.TrimEnd((ReadOnlySpan<char>)chars)));
-
                 ReadOnlySpan<char> span = s1.AsSpan();
                 ReadOnlySpan<char> trimResult = span.Trim(chars);
                 ReadOnlySpan<char> trimStartResult = span.TrimStart(chars);
@@ -6833,17 +6818,9 @@ namespace System.Tests
             Assert.True(trimEndStringResultString.SequenceEqual(trimEndStringResultString.TrimEnd(chars)));
 
             s2 = "ccedafffffbdaa";
-            trimStringResultString = s2.Trim((ReadOnlySpan<char>)chars);
-            trimStartStringResultString = s2.TrimStart((ReadOnlySpan<char>)chars);
-            trimEndStringResultString = s2.TrimEnd((ReadOnlySpan<char>)chars);
             Assert.True(s2.Substring(5, 5).SequenceEqual(trimStringResultString));
             Assert.True(s2.Substring(5).SequenceEqual(trimStartStringResultString));
             Assert.True(s2.Substring(0, 10).SequenceEqual(trimEndStringResultString));
-
-            // 2nd attempt should do nothing
-            Assert.True(trimStringResultString.SequenceEqual(trimStringResultString.Trim((ReadOnlySpan<char>)chars)));
-            Assert.True(trimStartStringResultString.SequenceEqual(trimStartStringResultString.TrimStart((ReadOnlySpan<char>)chars)));
-            Assert.True(trimEndStringResultString.SequenceEqual(trimEndStringResultString.TrimEnd((ReadOnlySpan<char>)chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
             ReadOnlySpan<char> trimChars = chars.AsSpan();
@@ -6889,11 +6866,6 @@ namespace System.Tests
             Assert.True(s2.SequenceEqual(s2.Trim(chars)));
             Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
             Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
-
-            s2 = testString.Substring(1, testString.Length - 2);
-            Assert.True(s2.SequenceEqual(s2.Trim((ReadOnlySpan<char>)chars)));
-            Assert.True(s2.SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)chars)));
-            Assert.True(s2.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
             ReadOnlySpan<char> trimChars = chars.AsSpan();
@@ -7225,7 +7197,7 @@ namespace System.Tests
                     yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                     yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
                 }
-                yield return new object[] { "\ud801\udc29",     PlatformDetection.IsWindows7 ? "\ud801\udc29" : "\ud801\udc01", "en-US" };
+                yield return new object[] { "\ud801\udc29",     "\ud801\udc01", "en-US" };
             }
         }
 
@@ -7379,7 +7351,8 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/112195", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
         public static void StartsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -7402,18 +7375,14 @@ namespace System.Tests
                     Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        s1.ToString().StartsWith(s2.ToString(), StringComparison.CurrentCulture),
-                        s1.StartsWith(s2, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        s1.ToString().StartsWith(s2.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCulture),
-                        s1.StartsWith(s2, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                    foreach (StringComparison comp in new[] { StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase, StringComparison.InvariantCulture, StringComparison.InvariantCultureIgnoreCase })
+                    {
+                        bool expected = s1.ToString().StartsWith(s2.ToString(), comp);
+                        bool actual = s1.StartsWith(s2, comp);
+                        Assert.True(expected == actual,
+                            $"String.StartsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
+                    }
 
                     ReadOnlySpan<char> firstSpan = s1.AsSpan();
                     ReadOnlySpan<char> secondSpan = s2.AsSpan();
@@ -7422,18 +7391,14 @@ namespace System.Tests
                     Assert.False(firstSpan.StartsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.StartsWith(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.StartsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.StartsWith(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.StartsWith(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    foreach (StringComparison comp in new[] { StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase, StringComparison.InvariantCulture, StringComparison.InvariantCultureIgnoreCase })
+                    {
+                        bool expected = firstSpan.ToString().StartsWith(secondSpan.ToString(), comp);
+                        bool actual = firstSpan.StartsWith(secondSpan, comp);
+                        Assert.True(expected == actual,
+                            $"Span.StartsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
+                    }
                 }
             }
         }
@@ -7791,8 +7756,8 @@ namespace System.Tests
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormD), "String should be not normalized when checking with FormD");
 
-            // Browser's, iOS's, MacCatalyst's, and tvOS's ICU do not support FormKC and FormKD
-            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
+            // Some platforms' ICUs do not support FormKC and FormKD
+            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsWasi && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
 
             if (supportsKCKD)
             {

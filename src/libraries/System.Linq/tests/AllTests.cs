@@ -32,20 +32,20 @@ namespace System.Linq.Tests
         public static IEnumerable<object[]> All_TestData()
         {
             Func<int, bool> isEvenFunc = IsEven;
-            yield return new object[] { new int[0], isEvenFunc, true };
-            yield return new object[] { new int[] { 3 }, isEvenFunc, false };
-            yield return new object[] { new int[] { 4 }, isEvenFunc, true };
-            yield return new object[] { new int[] { 3 }, isEvenFunc, false };
-            yield return new object[] { new int[] { 4, 8, 3, 5, 10, 20, 12 }, isEvenFunc, false };
-            yield return new object[] { new int[] { 4, 2, 10, 12, 8, 6, 3 }, isEvenFunc, false };
-            yield return new object[] { new int[] { 4, 2, 10, 12, 8, 6, 14 }, isEvenFunc, true };
+            yield return [new int[0], isEvenFunc, true];
+            yield return [new int[] { 3 }, isEvenFunc, false];
+            yield return [new int[] { 4 }, isEvenFunc, true];
+            yield return [new int[] { 3 }, isEvenFunc, false];
+            yield return [new int[] { 4, 8, 3, 5, 10, 20, 12 }, isEvenFunc, false];
+            yield return [new int[] { 4, 2, 10, 12, 8, 6, 3 }, isEvenFunc, false];
+            yield return [new int[] { 4, 2, 10, 12, 8, 6, 14 }, isEvenFunc, true];
 
             int[] range = Enumerable.Range(1, 10).ToArray();
-            yield return new object[] { range, (Func<int, bool>)(i => i > 0), true };
+            yield return [range, (Func<int, bool>)(i => i > 0), true];
             for (int j = 1; j <= 10; j++)
             {
                 int k = j; // Local copy for iterator
-                yield return new object[] { range, (Func<int, bool>)(i => i > k), false };
+                yield return [range, (Func<int, bool>)(i => i > k), false];
             }
         }
 

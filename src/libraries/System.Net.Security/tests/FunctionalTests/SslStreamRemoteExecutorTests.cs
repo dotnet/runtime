@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -18,8 +19,68 @@ namespace System.Net.Security.Tests
 
     public class SslStreamRemoteExecutorTests
     {
-        public SslStreamRemoteExecutorTests()
-        { }
+        private readonly ITestOutputHelper _output;
+
+        public SslStreamRemoteExecutorTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.FreeBSD)]
+        [InlineData(null, null, false)]
+        [InlineData(false, null, false)]
+        [InlineData(true, null, true)]
+        [InlineData(null, false, false)]
+        [InlineData(null, true, true)]
+        [InlineData(false, true, false)]
+        [InlineData(true, false, true)]
+        public async Task UseLegacySslStreamHandshake_SelectsExpectedHandshakePath(bool? appContextValue, bool? environmentValue, bool expectLegacyPath)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Remove("DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAMHANDSHAKE");
+            if (environmentValue.HasValue)
+            {
+                psi.Environment["DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAMHANDSHAKE"] = environmentValue.Value ? "1" : "0";
+            }
+
+            await RemoteExecutor.Invoke(async (switchValue, expectLegacyPathValue) =>
+            {
+                if (bool.TryParse(switchValue, out bool value))
+                {
+                    AppContext.SetSwitch("System.Net.Security.UseLegacySslStreamHandshake", value);
+                }
+
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (var client = new SslStream(clientStream))
+                using (var server = new SslStream(serverStream))
+                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+                {
+                    var clientOptions = new SslClientAuthenticationOptions
+                    {
+                        RemoteCertificateValidationCallback = delegate { return true; },
+                    };
+                    var serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate,
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    FieldInfo tlsSessionField = typeof(SslStream).GetField("_tlsSession", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Assert.NotNull(tlsSessionField);
+
+                    bool expectLegacy = bool.Parse(expectLegacyPathValue);
+                    Assert.Equal(expectLegacy, tlsSessionField.GetValue(client) is null);
+                    Assert.Equal(expectLegacy, tlsSessionField.GetValue(server) is null);
+                    await TestHelper.PingPong(client, server);
+                }
+            }, appContextValue.ToString(), expectLegacyPath.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
@@ -31,6 +92,13 @@ namespace System.Net.Security.Tests
             {
                 // AppCtxSwitch is not checked for SSLKEYLOGFILE in Debug builds, the same code path
                 // will be tested by the enabledBySwitch = true case. Skip it here.
+                return;
+            }
+
+            if (PlatformDetection.IsOpenSsl3_5 && !enabledBySwitch)
+            {
+                // OpenSSL 3.5 and later versions log into file in SSLKEYLOGFILE environment variable by default,
+                // regardless of AppContext switch.
                 return;
             }
 
@@ -74,6 +142,137 @@ namespace System.Net.Security.Tests
             {
                 Assert.True(File.ReadAllText(tempFile).Length == 0);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)] // OpenSSL configuration is only used on Linux
+        public async Task MalformedOpenSslConfig_DoesNotCrash()
+        {
+            // This test verifies that when OpenSSL has a malformed configuration,
+            // the SSL initialization gracefully falls back to defaults instead of crashing.
+
+            // Create a malformed OpenSSL configuration file
+            var tempConfigFile = Path.GetTempFileName();
+            try
+            {
+                // Write a malformed config that references a non-existent provider section
+                File.WriteAllText(tempConfigFile, @"openssl_conf = openssl_init
+
+[openssl_init]
+providers = provider_sect
+
+[provider_sect]
+default = default_sect
+legacy = legacy_sect
+
+[default_sect]
+activate = 1
+
+# The legacy_sect section is intentionally missing to cause a configuration error
+");
+
+                var psi = new ProcessStartInfo
+                {
+                    Environment = { { "OPENSSL_CONF", tempConfigFile } }
+                };
+
+                // The test should complete successfully without crashing
+                await RemoteExecutor.Invoke(async () =>
+                {
+                    // Create an SSL stream and perform a handshake
+                    // This will trigger SSL initialization which should gracefully handle the malformed config
+                    (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                    using (clientStream)
+                    using (serverStream)
+                    using (var client = new SslStream(clientStream))
+                    using (var server = new SslStream(serverStream))
+                    using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+                    {
+                        SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
+                        clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+                        SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
+                        serverOptions.ServerCertificate = certificate;
+
+                        // This should not crash even with malformed OpenSSL config
+                        await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                            client.AuthenticateAsClientAsync(clientOptions),
+                            server.AuthenticateAsServerAsync(serverOptions));
+
+                        await TestHelper.PingPong(client, server);
+                    }
+                }, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+
+                // If we get here without exception, the test passed
+                _output.WriteLine("Successfully handled malformed OpenSSL configuration without crashing");
+            }
+            finally
+            {
+                // Clean up the temporary config file
+                if (File.Exists(tempConfigFile))
+                {
+                    File.Delete(tempConfigFile);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, true)]
+        [InlineData(null, true, false)]
+        [InlineData(null, false, true)]
+        public async Task SslStream_ServerDisablesCertificateDownloads_DefaultAndCompatSwitch(bool? appCtxSwitchValue, bool envVarSet, bool shouldDisableDownloads)
+        {
+            var psi = new ProcessStartInfo
+            {
+                Environment = { { "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS", envVarSet ? "1" : "0" } }
+            };
+
+            await RemoteExecutor.Invoke(async (appCtxSwitchValueString, shouldDisableDownloadsString) =>
+            {
+                if (bool.TryParse(appCtxSwitchValueString, out bool value))
+                {
+                    AppContext.SetSwitch("System.Net.Security.EnableServerAiaDownloads", value);
+                }
+
+                bool? disableCertificateDownloadsObserved = false;
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (var client = new SslStream(clientStream))
+                using (var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    Assert.NotNull(chain);
+                    disableCertificateDownloadsObserved = chain.ChainPolicy.DisableCertificateDownloads;
+                    return true;
+                }))
+
+                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+                using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+                {
+                    SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                    {
+                        RemoteCertificateValidationCallback = delegate { return true; },
+                        ClientCertificates = new X509Certificate2Collection(clientCertificate),
+                        TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false),
+                    };
+
+                    SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate,
+                        ClientCertificateRequired = true,
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    bool expectDisabled = bool.Parse(shouldDisableDownloadsString);
+                    Assert.Equal(expectDisabled, disableCertificateDownloadsObserved);
+                }
+            }, appCtxSwitchValue.ToString(), shouldDisableDownloads.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
     }
 }

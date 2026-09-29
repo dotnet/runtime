@@ -18,19 +18,19 @@
     * [Building PAL Tests](#building-pal-tests)
     * [Running PAL Tests](#running-pal-tests)
 * [Modifying Tests](#modifying-tests)
+  * [Asynchronous Tests](#asynchronous-tests)
 * [Investigating Test Failures](#investigating-test-failures)
 
 This guide will walk you through building and running the CoreCLR tests. These are located within the `src/tests` subtree of the runtime repo.
 
 ## Requirements
 
-In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find more detailed instructions per platform in their dedicated docs:
+In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find detailed instructions on how to do it on their respective README's:
 
-* [Windows](/docs/workflow/building/coreclr/windows-instructions.md)
-* [macOS](/docs/workflow/building/coreclr/macos-instructions.md)
-* [Linux](/docs/workflow/building/coreclr/linux-instructions.md)
+* [CoreCLR](/docs/workflow/building/coreclr/README.md)
+* [Libraries](/docs/workflow/building/libraries/README.md)
 
-For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/README.md).
+For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/).
 
 ## Overview
 
@@ -43,6 +43,8 @@ Building the tests can be as simple as calling the build script without any argu
 ```
 
 Note that for the libraries configuration, we are passing the argument directly to MSBuild instead of the build script, hence the `/p:LibrariesConfiguration` flag. Also, make sure you use the correct syntax depending on our platform. The _cmd_ script takes the arguments by placing, while the _sh_ script requires them to be with a hyphen.
+
+In the case you are working with a different build configuration for the host, you can specify it here via the `/p:HostConfiguration` flag.
 
 **NOTE**: Building the whole test suite is a very lengthy process, so it is highly recommended you build individual tests, and/or test subtrees as you need them, to make your workflow more efficient. This is explained in detail later on in this doc.
 
@@ -144,7 +146,11 @@ Some tests need to be run in their own process as they interact with global proc
 
 Sometimes you may want to run a test with the least amount of code before actually executing the test. In addition to the merged test runner, we have another runner mode known as the "Standalone" runner. This runner is used by default in tests that require process isolation. This runner consists of a simple `try-catch` around executing each test sequentially, with no test results file or runtime test filtering.
 
+If you have a merged test runner that you want to run in the standalone mode, you can pass `-p:BuildAsStandalone=true` when building the merged test runner. This will build a project that runs all tests sequentially with no filtering or result file support.
+
 To filter tests on a merged test runner built as standalone, you can set the `TestFilter` property, like so: `./dotnet.sh build -c Checked src/tests/path/to/test.csproj -p:TestFilter=SubstringOfFullyQualifiedTestName`. This mechanism supports the same filtering as the runtime test filtering. Using this mechanism will allow you to skip individual test cases at build time instead of at runtime.
+
+The `TestFilter` property can also be used on a runner assembly in the merged runner mode.
 
 #### Building all tests with the Standalone Runner
 
@@ -172,6 +178,8 @@ The following are common reasons to mark a test as requiring process isolation:
 - The test requires special information, such as an app manifest, in its executable.
 - The test launches through a native executable.
 - The test sets one of the configuration properties that are checked in the test run scripts, such as those in [test-configuration.md](test-configuration.md#adding-test-guidelines).
+
+For a comprehensive list of rules, see [requiresprocessisolation.md](requiresprocessisolation.md).
 
 When a test is marked as `<RequiresProcessIsolation>true</RequiresProcessIsolation>`, it will be run in its own process and have its own `.cmd` and `.sh` scripts generated as test entrypoints. In CI, it will be executed as out of process by whichever merged test runner it is referenced by.
 
@@ -320,6 +328,20 @@ To disable tests in the CI, edit `src/coreclr/pal/tests/palsuite/issues.targets`
 ## Modifying Tests
 
 If you need to edit any given test's source code, simply make your changes and rebuild the test project. Then, you can re-run it as needed following the instructions detailed in the sections above.
+
+### Asynchronous Tests
+
+The generated standalone and merged runners await tests returning `Task` or
+`ValueTask`, including facts, theories, and instance tests. Instance disposal and
+result reporting happen after completion. Static facts may also return
+`Task<int>` or `ValueTask<int>` using the legacy exit-code convention (100 means
+success).
+
+Return the task directly, or make the test `async` and use `await`, rather than
+blocking with `.Wait()`, `.Result`, or `.GetAwaiter().GetResult()`. Blocking on
+incomplete tasks is not supported on single-threaded WebAssembly. Tests that
+actually require parallel threads must still use the multithreading capability
+condition; asynchronous suspension alone does not require it.
 
 ## Investigating Test Failures
 

@@ -181,6 +181,8 @@ namespace System.Reflection
             }
         }
 
+        public override bool IsCollectible => false;
+
         private string FormatNameAndSig()
         {
             // Serialization uses ToString to resolve MethodInfo overloads.
@@ -430,16 +432,16 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            return CustomAttribute.IsDefined(this, attributeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, inherit);
         }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -703,6 +705,8 @@ namespace System.Reflection
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeMethodInfo>(other);
+
+        private static bool IsDisallowedAsyncHelper => false;
     }
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
@@ -746,6 +750,8 @@ namespace System.Reflection
                 return GetRuntimeModule();
             }
         }
+
+        public override bool IsCollectible => false;
 
         internal RuntimeModule GetRuntimeModule()
         {
@@ -868,17 +874,17 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            return CustomAttribute.IsDefined(this, attributeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]

@@ -312,7 +312,7 @@ namespace System.Runtime.Serialization
 
             // This is supposed to be set by GenerateType. If it wasn't, there is a problem.
             Debug.Assert(contractCodeDomInfo.TypeReference != null);
-            return contractCodeDomInfo.TypeReference!;
+            return contractCodeDomInfo.TypeReference;
         }
 
         private CodeTypeReference GetCodeTypeReference(Type type)
@@ -405,6 +405,13 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
+        private bool GetCollectionItemNullability(DataContract collectionContract)
+        {
+            ContractCodeDomInfo contractCodeDomInfo = GetContractCodeDomInfo(collectionContract);
+            return contractCodeDomInfo.CollectionItemIsNullable ?? collectionContract.IsCollectionItemNullable();
+        }
+
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         private void GenerateType(DataContract dataContract, ContractCodeDomInfo contractCodeDomInfo)
         {
             if (!contractCodeDomInfo.IsProcessed)
@@ -486,7 +493,8 @@ namespace System.Runtime.Serialization
             if (containingContractCodeDomInfo.ReferencedTypeExists)
                 return null;
 
-            CodeTypeDeclaration containingType = containingContractCodeDomInfo.TypeDeclaration!; // Nested types by definition have containing types.
+            Debug.Assert(containingContractCodeDomInfo.TypeDeclaration != null, "Nested types have containing types by definition - types with declaration");
+            CodeTypeDeclaration containingType = containingContractCodeDomInfo.TypeDeclaration;
             if (TypeContainsNestedType(containingType, nestedTypeName))
             {
                 for (int i = 1; ; i++)
@@ -502,7 +510,8 @@ namespace System.Runtime.Serialization
 
             CodeTypeDeclaration type = CreateTypeDeclaration(nestedTypeName, dataContract);
             containingType.Members.Add(type);
-            contractCodeDomInfo.TypeReference = new CodeTypeReference(containingContractCodeDomInfo.TypeReference!.BaseType + "+" + nestedTypeName); // Again, nested types by definition have containing types.
+            Debug.Assert(containingContractCodeDomInfo.TypeReference != null, "Nested types have containing types by definition - types with reference");
+            contractCodeDomInfo.TypeReference = new CodeTypeReference(containingContractCodeDomInfo.TypeReference.BaseType + "+" + nestedTypeName);
 
             if (GenerateInternalTypes)
                 type.TypeAttributes = TypeAttributes.NestedAssembly;
@@ -518,8 +527,9 @@ namespace System.Runtime.Serialization
             CodeAttributeDeclaration generatedCodeAttribute = new CodeAttributeDeclaration(typeof(GeneratedCodeAttribute).FullName!);
 
             AssemblyName assemblyName = Assembly.GetExecutingAssembly().GetName();
-            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Name!)));
-            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Version?.ToString()!)));
+            Debug.Assert(assemblyName.Name != null, $"Current executing assembly name is not expected to be null in {nameof(CodeExporter)}.{nameof(CreateTypeDeclaration)} scenario");
+            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Name)));
+            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Version?.ToString())));
 
             // System.Diagnostics.DebuggerStepThroughAttribute not allowed on enums
             // ensure that the attribute is only generated on types that are not enums
@@ -607,12 +617,13 @@ namespace System.Runtime.Serialization
                 if (!TryGetReferencedDictionaryType(collectionContract, out typeReference))
                 {
                     // ItemContract - aka BaseContract - is never null for CollectionDataContract
-                    DataContract itemContract = collectionContract.BaseContract!;
+                    Debug.Assert(collectionContract.BaseContract != null, "BaseContract should not be null for CollectionDataContract");
+                    DataContract itemContract = collectionContract.BaseContract;
                     if (collectionContract.IsDictionaryLike(out _, out _, out _))
                     {
                         GenerateKeyValueType(itemContract.As(DataContractType.ClassDataContract));
                     }
-                    bool isItemTypeNullable = collectionContract.IsItemTypeNullable();
+                    bool isItemTypeNullable = GetCollectionItemNullability(collectionContract);
                     if (!TryGetReferencedListType(itemContract, isItemTypeNullable, out typeReference))
                     {
                         CodeTypeReference? elementTypeReference = GetElementTypeReference(itemContract, isItemTypeNullable);
@@ -626,12 +637,13 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
-        private static bool HasDefaultCollectionNames(DataContract collectionContract)
+        private bool HasDefaultCollectionNames(DataContract collectionContract)
         {
-            Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
-
             // ItemContract - aka BaseContract - is never null for CollectionDataContract
-            DataContract itemContract = collectionContract.BaseContract!;
+            Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
+            Debug.Assert(collectionContract.BaseContract != null, "BaseContract should not be null for CollectionDataContract");
+
+            DataContract itemContract = collectionContract.BaseContract;
             bool isDictionary = collectionContract.IsDictionaryLike(out string? keyName, out string? valueName, out string? itemName);
             if (itemName != itemContract.XmlName.Name)
                 return false;
@@ -639,7 +651,7 @@ namespace System.Runtime.Serialization
             if (isDictionary && (keyName != ImportGlobals.KeyLocalName || valueName != ImportGlobals.ValueLocalName))
                 return false;
 
-            XmlQualifiedName expectedType = itemContract.GetArrayTypeName(collectionContract.IsItemTypeNullable());
+            XmlQualifiedName expectedType = itemContract.GetArrayTypeName(GetCollectionItemNullability(collectionContract));
             return (collectionContract.XmlName.Name == expectedType.Name && collectionContract.XmlName.Namespace == expectedType.Namespace);
         }
 
@@ -647,6 +659,7 @@ namespace System.Runtime.Serialization
         private bool TryGetReferencedDictionaryType(DataContract collectionContract, [NotNullWhen(true)] out CodeTypeReference? typeReference)
         {
             Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
+            Debug.Assert(collectionContract.BaseContract != null, "BaseContract should not be null for CollectionDataContract");
 
             // Check if it is a dictionary and use referenced dictionary type if present
             if (collectionContract.IsDictionaryLike(out _, out _, out _)
@@ -655,7 +668,7 @@ namespace System.Runtime.Serialization
                 Type? type = _dataContractSet.GetReferencedType(GenericDictionaryName, GenericDictionaryContract, out DataContract? _, out object[]? _) ?? typeof(Dictionary<,>);
 
                 // ItemContract - aka BaseContract - is never null for CollectionDataContract
-                DataContract? itemContract = collectionContract.BaseContract!.As(DataContractType.ClassDataContract);
+                DataContract? itemContract = collectionContract.BaseContract.As(DataContractType.ClassDataContract);
 
                 // A dictionary should have a Key/Value item contract that has at least two members: key and value.
                 Debug.Assert(itemContract != null);
@@ -686,7 +699,7 @@ namespace System.Runtime.Serialization
                 if (type != null)
                 {
                     typeReference = GetCodeTypeReference(type);
-                    typeReference.TypeArguments.Add(GetElementTypeReference(itemContract, isItemTypeNullable)!);    // Lists have an item type
+                    typeReference.TypeArguments.Add(GetElementTypeReference(itemContract, isItemTypeNullable));    // Lists have an item type
                     return true;
                 }
             }
@@ -819,7 +832,8 @@ namespace System.Runtime.Serialization
             {
                 ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(classDataContract.BaseContract);
                 Debug.Assert(baseContractCodeDomInfo.IsProcessed, "Cannot generate code for type if code for base type has not been generated");
-                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference!);
+                Debug.Assert(baseContractCodeDomInfo.TypeReference != null, "Class data contracts should have non-null TypeReference");
+                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference);
                 AddBaseMemberNames(baseContractCodeDomInfo, contractCodeDomInfo);
                 if (baseContractCodeDomInfo.ReferencedTypeExists)
                 {
@@ -1068,7 +1082,8 @@ namespace System.Runtime.Serialization
 
             CodeTypeDeclaration type = contractCodeDomInfo.TypeDeclaration;
             // BaseContract is never null for EnumDataContract
-            Type baseType = enumDataContract.BaseContract!.UnderlyingType;
+            Debug.Assert(enumDataContract.BaseContract != null, "BaseContract should not be null for EnumDataContract");
+            Type baseType = enumDataContract.BaseContract.UnderlyingType;
             type.IsEnum = true;
             type.BaseTypes.Add(baseType);
             if (baseType.IsDefined(typeof(FlagsAttribute), false))
@@ -1152,7 +1167,9 @@ namespace System.Runtime.Serialization
             {
                 ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(classDataContract.BaseContract);
                 GenerateType(classDataContract.BaseContract, baseContractCodeDomInfo);
-                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference!);
+
+                Debug.Assert(baseContractCodeDomInfo.TypeReference != null, "Class data contracts should have non-null TypeReference");
+                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference);
                 if (baseContractCodeDomInfo.ReferencedTypeExists)
                 {
                     Type? actualType = (Type?)baseContractCodeDomInfo.TypeReference?.UserData[s_codeUserDataActualTypeKey];
@@ -1203,8 +1220,9 @@ namespace System.Runtime.Serialization
                     collectionContract.XmlName.Namespace)));
 
             // ItemContract - aka BaseContract - is never null for CollectionDataContract
+            Debug.Assert(collectionContract.BaseContract != null, "BaseContract should not be null for CollectionDataContract");
             DataContract itemContract = collectionContract.BaseContract!;
-            bool isItemTypeNullable = collectionContract.IsItemTypeNullable();
+            bool isItemTypeNullable = GetCollectionItemNullability(collectionContract);
             bool isDictionary = collectionContract.IsDictionaryLike(out string? keyName, out string? valueName, out string? itemName);
 
             CodeTypeReference? baseTypeReference;
@@ -1235,15 +1253,17 @@ namespace System.Runtime.Serialization
 
             // This is supposed to be set by GenerateType. If it wasn't, there is a problem.
             Debug.Assert(contractCodeDomInfo.TypeDeclaration != null);
+            Debug.Assert(baseTypeReference != null, "Base type reference should not be null for Dictionary/List collection data contracts");
 
             CodeTypeDeclaration generatedType = contractCodeDomInfo.TypeDeclaration;
-            generatedType.BaseTypes.Add(baseTypeReference!);
+            generatedType.BaseTypes.Add(baseTypeReference);
             CodeAttributeDeclaration collectionContractAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(CollectionDataContractAttribute)));
             collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.NameProperty, new CodePrimitiveExpression(dataContractName)));
             collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.NamespaceProperty, new CodePrimitiveExpression(collectionContract.XmlName.Namespace)));
             if (collectionContract.IsReference != ImportGlobals.DefaultIsReference)
                 collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.IsReferenceProperty, new CodePrimitiveExpression(collectionContract.IsReference)));
-            collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.ItemNameProperty, new CodePrimitiveExpression(GetNameForAttribute(itemName!))));    // ItemName is never null for Collection contracts.
+            Debug.Assert(itemName != null, "ItemName is never null for Collection contracts.");
+            collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.ItemNameProperty, new CodePrimitiveExpression(GetNameForAttribute(itemName))));
             if (foundDictionaryBase)
             {
                 // These are not null if we are working with a dictionary. See CollectionDataContract.IsDictionary
@@ -1314,7 +1334,7 @@ namespace System.Runtime.Serialization
                 bool isElementNameDifferent =
                     (xmlDataContract.TopLevelElementName != null && xmlDataContract.TopLevelElementName.Value != xmlDataContract.XmlName.Name) ||
                     (xmlDataContract.TopLevelElementNamespace != null && xmlDataContract.TopLevelElementNamespace.Value != xmlDataContract.XmlName.Namespace);
-                if (isElementNameDifferent || xmlDataContract.IsTopLevelElementNullable == false)
+                if (isElementNameDifferent || !xmlDataContract.IsTopLevelElementNullable)
                 {
                     CodeAttributeDeclaration xmlRootAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(XmlRootAttribute)));
                     if (isElementNameDifferent)
@@ -1328,7 +1348,7 @@ namespace System.Runtime.Serialization
                             xmlRootAttribute.Arguments.Add(new CodeAttributeArgument("Namespace", new CodePrimitiveExpression(xmlDataContract.TopLevelElementNamespace.Value)));
                         }
                     }
-                    if (xmlDataContract.IsTopLevelElementNullable == false)
+                    if (!xmlDataContract.IsTopLevelElementNullable)
                         xmlRootAttribute.Arguments.Add(new CodeAttributeArgument("IsNullable", new CodePrimitiveExpression(false)));
                     type.CustomAttributes.Add(xmlRootAttribute);
                 }
@@ -1433,7 +1453,9 @@ namespace System.Runtime.Serialization
 
         internal static string GetClrTypeFullName(Type type)
         {
-            return !type.IsGenericTypeDefinition && type.ContainsGenericParameters ? type.Namespace + "." + type.Name : type.FullName!;
+            // Type.FullName can be null for types that contain unassigned generic parameters and for generic type parameters,
+            // so construct a fallback name only when FullName is unavailable.
+            return type.FullName ?? (type.Namespace == null ? type.Name : type.Namespace + "." + type.Name);
         }
 
         private static string AppendToValidClrIdentifier(string identifier, string appendString)

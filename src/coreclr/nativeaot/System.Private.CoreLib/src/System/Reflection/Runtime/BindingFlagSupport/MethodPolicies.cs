@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -16,13 +15,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public static readonly MethodPolicies Instance = new MethodPolicies();
 
         public MethodPolicies() : base(MemberTypeIndex.Method) { }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Reflection implementation")]
-        public sealed override IEnumerable<MethodInfo> GetDeclaredMembers(Type type)
-        {
-            return type.GetMethods(DeclaredOnlyLookup);
-        }
 
         public sealed override IEnumerable<MethodInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
@@ -40,10 +32,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
         }
 
-        public sealed override bool ImplicitlyOverrides(MethodInfo? baseMember, MethodInfo? derivedMember)
+        public static bool ImplicitlyOverrides(MethodInfo baseMember, MethodInfo derivedMember)
         {
             // TODO (https://github.com/dotnet/corert/issues/1896) Comparing signatures is fragile. The runtime and/or toolchain should have a way of sharing this info.
-            return AreNamesAndSignaturesEqual(baseMember!, derivedMember!);
+            return AreNamesAndSignaturesEqual(baseMember, derivedMember);
         }
 
         //

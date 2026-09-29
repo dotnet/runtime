@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -112,7 +112,7 @@ namespace System.Buffers.Text.Tests
                 Assert.Equal(new String(encodedBytes), Base64Url.EncodeToString(source));
 
                 byte[] decoded = Base64Url.DecodeFromChars(encodedBytes);
-                Assert.Equal(source, decoded);
+                Assert.Equal(source, decoded.AsSpan());
             }
         }
 
@@ -196,7 +196,8 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("\u5948cz_T", 0, 0)]                                              // scalar code-path
+        [InlineData("AB\u1000D", 0, 0)]                                               // scalar code-path, non-ASCII char > 255 (https://github.com/dotnet/runtime/issues/124513)
+        [InlineData("\u5948cz_T", 0, 0)]                                               // scalar code-path
         [InlineData("z_Ta123\u5948", 4, 3)]
         [InlineData("\u5948z_T-H7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
         [InlineData("z_T-H7sqEkerqMweH1uSw\u5948==", 20, 15)]
@@ -438,7 +439,7 @@ namespace System.Buffers.Text.Tests
                 Span<byte> decodedBytes = new byte[original.Length];
                 int decoded = Base64Url.DecodeFromChars(encodedArray, decodedBytes);
                 Assert.Equal(original.Length, decoded);
-                AssertExtensions.SequenceEqual(original, decodedBytes);
+                AssertExtensions.SequenceEqual(original.AsSpan(), decodedBytes);
 
                 byte[] actualBytes = new byte[original.Length];
                 Assert.True(Base64Url.TryDecodeFromChars(encodedSpan, actualBytes, out int bytesWritten));

@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // Compute all minterm ranges. We do this here in order to determine the maximum character value
             // in order to size the lookup array to minimize steady-state memory consumption of the potentially
             // large lookup array. We prefer to use the byte[] _lookup when possible, in order to keep memory
-            // consumption to a minimum; doing so accomodates up to 255 minterms, which is the vast majority case.
+            // consumption to a minimum; doing so accommodates up to 255 minterms, which is the vast majority case.
             // However, when there are more than 255 minterms, we need to use int[] _intLookup. We rent an object[]
             // rather than a (uint,uint)[][] to avoid the extra type pressure on the ArrayPool (object[]s are common,
             // (uint,uint)[][]s much less so).

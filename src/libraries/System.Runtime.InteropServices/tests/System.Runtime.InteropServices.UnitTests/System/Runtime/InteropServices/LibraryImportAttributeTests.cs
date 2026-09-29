@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("LibraryName")]
-        public void Ctor(string libraryName)
+        public void Ctor(string? libraryName)
         {
             var attribute = new LibraryImportAttribute(libraryName);
             Assert.Equal(libraryName, attribute.LibraryName);

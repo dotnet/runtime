@@ -62,6 +62,8 @@ struct InstructionAttribute
     }
 };
 
+#ifndef DACCESS_COMPILE
+
 /* ------------------------------------------------------------------------- *
  * Classes
  * ------------------------------------------------------------------------- */
@@ -77,7 +79,7 @@ public:
 
     virtual void Init(const BYTE *ip, REGDISPLAY *pregisters)
     {
-        PREFIX_ASSUME(pregisters != NULL);
+        _ASSERTE(pregisters != NULL);
         _ASSERTE(GetControlPC(pregisters) == (PCODE)ip);
 
         m_registers = pregisters;
@@ -279,5 +281,7 @@ private:
     DWORD m_opcode;           // Current instruction or opcode
 };
 #endif
+
+#endif // DACCESS_COMPILE
 
 #endif // WALKER_H_

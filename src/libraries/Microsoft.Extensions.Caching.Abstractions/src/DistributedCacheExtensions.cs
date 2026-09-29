@@ -13,19 +13,21 @@ namespace Microsoft.Extensions.Caching.Distributed
     /// </summary>
     public static class DistributedCacheExtensions
     {
+        private static readonly DistributedCacheEntryOptions DefaultOptions = new DistributedCacheEntryOptions().Freeze();
+
         /// <summary>
         /// Sets a sequence of bytes in the specified cache with the specified key.
         /// </summary>
         /// <param name="cache">The cache in which to store the data.</param>
         /// <param name="key">The key to store the data in.</param>
         /// <param name="value">The data to store in the cache.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static void Set(this IDistributedCache cache, string key, byte[] value)
         {
-            ThrowHelper.ThrowIfNull(key);
-            ThrowHelper.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(value);
 
-            cache.Set(key, value, new DistributedCacheEntryOptions());
+            cache.Set(key, value, DefaultOptions);
         }
 
         /// <summary>
@@ -36,13 +38,13 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="value">The data to store in the cache.</param>
         /// <param name="token">Optional. A <see cref="CancellationToken" /> to cancel the operation.</param>
         /// <returns>A task that represents the asynchronous set operation.</returns>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static Task SetAsync(this IDistributedCache cache, string key, byte[] value, CancellationToken token = default(CancellationToken))
         {
-            ThrowHelper.ThrowIfNull(key);
-            ThrowHelper.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(value);
 
-            return cache.SetAsync(key, value, new DistributedCacheEntryOptions(), token);
+            return cache.SetAsync(key, value, DefaultOptions, token);
         }
 
         /// <summary>
@@ -51,10 +53,10 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="cache">The cache in which to store the data.</param>
         /// <param name="key">The key to store the data in.</param>
         /// <param name="value">The data to store in the cache.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static void SetString(this IDistributedCache cache, string key, string value)
         {
-            cache.SetString(key, value, new DistributedCacheEntryOptions());
+            cache.SetString(key, value, DefaultOptions);
         }
 
         /// <summary>
@@ -64,11 +66,11 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="key">The key to store the data in.</param>
         /// <param name="value">The data to store in the cache.</param>
         /// <param name="options">The cache options for the entry.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static void SetString(this IDistributedCache cache, string key, string value, DistributedCacheEntryOptions options)
         {
-            ThrowHelper.ThrowIfNull(key);
-            ThrowHelper.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(value);
 
             cache.Set(key, Encoding.UTF8.GetBytes(value), options);
         }
@@ -81,10 +83,10 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="value">The data to store in the cache.</param>
         /// <param name="token">Optional. A <see cref="CancellationToken" /> to cancel the operation.</param>
         /// <returns>A task that represents the asynchronous set operation.</returns>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static Task SetStringAsync(this IDistributedCache cache, string key, string value, CancellationToken token = default(CancellationToken))
         {
-            return cache.SetStringAsync(key, value, new DistributedCacheEntryOptions(), token);
+            return cache.SetStringAsync(key, value, DefaultOptions, token);
         }
 
         /// <summary>
@@ -96,11 +98,11 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <param name="options">The cache options for the entry.</param>
         /// <param name="token">Optional. A <see cref="CancellationToken" /> to cancel the operation.</param>
         /// <returns>A task that represents the asynchronous set operation.</returns>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static Task SetStringAsync(this IDistributedCache cache, string key, string value, DistributedCacheEntryOptions options, CancellationToken token = default(CancellationToken))
         {
-            ThrowHelper.ThrowIfNull(key);
-            ThrowHelper.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(value);
 
             return cache.SetAsync(key, Encoding.UTF8.GetBytes(value), options, token);
         }

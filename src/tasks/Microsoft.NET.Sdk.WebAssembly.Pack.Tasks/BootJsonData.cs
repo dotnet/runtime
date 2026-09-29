@@ -24,7 +24,13 @@ public class BootJsonData
 
     public string mainAssemblyName { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public string applicationEnvironment { get; set; }
+
     /// <summary>
+    /// For .NET < 10, this contains <see cref="ResourcesData"/>.
+    /// For .NET >= 10, this contains <see cref="AssetsData"/>.
+    /// ---
     /// Gets the set of resources needed to boot the application. This includes the transitive
     /// closure of .NET assemblies (including the entrypoint assembly), the dotnet.wasm file,
     /// and any PDBs to be loaded.
@@ -33,7 +39,8 @@ public class BootJsonData
     /// and values are SHA-256 hashes formatted in prefixed base-64 style (e.g., 'sha256-abcdefg...')
     /// as used for subresource integrity checking.
     /// </summary>
-    public ResourcesData resources { get; set; } = new ResourcesData();
+    [DataMember(EmitDefaultValue = false)]
+    public object resources { get; set; } = new ResourcesData();
 
     /// <summary>
     /// Gets a value that determines whether to enable caching of the <see cref="resources"/>
@@ -50,11 +57,6 @@ public class BootJsonData
     /// Gets a value that determines what level of debugging is configured.
     /// </summary>
     public int debugLevel { get; set; }
-
-    /// <summary>
-    /// Gets a value that determines if the linker is enabled.
-    /// </summary>
-    public bool? linkerEnabled { get; set; }
 
     /// <summary>
     /// Config files for the application
@@ -83,11 +85,6 @@ public class BootJsonData
     public string globalizationMode { get; set; }
 
     /// <summary>
-    /// Gets or sets a value that determines if the caching startup memory is enabled.
-    /// </summary>
-    public bool? startupMemoryCache { get; set; }
-
-    /// <summary>
     /// Gets a value for mono runtime options.
     /// </summary>
     public string[] runtimeOptions { get; set; }
@@ -100,7 +97,11 @@ public class BootJsonData
     /// <summary>
     /// Gets or sets environment variables.
     /// </summary>
-    public object environmentVariables { get; set; }
+    public System.Collections.Generic.Dictionary<string, string> environmentVariables { get; set; }
+    /// <summary>
+    /// Subset of runtimeconfig.json
+    /// </summary>
+    public RuntimeConfigData runtimeConfig { get; set; }
 
     /// <summary>
     /// Gets or sets diagnostic tracing.
@@ -116,6 +117,49 @@ public class BootJsonData
     /// Gets or sets pthread pool unused size.
     /// </summary>
     public int? pthreadPoolUnusedSize { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? exitOnUnhandledError { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? appendElementOnExit { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? logExitCode { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? asyncFlushOnExit { get; set; }
+}
+
+/// <summary>
+/// Subset of runtimeconfig.json
+/// </summary>
+public class RuntimeConfigData
+{
+    /// <summary>
+    /// Runtime options
+    /// </summary>
+    public RuntimeOptionsData runtimeOptions { get; set; }
+}
+
+public class RuntimeOptionsData
+{
+    /// <summary>
+    /// Config properties for the runtime
+    /// </summary>
+    public Dictionary<string, object> configProperties { get; set; }
 }
 
 public class ResourcesData
@@ -137,11 +181,14 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary runtime { get; set; }
 
+    /// <remarks>
+    /// Removed in .NET 11; kept for compatibility when the .NET 11 SDK builds projects targeting earlier TFMs.
+    /// </remarks>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary jsModuleGlobalization { get; set; }
+    public ResourceHashesByNameDictionary jsModuleDiagnostics { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleNative { get; set; }
@@ -194,7 +241,6 @@ public class ResourcesData
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
-    /// Used in .NET < 8
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary libraryInitializers { get; set; }
@@ -218,6 +264,7 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
+    // this field this only for Mono
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
 
@@ -226,6 +273,158 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public List<string> remoteSources { get; set; }
+}
+
+public class AssetsData
+{
+    /// <summary>
+    /// Gets a hash of all resources
+    /// </summary>
+    public string hash { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleDiagnostics { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleRuntime { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<WasmAsset> wasmNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<SymbolsAsset> wasmSymbols { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> icu { get; set; }
+
+    /// <summary>
+    /// "assembly" (.dll) resources needed to start MonoVM
+    /// </summary>
+    public List<WebcilAsset> coreAssembly { get; set; } = new();
+
+    /// <summary>
+    /// "assembly" (.dll) resources
+    /// </summary>
+    public List<WebcilAsset> assembly { get; set; } = new();
+
+    /// <summary>
+    /// "debug" (.pdb) resources needed to start MonoVM
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> corePdb { get; set; }
+
+    /// <summary>
+    /// "debug" (.pdb) resources
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<GeneralAsset> pdb { get; set; }
+
+    /// <summary>
+    /// localization (.satellite resx) resources
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, List<WebcilAsset>> satelliteResources { get; set; }
+
+    /// <summary>
+    /// Assembly (.dll) resources that are loaded lazily during runtime
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<WebcilAsset> lazyAssembly { get; set; }
+
+    /// <summary>
+    /// JavaScript module initializers that Blazor will be in charge of loading.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> libraryInitializers { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> modulesAfterConfigLoaded { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> modulesAfterRuntimeReady { get; set; }
+
+    /// <summary>
+    /// Extensions created by users customizing the initialization process. The format of the file(s)
+    /// is up to the user.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> extensions { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<VfsAsset> coreVfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<VfsAsset> vfs { get; set; }
+}
+
+[DataContract]
+public class JsAsset
+{
+    public string name { get; set; }
+    public string moduleExports { get; set; }
+}
+
+[DataContract]
+public class SymbolsAsset
+{
+    public string name { get; set; }
+    public string hash { get; set; }
+    public string cache { get; set; }
+}
+
+[DataContract]
+public class WasmAsset
+{
+    public string name { get; set; }
+    public string hash { get; set; }
+    public string resolvedUrl { get; set; }
+    public string cache { get; set; }
+}
+
+[DataContract]
+public class GeneralAsset
+{
+    public string virtualPath { get; set; }
+    public string name { get; set; }
+    public string hash { get; set; }
+    public string resolvedUrl { get; set; }
+    public string cache { get; set; }
+}
+
+[DataContract]
+public class WebcilAsset : GeneralAsset
+{
+    /// <summary>
+    /// For ReadyToRun (R2R) webcil-in-wasm images: the number of table entries the module needs.
+    /// When present (non-null) the loader grows the table before instantiation. Only R2R images set
+    /// this; it is omitted for plain (non-R2R) webcil.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public int? tableSize { get; set; }
+
+    /// <summary>
+    /// The size in bytes of the Webcil payload to allocate before instantiation. Emitted for every
+    /// webcil-in-wasm assembly (the loader requires it to avoid parsing the wasm data section), not
+    /// just R2R images. For R2R images it is paired with <see cref="tableSize"/>.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public int? payloadSize { get; set; }
+}
+
+[DataContract]
+public class VfsAsset
+{
+    public string virtualPath { get; set; }
+    public string name { get; set; }
+    public string hash { get; set; }
+    public string resolvedUrl { get; set; }
+    public string cache { get; set; }
 }
 
 public enum GlobalizationMode : int
@@ -252,11 +451,6 @@ public enum GlobalizationMode : int
     /// Load custom icu file provided by the developer.
     /// </summary>
     Custom = 3,
-
-    /// <summary>
-    /// Use the reduced icudt_hybrid.dat file
-    /// </summary>
-    Hybrid = 4,
 }
 
 [DataContract]

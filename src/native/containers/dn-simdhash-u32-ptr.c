@@ -7,7 +7,7 @@
 #define DN_SIMDHASH_T dn_simdhash_u32_ptr
 #define DN_SIMDHASH_KEY_T uint32_t
 #define DN_SIMDHASH_VALUE_T void *
-#define DN_SIMDHASH_KEY_HASHER(hash, key) murmur3_fmix32(key)
-#define DN_SIMDHASH_KEY_EQUALS(hash, lhs, rhs) (lhs == rhs)
+#define DN_SIMDHASH_KEY_HASHER(data, key) murmur3_fmix32(key)
+#define DN_SIMDHASH_KEY_EQUALS(data, lhs, rhs) (lhs == rhs)
 
 #include "dn-simdhash-specialization.h"

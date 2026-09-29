@@ -8,6 +8,7 @@
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurityTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\DomainControllerTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntryTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectorySearcherTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesTests.cs" />
     <Compile Include="System\DirectoryServices\DirectorySynchronizationTests.cs" />
@@ -20,8 +21,7 @@
     <Compile Include="System\DirectoryServices\ActiveDirectory\ForestTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\TrustHelperTests.cs" />
-    <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs"
-             Link="Common\DirectoryServices\LdapConfiguration.cs" />
+    <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs" Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(CommonTestPath)System\DirectoryServices\LDAP.Configuration.xml">

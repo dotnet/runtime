@@ -29,14 +29,14 @@ namespace ILLink.Shared.TypeSystemProxy
                 builder.Add(new GenericParameterProxy((GenericParameterDesc)genericParameter));
             }
 
-            return builder.ToImmutableArray();
+            return builder.MoveToImmutable();
         }
 
         public TypeDesc Type { get; }
 
-        public string Name { get => Type is MetadataType metadataType ? metadataType.Name : string.Empty; }
+        public string Name { get => Type is MetadataType metadataType ? metadataType.GetName() : string.Empty; }
 
-        public string? Namespace { get => Type is MetadataType metadataType ? metadataType.Namespace : null; }
+        public string? Namespace { get => Type is MetadataType metadataType ? metadataType.GetNamespace() : null; }
 
         public bool IsTypeOf(string @namespace, string name) => Type.IsTypeOf(@namespace, name);
 

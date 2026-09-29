@@ -19,6 +19,7 @@
 #include "../compiler/importhelper.h"
 #include "metadata.h"
 #include "streamutil.h"
+#include <minipal/guid.h>
 
 #ifdef _MSC_VER
 #pragma intrinsic(memcpy)
@@ -597,7 +598,7 @@ protected:
             return S_OK;
         }
 
-        PREFAST_ASSUME_MSG(m_iElemSize <= (int) sizeof(m_buf), "The MetaData table row has to fit into buffer for swapping.");
+        _ASSERTE((m_iElemSize <= (int) sizeof(m_buf)) && "The MetaData table row has to fit into buffer for swapping.");
 
         IfFailRet(getRow(iFirst, &pFirst));
         IfFailRet(getRow(iSecond, &pSecond));
@@ -710,6 +711,7 @@ CMiniMdRW::CMiniMdRW()
     m_pHostFilter(0),
     m_pTokenRemapManager(0),
     m_fMinimalDelta(FALSE),
+    m_fAll4ByteColumns(FALSE),
     m_rENCRecs(0)
 {
 #ifdef _DEBUG
@@ -764,7 +766,8 @@ CMiniMdRW::CMiniMdRW()
         // If assert fires, change define for AUTO_GROW_CODED_TOKEN_PADDING.
         _ASSERTE(CMiniMdRW::m_cb[iMax] == AUTO_GROW_CODED_TOKEN_PADDING);
     }
-    dbg_m_pLock = NULL;
+    dbg_m_fLockEnabled = false;
+    dbg_m_fIsLockedForWrite.Store(false);
 #endif //_DEBUG
 
 } // CMiniMdRW::CMiniMdRW
@@ -1039,7 +1042,7 @@ CMiniMdRW::CalculateTypeRefToTypeDefMap()
     mdToken     td;
     mdToken     tkResScope;
 
-    PREFIX_ASSUME(GetTypeRefToTypeDefMap() != NULL);
+    _ASSERTE(GetTypeRefToTypeDefMap() != NULL);
 
     for (index = 1; index <= m_Schema.m_cRecs[TBL_TypeRef]; index++)
     {
@@ -1196,7 +1199,7 @@ CMiniMdRW::SetOption(
         PutCol(TBL_Module, ModuleRec::COL_EncBaseId, pMod, uVal);
 */
         // Allocate a new GUID for EncId.
-        IfFailGo(CoCreateGuid(&encid));
+    IfFailGo(minipal_guid_v4_create(&encid) ? S_OK : E_FAIL);
         IfFailGo(PutGuid(TBL_Module, ModuleRec::COL_EncId, pMod, encid));
 #else //!FEATURE_METADATA_EMIT
         IfFailGo(E_INVALIDARG);
@@ -1275,6 +1278,7 @@ CMiniMdRW::ComputeGrowLimits(
         m_limIx = USHRT_MAX << 1;
         m_limRid = USHRT_MAX << 1;
         m_eGrow = eg_grown;
+        m_fAll4ByteColumns = TRUE;
     }
 } // CMiniMdRW::ComputeGrowLimits
 
@@ -1654,173 +1658,6 @@ CMiniMdRW::InitOnRO(
 ErrExit:
     return hr;
 } // CMiniMdRW::InitOnRO
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-
-// This checks that column sizes are reasonable for their types
-// The sizes could still be too small to hold all values in the range, or larger
-// than they needed, but there must exist some scenario where this size is the
-// one we would use.
-// As long as this validation passes + we verify that the records actually
-// have space for columns of this size then the worst thing that malicious
-// data could do is be slightly inneficient, or be unable to address all their data
-HRESULT _ValidateColumnSize(BYTE trustedColumnType, BYTE untrustedColumnSize)
-{
-    // Is the field a RID into a table?
-    if (trustedColumnType <= iCodedTokenMax)
-    {
-        if (untrustedColumnSize != sizeof(USHORT) && untrustedColumnSize != sizeof(ULONG))
-            return CLDB_E_FILE_CORRUPT;
-    }
-    else
-    {   // Fixed type.
-        switch (trustedColumnType)
-        {
-        case iBYTE:
-            if (untrustedColumnSize != 1)
-                return CLDB_E_FILE_CORRUPT;
-            break;
-        case iSHORT:
-        case iUSHORT:
-            if (untrustedColumnSize != 2)
-                return CLDB_E_FILE_CORRUPT;
-            break;
-        case iLONG:
-        case iULONG:
-            if (untrustedColumnSize != 4)
-                return CLDB_E_FILE_CORRUPT;
-            break;
-        case iSTRING:
-        case iGUID:
-        case iBLOB:
-            if (untrustedColumnSize != 2 && untrustedColumnSize != 4)
-                return CLDB_E_FILE_CORRUPT;
-            break;
-        default:
-            _ASSERTE(!"Unexpected schema type");
-            return CLDB_E_FILE_CORRUPT;
-        }
-    }
-    return S_OK;
-}
-
-__checkReturn
-HRESULT CMiniMdRW::InitOnCustomDataSource(IMDCustomDataSource* pDataSource)
-{
-    HRESULT hr = S_OK;
-    ULONG   i;          // Loop control.
-    ULONG   key;
-    BOOL fIsReadOnly = TRUE;
-    MetaData::DataBlob stringPoolData;
-    MetaData::DataBlob userStringPoolData;
-    MetaData::DataBlob guidHeapData;
-    MetaData::DataBlob blobHeapData;
-    MetaData::DataBlob tableRecordData;
-    CMiniTableDef tableDef;
-    BOOL sortable = FALSE;
-
-
-    // the data source owns all the memory backing the storage pools, so we need to ensure it stays alive
-    // after this method returns. When the CMiniMdRW is destroyed the reference will be released.
-    pDataSource->AddRef();
-    m_pCustomDataSource = pDataSource;
-
-    // Copy over the schema.
-    IfFailGo(pDataSource->GetSchema(&m_Schema));
-
-    // Is this the "native" version of the metadata for this runtime?
-    if ((m_Schema.m_major != METAMODEL_MAJOR_VER) || (m_Schema.m_minor != METAMODEL_MINOR_VER))
-    {
-        // We don't support this version of the metadata
-        Debug_ReportError("Unsupported version of MetaData.");
-        return PostError(CLDB_E_FILE_OLDVER, m_Schema.m_major, m_Schema.m_minor);
-    }
-
-    // How big are the various pool inidices?
-    m_iStringsMask = (m_Schema.m_heaps & CMiniMdSchema::HEAP_STRING_4) ? 0xffffffff : 0xffff;
-    m_iGuidsMask = (m_Schema.m_heaps & CMiniMdSchema::HEAP_GUID_4) ? 0xffffffff : 0xffff;
-    m_iBlobsMask = (m_Schema.m_heaps & CMiniMdSchema::HEAP_BLOB_4) ? 0xffffffff : 0xffff;
-
-    // Copy over TableDefs, column definitions and allocate VS structs for tables with key columns.
-    for (ULONG ixTbl = 0; ixTbl < m_TblCount; ++ixTbl)
-    {
-        IfFailGo(pDataSource->GetTableDef(ixTbl, &tableDef));
-        const CMiniTableDef* pTemplate = GetTableDefTemplate(ixTbl);
-
-        // validate that the table def looks safe
-        // we only allow some very limited differences between the standard template and the data source
-        key = (pTemplate->m_iKey < pTemplate->m_cCols) ? pTemplate->m_iKey : 0xFF;
-        if (key != tableDef.m_iKey) { IfFailGo(CLDB_E_FILE_CORRUPT); }
-        if (pTemplate->m_cCols != tableDef.m_cCols) { IfFailGo(CLDB_E_FILE_CORRUPT); }
-        ULONG cbRec = 0;
-        for (ULONG i = 0; i < pTemplate->m_cCols; i++)
-        {
-            if (tableDef.m_pColDefs == NULL) { IfFailGo(CLDB_E_FILE_CORRUPT); }
-            if (pTemplate->m_pColDefs[i].m_Type != tableDef.m_pColDefs[i].m_Type) { IfFailGo(CLDB_E_FILE_CORRUPT); }
-            IfFailGo(_ValidateColumnSize(pTemplate->m_pColDefs[i].m_Type, tableDef.m_pColDefs[i].m_cbColumn));
-            // sometimes, but not always, it seems like columns get alignment padding
-            // we'll allow it if we see it
-            if (cbRec > tableDef.m_pColDefs[i].m_oColumn)  { IfFailGo(CLDB_E_FILE_CORRUPT); }
-            if (tableDef.m_pColDefs[i].m_oColumn > AlignUp(cbRec, tableDef.m_pColDefs[i].m_cbColumn))  { IfFailGo(CLDB_E_FILE_CORRUPT); }
-            cbRec = tableDef.m_pColDefs[i].m_oColumn + tableDef.m_pColDefs[i].m_cbColumn;
-        }
-        if (tableDef.m_cbRec != cbRec) { IfFailGo(CLDB_E_FILE_CORRUPT); }
-
-        // tabledef passed validation, copy it in
-        m_TableDefs[ixTbl].m_iKey = tableDef.m_iKey;
-        m_TableDefs[ixTbl].m_cCols = tableDef.m_cCols;
-        m_TableDefs[ixTbl].m_cbRec = tableDef.m_cbRec;
-        IfFailGo(SetNewColumnDefinition(&(m_TableDefs[ixTbl]), tableDef.m_pColDefs, ixTbl));
-        if (m_TableDefs[ixTbl].m_iKey < m_TableDefs[ixTbl].m_cCols)
-        {
-            m_pVS[ixTbl] = new (nothrow)VirtualSort;
-            IfNullGo(m_pVS[ixTbl]);
-
-            m_pVS[ixTbl]->Init(ixTbl, m_TableDefs[ixTbl].m_iKey, this);
-        }
-    }
-
-    // Initialize string heap
-    IfFailGo(pDataSource->GetStringHeap(&stringPoolData));
-    m_StringHeap.Initialize(stringPoolData, !fIsReadOnly);
-
-    // Initialize user string heap
-    IfFailGo(pDataSource->GetUserStringHeap(&userStringPoolData));
-    m_UserStringHeap.Initialize(userStringPoolData, !fIsReadOnly);
-
-    // Initialize guid heap
-    IfFailGo(pDataSource->GetGuidHeap(&guidHeapData));
-    m_GuidHeap.Initialize(guidHeapData, !fIsReadOnly);
-
-    // Initialize blob heap
-    IfFailGo(pDataSource->GetBlobHeap(&blobHeapData));
-    m_BlobHeap.Initialize(blobHeapData, !fIsReadOnly);
-
-    // Init the record pools
-    for (i = 0; i < m_TblCount; ++i)
-    {
-        IfFailGo(pDataSource->GetTableRecords(i, &tableRecordData));
-        // sanity check record counts and table sizes, this also ensures that cbRec*m_cRecs[x] doesn't overflow
-        if (m_Schema.m_cRecs[i] > 1000000) { IfFailGo(CLDB_E_FILE_CORRUPT); }
-        if (tableRecordData.GetSize() < m_TableDefs[i].m_cbRec * m_Schema.m_cRecs[i]) { IfFailGo(CLDB_E_FILE_CORRUPT); }
-        m_Tables[i].Initialize(m_TableDefs[i].m_cbRec, tableRecordData, !fIsReadOnly);
-
-        IfFailGo(pDataSource->GetTableSortable(i, &sortable));
-        m_bSortable[i] = !!sortable ? 1 : 0;
-    }
-
-    // Set the limits so we will know when to grow the database.
-    ComputeGrowLimits(TRUE /* small */);
-
-    // Track records that this MD started with.
-    m_StartupSchema = m_Schema;
-
-    m_fIsReadOnly = fIsReadOnly;
-
-ErrExit:
-    return hr;
-}
-#endif
 
 //*****************************************************************************
 // Convert a read-only to read-write.  Copies data.
@@ -2388,10 +2225,6 @@ bool CMiniMdRW::CanHaveCustomAttribute( // Can a given table have a custom attri
 } // CMiniMdRW::CanHaveCustomAttribute
 #endif //_DEBUG
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 //---------------------------------------------------------------------------------------
 //
 // Perform any available pre-save optimizations.
@@ -2865,7 +2698,7 @@ CMiniMdRW::PreSaveFull()
     if (m_pHandler != NULL)
     {
         TOKENMAP * ptkmap = GetMemberRefToMemberDefMap();
-        PREFIX_ASSUME(ptkmap != NULL);  // RegMeta always inits this.
+        _ASSERTE(ptkmap != NULL);  // RegMeta always inits this.
         MDTOKENMAP * ptkRemap = GetTokenMovementMap();
         int     iCount = m_Schema.m_cRecs[TBL_MemberRef];
         mdToken tkTo;
@@ -2915,10 +2748,6 @@ ErrExit:
 
     return hr;
 } // CMiniMdRW::PreSaveFull
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -3563,6 +3392,7 @@ CMiniMdRW::ExpandTables()
 
     // Remember that we've grown.
     m_eGrow = eg_grown;
+    m_fAll4ByteColumns = TRUE;
     m_maxRid = m_maxIx = UINT32_MAX;
 
 ErrExit:
@@ -4910,6 +4740,14 @@ CMiniMdRW::AddPropertyToPropertyMap(
         IfFailGo(AddChildRowIndirectForParent(TBL_PropertyMap, PropertyMapRec::COL_PropertyList,
                                         TBL_PropertyPtr, pmd, &pPtr));
         hr = PutCol(TBL_PropertyPtr, PropertyPtrRec::COL_Property, pPtr, pd);
+
+        // Add the <property, typedef> to the property parent lookup table.
+        // This mirrors what AddMethodToTypeDef/AddFieldToTypeDef do for their
+        // respective lookup tables, and what emit.cpp:DefineProperty does.
+        PropertyMapRec *pPropertyMapRec;
+        IfFailGo(GetPropertyMapRecord(pmd, &pPropertyMapRec));
+        IfFailGo(AddPropertyToLookUpTable(TokenFromRid(pd, mdtProperty),
+                                          getParentOfPropertyMap(pPropertyMapRec)));
     }
 
 
@@ -4937,6 +4775,14 @@ CMiniMdRW::AddEventToEventMap(
         IfFailGo(AddChildRowIndirectForParent(TBL_EventMap, EventMapRec::COL_EventList,
                                         TBL_EventPtr, emd, &pPtr));
         hr = PutCol(TBL_EventPtr, EventPtrRec::COL_Event, pPtr, ed);
+
+        // Add the <event, typedef> to the event parent lookup table.
+        // This mirrors what AddMethodToTypeDef/AddFieldToTypeDef do for their
+        // respective lookup tables.
+        EventMapRec *pEventMapRec;
+        IfFailGo(GetEventMapRecord(emd, &pEventMapRec));
+        IfFailGo(AddEventToLookUpTable(TokenFromRid(ed, mdtEvent),
+                                       getParentOfEventMap(pEventMapRec)));
     }
 ErrExit:
     return hr;
@@ -6697,7 +6543,7 @@ CMiniMdRW::FindParentOfMethodHelper(
                 for (indexMd = ridStart; indexMd < ridEnd; indexMd++)
                 {
                     IfFailGo(GetMethodPtrRecord(indexMd, &pMethodPtrRec));
-                    PREFIX_ASSUME(pMethodMap->Get(getMethodOfMethodPtr(pMethodPtrRec)) != NULL);
+                    _ASSERTE(pMethodMap->Get(getMethodOfMethodPtr(pMethodPtrRec)) != NULL);
                     *(pMethodMap->Get(getMethodOfMethodPtr(pMethodPtrRec))) = indexTd;
                 }
             }
@@ -6760,7 +6606,7 @@ CMiniMdRW::FindParentOfFieldHelper(
                 for (indexFd = ridStart; indexFd < ridEnd; indexFd++)
                 {
                     IfFailGo(GetFieldPtrRecord(indexFd, &pFieldPtrRec));
-                    PREFIX_ASSUME(pFieldMap->Get(getFieldOfFieldPtr(pFieldPtrRec)) != NULL);
+                    _ASSERTE(pFieldMap->Get(getFieldOfFieldPtr(pFieldPtrRec)) != NULL);
                     *(pFieldMap->Get(getFieldOfFieldPtr(pFieldPtrRec))) = indexTd;
                 }
             }
@@ -6824,7 +6670,7 @@ CMiniMdRW::FindParentOfPropertyHelper(
                 {
                     IfFailGo(GetPropertyPtrRecord(indexPr, &pPropertyPtrRec));
                     mdToken *tok =  pPropertyMap->Get(getPropertyOfPropertyPtr(pPropertyPtrRec));
-                    PREFIX_ASSUME(tok != NULL);
+                    _ASSERTE(tok != NULL);
                     *tok = getParentOfPropertyMap(pPropertyMapRec);
                 }
             }
@@ -6893,7 +6739,7 @@ CMiniMdRW::FindParentOfEventHelper(
                 {
                     IfFailGo(GetEventPtrRecord(indexEv, &pEventPtrRec));
                     mdToken* tok = pEventMap->Get(getEventOfEventPtr(pEventPtrRec));
-                    PREFIX_ASSUME(tok != NULL);
+                    _ASSERTE(tok != NULL);
                     *tok = getParentOfEventMap(pEventMapRec);
                 }
             }
@@ -6961,7 +6807,7 @@ CMiniMdRW::FindParentOfParamHelper(
                 for (indexPd = ridStart; indexPd < ridEnd; indexPd++)
                 {
                     IfFailGo(GetParamPtrRecord(indexPd, &pParamPtrRec));
-                    PREFIX_ASSUME(pParamMap->Get(getParamOfParamPtr(pParamPtrRec)) != NULL);
+                    _ASSERTE(pParamMap->Get(getParamOfParamPtr(pParamPtrRec)) != NULL);
                     *(pParamMap->Get(getParamOfParamPtr(pParamPtrRec))) = indexMd;
                 }
             }
@@ -7152,7 +6998,7 @@ void
 CMiniMdRW::Debug_CheckIsLockedForWrite()
 {
     // If this assert fires, then we are trying to modify MetaData that is not locked for write
-    _ASSERTE((dbg_m_pLock == NULL) || dbg_m_pLock->Debug_IsLockedForWrite());
+    _ASSERTE(!dbg_m_fLockEnabled || dbg_m_fIsLockedForWrite.Load());
 }
 
 #endif //_DEBUG
@@ -7692,4 +7538,3 @@ FilterTable::~FilterTable()
         delete m_daUserStringMarker;
     Clear();
 } // FilterTable::~FilterTable
-

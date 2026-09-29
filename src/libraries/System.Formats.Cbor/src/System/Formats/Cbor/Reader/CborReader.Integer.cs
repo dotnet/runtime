@@ -82,7 +82,6 @@ namespace System.Formats.Cbor
         /// <summary>Reads the next data item as a CBOR negative integer representation (major type 1).</summary>
         /// <returns>An unsigned integer denoting -1 minus the integer.</returns>
         /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="OverflowException">The encoded integer is out of range for <see cref="uint" /></exception>
         /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
         /// <para>-or-</para>
         /// <para>There was an unexpected end of CBOR encoding data.</para>
@@ -147,6 +146,27 @@ namespace System.Formats.Cbor
 
             // conservative check: ensure the buffer has the minimum required length for declared definite length.
             if (length > (ulong)(data.Length - bytesRead))
+            {
+                throw new CborContentException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
+            }
+
+            return (int)length;
+        }
+
+        // Peek definite length for an array or map data item. Unlike strings, the contents of
+        // collections are separate data items, so when the current data is not the final block
+        // the declared length may exceed the buffer: the contents can be supplied by later
+        // SlideData calls. The length must still be representable in a single buffer.
+        private int DecodeCollectionLength(CborInitialByte header, ReadOnlySpan<byte> data, out int bytesRead)
+        {
+            if (_isFinalBlock)
+            {
+                return DecodeDefiniteLength(header, data, out bytesRead);
+            }
+
+            ulong length = DecodeUnsignedInteger(header, data, out bytesRead);
+
+            if (length > int.MaxValue)
             {
                 throw new CborContentException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
             }

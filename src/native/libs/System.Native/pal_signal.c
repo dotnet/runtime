@@ -9,12 +9,13 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#include <minipal/thread.h>
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -68,21 +69,31 @@ static bool IsSaSigInfo(struct sigaction* action)
 static bool IsSigDfl(struct sigaction* action)
 {
     assert(action);
+    bool isDefault;
     // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
     // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
     // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
-    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
-            action->sa_handler == SIG_DFL;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
+    isDefault = (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+                action->sa_handler == SIG_DFL;
+#pragma clang diagnostic pop
+    return isDefault;
 }
 
 static bool IsSigIgn(struct sigaction* action)
 {
     assert(action);
-    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
-            action->sa_handler == SIG_IGN;
+    bool isIgnored;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
+    isIgnored = (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+                action->sa_handler == SIG_IGN;
+#pragma clang diagnostic pop
+    return isIgnored;
 }
 
-static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
+bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
 {
     assert(posixSignal != NULL);
 
@@ -128,8 +139,12 @@ static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posix
             *posixSignal = PosixSignalSIGTSTP;
             return true;
 
+        case SIGKILL:
+            *posixSignal = PosixSignalSIGKILL;
+            return true;
+
         default:
-            *posixSignal = signalCode;
+            *posixSignal = (PosixSignal)signalCode;
             return false;
     }
 }
@@ -168,6 +183,9 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
         case PosixSignalSIGTSTP:
             return SIGTSTP;
 
+        case PosixSignalSIGKILL:
+            return SIGKILL;
+
         case PosixSignalInvalid:
             break;
     }
@@ -178,6 +196,11 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
     }
 
     return 0;
+}
+
+int32_t SystemNative_GetPlatformSIGSTOP(void)
+{
+    return SIGSTOP;
 }
 
 void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
@@ -226,7 +249,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
             else
             {
                 assert(origHandler->sa_handler);
-                origHandler->sa_handler(sig);
+                ((void (*)(int))origHandler->sa_handler)(sig);
             }
 
         }
@@ -309,17 +332,16 @@ static void* SignalHandlerLoop(void* arg)
     // Passed in argument is a ptr to the file descriptor
     // for the read end of the pipe.
     assert(arg != NULL);
+
     int pipeFd = *(int*)arg;
+
     free(arg);
     assert(pipeFd >= 0);
 
-    char* threadName = ".NET SigHandler";
-#if defined(__linux__) || defined(__FreeBSD__)
-    pthread_setname_np(pthread_self(), threadName);
-#endif
-#if defined(__APPLE__)
-    pthread_setname_np(threadName);
-#endif
+    // set thread name
+    int setNameResult = minipal_set_thread_name(pthread_self(), ".NET SigHandler");
+    (void)setNameResult; // used
+    assert(setNameResult == 0);
 
     // Continually read a signal code from the signal pipe and process it,
     // until the pipe is closed.
@@ -485,7 +507,7 @@ void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback ca
 
         installed = InstallSignalHandler(SIGCONT, SA_RESTART);
         assert(installed);
-        installed = InstallSignalHandler(SIGCHLD, SA_RESTART);
+        installed = InstallSignalHandler(SIGCHLD, SA_RESTART | SA_NOCLDSTOP);
         assert(installed);
         installed = InstallSignalHandler(SIGWINCH, SA_RESTART);
         assert(installed);
@@ -504,7 +526,7 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
     {
         g_sigChldCallback = callback;
 
-        installed = InstallSignalHandler(SIGCHLD, SA_RESTART);
+        installed = InstallSignalHandler(SIGCHLD, SA_RESTART | SA_NOCLDSTOP);
         assert(installed);
     }
     pthread_mutex_unlock(&lock);

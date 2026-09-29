@@ -3,11 +3,15 @@ trigger: none
 pr:
   branches:
     include:
-    - main
+    - '*'
+    exclude:
+    - release/*
+    - internal/release/*
   paths:
     include:
     - src/coreclr/ilasm/*
     - src/coreclr/ildasm/*
+    - src/tools/ilasm/*
 
 schedules:
 - cron: "0 19 * * 6"
@@ -19,6 +23,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
+
 extends:
   template:  /eng/pipelines/coreclr/templates/jit-outerloop-pipeline.yml
   parameters:
@@ -32,3 +38,22 @@ extends:
     - windows_x86
     - windows_arm64
     testGroup: ilasm
+
+    stages:
+      - stage: Managed_ILAsm
+        displayName: Managed IL Assembler Tests
+        dependsOn: []
+        jobs:
+          - template: /eng/pipelines/common/platform-matrix.yml
+            parameters:
+              jobTemplate: /eng/pipelines/common/global-build-job.yml
+              buildConfig: Debug
+              platforms:
+              - windows_x64
+              jobParameters:
+                nameSuffix: ILAsm
+                buildArgs: -s tools.ilasm -c $(_BuildConfig) -test
+                timeoutInMinutes: 120
+                enablePublishTestResults: true
+                testResultsFormat: 'xunit'
+        condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))

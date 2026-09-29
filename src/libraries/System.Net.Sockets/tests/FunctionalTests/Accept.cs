@@ -144,7 +144,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Accept_WithTargetSocket_Success()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -167,7 +167,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Accept_WithTargetSocket_ReuseAfterDisconnect_Success(bool reuseSocket)
@@ -239,7 +239,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Accept_WithInUseTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -299,6 +299,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [MemberData(nameof(AcceptGetsCanceledByDispose_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73536", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task AcceptGetsCanceledByDispose(IPAddress loopback, bool owning)
         {
@@ -352,7 +353,7 @@ namespace System.Net.Sockets.Tests
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AcceptReceive_Success()
         {
             if (!SupportsAcceptReceive)
@@ -377,16 +378,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptSync : Accept<SocketHelperArraySync>
     {
         public AcceptSync(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptSyncForceNonBlocking : Accept<SocketHelperSyncForceNonBlocking>
     {
         public AcceptSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
         public AcceptApm(ITestOutputHelper output) : base(output) {}
@@ -464,6 +468,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task AcceptAsync_CanceledDuringOperation_Throws()
         {
             using (Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -487,5 +492,58 @@ namespace System.Net.Sockets.Tests
     public sealed class AcceptEap : Accept<SocketHelperEap>
     {
         public AcceptEap(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class AcceptDualStackResetTests
+    {
+        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
+        [SkipOnPlatform(TestPlatforms.Wasi | TestPlatforms.OpenBSD, "These platforms don't support dual-mode sockets")]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Accept_DualStackListener_PeerImmediatelyResets_ListenerStaysHealthy(bool useAsync)
+        {
+            for (int i = 0; i < 200; i++)
+            {
+                using Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                listener.DualMode = true;
+                listener.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+                listener.Listen(2);
+
+                using Socket ipv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                using Socket ipv4 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+
+                await ipv4.ConnectAsync(IPAddress.Loopback, port).WaitAsync(TimeSpan.FromSeconds(5));
+                ipv4.LingerState = new LingerOption(true, 0);
+                ipv4.Close();
+
+                await ipv6.ConnectAsync(IPAddress.IPv6Loopback, port).WaitAsync(TimeSpan.FromSeconds(5));
+                byte[] message = [42];
+                Assert.Equal(message.Length, ipv6.Send(message));
+
+                bool receivedMessage = false;
+                for (int acceptCount = 0; acceptCount < 2 && !receivedMessage; acceptCount++)
+                {
+                    try
+                    {
+                        using Socket accepted = useAsync
+                            ? await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5))
+                            : listener.Accept();
+
+                        byte[] received = new byte[message.Length];
+                        int receivedCount = await accepted.ReceiveAsync(received).WaitAsync(TimeSpan.FromSeconds(5));
+                        receivedMessage = receivedCount == message.Length && received.AsSpan().SequenceEqual(message);
+                    }
+                    catch (SocketException)
+                    {
+                        // Some platforms surface the reset connection from accept() or the following receive,
+                        // while others discard it. Either way the listener must stay healthy, so tolerate the
+                        // reset and try to accept the healthy peer on a subsequent iteration.
+                    }
+                }
+
+                Assert.True(receivedMessage);
+            }
+        }
     }
 }

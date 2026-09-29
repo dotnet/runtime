@@ -92,8 +92,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign1 message.</exception>
         public static CoseSign1Message DecodeSign1(byte[] cborPayload)
         {
-            if (cborPayload is null)
-                throw new ArgumentNullException(nameof(cborPayload));
+            ArgumentNullException.ThrowIfNull(cborPayload);
 
             return DecodeCoseSign1Core(new CborReader(cborPayload));
         }
@@ -178,8 +177,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign message.</exception>
         public static CoseMultiSignMessage DecodeMultiSign(byte[] cborPayload)
         {
-            if (cborPayload is null)
-                throw new ArgumentNullException(nameof(cborPayload));
+            ArgumentNullException.ThrowIfNull(cborPayload);
 
             return DecodeCoseMultiSignCore(new CborReader(cborPayload));
         }
@@ -295,20 +293,43 @@ namespace System.Security.Cryptography.Cose
 
         private static void DecodeBucket(CborReader reader, CoseHeaderMap headerParameters)
         {
-            int? length = reader.ReadStartMap();
-            for (int i = 0; i < length; i++)
+            reader.ReadStartMap();
+
+            while (true)
             {
-                CoseHeaderLabel label = reader.PeekState() switch
+                CborReaderState state = reader.PeekState();
+
+                if (state == CborReaderState.EndMap)
                 {
-                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32()),
+                    reader.ReadEndMap();
+                    break;
+                }
+
+                CoseHeaderLabel label = state switch
+                {
+                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32ForCrypto()),
                     CborReaderState.TextString => new CoseHeaderLabel(reader.ReadTextString()),
                     _ => throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1MapLabelWasIncorrect))
                 };
 
                 CoseHeaderValue value = CoseHeaderValue.FromEncodedValue(reader.ReadEncodedValue().Span);
-                headerParameters.Add(label, value);
+
+                try
+                {
+                    headerParameters.Add(label, value);
+                }
+                catch (ArgumentException e)
+                {
+                    // Lift the well-known header value validation into a CryptographicException.
+                    if (e.ParamName == "value")
+                    {
+                        throw new CryptographicException(e.Message, e.InnerException);
+                    }
+
+                    Debug.Fail("Unexpected ArgumentException from CoseHeaderMap.Add");
+                    throw new CryptographicException(SR.DecodeErrorWhileDecodingSeeInnerEx, e);
+                }
             }
-            reader.ReadEndMap();
         }
 
         private static byte[]? DecodePayload(CborReader reader)
@@ -407,7 +428,7 @@ namespace System.Security.Cryptography.Cose
 
         internal static void AppendToBeSigned(
             Span<byte> buffer,
-            IncrementalHash hasher,
+            ToBeSignedBuilder toBeSignedBuilder,
             SigStructureContext context,
             ReadOnlySpan<byte> bodyProtected,
             ReadOnlySpan<byte> signProtected,
@@ -418,20 +439,20 @@ namespace System.Security.Cryptography.Cose
             int bytesWritten = CreateToBeSigned(buffer, context, bodyProtected, signProtected, associatedData, ReadOnlySpan<byte>.Empty);
             bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
 
-            hasher.AppendData(buffer.Slice(0, bytesWritten));
+            toBeSignedBuilder.AppendToBeSigned(buffer.Slice(0, bytesWritten));
 
             if (contentStream == null)
             {
                 // content length
-                CoseHelpers.WriteByteStringLength(hasher, (ulong)contentBytes.Length);
+                CoseHelpers.WriteByteStringLength(toBeSignedBuilder, (ulong)contentBytes.Length);
 
                 //content
-                hasher.AppendData(contentBytes);
+                toBeSignedBuilder.AppendToBeSigned(contentBytes);
             }
             else
             {
                 // content length
-                CoseHelpers.WriteByteStringLength(hasher, (ulong)(contentStream.Length - contentStream.Position));
+                CoseHelpers.WriteByteStringLength(toBeSignedBuilder, (ulong)(contentStream.Length - contentStream.Position));
 
                 //content
                 byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
@@ -441,7 +462,7 @@ namespace System.Security.Cryptography.Cose
                 {
                     while ((bytesRead = contentStream.Read(contentBuffer, 0, contentBuffer.Length)) > 0)
                     {
-                        hasher.AppendData(contentBuffer, 0, bytesRead);
+                        toBeSignedBuilder.AppendToBeSigned(contentBuffer, 0, bytesRead);
                     }
                 }
                 finally
@@ -453,7 +474,7 @@ namespace System.Security.Cryptography.Cose
 
         internal static async Task AppendToBeSignedAsync(
             byte[] buffer,
-            IncrementalHash hasher,
+            ToBeSignedBuilder toBeSignedBuilder,
             SigStructureContext context,
             ReadOnlyMemory<byte> bodyProtected,
             ReadOnlyMemory<byte> signProtected,
@@ -464,10 +485,10 @@ namespace System.Security.Cryptography.Cose
             int bytesWritten = CreateToBeSigned(buffer, context, bodyProtected.Span, signProtected.Span, associatedData.Span, ReadOnlySpan<byte>.Empty);
             bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
 
-            hasher.AppendData(buffer, 0, bytesWritten);
+            toBeSignedBuilder.AppendToBeSigned(buffer, 0, bytesWritten);
 
             //content length
-            CoseHelpers.WriteByteStringLength(hasher, (ulong)(content.Length - content.Position));
+            CoseHelpers.WriteByteStringLength(toBeSignedBuilder, (ulong)(content.Length - content.Position));
 
             // content
             byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
@@ -478,7 +499,7 @@ namespace System.Security.Cryptography.Cose
             while ((bytesRead = await content.ReadAsync(contentBuffer, cancellationToken).ConfigureAwait(false)) > 0)
 #endif
             {
-                hasher.AppendData(contentBuffer, 0, bytesRead);
+                toBeSignedBuilder.AppendToBeSigned(contentBuffer, 0, bytesRead);
             }
 
             ArrayPool<byte>.Shared.Return(contentBuffer, clearArray: true);
@@ -563,15 +584,25 @@ namespace System.Security.Cryptography.Cose
                 return false;
             }
 
-            var reader = new CborReader(critHeaderValue.EncodedValue);
-            int length = reader.ReadStartArray().GetValueOrDefault();
-            Debug.Assert(length > 0);
+            bool empty = true;
 
-            for (int i = 0; i < length; i++)
+            var reader = new CborReader(critHeaderValue.EncodedValue);
+            reader.ReadStartArray();
+
+            while (true)
             {
-                CoseHeaderLabel label = reader.PeekState() switch
+                CborReaderState state = reader.PeekState();
+
+                if (state == CborReaderState.EndArray)
                 {
-                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32()),
+                    reader.ReadEndArray();
+                    break;
+                }
+
+                empty = false;
+                CoseHeaderLabel label = state switch
+                {
+                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32ForCrypto()),
                     CborReaderState.TextString => new CoseHeaderLabel(reader.ReadTextString()),
                     _ => throw new CryptographicException(SR.CriticalHeadersLabelWasIncorrect)
                 };
@@ -581,6 +612,11 @@ namespace System.Security.Cryptography.Cose
                     labelName = label.LabelName;
                     return true;
                 }
+            }
+
+            if (empty)
+            {
+                throw new CryptographicException(SR.CriticalHeadersMustBeArrayOfAtLeastOne);
             }
 
             labelName = null;
@@ -621,7 +657,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         /// <summary>
-        /// When overriden in a derived class, attempts to encode this message into the specified buffer.
+        /// When overridden in a derived class, attempts to encode this message into the specified buffer.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
         /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>. This parameter is treated as uninitialized.</param>
@@ -632,7 +668,7 @@ namespace System.Security.Cryptography.Cose
         public abstract bool TryEncode(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
-        /// When overriden in a derived class, calculates the number of bytes produced by encoding this <see cref="CoseMessage"/>.
+        /// When overridden in a derived class, calculates the number of bytes produced by encoding this <see cref="CoseMessage"/>.
         /// </summary>
         /// <returns>The number of bytes produced by encoding this message.</returns>
         public abstract int GetEncodedLength();

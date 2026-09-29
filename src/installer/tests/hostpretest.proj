@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <!-- Build all test project assets. Output will be used by tests. -->
+  <ItemGroup>
+    <ProjectReference Include="$(InstallerProjectRoot)tests\Assets\Projects\**\*.csproj" />
+  </ItemGroup>
+
+  <!-- Set up the shared framework copy the tests should use. -->
+  <Target Name="SetUpSharedFrameworkPublish"
+          BeforeTargets="Build">
+
+    <ItemGroup>
+      <RuntimeSharedFrameworkProject Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+      <RuntimeSharedFrameworkProject Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Mono.sfxproj" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+    </ItemGroup>
+    <!--
+      Explicitly restore before PublishToDisk. IsRestoring property ensures that this evaluation won't be reused.
+      See https://github.com/dotnet/msbuild/issues/2811
+    -->
+    <MSBuild Projects="@(RuntimeSharedFrameworkProject)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+    <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
+             Targets="PublishToDisk"
+             Properties="OutputPath=$(TestArtifactsOutputRoot)sharedFrameworkPublish/" />
+  </Target>
+</Project>

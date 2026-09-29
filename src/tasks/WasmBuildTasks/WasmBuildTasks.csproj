@@ -1,13 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <OutputType>Library</OutputType>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <!-- Emit into a stable, version-independent folder name instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
 
+  <ItemGroup>
     <Compile Include="..\Common\LogAsErrorException.cs" />
   </ItemGroup>
 
@@ -17,7 +20,7 @@
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks" />
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks\net" />
     </ItemGroup>
   </Target>
 

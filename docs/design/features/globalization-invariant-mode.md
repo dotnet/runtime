@@ -35,7 +35,7 @@ Note: On Linux, .NET Core relies on globalization data from ICU. For example, [.
 
 ## Cultures and culture data
 
-When enabling the invariant mode, all cultures behave like the invariant culture. The invariant culture has the following characteristics:
+When enabling the invariant mode, the behavior depends on the [PredefinedCulturesOnly](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/globalization#predefined-cultures) setting. When `true` (the default), creation of any culture except the invariant culture is disallowed. When `false`, all cultures behave like the invariant culture. The invariant culture has the following characteristics:
 
 * Culture names (English, native display, ISO, language names) will return invariant names. For instance, when requesting culture native name, you will get "Invariant Language (Invariant Country)".
 * All cultures LCID will have value 0x1000 (which means Custom Locale ID). The exception is the invariant cultures which will still have 0x7F.

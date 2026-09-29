@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -25,15 +27,8 @@ namespace System.Text.Json.Schema
         /// <returns>A JSON object containing the schema for <paramref name="type"/>.</returns>
         public static JsonNode GetJsonSchemaAsNode(this JsonSerializerOptions options, Type type, JsonSchemaExporterOptions? exporterOptions = null)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(type);
 
             ValidateOptions(options);
             JsonTypeInfo typeInfo = options.GetTypeInfoInternal(type);
@@ -48,10 +43,7 @@ namespace System.Text.Json.Schema
         /// <returns>A JSON object containing the schema for <paramref name="typeInfo"/>.</returns>
         public static JsonNode GetJsonSchemaAsNode(this JsonTypeInfo typeInfo, JsonSchemaExporterOptions? exporterOptions = null)
         {
-            if (typeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(typeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(typeInfo);
 
             ValidateOptions(typeInfo.Options);
             exporterOptions ??= JsonSchemaExporterOptions.Default;
@@ -76,9 +68,12 @@ namespace System.Text.Json.Schema
         {
             Debug.Assert(typeInfo.IsConfigured);
 
-            if (cacheResult && state.TryPushType(typeInfo, propertyInfo, out string? existingJsonPointer))
+            JsonSchemaExporterContext exporterContext = state.CreateContext(typeInfo, propertyInfo, parentPolymorphicTypeInfo);
+
+            if (cacheResult && typeInfo.Kind is not JsonTypeInfoKind.None &&
+                state.TryGetExistingJsonPointer(exporterContext, out string? existingJsonPointer))
             {
-                // We're generating the schema of a recursive type, return a reference pointing to the outermost schema.
+                // The schema context has already been generated in the schema document, return a reference to it.
                 return CompleteSchema(ref state, new JsonSchema { Ref = existingJsonPointer });
             }
 
@@ -186,9 +181,29 @@ namespace System.Text.Json.Schema
             if (effectiveConverter.NullableElementConverter is { } elementConverter)
             {
                 JsonTypeInfo elementTypeInfo = typeInfo.Options.GetTypeInfo(elementConverter.Type!);
-                schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, cacheResult: false);
+                schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, customNumberHandling: customNumberHandling ?? typeInfo.NumberHandling, cacheResult: false);
 
-                if (schema.Enum != null)
+                if (elementConverter.IsIeeeFloatingPointConverter &&
+                    (effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0)
+                {
+                    // IEEE floating-point types with AllowNamedFloatingPointLiterals generate an anyOf schema.
+                    // Fold null into the numeric branch to preserve nullability for nullable wrappers.
+                    Debug.Assert(schema.AnyOf is not null, "IEEE floating-point types with AllowNamedFloatingPointLiterals should generate an anyOf schema.");
+
+                    List<JsonSchema> anyOf = schema.AnyOf;
+                    Debug.Assert(anyOf.Exists(b => (b.Type & JsonSchemaType.Number) != 0),
+                        "IEEE floating-point anyOf schema should have a numeric branch.");
+
+                    foreach (JsonSchema branch in anyOf)
+                    {
+                        if ((branch.Type & JsonSchemaType.Number) != 0)
+                        {
+                            branch.Type |= JsonSchemaType.Null;
+                            break;
+                        }
+                    }
+                }
+                else if (schema.Enum is not null)
                 {
                     Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
                     schema.Enum.Add(null); // Append null to the enum array.
@@ -207,7 +222,7 @@ namespace System.Text.Json.Schema
                     JsonUnmappedMemberHandling effectiveUnmappedMemberHandling = typeInfo.UnmappedMemberHandling ?? typeInfo.Options.UnmappedMemberHandling;
                     if (effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                     {
-                        additionalProperties = JsonSchema.False;
+                        additionalProperties = JsonSchema.CreateFalseSchema();
                     }
 
                     if (typeDiscriminator is { } typeDiscriminatorPair)
@@ -240,7 +255,8 @@ namespace System.Text.Json.Schema
 
                         if (property.AssociatedParameter is { HasDefaultValue: true } parameterInfo)
                         {
-                            propertySchema.DefaultValue = JsonSerializer.SerializeToNode(parameterInfo.DefaultValue, property.JsonTypeInfo);
+                            JsonSchema.EnsureMutable(ref propertySchema);
+                            propertySchema.DefaultValue = JsonSerializer.SerializeToNode(parameterInfo.EffectiveDefaultValue, property.JsonTypeInfo);
                             propertySchema.HasDefaultValue = true;
                         }
 
@@ -265,7 +281,7 @@ namespace System.Text.Json.Schema
                     });
 
                 case JsonTypeInfoKind.Enumerable:
-                    Debug.Assert(typeInfo.ElementTypeInfo != null);
+                    Debug.Assert(typeInfo.ElementTypeInfo is not null);
 
                     if (typeDiscriminator is null)
                     {
@@ -315,7 +331,7 @@ namespace System.Text.Json.Schema
                     }
 
                 case JsonTypeInfoKind.Dictionary:
-                    Debug.Assert(typeInfo.ElementTypeInfo != null);
+                    Debug.Assert(typeInfo.ElementTypeInfo is not null);
 
                     List<KeyValuePair<string, JsonSchema>>? dictProps = null;
                     List<string>? dictRequired = null;
@@ -342,38 +358,121 @@ namespace System.Text.Json.Schema
                         AdditionalProperties = valueSchema.IsTrue ? null : valueSchema,
                     });
 
+                case JsonTypeInfoKind.Union:
+                    if (typeInfo.UnionCases is { Count: > 0 } unionCases)
+                    {
+                        JsonSchemaType unionSchemaType = JsonSchemaType.Any;
+                        List<JsonSchema>? unionAnyOf = new(unionCases.Count);
+
+                        state.PushSchemaNode(JsonSchema.AnyOfPropertyName);
+
+                        foreach (JsonUnionCaseInfo caseInfo in unionCases)
+                        {
+                            JsonTypeInfo caseTypeInfo = typeInfo.Options.GetTypeInfoInternal(caseInfo.CaseType);
+
+                            state.PushSchemaNode(unionAnyOf.Count.ToString(CultureInfo.InvariantCulture));
+                            JsonSchema caseSchema = MapJsonSchemaCore(ref state, caseTypeInfo, customNumberHandling: typeInfo.NumberHandling, cacheResult: false);
+                            state.PopSchemaNode();
+
+                            if (caseInfo.IsNullable)
+                            {
+                                caseSchema.Type |= JsonSchemaType.Null;
+                            }
+
+                            if (unionAnyOf.Count == 0)
+                            {
+                                unionSchemaType = caseSchema.Type;
+                            }
+                            else if (unionSchemaType != caseSchema.Type)
+                            {
+                                unionSchemaType = JsonSchemaType.Any;
+                            }
+
+                            unionAnyOf.Add(caseSchema);
+                        }
+
+                        state.PopSchemaNode();
+
+                        if (unionSchemaType is not JsonSchemaType.Any)
+                        {
+                            foreach (JsonSchema caseSchema in unionAnyOf)
+                            {
+                                caseSchema.Type = JsonSchemaType.Any;
+
+                                if (caseSchema.KeywordCount == 0)
+                                {
+                                    unionAnyOf = null;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return CompleteSchema(ref state, new()
+                        {
+                            Type = unionSchemaType,
+                            AnyOf = unionAnyOf,
+                        });
+                    }
+
+                    return CompleteSchema(ref state, JsonSchema.CreateTrueSchema());
+
                 default:
                     Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.None);
                     // Return a `true` schema for types with user-defined converters.
-                    return CompleteSchema(ref state, JsonSchema.True);
+                    return CompleteSchema(ref state, JsonSchema.CreateTrueSchema());
             }
 
             JsonSchema CompleteSchema(ref GenerationState state, JsonSchema schema)
             {
+                if (HasObsoleteAttribute(typeInfo.Type) ||
+                    HasObsoleteAttribute(propertyInfo?.AttributeProvider))
+                {
+                    JsonSchema.EnsureMutable(ref schema);
+                    schema.Deprecated = true;
+                }
+
                 if (schema.Ref is null)
                 {
-                    // A schema is marked as nullable if either
-                    // 1. We have a schema for a property where either the getter or setter are marked as nullable.
-                    // 2. We have a schema for a reference type, unless we're explicitly treating null-oblivious types as non-nullable.
-                    bool isNullableSchema = propertyInfo != null
-                        ? propertyInfo.IsGetNullable || propertyInfo.IsSetNullable
-                        : typeInfo.CanBeNull && !parentPolymorphicTypeIsNonNullable && !state.ExporterOptions.TreatNullObliviousAsNonNullable;
-
-                    if (isNullableSchema)
+                    if (IsNullableSchema(state.ExporterOptions))
                     {
                         schema.MakeNullable();
                     }
 
-                    if (cacheResult)
+                    bool IsNullableSchema(JsonSchemaExporterOptions options)
                     {
-                        state.PopGeneratedType();
+                        // A schema is marked as nullable if either:
+                        // 1. We have a schema for a property where either the getter or setter are marked as nullable.
+                        // 2. We have a schema for a Nullable<T> type.
+                        // 3. We have a schema for a reference type, unless we're explicitly treating null-oblivious types as non-nullable.
+
+                        if (propertyInfo is not null)
+                        {
+                            if (propertyInfo.Get is not null && propertyInfo.IsGetNullable)
+                            {
+                                return true;
+                            }
+
+                            if (propertyInfo.AssociatedParameter is not null)
+                            {
+                                return propertyInfo.AssociatedParameter.IsNullable;
+                            }
+
+                            return propertyInfo.Set is not null && propertyInfo.IsSetNullable;
+                        }
+
+                        if (typeInfo.IsNullable)
+                        {
+                            return true;
+                        }
+
+                        return !typeInfo.Type.IsValueType && !parentPolymorphicTypeIsNonNullable && !options.TreatNullObliviousAsNonNullable;
                     }
                 }
 
-                if (state.ExporterOptions.TransformSchemaNode != null)
+                if (state.ExporterOptions.TransformSchemaNode is not null)
                 {
                     // Prime the schema for invocation by the JsonNode transformer.
-                    schema.ExporterContext = state.CreateContext(typeInfo, propertyInfo, parentPolymorphicTypeInfo);
+                    schema.ExporterContext = exporterContext;
                 }
 
                 return schema;
@@ -388,6 +487,28 @@ namespace System.Text.Json.Schema
             }
 
             options.MakeReadOnly();
+        }
+
+        private static bool HasObsoleteAttribute(ICustomAttributeProvider? attributeProvider)
+        {
+            if (attributeProvider is null)
+            {
+                return false;
+            }
+
+            // Identify ObsoleteAttribute using its full type name rather than typeof(ObsoleteAttribute).
+            // On downlevel targets System.Text.Json compiles in an internal ObsoleteAttribute polyfill
+            // that would otherwise shadow the framework type, causing the typeof comparison to never match
+            // the ObsoleteAttribute applied by user code.
+            foreach (object attribute in attributeProvider.GetCustomAttributes(inherit: true))
+            {
+                if (attribute.GetType().FullName == "System.ObsoleteAttribute")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IsPolymorphicTypeThatSpecifiesItselfAsDerivedType(JsonTypeInfo typeInfo)
@@ -408,7 +529,7 @@ namespace System.Text.Json.Schema
         private readonly ref struct GenerationState(JsonSerializerOptions options, JsonSchemaExporterOptions exporterOptions)
         {
             private readonly List<string> _currentPath = [];
-            private readonly List<(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo, int depth)> _generationStack = [];
+            private readonly Dictionary<(JsonTypeInfo, JsonPropertyInfo?), string[]> _generated = new();
 
             public int CurrentDepth => _currentPath.Count;
             public JsonSerializerOptions Options { get; } = options;
@@ -431,77 +552,55 @@ namespace System.Text.Json.Schema
             }
 
             /// <summary>
-            /// Pushes the current type/property to the generation stack or returns a JSON pointer if the type is recursive.
+            /// Registers the current schema node generation context; if it has already been generated return a JSON pointer to its location.
             /// </summary>
-            public bool TryPushType(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo, [NotNullWhen(true)] out string? existingJsonPointer)
+            public bool TryGetExistingJsonPointer(in JsonSchemaExporterContext context, [NotNullWhen(true)] out string? existingJsonPointer)
             {
-                foreach ((JsonTypeInfo otherTypeInfo, JsonPropertyInfo? otherPropertyInfo, int depth) in _generationStack)
+                (JsonTypeInfo TypeInfo, JsonPropertyInfo? PropertyInfo) key = (context.TypeInfo, context.PropertyInfo);
+#if NET
+                ref string[]? pathToSchema = ref CollectionsMarshal.GetValueRefOrAddDefault(_generated, key, out bool exists);
+#else
+                bool exists = _generated.TryGetValue(key, out string[]? pathToSchema);
+#endif
+                if (exists)
                 {
-                    if (typeInfo == otherTypeInfo && propertyInfo == otherPropertyInfo)
-                    {
-                        existingJsonPointer = FormatJsonPointer(_currentPath, depth);
-                        return true;
-                    }
+                    existingJsonPointer = FormatJsonPointer(pathToSchema);
+                    return true;
                 }
-
-                _generationStack.Add((typeInfo, propertyInfo, CurrentDepth));
+#if NET
+                pathToSchema = context._path;
+#else
+                _generated[key] = context._path;
+#endif
                 existingJsonPointer = null;
                 return false;
             }
 
-            public void PopGeneratedType()
-            {
-                Debug.Assert(_generationStack.Count > 0);
-                _generationStack.RemoveAt(_generationStack.Count - 1);
-            }
-
             public JsonSchemaExporterContext CreateContext(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo, JsonTypeInfo? baseTypeInfo)
             {
-                return new JsonSchemaExporterContext(typeInfo, propertyInfo, baseTypeInfo, _currentPath.ToArray());
+                return new JsonSchemaExporterContext(typeInfo, propertyInfo, baseTypeInfo, [.. _currentPath]);
             }
 
-            private static string FormatJsonPointer(List<string> currentPathList, int depth)
+            private static string FormatJsonPointer(ReadOnlySpan<string> path)
             {
-                Debug.Assert(0 <= depth && depth < currentPathList.Count);
-
-                if (depth == 0)
+                if (path.IsEmpty)
                 {
                     return "#";
                 }
 
-                using ValueStringBuilder sb = new(initialCapacity: depth * 10);
+                using ValueStringBuilder sb = new(initialCapacity: path.Length * 10);
                 sb.Append('#');
 
-                for (int i = 0; i < depth; i++)
+                foreach (string segment in path)
                 {
-                    ReadOnlySpan<char> segment = currentPathList[i].AsSpan();
                     sb.Append('/');
 
-                    do
-                    {
-                        // Per RFC 6901 the characters '~' and '/' must be escaped.
-                        int pos = segment.IndexOfAny('~', '/');
-                        if (pos < 0)
-                        {
-                            sb.Append(segment);
-                            break;
-                        }
+                    // Per RFC 6901 the characters '~' and '/' are escaped as '~0' and '~1'.
+                    string escapedToken = segment.Replace("~", "~0").Replace("/", "~1");
 
-                        sb.Append(segment.Slice(0, pos));
-
-                        if (segment[pos] == '~')
-                        {
-                            sb.Append("~0");
-                        }
-                        else
-                        {
-                            Debug.Assert(segment[pos] == '/');
-                            sb.Append("~1");
-                        }
-
-                        segment = segment.Slice(pos + 1);
-                    }
-                    while (!segment.IsEmpty);
+                    // Per RFC 6901 section 6 the JSON Pointer is embedded in a URI fragment,
+                    // so percent-encode any characters that are not valid in a URI fragment.
+                    sb.Append(Uri.EscapeDataString(escapedToken));
                 }
 
                 return sb.ToString();

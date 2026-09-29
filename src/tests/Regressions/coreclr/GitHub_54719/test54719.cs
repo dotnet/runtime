@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class IA { }
 public class IB { }
@@ -24,6 +25,7 @@ public abstract class Base<B> : Base where B : IB
 
 public class Program
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

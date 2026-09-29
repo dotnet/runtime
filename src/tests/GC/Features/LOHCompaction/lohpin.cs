@@ -9,6 +9,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime;
 using Xunit;
+using TestLibrary;
 
 namespace LOHPin
 {
@@ -23,6 +24,8 @@ namespace LOHPin
          *   - compact LOH then check the address of the objects
          * */
  
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46666", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

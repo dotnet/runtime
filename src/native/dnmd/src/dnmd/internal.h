@@ -20,6 +20,23 @@ typedef size_t rsize_t;
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
+// Safe arithmetic to prevent size_t overflow in allocations.
+static inline bool safe_add_size(size_t a, size_t b, size_t* result)
+{
+    if (a > SIZE_MAX - b)
+        return false;
+    *result = a + b;
+    return true;
+}
+
+static inline bool safe_mul_size(size_t a, size_t b, size_t* result)
+{
+    if (a != 0 && b > SIZE_MAX / a)
+        return false;
+    *result = a * b;
+    return true;
+}
+
 #ifndef NDEBUG
 #define ASSERT_ASSUME(x) assert(x)
 #elif defined(_MSC_VER)
@@ -99,13 +116,14 @@ typedef enum
 // Flags and masks for context details
 typedef enum
 {
-    mdc_none              = 0x0000,
-    mdc_large_string_heap = 0x0001,
-    mdc_large_guid_heap   = 0x0002,
-    mdc_large_blob_heap   = 0x0004,
-    mdc_extra_data        = 0x0040,
-    mdc_image_flags       = 0xffff,
-    mdc_minimal_delta     = 0x00010000,
+    mdc_none                    = 0x0000,
+    mdc_large_string_heap       = 0x0001,
+    mdc_large_guid_heap         = 0x0002,
+    mdc_large_blob_heap         = 0x0004,
+    mdc_extra_data              = 0x0040,
+    mdc_image_flags             = 0xffff,
+    mdc_minimal_delta           = 0x00010000,
+    mdc_uncompressed_table_heap = 0x00020000,
 } mdcxt_flag_t;
 
 // Macros used to insert/extract the column offset.
@@ -226,6 +244,9 @@ typedef struct md_pdb__
     uint64_t referenced_type_system_tables;
     uint32_t type_system_table_rows[MDTABLE_MAX_COUNT];
 } md_pdb_t;
+
+// Check if the context has a non-empty PDB stream.
+bool has_pdb(mdcxt_t* cxt);
 
 // Interpret in the PDB data stream
 // The md_pdb_t will be fully initialized if "true" is returned.
@@ -361,29 +382,39 @@ static col_index_t index_to_col(uint8_t idx, mdtable_id_t table_id)
 // Copy data from a cursor to one row to a cursor to another row.
 bool copy_cursor(mdcursor_t dest, mdcursor_t src);
 
-// Raw table data access
-
+// Single column access
 typedef struct access_cxt__
+{
+    mdtable_t* table;
+    mdtcol_t col_details;
+    uint8_t const* data;
+    uint8_t* writable_data;
+} access_cxt_t;
+
+bool create_access_context(mdcursor_t* cursor, col_index_t col_idx, bool make_writable, access_cxt_t* rcxt);
+bool write_column_data(access_cxt_t* acxt, uint32_t data);
+bool read_column_data(access_cxt_t* acxt, uint32_t* data);
+
+// Raw bulk table access
+typedef struct bulk_access_cxt__
 {
     mdtable_t* table;
     mdtcol_t col_details;
     uint8_t const* start;
     uint8_t const* data;
-    uint8_t* writable_data;
     uint8_t const* end;
     size_t data_len;
     uint32_t data_len_col;
     uint32_t next_row_stride;
-} access_cxt_t;
+} bulk_access_cxt_t;
 
-bool create_access_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, bool make_writable, access_cxt_t* acxt);
-bool read_column_data(access_cxt_t* acxt, uint32_t* data);
-bool write_column_data(access_cxt_t* acxt, uint32_t data);
-bool next_row(access_cxt_t* acxt);
+bool create_bulk_access_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, bulk_access_cxt_t* acxt);
+bool read_column_data_and_advance(bulk_access_cxt_t* acxt, uint32_t* data);
+bool next_row(bulk_access_cxt_t* acxt);
 
 // Internal functions used to read/write columns with minimal validation.
-int32_t get_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* offset);
-int32_t set_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t* offset);
+bool get_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t* offset);
+bool set_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t offset);
 
 //
 // Manipulation of bits

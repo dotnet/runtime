@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <_wasmSampleFiles Include="$(WasmAppBuilderTasksAssemblyPath)" />
-    <PackageFile Include="@(_wasmSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
+    <PackageFile Include="@(_wasmSampleFiles)" TargetPath="tools\net\" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

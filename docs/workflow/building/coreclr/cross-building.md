@@ -14,6 +14,8 @@
 * [Cross-Building using Docker](#cross-building-using-docker)
   * [Cross-Compiling for ARM32 and ARM64 with Docker](#cross-compiling-for-arm32-and-arm64-with-docker)
   * [Cross-Compiling for FreeBSD with Docker](#cross-compiling-for-freebsd-with-docker)
+  * [Building CoreCLR with Bootstrapping](#building-coreclr-with-bootstrapping)
+  * [Building Tests with Bootstrapping](#building-tests-with-bootstrapping)
 
 This guide will go more in-depth on how to do cross-building across multiple operating systems and architectures. It's worth mentioning this is not an any-to-any scenario. Only the combinations explained here are possible/supported. If/When any other combinations get supported/discovered, this document will get updated accordingly.
 
@@ -127,7 +129,7 @@ The Crossgen2 JIT tools are used to run Crossgen2 on libraries built during the 
 However, you might find yourself needing to (re)build them because either you made changes to them, or you built CoreCLR in a different way using `build-runtime.sh` instead of the usual default script at the root of the repo. To build these tools, you need to run the `src/coreclr/build-runtime.sh` script, and pass the `-hostarch` flag with the architecture of the host machine, alongside the `-component crosscomponents` flag to specify that you only want to build the cross-targeting tools. Retaking our previous example of building for ARM64 using an x64 Linux machine:
 
 ```bash
-./src/coreclr/build-runtime.sh -arm64 -hostarch x64 -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
+./src/coreclr/build-runtime.sh -arch arm64 -hostarch x64 -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
 ```
 
 The output of running this command is placed in `artifacts/bin/coreclr/linux.<target_arch>.<configuration>/<host_arch>`. For our example, it would be `artifacts/bin/coreclr/linux.arm64.Release/x64`.
@@ -135,7 +137,7 @@ The output of running this command is placed in `artifacts/bin/coreclr/linux.<ta
 On Windows, you can build these cross-targeting diagnostic libraries with the `linuxdac` and `alpinedac` subsets from the root `build.cmd` script. That said, you can also use the `build-runtime.cmd` script, like with Linux. These builds also require you to pass the `-os` flag to specify the target OS. For example:
 
 ```cmd
-.\src\coreclr\build-runtime.cmd -arm64 -hostarch x64 -os linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
+.\src\coreclr\build-runtime.cmd -arch arm64 -hostarch x64 -os linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
 ```
 
 If you're building the cross-components in powershell, you'll need to wrap `"-DCLR_CROSS_COMPONENTS_BUILD=1"` with single quotes (`'`) to ensure things are escaped correctly for CMD.
@@ -146,7 +148,7 @@ When it comes to building, Docker offers the most flexibility when it comes to t
 
 ### Cross-Compiling for ARM32 and ARM64 with Docker
 
-As mentioned in the [Linux Cross-Building section](#linux-cross-building), the `ROOTFS_DIR` environment variable has to be set to the _crossrootfs_ location. The prereqs Docker images already have _crossrootfs_ built, so you only need to specify it when creating the Docker container by means of the `-e` flag. These locations are specified in the [Docker Images table](/docs/workflow/building/coreclr/linux-instructions.md#docker-images).
+As mentioned in the [Linux Cross-Building section](#linux-cross-building), the `ROOTFS_DIR` environment variable has to be set to the _crossrootfs_ location. The prereqs Docker images already have _crossrootfs_ built, so you only need to specify it when creating the Docker container by means of the `-e` flag. These locations are specified in the [Docker Images table](/docs/workflow/using-docker.md#the-official-runtime-docker-images).
 
 In addition, you also have to specify the `--cross` flag with the target architecture. For example, the following command would create a container to build CoreCLR for Linux ARM64:
 
@@ -155,7 +157,7 @@ docker run --rm \
   -v <RUNTIME_REPO_PATH>:/runtime \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/arm64 \
-  mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-arm64 \
   ./build.sh --subset clr --cross --arch arm64
 ```
 
@@ -168,6 +170,118 @@ docker run --rm \
   -v <RUNTIME_REPO_PATH>:/runtime \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/x64 \
-  mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-freebsd-14-amd64 \
   ./build.sh --subset clr --cross --os freebsd
 ```
+
+### Building CoreCLR with Bootstrapping
+
+CoreCLR builds a few tools, including NativeAOT compiler itself, using NativeAOT (or single file where NativeAOT is not supported). The build defaults to using a "Last Known Good" version of NativeAOT to build the tools. This "Last Known Good" version comes from the .NET SDK referenced in the global.json file. This default was chosen for a good local build experience of most repo contributors. Building with live NativeAOT version would make the local build longer and it would make debugging local changes that impact NativeAOT compiler complicated.
+
+The runtime's build scripts provide an additional set of options to build with the live NativeAOT version instead of the "Last Known Good" version. This is useful for testing changes to NativeAOT or the tools that are built with it, and is required for building those tools for target platforms that are not known to the "Last Known Good" version of NativeAOT, such as FreeBSD, community architectures, or non-portable builds of .NET. This is not yet implemented for Windows.
+
+To build the bootstrap subset of the runtime repo, you can build the `bootstrap` subset. To use the bootstrap components in the runtime repo build, you can pass the `--use-bootstrap` argument to the build script. This will use the bootstrap components instead of the "Last Known Good" version of NativeAOT.
+
+For simplicity, a `--bootstrap` option is also provided. This option will build the `bootstrap` subset, clean up the artifacts directory, and then build the runtime repo with the `--use-bootstrap` option. This is useful for building the runtime repo with the live NativeAOT version without having to run two separate commands.
+
+The `--bootstrap` option is automatically specified when building the runtime repo for .NET Source Build, as the vast majority of Source Build scenarios use non-portable RIDs.
+
+### Building Tests with Bootstrapping
+
+For community-supported platforms where Microsoft does not publish targeting/runtime/apphost packs (e.g. FreeBSD, illumos, Haiku, linux-riscv64, linux-loongarch64, linux-ppc64le), the test builds need to consume the locally-built bootstrap artifacts instead of trying to download packs from NuGet. Both CoreCLR runtime tests and libraries tests support this via the `--use-bootstrap` flag.
+
+The steps below use FreeBSD ARM64 as an example. The same flow applies to any other community-supported target by swapping `--os`/`--arch` and the docker image.
+
+#### Building in the Container
+
+Start the cross-build container:
+
+```bash
+docker run --rm -it \
+  -v $(pwd):/runtime \
+  -w /runtime \
+  -e ROOTFS_DIR=/crossrootfs/arm64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-freebsd-14-arm64 \
+  bash
+```
+
+Inside the container, set the target and build the product, then the tests:
+
+```bash
+os=freebsd
+arch=arm64
+
+# Initial product build (also produces the bootstrap subset).
+./build.sh clr+libs --cross --arch $arch --os $os --bootstrap
+
+# Subsequent rebuilds (e.g. after editing code) reuse the existing bootstrap.
+./build.sh clr+libs --cross --arch $arch --os $os --use-bootstrap
+
+# CoreCLR runtime tests.
+src/tests/build.sh --cross --arch $arch --os $os -p:LibrariesConfiguration=Debug --use-bootstrap
+
+# Libraries tests (produces zipped per-library test archives under artifacts/helix/tests/).
+./build.sh libs.tests --cross --arch $arch --os $os --use-bootstrap -p:ArchiveTests=true
+
+# A single library's test project can also be built and archived on its own.
+# The resulting zip lands under artifacts/helix/tests/.
+./dotnet.sh build src/libraries/System.Formats.Nrbf/tests -p:CrossBuild=true -p:UseBootstrap=true -p:ArchiveTests=true -p:TargetOS=$os -p:TargetArchitecture=$arch
+```
+
+Without `--use-bootstrap`, restore would fail with `NU1102` errors because the apphost/runtime/targeting packs for `freebsd-arm64` are not published to NuGet feeds.
+
+#### Running CoreCLR Runtime Tests on the Target
+
+From the host machine, pack and upload `artifacts/tests/coreclr/<os>.<arch>.Debug` to the target:
+
+```bash
+tar -czf coreclr-tests-freebsd-arm64-Debug.tar.gz artifacts/tests/coreclr/freebsd.arm64.Debug
+scp coreclr-tests-freebsd-arm64-Debug.tar.gz $TargetMachine:/tmp
+```
+
+On the target machine, extract and run a test. For example, the interpreter tests:
+
+```bash
+ssh $TargetMachine
+
+mkdir coreclr-tests && cd $_
+tar -xzf /tmp/coreclr-tests-freebsd-arm64-Debug.tar.gz
+
+CORE_ROOT=$(pwd)/artifacts/tests/coreclr/freebsd.arm64.Debug/Tests/Core_Root \
+  DOTNET_TieredCompilation=0 \
+  artifacts/tests/coreclr/freebsd.arm64.Debug/JIT/Interpreter/InterpreterTester/InterpreterTester.sh
+```
+
+Exit code `100` means pass; any other value means fail.
+
+#### Running Libraries Tests on the Target
+
+Libraries tests need the test host (`artifacts/bin/testhost/...`) plus the per-library test archive. From the host machine:
+
+```bash
+# Pack and upload the test host.
+tar -czf testhost_net11.0-freebsd-Debug-arm64.tar.gz artifacts/bin/testhost/net11.0-freebsd-Debug-arm64
+scp testhost_net11.0-freebsd-Debug-arm64.tar.gz $TargetMachine:/tmp
+
+# Copy a specific test's archive (paths and names vary; this example uses System.Text.RegularExpressions).
+scp artifacts/helix/tests/freebsd.AnyCPU.Debug/System.Text.RegularExpressions.Unit.Tests.zip $TargetMachine:/tmp
+```
+
+On the target machine:
+
+```bash
+ssh $TargetMachine
+
+mkdir testhost
+tar -xzf /tmp/testhost_net11.0-freebsd-Debug-arm64.tar.gz -C testhost
+
+mkdir regex-tests && cd $_
+unzip /tmp/System.Text.RegularExpressions.Unit.Tests.zip
+
+./RunTests.sh --runtime-path ~/testhost/artifacts/bin/testhost/net11.0-freebsd-Debug-arm64
+```
+
+#### Notes
+
+* `--bootstrap` works on any platform; on community-supported platforms it is the only way to build the tests because the targeting/runtime/apphost packs are not published to NuGet feeds.
+* If restore still fails after passing the flag, double-check that the `bootstrap` subset built successfully and produced `artifacts/bootstrap/`.

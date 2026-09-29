@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// COM+99 Debug Interface Header
+// CLR Debug Interface Header
 //
 
 
@@ -18,6 +18,9 @@
 typedef DPTR(struct ICorDebugInfo::NativeVarInfo) PTR_NativeVarInfo;
 
 typedef void (*FAVORCALLBACK)(void *);
+
+class DebuggerSteppingInfo;
+class COR_ILMETHOD_DECODER;
 
 //
 // The purpose of this object is to serve as an entry point to the
@@ -58,21 +61,20 @@ public:
 
     virtual void DetachThread(Thread *pRuntimeThread) = 0;
 
+    virtual void AppDomainCreated(AppDomain * pAppDomain) = 0;
+
     // Called when a module is being loaded into an AppDomain.
-    // This includes when a domain neutral module is loaded into a new AppDomain.
     // This is called only when a debugger is attached, and will occur after the
-    // related LoadAssembly and AddAppDomainToIPCBlock calls and before any
+    // related LoadAssembly calls and before any
     // LoadClass calls for this module.
     virtual void LoadModule(Module *     pRuntimeModule,  // the module being loaded
                             LPCWSTR      psModuleName,    // module file name
-                            DWORD        dwModuleName,    // number of characters in file name excludign null
+                            DWORD        dwModuleName,    // number of characters in file name excluding null
                             Assembly *   pAssembly,       // the assembly the module belongs to
-                            DomainAssembly * pDomainAssembly,
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
 
     // Called for all modules in an AppDomain when the AppDomain is unloaded.
-    // This includes domain neutral modules that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass
     // calls and before any UnloadAssembly or RemoveAppDomainFromIPCBlock calls realted
     // to this module.  On CLR shutdown, we are not guaranteed to get UnloadModule calls for
@@ -90,12 +92,10 @@ public:
 
     virtual BOOL LoadClass(TypeHandle th,
                            mdTypeDef classMetadataToken,
-                           Module *classModule,
-                           AppDomain *pAppDomain) = 0;
+                           Module *classModule) = 0;
 
     virtual void UnloadClass(mdTypeDef classMetadataToken,
-                             Module *classModule,
-                             AppDomain *pAppDomain) = 0;
+                             Module *classModule) = 0;
 
     // Filter we call in 1st-pass to dispatch a CHF callback.
     // pCatchStackAddress really should be a Frame* onto the stack. That way the CHF stack address
@@ -141,8 +141,7 @@ public:
     virtual void SendUserBreakpoint(Thread *thread) = 0;
 
     // Send an UpdateModuleSyms event, and block waiting for the debugger to continue it.
-    virtual void SendUpdateModuleSymsEventAndBlock(Module *pRuntimeModule,
-                                          AppDomain *pAppDomain) = 0;
+    virtual void SendUpdateModuleSymsEventAndBlock(Module *pRuntimeModule) = 0;
 
     //
     // RequestFavor gets the debugger helper thread to call a function. It's
@@ -195,8 +194,8 @@ public:
                                              SIZE_T *nativeOffset) = 0;
 
 
-    // Used by FixContextAndResume
-    virtual void SendSetThreadContextNeeded(CONTEXT *context) = 0;
+    // Used by EditAndContinueModule::FixContextAndResume
+    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = nullptr, bool HasActivePatchSkip = false, bool fClearSetIP = false) = 0;
     virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
 #endif // FEATURE_METADATA_UPDATER
 
@@ -213,7 +212,8 @@ public:
 
     virtual void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers) = 0;
+                 bool *extendOthers,
+                 unsigned ilCodeSize) = 0;
 
     virtual BOOL CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address, /*OUT*/ PRD_TYPE *pOpcode) = 0;
 
@@ -247,24 +247,9 @@ public:
 
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
     // ICorDebugAppDomain on the RS.
-    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
-
-    // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-    virtual void SendMDANotification(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags,
-        BOOL bAttach
-    ) = 0;
+    virtual void SendCustomDebuggerNotification(Thread * pThread, Assembly * pAssembly, mdTypeDef classToken) = 0;
 
     virtual bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod) = 0;
-
-    virtual void SendLogSwitchSetting (int iLevel,
-                                       int iReason,
-                                       _In_z_ LPCWSTR pLogSwitchName,
-                                       _In_z_ LPCWSTR pParentSwitchName) = 0;
 
     virtual bool IsLoggingEnabled (void) = 0;
 
@@ -278,6 +263,7 @@ public:
                                          ULONG32 *pcMap,
                                          COR_DEBUG_IL_TO_NATIVE_MAP map[]) = 0;
 
+#ifdef DEBUG
     virtual HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
         PCODE pNativeCodeStartAddress,
@@ -285,34 +271,16 @@ public:
         USHORT * pcMap,
         UINT ** prguiILOffset,
         UINT ** prguiNativeOffset) = 0;
+#endif // DEBUG
 
     virtual DWORD GetHelperThreadID(void ) = 0;
 
-    // Called whenever a new AppDomain is created, regardless of whether a debugger is attached.
-    // This will be called before any LoadAssembly calls for assemblies in this domain.
-    virtual HRESULT AddAppDomainToIPC (AppDomain *pAppDomain) = 0;
-
-    // Called whenever an AppDomain is unloaded, regardless of whether a Debugger is attached
-    // This will occur after any UnloadAssembly and UnloadModule callbacks for this domain (if any).
-    virtual HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain) = 0;
-
-    virtual HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain) = 0;
-
-    // Called when an assembly is being loaded into an AppDomain.
-    // This includes when a domain neutral assembly is loaded into a new AppDomain.
-    // This is called only when a debugger is attached, and will occur after the
-    // related AddAppDomainToIPCBlock call and before any LoadModule or
-    // LoadClass calls for this assembly.
-    virtual void LoadAssembly(DomainAssembly * pDomainAssembly) = 0; // the assembly being loaded
-
-
     // Called for all assemblies in an AppDomain when the AppDomain is unloaded.
-    // This includes domain neutral assemblies that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass
     // and UnloadModule calls and before any RemoveAppDomainFromIPCBlock calls realted
     // to this assembly.  On CLR shutdown, we are not guaranteed to get UnloadAssembly calls for
     // all outstanding loaded assemblies.
-    virtual void UnloadAssembly(DomainAssembly * pDomainAssembly) = 0;
+    virtual void UnloadAssembly(Assembly * pAssembly) = 0;
 
     virtual HRESULT SetILInstrumentedCodeMap(MethodDesc *fd,
                                              BOOL fStartJit,
@@ -373,10 +341,9 @@ public:
     // and with whatever granularity (per-module, per-class, per-function, etc).
     virtual DWORD* GetJMCFlagAddr(Module * pModule) = 0;
 
-    // notification for SQL fiber debugging support
-    virtual void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName) = 0;
-    virtual void DestroyConnection(CONNID dwConnectionId) = 0;
-    virtual void ChangeConnection(CONNID dwConnectionId) = 0;
+    // Returns true if any stepper/controller has enabled method-enter callbacks.
+    // Used by the interpreter to avoid calling OnMethodEnter when not stepping.
+    virtual bool IsMethodEnterEnabled() = 0;
 
     //
     // This function is used to identify the helper thread.
@@ -411,6 +378,12 @@ public:
 #ifndef DACCESS_COMPILE
     virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
     virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
+    virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
+    virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
+    virtual void ProcessAnyPendingEvals(Thread* pThread) = 0;
+
+    virtual void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread) = 0;
+
 #endif //DACCESS_COMPILE
 };
 

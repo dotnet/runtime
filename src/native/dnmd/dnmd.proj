@@ -24,7 +24,7 @@
       <CTestResults Include="$(DnmdBuildArtifactsDir)\Testing\**\Test.xml" />
       <!-- Add metadata afterwards to ensure that built-in metadata is already available. -->
       <CTestResults>
-        <TargetFileName>dnmd-$([System.String]::new('%(RecursiveDir)').TrimEnd('\\')).ctestxml</TargetFileName>
+        <TargetFileName>dnmd-$([System.String]::new('%(RecursiveDir)').TrimEnd('\\').TrimEnd('/')).ctestxml</TargetFileName>
       </CTestResults>
     </ItemGroup>
     <Copy SourceFiles="@(CTestResults)" DestinationFiles="@(CTestResults->'$(ArtifactsTestResultsDir)/%(TargetFileName)')" />

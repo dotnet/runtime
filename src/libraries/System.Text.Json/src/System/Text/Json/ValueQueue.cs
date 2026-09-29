@@ -37,7 +37,7 @@ namespace System.Text.Json
                     goto default;
 
                 default:
-                    Debug.Assert(_multiple != null);
+                    Debug.Assert(_multiple is not null);
                     _multiple.Enqueue(value);
                     break;
             }
@@ -58,7 +58,7 @@ namespace System.Text.Json
                     return true;
 
                 default:
-                    Debug.Assert(_multiple != null);
+                    Debug.Assert(_multiple is not null);
                     return _multiple.TryDequeue(out value);
             }
         }

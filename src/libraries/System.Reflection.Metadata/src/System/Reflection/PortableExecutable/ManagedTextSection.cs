@@ -41,7 +41,6 @@ namespace System.Reflection.PortableExecutable
 
         /// <summary>
         /// The size of managed resource data stream.
-        /// Aligned to <see cref="ManagedResourcesDataAlignment"/>.
         /// </summary>
         public int ResourceDataSize { get; }
 
@@ -147,9 +146,6 @@ namespace System.Reflection.PortableExecutable
 
         internal int ComputeOffsetToDebugDirectory()
         {
-            Debug.Assert(MetadataSize % 4 == 0);
-            Debug.Assert(ResourceDataSize % 4 == 0);
-
             return
                 ComputeOffsetToMetadata() +
                 MetadataSize +
@@ -187,7 +183,6 @@ namespace System.Reflection.PortableExecutable
 
         public int ComputeSizeOfTextSection()
         {
-            Debug.Assert(MappedFieldDataSize % MappedFieldDataAlignment == 0);
             return CalculateOffsetToMappedFieldDataStream() + MappedFieldDataSize;
         }
 
@@ -254,7 +249,6 @@ namespace System.Reflection.PortableExecutable
             Debug.Assert(ilBuilder.Count == ILStreamSize);
             Debug.Assert((mappedFieldDataBuilderOpt?.Count ?? 0) == MappedFieldDataSize);
             Debug.Assert((resourceBuilderOpt?.Count ?? 0) == ResourceDataSize);
-            Debug.Assert((resourceBuilderOpt?.Count ?? 0) % 4 == 0);
 
             // TODO: avoid recalculation
             int importTableRva = GetImportTableDirectoryEntry(relativeVirtualAddess).RelativeVirtualAddress;
@@ -281,11 +275,9 @@ namespace System.Reflection.PortableExecutable
             }
 
             // strong name signature:
-            strongNameSignature = builder.ReserveBytes(StrongNameSignatureSize);
-
             // The bytes are required to be 0 for the purpose of calculating hash of the PE content
-            // when strong name signing.
-            new BlobWriter(strongNameSignature).WriteBytes(0, StrongNameSignatureSize);
+            // when strong name signing. This is already handled by ReserveBytes.
+            strongNameSignature = builder.ReserveBytes(StrongNameSignatureSize);
 
             // debug directory and data:
             if (debugDataBuilderOpt != null)

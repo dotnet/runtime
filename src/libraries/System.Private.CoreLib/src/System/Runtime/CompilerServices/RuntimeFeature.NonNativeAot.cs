@@ -22,7 +22,11 @@ namespace System.Runtime.CompilerServices
 #if MONO
             [Intrinsic]  // the Mono AOT compiler and Interpreter will change this flag to false for FullAOT and interpreted scenarios, otherwise this code is used
 #endif
+#if CORECLR && !FEATURE_DYNAMIC_CODE_COMPILED
+            get => false;
+#else
             get => IsDynamicCodeSupported;
+#endif
         }
     }
 }

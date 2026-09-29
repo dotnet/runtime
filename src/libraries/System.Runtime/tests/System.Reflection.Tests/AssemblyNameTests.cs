@@ -90,7 +90,7 @@ namespace System.Reflection.Tests
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
         [InlineData("aa, culture=en-en, culture=en-en", typeof(FileLoadException))]
         [InlineData("MyAssemblyName, PublicKey=00000000000000000400000000000000, PublicKeyToken=b77a5c561934e089", typeof(FileLoadException))]
-        public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
+        public void Ctor_String_Invalid(string? assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
         }
@@ -221,8 +221,7 @@ namespace System.Reflection.Tests
             Assert.Equal(new AssemblyName(expectedEqualString).FullName, assemblyName.FullName);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void CultureName_Set_Invalid_ThrowsCultureNotFoundException()
         {
             var assemblyName = new AssemblyName("Test");
@@ -304,8 +303,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "File locking is not respected")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public static void GetAssemblyName_LockedFile()
         {
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
@@ -410,7 +408,7 @@ namespace System.Reflection.Tests
         [InlineData("", "")]
         [InlineData(" name ", " name ")]
         [InlineData("\tname\t", "\tname\t")]
-        public void Name_Set(string name, string expectedName)
+        public void Name_Set(string? name, string? expectedName)
         {
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
             assemblyName.Name = name;
@@ -422,7 +420,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(Names_TestDataRequiresEscaping))]
         [InlineData(null, "")]
         [InlineData("", "")]
-        public void Name_Set_FullName(string name, string expectedName)
+        public void Name_Set_FullName(string? name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
             assemblyName.Name = name;

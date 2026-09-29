@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { bind_arg_marshal_to_js, end_marshal_task_to_js } from "./marshal-to-js";
+import { bind_arg_marshal_to_js, end_marshal_task_to_js, release_eager_task_holder } from "./marshal-to-js";
 import {
     get_sig, get_signature_argument_count,
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
@@ -123,7 +123,8 @@ function bind_fn_0V (closure: BindingClosure) {
             // call C# side
             invoke_sync_jsexport(method, args);
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -147,7 +148,8 @@ function bind_fn_1V (closure: BindingClosure) {
             // call C# side
             invoke_sync_jsexport(method, args);
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -175,7 +177,8 @@ function bind_fn_1R (closure: BindingClosure) {
             const js_result = res_converter(args);
             return js_result;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -200,15 +203,22 @@ function bind_fn_1RA (closure: BindingClosure) {
             // pre-allocate the promise
             let promise = res_converter(args);
 
-            // call C# side
-            invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+            try {
+                // call C# side
+                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+            } catch (ex) {
+                // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
+                release_eager_task_holder(promise);
+                throw ex;
+            }
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
 
             return promise;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -238,7 +248,8 @@ function bind_fn_2R (closure: BindingClosure) {
             const js_result = res_converter(args);
             return js_result;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -265,15 +276,22 @@ function bind_fn_2RA (closure: BindingClosure) {
             // pre-allocate the promise
             let promise = res_converter(args);
 
-            // call C# side
-            invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+            try {
+                // call C# side
+                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+            } catch (ex) {
+                // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
+                release_eager_task_holder(promise);
+                throw ex;
+            }
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
 
             return promise;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -311,7 +329,13 @@ function bind_fn (closure: BindingClosure) {
 
             // call C# side
             if (is_async) {
-                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+                try {
+                    invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+                } catch (ex) {
+                    // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
+                    release_eager_task_holder(js_result);
+                    throw ex;
+                }
                 // in case the C# side returned synchronously
                 js_result = end_marshal_task_to_js(args, undefined, js_result);
             } else if (is_discard_no_wait) {
@@ -325,7 +349,8 @@ function bind_fn (closure: BindingClosure) {
             }
             return js_result;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -372,7 +397,7 @@ function _walk_exports_to_set_function (assembly: string, namespace: string, cla
     scope[`${methodname}.${signature_hash}`] = fn;
 }
 
-export async function mono_wasm_get_assembly_exports (assembly: string): Promise<any> {
+export async function SystemInteropJS_GetAssemblyExports (assembly: string): Promise<any> {
     assert_js_interop();
     const result = exportsByAssembly.get(assembly);
     if (!result) {

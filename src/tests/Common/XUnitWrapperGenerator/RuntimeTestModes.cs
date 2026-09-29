@@ -43,5 +43,7 @@ namespace Xunit
         AnyJitOptimizationStress = AnyJitStress | TieredCompilation, // Disable when any JIT non-full optimization stress mode is exercised.
 
         HeapVerify = 1 << 9, // DOTNET_HeapVerify (or COMPlus_HeapVerify) is set.
+
+        InterpreterActive = 1 << 10, // DOTNET_Interpreter != "" or DOTNET_InterpMode != 0
     }
 }

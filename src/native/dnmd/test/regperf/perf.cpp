@@ -177,7 +177,7 @@ void EnumCustomAttributeByName(benchmark::State& state, IMetaDataImport* import)
 
 IMPORT_BENCHMARK(EnumCustomAttributeByName);
 
-int main(int argc, char** argv)
+int MAIN_CALLCONV main(int argc, char** argv)
 {
     RETURN_IF_FAILED(pal::GetBaselineMetadataDispenser(&g_baselineDisp));
     RETURN_IF_FAILED(GetDispenser(IID_IMetaDataDispenser, reinterpret_cast<void**>(&g_currentDisp)));
@@ -207,7 +207,7 @@ int main(int argc, char** argv)
     }
 
     RETURN_IF_FAILED(PerfInitialize(
-        dataImage,
+        dataImage.data(),
         (uint32_t)dataImage.size()));
 
     benchmark::Initialize(&argc, argv);

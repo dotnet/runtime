@@ -244,7 +244,6 @@ FixedCapacityStackingAllocatedUTF8StringHash<Data>::Lookup(
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     DWORD dwHash = GetHashCode(pszName);
     DWORD dwBucket = dwHash % m_dwNumBuckets;
@@ -270,7 +269,6 @@ FixedCapacityStackingAllocatedUTF8StringHash<Data>::FindNext(
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     CONSISTENCY_CHECK(CheckPointer(pEntry));
 
     LPCUTF8 key = pEntry->m_pKey;

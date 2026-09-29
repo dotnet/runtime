@@ -78,6 +78,22 @@ namespace Internal.TypeSystem
             /// True if the type transitively has a Vector<T> in it or is Vector<T>
             /// </summary>
             public const int IsVectorTOrHasVectorTFields = 0x1000;
+
+            /// <summary>
+            /// True if ContainsByRefs has been computed
+            /// </summary>
+            public const int ComputedContainsByRefs = 0x2000;
+
+            /// <summary>
+            /// True if the type contains byrefs
+            /// </summary>
+            public const int ContainsByRefs = 0x4000;
+
+            /// <summary>
+            /// True if the type transitively has a decimal floating-point type
+            /// (Decimal32/Decimal64/Decimal128) in it or is one.
+            /// </summary>
+            public const int IsDecimalFloatingPointOrHasDecimalFloatingPointFields = 0x8000;
         }
 
         private sealed class StaticBlockInfo
@@ -110,6 +126,21 @@ namespace Internal.TypeSystem
                     ComputeTypeContainsGCPointers();
                 }
                 return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsGCPointers);
+            }
+        }
+
+        /// <summary>
+        /// Does a type transitively have any fields which are byrefs
+        /// </summary>
+        public bool ContainsByRefs
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedContainsByRefs))
+                {
+                    ComputeTypeContainsByRefs();
+                }
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsByRefs);
             }
         }
 
@@ -170,6 +201,22 @@ namespace Internal.TypeSystem
                     ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
                 }
                 return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsVectorTOrHasVectorTFields);
+            }
+        }
+
+        /// <summary>
+        /// Is a type a decimal floating-point type (Decimal32/Decimal64/Decimal128) or transitively
+        /// have any fields of such a type.
+        /// </summary>
+        public virtual bool IsDecimalFloatingPointOrHasDecimalFloatingPointFields
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
+                }
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsDecimalFloatingPointOrHasDecimalFloatingPointFields);
             }
         }
 
@@ -475,6 +522,10 @@ namespace Internal.TypeSystem
             {
                 _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsVectorTOrHasVectorTFields);
             }
+            if (computedLayout.IsDecimalFloatingPointOrHasDecimalFloatingPointFields)
+            {
+                _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsDecimalFloatingPointOrHasDecimalFloatingPointFields);
+            }
 
             if (computedLayout.Offsets != null)
             {
@@ -540,6 +591,20 @@ namespace Internal.TypeSystem
             if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsGCPointers(this))
             {
                 flagsToAdd |= FieldLayoutFlags.ContainsGCPointers;
+            }
+
+            _fieldLayoutFlags.AddFlags(flagsToAdd);
+        }
+
+        public void ComputeTypeContainsByRefs()
+        {
+            if (_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedContainsByRefs))
+                return;
+
+            int flagsToAdd = FieldLayoutFlags.ComputedContainsByRefs;
+            if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsByRefs(this))
+            {
+                flagsToAdd |= FieldLayoutFlags.ContainsByRefs;
             }
 
             _fieldLayoutFlags.AddFlags(flagsToAdd);

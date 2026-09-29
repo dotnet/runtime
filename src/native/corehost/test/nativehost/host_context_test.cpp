@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <iostream>
+#include <fstream>
 #include <pal.h>
 #include <error_codes.h>
 #include <future>

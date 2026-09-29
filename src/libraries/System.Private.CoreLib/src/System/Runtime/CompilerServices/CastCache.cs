@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
+    // See typehandle.h for matching unmanaged type.
     internal enum CastResult
     {
         CannotCast = 0,
@@ -20,6 +21,9 @@ namespace System.Runtime.CompilerServices
         private const int VERSION_NUM_SIZE = 29;
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
         private const int BUCKET_SIZE = 8;
+
+        // The number of elements in the sentinel table (see s_sentinelTable).
+        private const int SENTINEL_TABLE_SIZE = 2;
 
         // nothing is ever stored into this, so we can use a static instance.
         private static int[]? s_sentinelTable;
@@ -35,7 +39,7 @@ namespace System.Runtime.CompilerServices
 
         public CastCache(int initialCacheSize, int maxCacheSize)
         {
-            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > 1);
+            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > SENTINEL_TABLE_SIZE);
             Debug.Assert(BitOperations.PopCount((uint)maxCacheSize) == 1 && maxCacheSize >= initialCacheSize);
 
             _initialCacheSize = initialCacheSize;
@@ -44,7 +48,7 @@ namespace System.Runtime.CompilerServices
             // A trivial 2-elements table used for "flushing" the cache.
             // Nothing is ever stored in such a small table and identity of the sentinel is not important.
             // It is required that we are able to allocate this, we may need this in OOM cases.
-            s_sentinelTable ??= CreateCastCache(2, throwOnFail: true);
+            s_sentinelTable ??= CreateCastCache(SENTINEL_TABLE_SIZE, throwOnFail: true);
 
             _table =
 #if !DEBUG
@@ -123,6 +127,13 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsSentinel(ref int tableData)
+        {
+            // The sentinel is the only table with SENTINEL_TABLE_SIZE elements.
+            return TableMask(ref tableData) == SENTINEL_TABLE_SIZE - 1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref uint VictimCounter(ref int tableData)
         {
             return ref Unsafe.As<int, uint>(ref Unsafe.Add(ref tableData, 2));
@@ -139,7 +150,7 @@ namespace System.Runtime.CompilerServices
         internal CastResult TryGet(nuint source, nuint target)
         {
             // table is always initialized and is not null.
-            return TryGet(_table!, source, target);
+            return TryGet(_table, source, target);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -156,29 +167,21 @@ namespace System.Runtime.CompilerServices
                 // we must read in this order: version -> [entry parts] -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
                 uint version = Volatile.Read(ref pEntry._version);
-                nuint entrySource = pEntry._source;
+                nuint entrySource = Volatile.Read(ref pEntry._source);
                 // mask the lower version bit to make it even.
                 // This way we can check if version is odd or changing in just one compare.
                 version &= unchecked((uint)~1);
 
                 if (entrySource == source)
                 {
-                    // we do ordinary reads of the entry parts and
-                    // Interlocked.ReadMemoryBarrier() before reading the version
-                    nuint entryTargetAndResult = pEntry._targetAndResult;
+                    // Acquire reads of both entry parts ensure that the second version
+                    // read happens after the entry has been read.
+                    nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
                     // target never has its lower bit set.
                     // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
                     entryTargetAndResult ^= target;
                     if (entryTargetAndResult <= 1)
                     {
-                        // make sure the second read of 'version' happens after reading 'source' and 'targetAndResults'
-                        //
-                        // We can either:
-                        // - use acquires for both _source and _targetAndResults or
-                        // - issue a load barrier before reading _version
-                        // benchmarks on available hardware (Jan 2020) show that use of a read barrier is cheaper.
-                        Interlocked.ReadMemoryBarrier();
-
                         if (version != pEntry._version)
                         {
                             // oh, so close, the entry is in inconsistent state.
@@ -263,9 +266,9 @@ namespace System.Runtime.CompilerServices
             do
             {
                 tableData = ref TableData(_table);
-                if (TableMask(ref tableData) == 1)
+                if (IsSentinel(ref tableData))
                 {
-                    // 2-element table is used as a sentinel.
+                    // the sentinel table is used to indicate that
                     // we did not allocate a real table yet or have flushed it.
                     // try replacing the table, but do not insert anything.
                     MaybeReplaceCacheWithLarger(_lastFlushSize);
@@ -338,7 +341,7 @@ namespace System.Runtime.CompilerServices
             // reread tableData after TryGrow.
             tableData = ref TableData(_table);
 
-            if (TableMask(ref tableData) == 1)
+            if (IsSentinel(ref tableData))
             {
                 // do not insert into a sentinel.
                 return;

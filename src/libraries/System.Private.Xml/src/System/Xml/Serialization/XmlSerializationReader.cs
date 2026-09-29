@@ -107,6 +107,8 @@ namespace System.Xml.Serialization
         private string _guidID = null!;
         private string _timeSpanID = null!;
         private string _dateTimeOffsetID = null!;
+        private string _dateOnlyID = null!;
+        private string _timeOnlyID = null!;
 
         protected abstract void InitIDs();
 
@@ -160,6 +162,9 @@ namespace System.Xml.Serialization
                 return _r;
             }
         }
+
+        internal bool HasUnknownNodeOrAttributeEvents =>
+            _events.OnUnknownNode is not null || _events.OnUnknownAttribute is not null;
 
         protected int ReaderCount
         {
@@ -216,6 +221,8 @@ namespace System.Xml.Serialization
             _guidID = _r.NameTable.Add("guid");
             _timeSpanID = _r.NameTable.Add("TimeSpan");
             _dateTimeOffsetID = _r.NameTable.Add("dateTimeOffset");
+            _dateOnlyID = _r.NameTable.Add("dateOnly");
+            _timeOnlyID = _r.NameTable.Add("timeOnly");
             _base64ID = _r.NameTable.Add("base64");
 
             _anyURIID = _r.NameTable.Add("anyURI");
@@ -671,6 +678,10 @@ namespace System.Xml.Serialization
                     value = XmlConvert.ToTimeSpan(ReadStringValue());
                 else if ((object)type.Name == (object)_dateTimeOffsetID)
                     value = XmlConvert.ToDateTimeOffset(ReadStringValue());
+                else if ((object)type.Name == (object)_dateOnlyID)
+                    value = ToDateOnly(ReadStringValue());
+                else if ((object)type.Name == (object)_timeOnlyID)
+                    value = ToTimeOnly(ReadStringValue());
                 else
                     value = ReadXmlNodes(elementCanBeType);
             }
@@ -770,6 +781,10 @@ namespace System.Xml.Serialization
                     value = default(Nullable<TimeSpan>);
                 else if ((object)type.Name == (object)_dateTimeOffsetID)
                     value = default(Nullable<DateTimeOffset>);
+                else if ((object)type.Name == (object)_dateOnlyID)
+                    value = default(Nullable<DateOnly>);
+                else if ((object)type.Name == (object)_timeOnlyID)
+                    value = default(Nullable<TimeOnly>);
                 else
                     value = null;
             }
@@ -893,6 +908,11 @@ namespace System.Xml.Serialization
             if (wrapped)
             {
                 if (ReadNull()) return null;
+                if (!LocalAppContextSwitches.UseLegacyEmptyXmlElementDeserialization && _r.IsEmptyElement)
+                {
+                    _r.Skip();
+                    return null;
+                }
                 _r.ReadStartElement();
                 _r.MoveToContent();
                 if (_r.NodeType != XmlNodeType.EndElement)
@@ -1092,9 +1112,24 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.ToDate(value);
         }
 
+        protected static DateOnly ToDateOnly(string value)
+        {
+            return XmlCustomFormatter.ToDateOnly(value);
+        }
+
         protected static DateTime ToTime(string value)
         {
             return XmlCustomFormatter.ToTime(value);
+        }
+
+        protected static TimeOnly ToTimeOnly(string value)
+        {
+            return XmlCustomFormatter.ToTimeOnly(value);
+        }
+
+        protected static TimeOnly ToTimeOnlyIgnoreOffset(string value)
+        {
+            return XmlCustomFormatter.ToTimeOnlyIgnoreOffset(value);
         }
 
         protected static char ToChar(string value)
@@ -1341,6 +1376,7 @@ namespace System.Xml.Serialization
             //XmlSerializableMissingClrType= Type '{0}' from namespace '{1}' doesnot have corresponding IXmlSerializable type. Please consider adding {2} to '{3}'.
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected Array EnsureArrayIndex(Array? a, int index, Type elementType)
         {
             if (a == null) return Array.CreateInstance(elementType, 32);
@@ -1350,6 +1386,7 @@ namespace System.Xml.Serialization
             return b;
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected Array? ShrinkArray(Array? a, int length, Type elementType, bool isNullable)
         {
             if (a == null)
@@ -1548,6 +1585,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetArrayElementType")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private Array? ReadArray(string? typeName, string? typeNs)
         {
             SoapArrayInfo arrayInfo;
@@ -1748,9 +1786,11 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected abstract void InitCallbacks();
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected void ReadReferencedElements()
         {
             _r.MoveToContent();
@@ -1765,24 +1805,28 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencedElement()
         {
             return ReadReferencedElement(null, null);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencedElement(string? name, string? ns)
         {
             return ReadReferencingElement(name, ns, out _);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencingElement(out string? fixupReference)
         {
             return ReadReferencingElement(null, null, out fixupReference);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, out string? fixupReference)
         {
             return ReadReferencingElement(name, ns, false, out fixupReference);
@@ -1790,6 +1834,7 @@ namespace System.Xml.Serialization
 
         [MemberNotNull(nameof(_callbacks))]
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference)
         {
             object? o;
@@ -1829,6 +1874,7 @@ namespace System.Xml.Serialization
 
         [MemberNotNull(nameof(_callbacks))]
         [RequiresUnreferencedCode("calls InitCallbacks")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void EnsureCallbackTables()
         {
             if (_callbacks == null)
@@ -1854,8 +1900,24 @@ namespace System.Xml.Serialization
         protected void ReadEndElement()
         {
             while (_r.NodeType == XmlNodeType.Whitespace) _r.Skip();
-            if (_r.NodeType == XmlNodeType.None) _r.Skip();
-            else _r.ReadEndElement();
+
+            if (LocalAppContextSwitches.UseXmlSerializerReadEndElementWorkaround)
+            {
+                if (_r.NodeType == XmlNodeType.None)
+                    return;
+
+                // Avoid forcing the reader to pull one more token after completing a top-level element.
+                // In fragment scenarios over streaming transports, additional data may not be immediately
+                // available even though deserialization of the current element is already complete.
+                if (_r.NodeType == XmlNodeType.EndElement && _r.Depth == 0)
+                    return;
+            }
+            else if (_r.NodeType == XmlNodeType.None)
+            {
+                _r.Skip();
+            }
+
+            _r.ReadEndElement();
         }
 
         private object ReadXmlNodes(bool elementCanBeType)
@@ -2032,12 +2094,12 @@ namespace System.Xml.Serialization
     internal sealed class XmlSerializationReaderCodeGen : XmlSerializationCodeGen
     {
         private readonly Hashtable _idNames = new Hashtable();
-        private Hashtable? _enums;
         private readonly Hashtable _createMethods = new Hashtable();
         private int _nextCreateMethodNumber;
         private int _nextIdNumber;
+        private bool _usedXmlListSeparators;
 
-        internal Hashtable Enums => _enums ??= new Hashtable();
+        internal Hashtable Enums => field ??= new Hashtable();
 
         private sealed class CreateCollectionInfo
         {
@@ -2292,6 +2354,19 @@ namespace System.Xml.Serialization
                 Writer.Write("string ");
                 Writer.Write(idName);
                 Writer.WriteLine(";");
+            }
+
+            if (_usedXmlListSeparators)
+            {
+                // Separator set used to split whitespace-separated [XmlText]/[XmlAttribute] list content.
+                // By default this is the four characters the XML spec defines as whitespace (#x20, #x9,
+                // #xA, #xD), matching the XSD list/NMTOKENS definition. The UseLegacyXmlListSeparation
+                // switch restores the legacy behavior of splitting on .NET's broader char.IsWhiteSpace()
+                // set, which String.Split does when the separator array is null. The switch is read once
+                // when this reader type loads, so a caller's opt-out is honored even by pre-generated
+                // serializers (rather than baking the build machine's switch value into the assembly).
+                Writer.WriteLine();
+                Writer.WriteLine("static readonly char[] xmlListSeparators = System.AppContext.TryGetSwitch(\"Switch.System.Xml.Serialization.UseLegacyXmlListSeparation\", out bool useLegacyXmlListSeparation) && useLegacyXmlListSeparation ? null : new char[] { ' ', '\\t', '\\n', '\\r' };");
             }
 
             Writer.WriteLine();
@@ -3814,8 +3889,15 @@ namespace System.Xml.Serialization
             {
                 if (attribute.IsList)
                 {
+                    _usedXmlListSeparators = true;
                     Writer.WriteLine("string listValues = Reader.Value;");
-                    Writer.WriteLine("string[] vals = listValues.Split(null);");
+                    // Split the whitespace-separated attribute list into its items. By default we split
+                    // on exactly the four characters the XML spec defines as whitespace (#x20, #x9, #xA,
+                    // #xD), matching the XSD list/NMTOKENS definition and letting items contain other
+                    // Unicode whitespace. The xmlListSeparators field (initialized from the
+                    // UseLegacyXmlListSeparation switch when this reader type loads) is null in the
+                    // legacy case, which makes String.Split fall back to its broader whitespace set.
+                    Writer.WriteLine("string[] vals = listValues.Split(xmlListSeparators);");
                     Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
                     Writer.Indent++;
 
@@ -4077,6 +4159,30 @@ namespace System.Xml.Serialization
             }
             else
             {
+                if (member.IsArrayLike && text.IsList)
+                {
+                    _usedXmlListSeparators = true;
+                    // The text content is a whitespace-separated list; split it and add each value to
+                    // the array-like member (mirrors [XmlAttribute] list handling). By default we split
+                    // on exactly the four characters the XML spec defines as whitespace (#x20, #x9, #xA,
+                    // #xD), matching the XSD list/NMTOKENS definition and letting items contain other
+                    // Unicode whitespace. The xmlListSeparators field (initialized from the
+                    // UseLegacyXmlListSeparation switch when this reader type loads) is null in the
+                    // legacy case, which makes String.Split fall back to its broader whitespace set.
+                    Writer.Write("string listValues = ");
+                    Writer.WriteLine(text.Mapping!.TypeDesc!.CollapseWhitespace ? "CollapseWhitespace(Reader.ReadString());" : "Reader.ReadString();");
+                    Writer.WriteLine("string[] vals = listValues.Split(xmlListSeparators, System.StringSplitOptions.RemoveEmptyEntries);");
+                    Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
+                    Writer.Indent++;
+                    WriteSourceBegin(member.ArraySource);
+                    Writer.Write("vals[i]");
+                    WriteSourceEnd(member.ArraySource);
+                    Writer.WriteLine(";");
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
+                    return;
+                }
+
                 if (member.IsArrayLike)
                 {
                     WriteSourceBegin(member.ArraySource);
@@ -4502,6 +4608,29 @@ namespace System.Xml.Serialization
                 Writer.Write("})");
         }
 
+        // Emits code that walks the attributes on the current element and raises the
+        // UnknownNode/UnknownAttribute events for any non-namespace attribute. This mirrors the
+        // attribute handling that already happens for elements mapped to structs (via WriteAttributes),
+        // so that unknown attributes on elements mapped to primitives, arrays, and collections are
+        // surfaced consistently.
+        private void WriteHandleUnknownAttributes()
+        {
+            Writer.WriteLine("if (Reader.HasAttributes) {");
+            Writer.Indent++;
+            Writer.WriteLine("while (Reader.MoveToNextAttribute()) {");
+            Writer.Indent++;
+            Writer.WriteLine("if (!IsXmlnsAttribute(Reader.Name)) {");
+            Writer.Indent++;
+            Writer.WriteLine("UnknownNode(null);");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+            Writer.WriteLine("Reader.MoveToElement();");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+        }
+
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int fixupIndex)
         {
             if (arrayMapping.IsSoap)
@@ -4545,6 +4674,7 @@ namespace System.Xml.Serialization
             {
                 Writer.WriteLine("if (!ReadNull()) {");
                 Writer.Indent++;
+                WriteHandleUnknownAttributes();
 
                 MemberMapping memberMapping = new MemberMapping();
                 memberMapping.Elements = arrayMapping.Elements;
@@ -4648,7 +4778,13 @@ namespace System.Xml.Serialization
                     Writer.WriteLine(";");
                     Writer.Indent--;
                     Writer.WriteLine("}");
-                    Writer.Write("else ");
+                    Writer.WriteLine("else {");
+                    Writer.Indent++;
+                    WriteHandleUnknownAttributes();
+                }
+                else
+                {
+                    WriteHandleUnknownAttributes();
                 }
                 if (element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
                 {
@@ -4665,7 +4801,8 @@ namespace System.Xml.Serialization
                 }
                 Writer.Indent++;
 
-                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
+                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset)
+                    || element.Mapping.TypeDesc!.Type == typeof(DateOnly) || element.Mapping.TypeDesc!.Type == typeof(TimeOnly))
                 {
                     Writer.WriteLine("if (Reader.IsEmptyElement) {");
                     Writer.Indent++;
@@ -4678,6 +4815,14 @@ namespace System.Xml.Serialization
                     else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
                     {
                         Writer.Write("default(System.DateTimeOffset)");
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(DateOnly))
+                    {
+                        Writer.Write("default(System.DateOnly)");
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(TimeOnly))
+                    {
+                        Writer.Write("default(System.TimeOnly)");
                     }
                     WriteSourceEnd(source);
                     Writer.WriteLine(";");
@@ -4718,6 +4863,11 @@ namespace System.Xml.Serialization
                 }
                 Writer.Indent--;
                 Writer.WriteLine("}");
+                if (element.IsNullable)
+                {
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
+                }
             }
             else if (element.Mapping is StructMapping || (element.Mapping.IsSoap && element.Mapping is PrimitiveMapping))
             {

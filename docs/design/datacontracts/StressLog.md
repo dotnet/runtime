@@ -1,0 +1,370 @@
+# Contract StressLog
+
+This contract is for reading the stress log of the process.
+
+## APIs of the contract
+
+```csharp
+internal record struct StressLogData(
+    uint LoggedFacilities,
+    uint Level,
+    uint MaxSizePerThread,
+    uint MaxSizeTotal,
+    int TotalChunks,
+    ulong TickFrequency,
+    ulong StartTimestamp,
+    ulong StartTime,
+    TargetPointer Logs);
+
+internal record struct ThreadStressLogData(
+    TargetPointer Address,
+    ulong ThreadId,
+    bool WriteHasWrapped);
+
+internal record struct StressMsgData(
+    uint Facility,
+    TargetPointer FormatString,
+    ulong Timestamp,
+    IReadOnlyList<TargetPointer> Args);
+```
+
+```csharp
+bool HasStressLog();
+StressLogData GetStressLogData();
+StressLogData GetStressLogData(TargetPointer stressLogPointer);
+IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs);
+IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress);
+bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
+```
+
+## Version 1 dependency summary
+
+<!-- BEGIN GENERATED: usage contract=StressLog version=c1 -->
+### Data descriptors used
+
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `StressLog` | `Level` | `uint32` | Level of logging |
+| `StressLog` | `LoggedFacilities` | `uint32` | Bitmask of facilities that are logged |
+| `StressLog` | `Logs` | `pointer` | Pointer to the thread-specific logs |
+| `StressLog` | `MaxSizePerThread` | `uint32` | Maximum size of the log per thread |
+| `StressLog` | `MaxSizeTotal` | `uint32` | Maximum size of the log |
+| `StressLog` | `ModuleOffset` | `nuint` | Offset of the module in the stress log |
+| `StressLog` | `Modules` | `pointer` | Offset of the stress log's module table (if StressLogHasModuleTable is 1) |
+| `StressLog` | `StartTime` | `uint64` | Wall-clock time when the stress log was started (FILETIME, 100ns units since Jan 1 1601) |
+| `StressLog` | `StartTimestamp` | `uint64` | Timestamp when the stress log was started |
+| `StressLog` | `TickFrequency` | `uint64` | Number of ticks per second for stresslog timestamps |
+| `StressLog` | `TotalChunks` | `int32` | Total number of chunks across all thread-specific logs |
+| `StressLogChunk` | *(type size)* | `uint32` | Size in bytes of each stress log chunk |
+| `StressLogChunk` | `Buf` | `pointer` | The data stored in the chunk |
+| `StressLogChunk` | `Next` | `pointer` | Pointer to the next chunk |
+| `StressLogChunk` | `Sig1` | `uint32` | First byte of the chunk signature (to ensure validity) |
+| `StressLogChunk` | `Sig2` | `uint32` | Second byte of the chunk signature (to ensure validity) |
+| `StressLogModuleDesc` | *(type size)* | `uint32` | Size of the data descriptor layout |
+| `StressLogModuleDesc` | `BaseAddress` | `pointer` | Base address of the module |
+| `StressLogModuleDesc` | `Size` | `nuint` | Size of the module |
+| `StressMsg` | `Args` | `pointer` | The arguments of the message (number of arguments specified in the header) |
+| `StressMsg` | `Header` | `pointer` | The message header |
+| `StressMsgHeader` | *(type size)* | `uint32` | Size in bytes of the fixed stress message header before its arguments |
+| `ThreadStressLog` | `ChunkListHead` | `pointer` | Pointer to the head of the chunk list |
+| `ThreadStressLog` | `ChunkListTail` | `pointer` | Pointer to the tail of the chunk list |
+| `ThreadStressLog` | `CurrentPtr` | `pointer` | Pointer to the most recently written message |
+| `ThreadStressLog` | `CurrentWriteChunk` | `pointer` | Pointer to the chunk currently being written to |
+| `ThreadStressLog` | `Next` | `pointer` | Pointer to the next thread-specific log |
+| `ThreadStressLog` | `ThreadId` | `uint64` | ID of the thread |
+| `ThreadStressLog` | `WriteHasWrapped` | `uint8` | Whether the write pointer is writing to previously used chunks |
+
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `StressLog` | `pointer` | Pointer to the stress log |
+| `StressLogChunkSize` | `uint32` | Size of a stress log chunk |
+| `StressLogEnabled` | `uint8` | Whether the stress log is enabled |
+| `StressLogHasModuleTable` | `uint8` | Whether the stress log module table is present |
+| `StressLogMaxMessageSize` | `uint64` | Maximum size of a stress log message |
+| `StressLogMaxModules` | `pointer` | Maximum number of module descriptors in the stress log module table |
+| `StressLogModuleTable` | `pointer` | Pointer to the stress log module descriptor table |
+| `StressLogValidChunkSig` | `uint32` | Signature value stored in both markers of a valid stress log chunk |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=StressLog version=c1 -->
+
+## Version 2 dependency changes from Version 1
+
+<!-- BEGIN GENERATED: usage contract=StressLog version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+_No changes._
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=StressLog version=c2 diff-from=c1 -->
+
+
+```csharp
+bool HasStressLog()
+{
+    return Target.ReadGlobal<byte>("StressLogEnabled") != 0;
+}
+
+StressLogData GetStressLogData()
+{
+    if (!HasStressLog())
+    {
+        return default;
+    }
+
+    StressLog stressLog = new StressLog(Target, Target.ReadGlobalPointer("StressLog"));
+    return new StressLogData(
+        stressLog.LoggedFacilities,
+        stressLog.Level,
+        stressLog.MaxSizePerThread,
+        stressLog.MaxSizeTotal,
+        stressLog.TotalChunks,
+        stressLog.TickFrequency,
+        stressLog.StartTimestamp,
+        stressLog.StartTime,
+        stressLog.Logs);
+}
+
+StressLogData GetStressLogData(TargetPointer stressLogPointer)
+{
+    StressLog stressLog = new StressLog(Target, stressLogPointer);
+    return new StressLogData(
+        stressLog.LoggedFacilities,
+        stressLog.Level,
+        stressLog.MaxSizePerThread,
+        stressLog.MaxSizeTotal,
+        stressLog.TotalChunks,
+        stressLog.TickFrequency,
+        stressLog.StartTimestamp,
+        stressLog.StartTime,
+        stressLog.Logs);
+}
+
+IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
+{
+    TargetPointer currentPointer = logs;
+    while (currentPointer != TargetPointer.Null)
+    {
+        ThreadStressLog threadStressLog = new(Target, currentPointer);
+
+        if (threadStressLog.ChunkListHead == TargetPointer.Null)
+        {
+            // If the chunk list head is null, this thread log isn't valid.
+            currentPointer = threadStressLog.Next;
+            continue;
+        }
+
+        if (threadStressLog.CurrentWriteChunk == TargetPointer.Null)
+        {
+            // If the current write chunk is null, this thread log isn't valid.
+            currentPointer = threadStressLog.Next;
+            continue;
+        }
+
+        StressLogChunk currentChunkData = new(Target, threadStressLog.CurrentWriteChunk);
+        if (currentChunkData.Sig1 != 0xCFCFCFCF || currentChunkData.Sig2 != 0xCFCFCFCF)
+        {
+            // If the current write chunk isn't valid, this thread log isn't valid.
+            currentPointer = threadStressLog.Next;
+            continue;
+        }
+
+        yield return new ThreadStressLogData(
+            currentPointer,
+            threadStressLog.ThreadId,
+            threadStressLog.WriteHasWrapped);
+
+        currentPointer = threadStressLog.Next;
+    }
+}
+
+// Return messages going in reverse chronological order, newest first.
+IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress)
+{
+    // 1. Get the current message pointer from the log and the info about the current chunk the runtime is writing into.
+    //    Record our current read pointer as the current message pointer.
+
+    // 2. The last written log, if it wrapped around may have partially overwritten a previous record.
+    //    Update our current message pointer to reflect the last safe beginning of a record (StressLogMaxMessageSize before our current message pointer)
+    //    without going before the start of the current chunk's buffer. Do not update the current read pointer in this way.
+
+    // 3. If the current read pointer is at the end of the chunk (this will never happen on the first iteration), check if current read pointer is at the end of the chunk list.
+    //    Otherwise, skip to step 8.
+
+    // 4. If current chunk is at the end of the chunk list and this thread never wrapped around while writing,
+    //    DONE.
+
+    // 5. Otherwise, get the next chunk in the list.
+    //    The tail will wrap around to the head if the current chunk at the end of the list. Record if we have wrapped around.
+
+    // 6. StressLog writes variable-sized payloads starting from the end of a chunk.
+    //    Chunks are zero-initialized, so look in the first StressLogMaxMessageSize bytes, for any non-0 bytes.
+    //    If we find any, that's the start of the first message of the chunk.
+    //    Set the current read pointer to that location.
+
+    // 7. If we didn't find a message before we read a whole message size, there's no message in this chunk (it was freshly allocated),
+    //    DONE.
+
+    // 8. If we have wrapped around while reading, we are reading in the thread's current write chunk, and our current read pointer is ahead of the current message pointer,
+    //    DONE.
+
+    // 9. Read the messsage at the current read pointer.
+
+    // 10. Advance the current read pointer to the next message (advance by "stress message header size + pointer size * number of arguments").
+
+    // 11. Go to step 3.
+}
+
+bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
+{
+    // For all chunks in all thread stress logs, check if
+    // any pointer-aligned offset in the chunk's data has the value of 'pointer'.
+    // If found, return true.
+}
+
+// This method is a helper for the various specific versions.
+protected TargetPointer GetFormatPointer(ulong formatOffset)
+{
+    if (Target.ReadGlobal<byte>("StressLogHasModuleTable") == 0)
+    {
+        StressLog stressLog = new(Target, target.ReadGlobalPointer("StressLog"));
+        return new TargetPointer(stressLog.ModuleOffset + formatOffset);
+    }
+
+    TargetPointer? moduleTable;
+    if (!target.TryReadGlobalPointer(Constants.Globals.StressLogModuleTable, out moduleTable))
+    {
+        if (!target.TryReadGlobalPointer(Constants.Globals.StressLog, out TargetPointer? pStressLog))
+        {
+            throw new InvalidOperationException("StressLogModuleTable is not set and StressLog is not available, but StressLogHasModuleTable is set to 1.");
+        }
+        Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(pStressLog.Value);
+        moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
+    }
+    uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
+    TargetNUInt maxModules = new(target.ReadGlobalPointer("StressLogMaxModules").Value);
+    ulong cumulativeOffset = 0;
+    for (ulong i = 0; i < maxModules.Value; ++i)
+    {
+        StressLogModuleDesc module = new(Target, moduleTable.Value + i * moduleEntrySize);
+        ulong relativeOffset = formatOffset - cumulativeOffset;
+        if (relativeOffset < module.Size.Value)
+        {
+            return new TargetPointer((ulong)module.BaseAddress + relativeOffset);
+        }
+        cumulativeOffset += module.Size.Value;
+    }
+
+    return TargetPointer.Null;
+}
+```
+
+A StressLog message, represented by a `StressMsgData` struct, can be formatted as though the null-terminated UTF-8 string located at `FormatString` is a `printf`-style format string, with all arguments located at `Args`. Additionally, the following special format specifiers are supported:
+
+| Format Specifier | Argument Type | Description |
+| --- | --- | --- |
+| `%pT` | pointer | A `TypeHandle`, accessible through the `GetTypeHandle` API in the [RuntimeTypeSystem contract](./RuntimeTypeSystem.md), possibly with bits of the `ObjectToMethodTableUnmask` data contract global variable set. |
+| `%pM` | pointer | A `MethodDescHandle`, accessible through the `GetMethodDescHandle` API in the [RuntimeTypeSystem contract](./RuntimeTypeSystem.md) |
+| `%pV` | pointer | A pointer to an unmanaged symbol in the image. |
+| `%pK` | pointer | A pointer to an offset from a symbol in the image, generally representing an IP in a stack trace. |
+
+## Version 1
+
+Version 1 stress logs are included in any .NET runtime version corresponding to an SOS breaking change version of 0, 1, 2, or 3, or a memory-mapped version of `0x00010001`.
+SOS breaking change versions of 0, 1, or 2 do not have a module table. SOS breaking change version 3 logs and memory mapped logs have a module table.
+
+These functions implement additional logic required for the shared contract implementation above.
+
+The message header data is stored in the following format:
+
+```c++
+struct
+{
+    uint32_t numberOfArgsLow  : 3;
+    uint32_t formatOffset  : 26;
+    uint32_t numberOfArgsHigh : 3;
+    uint32_t facility;
+    uint64_t timeStamp;
+};
+```
+
+The format offset refers to the offset from the module offset on the stress log.
+
+```csharp
+StressMsgData GetStressMsgData(StressMsg msg)
+{
+    uint pointerSize = Target.GetTypeInfo(DataType.pointer).Size!.Value;
+    uint payload = Target.Read<uint>(msg.Header);
+    int numArgs = (int)((payload & 0x7) | ((payload >> 29) & 0x7));
+    var args = new TargetPointer[numArgs];
+    for (int i = 0; i < numArgs; i++)
+    {
+        args[i] = Target.ReadPointer((ulong)msg.Args + (ulong)(i * pointerSize));
+    }
+
+    return new StressMsgData(
+        Facility: Target.Read<uint>((ulong)msg.Header + 4),
+        FormatString: GetFormatPointer(((payload >> 3) & ((1 << 26) - 1))),
+        Timestamp: Target.Read<ulong>((ulong)msg.Header + 8),
+        Args: args);
+}
+```
+
+## Version 2
+
+Version 2 stress logs are included in any .NET runtime version corresponding to an SOS breaking change version of 4 or a memory-mapped version of `0x00010002`.
+SOS breaking change version 4 stress logs and memory mapped stress logs will have a module table.
+
+These functions implement additional logic required for the shared contract implementation above.
+
+The message header data is stored in the following format:
+
+```c++
+struct
+{
+    static const size_t formatOffsetLowBits = 26;
+    static const size_t formatOffsetHighBits = 13;
+
+    uint64_t facility: 32;
+    uint64_t numberOfArgs : 6;
+    uint64_t formatOffsetLow: formatOffsetLowBits;
+    uint64_t formatOffsetHigh: formatOffsetHighBits;
+    uint64_t timeStamp: 51;
+};
+```
+
+The format offset refers to the cummulative offset into a module referred to in the module table.
+
+```csharp
+StressMsgData GetStressMsgData(StressMsg msg)
+{
+    StressLog stressLog = new(Target, target.ReadGlobalPointer("StressLog"));
+    uint pointerSize = Target.GetTypeInfo(DataType.pointer).Size!.Value;
+
+    ulong payload1 = target.Read<ulong>(msg.Header);
+    ulong payload2 = target.Read<ulong>((ulong)msg.Header + 8);
+    int numArgs = (int)((payload1 >> 32) & ((1 << 6) - 1));
+    var args = new TargetPointer[numArgs];
+    for (int i = 0; i < numArgs; i++)
+    {
+        args[i] = target.ReadPointer((ulong)msg.Args + (ulong)(i * pointerSize));
+    }
+    ulong formatOffset = ((payload1 >> 38) & ((1 << 26) - 1)) | ((payload2 & ((1ul << 13) - 1)) << 26);
+
+    return new StressMsgData(
+        Facility: (uint)payload1,
+        FormatString: GetFormatPointer(formatOffset),
+        Timestamp: payload2 >> 13,
+        Args: args);
+}
+```

@@ -49,7 +49,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         private readonly ITestOutputHelper _output = output;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public void GcCollectionsCount()
         {
             using InstrumentRecorder<long> instrumentRecorder = new("dotnet.gc.collections");
@@ -158,7 +158,7 @@ namespace System.Diagnostics.Metrics.Tests
            }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Fact]
         public void ExceptionsCount()
         {
             // We inject an exception into the MeterListener callback here, so we can test that we don't recursively record exceptions.
@@ -271,7 +271,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory]
         [InlineData("dotnet.gc.last_collection.heap.size")]
         [InlineData("dotnet.gc.last_collection.heap.fragmentation.size")]
         public void HeapTags(string metricName) => EnsureAllHeapTags(metricName);
@@ -322,6 +322,26 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 Assert.True(foundGenerations[i], $"Expected to find a measurement for '{s_genNames[i]}'.");
             }
+        }
+
+        [Fact]
+        public void ThreadPoolQueueLengthIsUpDownCounter()
+        {
+            using MeterListener listener = new();
+            Instrument? instrument = null;
+
+            listener.InstrumentPublished = (inst, l) =>
+            {
+                if (inst.Meter.Name == "System.Runtime" && inst.Name == "dotnet.thread_pool.queue.length")
+                {
+                    instrument = inst;
+                }
+            };
+
+            listener.Start();
+
+            Assert.NotNull(instrument);
+            Assert.IsType<ObservableUpDownCounter<long>>(instrument);
         }
 
         private sealed class RuntimeMeterException() : Exception { }

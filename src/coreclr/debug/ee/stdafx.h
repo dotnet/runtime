@@ -7,13 +7,12 @@
 //
 //*****************************************************************************
 
-#define USE_COM_CONTEXT_DEF
-
 #include <stdint.h>
 #include <wchar.h>
 #include <stdio.h>
 #include <algorithm>
 #include <cmath>
+#include <common.h>
 
 #include <windows.h>
 

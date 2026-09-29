@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -71,6 +71,9 @@
   </data>
   <data name="ContentTypeCannotHaveLeadingTrailingLWS" xml:space="preserve">
     <value>ContentType string cannot have leading/trailing Linear White Spaces [LWS - RFC 2616].</value>
+  </data>
+  <data name="ContentTypeStreamTooLarge" xml:space="preserve">
+    <value>The '[Content_Types].xml' part exceeds the maximum allowed size of {0} bytes.</value>
   </data>
   <data name="CorePropertiesElementExpected" xml:space="preserve">
     <value>Unrecognized root element in Core Properties part.</value>

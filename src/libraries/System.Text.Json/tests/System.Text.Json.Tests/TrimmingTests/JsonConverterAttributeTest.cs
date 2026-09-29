@@ -18,7 +18,7 @@ namespace SerializerTrimmingTest
         static int Main(string[] args)
         {
             string json = JsonSerializer.Serialize(new ClassWithDay());
-            return json == @"{""Day"":""Sunday""}" ? 100 : -1;
+            return json == """{"Day":"Sunday"}""" ? 100 : -1;
         }
     }
 

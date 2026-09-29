@@ -36,32 +36,21 @@ if [[ -z "$XHARNESS_COMMAND" ]]; then
 fi
 
 if [[ "$XHARNESS_COMMAND" == "test" ]]; then
+    if [[ -z "$JS_ENGINE" ]]; then
+		JS_ENGINE="--engine=V8"
+	fi
 	if [[ -z "$MAIN_JS" ]]; then
-		MAIN_JS="--js-file=test-main.js"
+		MAIN_JS="--js-file=test-main.mjs"
 	fi
 
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
 		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
-		if [[ "$SCENARIO" != "WasmTestOnNodeJS" && "$SCENARIO" != "wasmtestonnodejs" ]]; then
-			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--module"
-		fi
-		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
-			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--experimental-wasm-eh"
-		fi
-	fi
-
-	if [[ -z "$JS_ENGINE" ]]; then
-		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
-			JS_ENGINE="--engine=NodeJS"
-		else
-			JS_ENGINE="--engine=V8"
-			if [[ -n "$V8_PATH_FOR_TESTS" ]]; then
-				JS_ENGINE_ARGS="$JS_ENGINE_ARGS --js-engine-path=$V8_PATH_FOR_TESTS"
-			fi
-		fi
 	fi
 else
 	if [[ "$SCENARIO" == "WasmTestOnChrome" || "$SCENARIO" == "wasmtestonchrome" ]]; then
+		if [[ -z "$BROWSER_PATH" && "$(uname -s)" == "Darwin" && -n "$HELIX_CORRELATION_PAYLOAD" ]]; then
+			BROWSER_PATH="--browser-path=$HELIX_CORRELATION_PAYLOAD/chrome-mac/Chromium.app/Contents/MacOS/Chromium"
+		fi
 		if [[ -z "$JS_ENGINE_ARGS" ]]; then
 			JS_ENGINE_ARGS="--browser-arg=--js-flags=--stack-trace-limit=1000"
 		fi
@@ -76,7 +65,7 @@ else
 fi
 
 if [[ -z "$XHARNESS_ARGS" ]]; then
-	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
+	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $BROWSER_PATH $MAIN_JS"
 fi
 
 if [[ -n "$PREPEND_PATH" ]]; then
@@ -97,6 +86,7 @@ echo XHARNESS_COMMAND=$XHARNESS_COMMAND
 echo MAIN_JS=$MAIN_JS
 echo JS_ENGINE=$JS_ENGINE
 echo JS_ENGINE_ARGS=$JS_ENGINE_ARGS
+echo BROWSER_PATH=$BROWSER_PATH
 echo XHARNESS_ARGS=$XHARNESS_ARGS
 
 function _buildAOTFunc()

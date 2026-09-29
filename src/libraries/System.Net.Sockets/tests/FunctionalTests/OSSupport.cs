@@ -37,6 +37,14 @@ namespace System.Net.Sockets.Tests
             static void RunTest()
             {
                 Assert.False(Socket.OSSupportsIPv6);
+
+                // related to https://github.com/dotnet/runtime/issues/122435
+                var listenSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                listenSocket.DualMode = true;
+
+                listenSocket.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                listenSocket.Listen(1);
+                listenSocket.Close();
             }
         }
 
@@ -59,6 +67,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)] // https://github.com/WebAssembly/wasi-libc/issues/538
         public void IOControl_FIONREAD_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -99,6 +108,7 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support OOBDATA")]
         public void IOControl_SIOCATMARK_Unix_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

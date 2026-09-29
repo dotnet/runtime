@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Configuration
         public ConfigurationKeyNameAttribute(string name) => Name = name;
 
         /// <summary>
-        /// The key name for a configuration property.
+        /// Gets the key name for a configuration property.
         /// </summary>
         public string Name { get; }
     }

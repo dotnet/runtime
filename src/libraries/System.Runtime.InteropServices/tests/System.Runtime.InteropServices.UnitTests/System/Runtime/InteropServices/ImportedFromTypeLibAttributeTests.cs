@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Value")]
-        public void Ctor_TlbFile(string tlbFile)
+        public void Ctor_TlbFile(string? tlbFile)
         {
             var attribute = new ImportedFromTypeLibAttribute(tlbFile);
             Assert.Equal(tlbFile, attribute.Value);

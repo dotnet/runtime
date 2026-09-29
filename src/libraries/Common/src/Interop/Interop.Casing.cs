@@ -21,5 +21,8 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitOrdinalCasingPage", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial void InitOrdinalCasingPage(int pageNumber, char* pTarget);
+
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitOrdinalLowerCasingPage", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial void InitOrdinalLowerCasingPage(int pageNumber, char* pTarget);
     }
 }

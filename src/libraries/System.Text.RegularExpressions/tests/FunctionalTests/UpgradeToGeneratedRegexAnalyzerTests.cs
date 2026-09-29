@@ -15,6 +15,7 @@ using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
 namespace System.Text.RegularExpressions.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class UpgradeToGeneratedRegexAnalyzerTests
     {
         private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1045";
@@ -83,14 +84,14 @@ public class Program
         {
             string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
             string test = @"using System.Text.RegularExpressions;
-var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern: "\"\"") + @"|]" + isMatchInvocation + ";";
+var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, pattern: "\"\"") + @"" + isMatchInvocation + ";";
             string fixedCode = @"using System.Text.RegularExpressions;
-var isMatch = MyRegex().IsMatch("""");
+var isMatch = MyRegex.IsMatch("""");
 
 partial class Program
 {
     [GeneratedRegex("""")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
             await new VerifyCS.Test
             {
@@ -187,7 +188,7 @@ public class Program
 {{
     public static void Main(string[] args)
     {{
-        var isMatch = [|Regex.IsMatch("""", @""{pattern}"")|];
+        var isMatch = [|Regex.IsMatch|]("""", @""{pattern}"");
     }}
 }}";
 
@@ -198,11 +199,11 @@ public partial class Program
 {{
     public static void Main(string[] args)
     {{
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }}
 
     [GeneratedRegex(@""{pattern}"")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex {{ get; }}
 }}";
             // We successfully offer the diagnostic and make the fix despite the pattern
             // being invalid, because it was valid enough to parse out any options in the pattern.
@@ -241,7 +242,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"") + @"|]" + isMatchInvocation + @";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"") + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text;
 using System.Text.RegularExpressions;
@@ -250,14 +251,14 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }
 
     [GeneratedRegex("""")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }" };
 
-                // Test constructor with a local constant pattern.
+                // Test constructor with a local constant pattern (local constants are expanded).
                 yield return new object[] { @"using System.Text;
 using System.Text.RegularExpressions;
 
@@ -265,8 +266,8 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        const string pattern = @"""";
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"") + @"|]" + isMatchInvocation + @";
+        const string pattern = @""a|b"";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "pattern") + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text;
 using System.Text.RegularExpressions;
@@ -275,40 +276,74 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        const string pattern = @"""";
-        var isMatch = MyRegex().IsMatch("""");
+        const string pattern = @""a|b"";
+        var isMatch = MyRegex.IsMatch("""");
     }
 
-    [GeneratedRegex("""")]
-    private static partial Regex MyRegex();
+    [GeneratedRegex(""a|b"")]
+    private static partial Regex MyRegex { get; }
 }" };
 
-                // Test constructor with a constant field pattern.
+                // Test constructor with a constant field pattern (field constants are preserved).
                 yield return new object[] { @"using System.Text;
 using System.Text.RegularExpressions;
 
 public class Program
 {
-    private const string pattern = @"""";
+    private const string Pattern = @""a|b"";
 
     public static void Main(string[] args)
     {
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"") + @"|]" + isMatchInvocation + @";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "Pattern") + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text;
 using System.Text.RegularExpressions;
 
 public partial class Program
 {
-    private const string pattern = @"""";
+    private const string Pattern = @""a|b"";
 
     public static void Main(string[] args)
     {
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }
 
-    [GeneratedRegex("""")]
-    private static partial Regex MyRegex();
+    [GeneratedRegex(Pattern)]
+    private static partial Regex MyRegex { get; }
+}" };
+
+                // Test constructor with external constant field pattern (external field constants are preserved).
+                yield return new object[] { @"using System.Text;
+using System.Text.RegularExpressions;
+
+public class PatternConstants
+{
+    public const string EmailPattern = @""^[^@]+@[^@]+\.[^@]+$"";
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "PatternConstants.EmailPattern") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text;
+using System.Text.RegularExpressions;
+
+public class PatternConstants
+{
+    public const string EmailPattern = @""^[^@]+@[^@]+\.[^@]+$"";
+}
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex(PatternConstants.EmailPattern)]
+    private static partial Regex MyRegex { get; }
 }" };
             }
         }
@@ -408,7 +443,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"", "RegexOptions.None") + @"|]" + isMatchInvocation + @";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "RegexOptions.None") + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -416,11 +451,11 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }
 
     [GeneratedRegex("""", RegexOptions.None)]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }" };
 
                 // Test options as local constant
@@ -431,7 +466,7 @@ public class Program
     public static void Main(string[] args)
     {
         const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"", "options") + @"|]" + isMatchInvocation + @";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "options") + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -440,11 +475,11 @@ public partial class Program
     public static void Main(string[] args)
     {
         const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }
 
     [GeneratedRegex("""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }" };
 
                 // Test options as constant field
@@ -456,7 +491,7 @@ public class Program
 
     public static void Main(string[] args)
     {
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"", "Options") + @"|]" + isMatchInvocation + @";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "Options") + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -466,11 +501,65 @@ public partial class Program
 
     public static void Main(string[] args)
     {
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }
 
-    [GeneratedRegex("""", RegexOptions.None)]
-    private static partial Regex MyRegex();
+    [GeneratedRegex("""", Options)]
+    private static partial Regex MyRegex { get; }
+}" };
+
+                // Test options as external constant field
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class RegexConstants
+{
+    public const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "RegexConstants.DefaultOptions") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public class RegexConstants
+{
+    public const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex("""", RegexConstants.DefaultOptions)]
+    private static partial Regex MyRegex { get; }
+}" };
+
+                // Test options with AnyNewLine
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "RegexOptions.AnyNewLine | RegexOptions.Multiline") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex("""", RegexOptions.Multiline | RegexOptions.AnyNewLine)]
+    private static partial Regex MyRegex { get; }
 }" };
             }
         }
@@ -478,6 +567,186 @@ public partial class Program
         [Theory]
         [MemberData(nameof(ConstantOptionsTestData))]
         public async Task DiagnosticEmittedForConstantOptions(string test, string fixedSource)
+        {
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        public static IEnumerable<object[]> MixedConstantTestData()
+        {
+            foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
+            {
+                string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+
+                // Test both pattern and options as field constants (both should be preserved)
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    const string MyPattern = @""[a-z]+"";
+    const RegexOptions MyOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    public static void Main(string[] args)
+    {
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "MyPattern", "MyOptions") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    const string MyPattern = @""[a-z]+"";
+    const RegexOptions MyOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex(MyPattern, MyOptions)]
+    private static partial Regex MyRegex { get; }
+}" };
+
+                // Test pattern as field constant and options as local constant (field preserved, local expanded)
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    const string GlobalPattern = @""\d+"";
+
+    public static void Main(string[] args)
+    {
+        const RegexOptions localOptions = RegexOptions.Multiline;
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "GlobalPattern", "localOptions") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    const string GlobalPattern = @""\d+"";
+
+    public static void Main(string[] args)
+    {
+        const RegexOptions localOptions = RegexOptions.Multiline;
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex(GlobalPattern, RegexOptions.Multiline)]
+    private static partial Regex MyRegex { get; }
+}" };
+
+                // Test pattern as local constant and options as field constant (local expanded, field preserved)
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    public static void Main(string[] args)
+    {
+        const string localPattern = @""test.*pattern"";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "localPattern", "DefaultOptions") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    public static void Main(string[] args)
+    {
+        const string localPattern = @""test.*pattern"";
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex(""test.*pattern"", DefaultOptions)]
+    private static partial Regex MyRegex { get; }
+}" };
+
+                // Test external constants for both pattern and options
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public static class RegexConfig
+{
+    public const string EmailPattern = @""^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"";
+    public const RegexOptions EmailOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "RegexConfig.EmailPattern", "RegexConfig.EmailOptions") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public static class RegexConfig
+{
+    public const string EmailPattern = @""^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"";
+    public const RegexOptions EmailOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex(RegexConfig.EmailPattern, RegexConfig.EmailOptions)]
+    private static partial Regex MyRegex { get; }
+}" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MixedConstantTestData))]
+        public async Task DiagnosticEmittedForMixedConstants(string test, string fixedSource)
+        {
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        public static IEnumerable<object[]> StaticFieldConstantTestData()
+        {
+            foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
+            {
+                string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+
+                // Test static field constants (should be preserved)
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static readonly string ReadOnlyPattern = @""readonly""; // This is not const, so won't be preserved
+    public const string ConstPattern = @""const"";
+    private static readonly RegexOptions ReadOnlyOptions = RegexOptions.IgnoreCase; // This is not const, so won't be preserved
+    private const RegexOptions ConstOptions = RegexOptions.Multiline;
+
+    public static void Main(string[] args)
+    {
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "ConstPattern", "ConstOptions") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static readonly string ReadOnlyPattern = @""readonly""; // This is not const, so won't be preserved
+    public const string ConstPattern = @""const"";
+    private static readonly RegexOptions ReadOnlyOptions = RegexOptions.IgnoreCase; // This is not const, so won't be preserved
+    private const RegexOptions ConstOptions = RegexOptions.Multiline;
+
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex(ConstPattern, ConstOptions)]
+    private static partial Regex MyRegex { get; }
+}" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StaticFieldConstantTestData))]
+        public async Task DiagnosticEmittedForStaticFieldConstants(string test, string fixedSource)
         {
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
@@ -566,7 +835,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        [|Regex.@@Method@@(""input"", ""a|b"", RegexOptions.None)|];
+        [|Regex.@@Method@@|](""input"", ""a|b"", RegexOptions.None);
     }
 }";
             const string fixedSourceWithOptions = @"using System.Text.RegularExpressions;
@@ -575,11 +844,11 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        MyRegex().@@Method@@(""input"");
+        MyRegex.@@Method@@(""input"");
     }
 
     [GeneratedRegex(""a|b"", RegexOptions.None)]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             const string testTemplateWithoutOptions = @"using System.Text.RegularExpressions;
@@ -588,7 +857,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        [|Regex.@@Method@@(""input"", ""a|b"")|];
+        [|Regex.@@Method@@|](""input"", ""a|b"");
     }
 }";
             const string fixedSourceWithoutOptions = @"using System.Text.RegularExpressions;
@@ -597,11 +866,11 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        MyRegex().@@Method@@(""input"");
+        MyRegex.@@Method@@(""input"");
     }
 
     [GeneratedRegex(""a|b"")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             foreach (bool includeRegexOptions in new[] { true, false })
@@ -628,7 +897,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        [|Regex.Replace(""input"", ""a[b|c]*"", ""replacement"", RegexOptions.CultureInvariant)|];
+        [|Regex.Replace|](""input"", ""a[b|c]*"", ""replacement"", RegexOptions.CultureInvariant);
     }
 }
 ", @"using System.Text.RegularExpressions;
@@ -637,11 +906,11 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        MyRegex().Replace(""input"", ""replacement"");
+        MyRegex.Replace(""input"", ""replacement"");
     }
 
     [GeneratedRegex(""a[b|c]*"", RegexOptions.CultureInvariant)]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }
 " };
 
@@ -651,7 +920,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        [|Regex.Replace(""input"", ""a[b|c]*"", ""replacement"")|];
+        [|Regex.Replace|](""input"", ""a[b|c]*"", ""replacement"");
     }
 }
 ", @"using System.Text.RegularExpressions;
@@ -660,11 +929,11 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        MyRegex().Replace(""input"", ""replacement"");
+        MyRegex.Replace(""input"", ""replacement"");
     }
 
     [GeneratedRegex(""a[b|c]*"")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }
 " };
         }
@@ -689,7 +958,7 @@ public class A
             {
                 public void Foo()
                 {
-                    Regex regex = [|new Regex(""pattern"", RegexOptions.IgnorePatternWhitespace)|];
+                    Regex regex = [|new Regex|](""pattern"", RegexOptions.IgnorePatternWhitespace);
                 }
             }
         }
@@ -708,14 +977,74 @@ public partial class A
             {
                 public void Foo()
                 {
-                    Regex regex = MyRegex();
+                    Regex regex = MyRegex;
                 }
 
                 [GeneratedRegex(""pattern"", RegexOptions.IgnorePatternWhitespace)]
-                private static partial Regex MyRegex();
+                private static partial Regex MyRegex { get; }
             }
         }
     }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixSupportsExtensionMembers_StaticInvocation()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Foo
+{
+    extension(string value)
+    {
+        public bool Test() => [|Regex.IsMatch|](value, @""\d+"");
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+static partial class Foo
+{
+    extension(string value)
+    {
+        public bool Test() => MyRegex.IsMatch(value);
+    }
+
+    [GeneratedRegex(@""\d+"")]
+    private static partial Regex MyRegex { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixSupportsExtensionMembers_Constructor()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Foo
+{
+    extension(string value)
+    {
+        public Regex GetRegex() => [|new Regex|](@""\d+"");
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+static partial class Foo
+{
+    extension(string value)
+    {
+        public Regex GetRegex() => MyRegex;
+    }
+
+    [GeneratedRegex(@""\d+"")]
+    private static partial Regex MyRegex { get; }
 }
 ";
 
@@ -741,16 +1070,27 @@ public class Program
         }
 
         [Fact]
-        public async Task AnayzerSupportsMultipleDiagnostics()
+        public async Task AnalyzerSupportsMultipleDiagnostics()
         {
+            // The first diagnostic is a method-body call, so FixAll for CreateGeneratedRegexProperty
+            // runs first on the original document. The field (between the two method calls in source
+            // order) is fixed by a different equivalence key and must not inflate the name offset
+            // for method-body fixes: regex2 should get MyRegex1 (not MyRegex2).
             string test = @"using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main()
+    public static void M1()
     {
-        Regex regex1 = [|new Regex(""a|b"")|];
-        Regex regex2 = [|new Regex(""c|d"", RegexOptions.CultureInvariant)|];
+        Regex regex1 = [|new Regex|](""a|b"");
+    }
+
+    private static readonly Regex s_field = [|new Regex|](""x"");
+
+    public static void M2()
+    {
+        var _ = s_field;
+        Regex regex2 = [|new Regex|](""c|d"", RegexOptions.CultureInvariant);
     }
 }
 ";
@@ -758,18 +1098,721 @@ public class Program
 
 public partial class Program
 {
-    public static void Main()
+    public static void M1()
     {
-        Regex regex1 = MyRegex();
-        Regex regex2 = MyRegex1();
+        Regex regex1 = MyRegex;
+    }
+
+    [GeneratedRegex(""x"")]
+    private static partial Regex s_field { get; }
+
+    public static void M2()
+    {
+        var _ = s_field;
+        Regex regex2 = MyRegex1;
     }
 
     [GeneratedRegex(""a|b"")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
+
     [GeneratedRegex(""c|d"", RegexOptions.CultureInvariant)]
-    private static partial Regex MyRegex1();
+    private static partial Regex MyRegex1 { get; }
 }
 ";
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                NumberOfFixAllIterations = 3,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task CodeFixerGeneratesUniqueNamesAcrossPartialClassDeclarations()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        var r = [|new Regex|](""abc"");
+        return r;
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        var r = [|new Regex|](""def"");
+        return r;
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        var r = MyRegex;
+        return r;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        var r = MyRegex1;
+        return r;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerGeneratesUniqueNamesAcrossPartialClassDeclarationsInSeparateFiles()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+",
+                        @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+"
+                    }
+                },
+                FixedState =
+                {
+                    Sources =
+                    {
+                        @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+",
+                        @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+"
+                    }
+                },
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task CodeFixerGeneratesUniqueNamesAcrossThreePartialClassDeclarations()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""aaa"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""bbb"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return [|new Regex|](""ccc"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""aaa"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""bbb"")]
+    private static partial Regex MyRegex1 { get; }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return MyRegex2;
+    }
+
+    [GeneratedRegex(""ccc"")]
+    private static partial Regex MyRegex2 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerGeneratesUniqueNamesWhenExistingMemberNamedMyRegex()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    private static void MyRegex() { }
+
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    private static void MyRegex() { }
+
+    public static Regex A()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex1 { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex2;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex2 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerIgnoresNonFixableRegexCallsAcrossPartialDeclarations()
+        {
+            string test = @"using System;
+using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+
+    public static Regex NonFixable()
+    {
+        return new Regex(""def"", RegexOptions.None, TimeSpan.FromSeconds(1));
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""ghi"");
+    }
+}
+";
+
+            string fixedSource = @"using System;
+using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    public static Regex NonFixable()
+    {
+        return new Regex(""def"", RegexOptions.None, TimeSpan.FromSeconds(1));
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""ghi"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerIgnoresNonFixableStaticMethodsAcrossPartialDeclarations()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static string A()
+    {
+        return Regex.Escape(""abc"");
+    }
+
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return [|new Regex|](""ghi"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static string A()
+    {
+        return Regex.Escape(""abc"");
+    }
+
+    public static Regex B()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""ghi"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerNestedTypeCallsDoNotAffectOuterTypeNaming()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+
+    class Inner
+    {
+        public static Regex X()
+        {
+            return [|new Regex|](""inner"");
+        }
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    partial class Inner
+    {
+        public static Regex X()
+        {
+            return MyRegex;
+        }
+
+        [GeneratedRegex(""inner"")]
+        private static partial Regex MyRegex { get; }
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                NumberOfFixAllIterations = 2,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task CodeFixerNonConstantPatternDoesNotAffectNaming()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A(string pattern)
+    {
+        var r = new Regex(pattern);
+        return r;
+    }
+
+    public static Regex B()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A(string pattern)
+    {
+        var r = new Regex(pattern);
+        return r;
+    }
+
+    public static Regex B()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerPartialStructGeneratesUniqueNames()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial struct S
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+
+internal partial struct S
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial struct S
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial struct S
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerMixedConstructorAndStaticMethodCallsAcrossPartials()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+
+internal partial class C
+{
+    public static bool B(string input)
+    {
+        return [|Regex.IsMatch|](input, ""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static bool B(string input)
+    {
+        return MyRegex1.IsMatch(input);
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerNestedPartialTypeDoesNotInterfereWithOuterPartial()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class Outer
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""outer1"");
+    }
+
+    internal partial class Inner
+    {
+        public static Regex X()
+        {
+            return [|new Regex|](""inner1"");
+        }
+    }
+}
+
+internal partial class Outer
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""outer2"");
+    }
+
+    internal partial class Inner
+    {
+        public static Regex Y()
+        {
+            return [|new Regex|](""inner2"");
+        }
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class Outer
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    internal partial class Inner
+    {
+        public static Regex X()
+        {
+            return MyRegex;
+        }
+
+        [GeneratedRegex(""inner1"")]
+        private static partial Regex MyRegex { get; }
+    }
+
+    [GeneratedRegex(""outer1"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class Outer
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    internal partial class Inner
+    {
+        public static Regex Y()
+        {
+            return MyRegex1;
+        }
+
+        [GeneratedRegex(""inner2"")]
+        private static partial Regex MyRegex1 { get; }
+    }
+
+    [GeneratedRegex(""outer2"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
             await new VerifyCS.Test
             {
                 TestCode = test,
@@ -787,7 +1830,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        Regex r = [|new Regex(options: RegexOptions.None, pattern: ""a|b"")|];
+        Regex r = [|new Regex|](options: RegexOptions.None, pattern: ""a|b"");
     }
 }";
 
@@ -797,11 +1840,11 @@ partial class Program
 {
     static void Main(string[] args)
     {
-        Regex r = MyRegex();
+        Regex r = MyRegex;
     }
 
     [GeneratedRegex(""a|b"", RegexOptions.None)]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
@@ -817,7 +1860,7 @@ class Program
     static void Main()
     {
         int i = (4 - 4); // this shouldn't be changed by fixer
-        Regex r = [|new Regex(options: RegexOptions.None, pattern: ""a|b"")|];
+        Regex r = [|new Regex|](options: RegexOptions.None, pattern: ""a|b"");
     }
 }";
 
@@ -828,11 +1871,11 @@ partial class Program
     static void Main()
     {
         int i = (4 - 4); // this shouldn't be changed by fixer
-        Regex r = MyRegex();
+        Regex r = MyRegex;
     }
 
     [GeneratedRegex(""a|b"", RegexOptions.None)]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
@@ -845,17 +1888,17 @@ partial class Program
             {
                 TestState =
                 {
-                    Sources = { "public class C { }", @"var r = [|new System.Text.RegularExpressions.Regex("""")|];" },
+                    Sources = { "public class C { }", @"var r = [|new System.Text.RegularExpressions.Regex|]("""");" },
                     OutputKind = OutputKind.ConsoleApplication,
                 },
                 FixedState =
                 {
-                    Sources = { "public class C { }", @"var r = MyRegex();
+                    Sources = { "public class C { }", @"var r = MyRegex;
 
 partial class Program
 {
     [System.Text.RegularExpressions.GeneratedRegex("""")]
-    private static partial System.Text.RegularExpressions.Regex MyRegex();
+    private static partial System.Text.RegularExpressions.Regex MyRegex { get; }
 }" }
                 },
             }.RunAsync();
@@ -869,7 +1912,7 @@ partial class Program
 static class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        [|Regex.Replace(text, "" \\s+"" , ""  "")|];
+        [|Regex.Replace|](text, "" \\s+"" , ""  "");
 }";
 
             string expectedFixedCode = @"using System.Text.RegularExpressions;
@@ -877,9 +1920,10 @@ static class Class
 static partial class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        MyRegex().Replace(text, ""  "");
+        MyRegex.Replace(text, ""  "");
+
     [GeneratedRegex("" \\s+"")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
@@ -893,7 +1937,7 @@ static partial class Class
 static class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        [|Regex.Replace(text, @"" \s+"" , @""  "")|];
+        [|Regex.Replace|](text, @"" \s+"" , @""  "");
 }";
 
             string expectedFixedCode = @"using System.Text.RegularExpressions;
@@ -901,12 +1945,55 @@ static class Class
 static partial class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        MyRegex().Replace(text, @""  "");
+        MyRegex.Replace(text, @""  "");
+
     [GeneratedRegex(@"" \s+"")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task CodeFixForConstantPatternExpressionWithQuote()
+        {
+            // From https://github.com/dotnet/runtime/issues/104371
+            // When constant expression patterns need to be escaped, we generate
+            // a verbatim string literal. However, we still need to escape quotes.
+            string expression = """
+                "[" + @"\/:<>|" + "\"]"
+                """;
+
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = [|Regex.IsMatch|]("""", {expression});
+    }}
+}}";
+
+            string verbatimPattern = """
+                @"[\/:<>|""]"
+                """;
+
+            string fixedSource = @$"using System.Text;
+using System.Text.RegularExpressions;
+
+public partial class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = MyRegex.IsMatch("""");
+    }}
+
+    [GeneratedRegex({verbatimPattern})]
+    private static partial Regex MyRegex {{ get; }}
+}}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         [Fact]
@@ -917,10 +2004,10 @@ static partial class Class
 static class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        [|Regex.Replace(text, """"""
+        [|Regex.Replace|](text, """"""
                               \s+
                               """""",
-                              """""""" hello """""" world """""""")|];
+                              """""""" hello """""" world """""""");
 }";
 
             string expectedFixedCode = @"using System.Text.RegularExpressions;
@@ -928,11 +2015,12 @@ static class Class
 static partial class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        MyRegex().Replace(text, """""""" hello """""" world """""""");
+        MyRegex.Replace(text, """""""" hello """""" world """""""");
+
     [GeneratedRegex(""""""
                               \s+
                               """""")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
@@ -950,7 +2038,7 @@ partial class Program
         const string pattern = @""a|b\s\n"";
         const string pattern2 = $""{pattern}2"";
 
-        Regex regex = [|new Regex(pattern2)|];
+        Regex regex = [|new Regex|](pattern2);
     }
 }";
 
@@ -963,11 +2051,11 @@ partial class Program
         const string pattern = @""a|b\s\n"";
         const string pattern2 = $""{pattern}2"";
 
-        Regex regex = MyRegex();
+        Regex regex = MyRegex;
     }
 
     [GeneratedRegex(@""a|b\s\n2"")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
@@ -985,7 +2073,7 @@ partial class Program
 
     static void Main(string[] args)
     {
-        Regex regex = [|new Regex(pattern2)|];
+        Regex regex = [|new Regex|](pattern2);
     }
 }";
 
@@ -998,11 +2086,11 @@ partial class Program
 
     static void Main(string[] args)
     {
-        Regex regex = MyRegex();
+        Regex regex = MyRegex;
     }
 
     [GeneratedRegex(pattern2)]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
@@ -1022,7 +2110,7 @@ partial class Program
 {
     static void Main(string[] args)
     {
-        Regex regex = [|new Regex(GlobalConstants.pattern2)|];
+        Regex regex = [|new Regex|](GlobalConstants.pattern2);
     }
 }";
 
@@ -1037,12 +2125,73 @@ partial class Program
 {
     static void Main(string[] args)
     {
-        Regex regex = MyRegex();
+        Regex regex = MyRegex;
     }
 
     [GeneratedRegex(GlobalConstants.pattern2)]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task MultilineVerbatimStringPreservedByFixer()
+        {
+            string test = """
+                using System.Text.RegularExpressions;
+
+                static class Class
+                {
+                    private static Regex r = [|new Regex|](@"a
+                             b
+                             c", RegexOptions.IgnorePatternWhitespace);
+                }
+                """;
+
+            string expectedFixedCode = """
+                using System.Text.RegularExpressions;
+
+                static partial class Class
+                {
+                    [GeneratedRegex(@"a
+                             b
+                             c", RegexOptions.IgnorePatternWhitespace)]
+                    private static partial Regex r { get; }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task MultilineStringConcatenationPreservedByFixer()
+        {
+            string test = """
+                using System.Text.RegularExpressions;
+
+                static class Class
+                {
+                    private const string foo = "bar";
+                    private static Regex r1 = [|new Regex|](@"a        " + foo + @"
+                                                        b
+                                                        c", RegexOptions.IgnorePatternWhitespace);
+                }
+                """;
+
+            string expectedFixedCode = """
+                using System.Text.RegularExpressions;
+
+                static partial class Class
+                {
+                    private const string foo = "bar";
+
+                    [GeneratedRegex(@"a        bar
+                                                        b
+                                                        c", RegexOptions.IgnorePatternWhitespace)]
+                    private static partial Regex r1 { get; }
+                }
+                """;
 
             await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
         }
@@ -1054,7 +2203,7 @@ partial class Program
 public class C
 {
     void M1(Regex r) => _ = r;
-    void M2() => M1([|new Regex("""")|]);
+    void M2() => M1([|new Regex|](""""));
 }
 ";
 
@@ -1062,9 +2211,31 @@ public class C
 public partial class C
 {
     void M1(Regex r) => _ = r;
-    void M2() => M1(MyRegex());
+    void M2() => M1(MyRegex);
+
     [GeneratedRegex("""")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
+        }
+
+        [Fact]
+        public async Task TestTargetTypedNew()
+        {
+            string test = @"using System.Text.RegularExpressions;
+public class C
+{
+    private static readonly Regex r = [|new|](""abc"");
+}
+";
+
+            string fixedCode = @"using System.Text.RegularExpressions;
+public partial class C
+{
+    [GeneratedRegex(""abc"")]
+    private static partial Regex r { get; }
 }
 ";
 
@@ -1080,7 +2251,7 @@ public class A
 {
     public void Foo()
     {
-        Regex regex = [|new Regex(""pattern"", (RegexOptions)0x0800)|];
+        Regex regex = [|new Regex|](""pattern"", (RegexOptions)0x1000);
     }
 }
 ";
@@ -1090,11 +2261,11 @@ public partial class A
 {
     public void Foo()
     {
-        Regex regex = MyRegex();
+        Regex regex = MyRegex;
     }
 
-    [GeneratedRegex(""pattern"", (RegexOptions)(2048))]
-    private static partial Regex MyRegex();
+    [GeneratedRegex(""pattern"", (RegexOptions)(4096))]
+    private static partial Regex MyRegex { get; }
 }
 ";
 
@@ -1110,8 +2281,8 @@ public class A
 {
     public void Foo()
     {
-        const RegexOptions MyOptions = (RegexOptions)0x0800;
-        Regex regex = [|new Regex(""pattern"", MyOptions)|];
+        const RegexOptions MyOptions = (RegexOptions)0x1000;
+        Regex regex = [|new Regex|](""pattern"", MyOptions);
     }
 }
 ";
@@ -1121,12 +2292,12 @@ public partial class A
 {
     public void Foo()
     {
-        const RegexOptions MyOptions = (RegexOptions)0x0800;
-        Regex regex = MyRegex();
+        const RegexOptions MyOptions = (RegexOptions)0x1000;
+        Regex regex = MyRegex;
     }
 
-    [GeneratedRegex(""pattern"", (RegexOptions)(2048))]
-    private static partial Regex MyRegex();
+    [GeneratedRegex(""pattern"", (RegexOptions)(4096))]
+    private static partial Regex MyRegex { get; }
 }
 ";
 
@@ -1142,7 +2313,7 @@ public class A
 {
     public void Foo()
     {
-        Regex regex = [|new Regex(""pattern"", (RegexOptions)(-10000))|];
+        Regex regex = [|new Regex|](""pattern"", (RegexOptions)(-10000));
     }
 }
 ";
@@ -1152,11 +2323,11 @@ public partial class A
 {
     public void Foo()
     {
-        Regex regex = MyRegex();
+        Regex regex = MyRegex;
     }
 
     [GeneratedRegex(""pattern"", (RegexOptions)(-10000))]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }
 ";
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
@@ -1180,7 +2351,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern, options) + @"|]" + isMatchInvocation + @";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, pattern, options) + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -1188,11 +2359,11 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }
 
     [GeneratedRegex(" + $"{pattern}, {options}, \"{CultureInfo.CurrentCulture.Name}" + @""")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }" };
 
                     // Test using CultureInvariant which should default to the 2 parameter constructor
@@ -1203,7 +2374,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern, options) + @"|]" + isMatchInvocation + @";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, pattern, options) + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -1211,11 +2382,11 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }
 
     [GeneratedRegex(" + $"{pattern}, {options}" + @")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }" };
                 }
             }
@@ -1234,7 +2405,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"(?i)abc\"") + @"|]" + isMatchInvocation + @";
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"(?i)abc\"") + @"" + isMatchInvocation + @";
     }
 }", @"using System.Text.RegularExpressions;
 
@@ -1242,11 +2413,11 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        var isMatch = MyRegex().IsMatch("""");
+        var isMatch = MyRegex.IsMatch("""");
     }
 
     [GeneratedRegex(" + $"\"(?i)abc\", RegexOptions.None, \"{CultureInfo.CurrentCulture.Name}" + @""")]
-    private static partial Regex MyRegex();
+    private static partial Regex MyRegex { get; }
 }" };
             }
         }
@@ -1256,6 +2427,196 @@ public partial class Program
         [MemberData(nameof(NoOptionsCultureTestData))]
         public async Task DetectsCurrentCulture(string test, string fixedSource)
             => await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+
+        #region Field and Property Conversion Tests
+
+        [Fact]
+        public async Task ConvertFieldToPartialProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    private static readonly Regex s_regex = [|new Regex|](""abc"");
+    
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"")]
+    private static partial Regex s_regex { get; }
+
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertFieldToPartialPropertyWithOptions()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    private static readonly Regex s_regex = [|new Regex|](""abc"", RegexOptions.IgnoreCase);
+    
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = $@"using System.Text.RegularExpressions;
+
+public partial class Program
+{{
+    [GeneratedRegex(""abc"", RegexOptions.IgnoreCase, ""{CultureInfo.CurrentCulture.Name}"")]
+    private static partial Regex s_regex {{ get; }}
+
+    public static void Main()
+    {{
+        var match = s_regex.IsMatch(""test"");
+    }}
+}}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertPropertyToPartialProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    private static Regex MyRegex { get; } = [|new Regex|](""abc"");
+    
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertPropertyToPartialPropertyWithOptions()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    private static Regex MyRegex { get; } = [|new Regex|](""abc"", RegexOptions.Multiline);
+    
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"", RegexOptions.Multiline)]
+    private static partial Regex MyRegex { get; }
+
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertPublicFieldToPartialProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static readonly Regex s_regex = [|new Regex|](""abc"");
+    
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"")]
+    public static partial Regex s_regex { get; }
+
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertInternalFieldToPartialProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    internal static readonly Regex s_regex = [|new Regex|](""abc"");
+    
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"")]
+    internal static partial Regex s_regex { get; }
+
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        #endregion Field and Property Conversion Tests
 
         #region Test helpers
 
@@ -1272,6 +2633,29 @@ public partial class Program
                 {
                     (false, true) => $"new Regex({pattern})",
                     (false, false) => $"new Regex({pattern}, {options})",
+                    _ => throw new InvalidOperationException()
+                },
+                _ => throw new ArgumentOutOfRangeException(nameof(invocationType))
+            };
+
+        /// <summary>
+        /// Constructs a regex invocation with diagnostic markers that only span the part before the arguments.
+        /// This reflects the analyzer behavior that excludes the argument list from the diagnostic span to avoid
+        /// showing adornments on every line of multi-line patterns.
+        /// </summary>
+        private static string ConstructRegexInvocationWithDiagnostic(InvocationType invocationType, string pattern, string? options = null)
+            => invocationType switch
+            {
+                InvocationType.StaticMethods => (pattern is null, options is null) switch
+                {
+                    (false, true) => $"[|Regex.IsMatch|](\"\", {pattern})",
+                    (false, false) => $"[|Regex.IsMatch|](\"\", {pattern}, {options})",
+                    _ => throw new InvalidOperationException()
+                },
+                InvocationType.Constructor => (pattern is null, options is null) switch
+                {
+                    (false, true) => $"[|new Regex|]({pattern})",
+                    (false, false) => $"[|new Regex|]({pattern}, {options})",
                     _ => throw new InvalidOperationException()
                 },
                 _ => throw new ArgumentOutOfRangeException(nameof(invocationType))

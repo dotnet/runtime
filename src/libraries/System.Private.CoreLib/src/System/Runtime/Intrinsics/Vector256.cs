@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
@@ -29,7 +29,7 @@ namespace System.Runtime.Intrinsics
     // the internal inlining limits of the JIT.
 
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 256-bit vectors.</summary>
-    public static unsafe class Vector256
+    public static class Vector256
     {
         internal const int Size = 32;
 
@@ -53,6 +53,92 @@ namespace System.Runtime.Intrinsics
             get => IsHardwareAccelerated;
         }
 
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector256<T>)
+            where T : IFloatingPointConstants<T>
+        {
+            /// <inheritdoc cref="Vector128.get_E{T}" />
+            public static Vector256<T> E
+            {
+                [Intrinsic]
+                get => Create(T.E);
+            }
+
+            /// <inheritdoc cref="Vector128.get_Pi{T}" />
+            public static Vector256<T> Pi
+            {
+                [Intrinsic]
+                get => Create(T.Pi);
+            }
+
+            /// <inheritdoc cref="Vector128.get_Tau{T}" />
+            public static Vector256<T> Tau
+            {
+                [Intrinsic]
+                get => Create(T.Tau);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector256<T>)
+            where T : IFloatingPointIeee754<T>
+        {
+            /// <inheritdoc cref="Vector128.get_Epsilon{T}" />
+            public static Vector256<T> Epsilon
+            {
+                [Intrinsic]
+                get => Create(T.Epsilon);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NaN{T}" />
+            public static Vector256<T> NaN
+            {
+                [Intrinsic]
+                get => Create(T.NaN);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NegativeInfinity{T}" />
+            public static Vector256<T> NegativeInfinity
+            {
+                [Intrinsic]
+                get => Create(T.NegativeInfinity);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NegativeZero{T}" />
+            public static Vector256<T> NegativeZero
+            {
+                [Intrinsic]
+                get => Create(T.NegativeZero);
+            }
+
+            /// <inheritdoc cref="Vector128.get_PositiveInfinity{T}" />
+            public static Vector256<T> PositiveInfinity
+            {
+                [Intrinsic]
+                get => Create(T.PositiveInfinity);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector256<T>)
+            where T : ISignedNumber<T>
+        {
+            /// <inheritdoc cref="Vector128.get_NegativeOne{T}" />
+            public static Vector256<T> NegativeOne
+            {
+                [Intrinsic]
+                get => Create(T.NegativeOne);
+            }
+
+            /// <inheritdoc cref="Vector128.get_SignSequence{T}" />
+            public static Vector256<T> SignSequence
+            {
+                [Intrinsic]
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => CreateAlternatingSequence(T.One, T.NegativeOne);
+            }
+        }
+
         /// <summary>Computes the absolute value of each element in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector that will have its absolute value computed.</param>
@@ -62,11 +148,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Abs<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return vector;
             }
@@ -79,14 +161,51 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Adds two vectors to compute their sum.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="left">The vector to add with <paramref name="right" />.</param>
-        /// <param name="right">The vector to add with <paramref name="left" />.</param>
-        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <inheritdoc cref="Vector128.Add{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector256<T> Add<T>(Vector256<T> left, Vector256<T> right) => left + right;
+
+        /// <inheritdoc cref="Vector128.AddSaturate{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> AddSaturate<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return left + right;
+            }
+            else
+            {
+                return Create(
+                    Vector128.AddSaturate(left._lower, right._lower),
+                    Vector128.AddSaturate(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.All{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool All<T>(Vector256<T> vector, T value) => vector == Create(value);
+
+        /// <inheritdoc cref="Vector128.AllWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AllWhereAllBitsSet<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return All(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return All(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return All(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -97,6 +216,30 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> AndNot<T>(Vector256<T> left, Vector256<T> right) => left & ~right;
+
+        /// <inheritdoc cref="Vector128.Any{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Any<T>(Vector256<T> vector, T value) => EqualsAny(vector, Create(value));
+
+        /// <inheritdoc cref="Vector128.AnyWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AnyWhereAllBitsSet<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Any(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Any(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return Any(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <summary>Reinterprets a <see langword="Vector256&lt;TFrom&gt;" /> as a new <see langword="Vector256&lt;TTo&gt;" />.</summary>
         /// <typeparam name="TFrom">The type of the elements in the input vector.</typeparam>
@@ -111,11 +254,7 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TTo>();
 
-#if MONO
-            return Unsafe.As<Vector256<TFrom>, Vector256<TTo>>(ref vector);
-#else
             return Unsafe.BitCast<Vector256<TFrom>, Vector256<TTo>>(vector);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see langword="Vector256&lt;Byte&gt;" />.</summary>
@@ -228,12 +367,19 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> AsVector256<T>(this Vector<T> value)
         {
-            Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            Vector256<T> result = default;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
-            return result;
+            if (Vector<T>.Count >= Vector256<T>.Count)
+            {
+                ref byte address = ref Unsafe.As<Vector<T>, byte>(ref value);
+                return Unsafe.ReadUnaligned<Vector256<T>>(ref address);
+            }
+            else
+            {
+                Vector256<T> result = default;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector{T}" />.</summary>
@@ -245,11 +391,19 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> AsVector<T>(this Vector256<T> value)
         {
-            Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            ref byte address = ref Unsafe.As<Vector256<T>, byte>(ref value);
-            return Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            if (Vector256<T>.Count >= Vector<T>.Count)
+            {
+                ref byte address = ref Unsafe.As<Vector256<T>, byte>(ref value);
+                return Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            }
+            else
+            {
+                Vector<T> result = default;
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector<T>, byte>(ref result), value);
+                return result;
+            }
         }
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
@@ -277,25 +431,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Ceiling<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector128.Ceiling(vector._lower),
                     Vector128.Ceiling(vector._upper)
                 );
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -313,7 +459,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<double> Ceiling(Vector256<double> vector) => Ceiling<double>(vector);
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.Clamp{T}(Vector128{T}, Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector256<T> Clamp<T>(Vector256<T> value, Vector256<T> min, Vector256<T> max)
         {
@@ -321,7 +467,7 @@ namespace System.Runtime.Intrinsics
             return Min(Max(value, min), max);
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.ClampNative{T}(Vector128{T}, Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector256<T> ClampNative<T>(Vector256<T> value, Vector256<T> min, Vector256<T> max)
         {
@@ -336,6 +482,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="condition" />, <paramref name="left" />, and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <remarks>The returned vector is equivalent to <paramref name="condition" /> <c>?</c> <paramref name="left" /> <c>:</c> <paramref name="right" /> on a per-bit basis.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> ConditionalSelect<T>(Vector256<T> condition, Vector256<T> left, Vector256<T> right) => (left & condition) | AndNot(right, condition);
@@ -573,16 +720,12 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.CopySign{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CopySign<T>(Vector256<T> value, Vector256<T> sign)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return value;
             }
@@ -663,6 +806,47 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
+        /// <inheritdoc cref="Vector128.Asin(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Asin(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinDouble<Vector256<double>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Asin(vector._lower),
+                    Vector128.Asin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Asin(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Asin(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinSingle<Vector256<float>, Vector256<int>, Vector512<double>, Vector512<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinSingle<Vector256<float>, Vector256<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector128.Asin(vector._lower),
+                    Vector128.Asin(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector128.Cos(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> Cos(Vector256<double> vector)
@@ -701,6 +885,30 @@ namespace System.Runtime.Intrinsics
                     Vector128.Cos(vector._lower),
                     Vector128.Cos(vector._upper)
                 );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Count{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Count<T>(Vector256<T> vector, T value) => CountMatches(Equals(vector, Create(value)));
+
+        /// <inheritdoc cref="Vector128.CountWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountWhereAllBitsSet<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Count(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Count(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return Count(vector, Scalar<T>.AllBitsSet);
             }
         }
 
@@ -826,7 +1034,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{T}" /> from a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="values">The array from which the vector is created.</param>
-        /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
+        /// <param name="index">The index in <paramref name="values" /> at which to begin reading elements.</param>
         /// <returns>A new <see cref="Vector256{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector256{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
@@ -1442,6 +1650,179 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateSequence<T>(T start, T step) => (Vector256<T>.Indices * step) + Create(start);
 
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance where the elements begin at a specified value and are multiplied by another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="initial">The value that element 0 will be initialized to.</param>
+        /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance with each element initialized to <paramref name="initial" /> multiplied by <paramref name="multiplier" /> raised to the element index.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            if (Scalar<T>.IsFloatingPoint)
+            {
+                for (int index = 0; index < Vector256<T>.Count; index++)
+                {
+                    T power = Scalar<T>.Pow(multiplier, Scalar<T>.Convert(index));
+                    T value = Scalar<T>.Multiply(initial, power);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+
+            result.SetElementUnsafe(0, initial);
+
+            for (int index = 1; index < Vector256<T>.Count; index++)
+            {
+                initial = Scalar<T>.Multiply(initial, multiplier);
+                result.SetElementUnsafe(index, initial);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements alternate between two specified values.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="even">The value assigned to even-indexed elements.</param>
+        /// <param name="odd">The value assigned to odd-indexed elements.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance whose even-indexed elements are initialized to <paramref name="even" /> and odd-indexed elements are initialized to <paramref name="odd" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="even"/> and <paramref name="odd"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateAlternatingSequence<T>(T even, T odd)
+        {
+            Vector128<T> sequence = Vector128.CreateAlternatingSequence(even, odd);
+            return Create(sequence, sequence);
+        }
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements are the reciprocal of an arithmetic sequence.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance whose elements are initialized to one divided by the corresponding element of the arithmetic sequence.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="start"/> and <paramref name="step"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateHarmonicSequence<T>(T start, T step)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return Vector256<T>.One / CreateSequence(start, step);
+            }
+
+            T upperStart = Scalar<T>.Add(start, Scalar<T>.Multiply(Scalar<T>.Convert(Vector128<T>.Count), step));
+
+            return Create(
+                Vector128.CreateHarmonicSequence(start, step),
+                Vector128.CreateHarmonicSequence(upperStart, step)
+            );
+        }
+
+        /// <inheritdoc cref="Vector.ConcatLowerLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConcatLowerLower<T>(Vector256<T> left, Vector256<T> right) => Create(left.GetLower(), right.GetLower());
+
+        /// <inheritdoc cref="Vector.ConcatUpperLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConcatUpperLower<T>(Vector256<T> left, Vector256<T> right) => Create(left.GetUpper(), right.GetLower());
+
+        /// <inheritdoc cref="Vector.ConcatUpperUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConcatUpperUpper<T>(Vector256<T> left, Vector256<T> right) => Create(left.GetUpper(), right.GetUpper());
+
+        /// <inheritdoc cref="Vector.ConcatLowerUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConcatLowerUpper<T>(Vector256<T> left, Vector256<T> right) => Create(left.GetLower(), right.GetUpper());
+
+        /// <inheritdoc cref="Vector.ZipLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ZipLower<T>(Vector256<T> left, Vector256<T> right) => Create(
+            Vector128.ZipLower(left.GetLower(), right.GetLower()),
+            Vector128.ZipUpper(left.GetLower(), right.GetLower())
+        );
+
+        /// <inheritdoc cref="Vector.ZipUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ZipUpper<T>(Vector256<T> left, Vector256<T> right) => Create(
+            Vector128.ZipLower(left.GetUpper(), right.GetUpper()),
+            Vector128.ZipUpper(left.GetUpper(), right.GetUpper())
+        );
+
+        /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector256<T> Lower, Vector256<T> Upper) Zip<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (Avx2.IsSupported && ((typeof(T) == typeof(int)) || (typeof(T) == typeof(uint))))
+            {
+                Vector256<int> lower = Avx2.UnpackLow(left.AsInt32(), right.AsInt32());
+                Vector256<int> upper = Avx2.UnpackHigh(left.AsInt32(), right.AsInt32());
+
+                return (
+                    Avx2.Permute2x128(lower, upper, 0x20).As<int, T>(),
+                    Avx2.Permute2x128(lower, upper, 0x31).As<int, T>()
+                );
+            }
+
+            return (ZipLower(left, right), ZipUpper(left, right));
+        }
+
+        /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> UnzipEven<T>(Vector256<T> left, Vector256<T> right) => Create(
+            Vector128.UnzipEven(left.GetLower(), left.GetUpper()),
+            Vector128.UnzipEven(right.GetLower(), right.GetUpper())
+        );
+
+        /// <inheritdoc cref="Vector.UnzipOdd{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> UnzipOdd<T>(Vector256<T> left, Vector256<T> right) => Create(
+            Vector128.UnzipOdd(left.GetLower(), left.GetUpper()),
+            Vector128.UnzipOdd(right.GetLower(), right.GetUpper())
+        );
+
+        /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector256<T> Even, Vector256<T> Odd) Unzip<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (Avx2.IsSupported && ((typeof(T) == typeof(int)) || (typeof(T) == typeof(uint))))
+            {
+                Vector256<int> leftUnzip = Avx2.Shuffle(left.AsInt32(), 0xD8);
+                leftUnzip = Avx2.Permute4x64(leftUnzip.AsInt64(), 0xD8).AsInt32();
+
+                Vector256<int> rightUnzip = Avx2.Shuffle(right.AsInt32(), 0xD8);
+                rightUnzip = Avx2.Permute4x64(rightUnzip.AsInt64(), 0xD8).AsInt32();
+
+                return (
+                    Avx2.Permute2x128(leftUnzip, rightUnzip, 0x20).As<int, T>(),
+                    Avx2.Permute2x128(leftUnzip, rightUnzip, 0x31).As<int, T>()
+                );
+            }
+
+            return (UnzipEven(left, right), UnzipOdd(left, right));
+        }
+
+        /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Reverse<T>(Vector256<T> vector) => Create(
+            Vector128.Reverse(vector.GetUpper()),
+            Vector128.Reverse(vector.GetLower())
+        );
+
         /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{double})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1449,7 +1830,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector256<double>, double>(degrees);
+                return VectorMath.DegreesToRadiansDouble<Vector256<double>, Vector256<ulong>>(degrees);
             }
             else
             {
@@ -1467,7 +1848,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector256<float>, float>(degrees);
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector256<float>, Vector512<double>>(degrees);
+                }
+                else
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector256<float>, Vector256<double>>(degrees);
+                }
             }
             else
             {
@@ -1607,25 +1995,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Floor<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-                 || (typeof(T) == typeof(short))
-                 || (typeof(T) == typeof(int))
-                 || (typeof(T) == typeof(long))
-                 || (typeof(T) == typeof(nint))
-                 || (typeof(T) == typeof(nuint))
-                 || (typeof(T) == typeof(sbyte))
-                 || (typeof(T) == typeof(ushort))
-                 || (typeof(T) == typeof(uint))
-                 || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector128.Floor(vector._lower),
                     Vector128.Floor(vector._upper)
                 );
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -1837,7 +2217,87 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
+        /// <inheritdoc cref="Vector128.IndexOf{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf<T>(Vector256<T> vector, T value) => IndexOfFirstMatch(Equals(vector, Create(value)));
+
+        /// <inheritdoc cref="Vector128.IndexOfWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfWhereAllBitsSet<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return IndexOf(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return IndexOf(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return IndexOf(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.IsEvenInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> IsEvenInteger<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return VectorMath.IsEvenInteger<Vector256<float>, float>(vector.AsSingle()).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return VectorMath.IsEvenInteger<Vector256<double>, double>(vector.AsDouble()).As<double, T>();
+            }
+            return IsZero(vector & Vector256<T>.One);
+        }
+
+        /// <inheritdoc cref="Vector128.IsFinite{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> IsFinite<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return ~IsZero(AndNot(Vector256<float>.PositiveInfinity.AsUInt32(), vector.AsUInt32())).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return ~IsZero(AndNot(Vector256<double>.PositiveInfinity.AsUInt64(), vector.AsUInt64())).As<ulong, T>();
+            }
+            return Vector256<T>.AllBitsSet;
+        }
+
+        /// <inheritdoc cref="Vector128.IsInfinity{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> IsInfinity<T>(Vector256<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return IsPositiveInfinity(Abs(vector));
+            }
+            return Vector256<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> IsInteger<T>(Vector256<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return IsZero(vector - Truncate(vector));
+            }
+            return Vector256<T>.AllBitsSet;
+        }
+
+        /// <inheritdoc cref="Vector128.IsNaN{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> IsNaN<T>(Vector256<T> vector)
@@ -1849,16 +2309,12 @@ namespace System.Runtime.Intrinsics
             return Vector256<T>.Zero;
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="Vector128.IsNegative{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> IsNegative<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector256<T>.Zero;
             }
@@ -1876,16 +2332,60 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
+        /// <inheritdoc cref="Vector128.IsNegativeInfinity{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> IsNegativeInfinity<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Equals(vector, Vector256<float>.NegativeInfinity.As<float, T>());
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Equals(vector, Vector256<double>.NegativeInfinity.As<double, T>());
+            }
+            return Vector256<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsNormal{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> IsNormal<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LessThan(Abs(vector).AsUInt32() - Create<uint>(float.SmallestNormalBits), Create<uint>(float.PositiveInfinityBits - float.SmallestNormalBits)).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(Abs(vector).AsUInt64() - Create<ulong>(double.SmallestNormalBits), Create<ulong>(double.PositiveInfinityBits - double.SmallestNormalBits)).As<ulong, T>();
+            }
+            return ~IsZero(vector);
+        }
+
+        /// <inheritdoc cref="Vector128.IsOddInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> IsOddInteger<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return VectorMath.IsOddInteger<Vector256<float>, float>(vector.AsSingle()).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return VectorMath.IsOddInteger<Vector256<double>, double>(vector.AsDouble()).As<double, T>();
+            }
+            return ~IsZero(vector & Vector256<T>.One);
+        }
+
+        /// <inheritdoc cref="Vector128.IsPositive{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> IsPositive<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector256<T>.AllBitsSet;
             }
@@ -1903,26 +2403,66 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
+        /// <inheritdoc cref="Vector128.IsPositiveInfinity{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> IsPositiveInfinity<T>(Vector256<T> vector)
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.PositiveInfinity).As<float, T>());
+                return Equals(vector, Vector256<float>.PositiveInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.PositiveInfinity).As<double, T>());
+                return Equals(vector, Vector256<double>.PositiveInfinity.As<double, T>());
             }
             return Vector256<T>.Zero;
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
+        /// <inheritdoc cref="Vector128.IsSubnormal{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> IsSubnormal<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LessThan(Abs(vector).AsUInt32() - Vector256<uint>.One, Create<uint>(float.MaxTrailingSignificand)).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(Abs(vector).AsUInt64() - Vector256<ulong>.One, Create<ulong>(double.MaxTrailingSignificand)).As<ulong, T>();
+            }
+            return Vector256<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsZero{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> IsZero<T>(Vector256<T> vector) => Equals(vector, Vector256<T>.Zero);
+
+        /// <inheritdoc cref="Vector128.LastIndexOf{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOf<T>(Vector256<T> vector, T value) => IndexOfLastMatch(Equals(vector, Create(value)));
+
+        /// <inheritdoc cref="Vector128.LastIndexOfWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfWhereAllBitsSet<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LastIndexOf(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LastIndexOf(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return LastIndexOf(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <inheritdoc cref="Vector128.Lerp(Vector128{double}, Vector128{double}, Vector128{double})" />
         [Intrinsic]
@@ -2055,7 +2595,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector256<T> Load<T>(T* source) => LoadUnsafe(ref *source);
+        public static unsafe Vector256<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2065,7 +2605,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> LoadAligned<T>(T* source)
+        public static unsafe Vector256<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -2085,7 +2625,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector256<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
+        public static unsafe Vector256<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2196,7 +2736,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.Max{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Max<T>(Vector256<T> left, Vector256<T> right)
@@ -2214,7 +2754,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MaxMagnitude{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> MaxMagnitude<T>(Vector256<T> left, Vector256<T> right)
@@ -2232,7 +2772,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MaxMagnitudeNumber{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> MaxMagnitudeNumber<T>(Vector256<T> left, Vector256<T> right)
@@ -2250,13 +2790,23 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MaxNative{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> MaxNative<T>(Vector256<T> left, Vector256<T> right)
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MaxNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MaxNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(GreaterThan(left, right), left, right);
             }
             else
@@ -2268,7 +2818,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MaxNumber{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> MaxNumber<T>(Vector256<T> left, Vector256<T> right)
@@ -2286,7 +2836,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.Min{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Min<T>(Vector256<T> left, Vector256<T> right)
@@ -2304,7 +2854,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MinMagnitude{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> MinMagnitude<T>(Vector256<T> left, Vector256<T> right)
@@ -2322,7 +2872,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MinMagnitudeNumber{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> MinMagnitudeNumber<T>(Vector256<T> left, Vector256<T> right)
@@ -2340,13 +2890,23 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MinNative{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> MinNative<T>(Vector256<T> left, Vector256<T> right)
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MinNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MinNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(LessThan(left, right), left, right);
             }
             else
@@ -2358,7 +2918,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MinNumber{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> MinNumber<T>(Vector256<T> left, Vector256<T> right)
@@ -2435,107 +2995,143 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see langword="Vector256&lt;Double&gt;" /> instances into one <see langword="Vector256&lt;Single&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector256&lt;Single&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector256<TResult> Narrow<TSource, TResult>(Vector256<TSource> lower, Vector256<TSource> upper)
+            where TSource : INumber<TSource>
+            where TResult : INumber<TResult>
+        {
+            Unsafe.SkipInit(out Vector256<TResult> result);
+
+            for (int i = 0; i < Vector256<TSource>.Count; i++)
+            {
+                TResult value = TResult.CreateTruncating(lower.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<TSource>.Count; i < Vector256<TResult>.Count; i++)
+            {
+                TResult value = TResult.CreateTruncating(upper.GetElementUnsafe(i - Vector256<TSource>.Count));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{double}, Vector128{double})"/>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<float> Narrow(Vector256<double> lower, Vector256<double> upper)
-        {
-            return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<double, float>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector256&lt;Int16&gt;" /> instances into one <see langword="Vector256&lt;SByte&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector256&lt;SByte&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{short}, Vector128{short})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<sbyte> Narrow(Vector256<short> lower, Vector256<short> upper)
-        {
-            return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<short, sbyte>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector256&lt;Int32&gt;" /> instances into one <see langword="Vector256&lt;Int16&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector256&lt;Int16&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{int}, Vector128{int})"/>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<short> Narrow(Vector256<int> lower, Vector256<int> upper)
-        {
-            return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<int, short>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector256&lt;Int64&gt;" /> instances into one <see langword="Vector256&lt;Int32&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector256&lt;Int32&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{long}, Vector128{long})"/>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<int> Narrow(Vector256<long> lower, Vector256<long> upper)
-        {
-            return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<long, int>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector256&lt;UInt16&gt;" /> instances into one <see langword="Vector256&lt;Byte&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector256&lt;Byte&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{ushort}, Vector128{ushort})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<byte> Narrow(Vector256<ushort> lower, Vector256<ushort> upper)
-        {
-            return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<ushort, byte>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector256&lt;UInt32&gt;" /> instances into one <see langword="Vector256&lt;UInt16&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector256&lt;UInt16&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{uint}, Vector128{uint})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ushort> Narrow(Vector256<uint> lower, Vector256<uint> upper)
-        {
-            return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<uint, ushort>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector256&lt;UInt64&gt;" /> instances into one <see langword="Vector256&lt;UInt32&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector256&lt;UInt32&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{ulong}, Vector128{ulong})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<uint> Narrow(Vector256<ulong> lower, Vector256<ulong> upper)
+            => Narrow<ulong, uint>(lower, upper);
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector256<TResult> NarrowWithSaturation<TSource, TResult>(Vector256<TSource> lower, Vector256<TSource> upper)
+            where TSource : INumber<TSource>
+            where TResult : INumber<TResult>
         {
-            return Create(
-                Vector128.Narrow(lower._lower, lower._upper),
-                Vector128.Narrow(upper._lower, upper._upper)
-            );
+            Unsafe.SkipInit(out Vector256<TResult> result);
+
+            for (int i = 0; i < Vector256<TSource>.Count; i++)
+            {
+                TResult value = TResult.CreateSaturating(lower.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<TSource>.Count; i < Vector256<TResult>.Count; i++)
+            {
+                TResult value = TResult.CreateSaturating(upper.GetElementUnsafe(i - Vector256<TSource>.Count));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
         }
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{double}, Vector128{double})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> NarrowWithSaturation(Vector256<double> lower, Vector256<double> upper)
+            => NarrowWithSaturation<double, float>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{short}, Vector128{short})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<sbyte> NarrowWithSaturation(Vector256<short> lower, Vector256<short> upper)
+            => NarrowWithSaturation<short, sbyte>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{int}, Vector128{int})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<short> NarrowWithSaturation(Vector256<int> lower, Vector256<int> upper)
+            => NarrowWithSaturation<int, short>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{long}, Vector128{long})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> NarrowWithSaturation(Vector256<long> lower, Vector256<long> upper)
+            => NarrowWithSaturation<long, int>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{ushort}, Vector128{ushort})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<byte> NarrowWithSaturation(Vector256<ushort> lower, Vector256<ushort> upper)
+            => NarrowWithSaturation<ushort, byte>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{uint}, Vector128{uint})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<ushort> NarrowWithSaturation(Vector256<uint> lower, Vector256<uint> upper)
+            => NarrowWithSaturation<uint, ushort>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{ulong}, Vector128{ulong})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<uint> NarrowWithSaturation(Vector256<ulong> lower, Vector256<ulong> upper)
+            => NarrowWithSaturation<ulong, uint>(lower, upper);
 
         /// <summary>Negates a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2544,6 +3140,30 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<T> Negate<T>(Vector256<T> vector) => -vector;
+
+        /// <inheritdoc cref="Vector128.None{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool None<T>(Vector256<T> vector, T value) => !EqualsAny(vector, Create(value));
+
+        /// <inheritdoc cref="Vector128.NoneWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool NoneWhereAllBitsSet<T>(Vector256<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return None(vector.AsInt32(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return None(vector.AsInt64(), -1);
+            }
+            else
+            {
+                return None(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2560,7 +3180,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector256<double>, double>(radians);
+                return VectorMath.RadiansToDegreesDouble<Vector256<double>, Vector256<ulong>>(radians);
             }
             else
             {
@@ -2578,7 +3198,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector256<float>, float>(radians);
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector256<float>, Vector512<double>>(radians);
+                }
+                else
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector256<float>, Vector256<double>>(radians);
+                }
             }
             else
             {
@@ -2593,25 +3220,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Round<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector128.Round(vector._lower),
                     Vector128.Round(vector._upper)
                 );
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -2705,6 +3324,15 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<uint> ShiftLeft(Vector256<uint> vector, int shiftCount) => vector << shiftCount;
 
+        [Intrinsic]
+        internal static Vector256<uint> ShiftLeft(Vector256<uint> vector, Vector256<uint> shiftCount)
+        {
+            return Create(
+                Vector128.ShiftLeft(vector._lower, shiftCount._lower),
+                Vector128.ShiftLeft(vector._upper, shiftCount._upper)
+            );
+        }
+
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
@@ -2712,6 +3340,15 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<ulong> ShiftLeft(Vector256<ulong> vector, int shiftCount) => vector << shiftCount;
+
+        [Intrinsic]
+        internal static Vector256<ulong> ShiftLeft(Vector256<ulong> vector, Vector256<ulong> shiftCount)
+        {
+            return Create(
+                Vector128.ShiftLeft(vector._lower, shiftCount._lower),
+                Vector128.ShiftLeft(vector._upper, shiftCount._upper)
+            );
+        }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2838,28 +3475,34 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector256<byte> Shuffle(Vector256<byte> vector, Vector256<byte> indices)
+        private static Vector256<T> ShuffleFallback<T, TIndex>(Vector256<T> vector, Vector256<TIndex> indices)
+            where TIndex : IBinaryInteger<TIndex>
         {
-            Unsafe.SkipInit(out Vector256<byte> result);
+            Debug.Assert(Vector256<T>.Count == Vector256<TIndex>.Count);
+            Vector256<T> result = Vector256<T>.Zero;
 
-            for (int index = 0; index < Vector256<byte>.Count; index++)
+            for (int index = 0; index < Vector256<T>.Count; index++)
             {
-                byte selectedIndex = indices.GetElementUnsafe(index);
-                byte selectedValue = 0;
+                int selectedIndex = int.CreateSaturating(indices.GetElementUnsafe(index));
 
-                if (selectedIndex < Vector256<byte>.Count)
+                if ((uint)selectedIndex < (uint)Vector256<T>.Count)
                 {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                    T selectedValue = vector.GetElementUnsafe(selectedIndex);
+                    result.SetElementUnsafe(index, selectedValue);
                 }
-                result.SetElementUnsafe(index, selectedValue);
             }
-
             return result;
+        }
+
+        // This method only exists so that ShuffleNative has the same behaviour when called directly or via
+        // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
+        // reflecting into these. TODO: figure out if this can be solved in a nicer way.
+
+        [Intrinsic]
+        private static Vector256<T> ShuffleNativeFallback<T, TIndex>(Vector256<T> vector, Vector256<TIndex> indices)
+            where TIndex : IBinaryInteger<TIndex>
+        {
+            return ShuffleFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -2867,220 +3510,125 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
-        [CLSCompliant(false)]
-        public static Vector256<sbyte> Shuffle(Vector256<sbyte> vector, Vector256<sbyte> indices)
-        {
-            Unsafe.SkipInit(out Vector256<sbyte> result);
+        public static Vector256<byte> Shuffle(Vector256<byte> vector, Vector256<byte> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector256<sbyte>.Count; index++)
-            {
-                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
-                sbyte selectedValue = 0;
-
-                if (selectedIndex < Vector256<sbyte>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
         [Intrinsic]
-        public static Vector256<short> Shuffle(Vector256<short> vector, Vector256<short> indices)
-        {
-            Unsafe.SkipInit(out Vector256<short> result);
+        public static Vector256<double> Shuffle(Vector256<double> vector, Vector256<long> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector256<short>.Count; index++)
-            {
-                ushort selectedIndex = (ushort)indices.GetElementUnsafe(index);
-                short selectedValue = 0;
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        public static Vector256<short> Shuffle(Vector256<short> vector, Vector256<short> indices) => ShuffleFallback(vector, indices);
 
-                if (selectedIndex < Vector256<short>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        public static Vector256<int> Shuffle(Vector256<int> vector, Vector256<int> indices) => ShuffleFallback(vector, indices);
 
-            return result;
-        }
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        public static Vector256<long> Shuffle(Vector256<long> vector, Vector256<long> indices) => ShuffleFallback(vector, indices);
 
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        public static Vector256<nint> Shuffle(Vector256<nint> vector, Vector256<nint> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector256<ushort> Shuffle(Vector256<ushort> vector, Vector256<ushort> indices)
-        {
-            Unsafe.SkipInit(out Vector256<ushort> result);
+        public static Vector256<sbyte> Shuffle(Vector256<sbyte> vector, Vector256<sbyte> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector256<ushort>.Count; index++)
-            {
-                ushort selectedIndex = indices.GetElementUnsafe(index);
-                ushort selectedValue = 0;
-
-                if (selectedIndex < Vector256<ushort>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
         [Intrinsic]
-        public static Vector256<int> Shuffle(Vector256<int> vector, Vector256<int> indices)
-        {
-            Unsafe.SkipInit(out Vector256<int> result);
+        public static Vector256<float> Shuffle(Vector256<float> vector, Vector256<int> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector256<int>.Count; index++)
-            {
-                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
-                int selectedValue = 0;
-
-                if (selectedIndex < Vector256<int>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector256<uint> Shuffle(Vector256<uint> vector, Vector256<uint> indices)
-        {
-            Unsafe.SkipInit(out Vector256<uint> result);
+        public static Vector256<ushort> Shuffle(Vector256<ushort> vector, Vector256<ushort> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector256<uint>.Count; index++)
-            {
-                uint selectedIndex = indices.GetElementUnsafe(index);
-                uint selectedValue = 0;
-
-                if (selectedIndex < Vector256<uint>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector256<float> Shuffle(Vector256<float> vector, Vector256<int> indices)
-        {
-            Unsafe.SkipInit(out Vector256<float> result);
-
-            for (int index = 0; index < Vector256<float>.Count; index++)
-            {
-                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
-                float selectedValue = 0;
-
-                if (selectedIndex < Vector256<float>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector256<long> Shuffle(Vector256<long> vector, Vector256<long> indices)
-        {
-            Unsafe.SkipInit(out Vector256<long> result);
-
-            for (int index = 0; index < Vector256<long>.Count; index++)
-            {
-                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
-                long selectedValue = 0;
-
-                if (selectedIndex < (uint)Vector256<long>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector256<ulong> Shuffle(Vector256<ulong> vector, Vector256<ulong> indices)
-        {
-            Unsafe.SkipInit(out Vector256<ulong> result);
+        public static Vector256<uint> Shuffle(Vector256<uint> vector, Vector256<uint> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector256<ulong>.Count; index++)
-            {
-                ulong selectedIndex = indices.GetElementUnsafe(index);
-                ulong selectedValue = 0;
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<ulong> Shuffle(Vector256<ulong> vector, Vector256<ulong> indices) => ShuffleFallback(vector, indices);
 
-                if (selectedIndex < (uint)Vector256<ulong>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
+        /// <inheritdoc cref="Shuffle(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<nuint> Shuffle(Vector256<nuint> vector, Vector256<nuint> indices) => ShuffleFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, Count - 1].</remarks>
         [Intrinsic]
-        public static Vector256<double> Shuffle(Vector256<double> vector, Vector256<long> indices)
-        {
-            Unsafe.SkipInit(out Vector256<double> result);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<byte> ShuffleNative(Vector256<byte> vector, Vector256<byte> indices) => ShuffleNativeFallback(vector, indices);
 
-            for (int index = 0; index < Vector256<double>.Count; index++)
-            {
-                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
-                double selectedValue = 0;
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> ShuffleNative(Vector256<double> vector, Vector256<long> indices) => ShuffleNativeFallback(vector, indices);
 
-                if (selectedIndex < (uint)Vector256<double>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<short> ShuffleNative(Vector256<short> vector, Vector256<short> indices) => ShuffleNativeFallback(vector, indices);
 
-            return result;
-        }
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> ShuffleNative(Vector256<int> vector, Vector256<int> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<long> ShuffleNative(Vector256<long> vector, Vector256<long> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<nint> ShuffleNative(Vector256<nint> vector, Vector256<nint> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector256<sbyte> ShuffleNative(Vector256<sbyte> vector, Vector256<sbyte> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> ShuffleNative(Vector256<float> vector, Vector256<int> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector256<ushort> ShuffleNative(Vector256<ushort> vector, Vector256<ushort> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector256<uint> ShuffleNative(Vector256<uint> vector, Vector256<uint> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector256<ulong> ShuffleNative(Vector256<ulong> vector, Vector256<ulong> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector256{byte}, Vector256{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector256<nuint> ShuffleNative(Vector256<nuint> vector, Vector256<nuint> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <inheritdoc cref="Vector128.Sin(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3123,7 +3671,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="Vector128.Cos(Vector128{double})" />
+        /// <inheritdoc cref="Vector128.SinCos(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector256<double> Sin, Vector256<double> Cos) SinCos(Vector256<double> vector)
         {
@@ -3143,7 +3691,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="Vector128.Cos(Vector128{float})" />
+        /// <inheritdoc cref="Vector128.SinCos(Vector128{float})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector256<float> Sin, Vector256<float> Cos) SinCos(Vector256<float> vector)
         {
@@ -3192,7 +3740,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void Store<T>(this Vector256<T> source, T* destination) => source.StoreUnsafe(ref *destination);
+        public static unsafe void Store<T>(this Vector256<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3202,7 +3750,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAligned<T>(this Vector256<T> source, T* destination)
+        public static unsafe void StoreAligned<T>(this Vector256<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -3222,7 +3770,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination) => source.StoreAligned(destination);
+        public static unsafe void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3254,14 +3802,27 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
-        /// <summary>Subtracts two vectors to compute their difference.</summary>
-        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
-        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <inheritdoc cref="Vector128.Subtract{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector256<T> Subtract<T>(Vector256<T> left, Vector256<T> right) => left - right;
+
+        /// <inheritdoc cref="Vector128.SubtractSaturate{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> SubtractSaturate<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return left - right;
+            }
+            else
+            {
+                return Create(
+                    Vector128.SubtractSaturate(left._lower, right._lower),
+                    Vector128.SubtractSaturate(left._upper, right._upper)
+                );
+            }
+        }
 
         /// <summary>Computes the sum of all elements in a vector.</summary>
         /// <param name="vector">The vector whose elements will be summed.</param>
@@ -3314,7 +3875,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of <paramref name="vector" /> and the upper 256-bits left uninitialized.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
+        public static Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -3330,25 +3891,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Truncate<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector128.Truncate(vector._lower),
                     Vector128.Truncate(vector._upper)
                 );
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -3706,11 +4259,66 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int CountMatches<T>(Vector256<T> vector)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            }
+            else
+            {
+                return Vector128.CountMatches(vector._lower)
+                     + Vector128.CountMatches(vector._upper);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector256<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
             ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
             return Unsafe.Add(ref address, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfFirstMatch<T>(Vector256<T> vector)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                int result = BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+                return (result != 32) ? result : -1;
+            }
+            else
+            {
+                int result = Vector128.IndexOfFirstMatch(vector._lower);
+
+                if (result >= 0)
+                {
+                    return result;
+                }
+
+                result = Vector128.IndexOfFirstMatch(vector._upper);
+                return result + ((result >= 0) ? Vector128<T>.Count : 0);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfLastMatch<T>(Vector256<T> vector)
+        {
+            if (Vector256.IsHardwareAccelerated)
+            {
+                return 31 - BitOperations.LeadingZeroCount(vector.ExtractMostSignificantBits());
+            }
+            else
+            {
+                int result = Vector128.IndexOfLastMatch(vector._upper);
+
+                if (result >= 0)
+                {
+                    return result + Vector128<T>.Count;
+                }
+                return Vector128.IndexOfLastMatch(vector._lower);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

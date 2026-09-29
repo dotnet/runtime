@@ -9,7 +9,6 @@
 #include <utilcode.h>                   // Utility helpers.
 #include <corerror.h>
 #include <clrversion.h>
-#include "../../dlls/mscorrc/resource.h"
 
 // Output printf-style formatted text to the debugger if it's present or stdout otherwise.
 static void DbgPrintf(const LPCSTR szFormat, ...)
@@ -23,7 +22,7 @@ static void DbgPrintf(const LPCSTR szFormat, ...)
 
     va_end(args);
 
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         OutputDebugStringUtf8(szBuffer);
     }
@@ -34,10 +33,12 @@ static void DbgPrintf(const LPCSTR szFormat, ...)
     }
 }
 
+#ifndef HOST_UNIX
 typedef int (*MessageBoxWFnPtr)(HWND hWnd,
                                 LPCWSTR lpText,
                                 LPCWSTR lpCaption,
                                 UINT uType);
+#endif // !HOST_UNIX
 
 static int MessageBoxImpl(
                   LPCWSTR title,        // Dialog box title
@@ -46,8 +47,6 @@ static int MessageBoxImpl(
 {
     CONTRACTL
     {
-        INJECT_FAULT(return IDCANCEL;);
-
         // Assert if none of MB_ICON is set
         PRECONDITION((uType & MB_ICONMASK) != 0);
     }
@@ -99,7 +98,6 @@ static int UtilMessageBoxNonLocalized(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
 
         // Assert if none of MB_ICON is set
         PRECONDITION((uType & MB_ICONMASK) != 0);
@@ -138,7 +136,7 @@ static int UtilMessageBoxNonLocalized(
     {
         result = IDCANCEL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }
@@ -151,16 +149,17 @@ int NotifyUserOfFaultMessageBox(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
     }
     CONTRACTL_END;
 
     int result = IDCANCEL;
 
+#ifdef HOST_WINDOWS
     // Add the MB_TASKMODAL style to indicate that the dialog should be displayed on top of the windows
     // owned by the current thread and should prevent interaction with them until dismissed.
     // Include in the MB_DEFAULT_DESKTOP_ONLY style.
     uType |= (MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY);
+#endif
 
     EX_TRY
     {
@@ -170,7 +169,7 @@ int NotifyUserOfFaultMessageBox(
     {
         result = IDCANCEL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }

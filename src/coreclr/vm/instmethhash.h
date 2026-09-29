@@ -14,9 +14,10 @@
 #define _INSTMETHHASH_H
 
 #include "dacenumerablehash.h"
+#include "cdacdata.h"
 
 class AllocMemTracker;
-
+enum class AsyncVariantLookup;
 //========================================================================================
 // The hash table types defined in this header file are used by the loader to
 // look up instantiation-specific methods:
@@ -109,7 +110,8 @@ public:
                                mdMethodDef token,
                                BOOL unboxingStub,
                                Instantiation inst,
-                               BOOL getSharedNotStub);
+                               BOOL getSharedNotStub,
+                               AsyncVariantLookup variantLookup);
 
     BOOL ContainsMethodDesc(MethodDesc* pMD);
 
@@ -144,6 +146,18 @@ public:
 
 private:
     LoaderAllocator* GetLoaderAllocator();
+
+    friend struct ::cdac_data<InstMethodHashTable>;
+};
+
+template<>
+struct cdac_data<InstMethodHashTable>
+{
+    static constexpr size_t Buckets = offsetof(InstMethodHashTable, m_pBuckets);
+    static constexpr size_t Count = offsetof(InstMethodHashTable, m_cEntries);
+
+    static constexpr size_t VolatileEntryValue = offsetof(InstMethodHashTable::VolatileEntry, m_sValue);
+    static constexpr size_t VolatileEntryNextEntry = offsetof(InstMethodHashTable::VolatileEntry, m_pNextEntry);
 };
 
 #endif /* _INSTMETHHASH_H */

@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNonNullablePropertyGetter))]
-        public async Task WriteNullFromNotNullablePropertyGetter_EnforcedNullability_ThrowsJsonException(Type type, string propertyName)
+        public async Task WriteNullFromNotNullablePropertyGetter_EnforcedNullability_ThrowsJsonException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string propertyName)
         {
             object value = Activator.CreateInstance(type)!;
 
@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNonNullablePropertyGetter))]
-        public async Task WriteNullFromNotNullablePropertyGetter_IgnoredNullability_Succeeds(Type type, string _)
+        public async Task WriteNullFromNotNullablePropertyGetter_IgnoredNullability_Succeeds([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string _)
         {
             object value = Activator.CreateInstance(type)!;
             string json = await Serializer.SerializeWrapper(value, type, s_optionsWithIgnoredNullability);
@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNonNullablePropertyGetter))]
-        public async Task WriteNullFromNotNullablePropertyGetter_EnforcedNullability_DisabledFlag_Succeeds(Type type, string propertyName)
+        public async Task WriteNullFromNotNullablePropertyGetter_EnforcedNullability_DisabledFlag_Succeeds([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string propertyName)
         {
             object value = Activator.CreateInstance(type)!;
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type, s_optionsWithEnforcedNullability, mutable: true);
@@ -72,13 +72,15 @@ namespace System.Text.Json.Serialization.Tests
             yield return Wrap(typeof(NotNullableSpecialTypePropertiesClass), nameof(NotNullableSpecialTypePropertiesClass.JsonDocument));
             yield return Wrap(typeof(NullableObliviousConstructorParameter), nameof(NullableObliviousConstructorParameter.Property));
             yield return Wrap(typeof(NotNullGenericPropertyClass<string>), nameof(NotNullGenericPropertyClass<string>.Property));
+            yield return Wrap(typeof(ClassWithNonNullableInitProperty), nameof(ClassWithNonNullableInitProperty.Property));
+            yield return Wrap(typeof(ClassWithNonNullableInitProperty), nameof(ClassWithNonNullableRequiredProperty.Property));
 
             static object[] Wrap(Type type, string propertyName) => [type, propertyName];
         }
 
         [Theory]
         [MemberData(nameof(GetTypesWithNullablePropertyGetter))]
-        public async Task WriteNullFromNullablePropertyGetter_EnforcedNullability_Succeeds(Type type, string _)
+        public async Task WriteNullFromNullablePropertyGetter_EnforcedNullability_Succeeds([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string _)
         {
             object value = Activator.CreateInstance(type)!;
             string json = await Serializer.SerializeWrapper(value, type, s_optionsWithEnforcedNullability);
@@ -87,7 +89,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNullablePropertyGetter))]
-        public async Task WriteNullFromNullablePropertyGetter_IgnoredNullability_Succeeds(Type type, string _)
+        public async Task WriteNullFromNullablePropertyGetter_IgnoredNullability_Succeeds([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string _)
         {
             object value = Activator.CreateInstance(type)!;
             string json = await Serializer.SerializeWrapper(value, type, s_optionsWithIgnoredNullability);
@@ -96,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNullablePropertyGetter))]
-        public async Task WriteNullFromNullablePropertyGetter_EnforcedNullability_EnabledFlag_ThrowsJsonException(Type type, string propertyName)
+        public async Task WriteNullFromNullablePropertyGetter_EnforcedNullability_EnabledFlag_ThrowsJsonException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string propertyName)
         {
             object value = Activator.CreateInstance(type)!;
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type, s_optionsWithEnforcedNullability, mutable: true);
@@ -125,6 +127,8 @@ namespace System.Text.Json.Serialization.Tests
             yield return Wrap(typeof(NullableObliviousPropertyClass), nameof(NullableObliviousPropertyClass.Property));
             yield return Wrap(typeof(GenericPropertyClass<string>), nameof(GenericPropertyClass<string>.Property));
             yield return Wrap(typeof(NullableGenericPropertyClass<string>), nameof(NullableGenericPropertyClass<string>.Property));
+            yield return Wrap(typeof(ClassWithNullableInitProperty), nameof(ClassWithNullableInitProperty.Property));
+            yield return Wrap(typeof(ClassWithNullableInitProperty), nameof(ClassWithNullableRequiredProperty.Property));
 
             static object[] Wrap(Type type, string propertyName) => [type, propertyName];
         }
@@ -191,6 +195,8 @@ namespace System.Text.Json.Serialization.Tests
             yield return Wrap(typeof(DisallowNullConstructorParameter), nameof(DisallowNullConstructorParameter.Property));
             yield return Wrap(typeof(DisallowNullConstructorParameter<string>), nameof(DisallowNullConstructorParameter<string>.Property));
             yield return Wrap(typeof(NotNullGenericConstructorParameter<string>), nameof(NotNullGenericConstructorParameter<string>.Property));
+            yield return Wrap(typeof(ClassWithNonNullableInitProperty), nameof(ClassWithNonNullableInitProperty.Property));
+            yield return Wrap(typeof(ClassWithNonNullableInitProperty), nameof(ClassWithNonNullableRequiredProperty.Property));
 
             static object[] Wrap(Type type, string propertyName) => [type, propertyName];
         }
@@ -249,6 +255,8 @@ namespace System.Text.Json.Serialization.Tests
             yield return Wrap(typeof(AllowNullConstructorParameter<string>), nameof(AllowNullConstructorParameter<string>.Property));
             yield return Wrap(typeof(GenericConstructorParameter<string>), nameof(GenericConstructorParameter<string>.Property));
             yield return Wrap(typeof(NullableGenericConstructorParameter<string>), nameof(NullableGenericConstructorParameter<string>.Property));
+            yield return Wrap(typeof(ClassWithNullableInitProperty), nameof(ClassWithNullableInitProperty.Property));
+            yield return Wrap(typeof(ClassWithNullableInitProperty), nameof(ClassWithNullableRequiredProperty.Property));
 
             static object[] Wrap(Type type, string propertyName) => [type, propertyName];
         }
@@ -764,6 +772,26 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonInclude]
             public string? Field;
+        }
+
+        public class ClassWithNullableInitProperty
+        {
+            public string? Property { get; init; }
+        }
+
+        public class ClassWithNonNullableInitProperty
+        {
+            public string Property { get; init; }
+        }
+
+        public class ClassWithNullableRequiredProperty
+        {
+            public required string? Property { get; set; }
+        }
+
+        public class ClassWithNonNullableRequiredProperty
+        {
+            public required string Property { get; set; }
         }
     }
 }

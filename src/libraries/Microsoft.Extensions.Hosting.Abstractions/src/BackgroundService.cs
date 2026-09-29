@@ -41,17 +41,14 @@ namespace Microsoft.Extensions.Hosting
         {
             // Create linked token to allow cancelling executing task from provided token
             _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            CancellationToken stoppingToken = _stoppingCts.Token;
 
-            // Store the task we're executing
-            _executeTask = ExecuteAsync(_stoppingCts.Token);
+            // Execute all of ExecuteAsync asynchronously, and store the task we're executing so that we can wait for it later.
+            _executeTask = cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : Task.Run(() => ExecuteAsync(stoppingToken), CancellationToken.None);
 
-            // If the task is completed then return it, this will bubble cancellation and failure to the caller
-            if (_executeTask.IsCompleted)
-            {
-                return _executeTask;
-            }
-
-            // Otherwise it's running
+            // Always return a completed task.  Any result from ExecuteAsync will be handled by the Host.
             return Task.CompletedTask;
         }
 
@@ -75,7 +72,7 @@ namespace Microsoft.Extensions.Hosting
             }
             finally
             {
-#if NET8_0_OR_GREATER
+#if NET
                 await _executeTask.WaitAsync(cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 #else
                 // Wait until the task completes or the stop token triggers

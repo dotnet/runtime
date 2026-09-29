@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal;
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
 
@@ -75,6 +76,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     // Historical attribute in the System.Reflection namespace
                     if (customAttributeTypeName == "DefaultMemberAttribute")
+                    {
+                        addToTable = true;
+                    }
+                }
+                else if (customAttributeTypeNamespace == "System.Diagnostics.CodeAnalysis")
+                {
+                    // Consulted by the JIT (via canValueClassInstancePointerEscape) to reason
+                    // about escaping receivers of value type instance methods.
+                    if (customAttributeTypeName == "UnscopedRefAttribute")
                     {
                         addToTable = true;
                     }
@@ -334,8 +344,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     string name = customAttributeEntry.TypeNamespace + "." + customAttributeEntry.TypeName;
                     // This hashing algorithm MUST match exactly the logic in NativeCuckooFilter
-                    int hashOfAttribute = ReadyToRunHashCode.NameHashCode(name);
-                    uint hash = unchecked((uint)ReadyToRunHashCode.CombineTwoValuesIntoHash((uint)hashOfAttribute, (uint)customAttributeEntry.Parent));
+                    int hashOfAttribute = VersionResilientHashCode.NameHashCode(System.Text.Encoding.UTF8.GetBytes(name));
+                    uint hash = unchecked((uint)VersionResilientHashCode.CombineTwoValuesIntoHash((uint)hashOfAttribute, (uint)customAttributeEntry.Parent));
                     ushort fingerprint = (ushort)(hash >> 16);
                     if (fingerprint == 0)
                     {
@@ -439,7 +449,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     bucketCount *= 2;
                 }
             }
-            while(tryAgainWithBiggerTable && ((countOfRetries++) < 2));
+            while (tryAgainWithBiggerTable && ((countOfRetries++) < 2));
 
             byte[] result;
             if (tryAgainWithBiggerTable)

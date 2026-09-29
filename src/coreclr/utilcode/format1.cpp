@@ -31,14 +31,12 @@ COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
     DecoderStatus * wbStatus)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // Can't put contract because of SEH
     // CONTRACTL
     // {
     //    NOTHROW;
     //    GC_NOTRIGGER;
-    //    FORBID_FAULT;
     // }
     // CONTRACTL_END
 
@@ -61,15 +59,13 @@ COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
         fErrorInInit = true;
         Code = 0;
         SetLocalVarSigTok(0);
-        if (wbStatus != NULL)
-        {
-            *wbStatus = FORMAT_ERROR;
-        }
     }
     PAL_ENDTRY
 
     if (fErrorInInit)
     {
+        if (wbStatus != NULL)
+            *wbStatus = FORMAT_ERROR;
         return;
     }
 

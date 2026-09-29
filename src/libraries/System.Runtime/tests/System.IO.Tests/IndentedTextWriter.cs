@@ -378,7 +378,7 @@ namespace System.CodeDom.Tests
         [InlineData("")]
         [InlineData("space")]
         [InlineData("    ")]
-        public static void TabString_UsesProvidedString(string tabString)
+        public static void TabString_UsesProvidedString(string? tabString)
         {
             var sb = new StringBuilder();
             var sw = new StringWriter(sb);

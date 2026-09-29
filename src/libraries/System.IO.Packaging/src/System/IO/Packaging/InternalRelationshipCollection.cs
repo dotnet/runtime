@@ -320,11 +320,7 @@ namespace System.IO.Packaging
             {
                 try
                 {
-#if NET
                     relationshipTargetMode = Enum.Parse<TargetMode>(targetModeAttributeValue, ignoreCase: false);
-#else
-                    relationshipTargetMode = (TargetMode)(Enum.Parse(typeof(TargetMode), targetModeAttributeValue, ignoreCase: false));
-#endif
                 }
                 catch (ArgumentNullException argNullEx)
                 {
@@ -389,14 +385,8 @@ namespace System.IO.Packaging
         /// from a relationship part, or we are adding a new relationship</param>
         private PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string? id, bool parsing)
         {
-            if (targetUri is null)
-            {
-                throw new ArgumentNullException(nameof(targetUri));
-            }
-            if (relationshipType is null)
-            {
-                throw new ArgumentNullException(nameof(relationshipType));
-            }
+            ArgumentNullException.ThrowIfNull(targetUri);
+            ArgumentNullException.ThrowIfNull(relationshipType);
 
             ThrowIfInvalidRelationshipType(relationshipType);
 

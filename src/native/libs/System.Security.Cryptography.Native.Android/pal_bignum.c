@@ -13,22 +13,32 @@ int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
 
     // bigNum.toByteArray()
     JNIEnv* env = GetJNIEnv();
-    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
-    jsize bytesLen = (*env)->GetArrayLength(env, bytes);
+    int32_t ret = -1;
+    jsize bytesLen = 0;
+    jsize startingIndex = 0;
+    jbyte leadingByte = 0;
+    INIT_LOCALS(loc, bytes);
+
+    loc[bytes] = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    bytesLen = (*env)->GetArrayLength(env, loc[bytes]);
 
     // We strip the leading zero byte from the byte array.
-    jsize startingIndex = 0;
-    jbyte leadingByte;
-    (*env)->GetByteArrayRegion(env, bytes, 0, 1, &leadingByte);
+    (*env)->GetByteArrayRegion(env, loc[bytes], 0, 1, &leadingByte);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (leadingByte == 0)
     {
         startingIndex++;
         bytesLen--;
     }
 
-    (*env)->GetByteArrayRegion(env, bytes, startingIndex, bytesLen, (jbyte*)output);
-    (*env)->DeleteLocalRef(env, bytes);
-    return CheckJNIExceptions(env) ? FAIL : (int32_t)bytesLen;
+    (*env)->GetByteArrayRegion(env, loc[bytes], startingIndex, bytesLen, (jbyte*)output);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (int32_t)bytesLen;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_GetBigNumBytes(jobject bignum)
@@ -65,8 +75,14 @@ int32_t AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bi
     // Use the array here to get the leading zero byte if it exists.
     // bigNum.toByteArray().length();
     JNIEnv* env = GetJNIEnv();
-    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
-    jsize bytesLen = (*env)->GetArrayLength(env, bytes);
-    (*env)->DeleteLocalRef(env, bytes);
-    return CheckJNIExceptions(env) ? FAIL : (int32_t)bytesLen;
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, bytes);
+
+    loc[bytes] = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (int32_t)(*env)->GetArrayLength(env, loc[bytes]);
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }

@@ -20,9 +20,11 @@
 #ifndef MINIPAL_COM_COMTYPES_H
 #define MINIPAL_COM_COMTYPES_H
 
+#include "../guid.h"
+
 // Perform platform check
-#ifdef _MSC_VER
-    #define DNCP_WINDOWS
+#if defined(_WIN32) || defined(HOST_WINDOWS)
+    #define MINIPAL_COM_WINDOWS
 #endif
 
 // Typedefs typically provided by Windows' headers
@@ -35,6 +37,8 @@
 
     typedef uint8_t BYTE;
     typedef char CHAR;
+    typedef CHAR* LPSTR;
+    typedef CHAR const* LPCSTR;
     typedef int16_t SHORT;
     typedef uint16_t USHORT;
     typedef int32_t INT;
@@ -53,7 +57,7 @@
     typedef int32_t SCODE;
     typedef int32_t DATE;
 
-#ifdef HOST_WINDOWS
+#ifdef MINIPAL_COM_WINDOWS
     typedef wchar_t WCHAR;
 #elif defined(__cplusplus)
     typedef char16_t WCHAR;
@@ -82,22 +86,20 @@
     typedef int32_t HRESULT;
     typedef void* HANDLE;
 
-    typedef struct
-    {
-        uint32_t  Data1;
-        uint16_t  Data2;
-        uint16_t  Data3;
-        uint8_t   Data4[8];
-    } GUID;
-
     typedef GUID IID;
 
     // 00000000-0000-0000-0000-000000000000
+#ifdef __cplusplus
+    extern "C" {
+#endif
     extern IID const GUID_NULL;
+#ifdef __cplusplus
+    }
+#endif
 
     typedef union {
         struct {
-#ifdef DNCP_BIG_ENDIAN
+#ifdef MINIPAL_COM_BIG_ENDIAN
             LONG HighPart;
             DWORD LowPart;
 #else
@@ -110,7 +112,7 @@
 
     typedef union {
         struct {
-#ifdef DNCP_BIG_ENDIAN
+#ifdef MINIPAL_COM_BIG_ENDIAN
             DWORD HighPart;
             DWORD LowPart;
 #else
@@ -121,9 +123,6 @@
         ULONGLONG QuadPart;
     } ULARGE_INTEGER;
 #endif // MINIPAL_COM_TYPEDEFS
-
-typedef char* LPUTF8;
-typedef char const* LPCUTF8;
 
 //
 // Windows headers
@@ -142,15 +141,15 @@ typedef char const* LPCUTF8;
         using CLSID = GUID;
         using REFCLSID = CLSID const&;
 
-        // The DNCP_DEFINE_GUID should only be set in a compilation unit
+        // The MINIPAL_COM_DEFINE_GUID should only be set in a compilation unit
         // to avoid duplicate symbol problems during linking.
-        #if defined(DNCP_DEFINE_GUID)
+        #if defined(MINIPAL_COM_DEFINE_GUID)
             #define EXTERN_GUID(itf,l1,s1,s2,c1,c2,c3,c4,c5,c6,c7,c8) \
                 EXTERN_C constexpr IID itf = {l1,s1,s2,{c1,c2,c3,c4,c5,c6,c7,c8}}
         #else
             #define EXTERN_GUID(itf,l1,s1,s2,c1,c2,c3,c4,c5,c6,c7,c8) \
                 EXTERN_C const IID itf
-        #endif // !DNCP_DEFINE_GUID
+        #endif // !MINIPAL_COM_DEFINE_GUID
 
         // sal
         #define _In_
@@ -188,6 +187,12 @@ typedef char const* LPCUTF8;
         #define STDMETHODCALLTYPE
         #define STDMETHOD(method)       virtual HRESULT STDMETHODCALLTYPE method
         #define STDMETHOD_(type,method) virtual type STDMETHODCALLTYPE method
+        #ifndef STDMETHODIMP
+        #define STDMETHODIMP HRESULT STDMETHODCALLTYPE
+        #endif
+        #ifndef STDMETHODIMP_
+        #define STDMETHODIMP_(type) type STDMETHODCALLTYPE
+        #endif
 
         #define UNALIGNED
         #define PURE = 0
@@ -433,6 +438,6 @@ typedef char const* LPCUTF8;
 
         #define V_DECIMALREF(X)  V_UNION(X, pdecVal)
     #endif // __cplusplus
-#endif // DNCP_INTERFACES
+#endif // MINIPAL_COM_WINHDRS
 
 #endif // MINIPAL_COM_COMTYPES_H

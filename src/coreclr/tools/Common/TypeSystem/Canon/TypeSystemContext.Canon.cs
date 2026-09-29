@@ -97,9 +97,9 @@ namespace Internal.TypeSystem
         {
             switch (name)
             {
-                case TypeSystem.CanonType.FullName:
+                case "System.__Canon":
                     return CanonType;
-                case TypeSystem.UniversalCanonType.FullName:
+                case "System.__UniversalCanon":
                     return UniversalCanonType;
             }
 

@@ -393,6 +393,68 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), timeout.ToString()).DisposeAsync();
         }
 
+        [OuterLoop("We wait for PendingConnectionTimeout which defaults to 5 seconds.")]
+        [Fact]
+        public async Task PendingConnectionTimeout_SignalsAllConnectionAttempts()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            int pendingConnectionAttempts = 0;
+            bool connectionAttemptTimedOut = false;
+
+            using var handler = new SocketsHttpHandler
+            {
+                ConnectCallback = async (context, cancellation) =>
+                {
+                    Interlocked.Increment(ref pendingConnectionAttempts);
+                    try
+                    {
+                        await Assert.ThrowsAsync<TaskCanceledException>(() => Task.Delay(-1, cancellation)).WaitAsync(TestHelper.PassingTestTimeout);
+                        cancellation.ThrowIfCancellationRequested();
+                        throw new UnreachableException();
+                    }
+                    catch (TimeoutException)
+                    {
+                        connectionAttemptTimedOut = true;
+                        throw;
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref pendingConnectionAttempts);
+                    }
+                }
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+            client.Timeout = TimeSpan.FromSeconds(2);
+
+            // Many of these requests should trigger new connection attempts, and all of those should eventually be cleaned up.
+            await Parallel.ForAsync(0, 100, async (_, _) =>
+            {
+                await Assert.ThrowsAnyAsync<TaskCanceledException>(() => client.GetAsync("https://dummy"));
+            });
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            while (Volatile.Read(ref pendingConnectionAttempts) > 0)
+            {
+                Assert.False(connectionAttemptTimedOut);
+
+                if (stopwatch.Elapsed > 2 * TestHelper.PassingTestTimeout)
+                {
+                    Assert.Fail("Connection attempts took too long to get cleaned up");
+                }
+
+                await Task.Delay(100);
+            }
+
+            Assert.False(connectionAttemptTimedOut);
+        }
+
         private sealed class SetTcsContent : StreamContent
         {
             private readonly TaskCompletionSource<bool> _tcs;

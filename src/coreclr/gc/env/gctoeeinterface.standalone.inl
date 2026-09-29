@@ -14,9 +14,9 @@ namespace standalone
             ::GCToEEInterface::SuspendEE(reason);
         }
 
-        void RestartEE(bool bFinishedGC)
+        void RestartEE(bool bUnused)
         {
-            ::GCToEEInterface::RestartEE(bFinishedGC);
+            ::GCToEEInterface::RestartEE(/* bUnused */ true);
         }
 
         void GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
@@ -47,6 +47,16 @@ namespace standalone
         bool RefCountedHandleCallbacks(Object * pObject)
         {
             return ::GCToEEInterface::RefCountedHandleCallbacks(pObject);
+        }
+
+        void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+        {
+            return ::GCToEEInterface::TriggerClientBridgeProcessing(args);
+        }
+
+        bool IsClientBridgeProcessingActive()
+        {
+            return ::GCToEEInterface::IsClientBridgeProcessingActive();
         }
 
         void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -257,6 +267,11 @@ namespace standalone
         void LogErrorToHost(const char *message)
         {
             ::GCToEEInterface::LogErrorToHost(message);
+        }
+
+        uint64_t GetThreadOSThreadId(Thread* thread)
+        {
+            return ::GCToEEInterface::GetThreadOSThreadId(thread);
         }
     };
 }

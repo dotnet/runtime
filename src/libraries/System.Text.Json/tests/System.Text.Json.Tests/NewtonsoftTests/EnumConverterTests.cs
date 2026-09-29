@@ -45,11 +45,13 @@ namespace System.Text.Json.Tests
 
             string json = JsonSerializer.Serialize(enumClass, new JsonSerializerOptions { WriteIndented = true });
 
-            Assert.Equal(@"{
-  ""StoreColor"": 2,
-  ""NullableStoreColor1"": 8,
-  ""NullableStoreColor2"": null
-}".NormalizeLineEndings(), json);
+            Assert.Equal("""
+                {
+                  "StoreColor": 2,
+                  "NullableStoreColor1": 8,
+                  "NullableStoreColor2": null
+                }
+                """.NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -64,11 +66,13 @@ namespace System.Text.Json.Tests
 
             string json = JsonSerializer.Serialize(enumClass, new JsonSerializerOptions { WriteIndented = true });
 
-            Assert.Equal(@"{
-  ""StoreColor"": 1000,
-  ""NullableStoreColor1"": 1000,
-  ""NullableStoreColor2"": null
-}".NormalizeLineEndings(), json);
+            Assert.Equal("""
+                {
+                  "StoreColor": 1000,
+                  "NullableStoreColor1": 1000,
+                  "NullableStoreColor2": null
+                }
+                """.NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -83,11 +87,13 @@ namespace System.Text.Json.Tests
 
             string json = JsonSerializer.Serialize(enumClass, new JsonSerializerOptions { WriteIndented = true });
 
-            Assert.Equal(@"{
-  ""StoreColor"": 10,
-  ""NullableStoreColor1"": 0,
-  ""NullableStoreColor2"": 11
-}".NormalizeLineEndings(), json);
+            Assert.Equal("""
+                {
+                  "StoreColor": 10,
+                  "NullableStoreColor1": 0,
+                  "NullableStoreColor2": 11
+                }
+                """.NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -99,10 +105,12 @@ namespace System.Text.Json.Tests
 
             string json = JsonSerializer.Serialize(negativeEnumClass, new JsonSerializerOptions { WriteIndented = true });
 
-            Assert.Equal(@"{
-  ""Value1"": -2,
-  ""Value2"": 6
-}".NormalizeLineEndings(), json);
+            Assert.Equal("""
+                {
+                  "Value1": -2,
+                  "Value2": 6
+                }
+                """.NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -116,10 +124,12 @@ namespace System.Text.Json.Tests
 
             string json = JsonSerializer.Serialize(negativeEnumClass, new JsonSerializerOptions { WriteIndented = true });
 
-            Assert.Equal(@"{
-  ""Value1"": -1,
-  ""Value2"": -2147483648
-}".NormalizeLineEndings(), json);
+            Assert.Equal("""
+                {
+                  "Value1": -1,
+                  "Value2": -2147483648
+                }
+                """.NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -138,14 +148,16 @@ namespace System.Text.Json.Tests
 
             string json1 = JsonSerializer.Serialize(lfoo, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
-            Assert.Equal(@"[
-  6,
-  1,
-  2,
-  4,
-  5,
-  2147483647
-]".NormalizeLineEndings(), json1);
+            Assert.Equal("""
+                [
+                  6,
+                  1,
+                  2,
+                  4,
+                  5,
+                  2147483647
+                ]
+                """.NormalizeLineEndings(), json1);
 
             IList<Foo> foos = JsonSerializer.Deserialize<List<Foo>>(json1);
 
@@ -161,11 +173,13 @@ namespace System.Text.Json.Tests
 
             string json2 = JsonSerializer.Serialize(lbar, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
-            Assert.Equal(@"[
-  0,
-  1,
-  2
-]".NormalizeLineEndings(), json2);
+            Assert.Equal("""
+                [
+                  0,
+                  1,
+                  2
+                ]
+                """.NormalizeLineEndings(), json2);
 
             IList<Bar> bars = JsonSerializer.Deserialize<List<Bar>>(json2);
 
@@ -237,10 +251,12 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void DeserializeNegativeEnum()
         {
-            string json = @"{
-  ""Value1"": -1,
-  ""Value2"": -2147483648
-}";
+            string json = """
+                {
+                  "Value1": -1,
+                  "Value2": -2147483648
+                }
+                """;
             NegativeEnumClass negativeEnumClass = JsonSerializer.Deserialize<NegativeEnumClass>(json);
             Assert.Equal(NegativeEnum.Negative, negativeEnumClass.Value1);
             Assert.Equal((NegativeEnum)int.MinValue, negativeEnumClass.Value2);
@@ -249,11 +265,13 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void DeserializeEnumClass()
         {
-            string json = @"{
-  ""StoreColor"": 2,
-  ""NullableStoreColor1"": 8,
-  ""NullableStoreColor2"": null
-}";
+            string json = """
+                {
+                  "StoreColor": 2,
+                  "NullableStoreColor1": 8,
+                  "NullableStoreColor2": null
+                }
+                """;
             EnumClass enumClass = JsonSerializer.Deserialize<EnumClass>(json);
             Assert.Equal(StoreColor.Red, enumClass.StoreColor);
             Assert.Equal(StoreColor.White, enumClass.NullableStoreColor1);
@@ -263,11 +281,13 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void DeserializeFlagEnum()
         {
-            string json = @"{
-  ""StoreColor"": 10,
-  ""NullableStoreColor1"": 0,
-  ""NullableStoreColor2"": 11
-}";
+            string json = """
+                {
+                  "StoreColor": 10,
+                  "NullableStoreColor1": 0,
+                  "NullableStoreColor2": 11
+                }
+                """;
             EnumClass enumClass = JsonSerializer.Deserialize<EnumClass>(json);
             Assert.Equal(StoreColor.Red | StoreColor.White, enumClass.StoreColor);
             Assert.Equal((StoreColor)0, enumClass.NullableStoreColor1);

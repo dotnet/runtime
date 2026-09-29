@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
+    <!-- Needed for UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
     <!-- This test takes a very long time when run with runincontext -->
@@ -29,6 +28,9 @@
     <Compile Include="neural-dat.cs" />
     <Compile Include="numericsort.cs" />
     <Compile Include="utility.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <PropertyGroup>
     <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark\obj\project.assets.json</ProjectAssetsFile>

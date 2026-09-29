@@ -91,6 +91,58 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithArraylikeMembers
+    {
+        public int[] IntAField;
+        public int[]? NIntAField;
+
+        public List<int> IntLField;
+        [XmlArray(IsNullable = true)]
+        public List<int>? NIntLField;
+
+        public int[] IntAProp { get; set; }
+        [XmlArray(IsNullable = true)]
+        public int[]? NIntAProp { get; set; }
+
+        public List<int> IntLProp { get; set; }
+        public List<int>? NIntLProp { get; set; }
+
+        private static Random r = new Random();
+        public static TypeWithArraylikeMembers CreateWithPopulatedMembers() => new TypeWithArraylikeMembers
+        {
+            IntAField = new int[] { r.Next(), r.Next(), r.Next() },
+            NIntAField = new int[] { r.Next(), r.Next() },
+            IntLField = new List<int> { r.Next() },
+            NIntLField = new List<int> { r.Next(), r.Next() },
+            IntAProp = new int[] { r.Next(), r.Next() },
+            NIntAProp = new int[] { r.Next(), r.Next(), r.Next() },
+            IntLProp = new List<int> { r.Next(), r.Next(), r.Next() },
+            NIntLProp = new List<int> { r.Next() },
+        };
+        public static TypeWithArraylikeMembers CreateWithEmptyMembers() => new TypeWithArraylikeMembers
+        {
+            IntAField = new int[] { },
+            NIntAField = new int[] { },
+            IntLField = new List<int> { },
+            NIntLField = new List<int> { },
+            IntAProp = new int[] { },
+            NIntAProp = new int[] { },
+            IntLProp = new List<int> { },
+            NIntLProp = new List<int> { },
+        };
+        public static TypeWithArraylikeMembers CreateWithNullMembers() => new TypeWithArraylikeMembers
+        {
+            IntAField = null,
+            NIntAField = null,
+            IntLField = null,
+            NIntLField = null,
+            IntAProp = null,
+            NIntAProp = null,
+            IntLProp = null,
+            NIntLProp = null,
+        };
+    }
+
     public struct StructNotSerializable
     {
         public int value;
@@ -316,6 +368,27 @@ namespace SerializationTypes
     public class BuiltInTypes
     {
         public byte[] ByteArray { get; set; }
+    }
+
+    public class TypeWithBuiltInTypedMembers
+    {
+        public string StringMember;
+        public int IntMember;
+        public int? NullableIntMember;
+        public List<string> ListMember;
+        public int[] ArrayMember;
+    }
+
+    public class TypeWithNullableBuiltInTypedMembers
+    {
+        [XmlElement(IsNullable = true)]
+        public string StringMember;
+
+        public int? NullableIntMember;
+
+        public int[] ArrayMember;
+
+        public List<string> ListMember;
     }
 
     public class TypeA
@@ -656,6 +729,61 @@ namespace SerializationTypes
             writer.WriteAttributeString("BoolValue", BoolValue.ToString());
         }
     }
+
+    public struct StructImplementingIXmlSerializableWithoutParameterlessConstructor : IXmlSerializable
+    {
+        public static bool WriteXmlInvoked = false;
+        public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+    }
+
+    public struct StructImplementingIXmlSerializableWithParameterlessConstructor : IXmlSerializable
+    {
+        public static bool WriteXmlInvoked = false;
+        public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+
+        public StructImplementingIXmlSerializableWithParameterlessConstructor() { }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+    }
+
     public class TypeWithPropertyNameSpecified
     {
         public string MyField;
@@ -698,8 +826,7 @@ namespace SerializationTypes
 
     public class CustomDocument
     {
-        private XmlDocument? _doc;
-        public XmlDocument Document => _doc ??= new XmlDocument();
+        public XmlDocument Document => field ??= new XmlDocument();
 
         [XmlAnyElement]
         public XmlNode[] Items
@@ -873,6 +1000,36 @@ namespace SerializationTypes
         }
     }
 
+    public class BaseTypeWithShouldSerializeMethod
+    {
+        public string Foo { get; set; } = "default";
+
+        [System.Xml.Serialization.XmlAttribute]
+        public string Bar { get; set; } = "default";
+
+        public bool ShouldSerializeFoo()
+        {
+            return Foo != "default";
+        }
+
+        public bool ShouldSerializeBar()
+        {
+            return Bar != "default";
+        }
+    }
+
+    public class DerivedTypeWithInheritedShouldSerialize : BaseTypeWithShouldSerializeMethod
+    {
+    }
+
+    public class TypeWithFieldBackedSpecifiedMember
+    {
+        public string Foo { get; set; }
+
+        [System.Xml.Serialization.XmlIgnore]
+        public bool FooSpecified;
+    }
+
     public class KnownTypesThroughConstructorWithArrayProperties
     {
         public object StringArrayValue;
@@ -931,12 +1088,50 @@ namespace SerializationTypes
         public MoreChoices[] ChoiceArray;
     }
 
+    public class TypeWithPropertyHavingComplexChoice
+    {
+        // The ManyChoices field can contain an array
+        // of choices. Each choice must be matched to
+        // an array item in the ChoiceArray field.
+        [XmlChoiceIdentifier("ChoiceArray")]
+        [XmlElement("Item", typeof(ComplexChoiceA))]
+        [XmlElement("Amount", typeof(int))]
+        public object[] ManyChoices;
+
+        // TheChoiceArray field contains the enumeration
+        // values, one for each item in the ManyChoices array.
+        [XmlIgnore]
+        public MoreChoices[] ChoiceArray;
+    }
+
     public enum MoreChoices
     {
         None,
-        Item,
-        Amount
+        Item = 12,
+        Amount = 27
     }
+
+    [XmlInclude(typeof(ComplexChoiceB))]
+    public class ComplexChoiceA
+    {
+        public string Name { get; set; }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is ComplexChoiceA a)
+            {
+                return a.Name == Name;
+            }
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            //return HashCode.Combine(Name);
+            return Name.GetHashCode();
+        }
+    }
+    public class ComplexChoiceB : ComplexChoiceA { }
 
     public class TypeWithFieldsOrdered
     {
@@ -1031,6 +1226,38 @@ public class TypeWithDateTimeOffsetProperties
     [DefaultValue(typeof(DateTimeOffset), "1/1/0001 0:00:00 AM +00:00")]
     public DateTimeOffset? NullableDTOWithDefault { get; set; }
 }
+
+public class TypeWithDateAndTimeOnlyProperties
+{
+    public const string DefaultDateString = "1969-07-20";
+    public const string DefaultTimeString = "20:17:40";
+
+    public DateOnly Today { get; set; }
+    [XmlElement(ElementName = "MyDate")]
+    public DateOnly CustomDate { get; set; }
+    [DefaultValue(typeof(DateOnly), DefaultDateString)]
+    public DateOnly DefaultDate { get; set; } = DateOnly.Parse(DefaultDateString);
+    public DateOnly? NullableDate { get; set; }
+    public DateOnly? NullableDateWithValue { get; set; }
+    [DefaultValue(typeof(DateOnly?), DefaultDateString)]
+    public DateOnly? NullableDefaultDate { get; set; }
+
+    public TimeOnly Now { get; set; }
+    [XmlElement(ElementName = "MyTime")]
+    public TimeOnly CustomTime { get; set; }
+    [DefaultValue(typeof(TimeOnly), DefaultTimeString)]
+    public TimeOnly DefaultTime { get; set; } = TimeOnly.Parse(DefaultTimeString);
+    public TimeOnly? NullableTime { get; set; }
+    public TimeOnly? NullableTimeWithValue { get; set; }
+    [DefaultValue(typeof(TimeOnly), DefaultTimeString)]
+    public TimeOnly? NullableDefaultTime { get; set; }
+}
+
+public class DateOnlyWrapper { public DateOnly TestValue { get; set; } }
+public class TimeOnlyWrapper { public TimeOnly TestValue { get; set; } }
+public class TimeOnlyAsXsdTimeWrapper { [XmlElement(DataType = "time")] public TimeOnly TestValue { get; set; } }
+public class DateTimeDateWrapper { [XmlElement(DataType = "date")] public DateTime TestValue { get; set; } }
+public class DateTimeTimeWrapper { [XmlElement(DataType = "time")] public DateTime TestValue { get; set; } }
 
 public class TypeWithTimeSpanProperty
 {
@@ -1265,7 +1492,7 @@ public class PurchaseOrder
         OrderedItem item = new OrderedItem();
         item.ItemName = "Widget S";
         item.Description = "Small widget";
-        item.UnitPrice = (decimal)5.23;
+        item.UnitPrice = 5.23m;
         item.Quantity = 3;
         item.Calculate();
 
@@ -1277,7 +1504,7 @@ public class PurchaseOrder
             subTotal += oi.LineTotal;
         }
         po.SubTotal = subTotal;
-        po.ShipCost = (decimal)12.51;
+        po.ShipCost = 12.51m;
         po.TotalCost = po.SubTotal + po.ShipCost;
         return po;
     }
@@ -1565,4 +1792,28 @@ public struct XElementStruct
 public class XElementArrayWrapper
 {
     public XElement[] xelements;
+}
+
+// Container used by tests to validate DateTimeOffset round-tripping when
+// serialized inside an IXmlSerializable type that internally leverages
+// DataContractSerializer (regression coverage).
+public class DateTimeOffsetIXmlSerializableContainer : IXmlSerializable
+{
+    public DateTimeOffset Date { get; set; }
+
+    public XmlSchema GetSchema() => null;
+
+    public void WriteXml(XmlWriter writer)
+    {
+        var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
+        innerSerializer.WriteObject(writer, Date);
+    }
+
+    public void ReadXml(XmlReader reader)
+    {
+        var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
+        reader.ReadStartElement();
+        Date = (DateTimeOffset)innerSerializer.ReadObject(reader);
+        reader.ReadEndElement();
+    }
 }

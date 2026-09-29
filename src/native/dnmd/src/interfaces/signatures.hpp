@@ -6,10 +6,14 @@
 
 #include <cor.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <functional>
 #include <cassert>
+#include <memory>
+#include <type_traits>
+#include <utility>
 
 /// @brief A span that that supports owning a specified number of elements in itself.
 /// @tparam T The type of the elements in the span.
@@ -17,31 +21,42 @@
 template <typename T, size_t NumInlineElements>
 struct base_inline_span : public span<T>
 {
-    base_inline_span() : span<T>(_storage.data(), 0) {}
+    base_inline_span() : span<T>()
+    {
+        this->_ptr = _storage.data();
+    }
 
-    base_inline_span(size_t size) : span<T>(size > NumInlineElements ? new T[size] : _storage.data(), size) {}
+    base_inline_span(size_t size) : span<T>()
+    {
+        this->_ptr = size > NumInlineElements ? base_inline_span::allocate_noninline_memory(size) : _storage.data();
+        this->_size = size;
+    }
 
     base_inline_span(base_inline_span&& other)
+        : base_inline_span()
     {
         *this = std::move(other);
     }
 
-    base_inline_span& operator=(base_inline_span&& other) noexcept
+    base_inline_span& operator=(base_inline_span&& other) noexcept(std::is_nothrow_copy_assignable<T>::value)
     {
-        if (size() > NumInlineElements)
-        {
-            delete[] this->_ptr;
-            this->_ptr = nullptr;
-        }
+        if (this == &other)
+            return *this;
 
         if (other.size() > NumInlineElements)
         {
+            if (this->size() > NumInlineElements)
+                base_inline_span::free_noninline_memory(this->_ptr, this->size());
             this->_ptr = other._ptr;
-            other._ptr = nullptr;
+            this->_size = other._size;
+            other._ptr = other._storage.data();
+            other._size = 0;
         }
         else
         {
             std::copy(other.begin(), other.end(), _storage.begin());
+            if (this->size() > NumInlineElements)
+                base_inline_span::free_noninline_memory(this->_ptr, this->size());
             this->_ptr = _storage.data();
             this->_size = other._size;
         }
@@ -51,41 +66,41 @@ struct base_inline_span : public span<T>
 
     void resize(size_t newSize)
     {
-        if (size() > NumInlineElements && newSize < NumInlineElements)
+        if (this->size() > NumInlineElements && newSize <= NumInlineElements)
         {
             // Transitioning from a non-inline buffer to the inline buffer.
             std::copy(this->begin(), this->begin() + newSize, _storage.begin());
-            delete[] this->_ptr;
+            base_inline_span::free_noninline_memory(this->_ptr, this->size());
             this->_ptr = _storage.data();
+            this->_size = newSize;
         }
-        else if (size() <= NumInlineElements && newSize <= NumInlineElements)
+        else if (this->size() <= NumInlineElements && newSize <= NumInlineElements)
         {
             // We're staying within the inline buffer, so just update the size.
             this->_size = newSize;
         }
-        else if (size() > NumInlineElements && newSize < size())
+        else if (this->size() > NumInlineElements && newSize <= this->size())
         {
             // Shrinking the buffer, but still keeping it as a non-inline buffer.
             this->_size = newSize;
         }
         else
         {
-            // Growing the buffer from the inline buffer to a non-inline buffer.
-            assert(size() <= NumInlineElements && newSize > NumInlineElements);
-            T* newPtr = new T[newSize];
-            std::copy(this->begin(), this->end(), newPtr);
-            this->_ptr = newPtr;
+            std::unique_ptr<T[]> newBuffer(base_inline_span::allocate_noninline_memory(newSize));
+            std::copy(this->begin(), this->end(), newBuffer.get());
+            if (this->size() > NumInlineElements)
+                base_inline_span::free_noninline_memory(this->_ptr, this->size());
+            this->_ptr = newBuffer.release();
             this->_size = newSize;
         }
     }
 
     ~base_inline_span()
     {
-        if (size() > NumInlineElements)
+        if (this->size() > NumInlineElements)
         {
             assert(this->_ptr != _storage.data());
-            delete[] this->_ptr;
-            this->_ptr = nullptr;
+            base_inline_span::free_noninline_memory(this->_ptr, this->size());
         }
         else
         {
@@ -95,6 +110,19 @@ struct base_inline_span : public span<T>
 
 private:
     std::array<T, NumInlineElements> _storage;
+
+    static T* allocate_noninline_memory(size_t numElements)
+    {
+        assert(numElements > NumInlineElements);
+        return new T[numElements];
+    }
+
+    static void free_noninline_memory(T* ptr, size_t numElements)
+    {
+        UNREFERENCED_PARAMETER(numElements);
+        assert(numElements > NumInlineElements);
+        delete[] ptr;
+    }
 };
 
 /// @brief An span with inline storage for up to 64 bytes.

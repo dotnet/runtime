@@ -32,6 +32,11 @@ namespace Internal.TypeSystem
         public abstract bool ComputeContainsGCPointers(DefType type);
 
         /// <summary>
+        /// Compute whether the fields of the specified type contains a byref.
+        /// </summary>
+        public abstract bool ComputeContainsByRefs(DefType type);
+
+        /// <summary>
         /// Compute whether the specified type is a value type that transitively has UnsafeValueTypeAttribute
         /// </summary>
         public abstract bool ComputeIsUnsafeValueType(DefType type);
@@ -75,6 +80,21 @@ namespace Internal.TypeSystem
         StaticRegionSizesAndFields
     }
 
+    public struct FieldAndOffset
+    {
+        public static readonly LayoutInt InvalidOffset = new LayoutInt(int.MaxValue);
+
+        public readonly FieldDesc Field;
+
+        public readonly LayoutInt Offset;
+
+        public FieldAndOffset(FieldDesc field, LayoutInt offset)
+        {
+            Field = field;
+            Offset = offset;
+        }
+    }
+
     public struct ComputedInstanceFieldLayout
     {
         public LayoutInt FieldSize;
@@ -85,6 +105,7 @@ namespace Internal.TypeSystem
         public bool IsAutoLayoutOrHasAutoLayoutFields;
         public bool IsInt128OrHasInt128Fields;
         public bool IsVectorTOrHasVectorTFields;
+        public bool IsDecimalFloatingPointOrHasDecimalFloatingPointFields;
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.

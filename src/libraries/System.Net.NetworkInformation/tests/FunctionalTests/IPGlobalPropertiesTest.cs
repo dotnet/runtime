@@ -34,6 +34,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Expected behavior is different on Android")]
+        [SkipOnPlatform(TestPlatforms.OpenBSD, "TCP/UDP connection enumeration is unsupported on OpenBSD")]
         public void IPGlobalProperties_AccessAllMethods_NoErrors()
         {
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
@@ -129,6 +130,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [MemberData(nameof(Loopbacks))]
         [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        [SkipOnPlatform(TestPlatforms.OpenBSD, "TCP connection enumeration is unsupported on OpenBSD")]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -145,6 +147,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [MemberData(nameof(Loopbacks))]
         [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        [SkipOnPlatform(TestPlatforms.OpenBSD, "UDP listener enumeration is unsupported on OpenBSD")]
         public void IPGlobalProperties_UdpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp))
@@ -158,7 +161,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android))]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.OpenBSD))]
         [MemberData(nameof(Loopbacks))]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
         {
@@ -190,6 +193,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        [SkipOnPlatform(TestPlatforms.OpenBSD, "TCP connection enumeration is unsupported on OpenBSD")]
         public void IPGlobalProperties_TcpActiveConnections_NotListening()
         {
             TcpConnectionInformation[] tcpCconnections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
@@ -206,6 +210,16 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEmpty(props.GetUnicastAddresses());
             Assert.NotEmpty(await props.GetUnicastAddressesAsync());
             Assert.NotEmpty(await Task.Factory.FromAsync(props.BeginGetUnicastAddresses, props.EndGetUnicastAddresses, null));
+        }
+
+        [Fact]
+        public void IPGlobalProperties_DomainName_ReturnsEmptyStringWhenNotSet()
+        {
+            IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/109280")]
+            string expectedDomainName = PlatformDetection.IsAndroid ? "localdomain" : string.Empty;
+            Assert.Equal(expectedDomainName, gp.DomainName);
         }
     }
 }

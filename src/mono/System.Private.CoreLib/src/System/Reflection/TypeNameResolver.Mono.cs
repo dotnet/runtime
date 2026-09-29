@@ -18,7 +18,7 @@ namespace System.Reflection
         private Func<Assembly?, string, bool, Type?>? _typeResolver;
         private bool _throwOnError;
         private bool _ignoreCase;
-        private void* _stackMark;
+        private ref StackCrawlMark _stackMark;
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
@@ -52,7 +52,7 @@ namespace System.Reflection
                 _typeResolver = typeResolver,
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
-                _stackMark = Unsafe.AsPointer(ref stackMark)
+                _stackMark = ref stackMark
             }.Resolve(parsed);
         }
 
@@ -69,11 +69,9 @@ namespace System.Reflection
             }
             else
             {
-                ref StackCrawlMark stackMark = ref Unsafe.AsRef<StackCrawlMark>(_stackMark);
-
                 if (_throwOnError)
                 {
-                    assembly = Assembly.Load(name, ref stackMark, null);
+                    assembly = Assembly.Load(name, ref _stackMark, null);
                 }
                 else
                 {
@@ -81,7 +79,7 @@ namespace System.Reflection
                     // Other exceptions like BadImangeFormatException should still fly.
                     try
                     {
-                        assembly = Assembly.Load(name, ref stackMark, null);
+                        assembly = Assembly.Load(name, ref _stackMark, null);
                     }
                     catch (FileNotFoundException)
                     {
@@ -114,7 +112,8 @@ namespace System.Reflection
                     {
                         throw new TypeLoadException(assembly is null ?
                             SR.Format(SR.TypeLoad_ResolveType, escapedTypeName) :
-                            SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, escapedTypeName, assembly.FullName));
+                            SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, escapedTypeName, assembly.FullName),
+                            typeName: escapedTypeName);
                     }
                     return null;
                 }
@@ -123,9 +122,7 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
-                    ref StackCrawlMark stackMark = ref Unsafe.AsRef<StackCrawlMark>(_stackMark);
-
-                    type = RuntimeType.GetType(escapedTypeName, _throwOnError, _ignoreCase, ref stackMark);
+                    type = RuntimeType.GetType(escapedTypeName, _throwOnError, _ignoreCase, ref _stackMark);
                 }
                 else
                 {
@@ -151,7 +148,8 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeNameHelpers.Unescape(escapedTypeName)));
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeName.Unescape(escapedTypeName)),
+                            typeName: escapedTypeName);
                     }
                     return null;
                 }

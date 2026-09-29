@@ -182,9 +182,7 @@ namespace System
 
                 while (buffer.Length >= sizeof(uint))
                 {
-                    Unsafe.WriteUnaligned(
-                        ref MemoryMarshal.GetReference(buffer),
-                        BitOperations.RotateLeft(s1 * 5, 7) * 9);
+                    MemoryMarshal.Write(buffer, BitOperations.RotateLeft(s1 * 5, 7) * 9);
 
                     // Update PRNG state.
                     uint t = s1 << 9;

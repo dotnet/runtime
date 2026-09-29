@@ -13,6 +13,7 @@
 #include "metadataemit.hpp"
 #include "threadsafe.hpp"
 #include "internal/metadataimport.hpp"
+#include <minipal/guid.h>
 
 #include <cstring>
 
@@ -20,13 +21,13 @@ namespace
 {
     class MDDispenser final : public TearOffBase<IMetaDataDispenserEx>
     {
-        bool _threadSafe;
+        bool _threadSafe = false;
     private:
         minipal::com_ptr<ControllingIUnknown> CreateExposedObject(minipal::com_ptr<ControllingIUnknown> unknown, DNMDOwner* owner)
         {
             mdhandle_view handle_view{ owner };
             MetadataEmit* emit = unknown->CreateAndAddTearOff<MetadataEmit>(handle_view);
-            MetadataImportRO* import = unknown->CreateAndAddTearOff<MetadataImportRO>(std::move(handle_view));
+            MetadataImportRO* import = unknown->CreateAndAddTearOff<MetadataImportRO>(handle_view);
             if (!_threadSafe)
             {
                 (void)unknown->CreateAndAddTearOff<InternalMetadataImportRO>(handle_view);
@@ -34,7 +35,7 @@ namespace
             }
             minipal::com_ptr<ControllingIUnknown> threadSafeUnknown;
             threadSafeUnknown.Attach(new ControllingIUnknown());
-            
+
             // Define an IDNMDOwner* tear-off here so the thread-safe object can be identified as a DNMD object.
             (void)threadSafeUnknown->CreateAndAddTearOff<DelegatingDNMDOwner>(handle_view);
             (void)threadSafeUnknown->CreateAndAddTearOff<ThreadSafeImportEmit<MetadataImportRO, MetadataEmit>>(std::move(unknown), import, emit);
@@ -78,20 +79,23 @@ namespace
             mdhandle_ptr md_ptr { md_create_new_handle() };
             if (md_ptr == nullptr)
                 return E_OUTOFMEMORY;
-            
+
             // Initialize the MVID of the new image.
             mdcursor_t moduleCursor;
             if (!md_token_to_cursor(md_ptr.get(), TokenFromRid(1, mdtModule), &moduleCursor))
                 return E_FAIL;
-            
+
+            GUID guid;
+            if (!minipal_guid_v4_create(&guid))
+                return E_FAIL;
+
+            static_assert(sizeof(mdguid_t) == sizeof(GUID), "DNMD and minipal GUID sizes must match");
             mdguid_t mvid;
-            HRESULT hr = PAL_CoCreateGuid(reinterpret_cast<GUID*>(&mvid));
-            if (FAILED(hr))
-                return hr;
-            
-            if (1 != md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, 1, &mvid))
+            std::memcpy(&mvid, &guid, sizeof(mvid));
+
+            if (!md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, mvid))
                 return E_OUTOFMEMORY;
-            
+
             minipal::com_ptr<ControllingIUnknown> obj;
             obj.Attach(new (std::nothrow) ControllingIUnknown());
             if (obj == nullptr)
@@ -165,11 +169,11 @@ namespace
                 if (dwOpenFlags & ofReadOnly)
                 {
                     // If we're read-only, then we don't need to deal with thread safety.
-                    (void)obj->CreateAndAddTearOff<MetadataImportRO>(std::move(handle_view));
+                    (void)obj->CreateAndAddTearOff<MetadataImportRO>(handle_view);
                     (void)obj->CreateAndAddTearOff<InternalMetadataImportRO>(handle_view);
                     return obj->QueryInterface(riid, (void**)ppIUnk);
                 }
-                
+
                 // If we're read-write, go through our helper to create an object that respects all of the options
                 // (as the various options affect writing operations only).
                 return CreateExposedObject(std::move(obj), owner)->QueryInterface(riid, (void**)ppIUnk);

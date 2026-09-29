@@ -12,7 +12,7 @@ namespace System.Formats.Nrbf
         public override System.Formats.Nrbf.SerializationRecordId Id { get { throw null; } }
         public abstract System.ReadOnlySpan<int> Lengths { get; }
         public int Rank { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public System.Array GetArray(System.Type expectedArrayType, bool allowNulls = true) { throw null; }
     }
     public abstract partial class ClassRecord : System.Formats.Nrbf.SerializationRecord
@@ -45,11 +45,11 @@ namespace System.Formats.Nrbf
     }
     public static partial class NrbfDecoder
     {
-        public static System.Formats.Nrbf.SerializationRecord Decode(System.IO.Stream payload, out System.Collections.Generic.IReadOnlyDictionary<System.Formats.Nrbf.SerializationRecordId, System.Formats.Nrbf.SerializationRecord> recordMap, System.Formats.Nrbf.PayloadOptions options=null, bool leaveOpen=false) { throw null; }
-        public static System.Formats.Nrbf.SerializationRecord Decode(System.IO.Stream payload, System.Formats.Nrbf.PayloadOptions? options=null, bool leaveOpen=false) { throw null; }
-        public static System.Formats.Nrbf.ClassRecord DecodeClassRecord(System.IO.Stream payload, System.Formats.Nrbf.PayloadOptions? options=null, bool leaveOpen=false) { throw null; }
-        public static bool StartsWithPayloadHeader(System.ReadOnlySpan<byte> bytes) { throw null; }
+        public static System.Formats.Nrbf.SerializationRecord Decode(System.IO.Stream payload, out System.Collections.Generic.IReadOnlyDictionary<System.Formats.Nrbf.SerializationRecordId, System.Formats.Nrbf.SerializationRecord> recordMap, System.Formats.Nrbf.PayloadOptions? options = null, bool leaveOpen = false) { throw null; }
+        public static System.Formats.Nrbf.SerializationRecord Decode(System.IO.Stream payload, System.Formats.Nrbf.PayloadOptions? options = null, bool leaveOpen = false) { throw null; }
+        public static System.Formats.Nrbf.ClassRecord DecodeClassRecord(System.IO.Stream payload, System.Formats.Nrbf.PayloadOptions? options = null, bool leaveOpen = false) { throw null; }
         public static bool StartsWithPayloadHeader(System.IO.Stream stream) { throw null; }
+        public static bool StartsWithPayloadHeader(System.ReadOnlySpan<byte> bytes) { throw null; }
     }
     public sealed partial class PayloadOptions
     {
@@ -76,8 +76,9 @@ namespace System.Formats.Nrbf
         public abstract System.Reflection.Metadata.TypeName TypeName { get; }
         public bool TypeNameMatches(System.Type type) { throw null; }
     }
-    public partial struct SerializationRecordId : System.IEquatable<System.Formats.Nrbf.SerializationRecordId>
+    public readonly partial struct SerializationRecordId : System.IEquatable<System.Formats.Nrbf.SerializationRecordId>
     {
+        private readonly int _dummyPrimitive;
         public bool Equals(System.Formats.Nrbf.SerializationRecordId other) { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }

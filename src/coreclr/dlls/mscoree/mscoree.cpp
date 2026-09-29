@@ -6,13 +6,9 @@
 #include "stdafx.h"                     // Standard header.
 
 #include <utilcode.h>                   // Utility helpers.
-#include <posterror.h>                  // Error handlers
-#define INIT_GUIDS
 #include <corpriv.h>
 #include <winwrap.h>
 #include <mscoree.h>
-#include "shimload.h"
-#include "metadataexports.h"
 #include "ex.h"
 #include <dnmd_interfaces.hpp>
 
@@ -46,18 +42,16 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
 #endif // !defined(CORECLR_EMBEDDED)
 
-extern void* GetClrModuleBase();
-
 // ---------------------------------------------------------------------------
 // %%Function: MetaDataGetDispenser
 // This function gets the Dispenser interface given the CLSID and REFIID.
+// Exported from coreclr and used by external profilers.
 // ---------------------------------------------------------------------------
-STDAPI DLLEXPORT MetaDataGetDispenser(            // Return HRESULT
+STDAPI DLLEXPORT MetaDataGetDispenser(  // Return HRESULT
     REFCLSID    rclsid,                 // The class to desired.
     REFIID      riid,                   // Interface wanted on class factory.
     LPVOID FAR  *ppv)                   // Return interface pointer here.
 {
-
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -65,16 +59,11 @@ STDAPI DLLEXPORT MetaDataGetDispenser(            // Return HRESULT
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
 
-    NonVMComHolder<IClassFactory> pcf(NULL);
-    HRESULT hr;
+    if (rclsid != CLSID_CorMetaDataDispenser)
+        return CLASS_E_CLASSNOTAVAILABLE;
 
-    IfFailGo(MetaDataDllGetClassObject(rclsid, IID_IClassFactory, (void **) &pcf));
-    hr = pcf->CreateInstance(NULL, riid, ppv);
-
-ErrExit:
-    return (hr);
+    return CreateMetaDataDispenser(riid, ppv);
 }
-
 // ---------------------------------------------------------------------------
 // %%Function: GetMetaDataInternalInterface
 // This function gets the IMDInternalImport given the metadata on memory.
@@ -97,7 +86,9 @@ STDAPI DLLEXPORT GetMetaDataInternalInterface(
     if (riid == IID_IMDInternalImport)
     {
         ReleaseHolder<IMetaDataDispenser> pDispenser;
-        GetDispenser(IID_IMetaDataDispenser, (void**)&pDispenser);
+        HRESULT hr = GetDispenser(IID_IMetaDataDispenser, (void**)&pDispenser);
+        if (FAILED(hr))
+            return hr;
         return pDispenser->OpenScopeOnMemory(pData, cbData, flags, IID_IMDInternalImport, (IUnknown**)ppv);
     }
 
@@ -165,7 +156,7 @@ STDAPI ReOpenMetaDataWithMemory(
         PRECONDITION(CheckPointer(pData));
     } CONTRACTL_END;
 
-    return MDReOpenMetaDataWithMemory(pUnk, pData, cbData);
+    return MDReOpenMetaDataWithMemory(pUnk, pData, cbData, 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -187,8 +178,10 @@ STDAPI ReOpenMetaDataWithMemoryEx(
         PRECONDITION(CheckPointer(pData));
     } CONTRACTL_END;
 
-    return MDReOpenMetaDataWithMemoryEx(pUnk, pData, cbData, dwReOpenFlags);
+    return MDReOpenMetaDataWithMemory(pUnk, pData, cbData, dwReOpenFlags);
 }
+
+HRESULT SetInternalSystemDirectory();
 
 static DWORD g_dwSystemDirectory = 0;
 static WCHAR * g_pSystemDirectory = NULL;
@@ -285,4 +278,3 @@ HRESULT SetInternalSystemDirectory()
 
     return hr;
 }
-

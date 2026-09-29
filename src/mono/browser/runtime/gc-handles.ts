@@ -60,6 +60,8 @@ if (_use_finalization_registry) {
 export const js_owned_gc_handle_symbol = Symbol.for("wasm js_owned_gc_handle");
 export const cs_owned_js_handle_symbol = Symbol.for("wasm cs_owned_js_handle");
 export const do_not_force_dispose = Symbol.for("wasm do_not_force_dispose");
+// links an eagerly created Promise back to the JSHandle of its TaskHolder
+export const eager_task_handle_symbol = Symbol.for("wasm eager_task_handle");
 
 
 export function mono_wasm_get_jsobj_from_js_handle (js_handle: JSHandle): any {
@@ -81,7 +83,10 @@ export function mono_wasm_get_js_handle (js_obj: any): JSHandle {
     _cs_owned_objects_by_js_handle[<any>js_handle] = js_obj;
 
     if (Object.isExtensible(js_obj)) {
-        js_obj[cs_owned_js_handle_symbol] = js_handle;
+        const is_prototype = typeof js_obj === "function" && Object.prototype.hasOwnProperty.call(js_obj, "prototype");
+        if (!is_prototype) {
+            js_obj[cs_owned_js_handle_symbol] = js_handle;
+        }
     }
     // else
     //   The consequence of not adding the cs_owned_js_handle_symbol is, that we could have multiple JSHandles and multiple proxy instances.
@@ -102,7 +107,7 @@ export function register_with_jsv_handle (js_obj: any, jsv_handle: JSHandle) {
 }
 
 // note: in MT, this is called from locked JSProxyContext. Don't call anything that would need locking.
-export function mono_wasm_release_cs_owned_object (js_handle: JSHandle): void {
+export function SystemInteropJS_ReleaseCSOwnedObject (js_handle: JSHandle): void {
     let obj: any;
     if (is_js_handle(js_handle)) {
         obj = _cs_owned_objects_by_js_handle[<any>js_handle];
@@ -180,6 +185,32 @@ function _js_owned_object_finalized (gc_handle: GCHandle): void {
         return;
     }
     teardown_managed_proxy(null, gc_handle);
+}
+
+// Counts of live proxies, for leak diagnostics and tests. Exposed as INTERNAL.getProxyCounts.
+// Order: [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
+export function get_proxy_counts (): number[] {
+    // index 0 of each list is always a dummy
+    const count_live = (list: any[]): number => {
+        let live = 0;
+        for (let i = 1; i < list.length; i++) {
+            if (list[i] !== undefined && list[i] !== null) live++;
+        }
+        return live;
+    };
+
+    let js_owned_alive = 0;
+    for (const wr of _js_owned_object_table.values()) {
+        if (wr.deref() !== undefined) js_owned_alive++;
+    }
+
+    return [
+        count_live(_cs_owned_objects_by_js_handle),
+        count_live(_cs_owned_objects_by_jsv_handle),
+        _js_owned_object_table.size,
+        js_owned_alive,
+        count_live(js_import_wrapper_by_fn_handle),
+    ];
 }
 
 export function _lookup_js_owned_object (gc_handle: GCHandle): any {

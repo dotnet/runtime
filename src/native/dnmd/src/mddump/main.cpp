@@ -85,7 +85,7 @@ void dump(dump_config_t cfg)
 
 static char const* s_usage = "Syntax: mddump [-t <table_id>]? [-d <path_to_delta>]* <path ecma-335 data>";
 
-int main(int ac, char** av)
+int MAIN_CALLCONV main(int ac, char** av)
 {
     if (ac <= 1)
     {

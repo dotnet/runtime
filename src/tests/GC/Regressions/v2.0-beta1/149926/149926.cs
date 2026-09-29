@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class ArrayOOM
 {
@@ -45,6 +46,8 @@ public class ArrayOOM
 
 public class ByteArrayOOM
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -240,7 +240,7 @@ namespace System.Numerics.Tests
         [InlineData(uint.MaxValue, 0)]
         public static void BitOps_LeadingZeroCount_nuint_32(uint n, int expected)
         {
-            int actual = BitOperations.LeadingZeroCount(n);
+            int actual = BitOperations.LeadingZeroCount((nuint)n);
             Assert.Equal(expected, actual);
         }
 
@@ -263,7 +263,7 @@ namespace System.Numerics.Tests
         [InlineData(ulong.MaxValue, 0)]
         public static void BitOps_LeadingZeroCount_nuint_64(ulong n, int expected)
         {
-            int actual = BitOperations.LeadingZeroCount(n);
+            int actual = BitOperations.LeadingZeroCount((nuint)n);
             Assert.Equal(expected, actual);
         }
 
@@ -756,15 +756,15 @@ namespace System.Numerics.Tests
                 if (Environment.Is64BitProcess)
                 {
                     const ulong value = 0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101ul;
-                    Assert.Equal(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul,
-                        BitOperations.RotateRight(value, 1));
-                    Assert.Equal(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101ul,
-                        BitOperations.RotateRight(value, 2));
-                    Assert.Equal(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul,
-                        BitOperations.RotateRight(value, 3));
-                    Assert.Equal(value, BitOperations.RotateRight(value, int.MinValue)); // % 64 = 0
-                    Assert.Equal(BitOperations.RotateLeft(value, 63),
-                        BitOperations.RotateRight(value, int.MaxValue)); // % 64 = 63
+                    Assert.Equal((nuint)0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul,
+                        BitOperations.RotateRight((nuint)value, 1));
+                    Assert.Equal((nuint)0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101ul,
+                        BitOperations.RotateRight((nuint)value, 2));
+                    Assert.Equal((nuint)0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul,
+                        BitOperations.RotateRight((nuint)value, 3));
+                    Assert.Equal((nuint)value, BitOperations.RotateRight((nuint)value, int.MinValue)); // % 64 = 0
+                    Assert.Equal(BitOperations.RotateLeft((nuint)value, 63),
+                        BitOperations.RotateRight((nuint)value, int.MaxValue)); // % 64 = 63
                 }
                 else
                 {
@@ -893,7 +893,6 @@ namespace System.Numerics.Tests
         [InlineData(0, 120, 4215344322)]
         [InlineData(0, byte.MaxValue, 2910671697)]
         [InlineData(123, byte.MaxValue, 1164749927)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76830", TestPlatforms.tvOS)]
         public static void BitOps_Crc32C_byte(uint crc, byte data, uint expected)
         {
             uint obtained = BitOperations.Crc32C(crc, data);
@@ -905,7 +904,6 @@ namespace System.Numerics.Tests
         [InlineData(0, 120, 575477567)]
         [InlineData(0, ushort.MaxValue, 245266386)]
         [InlineData(123, ushort.MaxValue, 406112372)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76830", TestPlatforms.tvOS)]
         public static void BitOps_Crc32C_ushort(uint crc, ushort data, uint expected)
         {
             uint obtained = BitOperations.Crc32C(crc, data);
@@ -917,7 +915,6 @@ namespace System.Numerics.Tests
         [InlineData(0, 120, 1671666103)]
         [InlineData(0, uint.MaxValue, 3080238136)]
         [InlineData(123, uint.MaxValue, 3055133878)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76830", TestPlatforms.tvOS)]
         public static void BitOps_Crc32C_uint(uint crc, uint data, uint expected)
         {
             uint obtained = BitOperations.Crc32C(crc, data);
@@ -929,7 +926,6 @@ namespace System.Numerics.Tests
         [InlineData(0, 120, 3511526341)]
         [InlineData(0, ulong.MaxValue, 3293575501)]
         [InlineData(123, ulong.MaxValue, 3460750817)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76830", TestPlatforms.tvOS)]
         public static void BitOps_Crc32C_ulong(uint crc, ulong data, uint expected)
         {
             uint obtained = BitOperations.Crc32C(crc, data);

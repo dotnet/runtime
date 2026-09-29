@@ -21,13 +21,6 @@ namespace System.Runtime.InteropServices
         private static long s_safeHandlesFinalized;
 #endif
 
-        // IMPORTANT:
-        // - Do not add or rearrange fields as the EE depends on this layout,
-        //   as well as on the values of the StateBits flags.
-        // - The EE may also perform the same operations using equivalent native
-        //   code, so this managed code must not assume it is the only code
-        //   manipulating _state.
-
 #if DEBUG && CORECLR
         private readonly string? _ctorStackTrace;
 #endif

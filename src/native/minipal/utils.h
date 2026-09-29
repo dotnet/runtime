@@ -4,10 +4,20 @@
 #ifndef HAVE_MINIPAL_UTILS_H
 #define HAVE_MINIPAL_UTILS_H
 
+#ifndef assert
+#include <assert.h>
+#endif
+
 #define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 // Number of characters in a string literal. Excludes terminating NULL.
 #define STRING_LENGTH(str) (ARRAY_SIZE(str) - 1)
+
+#ifdef __clang_analyzer__
+#define ANALYZER_NORETURN __attribute((analyzer_noreturn))
+#else
+#define ANALYZER_NORETURN
+#endif
 
 #ifndef __has_builtin
 #define __has_builtin(x) 0
@@ -32,10 +42,52 @@
 #  define FALLTHROUGH
 #endif
 
+#ifdef _MSC_VER
+#define UNREACHABLE_MSG(message) \
+    do { \
+        assert(!#message); \
+        __assume(0); \
+    } while (0)
+#else
+#define UNREACHABLE_MSG(message) \
+    do { \
+        assert(!#message); \
+        __builtin_unreachable(); \
+    } while (0)
+#endif
+#define UNREACHABLE() UNREACHABLE_MSG("Unreachable reached")
+
+#if defined(_MSC_VER)
+#define NOINLINE __declspec(noinline)
+#define FORCEINLINE __forceinline
+#else
+#define NOINLINE __attribute__((noinline))
+#define FORCEINLINE __attribute__((always_inline)) inline
+#endif
+
+#ifdef _MSC_VER
+#define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#define EMPTY_BASES __declspec(empty_bases)
+#else
+#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
+#define EMPTY_BASES
+#endif
+
 #if defined(_MSC_VER)
 #define LIBC_CALLBACK __cdecl
 #else
 #define LIBC_CALLBACK
+#endif
+
+// Define a macro to declare TLS variables. There are cases
+// where we want to use the platform specific thread-local
+// storage mechanism:
+//  * Better performance characteristics compared to C++'s thread_local keyword.
+//  * Makes consuming TLS variables from assembly code easier.
+#if defined(_MSC_VER)
+#define PLATFORM_THREAD_LOCAL __declspec(thread)
+#else
+#define PLATFORM_THREAD_LOCAL __thread
 #endif
 
 #if defined(_MSC_VER)
@@ -57,13 +109,8 @@
 #endif
 
 #if defined(_MSC_VER)
-#  ifdef SANITIZER_SHARED_RUNTIME
-#    define SANITIZER_CALLBACK_CALLCONV __declspec(dllexport no_sanitize_address) __cdecl
-#    define SANITIZER_INTERFACE_CALLCONV __declspec(dllimport) __cdecl
-#  else
-#    define SANITIZER_CALLBACK_CALLCONV __declspec(no_sanitize_address) __cdecl
-#    define SANITIZER_INTERFACE_CALLCONV __cdecl
-#  endif
+#  define SANITIZER_CALLBACK_CALLCONV __declspec(no_sanitize_address) __cdecl
+#  define SANITIZER_INTERFACE_CALLCONV __cdecl
 #else
 #  ifdef SANITIZER_SHARED_RUNTIME
 #    define SANITIZER_CALLBACK_CALLCONV __attribute__((no_address_safety_analysis)) __attribute__((visibility("default")))

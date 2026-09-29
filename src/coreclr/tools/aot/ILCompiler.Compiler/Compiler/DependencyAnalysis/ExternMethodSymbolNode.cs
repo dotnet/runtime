@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -9,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a symbol that is defined externally but modelled as a method
     /// in the DependencyAnalysis infrastructure during compilation
     /// </summary>
-    public sealed class ExternMethodSymbolNode : ExternSymbolNode, IMethodNode
+    public sealed class ExternMethodSymbolNode : ExternFunctionSymbolNode, IMethodNode
     {
         private MethodDesc _method;
 

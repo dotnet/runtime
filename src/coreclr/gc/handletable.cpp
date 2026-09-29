@@ -11,6 +11,7 @@
  */
 
 #include "common.h"
+#include <inttypes.h>
 
 #include "gcenv.h"
 
@@ -96,7 +97,6 @@ HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCoun
     {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return NULL);
     }
     CONTRACTL_END;
 
@@ -136,12 +136,7 @@ HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCoun
     // We need to allow CRST_UNSAFE_SAMELEVEL, because
     // during AD unload, we need to move some TableSegment from unloaded domain to default domain.
     // We need to take both locks for the two HandleTable's to avoid racing with concurrent gc thread.
-    if (!pTable->Lock.InitNoThrow(CrstHandleTable, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_UNSAFE_SAMELEVEL)))
-    {
-        SegmentFree(pTable->pSegmentList);
-        delete [] (uint8_t*)pTable;
-        return NULL;
-    }
+    pTable->Lock.Init(CrstHandleTable, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_UNSAFE_SAMELEVEL));
 
     // remember how many types we are supporting
     pTable->uTypeCount = uTypeCount;
@@ -1125,14 +1120,14 @@ void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
             // dump the generation number and the number of blocks scanned
             LOG((LF_GC, level,     "--------------------------------------------------------------\n"));
             LOG((LF_GC, level,     "    Condemned Generation      = %d\n", i));
-            LOG((LF_GC, level,     "    Blocks Scanned            = %llu\n", totalBlocksScanned));
+            LOG((LF_GC, level,     "    Blocks Scanned            = %" PRId64 "\n", totalBlocksScanned));
 
             // if we scanned any blocks in this generation then dump some interesting numbers
             if (totalBlocksScanned)
             {
-                LOG((LF_GC, level, "    Blocks Examined           = %llu\n", pTable->_DEBUG_TotalBlocksScannedNonTrivially[i]));
-                LOG((LF_GC, level, "    Slots Scanned             = %llu\n", pTable->_DEBUG_TotalHandleSlotsScanned       [i]));
-                LOG((LF_GC, level, "    Handles Scanned           = %llu\n", pTable->_DEBUG_TotalHandlesActuallyScanned   [i]));
+                LOG((LF_GC, level, "    Blocks Examined           = %" PRId64 "\n", pTable->_DEBUG_TotalBlocksScannedNonTrivially[i]));
+                LOG((LF_GC, level, "    Slots Scanned             = %" PRId64 "\n", pTable->_DEBUG_TotalHandleSlotsScanned       [i]));
+                LOG((LF_GC, level, "    Handles Scanned           = %" PRId64 "\n", pTable->_DEBUG_TotalHandlesActuallyScanned   [i]));
 
                 double blocksScanned  = (double) totalBlocksScanned;
                 double blocksExamined = (double) pTable->_DEBUG_TotalBlocksScannedNonTrivially[i];

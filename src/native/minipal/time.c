@@ -2,35 +2,75 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
+#include <stdlib.h>
 #include <minipal/time.h>
 #include "minipalconfig.h"
 
-#if HAVE_WINDOWS_H
+#if HOST_WINDOWS
 
 #include <Windows.h>
 
 int64_t minipal_hires_ticks()
 {
     LARGE_INTEGER ts;
-    QueryPerformanceCounter(&ts);
+    BOOL ret;
+    ret = QueryPerformanceCounter(&ts);
+    assert(ret); // The function is documented to never fail on Windows XP+.
+    if (!ret)
+        abort();
     return ts.QuadPart;
 }
 
 int64_t minipal_hires_tick_frequency()
 {
     LARGE_INTEGER ts;
-    QueryPerformanceFrequency(&ts);
+    BOOL ret;
+    ret = QueryPerformanceFrequency(&ts);
+    assert(ret); // The function is documented to never fail on Windows XP+.
+    if (!ret)
+        abort();
     return ts.QuadPart;
 }
 
-#else // HAVE_WINDOWS_H
+int64_t minipal_lowres_ticks()
+{
+    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
+    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
+    // resolution is improved. This helps responsiveness in the case an app is trying to opt
+    // into things like multimedia scenarios and additionally does not include "bias" from time
+    // the system is spent asleep or in hibernation.
+
+    const ULONGLONG TicksPerMillisecond = 10000;
+
+    ULONGLONG unbiasedTime;
+    BOOL ret;
+    ret = QueryUnbiasedInterruptTime(&unbiasedTime);
+    assert(ret); // The function is documented to only fail if a null-ptr is passed in
+    if (!ret)
+        abort();
+    return (int64_t)(unbiasedTime / TicksPerMillisecond);
+}
+
+uint64_t minipal_get_system_time()
+{
+    FILETIME filetime;
+    GetSystemTimeAsFileTime(&filetime);
+    return ((uint64_t)filetime.dwHighDateTime << 32) | filetime.dwLowDateTime;
+}
+
+#else // HOST_WINDOWS
 
 #include "minipalconfig.h"
 
-#include <time.h> // nanosleep
+#include <time.h>
+#include <sys/time.h>
 #include <errno.h>
+#include <sched.h>
+#include <unistd.h>
 
-inline static void YieldProcessor()
+inline static void YieldProcessor(void);
+
+inline static void YieldProcessor(void)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
     __asm__ __volatile__(
@@ -54,6 +94,9 @@ inline static void YieldProcessor()
 }
 
 #define tccSecondsToNanoSeconds 1000000000      // 10^9
+#define tccSecondsToMilliSeconds 1000           // 10^3
+#define tccMilliSecondsToNanoSeconds 1000000    // 10^6
+#define tccSecondsTo100NS 10000000              // 10^7
 int64_t minipal_hires_tick_frequency(void)
 {
     return tccSecondsToNanoSeconds;
@@ -65,27 +108,105 @@ int64_t minipal_hires_ticks(void)
     return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
 #else
     struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+    int result;
+    result = clock_gettime(CLOCK_MONOTONIC, &ts);
+    assert(result == 0 && "clock_gettime(CLOCK_MONOTONIC) failed");
     if (result != 0)
-    {
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
-    }
+        abort();
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
 #endif
 }
 
-#endif // !HAVE_WINDOWS_H
+int64_t minipal_lowres_ticks(void)
+{
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
+#else
+    struct timespec ts;
+
+    // emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it
+#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
+    // CLOCK_MONOTONIC_COARSE has enough precision for GetTickCount but
+    // doesn't have the same overhead as CLOCK_MONOTONIC. This allows
+    // overall higher throughput. See dotnet/coreclr#2257 for more details.
+
+    const clockid_t clockType = CLOCK_MONOTONIC_COARSE;
+#else
+    const clockid_t clockType = CLOCK_MONOTONIC;
+#endif
+
+    int result;
+    result = clock_gettime(clockType, &ts);
+#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
+    assert(result == 0 && "clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
+#else
+    assert(result == 0 && "clock_gettime(CLOCK_MONOTONIC) failed");
+#endif
+    if (result != 0)
+        abort();
+
+    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMilliSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMilliSecondsToNanoSeconds));
+#endif
+}
+
+uint64_t minipal_get_system_time(void)
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0)
+    {
+        assert(!"clock_gettime(CLOCK_REALTIME) failed");
+        abort();
+    }
+
+    const uint64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+    return ((uint64_t)(ts.tv_sec) + SECS_BETWEEN_1601_AND_1970_EPOCHS) * tccSecondsTo100NS + (ts.tv_nsec / 100);
+}
+
+#endif // HOST_WINDOWS
+
+void minipal_sleep(uint32_t milliseconds)
+{
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    (void)milliseconds;
+#elif HOST_WINDOWS
+    Sleep(milliseconds);
+#else
+    if (milliseconds == 0)
+    {
+        sched_yield();
+        return;
+    }
+
+    if (milliseconds == UINT32_MAX)
+    {
+        while (1)
+        {
+            usleep(999000);
+        }
+    }
+
+    struct timespec requested;
+    requested.tv_sec = milliseconds / 1000;
+    requested.tv_nsec = (milliseconds % 1000) * 1000000;
+
+    struct timespec remaining;
+    while (nanosleep(&requested, &remaining) != 0 && errno == EINTR)
+    {
+        requested = remaining;
+    }
+#endif
+}
 
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
-#if HAVE_WINDOWS_H
+#if HOST_WINDOWS
     if (usecs > 1000)
     {
-        SleepEx(usecs / 1000, FALSE);
+        Sleep(usecs / 1000);
         if (usecsSinceYield)
         {
-            usecsSinceYield = 0;
+            *usecsSinceYield = 0;
         }
 
         return;
@@ -94,18 +215,18 @@ void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
     if (usecs > 10)
     {
         struct timespec requested;
-        requested.tv_sec = usecs / 1000;
-        requested.tv_nsec = (usecs - requested.tv_sec * 1000) * 1000;
+        requested.tv_sec = usecs / 1000000;
+        requested.tv_nsec = (usecs % 1000000) * 1000;
 
         struct timespec remaining;
-        while (nanosleep(&requested, &remaining) == EINTR)
+        while (nanosleep(&requested, &remaining) != 0 && errno == EINTR)
         {
             requested = remaining;
         }
 
         if (usecsSinceYield)
         {
-            usecsSinceYield = 0;
+            *usecsSinceYield = 0;
         }
 
         return;

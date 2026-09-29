@@ -89,7 +89,7 @@ namespace System.ServiceModel.Syndication.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void WriteTo_EmptyOrNullName_ThrowsArgumentException(string outerElementName)
+        public void WriteTo_EmptyOrNullName_ThrowsArgumentException(string? outerElementName)
         {
             var content = new SyndicationContentSubclass();
             using (var stringWriter = new StringWriter())
@@ -103,7 +103,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("content")]
-        public void CreateHtmlContent_Invoke_ReturnsExpected(string content)
+        public void CreateHtmlContent_Invoke_ReturnsExpected(string? content)
         {
             TextSyndicationContent syndicationContent = SyndicationContent.CreateHtmlContent(content);
             Assert.Empty(syndicationContent.AttributeExtensions);
@@ -115,7 +115,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("content")]
-        public void CreatePlainContent_Invoke_ReturnsExpected(string content)
+        public void CreatePlainContent_Invoke_ReturnsExpected(string? content)
         {
             TextSyndicationContent syndicationContent = SyndicationContent.CreatePlaintextContent(content);
             Assert.Empty(syndicationContent.AttributeExtensions);
@@ -127,7 +127,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("content")]
-        public void CreateXhtmlContent_Invoke_ReturnsExpected(string content)
+        public void CreateXhtmlContent_Invoke_ReturnsExpected(string? content)
         {
             TextSyndicationContent syndicationContent = SyndicationContent.CreateXhtmlContent(content);
             Assert.Empty(syndicationContent.AttributeExtensions);

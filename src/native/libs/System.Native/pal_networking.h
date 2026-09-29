@@ -66,6 +66,7 @@ typedef enum
     AddressFamily_AF_UNIX = 1,     // System.Net.AddressFamily.Unix
     AddressFamily_AF_INET = 2,     // System.Net.AddressFamily.InterNetwork
     AddressFamily_AF_INET6 = 23,   // System.Net.AddressFamily.InterNetworkV6
+    AddressFamily_AF_LINK = 13,       // System.Net.AddressFamily.DataLink
     AddressFamily_AF_PACKET = 65536,  // System.Net.AddressFamily.Packet
     AddressFamily_AF_CAN = 65537,     // System.Net.AddressFamily.ControllerAreaNetwork
 } AddressFamily;
@@ -212,20 +213,6 @@ typedef enum
     SocketFlags_MSG_ERRQUEUE = 0x2000,  // used privately by Ping
 } SocketFlags;
 
-/*
- * Socket async events.
- */
-typedef enum
-{
-    SocketEvents_SA_NONE = 0x00,
-    SocketEvents_SA_READ = 0x01,
-    SocketEvents_SA_WRITE = 0x02,
-    SocketEvents_SA_READCLOSE = 0x04,
-    SocketEvents_SA_CLOSE = 0x08,
-    SocketEvents_SA_ERROR = 0x10,
-    // Force the enum to use int32_t instead of uint32_t
-    SocketEvents__IGNORE_SIGNED = -1,
-} SocketEvents;
 
 /**
  * IP address sizes.
@@ -290,13 +277,6 @@ typedef struct
     int32_t ControlBufferLen;
     int32_t Flags;
 } MessageHeader;
-
-typedef struct
-{
-    uintptr_t Data;      // User data for this event
-    int32_t Events;      // Event flags
-    uint32_t Padding;    // Pad out to 8-byte alignment
-} SocketEvent;
 
 PALEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry);
 
@@ -404,18 +384,9 @@ PALEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* avai
 
 PALEXPORT int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
 
-PALEXPORT int32_t SystemNative_CreateSocketEventPort(intptr_t* port);
+PALEXPORT int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType);
 
-PALEXPORT int32_t SystemNative_CloseSocketEventPort(intptr_t port);
-
-PALEXPORT int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer);
-
-PALEXPORT int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer);
-
-PALEXPORT int32_t SystemNative_TryChangeSocketEventRegistration(
-    intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
-
-PALEXPORT int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count);
+PALEXPORT int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle);
 
 PALEXPORT int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void);
 

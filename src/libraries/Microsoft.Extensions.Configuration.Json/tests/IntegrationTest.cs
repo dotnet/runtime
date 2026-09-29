@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
                 ""h"": {},
                 ""i"": {
                     ""k"": {}
-                } 
+                }
             }";
 
             var configurationBuilder = new ConfigurationBuilder();
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
                         x => AssertSection(x, "d", "e"),
                     }),
                     x => AssertSection(x, "f", ""),
-                    x => AssertSection(x, "g", ""),
+                    x => AssertSection(x, "g", null),
                     x => AssertSection(x, "h", null),
                     x => AssertSection(x, "i", null, new Action<IConfigurationSection>[] {
                         x => AssertSection(x, "k", null),

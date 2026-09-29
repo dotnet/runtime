@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -468,6 +469,16 @@ namespace System.Collections.Tests
         }
 
         [Theory]
+        [InlineData(132, 137)]
+        [InlineData(607, 613)]
+        public void TrimExcess_Generic_UsesNearestValidPrime(int requestedCapacity, int expectedCapacity)
+        {
+            var dictionary = new Dictionary<TKey, TValue>(1000);
+            dictionary.TrimExcess(requestedCapacity);
+            Assert.Equal(expectedCapacity, dictionary.Capacity);
+        }
+
+        [Theory]
         [InlineData(20)]
         [InlineData(23)]
         public void TrimExcess_Generic_TrimToLargerThanExistingCapacity_DoesNothing(int suggestedCapacity)
@@ -774,7 +785,7 @@ namespace System.Collections.Tests
         #endregion
 
         #region Non-randomized comparers
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void Dictionary_Comparer_NonRandomizedStringComparers()
         {
             RunTest(null);

@@ -8,49 +8,6 @@ namespace ILCompiler
     // Functionality related to deterministic ordering of types and members
     public partial class CompilerTypeSystemContext
     {
-        private partial class BoxedValueType
-        {
-            protected override int ClassCode => 1062019524;
-
-            protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
-            {
-                return comparer.Compare(ValueTypeRepresented, ((BoxedValueType)other).ValueTypeRepresented);
-            }
-        }
-
-        private partial class GenericUnboxingThunk
-        {
-            protected override int ClassCode => -247515475;
-
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-            {
-                var otherMethod = (GenericUnboxingThunk)other;
-                return comparer.Compare(_targetMethod, otherMethod._targetMethod);
-            }
-        }
-
-        private partial class UnboxingThunk
-        {
-            protected override int ClassCode => 446545583;
-
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-            {
-                var otherMethod = (UnboxingThunk)other;
-                return comparer.Compare(_targetMethod, otherMethod._targetMethod);
-            }
-        }
-
-        internal partial class ValueTypeInstanceMethodWithHiddenParameter
-        {
-            protected override int ClassCode => 2131875345;
-
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-            {
-                var otherMethod = (ValueTypeInstanceMethodWithHiddenParameter)other;
-                return comparer.Compare(_methodRepresented, otherMethod._methodRepresented);
-            }
-        }
-
         private partial class DefaultInterfaceMethodImplementationInstantiationThunk
         {
             protected override int ClassCode => -789598;
@@ -64,17 +21,6 @@ namespace ILCompiler
                     return result;
 
                 return comparer.Compare(_targetMethod, otherMethod._targetMethod);
-            }
-        }
-
-        internal partial class DefaultInterfaceMethodImplementationWithHiddenParameter
-        {
-            protected override int ClassCode => 4903209;
-
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-            {
-                var otherMethod = (DefaultInterfaceMethodImplementationWithHiddenParameter)other;
-                return comparer.Compare(_methodRepresented, otherMethod._methodRepresented);
             }
         }
     }

@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: UTIL.CPP
-//
-
 // ===========================================================================
-
 
 #include "common.h"
 #include "excep.h"
@@ -17,7 +15,6 @@
 
 #ifndef DACCESS_COMPILE
 
-
 thread_local size_t t_ThreadType;
 
 void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
@@ -28,7 +25,7 @@ void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
 
     // The historic location of ThreadType slot kept for compatibility with SOS
     // TODO: Introduce DAC API to make this hack unnecessary
-    gCurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
+    t_CurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
 }
 
 void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
@@ -47,7 +44,7 @@ thread_local size_t t_CantStopCount;
 // Destroying the heap frees all blocks allocated from the heap.
 // Blocks cannot be freed individually.
 //
-// The heap uses COM+ exceptions to report errors.
+// The heap uses CLR exceptions to report errors.
 //
 // The heap does not use any internal synchronization so it is not
 // multithreadsafe.
@@ -67,7 +64,6 @@ CQuickHeap::~CQuickHeap()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -92,7 +88,6 @@ LPVOID CQuickHeap::Alloc(UINT sz)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     sz = (sz+7) & ~7;
@@ -123,66 +118,16 @@ LPVOID CQuickHeap::Alloc(UINT sz)
 // Output functions that avoid the crt's.
 //----------------------------------------------------------------------------
 
-static
-void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
+void PrintToStdErrA(const char *pszString)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
-    if (Handle == INVALID_HANDLE_VALUE || Handle == NULL)
-        return;
-
-    BOOL success;
-    DWORD   dwBytesWritten;
-    const size_t maxWriteFileSize = 32767; // This is somewhat arbitrary limit, but 2**16-1 doesn't work
-
-    while (BytesToWrite > 0) {
-        DWORD dwChunkToWrite = (DWORD) min(BytesToWrite, maxWriteFileSize);
-
-        // Try to write to handle.  If this is not a CUI app, then this is probably
-        // not going to work unless the dev took special pains to set their own console
-        // handle during CreateProcess.  So try it, but don't yell if it doesn't work in
-        // that case.  Also, if we redirect stdout to a pipe then the pipe breaks (ie, we
-        // write to something like the UNIX head command), don't complain.
-        success = WriteFile(Handle, pszString, dwChunkToWrite, &dwBytesWritten, NULL);
-        if (!success)
-        {
-#if defined(_DEBUG)
-            // This can happen if stdout is a closed pipe.  This might not help
-            // much, but we'll have half a chance of seeing this.
-            OutputDebugStringA("CLR: Writing out an unhandled exception to stdout failed!\n");
-            OutputDebugStringA(pszString);
-#endif //_DEBUG
-
-            break;
-        }
-        else {
-            _ASSERTE(dwBytesWritten == dwChunkToWrite);
-        }
-        pszString = pszString + dwChunkToWrite;
-        BytesToWrite -= dwChunkToWrite;
-    }
-
-}
-
-void PrintToStdErrA(const char *pszString) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-
-    size_t len = strlen(pszString);
-    NPrintToHandleA(Handle, pszString, len);
+    minipal_log_write_error(pszString);
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)
@@ -191,7 +136,6 @@ void PrintToStdErrW(const WCHAR *pwzString)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -210,7 +154,6 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (varLoc1.vlType != varLoc2.vlType)
         return false;
@@ -218,6 +161,7 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
     switch(varLoc1.vlType)
     {
     case ICorDebugInfo::VLT_REG:
+    case ICorDebugInfo::VLT_REG_FP:
     case ICorDebugInfo::VLT_REG_BYREF:
         return varLoc1.vlReg.vlrReg == varLoc2.vlReg.vlrReg;
 
@@ -247,6 +191,9 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
     case ICorDebugInfo::VLT_FPSTK:
         return varLoc1.vlFPstk.vlfReg == varLoc2.vlFPstk.vlfReg;
 
+    case ICorDebugInfo::VLT_FIXED_VA:
+        return varLoc1.vlFixedVarArg.vlfvOffset == varLoc2.vlFixedVarArg.vlfvOffset;
+
     default:
         _ASSERTE(!"Bad vlType"); return false;
     }
@@ -263,7 +210,6 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifdef TARGET_X86
     switch(regNum)
@@ -292,7 +238,11 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     case ICorDebugInfo::REGNUM_RCX: return offsetof(CONTEXT, Rcx);
     case ICorDebugInfo::REGNUM_RDX: return offsetof(CONTEXT, Rdx);
     case ICorDebugInfo::REGNUM_RBX: return offsetof(CONTEXT, Rbx);
-    case ICorDebugInfo::REGNUM_RSP: return offsetof(CONTEXT, Rsp);
+    // TODO: AMBIENT_SP isn't necessarily the same value as RSP (see x86 TODO above).
+    // This is a best-effort approximation matching the pattern used by other platforms.
+    case ICorDebugInfo::REGNUM_RSP:
+    case ICorDebugInfo::REGNUM_AMBIENT_SP:
+                                    return offsetof(CONTEXT, Rsp);
     case ICorDebugInfo::REGNUM_RBP: return offsetof(CONTEXT, Rbp);
     case ICorDebugInfo::REGNUM_RSI: return offsetof(CONTEXT, Rsi);
     case ICorDebugInfo::REGNUM_RDI: return offsetof(CONTEXT, Rdi);
@@ -375,7 +325,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     {
     case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
     case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
-    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    //case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
     case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
     case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
     case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);
@@ -478,7 +428,7 @@ SIZE_T DereferenceByRefVar(SIZE_T addr)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #endif // !DACCESS_COMPILE
 
@@ -493,7 +443,6 @@ ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(numLocs >= MAX_NATIVE_VAR_LOCS);
 
@@ -605,7 +554,6 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     SIZE_T *dwAddr = NULL;
 
@@ -625,7 +573,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         {
             dwAddr = (SIZE_T*)(*dwAddr);
         }
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_REG @ 0x%x (by ref = %d)\n", dwAddr, fByRef));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_REG @ %p (by ref = %d)\n", dwAddr, fByRef));
         break;
 
     case ICorDebugInfo::VLT_STK_BYREF:
@@ -639,7 +587,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         {
             dwAddr = (SIZE_T*)(*dwAddr);
         }
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK @ 0x%x (by ref = %d)\n", dwAddr, fByRef));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK @ %p (by ref = %d)\n", dwAddr, fByRef));
         break;
 
     case ICorDebugInfo::VLT_STK2:
@@ -649,21 +597,21 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStk2.vls2BaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlStk2.vls2Offset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK_2 @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK_2 @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_REG_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegStk.vlrsStk.vlrssBaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlRegStk.vlrsStk.vlrssOffset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: REG_STK @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: REG_STK @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_STK_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStkReg.vlsrStk.vlsrsBaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlStkReg.vlsrStk.vlsrsOffset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: STK_REG @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: STK_REG @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_REG_REG:
@@ -713,7 +661,6 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     switch(varLoc.vlType)
     {
@@ -736,20 +683,20 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     case ICorDebugInfo::VLT_REG_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegReg.vlrrReg1);
         *pVal1 = *(SIZE_T *)(regOffs + (BYTE*)pCtx);
-        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_REG 1 @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_REG 1 @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
 
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegReg.vlrrReg2);
         *pVal2 = *(SIZE_T *)(regOffs + (BYTE*)pCtx);
-        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_REG 2 @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_REG 2 @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         break;
 
     case ICorDebugInfo::VLT_REG_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegStk.vlrsReg);
         *pVal1 = *(SIZE_T *)(regOffs + (BYTE*)pCtx);
-        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_STK reg @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_REG_STK reg @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         *pVal2 = *NativeVarStackAddr(varLoc,pCtx);
         break;
 
@@ -757,8 +704,8 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
         *pVal1 = *NativeVarStackAddr(varLoc,pCtx);
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStkReg.vlsrReg);
         *pVal2 = *(SIZE_T *)(regOffs + (BYTE*)pCtx);
-        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_STK_REG reg @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "GNVV: STK_STK_REG reg @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         break;
 
     case ICorDebugInfo::VLT_FPSTK:
@@ -819,7 +766,6 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     switch(varLoc.vlType)
     {
@@ -842,20 +788,20 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     case ICorDebugInfo::VLT_REG_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegReg.vlrrReg1);
         *(SIZE_T *)(regOffs + (BYTE*)pCtx) = val1;
-        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_REG 1 @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_REG 1 @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
 
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegReg.vlrrReg2);
         *(SIZE_T *)(regOffs + (BYTE*)pCtx) = val2;
-        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_REG 2 @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_REG 2 @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         break;
 
     case ICorDebugInfo::VLT_REG_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegStk.vlrsReg);
         *(SIZE_T *)(regOffs + (BYTE*)pCtx) = val1;
-        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_STK reg @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_REG_STK reg @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         *NativeVarStackAddr(varLoc,pCtx) = val2;
         break;
 
@@ -863,8 +809,8 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
         *NativeVarStackAddr(varLoc,pCtx) = val1;
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStkReg.vlsrReg);
         *(SIZE_T *)(regOffs + (BYTE*)pCtx) = val2;
-        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_STK_REG reg @ 0x%x\n",
-            (SIZE_T *)(regOffs + (BYTE*)pCtx)));
+        LOG((LF_CORDB, LL_INFO100, "SNVV: STK_STK_REG reg @ %p\n",
+            (void*)(regOffs + (BYTE*)pCtx)));
         break;
 
     case ICorDebugInfo::VLT_FPSTK:
@@ -925,27 +871,6 @@ CLRMapViewOfFile(
         return NULL;
     }
 
-#ifdef _DEBUG
-#ifdef TARGET_X86
-    if (pv && g_pConfig && g_pConfig->ShouldInjectFault(INJECTFAULT_MAPVIEWOFFILE))
-    {
-        MEMORY_BASIC_INFORMATION mbi;
-        memset(&mbi, 0, sizeof(mbi));
-        if (!ClrVirtualQuery(pv, &mbi, sizeof(mbi)))
-        {
-            if(GetLastError()==ERROR_SUCCESS)
-                SetLastError(ERROR_OUTOFMEMORY);
-            return NULL;
-        }
-        UnmapViewOfFile(pv);
-        pv = ClrVirtualAlloc(lpBaseAddress, mbi.RegionSize, MEM_RESERVE, PAGE_NOACCESS);
-    }
-    else
-#endif // TARGET_X86
-#endif // _DEBUG
-    {
-    }
-
     if (!pv && GetLastError()==ERROR_SUCCESS)
         SetLastError(ERROR_OUTOFMEMORY);
 
@@ -959,33 +884,14 @@ CLRUnmapViewOfFile(
 {
     STATIC_CONTRACT_ENTRY_POINT;
 
-#ifdef _DEBUG
-#ifdef TARGET_X86
-    if (g_pConfig && g_pConfig->ShouldInjectFault(INJECTFAULT_MAPVIEWOFFILE))
-    {
-        return ClrVirtualFree((LPVOID)lpBaseAddress, 0, MEM_RELEASE);
-    }
-    else
-#endif // TARGET_X86
-#endif // _DEBUG
-    {
-        BOOL result = UnmapViewOfFile(lpBaseAddress);
-        if (result)
-        {
-        }
-        return result;
-    }
+    return UnmapViewOfFile(lpBaseAddress);
 }
-
-
 
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
 {
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
@@ -1001,8 +907,6 @@ HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName)
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     DWORD dwLastError = 0;
     HMODULE hmod = 0;
 
@@ -1020,8 +924,6 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
@@ -1039,8 +941,6 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
     // This will throw in the case of SO
     //STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     DWORD lastError = ERROR_SUCCESS;
     HMODULE hmod = NULL;
 
@@ -1057,13 +957,132 @@ BOOL CLRFreeLibrary(HMODULE hModule)
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     return FreeLibrary(hModule);
 }
 
-
 #endif // #ifndef DACCESS_COMPILE
+
+//======================================================================
+// This function returns true, if it can determine that the instruction pointer
+// refers to a code address that belongs in the range of the given image.
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
+{
+    STATIC_CONTRACT_LEAF;
+    SUPPORTS_DAC;
+
+    struct Param
+    {
+        PTR_VOID pModuleBaseAddress;
+        PCODE ip;
+        BOOL fRet;
+    } param;
+    param.pModuleBaseAddress = pModuleBaseAddress;
+    param.ip = ip;
+    param.fRet = FALSE;
+
+// UNIXTODO: implement a proper version for PAL
+#ifdef HOST_WINDOWS
+    PAL_TRY(Param *, pParam, &param)
+    {
+        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->pModuleBaseAddress);
+
+        PTR_IMAGE_DOS_HEADER pDOS = NULL;
+        PTR_IMAGE_NT_HEADERS pNT  = NULL;
+        USHORT cbOptHdr;
+        PCODE baseAddr;
+
+        //
+        // First, must validate the format of the PE headers to make sure that
+        // the fields we're interested in using exist in the image.
+        //
+
+        // Validate the DOS header.
+        pDOS = PTR_IMAGE_DOS_HEADER(pBase);
+        if (pDOS->e_magic != VAL16(IMAGE_DOS_SIGNATURE) ||
+            pDOS->e_lfanew == 0)
+        {
+            goto lDone;
+        }
+
+        // Validate the NT header
+        pNT = PTR_IMAGE_NT_HEADERS(pBase + VAL32(pDOS->e_lfanew));
+
+        if (pNT->Signature != VAL32(IMAGE_NT_SIGNATURE))
+        {
+            goto lDone;
+        }
+
+        // Validate that the optional header is large enough to contain the fields
+        // we're interested, namely IMAGE_OPTIONAL_HEADER::SizeOfImage. The reason
+        // we don't just check that SizeOfOptionalHeader == IMAGE_SIZEOF_NT_OPTIONAL_HEADER
+        // is due to VSW443590, which states that the extensibility of this structure
+        // is such that it is possible to include only a portion of the optional header.
+        cbOptHdr = pNT->FileHeader.SizeOfOptionalHeader;
+
+        // Check that the magic field is contained by the optional header and set to the correct value.
+        if (cbOptHdr < (offsetof(IMAGE_OPTIONAL_HEADER, Magic) + sizeofmember(IMAGE_OPTIONAL_HEADER, Magic)) ||
+            pNT->OptionalHeader.Magic != VAL16(IMAGE_NT_OPTIONAL_HDR_MAGIC))
+        {
+            goto lDone;
+        }
+
+        // Check that the SizeOfImage is contained by the optional header.
+        if (cbOptHdr < (offsetof(IMAGE_OPTIONAL_HEADER, SizeOfImage) + sizeofmember(IMAGE_OPTIONAL_HEADER, SizeOfImage)))
+        {
+            goto lDone;
+        }
+
+        //
+        // The real check
+        //
+
+        baseAddr = dac_cast<PCODE>(pBase);
+        if ((pParam->ip < baseAddr) || (pParam->ip >= (baseAddr + VAL32(pNT->OptionalHeader.SizeOfImage))))
+        {
+            goto lDone;
+        }
+
+        pParam->fRet = TRUE;
+
+lDone: ;
+    }
+    PAL_EXCEPT (EXCEPTION_EXECUTE_HANDLER)
+    {
+    }
+    PAL_ENDTRY
+#endif // HOST_WINDOWS
+
+    return param.fRet;
+}
+
+namespace GcNotifications
+{
+    VOID SetNotification(GcEvtArgs ev)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (ev.typ == GC_MARK_END)
+        {
+            if (ev.condemnedGeneration == 0)
+                g_gcNotificationFlags = 0;
+            else
+                g_gcNotificationFlags = (DWORD)(g_gcNotificationFlags | ev.condemnedGeneration);
+        }
+    }
+    BOOL GetNotification(GcEvtArgs ev)
+    {
+        LIMITED_METHOD_CONTRACT;
+        // check to see if we have a notification for this generation
+        if (ev.typ == GC_MARK_END && (ev.condemnedGeneration == 0 || (g_gcNotificationFlags & ev.condemnedGeneration) != 0))
+        {
+            return TRUE;
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
+};
 
 GPTR_IMPL(JITNotification, g_pNotificationTable);
 GVAL_IMPL(ULONG32, g_dacNotificationFlags);
@@ -1368,155 +1387,10 @@ BOOL JITNotifications::UpdateOutOfProcTable()
 }
 #endif // DACCESS_COMPILE
 
-GPTR_IMPL(GcNotification, g_pGcNotificationTable);
-
-GcNotifications::GcNotifications(GcNotification *gcTable)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (gcTable)
-    {
-        // Bookkeeping info is held in the first slot
-        m_gcTable = gcTable + 1;
-    }
-    else
-    {
-        m_gcTable = NULL;
-    }
-}
-
-BOOL GcNotifications::FindItem(GcEvtArgs ev_, UINT *indexOut)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (m_gcTable == NULL)
-    {
-        return FALSE;
-    }
-
-    if (indexOut == NULL)
-    {
-        return FALSE;
-    }
-
-    UINT length = Length();
-    for (UINT i = 0; i < length; i++)
-    {
-        if (m_gcTable[i].IsMatch(ev_))
-        {
-            *indexOut = i;
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
-
-BOOL GcNotifications::SetNotification(GcEvtArgs ev)
-{
-    if (!IsActive())
-    {
-        return FALSE;
-    }
-
-    if (ev.typ < 0 || ev.typ >= GC_EVENT_TYPE_MAX)
-    {
-        return FALSE;
-    }
-
-    // build the "match" event
-    GcEvtArgs evStar = { ev.typ };
-    switch (ev.typ)
-    {
-        case GC_MARK_END:
-            // specify mark event matching all generations
-            evStar.condemnedGeneration = -1;
-            break;
-        default:
-            break;
-    }
-
-    // look for the entry that matches the evStar argument
-    UINT idx;
-    if (!FindItem(evStar, &idx))
-    {
-        // Find first free item
-        UINT iFirstFree = Length();
-        for (UINT i = 0; i < iFirstFree; i++)
-        {
-            GcNotification *pCurrent = m_gcTable + i;
-            if (pCurrent->IsFree())
-            {
-                iFirstFree = i;
-                break;
-            }
-        }
-
-        if (iFirstFree == Length() &&
-            iFirstFree == GetTableSize())
-    {
-            // No more room
-        return FALSE;
-    }
-
-        // guarantee the free cell is zeroed out
-        m_gcTable[iFirstFree].SetFree();
-        idx = iFirstFree;
-    }
-
-    // Now update the state
-    m_gcTable[idx].ev.typ = ev.typ;
-    switch (ev.typ)
-    {
-        case GC_MARK_END:
-            if (ev.condemnedGeneration == 0)
-            {
-                m_gcTable[idx].SetFree();
-            }
-            else
-            {
-                m_gcTable[idx].ev.condemnedGeneration |= ev.condemnedGeneration;
-            }
-            break;
-        default:
-            break;
-    }
-
-    // and if needed, update the array's length
-    if (idx == Length())
-    {
-        IncrementLength();
-    }
-
-    return TRUE;
-}
 
 GARY_IMPL(size_t, g_clrNotificationArguments, MAX_CLR_NOTIFICATION_ARGS);
 
-#ifdef DACCESS_COMPILE
-
-GcNotification *GcNotifications::InitializeNotificationTable(UINT TableSize)
-{
-    // We use the first entry in the table for recordkeeping info.
-
-    GcNotification *retTable = new (nothrow) GcNotification[TableSize+1];
-    if (retTable)
-    {
-        // Set the length
-        UINT *pUint = (UINT *) &(retTable[0].ev.typ);
-        *pUint = 0;
-        // Set the table size
-        ++pUint;
-        *pUint = TableSize;
-    }
-    return retTable;
-}
-
-BOOL GcNotifications::UpdateOutOfProcTable()
-{
-    return ::UpdateOutOfProcTable<GcNotification>(g_pGcNotificationTable, m_gcTable - 1, GetTableSize() + 1);
-}
-
-#else // DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
 
 static CrstStatic g_clrNotificationCrst;
 
@@ -1556,7 +1430,7 @@ void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
 
     _ASSERTE(argCount <= MAX_CLR_NOTIFICATION_ARGS);
 
-    if (IsDebuggerPresent() && !CORDebuggerAttached())
+    if (minipal_is_native_debugger_present() && !CORDebuggerAttached())
     {
         CrstHolder lh(&g_clrNotificationCrst);
 
@@ -1614,23 +1488,6 @@ void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr, TADDR NativeCodeLoc
 
     TADDR Args[3] = { JIT_NOTIFICATION2, (TADDR) MethodDescPtr, NativeCodeLocation };
     DACNotifyExceptionHelper(Args, 3);
-}
-
-void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-    NotifyGdb::MethodPitched(MethodDescPtr);
-#endif
-    TADDR Args[2] = { JIT_PITCHING_NOTIFICATION, (TADDR) MethodDescPtr };
-    DACNotifyExceptionHelper(Args, 2);
 }
 
 void DACNotify::DoModuleLoadNotification(Module *ModulePtr)
@@ -1743,19 +1600,6 @@ BOOL DACNotify::ParseJITNotification(TADDR Args[], TADDR& MethodDescPtr, TADDR& 
 
     MethodDescPtr = Args[1];
     NativeCodeLocation = Args[2];
-
-    return TRUE;
-}
-
-BOOL DACNotify::ParseJITPitchingNotification(TADDR Args[], TADDR& MethodDescPtr)
-{
-    _ASSERTE(Args[0] == JIT_PITCHING_NOTIFICATION);
-    if (Args[0] != JIT_PITCHING_NOTIFICATION)
-    {
-        return FALSE;
-    }
-
-    MethodDescPtr = Args[1];
 
     return TRUE;
 }
@@ -1880,7 +1724,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -1891,62 +1734,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
 }
 
 #ifndef DACCESS_COMPILE
-//
-//
-// COMCharacter and Helper functions
-//
-//
-
-#ifndef TARGET_UNIX
-/*============================GetCharacterInfoHelper============================
-**Determines character type info (digit, whitespace, etc) for the given char.
-**Args:   c is the character on which to operate.
-**        CharInfoType is one of CT_CTYPE1, CT_CTYPE2, CT_CTYPE3 and specifies the type
-**        of information being requested.
-**Returns: The bitmask returned by GetStringTypeEx.  The caller needs to know
-**         how to interpret this.
-**Exceptions: ArgumentException if GetStringTypeEx fails.
-==============================================================================*/
-INT32 GetCharacterInfoHelper(WCHAR c, INT32 CharInfoType)
-{
-    WRAPPER_NO_CONTRACT;
-
-    unsigned short result=0;
-    if (!GetStringTypeEx(LOCALE_USER_DEFAULT, CharInfoType, &(c), 1, &result)) {
-        _ASSERTE(!"This should not happen, verify the arguments passed to GetStringTypeEx()");
-    }
-    return(INT32)result;
-}
-#endif // !TARGET_UNIX
-
-/*==============================nativeIsWhiteSpace==============================
-**The locally available version of IsWhiteSpace.  Designed to be called by other
-**native methods.  The work is mostly done by GetCharacterInfoHelper
-**Args:  c -- the character to check.
-**Returns: true if c is whitespace, false otherwise.
-**Exceptions:  Only those thrown by GetCharacterInfoHelper.
-==============================================================================*/
-BOOL COMCharacter::nativeIsWhiteSpace(WCHAR c)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifndef TARGET_UNIX
-    if (c <= (WCHAR) 0x7F) // common case
-    {
-        BOOL result = (c == ' ') || (c == '\r') || (c == '\n') || (c == '\t') || (c == '\f') || (c == (WCHAR) 0x0B);
-
-        ASSERT(result == ((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_SPACE)!=0));
-
-        return result;
-    }
-
-    // GetCharacterInfoHelper costs around 160 instructions
-    return((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_SPACE)!=0);
-#else // !TARGET_UNIX
-    return iswspace(c);
-#endif // !TARGET_UNIX
-}
-
 BOOL RuntimeFileNotFound(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;

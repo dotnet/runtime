@@ -1,0 +1,39 @@
+parameters:
+  - name: platforms
+    type: object
+  - name: testBuildArgs
+    type: string
+
+jobs:
+# Build CoreCLR + libraries for wasm and compile the wasm HardwareIntrinsics
+# tests. Browser/V8 can't execute these tests yet (wasm SIMD support is
+# incomplete), so this is build-only coverage -- sendToHelix is false. See the
+# note in build-runtime-tests-and-send-to-helix.yml.
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    platforms: ${{ parameters.platforms }}
+    variables:
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: outerloop
+      nameSuffix: CoreCLR
+      buildArgs: -s clr+libs+packs -c $(_BuildConfig) /p:TestAssemblies=false
+      timeoutInMinutes: 180
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: ${{ parameters.testBuildArgs }}
+            testRunNamePrefixSuffix: CoreCLR
+            sendToHelix: false
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: outerloop

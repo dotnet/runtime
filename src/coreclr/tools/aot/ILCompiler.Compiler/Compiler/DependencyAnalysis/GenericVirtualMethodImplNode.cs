@@ -15,7 +15,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class GenericVirtualMethodImplNode : DependencyNodeCore<NodeFactory>
     {
-        private const int UniversalCanonGVMDepthHeuristic_CanonDepth = 2;
         private readonly MethodDesc _method;
 
         public GenericVirtualMethodImplNode(MethodDesc method)
@@ -24,8 +23,8 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(method.HasInstantiation);
 
             // This is either a generic virtual method or a MethodImpl for a static interface method.
-            // We can't test for static MethodImpl so at least sanity check it's static and noninterface.
-            Debug.Assert(method.IsVirtual || (method.Signature.IsStatic && !method.OwningType.IsInterface));
+            // We can't test for static MethodImpl so at least sanity check it's static and nonabstract.
+            Debug.Assert(method.IsVirtual || (method.Signature.IsStatic && !method.IsAbstract));
 
             _method = method;
         }
@@ -49,12 +48,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (validInstantiation)
             {
-                if (factory.TypeSystemContext.SupportsUniversalCanon && _method.IsGenericDepthGreaterThan(UniversalCanonGVMDepthHeuristic_CanonDepth))
-                {
-                    // fall back to using the universal generic variant of the generic method
-                    return dependencies;
-                }
-
                 bool getUnboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
@@ -63,6 +56,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     dependencies.Add(factory.NativeLayout.TemplateMethodEntry(_method), "GVM Dependency - Template entry");
                     dependencies.Add(factory.NativeLayout.TemplateMethodLayout(_method), "GVM Dependency - Template");
+                    dependencies.Add(factory.ShadowNonConcreteMethod(_method), "GVM Dependency - shadow generic method");
                 }
                 else
                 {

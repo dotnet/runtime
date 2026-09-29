@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
@@ -32,7 +34,7 @@ namespace System.Text.Json.Nodes
         {
             get
             {
-                if (!_options.HasValue && Parent != null)
+                if (!_options.HasValue && Parent is not null)
                 {
                     // Remember the parent options; if node is re-parented later we still want to keep the
                     // original options since they may have affected the way the node was created as is the case
@@ -133,9 +135,9 @@ namespace System.Text.Json.Nodes
         ///   Gets the JSON path.
         /// </summary>
         /// <returns>The JSON Path value.</returns>
-        public string GetPath()
+        public unsafe string GetPath()
         {
-            if (Parent == null)
+            if (Parent is null)
             {
                 return "$";
             }
@@ -159,12 +161,12 @@ namespace System.Text.Json.Nodes
             get
             {
                 JsonNode? parent = Parent;
-                if (parent == null)
+                if (parent is null)
                 {
                     return this;
                 }
 
-                while (parent.Parent != null)
+                while (parent.Parent is not null)
                 {
                     parent = parent.Parent;
                 }
@@ -343,13 +345,13 @@ namespace System.Text.Json.Nodes
 
         internal void AssignParent(JsonNode parent)
         {
-            if (Parent != null)
+            if (Parent is not null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NodeAlreadyHasParent();
             }
 
             JsonNode? p = parent;
-            while (p != null)
+            while (p is not null)
             {
                 if (p == this)
                 {
@@ -386,7 +388,7 @@ namespace System.Text.Json.Nodes
                 return JsonNodeConverter.Create(element, options);
             }
 
-            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            var jsonTypeInfo = JsonSerializerOptions.Default.GetTypeInfo<T>();
             return JsonValue.CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
     }

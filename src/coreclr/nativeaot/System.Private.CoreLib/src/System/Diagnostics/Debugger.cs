@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
@@ -13,7 +15,7 @@ namespace System.Diagnostics
         {
 #if TARGET_WINDOWS
             // IsAttached is always true when IsDebuggerPresent is true, so no need to check for it
-            if (Interop.Kernel32.IsDebuggerPresent())
+            if (Debugger.IsNativeDebuggerAttached())
                 Debug.DebugBreak();
 #else
             // UNIXTODO: Implement Debugger.Break
@@ -40,17 +42,6 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Constants representing the importance level of messages to be logged.
-        ///
-        /// An attached debugger can enable or disable which messages will
-        /// actually be reported to the user through the COM+ debugger
-        /// services API.  This info is communicated to the runtime so only
-        /// desired events are actually reported to the debugger.
-        /// Constant representing the default category
-        /// </summary>
-        public static readonly string DefaultCategory;
-
-        /// <summary>
         /// Posts a message for the attached debugger.  If there is no
         /// debugger attached, has no effect.  The debugger may or may not
         /// report the message depending on its settings.
@@ -74,5 +65,10 @@ namespace System.Diagnostics
             }
             return false;
         }
+
+        internal static bool IsNativeDebuggerAttached() => IsNativeDebuggerAttachedInternal() != 0;
+
+        [LibraryImport(RuntimeImports.RuntimeLibrary, EntryPoint = "DebugDebugger_IsNativeDebuggerAttached")]
+        private static partial int IsNativeDebuggerAttachedInternal();
     }
 }

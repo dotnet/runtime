@@ -27,8 +27,8 @@ namespace System.Linq.Parallel
         }
 
         // A singleton cached and shared among callers.
-        private static volatile EmptyEnumerable<T>? s_instance;
-        private static volatile EmptyEnumerator<T>? s_enumeratorInstance;
+        private static EmptyEnumerable<T>? s_instance;
+        private static EmptyEnumerator<T>? s_enumeratorInstance;
 
         internal static EmptyEnumerable<T> Instance =>
             // There is no need for thread safety here.

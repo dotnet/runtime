@@ -10,4 +10,7 @@
   <ItemGroup>
     <Compile Include="dynamicmethodliveness.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

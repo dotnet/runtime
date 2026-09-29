@@ -12,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class WinHttp
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial SafeWinHttpHandle WinHttpOpen(
             IntPtr userAgent,
@@ -19,11 +20,13 @@ internal static partial class Interop
             string? proxyName,
             string? proxyBypass, int flags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpCloseHandle(
             IntPtr handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial SafeWinHttpHandle WinHttpConnect(
             SafeWinHttpHandle sessionHandle,
@@ -31,6 +34,7 @@ internal static partial class Interop
             ushort serverPort,
             uint reserved);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial SafeWinHttpHandle WinHttpOpenRequest(
             SafeWinHttpHandle connectHandle,
@@ -41,6 +45,7 @@ internal static partial class Interop
             string acceptTypes,
             uint flags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpAddRequestHeaders(
@@ -73,6 +78,7 @@ internal static partial class Interop
         }
 #endif
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpAddRequestHeaders(
@@ -81,6 +87,7 @@ internal static partial class Interop
             uint headersLength,
             uint modifiers);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpSendRequest(
@@ -92,18 +99,21 @@ internal static partial class Interop
             uint totalLength,
             IntPtr context);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpReceiveResponse(
             SafeWinHttpHandle requestHandle,
             IntPtr reserved);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpQueryDataAvailable(
             SafeWinHttpHandle requestHandle,
             IntPtr parameterIgnoredAndShouldBeNullForAsync);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpReadData(
@@ -112,6 +122,7 @@ internal static partial class Interop
             uint bufferSize,
             IntPtr parameterIgnoredAndShouldBeNullForAsync);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpQueryHeaders(
@@ -122,6 +133,7 @@ internal static partial class Interop
             ref uint bufferLength,
             ref uint index);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpQueryHeaders(
@@ -132,6 +144,7 @@ internal static partial class Interop
             ref uint bufferLength,
             IntPtr index);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpQueryOption(
@@ -140,6 +153,7 @@ internal static partial class Interop
             ref IntPtr buffer,
             ref uint bufferSize);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpQueryOption(
@@ -148,6 +162,7 @@ internal static partial class Interop
             IntPtr buffer,
             ref uint bufferSize);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpQueryOption(
@@ -156,6 +171,7 @@ internal static partial class Interop
             ref uint buffer,
             ref uint bufferSize);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpWriteData(
@@ -164,6 +180,7 @@ internal static partial class Interop
             uint bufferSize,
             IntPtr parameterIgnoredAndShouldBeNullForAsync);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpSetOption(
@@ -172,6 +189,7 @@ internal static partial class Interop
             ref uint optionData,
             uint optionLength = sizeof(uint));
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpSetOption(
@@ -180,6 +198,7 @@ internal static partial class Interop
             IntPtr optionData,
             uint optionLength);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpSetCredentials(
@@ -190,6 +209,7 @@ internal static partial class Interop
             string? password,
             IntPtr reserved);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpQueryAuthSchemes(
@@ -198,6 +218,7 @@ internal static partial class Interop
             out uint firstScheme,
             out uint authTarget);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpSetTimeouts(
@@ -207,11 +228,13 @@ internal static partial class Interop
             int sendTimeout,
             int receiveTimeout);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpGetIEProxyConfigForCurrentUser(
             out WINHTTP_CURRENT_USER_IE_PROXY_CONFIG proxyConfig);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpGetProxyForUrl(
@@ -220,6 +243,7 @@ internal static partial class Interop
             ref WINHTTP_AUTOPROXY_OPTIONS autoProxyOptions,
             out WINHTTP_PROXY_INFO proxyInfo);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.WinHttp, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial IntPtr WinHttpSetStatusCallback(
             SafeWinHttpHandle handle,

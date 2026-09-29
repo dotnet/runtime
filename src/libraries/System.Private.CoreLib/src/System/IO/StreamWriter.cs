@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -24,7 +24,6 @@ namespace System.IO
         // which means we take advantage of adaptive buffering code.
         // The performance using UnicodeEncoding is acceptable.
         private const int DefaultBufferSize = 1024;   // char[]
-        private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
         // Bit bucket - Null has no backing store. Non closable.
@@ -44,14 +43,22 @@ namespace System.IO
 
         // We don't guarantee thread safety on StreamWriter, but we should at
         // least prevent users from trying to write anything while an Async
-        // write from the same thread is in progress.
+        // write from the same thread is in progress. We track this with the
+        // following fields.
+        //
+        // Generally we prefer to use the bool _asyncIOInProgress, but in
+        // certain cases for async1 this would require introducing a wrapper
+        // state machine, and in those cases we use Task _asyncWriteTask
+        // instead.
+        //
+        private bool _asyncIOInProgress;
         private Task _asyncWriteTask = Task.CompletedTask;
 
         private void CheckAsyncTaskInProgress()
         {
-            // We are not locking the access to _asyncWriteTask because this is not meant to guarantee thread safety.
+            // We are not locking this access because this is not meant to guarantee thread safety.
             // We are simply trying to deter calling any Write APIs while an async Write from the same thread is in progress.
-            if (!_asyncWriteTask.IsCompleted)
+            if (_asyncIOInProgress || !_asyncWriteTask.IsCompleted)
             {
                 ThrowAsyncIOInProgress();
             }
@@ -60,6 +67,24 @@ namespace System.IO
         [DoesNotReturn]
         private static void ThrowAsyncIOInProgress() =>
             throw new InvalidOperationException(SR.InvalidOperation_AsyncIOInProgress);
+
+        private ThrowOnWritesScope GuardAgainstOtherWrites()
+        {
+            return new ThrowOnWritesScope(this);
+        }
+
+        private readonly struct ThrowOnWritesScope : IDisposable
+        {
+            private readonly StreamWriter _writer;
+
+            public ThrowOnWritesScope(StreamWriter writer)
+            {
+                writer._asyncIOInProgress = true;
+                _writer = writer;
+            }
+
+            public void Dispose() => _writer._asyncIOInProgress = false;
+        }
 
         // The high level goal is to be tolerant of encoding errors when we read and very strict
         // when we write. Hence, default StreamWriter encoding will throw on encoding error.
@@ -77,7 +102,7 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(Stream stream, Encoding encoding)
+        public StreamWriter(Stream stream, Encoding? encoding)
             : this(stream, encoding, DefaultBufferSize, false)
         {
         }
@@ -86,7 +111,7 @@ namespace System.IO
         // character encoding is set by encoding and the buffer size,
         // in number of 16-bit characters, is set by bufferSize.
         //
-        public StreamWriter(Stream stream, Encoding encoding, int bufferSize)
+        public StreamWriter(Stream stream, Encoding? encoding, int bufferSize)
             : this(stream, encoding, bufferSize, false)
         {
         }
@@ -140,13 +165,13 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, bool append, Encoding encoding)
+        public StreamWriter(string path, bool append, Encoding? encoding)
             : this(path, append, encoding, DefaultBufferSize)
         {
         }
 
-        public StreamWriter(string path, bool append, Encoding encoding, int bufferSize) :
-            this(ValidateArgsAndOpenPath(path, append, encoding, bufferSize), encoding, bufferSize, leaveOpen: false)
+        public StreamWriter(string path, bool append, Encoding? encoding, int bufferSize) :
+            this(ValidateArgsAndOpenPath(path, append, bufferSize), encoding, bufferSize, leaveOpen: false)
         {
         }
 
@@ -155,8 +180,8 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, Encoding encoding, FileStreamOptions options)
-            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, DefaultFileStreamBufferSize)
+        public StreamWriter(string path, Encoding? encoding, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, options), encoding, DefaultBufferSize)
         {
         }
 
@@ -166,13 +191,12 @@ namespace System.IO
             _stream = Stream.Null;
             _encoding = UTF8NoBOM;
             _encoder = null!;
-            _charBuffer = Array.Empty<char>();
+            _charBuffer = [];
         }
 
-        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        private static FileStream ValidateArgsAndOpenPath(string path, FileStreamOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(encoding);
             ArgumentNullException.ThrowIfNull(options);
             if ((options.Access & FileAccess.Write) == 0)
             {
@@ -182,13 +206,16 @@ namespace System.IO
             return new FileStream(path, options);
         }
 
-        private static FileStream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
+        private static FileStream ValidateArgsAndOpenPath(string path, bool append, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(encoding);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
-            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
+            if (bufferSize != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            }
+
+            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileStream.DefaultBufferSize);
         }
 
         public override void Close()
@@ -273,7 +300,7 @@ namespace System.IO
             Flush(true, true);
         }
 
-        private void Flush(bool flushStream, bool flushEncoder)
+        private unsafe void Flush(bool flushStream, bool flushEncoder)
         {
             // flushEncoder should be true at the end of the file and if
             // the user explicitly calls Flush (though not if AutoFlush is true).
@@ -307,7 +334,7 @@ namespace System.IO
             else
             {
                 int maxBytesForCharPos = _encoding.GetMaxByteCount(_charPos);
-                byteBuffer = maxBytesForCharPos <= 1024 ? // arbitrary threshold
+                byteBuffer = (uint)maxBytesForCharPos <= 1024 ? // arbitrary threshold
                     stackalloc byte[1024] :
                     (_byteBuffer = new byte[_encoding.GetMaxByteCount(_charBuffer.Length)]);
             }
@@ -500,10 +527,10 @@ namespace System.IO
             }
         }
 
-        private void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
+        private unsafe void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
         {
-            int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
-            var vsb = estimatedLength <= 256 ?
+            int estimatedLength = checked((format?.Length ?? 0) + args.Length * 8);
+            var vsb = (uint)estimatedLength <= 256 ?
                 new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(estimatedLength);
 
@@ -530,8 +557,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, two, appendNewLine: false);
+                WriteFormatHelper(format, [arg0, arg1], appendNewLine: false);
             }
             else
             {
@@ -543,8 +569,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, three, appendNewLine: false);
+                WriteFormatHelper(format, [arg0, arg1, arg2], appendNewLine: false);
             }
             else
             {
@@ -601,8 +626,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, two, appendNewLine: true);
+                WriteFormatHelper(format, [arg0, arg1], appendNewLine: true);
             }
             else
             {
@@ -614,8 +638,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, three, appendNewLine: true);
+                WriteFormatHelper(format, [arg0, arg1, arg2], appendNewLine: true);
             }
             else
             {
@@ -667,14 +690,13 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(value, appendNewLine: false);
-            _asyncWriteTask = task;
-
-            return task;
+            return WriteAsyncInternal(value, appendNewLine: false);
         }
 
         private async Task WriteAsyncInternal(char value, bool appendNewLine)
         {
+            using ThrowOnWritesScope _ = GuardAgainstOtherWrites();
+
             if (_charPos == _charLen)
             {
                 await FlushAsyncInternal(flushStream: false, flushEncoder: false).ConfigureAwait(false);
@@ -717,10 +739,7 @@ namespace System.IO
                 ThrowIfDisposed();
                 CheckAsyncTaskInProgress();
 
-                Task task = WriteAsyncInternal(value.AsMemory(), appendNewLine: false, default);
-                _asyncWriteTask = task;
-
-                return task;
+                return WriteAsyncInternal(value.AsMemory(), appendNewLine: false, default);
             }
             else
             {
@@ -751,10 +770,7 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(new ReadOnlyMemory<char>(buffer, index, count), appendNewLine: false, cancellationToken: default);
-            _asyncWriteTask = task;
-
-            return task;
+            return WriteAsyncInternal(new ReadOnlyMemory<char>(buffer, index, count), appendNewLine: false, cancellationToken: default);
         }
 
         public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
@@ -773,13 +789,13 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            Task task = WriteAsyncInternal(buffer, appendNewLine: false, cancellationToken: cancellationToken);
-            _asyncWriteTask = task;
-            return task;
+            return WriteAsyncInternal(buffer, appendNewLine: false, cancellationToken: cancellationToken);
         }
 
         private async Task WriteAsyncInternal(ReadOnlyMemory<char> source, bool appendNewLine, CancellationToken cancellationToken)
         {
+            using ThrowOnWritesScope _ = GuardAgainstOtherWrites();
+
             int copied = 0;
             while (copied < source.Length)
             {
@@ -829,10 +845,7 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(ReadOnlyMemory<char>.Empty, appendNewLine: true, cancellationToken: default);
-            _asyncWriteTask = task;
-
-            return task;
+            return WriteAsyncInternal(ReadOnlyMemory<char>.Empty, appendNewLine: true, cancellationToken: default);
         }
 
         public override Task WriteLineAsync(char value)
@@ -849,10 +862,7 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(value, appendNewLine: true);
-            _asyncWriteTask = task;
-
-            return task;
+            return WriteAsyncInternal(value, appendNewLine: true);
         }
 
         public override Task WriteLineAsync(string? value)
@@ -874,10 +884,7 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(value.AsMemory(), appendNewLine: true, default);
-            _asyncWriteTask = task;
-
-            return task;
+            return WriteAsyncInternal(value.AsMemory(), appendNewLine: true, default);
         }
 
         public override Task WriteLineAsync(char[] buffer, int index, int count)
@@ -903,10 +910,7 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(new ReadOnlyMemory<char>(buffer, index, count), appendNewLine: true, cancellationToken: default);
-            _asyncWriteTask = task;
-
-            return task;
+            return WriteAsyncInternal(new ReadOnlyMemory<char>(buffer, index, count), appendNewLine: true, cancellationToken: default);
         }
 
         public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
@@ -924,10 +928,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            Task task = WriteAsyncInternal(buffer, appendNewLine: true, cancellationToken: cancellationToken);
-            _asyncWriteTask = task;
-
-            return task;
+            return WriteAsyncInternal(buffer, appendNewLine: true, cancellationToken: cancellationToken);
         }
 
         public override Task FlushAsync()
@@ -939,6 +940,12 @@ namespace System.IO
 
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
+
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return FlushAsyncInternalWithGuard(flushStream: true, flushEncoder: true, CancellationToken.None);
+            }
+
             return (_asyncWriteTask = FlushAsyncInternal(flushStream: true, flushEncoder: true, CancellationToken.None));
         }
 
@@ -959,7 +966,19 @@ namespace System.IO
 
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
+
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return FlushAsyncInternalWithGuard(flushStream: true, flushEncoder: true, cancellationToken);
+            }
+
             return (_asyncWriteTask = FlushAsyncInternal(flushStream: true, flushEncoder: true, cancellationToken));
+        }
+
+        private async Task FlushAsyncInternalWithGuard(bool flushStream, bool flushEncoder, CancellationToken cancellationToken)
+        {
+            using ThrowOnWritesScope _ = GuardAgainstOtherWrites();
+            await FlushAsyncInternal(flushStream, flushEncoder, cancellationToken).ConfigureAwait(false);
         }
 
         private Task FlushAsyncInternal(bool flushStream, bool flushEncoder, CancellationToken cancellationToken = default)

@@ -257,7 +257,7 @@ namespace System.Security.Cryptography.X509Certificates
             return false;
         }
 
-        private static DateTimeOffset ReadX509Time(ref AsnValueReader reader)
+        private static DateTimeOffset ReadX509Time(ref ValueAsnReader reader)
         {
             if (reader.PeekTag().HasSameClassAndValue(Asn1Tag.UtcTime))
             {
@@ -267,7 +267,7 @@ namespace System.Security.Cryptography.X509Certificates
             return reader.ReadGeneralizedTime();
         }
 
-        private static DateTimeOffset? ReadX509TimeOpt(ref AsnValueReader reader)
+        private static DateTimeOffset? ReadX509TimeOpt(ref ValueAsnReader reader)
         {
             if (reader.PeekTag().HasSameClassAndValue(Asn1Tag.UtcTime))
             {
@@ -303,9 +303,9 @@ namespace System.Security.Cryptography.X509Certificates
             internal DateTimeOffset RevocationTime;
             internal byte[]? Extensions;
 
-            internal RevokedCertificate(ref AsnValueReader reader, int version)
+            internal RevokedCertificate(ref ValueAsnReader reader, int version)
             {
-                AsnValueReader revokedCertificate = reader.ReadSequence();
+                ValueAsnReader revokedCertificate = reader.ReadSequence();
                 Serial = revokedCertificate.ReadIntegerBytes().ToArray();
                 RevocationTime = ReadX509Time(ref revokedCertificate);
                 Extensions = null;

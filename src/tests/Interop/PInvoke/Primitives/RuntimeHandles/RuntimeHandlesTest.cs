@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
@@ -44,6 +45,10 @@ public class RuntimeHandlesTest
         Assert.True(Marshal_In(handle, handle.Value));
     }
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("missing assembly", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -135,6 +135,33 @@ public static unsafe class UnsafeAccessorsTests
         extern static UserDataClass CallPrivateConstructorWithEmptyName();
     }
 
+    interface IDelegateTarget
+    {
+        static virtual object GetValue() => "DelegateTargetValue";
+    }
+
+    class DelegateTargetImpl : IDelegateTarget { }
+
+    delegate object DelegateFromUnsafeAccessor();
+
+    [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+    extern static DelegateFromUnsafeAccessor ConstructDelegate(object o, IntPtr p);
+
+    static class DelegateTargetResolver<T> where T : IDelegateTarget
+    {
+        public static unsafe delegate*<object> Resolve() => &T.GetValue;
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [Fact]
+    public static unsafe void Verify_ConstructDelegateFromFunctionPointer()
+    {
+        Console.WriteLine($"Running {nameof(Verify_ConstructDelegateFromFunctionPointer)}");
+
+        var del = ConstructDelegate(null, (nint)DelegateTargetResolver<DelegateTargetImpl>.Resolve());
+        Assert.Equal("DelegateTargetValue", del());
+    }
+
     [Fact]
     public static void Verify_CallCtorAsMethod()
     {
@@ -326,6 +353,72 @@ public static unsafe class UnsafeAccessorsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_fptr")]
         extern static ref delegate*<void> GetFPtr(ref AllFields f);
+    }
+
+    // Contains fields that are volatile
+    struct VolatileFields
+    {
+        private static volatile int s_vInt;
+        private volatile int _vInt;
+    }
+
+    // Accessors for fields that are volatile
+    static class AccessorsVolatile
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name="s_vInt")]
+        public extern static ref int GetStaticVolatileInt(ref VolatileFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_vInt")]
+        public extern static ref int GetVolatileInt(ref VolatileFields f);
+    }
+
+    [Fact]
+    public static void Verify_AccessFieldsWithVolatile()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessFieldsWithVolatile)}");
+
+        VolatileFields fieldsWithVolatile = default;
+
+        AccessorsVolatile.GetStaticVolatileInt(ref fieldsWithVolatile) = default;
+        AccessorsVolatile.GetVolatileInt(ref fieldsWithVolatile) = default;
+    }
+
+    // Contains fields that are readonly
+    readonly struct ReadOnlyFields
+    {
+        public static readonly int s_rInt;
+        public readonly int _rInt;
+    }
+
+    // Accessors for fields that are readonly
+    static class AccessorsReadOnly
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name="s_rInt")]
+        public extern static ref readonly int GetStaticReadOnlyInt(ref readonly ReadOnlyFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_rInt")]
+        public extern static ref readonly int GetReadOnlyInt(ref readonly ReadOnlyFields f);
+    }
+
+    [Fact]
+    public static void Verify_AccessFieldsWithReadOnlyRefs()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessFieldsWithReadOnlyRefs)}");
+
+        ReadOnlyFields readOnlyFields = default;
+
+        Assert.True(Unsafe.AreSame(in AccessorsReadOnly.GetStaticReadOnlyInt(in readOnlyFields), in ReadOnlyFields.s_rInt));
+        Assert.True(Unsafe.AreSame(in AccessorsReadOnly.GetReadOnlyInt(in readOnlyFields), in readOnlyFields._rInt));
+
+        // Test the local declaration of the signature since it places modopts/modreqs differently.
+        Assert.True(Unsafe.AreSame(in GetStaticReadOnlyIntLocal(in readOnlyFields), in ReadOnlyFields.s_rInt));
+        Assert.True(Unsafe.AreSame(in GetReadOnlyIntLocal(in readOnlyFields), in readOnlyFields._rInt));
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name="s_rInt")]
+        extern static ref readonly int GetStaticReadOnlyIntLocal(ref readonly ReadOnlyFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_rInt")]
+        extern static ref readonly int GetReadOnlyIntLocal(ref readonly ReadOnlyFields f);
     }
 
     [Fact]

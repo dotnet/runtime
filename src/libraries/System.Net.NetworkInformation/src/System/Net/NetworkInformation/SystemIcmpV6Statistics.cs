@@ -24,7 +24,7 @@ namespace System.Net.NetworkInformation
     }
 
     // ICMP statistics for Ipv6.
-    internal sealed unsafe class SystemIcmpV6Statistics : IcmpV6Statistics
+    internal sealed class SystemIcmpV6Statistics : IcmpV6Statistics
     {
         private readonly Interop.IpHlpApi.MibIcmpInfoEx _stats;
 
@@ -50,7 +50,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.DestinationUnreachable];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.DestinationUnreachable];
             }
         }
 
@@ -58,7 +58,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.DestinationUnreachable];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.DestinationUnreachable];
             }
         }
 
@@ -66,7 +66,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.PacketTooBig];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.PacketTooBig];
             }
         }
 
@@ -74,7 +74,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.PacketTooBig];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.PacketTooBig];
             }
         }
 
@@ -82,7 +82,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.TimeExceeded];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.TimeExceeded];
             }
         }
 
@@ -90,7 +90,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.TimeExceeded];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.TimeExceeded];
             }
         }
 
@@ -98,7 +98,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.ParameterProblem];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.ParameterProblem];
             }
         }
 
@@ -106,7 +106,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.ParameterProblem];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.ParameterProblem];
             }
         }
 
@@ -114,7 +114,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.EchoRequest];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.EchoRequest];
             }
         }
 
@@ -122,7 +122,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.EchoRequest];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.EchoRequest];
             }
         }
 
@@ -130,7 +130,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.EchoReply];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.EchoReply];
             }
         }
 
@@ -138,7 +138,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.EchoReply];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.EchoReply];
             }
         }
 
@@ -146,7 +146,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.MembershipQuery];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.MembershipQuery];
             }
         }
 
@@ -154,7 +154,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.MembershipQuery];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.MembershipQuery];
             }
         }
 
@@ -162,7 +162,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.MembershipReport];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.MembershipReport];
             }
         }
 
@@ -170,7 +170,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.MembershipReport];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.MembershipReport];
             }
         }
 
@@ -178,7 +178,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.MembershipReduction];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.MembershipReduction];
             }
         }
 
@@ -186,7 +186,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.MembershipReduction];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.MembershipReduction];
             }
         }
 
@@ -194,7 +194,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.RouterAdvertisement];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.RouterAdvertisement];
             }
         }
 
@@ -202,7 +202,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.RouterAdvertisement];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.RouterAdvertisement];
             }
         }
 
@@ -210,7 +210,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.RouterSolicit];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.RouterSolicit];
             }
         }
 
@@ -218,7 +218,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.RouterSolicit];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.RouterSolicit];
             }
         }
 
@@ -226,7 +226,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.NeighborAdvertisement];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.NeighborAdvertisement];
             }
         }
 
@@ -234,7 +234,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.NeighborAdvertisement];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.NeighborAdvertisement];
             }
         }
 
@@ -242,7 +242,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.NeighborSolict];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.NeighborSolict];
             }
         }
 
@@ -250,7 +250,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.NeighborSolict];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.NeighborSolict];
             }
         }
 
@@ -258,7 +258,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.outStats.rgdwTypeCount[(long)IcmpV6StatType.Redirect];
+                return _stats.outStats.rgdwTypeCount[(int)IcmpV6StatType.Redirect];
             }
         }
 
@@ -266,7 +266,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return _stats.inStats.rgdwTypeCount[(long)IcmpV6StatType.Redirect];
+                return _stats.inStats.rgdwTypeCount[(int)IcmpV6StatType.Redirect];
             }
         }
     }

@@ -4,8 +4,6 @@
 using System.Runtime.CompilerServices;
 using System.Security;
 
-using Internal.DeveloperExperience;
-
 namespace System.Diagnostics
 {
     // .NET Native-specific Debug implementation

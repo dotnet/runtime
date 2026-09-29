@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -83,17 +83,12 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Get the secret agreement generated between two parties
         /// </summary>
-        private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
+        private unsafe byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
         {
             Debug.Assert(otherPartyPublicKey != null);
             Debug.Assert(_key is not null); // Callers should validate prior.
 
-            bool thisIsNamed;
-
-            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
-            {
-                thisIsNamed = Interop.Crypto.EcKeyHasCurveName(ecKey);
-            }
+            bool thisIsNamed = !Interop.Crypto.EvpPKeyEcHasExplicitEncoding(_key.Value);
 
             ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
             bool disposeOtherKey = false;
@@ -110,7 +105,7 @@ namespace System.Security.Cryptography
                 otherKey = new ECDiffieHellmanOpenSslPublicKey(otherParameters);
             }
 
-            bool otherIsNamed = otherKey.HasCurveName;
+            bool otherIsNamed = !otherKey.HasExplicitEncoding;
 
             // We need to always duplicate handle in case this operation is done by multiple threads and one of them disposes the handle
             SafeEvpPKeyHandle? ourKey = _key.Value;
@@ -135,10 +130,7 @@ namespace System.Security.Cryptography
                 }
                 else if (otherIsNamed)
                 {
-                    using (ECOpenSsl tmp = new ECOpenSsl(otherKey.ExportExplicitParameters()))
-                    {
-                        theirKey = tmp.CreateEvpPKeyHandle();
-                    }
+                    theirKey = ECOpenSsl.ImportECKey(otherKey.ExportExplicitParameters(), out _);
                 }
                 else
                 {
@@ -147,11 +139,8 @@ namespace System.Security.Cryptography
                         // This is generally not expected to fail except:
                         // - when key can't be accessed but is available (i.e. TPM)
                         // - private key is actually missing
-                        using (ECOpenSsl tmp = new ECOpenSsl(ExportExplicitParameters(true)))
-                        {
-                            ourKey = tmp.CreateEvpPKeyHandle();
-                            disposeOurKey = true;
-                        }
+                        ourKey = ECOpenSsl.ImportECKey(ExportExplicitParameters(true), out _);
+                        disposeOurKey = true;
                     }
                     catch (CryptographicException)
                     {

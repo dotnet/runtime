@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out DateTimeOffset value)
+        public void ToManaged(out DateTimeOffset value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out DateTimeOffset? value)
+        public void ToManaged(out DateTimeOffset? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out DateTime value)
+        public void ToManaged(out DateTime value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public void ToJS(DateTime value)
         {
             slot.Type = MarshalerType.DateTime;
-            slot.DoubleValue = new DateTimeOffset(value).ToUnixTimeMilliseconds();
+            slot.DoubleValue = new DateTimeOffset(value.Ticks, TimeSpan.Zero).ToUnixTimeMilliseconds();
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out DateTime? value)
+        public void ToManaged(out DateTime? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -141,7 +141,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (value.HasValue)
             {
                 slot.Type = MarshalerType.DateTime;
-                slot.DoubleValue = new DateTimeOffset(value.Value).ToUnixTimeMilliseconds();
+                slot.DoubleValue = new DateTimeOffset(value.Value.Ticks, TimeSpan.Zero).ToUnixTimeMilliseconds();
             }
             else
             {

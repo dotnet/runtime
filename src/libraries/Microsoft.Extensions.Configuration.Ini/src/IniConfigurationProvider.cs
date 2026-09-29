@@ -6,17 +6,20 @@ using System.IO;
 namespace Microsoft.Extensions.Configuration.Ini
 {
     /// <summary>
-    /// An INI file based <see cref="ConfigurationProvider"/>.
-    /// Files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI Files on Wikipedia</a>)
+    /// Provides configuration key-value pairs that are obtained from an INI file.
     /// </summary>
-    /// <examples>
+    /// <remarks>
+    /// <para>INI files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI files on Wikipedia</a>).</para>
+    /// <para>The following is an example of an INI file:</para>
+    /// <code lang="ini">
     /// [Section:Header]
     /// key1=value1
     /// key2 = " value2 "
     /// ; comment
     /// # comment
     /// / comment
-    /// </examples>
+    /// </code>
+    /// </remarks>
     public class IniConfigurationProvider : FileConfigurationProvider
     {
         /// <summary>

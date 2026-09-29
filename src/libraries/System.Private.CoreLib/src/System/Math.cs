@@ -27,16 +27,13 @@ namespace System
 
         public const double Tau = 6.283185307179586476925;
 
-        private const int maxRoundingDigits = 15;
+        // The largest digit count the fast rounding path handles: `10^digits` must fit a `ulong` for the
+        // integer fallback (10^19 is the last that does); larger counts use the exact routine.
+        private const int maxFastRoundingDigits = 19;
 
-        private const double doubleRoundLimit = 1e16d;
-
-        // This table is required for the Round function which can specify the number of digits to round to
-        private static ReadOnlySpan<double> RoundPower10Double =>
-        [
-            1E0, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6, 1E7, 1E8,
-            1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
-        ];
+        // Below this boundary a double may have a fractional portion; at or above it every
+        // representable value is already an integer (2^52).
+        private const double doubleIntegerBoundary = 4503599627370496.0;
 
         private const double SCALEB_C1 = 8.98846567431158E+307; // 0x1p1023
 
@@ -157,18 +154,8 @@ namespace System
         /// <returns>The number containing the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ulong BigMul(uint a, uint b)
+        public static ulong BigMul(uint a, uint b)
         {
-#if false // TARGET_32BIT
-            // This generates slower code currently than the simple multiplication
-            // https://github.com/dotnet/runtime/issues/11782
-            if (Bmi2.IsSupported)
-            {
-                uint low;
-                uint high = Bmi2.MultiplyNoFlags(a, b, &low);
-                return ((ulong)high << 32) | low;
-            }
-#endif
             return ((ulong)a) * b;
         }
 
@@ -181,6 +168,28 @@ namespace System
             return ((long)a) * b;
         }
 
+#if !(TARGET_ARM64 || (TARGET_AMD64 && !MONO)) // BigMul 64*64 has high performance intrinsics on ARM64 and AMD64 (but not yet on MONO)
+        /// <summary>
+        /// Perform multiplication between 64 and 32 bit numbers, returning lower 64 bits in <paramref name="low"/>
+        /// </summary>
+        /// <returns>hi bits of the result</returns>
+        /// <remarks>REMOVE once BigMul(ulong, ulong) is treated as intrinsics and optimizes 32 by 64 multiplications</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong BigMul(ulong a, uint b, out ulong low)
+        {
+            ulong prodL = ((ulong)(uint)a) * b;
+            ulong prodH = (prodL >> 32) + (((ulong)(uint)(a >> 32)) * b);
+
+            low = ((prodH << 32) | (uint)prodL);
+            return (prodH >> 32);
+        }
+
+        /// <inheritdoc cref="BigMul(ulong, uint, out ulong)"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong BigMul(uint a, ulong b, out ulong low)
+            => BigMul(b, a, out low);
+#endif
+
         /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
@@ -190,6 +199,15 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
         {
+#if !MONO // X86Base.X64.BigMul is not yet implemented in MONO
+            // X86Base.X64.BigMul is more performant than Bmi2.X64.MultiplyNoFlags, which has known performance issues
+            // (https://github.com/dotnet/runtime/issues/11782), so we don't need a separate BMI2 path here.
+            if (X86Base.X64.IsSupported)
+            {
+                (low, ulong hi) = X86Base.X64.BigMul(a, b);
+                return hi;
+            }
+#else
             if (Bmi2.X64.IsSupported)
             {
                 ulong tmp;
@@ -197,6 +215,7 @@ namespace System
                 low = tmp;
                 return high;
             }
+#endif
             else if (ArmBase.Arm64.IsSupported)
             {
                 low = a * b;
@@ -236,6 +255,13 @@ namespace System
         /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
+#if !MONO // X86Base.BigMul is not yet implemented in MONO
+            if (X86Base.X64.IsSupported)
+            {
+                (low, long hi) = X86Base.X64.BigMul(a, b);
+                return hi;
+            }
+#endif
             if (ArmBase.Arm64.IsSupported)
             {
                 low = a * b;
@@ -880,7 +906,7 @@ namespace System
                 }
 
                 Debug.Assert(double.IsSubnormal(x));
-                return double.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - double.BiasedExponentLength);
+                return double.MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - double.BiasedExponentLength);
             }
 
             return x.Exponent;
@@ -911,6 +937,7 @@ namespace System
             return Log(a) / Log(newBase);
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static byte Max(byte val1, byte val2)
         {
@@ -946,18 +973,21 @@ namespace System
             return double.IsNegative(val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static short Max(short val1, short val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static int Max(int val1, int val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static long Max(long val1, long val2)
         {
@@ -968,6 +998,7 @@ namespace System
         /// <param name="val1">The first of two native signed integers to compare.</param>
         /// <param name="val2">The second of two native signed integers to compare.</param>
         /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is larger.</returns>
+        [Intrinsic]
         [NonVersionable]
         public static nint Max(nint val1, nint val2)
         {
@@ -975,6 +1006,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static sbyte Max(sbyte val1, sbyte val2)
         {
@@ -1005,6 +1037,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static ushort Max(ushort val1, ushort val2)
         {
@@ -1012,6 +1045,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static uint Max(uint val1, uint val2)
         {
@@ -1019,6 +1053,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static ulong Max(ulong val1, ulong val2)
         {
@@ -1030,6 +1065,7 @@ namespace System
         /// <param name="val2">The second of two native unsigned integers to compare.</param>
         /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is larger.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static nuint Max(nuint val1, nuint val2)
         {
@@ -1061,6 +1097,7 @@ namespace System
             return y;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static byte Min(byte val1, byte val2)
         {
@@ -1096,18 +1133,21 @@ namespace System
             return double.IsNegative(val1) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static short Min(short val1, short val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static int Min(int val1, int val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [NonVersionable]
         public static long Min(long val1, long val2)
         {
@@ -1118,6 +1158,7 @@ namespace System
         /// <param name="val1">The first of two native signed integers to compare.</param>
         /// <param name="val2">The second of two native signed integers to compare.</param>
         /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is smaller.</returns>
+        [Intrinsic]
         [NonVersionable]
         public static nint Min(nint val1, nint val2)
         {
@@ -1125,6 +1166,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static sbyte Min(sbyte val1, sbyte val2)
         {
@@ -1155,6 +1197,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static ushort Min(ushort val1, ushort val2)
         {
@@ -1162,6 +1205,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static uint Min(uint val1, uint val2)
         {
@@ -1169,6 +1213,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static ulong Min(ulong val1, ulong val2)
         {
@@ -1180,6 +1225,7 @@ namespace System
         /// <param name="val2">The second of two native unsigned integers to compare.</param>
         /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is smaller.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         [NonVersionable]
         public static nuint Min(nuint val1, nuint val2)
         {
@@ -1238,7 +1284,7 @@ namespace System
         [Intrinsic]
         public static double ReciprocalSqrtEstimate(double d)
         {
-#if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
+#if MONO || TARGET_LOONGARCH64
             return 1.0 / Sqrt(d);
 #else
             return ReciprocalSqrtEstimate(d);
@@ -1357,15 +1403,35 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Round(double value, int digits, MidpointRounding mode)
         {
-            if ((uint)digits > maxRoundingDigits)
+            if (digits < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_RoundingDigits(nameof(digits));
             }
 
-            if (Abs(value) < doubleRoundLimit)
+            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
             {
-                double power10 = RoundPower10Double[digits];
-                value = Round(value * power10, mode) / power10;
+                ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+            }
+
+            // Rounding to zero fractional digits is just rounding to an integer, which the dedicated
+            // overload does with a single hardware instruction on most platforms.
+            if (digits == 0)
+            {
+                return Round(value, mode);
+            }
+
+            // Only finite values with a magnitude below the integer boundary can have a fractional
+            // portion to round. All other values (including NaN and Infinity) are returned unchanged;
+            // this comparison is naturally false for those cases.
+            if (Abs(value) < doubleIntegerBoundary)
+            {
+                // The fast path only handles the small-digit range where `10^digits` is exactly
+                // representable; larger counts fall back to the exact arbitrary-precision routine.
+                if ((digits > maxFastRoundingDigits) || !Number.TryRoundToDecimalDigitsFast(value, digits, mode, out double rounded))
+                {
+                    rounded = Number.RoundToDecimalDigits<double>(value, digits, mode);
+                }
+                value = rounded;
             }
 
             return value;

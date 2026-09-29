@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -43,7 +44,8 @@ public static class DebugProxyHost
     public static async Task RunDevToolsProxyAsync(ProxyOptions options, string[] args, ILoggerFactory loggerFactory, CancellationToken token)
     {
         string proxyUrl = $"http://127.0.0.1:{options.DevToolsProxyPort}";
-        IWebHost host = new WebHostBuilder()
+        IHost host = new HostBuilder().ConfigureWebHost(webHostBuilder =>
+            webHostBuilder
             .UseSetting("UseIISIntegration", false.ToString())
             .UseKestrel()
             .UseContentRoot(Directory.GetCurrentDirectory())
@@ -51,7 +53,6 @@ public static class DebugProxyHost
             .ConfigureServices(services =>
             {
                 services.AddSingleton(loggerFactory);
-                services.AddLogging(configure => configure.AddSimpleConsole().AddFilter(null, LogLevel.Information));
                 services.AddSingleton(Options.Create(options));
                 services.AddRouting();
             })
@@ -60,7 +61,7 @@ public static class DebugProxyHost
                 config.AddCommandLine(args);
             })
             .UseUrls(proxyUrl)
-            .Build();
+        ).Build();
 
         if (token.CanBeCanceled)
             token.Register(async () => await host.StopAsync());

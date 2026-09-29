@@ -352,7 +352,7 @@ namespace System.Reflection
         #region ICustomAttributeProvider Members
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -362,7 +362,7 @@ namespace System.Reflection
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -372,7 +372,7 @@ namespace System.Reflection
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.IsDefined(this, attributeRuntimeType);
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
@@ -400,6 +400,7 @@ namespace System.Reflection
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
         private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
 
@@ -415,14 +416,20 @@ namespace System.Reflection
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetTypes")]
-        private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes);
+        private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes, ObjectHandleOnStack retExceptions);
 
         internal RuntimeType[] GetDefinedTypes()
         {
             RuntimeType[]? types = null;
+            Exception[]? exceptions = null;
             RuntimeModule thisAsLocal = this;
-            GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types));
+            GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types), ObjectHandleOnStack.Create(ref exceptions));
+
+            if (exceptions is not null)
+                throw new ReflectionTypeLoadException(types, exceptions, SR.ReflectionTypeLoad_LoadFailed);
+
             return types!;
         }
 
@@ -454,7 +461,7 @@ namespace System.Reflection
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
-                return Array.Empty<FieldInfo>();
+                return [];
 
             return RuntimeType.GetFields(bindingFlags);
         }
@@ -471,11 +478,12 @@ namespace System.Reflection
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
-                return Array.Empty<MethodInfo>();
+                return [];
 
             return RuntimeType.GetMethods(bindingFlags);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
         private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
 

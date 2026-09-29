@@ -11,6 +11,7 @@
 #ifndef SHIMPRIV_H
 #define SHIMPRIV_H
 
+#include "CLREventBase.h"
 #include "helpers.h"
 
 #include "shimdatatarget.h"
@@ -352,7 +353,7 @@ public:
     // Initialization phases.
     // 1. allocate new ShimProcess(). This lets us spin up a Win32 EventThread, which can then
     //    be used to
-    // 2. Call ShimProcess::CreateProcess/DebugActiveProcess. This will call CreateAndStartWin32ET to
+    // 2. Call ShimProcess::DebugActiveProcess. This will call CreateAndStartWin32ET to
     //     craete the w32et.
     // 3. Create OS-debugging pipeline. This establishes the physical OS process and gets us a pid/handle
     // 4. pShim->InitializeDataTarget - this creates a reader/writer abstraction around the OS process.
@@ -363,22 +364,6 @@ public:
     //-----------------------------------------------------------
     // Creation
     //-----------------------------------------------------------
-
-    static HRESULT CreateProcess(
-          Cordb * pCordb,
-          ICorDebugRemoteTarget * pRemoteTarget,
-          LPCWSTR programName,
-          _In_z_ LPWSTR  programArgs,
-          LPSECURITY_ATTRIBUTES lpProcessAttributes,
-          LPSECURITY_ATTRIBUTES lpThreadAttributes,
-          BOOL bInheritHandles,
-          DWORD dwCreationFlags,
-          PVOID lpEnvironment,
-          LPCWSTR lpCurrentDirectory,
-          LPSTARTUPINFOW lpStartupInfo,
-          LPPROCESS_INFORMATION lpProcessInformation,
-          CorDebugCreateProcessFlags corDebugFlags
-    );
 
     static HRESULT DebugActiveProcess(
         Cordb * pCordb,
@@ -519,8 +504,8 @@ protected:
     // Synchronization events to ensure that AttachPending bit is marked before DebugActiveProcess
     // returns or debugger is detaching
     //
-    HANDLE  m_markAttachPendingEvent;
-    HANDLE  m_terminatingEvent;
+    CLREventBase m_markAttachPendingEvent;
+    CLREventBase m_terminatingEvent;
 
     //
     // Event Queues
@@ -1062,4 +1047,3 @@ private:
 
 
 #endif // SHIMPRIV_H
-

@@ -77,13 +77,18 @@ namespace System.Net
             _epl = epl;
             _secure = secure;
             _cert = cert;
-            if (secure == false)
+            if (!secure)
             {
                 _stream = new NetworkStream(sock, false);
             }
             else
             {
 #pragma warning disable CA5359
+                // This part is actually never called because LoadCertificateAndKey always returns null
+                // and for managed implementation we never negotiate TLS. If this ever changes we will need to re-think
+                // how we deal with client certs and probably also remove "disable CA5359".
+                // Doing full validation brings its own problems ... like AIA processing and possibly access to untrusted sites.
+                // so that should probably be driven by user configuration.
                 _sslStream = HttpListener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
                 {
                     if (c == null)

@@ -2009,7 +2009,7 @@ namespace System
         public override int GetHashCode()
         {
             // We want to have a limited hash in this case. We'll use the first 7 elements of the tuple
-            if (Rest is not IValueTupleInternal)
+            if (Rest is not IValueTupleInternal rest)
             {
                 return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                         Item2?.GetHashCode() ?? 0,
@@ -2020,7 +2020,7 @@ namespace System
                                         Item7?.GetHashCode() ?? 0);
             }
 
-            int size = ((IValueTupleInternal)Rest).Length;
+            int size = rest.Length;
             int restHashCode = Rest.GetHashCode();
             if (size >= 8)
             {
@@ -2170,9 +2170,9 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            if (Rest is IValueTupleInternal)
+            if (Rest is IValueTupleInternal rest)
             {
-                return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + ((IValueTupleInternal)Rest).ToStringEnd();
+                return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + rest.ToStringEnd();
             }
 
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + Rest.ToString() + ")";
@@ -2180,9 +2180,9 @@ namespace System
 
         string IValueTupleInternal.ToStringEnd()
         {
-            if (Rest is IValueTupleInternal)
+            if (Rest is IValueTupleInternal rest)
             {
-                return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + ((IValueTupleInternal)Rest).ToStringEnd();
+                return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + rest.ToStringEnd();
             }
 
             return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + Rest.ToString() + ")";
@@ -2191,7 +2191,7 @@ namespace System
         /// <summary>
         /// The number of positions in this data structure.
         /// </summary>
-        int ITuple.Length => Rest is IValueTupleInternal ? 7 + ((IValueTupleInternal)Rest).Length : 8;
+        int ITuple.Length => Rest is IValueTupleInternal rest ? 7 + rest.Length : 8;
 
         /// <summary>
         /// Get the element at position <param name="index"/>.
@@ -2218,9 +2218,9 @@ namespace System
                         return Item7;
                 }
 
-                if (Rest is IValueTupleInternal)
+                if (Rest is IValueTupleInternal rest)
                 {
-                    return ((IValueTupleInternal)Rest)[index - 7];
+                    return rest[index - 7];
                 }
 
 

@@ -12,7 +12,7 @@ class GCToEEInterface
 {
 public:
     static void SuspendEE(SUSPEND_REASON reason);
-    static void RestartEE(bool bFinishedGC); //resume threads.
+    static void RestartEE(bool bUnused); //resume threads.
 
     //
     // The GC roots enumeration callback
@@ -38,6 +38,10 @@ public:
 
     // Promote refcounted handle callback
     static bool RefCountedHandleCallbacks(Object * pObject);
+
+    static void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args);
+
+    static bool IsClientBridgeProcessingActive();
 
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
@@ -96,6 +100,8 @@ public:
     static void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved);
 
     static void LogErrorToHost(const char *message);
+
+    static uint64_t GetThreadOSThreadId(Thread* thread);
 };
 
 #endif // __GCENV_EE_H__

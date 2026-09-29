@@ -50,7 +50,7 @@ namespace System.IO.Ports.Tests
 
         private delegate void WriteMethodDelegate(Stream stream);
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort))]
         public void WriteTimeout_DefaultValue()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -67,7 +67,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort))]
         public void WriteTimeout_AfterClose()
         {
             Debug.WriteLine("Verifying setting WriteTimeout after the SerialPort was closed");
@@ -75,7 +75,7 @@ namespace System.IO.Ports.Tests
             VerifyException(2048, null, typeof(ObjectDisposedException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort))]
         public void WriteTimeout_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue WriteTimeout");
@@ -83,7 +83,7 @@ namespace System.IO.Ports.Tests
             VerifyException(int.MinValue, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort))]
         public void WriteTimeout_NEG2()
         {
             Debug.WriteLine("Verifying -2 WriteTimeout");
@@ -92,7 +92,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort))]
         public void WriteTimeout_ZERO()
         {
             Debug.WriteLine("Verifying 0 WriteTimeout");
@@ -100,7 +100,7 @@ namespace System.IO.Ports.Tests
             VerifyException(0, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Default_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying default WriteTimeout with Write(byte[] buffer, int offset, int count)");
@@ -108,7 +108,7 @@ namespace System.IO.Ports.Tests
             VerifyDefaultTimeout(Write_byte_int_int);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
         public void WriteTimeout_Default_WriteByte()
         {
             Debug.WriteLine("Verifying default WriteTimeout with WriteByte()");
@@ -116,7 +116,7 @@ namespace System.IO.Ports.Tests
             VerifyDefaultTimeout(WriteByte);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Infinite_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying infinite WriteTimeout with Write(byte[] buffer, int offset, int count)");
@@ -124,7 +124,7 @@ namespace System.IO.Ports.Tests
             VerifyLongTimeout(Write_byte_int_int, -1);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
         public void WriteTimeout_Infinite_WriteByte()
         {
             Debug.WriteLine("Verifying infinite WriteTimeout with WriteByte()");
@@ -132,7 +132,7 @@ namespace System.IO.Ports.Tests
             VerifyLongTimeout(WriteByte, -1);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Int32MaxValue_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying Int32.MaxValue WriteTimeout with Write(byte[] buffer, int offset, int count)");
@@ -140,7 +140,7 @@ namespace System.IO.Ports.Tests
             VerifyLongTimeout(Write_byte_int_int, int.MaxValue - 1);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
         public void WriteTimeout_Int32MaxValue_WriteByte()
         {
             Debug.WriteLine("Verifying Int32.MaxValue WriteTimeout with WriteByte()");
@@ -149,7 +149,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_750_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying 750 WriteTimeout with Write(byte[] buffer, int offset, int count)");
@@ -158,7 +158,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
         public void WriteTimeout_750_WriteByte()
         {
             Debug.WriteLine("Verifying 750 WriteTimeout with WriteByte()");
@@ -167,7 +167,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void SuccessiveWriteTimeoutNoData_Write_byte_int_int()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -185,7 +185,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void SuccessiveWriteTimeoutSomeData_Write_byte_int_int()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -226,7 +226,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
         public void SuccessiveWriteTimeoutNoData_WriteByte()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -245,7 +245,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void SuccessiveWriteTimeoutSomeData_WriteByte()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -285,21 +285,21 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_0_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying 0 WriteTimeout with Write(byte[] buffer, int offset, int count)");
             Verify0Timeout(Write_byte_int_int);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_0_WriteByte()
         {
             Debug.WriteLine("Verifying 0 WriteTimeout with WriteByte()");
             Verify0Timeout(WriteByte);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_LargeWrite()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

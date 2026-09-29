@@ -42,44 +42,51 @@
 #define BINDER_DefaultLookup        (BINDER_Instance | BINDER_Static | BINDER_Public)
 #define BINDER_AllLookup            (BINDER_Instance | BINDER_Static | BINDER_Public | BINDER_Instance)
 
-class ReflectionInvocation {
-
+class ReflectionInvocation
+{
 public:
-
-    static FCDECL1(void, PrepareDelegate, Object* delegateUNSAFE);
-    static FCDECL0(void, EnsureSufficientExecutionStack);
-    static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
-
-    // TypedReference functions, should go somewhere else
-    static FCDECL4(void, MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldType);
-
-#ifdef FEATURE_COMINTEROP
-    static FCDECL8(Object*, InvokeDispMethod, ReflectClassBaseObject* refThisUNSAFE, StringObject* nameUNSAFE, INT32 invokeAttr, Object* targetUNSAFE, PTRArray* argsUNSAFE, PTRArray* byrefModifiersUNSAFE, LCID lcid, PTRArray* namedParametersUNSAFE);
-#endif  // FEATURE_COMINTEROP
-    static FCDECL2(void, GetGUID, ReflectClassBaseObject* refThisUNSAFE, GUID * result);
-
-    // helper fcalls for invocation
-    static FCDECL2(FC_BOOL_RET, CanValueSpecialCast, ReflectClassBaseObject *valueType, ReflectClassBaseObject *targetType);
+    FCDECL0(static FC_BOOL_RET, TryEnsureSufficientExecutionStack);
 };
 
-extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD);
+extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHandle pType);
+extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHandle pType, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::ModuleHandle pModule);
+extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::ModuleHandle pModule, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc* pMD, TypeHandle *pInstantiation, UINT32 cInstantiation);
+extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc* pMD, TypeHandle *pInstantiation, UINT32 cInstantiation, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectInfo(QCall::TypeHandle pType, PCODE* ppfnAllocator, void** pvAllocatorFirstArg);
+extern "C" void QCALLTYPE ReflectionInvocation_PrepareDelegate(QCall::ObjectHandleOnStack delegate, QCallExceptionStatus* qcallError);
+
+#ifdef FEATURE_COMINTEROP
+extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
+    QCall::ObjectHandleOnStack type,
+    QCall::ObjectHandleOnStack name,
+    INT32 invokeAttr,
+    QCall::ObjectHandleOnStack target,
+    QCall::ObjectHandleOnStack args,
+    QCall::ObjectHandleOnStack byrefModifiers,
+    LCID lcid,
+    QCall::ObjectHandleOnStack namedParameters,
+    QCall::ObjectHandleOnStack result,
+    QCallExceptionStatus* qcallError);
+
+extern "C" void QCALLTYPE ReflectionInvocation_GetComObjectGuid(QCall::ObjectHandleOnStack type, GUID* result, QCallExceptionStatus* qcallError);
+#endif // FEATURE_COMINTEROP
+
+extern "C" void QCALLTYPE ReflectionInvocation_GetGuid(MethodTable* pMT, GUID* result, QCallExceptionStatus* qcallError);
+
+extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectInfo(QCall::TypeHandle pType, PCODE* ppfnAllocator, void** pvAllocatorFirstArg, QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
     QCall::TypeHandle pType,
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg,
     int32_t* pValueOffset,
-    uint32_t* pValueSize);
+    uint32_t* pValueSize,
+    QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames);
+extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames, QCallExceptionStatus* qcallError);
 
 extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType);
 

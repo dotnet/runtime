@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -17,7 +18,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         internal sealed class ConfigBindingGenTestDriver
@@ -28,19 +29,21 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             private readonly LanguageVersion _langVersion;
             private readonly IEnumerable<Assembly>? _assemblyReferences;
+            private readonly IEnumerable<MetadataReference>? _metadataReferences;
             private Compilation _compilation = null;
 
             public ConfigBindingGenTestDriver(
                 LanguageVersion langVersion = LanguageVersion.LatestMajor,
-                IEnumerable<Assembly>? assemblyReferences = null)
+                IEnumerable<Assembly>? assemblyReferences = null,
+                IEnumerable<MetadataReference>? metadataReferences = null)
             {
                 _langVersion = langVersion;
 
                 _assemblyReferences = assemblyReferences ?? s_compilationAssemblyRefs;
+                _metadataReferences = metadataReferences;
 
                 _parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] {
-                    new KeyValuePair<string, string>("InterceptorsPreview", "") ,
-                    new KeyValuePair<string, string>("InterceptorsPreviewNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
+                    new KeyValuePair<string, string>("InterceptorsNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
                 });
 
                 ConfigurationBindingGenerator generator = new() { OnSourceEmitting = spec => _genSpec = spec };
@@ -86,6 +89,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Annotations))
                         .WithParseOptions(_parseOptions)
                         .WithDocuments(new string[] { source });
+
+                    if (_metadataReferences is not null)
+                    {
+                        project = project.AddMetadataReferences(_metadataReferences);
+                    }
+
                     Assert.True(project.Solution.Workspace.TryApplyChanges(project.Solution));
 
                     _compilation = (await project.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false))!;

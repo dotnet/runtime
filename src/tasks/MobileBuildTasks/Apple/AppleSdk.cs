@@ -92,7 +92,7 @@ namespace Microsoft.Apple.Build
 
             if (!File.Exists ("/usr/bin/xcode-select"))
             {
-                throw new Exception("Unable to locate XCode via xcode-select. Please make sure Xcode is properly installed");
+                throw new Exception("Unable to locate Xcode via xcode-select. Please make sure Xcode is properly installed");
             }
 
             try
@@ -104,7 +104,7 @@ namespace Microsoft.Apple.Build
                                                                 debugMessageImportance: MessageImportance.Low,
                                                                 label: "xcode-select");
 
-                output.Trim();
+                output = output.Trim();
                 if (Directory.Exists(output))
                 {
                     if (output.EndsWith("/Contents/Developer", StringComparison.Ordinal))

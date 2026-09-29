@@ -359,7 +359,7 @@ namespace System.Reflection.Emit
              * MS throws NotSupported here, but we can't because some corlib
              * classes make calls to IsDefined.
              */
-            return CustomAttribute.IsDefined(this, attributeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
         public override object[] GetCustomAttributes(bool inherit)
@@ -1198,7 +1198,7 @@ namespace System.Reflection.Emit
             return created!.HasElementType;
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             check_created();
@@ -1303,6 +1303,7 @@ namespace System.Reflection.Emit
                     LayoutKind.Auto => TypeAttributes.AutoLayout,
                     LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
                     LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+                    LayoutKind.Extended => TypeAttributes.ExtendedLayout,
                     _ => throw new Exception(SR.Argument_InvalidKindOfTypeForCA), // we should ignore it since it can be any value anyway...
                 };
 

@@ -133,10 +133,21 @@ namespace System.Diagnostics
                 if (Parent is ActivityContext && IdFormat == ActivityIdFormat.W3C && _context == default)
                 {
                     Func<ActivityTraceId>? traceIdGenerator = Activity.TraceIdGenerator;
-                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+                    ActivityTraceId id;
+                    ActivityTraceFlags activityTraceFlags = ActivityTraceFlags.None;
+
+                    if (traceIdGenerator is null)
+                    {
+                        id = ActivityTraceId.CreateRandom();
+                        activityTraceFlags = ActivityTraceFlags.RandomTraceId;
+                    }
+                    else
+                    {
+                        id = traceIdGenerator();
+                    }
 
                     // Because the struct is readonly, we cannot directly assign _context. We have to workaround it by calling Unsafe.AsRef
-                    Unsafe.AsRef(in _context) = new ActivityContext(id, default, ActivityTraceFlags.None);
+                    Unsafe.AsRef(in _context) = new ActivityContext(id, default, activityTraceFlags);
                 }
 
                 return _context.TraceId;

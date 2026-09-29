@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
@@ -11,7 +12,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public sealed class IncrementalTests
         {
             [Fact]
@@ -21,7 +22,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 SourceGenerationSpec spec2 = (await new ConfigBindingGenTestDriver().RunGeneratorAndUpdateCompilation(BindCallSampleCode)).GenerationSpec;
 
                 Assert.NotSame(spec1, spec2);
+#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
                 GeneratorTestHelpers.AssertStructurallyEqual(spec1, spec2);
+#pragma warning restore IL2026
 
                 Assert.Equal(spec1, spec2);
                 Assert.Equal(spec1.GetHashCode(), spec2.GetHashCode());

@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // A cycle in just Types (not data) is allowed.
             string json = JsonSerializer.Serialize(obj);
-            Assert.Equal(@"{""Array"":null}", json);
+            Assert.Equal("""{"Array":null}""", json);
         }
 
         [Fact]

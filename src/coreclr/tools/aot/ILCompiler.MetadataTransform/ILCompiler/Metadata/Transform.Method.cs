@@ -60,7 +60,7 @@ namespace ILCompiler.Metadata
 
         private void InitializeMethodDefinition(Cts.MethodDesc entity, Method record)
         {
-            record.Name = HandleString(entity.Name);
+            record.Name = HandleString(entity.GetName());
 
             if (entity.HasInstantiation)
             {
@@ -84,6 +84,9 @@ namespace ILCompiler.Metadata
                 record.Parameters.Capacity = paramHandles.Count;
                 foreach (var paramHandle in paramHandles)
                 {
+                    if (!_policy.GeneratesMetadata(ecmaEntity.Module, paramHandle))
+                        continue;
+
                     Ecma.Parameter param = reader.GetParameter(paramHandle);
                     Parameter paramRecord = new Parameter
                     {
@@ -132,7 +135,7 @@ namespace ILCompiler.Metadata
 
         private void InitializeMethodReference(Cts.MethodDesc entity, MemberReference record)
         {
-            record.Name = HandleString(entity.Name);
+            record.Name = HandleString(entity.GetName());
             record.Parent = HandleType(entity.OwningType);
             record.Signature = HandleMethodSignature(entity.GetTypicalMethodDefinition().Signature);
         }

@@ -39,42 +39,6 @@ namespace System.Reflection.Runtime.Assemblies
         }
 
         /// <summary>
-        /// Returns non-null or throws.
-        /// </summary>
-        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
-        {
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
-            if (!binder.Bind(rawAssembly, pdbSymbolStore, out AssemblyBindResult bindResult, out Exception exception))
-            {
-                if (exception != null)
-                    throw exception;
-                else
-                    throw new BadImageFormatException();
-            }
-
-            RuntimeAssembly result = GetRuntimeAssembly(bindResult);
-            return result;
-        }
-
-        /// <summary>
-        /// Returns non-null or throws.
-        /// </summary>
-        internal static RuntimeAssembly GetRuntimeAssemblyFromPath(string assemblyPath)
-        {
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
-            if (!binder.Bind(assemblyPath, out AssemblyBindResult bindResult, out Exception exception))
-            {
-                if (exception != null)
-                    throw exception;
-                else
-                    throw new BadImageFormatException();
-            }
-
-            RuntimeAssembly result = GetRuntimeAssembly(bindResult, assemblyPath);
-            return result;
-        }
-
-        /// <summary>
         /// Returns null if no assembly matches the assemblyRefName. Throws for other error cases.
         /// </summary>
         internal static RuntimeAssemblyInfo GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)
@@ -191,42 +155,6 @@ namespace System.Reflection.Runtime.MethodInfos
         internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, string name, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, CustomMethodInvokerAction action)
         {
             return new RuntimeSyntheticMethodInfo(syntheticMethodId, name, declaringType, runtimeParameterTypes, returnType, options, action).WithDebugName();
-        }
-    }
-}
-
-namespace System.Reflection.Runtime.ParameterInfos
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos for MethodBase objects with no Parameter metadata.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
-    {
-        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
-        {
-            return new RuntimeThinMethodParameterInfo(member, position, qualifiedParameterType, typeContext);
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos returned by PropertyInfo.GetIndexParameters()
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimePropertyIndexParameterInfo : RuntimeParameterInfo
-    {
-        internal static RuntimePropertyIndexParameterInfo GetRuntimePropertyIndexParameterInfo(RuntimePropertyInfo member, RuntimeParameterInfo backingParameter)
-        {
-            return new RuntimePropertyIndexParameterInfo(member, backingParameter);
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos returned by Get/Set methods on array types.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeSyntheticParameterInfo : RuntimeParameterInfo
-    {
-        internal static RuntimeSyntheticParameterInfo GetRuntimeSyntheticParameterInfo(MemberInfo member, int position, RuntimeTypeInfo parameterType)
-        {
-            return new RuntimeSyntheticParameterInfo(member, position, parameterType);
         }
     }
 }

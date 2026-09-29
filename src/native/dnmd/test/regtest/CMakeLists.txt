@@ -11,6 +11,7 @@ set(SOURCES
 )
 
 add_executable(regtest ${SOURCES} ${HEADERS})
+target_include_directories(regtest PRIVATE "${CLR_SRC_NATIVE_DIR}/../coreclr/minipal")
 target_link_libraries(regtest PRIVATE dnmd::interfaces gtest gmock minipal_com regpal) # Reference gmock for better collection assertions
 
 target_compile_definitions(regtest PRIVATE COM_NO_WINDOWS_H)
@@ -18,6 +19,7 @@ target_compile_definitions(regtest PRIVATE COM_NO_WINDOWS_H)
 if (NOT WIN32)
     target_link_libraries(regtest PRIVATE minipal_comhdrs)
 else()
+    target_compile_definitions(regtest PRIVATE NOMINMAX _CRT_SECURE_NO_WARNINGS)
     target_link_libraries(regtest PRIVATE WIL)
 endif()
 
@@ -38,4 +40,8 @@ if(WIN32)
                         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nethost> $<TARGET_FILE_DIR:regtest>)
 endif()
 
-# gtest_discover_tests(regtest DISCOVERY_TIMEOUT 1200)
+if (DNMD_ENABLE_SANITIZERS)
+    set(SANITIZER_SUPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../sanitizers")
+    gtest_discover_tests(regtest DISCOVERY_TIMEOUT 1200 PROPERTIES ENVIRONMENT
+        "ASAN_OPTIONS=detect_odr_violation=0;LSAN_OPTIONS=suppressions=${SANITIZER_SUPP_DIR}/lsan.supp;UBSAN_OPTIONS=suppressions=${SANITIZER_SUPP_DIR}/ubsan.supp")
+endif()

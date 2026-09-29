@@ -28,6 +28,10 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")] // Match SslStream_StreamToStream_Authentication_Success
         public async Task EventSource_EventsRaisedAsExpected()
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("We'll deal with EventSources later.");
+            }
             await RemoteExecutor.Invoke(async () =>
             {
                 try

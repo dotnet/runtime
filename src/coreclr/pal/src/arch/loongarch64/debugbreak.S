@@ -4,4 +4,5 @@
 #include "unixasmmacros.inc"
 LEAF_ENTRY DBG_DebugBreak, _TEXT
     EMIT_BREAKPOINT
+    jirl  $r0, $ra, 0
 LEAF_END_MARKED DBG_DebugBreak, _TEXT

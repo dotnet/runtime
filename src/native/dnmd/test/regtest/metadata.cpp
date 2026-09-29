@@ -1609,6 +1609,7 @@ namespace
                 EXPECT_HRESULT_SUCCEEDED(import->ResetEnum(hcorenum, 0));
                 ReadInMembers(import, hcorenum, tk, tokens);
             }
+            import->CloseEnum(hcorenum);
         }
         catch (...)
         {
@@ -1619,19 +1620,138 @@ namespace
     }
 }
 
+TEST(ImportAssembly, MissingSourceAssemblyRejectsExternalTypeImports)
+{
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+
+    minipal::com_ptr<IMetaDataEmit> source;
+    minipal::com_ptr<IMetaDataEmit> target;
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit, (IUnknown**)&source));
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit, (IUnknown**)&target));
+
+    minipal::com_ptr<IMetaDataImport> sourceImport;
+    minipal::com_ptr<IMetaDataAssemblyEmit> targetAssembly;
+    ASSERT_EQ(S_OK, source->QueryInterface(IID_IMetaDataImport, (void**)&sourceImport));
+    ASSERT_EQ(S_OK, target->QueryInterface(IID_IMetaDataAssemblyEmit, (void**)&targetAssembly));
+
+    mdTypeDef sourceType;
+    ASSERT_EQ(S_OK, source->DefineTypeDef(W("SourceType"), tdPublic, mdTypeDefNil, nullptr, &sourceType));
+
+    mdTypeRef importedType = mdTypeRefNil;
+    EXPECT_EQ(E_UNEXPECTED, target->DefineImportType(
+        nullptr, nullptr, 0, sourceImport, sourceType, targetAssembly, &importedType));
+
+    mdTypeRef sourceTypeRef;
+    ASSERT_EQ(S_OK, source->DefineTypeRefByName(mdTokenNil, W("Missing.Type"), &sourceTypeRef));
+
+    std::array<COR_SIGNATURE, 6> signature = { IMAGE_CEE_CS_CALLCONV_FIELD, ELEMENT_TYPE_CLASS };
+    ULONG signatureLength = 2 + CorSigCompressToken(sourceTypeRef, signature.data() + 2);
+    std::array<COR_SIGNATURE, 6> translatedSignature{};
+    ULONG translatedLength = 0;
+    EXPECT_EQ(E_UNEXPECTED, target->TranslateSigWithScope(
+        nullptr, nullptr, 0, sourceImport, signature.data(), signatureLength,
+        targetAssembly, target, translatedSignature.data(), (ULONG)translatedSignature.size(), &translatedLength));
+
+    minipal::com_ptr<IMetaDataImport> targetImport;
+    ASSERT_EQ(S_OK, target->QueryInterface(IID_IMetaDataImport, (void**)&targetImport));
+    HCORENUM enumeration = nullptr;
+    mdTypeRef typeRef;
+    ULONG count = 1;
+    EXPECT_EQ(S_FALSE, targetImport->EnumTypeRefs(&enumeration, &typeRef, 1, &count));
+    EXPECT_EQ(0u, count);
+    targetImport->CloseEnum(enumeration);
+}
+
+TEST(ImportAssembly, MissingAssemblyStillAllowsSameModuleType)
+{
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+
+    minipal::com_ptr<IMetaDataEmit> module;
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit, (IUnknown**)&module));
+
+    minipal::com_ptr<IMetaDataImport> moduleImport;
+    ASSERT_EQ(S_OK, module->QueryInterface(IID_IMetaDataImport, (void**)&moduleImport));
+
+    mdTypeDef typeDef;
+    ASSERT_EQ(S_OK, module->DefineTypeDef(W("SameModuleType"), tdPublic, mdTypeDefNil, nullptr, &typeDef));
+
+    mdTypeRef importedType = mdTypeRefNil;
+    ASSERT_EQ(S_OK, module->DefineImportType(
+        nullptr, nullptr, 0, moduleImport, typeDef, nullptr, &importedType));
+    EXPECT_EQ(typeDef, importedType);
+}
+
+TEST(ImportAssembly, ImportsAssemblyWithoutPublicKey)
+{
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+
+    minipal::com_ptr<IMetaDataEmit> source;
+    minipal::com_ptr<IMetaDataEmit> target;
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit, (IUnknown**)&source));
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit, (IUnknown**)&target));
+
+    minipal::com_ptr<IMetaDataAssemblyEmit> sourceAssembly;
+    minipal::com_ptr<IMetaDataAssemblyImport> sourceAssemblyImport;
+    minipal::com_ptr<IMetaDataImport> sourceImport;
+    minipal::com_ptr<IMetaDataAssemblyEmit> targetAssembly;
+    minipal::com_ptr<IMetaDataAssemblyImport> targetAssemblyImport;
+    ASSERT_EQ(S_OK, source->QueryInterface(IID_IMetaDataAssemblyEmit, (void**)&sourceAssembly));
+    ASSERT_EQ(S_OK, source->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&sourceAssemblyImport));
+    ASSERT_EQ(S_OK, source->QueryInterface(IID_IMetaDataImport, (void**)&sourceImport));
+    ASSERT_EQ(S_OK, target->QueryInterface(IID_IMetaDataAssemblyEmit, (void**)&targetAssembly));
+    ASSERT_EQ(S_OK, target->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&targetAssemblyImport));
+
+    ASSEMBLYMETADATA identity{};
+    identity.usMajorVersion = 1;
+    identity.usMinorVersion = 2;
+    identity.usBuildNumber = 3;
+    identity.usRevisionNumber = 4;
+    identity.szLocale = const_cast<LPWSTR>(W("en-us"));
+    identity.cbLocale = 6;
+
+    mdAssembly assembly;
+    ASSERT_EQ(S_OK, sourceAssembly->DefineAssembly(nullptr, 0, 0, W("SourceAssembly"), &identity, 0, &assembly));
+
+    mdAssemblyRef seed;
+    ASSERT_EQ(S_OK, targetAssembly->DefineAssemblyRef(nullptr, 0, W("Seed"), &identity, nullptr, 0, 0, &seed));
+
+    mdTypeDef typeDef;
+    ASSERT_EQ(S_OK, source->DefineTypeDef(W("SourceType"), tdPublic, mdTypeDefNil, nullptr, &typeDef));
+
+    mdTypeRef importedType = mdTypeRefNil;
+    ASSERT_EQ(S_OK, target->DefineImportType(
+        sourceAssemblyImport, nullptr, 0, sourceImport, typeDef, targetAssembly, &importedType));
+    EXPECT_EQ(mdtTypeRef, TypeFromToken(importedType));
+
+    void const* publicKeyOrToken = nullptr;
+    ULONG publicKeyOrTokenLength = 0;
+    std::array<WCHAR, 16> locale{};
+    ASSEMBLYMETADATA importedIdentity{};
+    importedIdentity.szLocale = locale.data();
+    importedIdentity.cbLocale = (ULONG)locale.size();
+    ASSERT_EQ(S_OK, targetAssemblyImport->GetAssemblyRefProps(
+        TokenFromRid(2, mdtAssemblyRef), &publicKeyOrToken, &publicKeyOrTokenLength,
+        nullptr, 0, nullptr, &importedIdentity, nullptr, nullptr, nullptr));
+    EXPECT_EQ(0u, publicKeyOrTokenLength);
+    EXPECT_EQ(identity.usRevisionNumber, importedIdentity.usRevisionNumber);
+}
+
 TEST(FindTest, FindAPIs)
 {
     malloc_span<uint8_t> metadata = GetRegressionAssemblyMetadata();
 
     minipal::com_ptr<IMetaDataImport2> baselineImport;
-    ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, metadata, (uint32_t)metadata.size(), &baselineImport));
+    ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, metadata.data(), (uint32_t)metadata.size(), &baselineImport));
     // Load metadata
     minipal::com_ptr<IMetaDataImport2> currentImport;
 
     minipal::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
 
-    ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, metadata, (uint32_t)metadata.size(), &currentImport));
+    ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, metadata.data(), (uint32_t)metadata.size(), &currentImport));
 
     static auto FindTokenByName = [](IMetaDataImport2* import, LPCWSTR name, mdToken enclosing = mdTokenNil) -> mdToken
     {
@@ -1767,7 +1887,7 @@ TEST_P(MetadataImportTest, ImportAPIs)
 {
     auto param = GetParam();
     span<uint8_t> blob = GetMetadataForFile(param);
-    void const* data = blob;
+    void const* data = blob.data();
     uint32_t dataLen = (uint32_t)blob.size();
 
     // Load metadata
@@ -2004,7 +2124,7 @@ TEST_P(MetaDataLongRunningTest, ImportAPIs)
 {
     auto param = GetParam();
     span<uint8_t> blob = GetMetadataForFile(param);
-    void const* data = blob;
+    void const* data = blob.data();
     uint32_t dataLen = (uint32_t)blob.size();
 
     // Load metadata

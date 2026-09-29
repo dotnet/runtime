@@ -42,11 +42,11 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static bool DisableDynamicEngine { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.DisableDynamicEngine", out bool disableDynamicEngine) ? disableDynamicEngine : false;
 
-        internal static bool VerifyAotCompatibility =>
+        internal static bool IsDynamicCodeSupported =>
 #if NETFRAMEWORK || NETSTANDARD2_0
-            false;
+            true;
 #else
-            !RuntimeFeature.IsDynamicCodeSupported;
+            RuntimeFeature.IsDynamicCodeSupported;
 #endif
 
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
@@ -108,42 +108,92 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to get.</param>
         /// <param name="serviceKey">The key of the service to get.</param>
         /// <returns>The keyed service.</returns>
+        /// <exception cref="InvalidOperationException">The <see cref="KeyedService.AnyKey"/> value is used for <paramref name="serviceKey"/>
+        /// when <paramref name="serviceType"/> is not an enumerable based on <see cref="IEnumerable{T}"/>.
+        /// </exception>
         public object? GetKeyedService(Type serviceType, object? serviceKey)
             => GetKeyedService(serviceType, serviceKey, Root);
 
         internal object? GetKeyedService(Type serviceType, object? serviceKey, ServiceProviderEngineScope serviceProviderEngineScope)
-            => GetService(new ServiceIdentifier(serviceKey, serviceType), serviceProviderEngineScope);
+        {
+            if (serviceKey == KeyedService.AnyKey)
+            {
+                if (!serviceType.IsGenericType || serviceType.GetGenericTypeDefinition() != typeof(IEnumerable<>))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_KeyedServiceAnyKeyUsedToResolveService();
+                }
+            }
+
+            return GetService(new ServiceIdentifier(serviceKey, serviceType), serviceProviderEngineScope);
+        }
 
         /// <summary>
-        /// Gets the service object of the specified type. Will throw if the service not found.
+        /// Gets the service object of the specified type.
         /// </summary>
         /// <param name="serviceType">The type of the service to get.</param>
         /// <param name="serviceKey">The key of the service to get.</param>
         /// <returns>The keyed service.</returns>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="InvalidOperationException">The service wasn't found or the <see cref="KeyedService.AnyKey"/> value is used
+        /// for <paramref name="serviceKey"/> when <paramref name="serviceType"/> is not an enumerable based on <see cref="IEnumerable{T}"/>.
+        /// </exception>
         public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
-            => GetRequiredKeyedService(serviceType, serviceKey, Root);
+        {
+            if (serviceKey == KeyedService.AnyKey)
+            {
+                if (!serviceType.IsGenericType || serviceType.GetGenericTypeDefinition() != typeof(IEnumerable<>))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_KeyedServiceAnyKeyUsedToResolveService();
+                }
+            }
+
+            return GetRequiredKeyedService(serviceType, serviceKey, Root);
+        }
 
         internal object GetRequiredKeyedService(Type serviceType, object? serviceKey, ServiceProviderEngineScope serviceProviderEngineScope)
         {
             object? service = GetKeyedService(serviceType, serviceKey, serviceProviderEngineScope);
             if (service == null)
             {
-                throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
+                if (serviceKey is null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NoServiceRegistered(serviceType);
+                }
+                else
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NoKeyedServiceRegistered(serviceType, serviceKey.GetType());
+                }
             }
+
             return service;
         }
 
         internal bool IsDisposed() => _disposed;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Disposes the service provider and all resolved services that implement <see cref="IDisposable"/>.
+        /// </summary>
+        /// <remarks>
+        /// Prefer calling <see cref="DisposeAsync"/> over this method. If any resolved service implements
+        /// <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>, this method throws an
+        /// <see cref="InvalidOperationException"/>. Use <see cref="DisposeAsync"/> to properly handle all
+        /// disposable services, or explicitly perform sync-over-async on the caller side if synchronous
+        /// disposal is required.
+        /// </remarks>
         public void Dispose()
         {
             DisposeCore();
             Root.Dispose();
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Asynchronously disposes the service provider and all resolved services that implement <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>.
+        /// </summary>
+        /// <remarks>
+        /// Awaiting individual <see cref="IAsyncDisposable.DisposeAsync"/> calls uses <c>ConfigureAwait(false)</c>,
+        /// so when an asynchronous dispose operation yields, its continuations do not attempt to resume on the original
+        /// synchronization context. Services should not rely on disposal continuations running on any particular context.
+        /// </remarks>
+        /// <returns>A value task that represents the asynchronous operation.</returns>
         public ValueTask DisposeAsync()
         {
             DisposeCore();
@@ -280,7 +330,22 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.Root.RootProvider.CallSiteFactory.Descriptors);
-            public List<object> Disposables => new List<object>(_serviceProvider.Root.Disposables);
+            public List<object> Disposables
+            {
+                get
+                {
+                    IList<object?> source = _serviceProvider.Root.Disposables;
+                    var result = new List<object>(source.Count);
+                    for (int i = 0; i < source.Count; i++)
+                    {
+                        if (source[i] is object item)
+                        {
+                            result.Add(item);
+                        }
+                    }
+                    return result;
+                }
+            }
             public bool Disposed => _serviceProvider.Root.Disposed;
             public bool IsScope => !_serviceProvider.Root.IsRootScope;
         }

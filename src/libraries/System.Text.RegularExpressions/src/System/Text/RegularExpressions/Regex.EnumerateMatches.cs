@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
@@ -93,17 +95,24 @@ namespace System.Text.RegularExpressions
             new ValueMatchEnumerator(this, input, startat);
 
         /// <summary>
-        /// Represents an enumerator containing the set of successful matches found by iteratively applying a regular expression pattern to the input span.
+        /// Represents an enumerator containing the set of successful matches found by iteratively applying
+        /// a regular expression pattern to the input span.
         /// </summary>
         /// <remarks>
-        /// The enumerator has no public constructor. The <see cref="Regex.EnumerateMatches(ReadOnlySpan{char})"/> method returns a <see cref="Regex.ValueMatchEnumerator"/>
-        /// object.The enumerator will lazily iterate over zero or more <see cref="ValueMatch"/> objects. If there is at least one successful match in the span, then
-        /// <see cref="MoveNext"/> returns <see langword="true"/> and <see cref="Current"/> will contain the first <see cref="ValueMatch"/>. If there are no successful matches,
-        /// then <see cref="MoveNext"/> returns <see langword="false"/> and <see cref="Current"/> throws an <see cref="InvalidOperationException"/>.
-        ///
-        /// This type is a ref struct since it stores the input span as a field in order to be able to lazily iterate over it.
+        /// <para>
+        /// The enumerator has no public constructor. The <see cref="Regex.EnumerateMatches(ReadOnlySpan{char})"/>
+        /// method returns a <see cref="Regex.ValueMatchEnumerator"/> object. The enumerator will lazily iterate
+        /// over zero or more <see cref="ValueMatch"/> objects. If there is at least one successful match in the
+        /// span, then <see cref="MoveNext"/> returns <see langword="true"/> and <see cref="Current"/> will contain
+        /// the first <see cref="ValueMatch"/>. If there are no successful matches, then <see cref="MoveNext"/>
+        /// returns <see langword="false"/> and <see cref="Current"/> throws an <see cref="InvalidOperationException"/>.
+        /// </para>
+        /// <para>
+        /// This type is a ref struct since it stores the input span as a field in order to be able to lazily
+        /// iterate over it.
+        /// </para>
         /// </remarks>
-        public ref struct ValueMatchEnumerator
+        public ref struct ValueMatchEnumerator : IEnumerator<ValueMatch>
         {
             private readonly Regex _regex;
             private readonly ReadOnlySpan<char> _input;
@@ -157,6 +166,15 @@ namespace System.Text.RegularExpressions
             /// </summary>
             /// <exception cref="InvalidOperationException">Enumeration has either not started or has already finished.</exception>
             public readonly ValueMatch Current => _current;
+
+            /// <inheritdoc />
+            readonly object IEnumerator.Current => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            void IEnumerator.Reset() => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            void IDisposable.Dispose() { }
         }
     }
 }

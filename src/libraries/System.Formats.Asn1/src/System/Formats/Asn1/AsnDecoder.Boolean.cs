@@ -25,15 +25,15 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -93,15 +93,15 @@ namespace System.Formats.Asn1
         ///   The decoded value.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -112,6 +112,42 @@ namespace System.Formats.Asn1
         public bool ReadBoolean(Asn1Tag? expectedTag = null)
         {
             bool ret = AsnDecoder.ReadBoolean(_data.Span, RuleSet, out int bytesConsumed, expectedTag);
+            _data = _data.Slice(bytesConsumed);
+            return ret;
+        }
+    }
+
+    public ref partial struct ValueAsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a Boolean with a specified tag.
+        /// </summary>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        /// </param>
+        /// <returns>
+        ///   The decoded value.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        public bool ReadBoolean(Asn1Tag? expectedTag = null)
+        {
+            bool ret = AsnDecoder.ReadBoolean(_data, RuleSet, out int bytesConsumed, expectedTag);
             _data = _data.Slice(bytesConsumed);
             return ret;
         }

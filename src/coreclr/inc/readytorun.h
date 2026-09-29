@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 10
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MAJOR_VERSION 30
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 10
+#define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -38,6 +38,46 @@
 //                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
 // R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis, disable support for LogMethodEnter helper
 // R2R Version 10.1 adds Unbox_TypeTest helper
+// R2R Version 11 uses GCInfo v4, which encodes safe points without -1 offset and does not track return kinds in GCInfo
+// R2R Version 12 requires all return buffers to be always on the stack
+// R2R Version 13 removes usage of PSPSym, changes ABI for funclets to match NativeAOT, changes register for
+//                exception parameter on AMD64, and redefines generics instance context stack slot in GCInfo v4
+//                to be SP/FP relative
+// R2R Version 13.1 added long/ulong to float helper calls
+// R2R Version 14 changed x86 code generation to use funclets
+// R2R Version 15 removes double to int/uint helper calls
+// R2R Version 16 replaces the compression format for debug boundaries with a new format that is smaller and more efficient to parse
+//     R2R 16 is not backward compatible with 15.x or earlier.
+// R2R Version 17 adds support for producing "fat" debug information (that e.g. can include async debug info)
+//     R2R 17 is not backward compatible with 16.x or earlier.
+// R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
+// R2R Version 18 updates fields layout algorithm
+// R2R Version 18.2 adds InitClass and InitInstClass helpers
+// R2R Version 18.3 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
+// R2R Version 18.4 adds ThrowArgument, ThrowArgumentOutOfRange, ThrowPlatformNotSupported, and ThrowNotImplemented helpers
+// R2R Version 18.5 adds READYTORUN_FLAG_STRIPPED_IL_BODIES, READYTORUN_FLAG_STRIPPED_INLINING_INFO, and READYTORUN_FLAG_STRIPPED_DEBUG_INFO flags
+// R2R Version 18.6 adds READYTORUN_FIXUP_InjectStringThunks for mapping strings to pregenerated code thunks
+// R2R Version 18.7 adds READYTORUN_HELPER_R2RToInterpreter
+// R2R Version 19 removes the READYTORUN_HELPER_ByRefWriteBarrier helper
+// R2R Version 20 changes NativeVarInfo encoding to include ASYNC_CONTINUATION_ILNUM
+// R2R Version 21 updates GC info version to 5 which adds isAsync to x86 GC info
+// R2R Version 22 changes NativeVarInfo encoding to include CALL_RETURN_VALUE
+// R2R Version 23 changes delegate layout to have target before methodPtr
+// R2R Version 24 changes ARM32 virtual stub dispatch hidden parameter register to R12
+// R2R Version 25 renames runtime async infrastructure members, makes thunk-used members NonVersionable, and frees up a flag in CorInfoContinuationFlags
+// R2R Version 26 changes ARM64 NativeVarInfo register encoding to include V0-V31
+// R2R Version 26.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
+// R2R Version 27 redefines READYTORUN_FIXUP_DeclaringTypeHandle to be encoded as a method signature instead of a pair of type signatures
+// R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
+// R2R Version 29 adds the WasmAsyncResumeInfo fixup section and stores method-relative virtual IPs in Wasm async resume information.
+//     R2R 29 is not backward compatible with 28.x or earlier.
+// R2R Version 29.1 adds READYTORUN_HELPER_ResumeAfterCatch for WebAssembly exception resumption.
+// R2R Version 29.2 adds READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS, which records that the image was
+// compiled with the GC mode transition verification scaffolding (and therefore emits
+// READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
+// consumes the scaffolding, so the flag is only ever set on WebAssembly images.
+// R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
+// R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
 
 struct READYTORUN_CORE_HEADER
 {
@@ -74,6 +114,11 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_COMPONENT                   = 0x00000020,   // This is the header describing a component assembly of composite R2R
     READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE  = 0x00000040,   // This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
     READYTORUN_FLAG_UNRELATED_R2R_CODE          = 0x00000080,   // This R2R module has code in it that would not be naturally encoded into this module
+    READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE       = 0x00000100,   // The owning composite executable is in the platform native format
+    READYTORUN_FLAG_STRIPPED_IL_BODIES          = 0x00000200,   // IL method bodies have been stripped from the image
+    READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
+    READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
+    READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS  = 0x00001000,   // Code in this image verifies that GC mode transitions are legal. WebAssembly only; its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -82,7 +127,7 @@ enum class ReadyToRunSectionType : uint32_t
     ImportSections              = 101,
     RuntimeFunctions            = 102,
     MethodDefEntryPoints        = 103,
-    ExceptionInfo               = 104,
+    ExceptionInfo               = 104, // [cDAC] [ExecutionManager] : Contract depends on this value.
     DebugInfo                   = 105,
     DelayLoadMethodCallThunks   = 106,
     // 107 used by an older format of AvailableTypes
@@ -102,6 +147,10 @@ enum class ReadyToRunSectionType : uint32_t
     MethodIsGenericMap          = 121, // Added in V9.0
     EnclosingTypeMap            = 122, // Added in V9.0
     TypeGenericInfoMap          = 123, // Added in V9.0
+    ExternalTypeMaps            = 124, // Added in V18.3
+    ProxyTypeMaps               = 125, // Added in V18.3
+    TypeMapAssemblyTargets      = 126, // Added in V18.3
+    WasmAsyncResumeInfo         = 127, // Added in V29
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -183,6 +232,7 @@ enum ReadyToRunMethodSigFlags
     READYTORUN_METHOD_SIG_Constrained           = 0x20,
     READYTORUN_METHOD_SIG_OwnerType             = 0x40,
     READYTORUN_METHOD_SIG_UpdateContext         = 0x80,
+    READYTORUN_METHOD_SIG_AsyncVariant          = 0x100,
 };
 
 enum ReadyToRunFieldSigFlags
@@ -266,7 +316,7 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_Check_FieldOffset          = 0x2B,
 
     READYTORUN_FIXUP_DelegateCtor               = 0x2C, /* optimized delegate ctor */
-    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D,
+    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D, /* Type which declares the method described by the (method) signature */
 
     READYTORUN_FIXUP_IndirectPInvokeTarget      = 0x2E, /* Target (indirect) of an inlined pinvoke */
     READYTORUN_FIXUP_PInvokeTarget              = 0x2F, /* Target of an inlined pinvoke */
@@ -281,6 +331,15 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
     READYTORUN_FIXUP_Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+    READYTORUN_FIXUP_Continuation_Layout        = 0x37, /* Layout of an async method continuation type */
+    READYTORUN_FIXUP_ResumptionStubEntryPoint   = 0x38, /* Entry point of an async method resumption stub */
+
+    READYTORUN_FIXUP_InjectStringThunks         = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
+
+    READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
+
+    READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
+                                                        /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
 };
 
 //
@@ -319,12 +378,18 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FailFast                  = 0x24,
     READYTORUN_HELPER_ThrowNullRef              = 0x25,
     READYTORUN_HELPER_ThrowDivZero              = 0x26,
+    READYTORUN_HELPER_ThrowExact                = 0x27,
+    READYTORUN_HELPER_ThrowArgument             = 0x28,
+    READYTORUN_HELPER_ThrowArgumentOutOfRange   = 0x29,
+    READYTORUN_HELPER_ThrowPlatformNotSupported = 0x2A,
+    READYTORUN_HELPER_ThrowNotImplemented       = 0x2B,
 
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
-    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32,
+    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
     READYTORUN_HELPER_BulkWriteBarrier          = 0x33,
+    READYTORUN_HELPER_BulkWriteBarrierSmall     = 0x34,
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
@@ -341,9 +406,10 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GCPoll                    = 0x44,
     READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
     READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
+    READYTORUN_HELPER_ResumeAfterCatch          = 0x47,
 
     // Get string handle lazily
-    READYTORUN_HELPER_GetString                 = 0x50,
+    READYTORUN_HELPER_GetString                 = 0x50, // No longer supported as of READYTORUN_MAJOR_VERSION 17.0
 
     // Used by /Tuning for Profile optimizations
     READYTORUN_HELPER_LogMethodEnter            = 0x51, // No longer supported as of READYTORUN_MAJOR_VERSION 10.0
@@ -395,14 +461,16 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_UMod                      = 0xCF,
 
     // Floating point conversions
-    READYTORUN_HELPER_Dbl2Int                   = 0xD0,
+    READYTORUN_HELPER_Dbl2Int                   = 0xD0, // Unused since READYTORUN_MAJOR_VERSION 15.0
     READYTORUN_HELPER_Dbl2IntOvf                = 0xD1,
     READYTORUN_HELPER_Dbl2Lng                   = 0xD2,
     READYTORUN_HELPER_Dbl2LngOvf                = 0xD3,
-    READYTORUN_HELPER_Dbl2UInt                  = 0xD4,
+    READYTORUN_HELPER_Dbl2UInt                  = 0xD4, // Unused since READYTORUN_MAJOR_VERSION 15.0
     READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
     READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
     READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
+    READYTORUN_HELPER_Lng2Flt                   = 0xD8,
+    READYTORUN_HELPER_ULng2Flt                  = 0xD9,
 
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,
@@ -412,11 +480,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_DblRound                  = 0xE2,
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
-#ifdef FEATURE_EH_FUNCLETS
     // Personality routines
     READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
     READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
-#endif
 
     // Synchronized methods
     READYTORUN_HELPER_MonitorEnter              = 0xF8,
@@ -441,12 +507,20 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_CheckedWriteBarrier_EBP   = 0x10B,
 
     // JIT32 x86-specific exception handling
-    READYTORUN_HELPER_EndCatch                  = 0x110,
+    READYTORUN_HELPER_EndCatch                  = 0x110, // Unused since READYTORUN_MAJOR_VERSION 14.0
 
     // Stack probing helper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
+
+    READYTORUN_HELPER_AllocContinuation         = 0x113,
+    READYTORUN_HELPER_AllocContinuationClass    = 0x114,
+    READYTORUN_HELPER_AllocContinuationMethod   = 0x115,
+
+    READYTORUN_HELPER_InitClass                 = 0x116,
+    READYTORUN_HELPER_InitInstClass             = 0x117,
+    READYTORUN_HELPER_R2RToInterpreter          = 0x118,
 };
 
 #include "readytoruninstructionset.h"
@@ -491,6 +565,15 @@ enum ReadyToRunHFAElemType : DWORD
     READYTORUN_HFA_ELEMTYPE_Float64 = 2,
     READYTORUN_HFA_ELEMTYPE_Vector64 = 3,
     READYTORUN_HFA_ELEMTYPE_Vector128 = 4,
+};
+
+struct READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT
+{
+    void* Target;
+    DWORD RelocOffset;
+#ifdef TARGET_64BIT
+    DWORD Padding;
+#endif
 };
 
 #endif // __READYTORUN_H__

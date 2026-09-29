@@ -38,7 +38,11 @@ namespace
         if (!pal::clr_palstring(path, &file_path))
         {
             trace::warning(_X("Failure probing contents of the application bundle."));
+#ifdef TARGET_UNIX
+            trace::warning(_X("Failed to convert path [%s] to UTF8"), path);
+#else
             trace::warning(_X("Failed to convert path [%hs] to UTF8"), path);
+#endif
 
             return false;
         }
@@ -70,11 +74,13 @@ namespace
             return SystemResolveDllImport(entry_point_name);
         }
 
+#if !defined(TARGET_OSX)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
             return CryptoResolveDllImport(entry_point_name);
         }
-#endif
+#endif // !defined(TARGET_OSX)
+#endif // !defined(_WIN32)
 
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
         {
@@ -120,6 +126,26 @@ namespace
             return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
         }
 
+        if (::strcmp(key, HOST_PROPERTY_ARGV0) == 0)
+        {
+            if (context->invocation_name.empty())
+                return -1;
+
+            return pal::pal_utf8string(context->invocation_name, value_buffer, value_buffer_size);
+        }
+
+        if (::strcmp(key, HOST_PROPERTY_BUNDLE_EXTRACTION_PATH) == 0)
+        {
+            if (!bundle::info_t::is_single_file_bundle())
+                return -1;
+
+            auto bundle = bundle::runner_t::app();
+            if (bundle->extraction_path().empty())
+                return -1;
+
+            return pal::pal_utf8string(bundle->extraction_path(), value_buffer, value_buffer_size);
+        }
+
         // Properties from runtime initialization
         pal::string_t key_str;
         if (pal::clr_palstring(key, &key_str))
@@ -153,6 +179,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     application = args.managed_application;
     host_mode = hostpolicy_init.host_mode;
     host_path = hostpolicy_init.host_info.host_path;
+    invocation_name = args.invocation_name;
     breadcrumbs_enabled = enable_breadcrumbs;
 
     deps_json_t::rid_resolution_options_t rid_resolution_options
@@ -178,29 +205,11 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         return StatusCode::ResolverInitFailure;
     }
 
+    // Resolve probe paths and setup breadcrumbs if enabled
     probe_paths_t probe_paths;
-
-    // Setup breadcrumbs.
-    if (breadcrumbs_enabled)
+    if (!resolver.resolve_probe_paths(&probe_paths, breadcrumbs_enabled ? &breadcrumbs : nullptr))
     {
-        pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-        pal::string_t policy_version = _STRINGIFY(HOST_VERSION);
-
-        // Always insert the hostpolicy that the code is running on.
-        breadcrumbs.insert(policy_name);
-        breadcrumbs.insert(policy_name + _X(",") + policy_version);
-
-        if (!resolver.resolve_probe_paths(&probe_paths, &breadcrumbs))
-        {
-            return StatusCode::ResolverResolveFailure;
-        }
-    }
-    else
-    {
-        if (!resolver.resolve_probe_paths(&probe_paths, nullptr))
-        {
-            return StatusCode::ResolverResolveFailure;
-        }
+        return StatusCode::ResolverResolveFailure;
     }
 
     clr_path = probe_paths.coreclr;
@@ -210,7 +219,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         // otherwise fail early.
         if (!bundle::info_t::is_single_file_bundle())
         {
-            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting DOTNET_HOST_TRACE environment variable to 1"));
             return StatusCode::CoreClrResolveFailure;
         }
 
@@ -340,9 +349,9 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         host_contract.get_runtime_property = &get_runtime_property;
-        pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
-        pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
-        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))
+        pal::char_t ptr_to_string_buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
+        pal::snwprintf(ptr_to_string_buffer, ARRAY_SIZE(ptr_to_string_buffer), _X("0x%zx"), (size_t)(&host_contract));
+        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), ptr_to_string_buffer))
         {
             log_duplicate_property_error(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT));
             return StatusCode::LibHostDuplicateProperty;

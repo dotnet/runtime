@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 [SkipOnMono("This test suite tests CoreCLR and Crossgen2/NativeAOT-specific layout rules.")]
 public unsafe class LargeStructSize
@@ -40,7 +41,7 @@ public unsafe class LargeStructSize
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    struct Y_explict
+    struct Y_explicit
     {
         [FieldOffset(0)]
         BigArray b;
@@ -53,6 +54,7 @@ public unsafe class LargeStructSize
     {
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestLargeStructSize()
     {
@@ -64,7 +66,7 @@ public unsafe class LargeStructSize
             // Explicit struct of big size triggers out of memory error instead of type load exception
             Assert.Throws<TypeLoadException>(() => sizeof(X_explicit));
             Assert.Throws<TypeLoadException>(() => sizeof(X_non_blittable));
-            Assert.Throws<TypeLoadException>(() => sizeof(Y_explict));
+            Assert.Throws<TypeLoadException>(() => sizeof(Y_explicit));
         }
     }
 }

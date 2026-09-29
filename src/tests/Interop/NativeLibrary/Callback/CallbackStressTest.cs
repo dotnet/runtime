@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 public class CallbackStressTest
@@ -36,7 +37,7 @@ public class CallbackStressTest
                         throw new ArgumentException();
                     }
 
-                    return NativeLibrary.Load(NativeLibraryToLoad.Name, asm, null);
+                    return NativeLibrary.Load(NativeLibraryToLoad.GetFullPath(), asm, null);
                 }
 
                 return IntPtr.Zero;
@@ -107,7 +108,7 @@ public class CallbackStressTest
     public static void ManualRaiseException()
     {
 #if WINDOWS
-        if (!TestLibrary.Utilities.IsMonoRuntime)
+        if (TestLibrary.PlatformDetection.IsExceptionInteropSupported)
         {
             try
             {
@@ -117,7 +118,7 @@ public class CallbackStressTest
         }
         else
         {
-            // SEH exception handling not supported on Mono.
+            // SEH exception handling is not supported on this runtime.
             s_SEHExceptionCatchCalled++;
         }
 #else
@@ -126,6 +127,9 @@ public class CallbackStressTest
 #endif
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/54905", TestPlatforms.Android)]
     [Fact]
     public static int TestEntryPoint()
     {

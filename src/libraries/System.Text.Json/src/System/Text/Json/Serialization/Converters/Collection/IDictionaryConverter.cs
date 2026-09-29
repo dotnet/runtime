@@ -21,7 +21,14 @@ namespace System.Text.Json.Serialization.Converters
         protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
             TDictionary collection = (TDictionary)state.Current.ReturnValue!;
+
+            if (!options.AllowDuplicateProperties && collection.Contains(key))
+            {
+                ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(key);
+            }
+
             collection[key] = value;
+
             if (IsValueType)
             {
                 state.Current.ReturnValue = collection;
@@ -42,7 +49,7 @@ namespace System.Text.Json.Serialization.Converters
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TDictionary value, JsonSerializerOptions options, ref WriteStack state)
         {
             IDictionaryEnumerator enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            if (state.Current.CollectionEnumerator is null)
             {
                 enumerator = value.GetEnumerator();
                 state.Current.CollectionEnumerator = enumerator;

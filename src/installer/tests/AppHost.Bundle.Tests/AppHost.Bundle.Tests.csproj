@@ -2,11 +2,14 @@
 
   <PropertyGroup>
     <Description>Apphost Bundle Tests</Description>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>AppHost.Bundle.Tests</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
     <TestsOutputName>ahb</TestsOutputName>
+    <TestRunnerName>XUnitV3</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>

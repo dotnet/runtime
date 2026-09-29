@@ -345,6 +345,7 @@ typedef struct {
 	int byte_arg_size;
 	guint8 pass_empty_struct : 1; // Set in scenarios when empty structs needs to be represented as argument.
 	guint8 is_signed : 1;
+	guint8 swift_error_in_reg : 1;
 } ArgInfo;
 
 struct CallInfo {
@@ -493,7 +494,7 @@ typedef struct {
 // FIXME: Doesn't work on windows
 //#define MONO_ARCH_HAVE_INIT_MRGCTX 1
 
-#if defined(TARGET_OSX) || defined(__linux__)
+#if defined(TARGET_OSX) || (defined(__linux__) && !defined(TARGET_ANDROID))
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 

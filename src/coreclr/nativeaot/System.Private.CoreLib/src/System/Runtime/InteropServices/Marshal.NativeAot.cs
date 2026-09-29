@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(throwIfNotMarshalable);
 
-            if (t.IsPointer /* or IsFunctionPointer */)
+            if (t.IsPointer || t.IsFunctionPointer)
                 return IntPtr.Size;
 
             if (t.IsByRef || t.IsArray || t.ContainsGenericParameters)
@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            ArgumentNullException.ThrowIfNull(structuretype, nameof(structuretype));
+            ArgumentNullException.ThrowIfNull(structuretype);
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
@@ -234,7 +234,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         private static unsafe T ReadValueSlow<T>(object ptr, int ofs, delegate*<IntPtr, int, T> readValueHelper)
         {
-            // Consumers of this method are documented to throw AccessViolationException on any AV
+            // Compatibility: null input to these obsolete APIs throws AccessViolationException.
             if (ptr is null)
             {
                 throw new AccessViolationException();
@@ -312,7 +312,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         private static unsafe void WriteValueSlow<T>(object ptr, int ofs, T val, delegate*<IntPtr, int, T, void> writeValueHelper)
         {
-            // Consumers of this method are documented to throw AccessViolationException on any AV
+            // Compatibility: null input to these obsolete APIs throws AccessViolationException.
             if (ptr is null)
             {
                 throw new AccessViolationException();

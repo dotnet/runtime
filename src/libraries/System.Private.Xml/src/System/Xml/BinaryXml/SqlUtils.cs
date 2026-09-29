@@ -182,7 +182,7 @@ namespace System.Xml
                 m_bLen = 1;
         }
 
-        public override string ToString()
+        public override unsafe string ToString()
         {
             AssertValid();
 
@@ -372,7 +372,7 @@ namespace System.Xml
             }
         }
 
-        private static void WriteTimeFullPrecision(StringBuilder sb, int hr, int min, int sec, int fraction)
+        private static unsafe void WriteTimeFullPrecision(StringBuilder sb, int hr, int min, int sec, int fraction)
         {
             Write2Dig(sb, hr);
             sb.Append(':');

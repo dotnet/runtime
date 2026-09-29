@@ -33,17 +33,17 @@
 #include "driver.h"
 #include "runtime.h"
 
-int mono_wasm_register_root (char *start, size_t size, const char *name);
-void mono_wasm_deregister_root (char *addr);
+int SystemInteropJS_RegisterGCRoot (char *start, size_t size, const char *name);
+void SystemInteropJS_UnregisterGCRoot (char *addr);
 
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 char *mono_method_get_full_name (MonoMethod *method);
-#ifndef INVARIANT_TIMEZONE
-extern void mono_register_timezones_bundle (void);
-#endif /* INVARIANT_TIMEZONE */
+
+// Exported by libmono (MONO_API_DATA gboolean, see options-def.h). gboolean is int.
+extern int mono_opt_aot_lazy_assembly_load;
 #ifdef WASM_SINGLE_FILE
 extern void mono_register_assemblies_bundle (void);
 extern void mono_register_runtimeconfig_bin (void);
@@ -242,9 +242,19 @@ load_runtimeconfig (void)
 }
 
 void
-mono_wasm_load_runtime (const char *unused, int debug_level)
+mono_wasm_load_runtime (int debug_level)
 {
 	const char *interp_opts = "";
+
+	// Load assemblies referenced by AOT images lazily instead of eagerly.
+	// On WASI assemblies are resolved through filesystem probing, which is not yet
+	// available while corlib itself is being set up. Eagerly loading the assemblies
+	// referenced by corlib's AOT image (e.g. System.Security.Claims) during that early
+	// phase falls back to the managed AssemblyLoadContext resolving event, which needs
+	// the corlib metadata that isn't initialized yet, aborting with a "Runtime critical
+	// type System.Runtime.Loader.AssemblyLoadContext not found" error. Deferring the
+	// load until the referenced assembly is actually needed avoids this reentrancy.
+	mono_opt_aot_lazy_assembly_load = 1;
 
 #ifndef INVARIANT_GLOBALIZATION
 	char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
@@ -252,19 +262,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		load_icu_data();
 #endif /* INVARIANT_GLOBALIZATION */
 
-
-	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
-	if (debugger_fd != 0)
-	{
-		const char *debugger_str = "--debugger-agent=transport=wasi_socket,debugger_fd=%-2s,loglevel=0";
-		char *debugger_str_with_fd = (char *)malloc (sizeof (char) * (strlen(debugger_str) + strlen(debugger_fd) + 1));
-		snprintf (debugger_str_with_fd, strlen(debugger_str) + strlen(debugger_fd) + 1, debugger_str, debugger_fd);
-		mono_jit_parse_options (1, &debugger_str_with_fd);
-		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
-		free (debugger_str_with_fd);
-	}
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in BrowserWasmApp.targets file
 	const char *appctx_keys[2];
@@ -278,9 +275,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	load_runtimeconfig();
 	monovm_initialize (2, appctx_keys, appctx_values);
 
-#ifndef INVARIANT_TIMEZONE
-	mono_register_timezones_bundle ();
-#endif /* INVARIANT_TIMEZONE */
 #ifdef WASM_SINGLE_FILE
 	mono_register_assemblies_bundle ();
 #endif

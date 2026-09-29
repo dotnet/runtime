@@ -43,7 +43,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.GetUnescapedString(span);
             }
 
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!span.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TranscodeHelper(span);
         }
 
@@ -140,7 +140,7 @@ namespace System.Text.Json
             return CopyValue(destination);
         }
 
-        internal readonly int CopyValue(Span<char> destination)
+        internal readonly unsafe int CopyValue(Span<char> destination)
         {
             Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number);
             Debug.Assert(_tokenType != JsonTokenType.Number || !ValueIsEscaped, "Numbers can't contain escape characters.");
@@ -183,7 +183,7 @@ namespace System.Text.Json
 
             int charsWritten = JsonReaderHelper.TranscodeHelper(unescapedSource, destination);
 
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 new Span<byte>(rentedBuffer, 0, unescapedSource.Length).Clear();
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
@@ -192,7 +192,7 @@ namespace System.Text.Json
             return charsWritten;
         }
 
-        private readonly bool TryCopyEscapedString(Span<byte> destination, out int bytesWritten)
+        private readonly unsafe bool TryCopyEscapedString(Span<byte> destination, out int bytesWritten)
         {
             Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName);
             Debug.Assert(ValueIsEscaped);
@@ -219,7 +219,7 @@ namespace System.Text.Json
 
             bool success = JsonReaderHelper.TryUnescape(source, destination, out bytesWritten);
 
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 new Span<byte>(rentedBuffer, 0, source.Length).Clear();
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
@@ -605,7 +605,7 @@ namespace System.Text.Json
             // The following logic reconciles the two implementations to enforce consistent behavior.
             if (!(Utf8Parser.TryParse(span, out value, out int bytesConsumed)
                   && span.Length == bytesConsumed
-                  && JsonHelpers.IsFinite(value)))
+                  && float.IsFinite(value)))
             {
                 ThrowHelper.ThrowFormatException(NumericType.Single);
             }
@@ -662,7 +662,7 @@ namespace System.Text.Json
             // The following logic reconciles the two implementations to enforce consistent behavior.
             if (!(Utf8Parser.TryParse(span, out value, out int bytesConsumed)
                   && span.Length == bytesConsumed
-                  && JsonHelpers.IsFinite(value)))
+                  && double.IsFinite(value)))
             {
                 ThrowHelper.ThrowFormatException(NumericType.Double);
             }
@@ -838,7 +838,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.TryGetUnescapedBase64Bytes(span, out value);
             }
 
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!span.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TryDecodeBase64(span, out value);
         }
 
@@ -1241,7 +1241,7 @@ namespace System.Text.Json
             return TryGetDateTimeCore(out value);
         }
 
-        internal bool TryGetDateTimeCore(out DateTime value)
+        internal unsafe bool TryGetDateTimeCore(out DateTime value)
         {
             scoped ReadOnlySpan<byte> span;
 
@@ -1260,30 +1260,10 @@ namespace System.Text.Json
             }
             else
             {
-                if (!JsonHelpers.IsInRangeInclusive(ValueSpan.Length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength))
-                {
-                    value = default;
-                    return false;
-                }
-
                 span = ValueSpan;
             }
 
-            if (ValueIsEscaped)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTime(span, out value);
-            }
-
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (JsonHelpers.TryParseAsISO(span, out DateTime tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(span, ValueIsEscaped, out value);
         }
 
         /// <summary>
@@ -1306,7 +1286,7 @@ namespace System.Text.Json
             return TryGetDateTimeOffsetCore(out value);
         }
 
-        internal bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
+        internal unsafe bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
         {
             scoped ReadOnlySpan<byte> span;
 
@@ -1325,30 +1305,10 @@ namespace System.Text.Json
             }
             else
             {
-                if (!JsonHelpers.IsInRangeInclusive(ValueSpan.Length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength))
-                {
-                    value = default;
-                    return false;
-                }
-
                 span = ValueSpan;
             }
 
-            if (ValueIsEscaped)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTimeOffset(span, out value);
-            }
-
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (JsonHelpers.TryParseAsISO(span, out DateTimeOffset tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(span, ValueIsEscaped, out value);
         }
 
         /// <summary>
@@ -1372,7 +1332,7 @@ namespace System.Text.Json
             return TryGetGuidCore(out value);
         }
 
-        internal bool TryGetGuidCore(out Guid value)
+        internal unsafe bool TryGetGuidCore(out Guid value)
         {
             scoped ReadOnlySpan<byte> span;
 
@@ -1391,31 +1351,10 @@ namespace System.Text.Json
             }
             else
             {
-                if (ValueSpan.Length > JsonConstants.MaximumEscapedGuidLength)
-                {
-                    value = default;
-                    return false;
-                }
-
                 span = ValueSpan;
             }
 
-            if (ValueIsEscaped)
-            {
-                return JsonReaderHelper.TryGetEscapedGuid(span, out value);
-            }
-
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (span.Length == JsonConstants.MaximumFormatGuidLength
-                && Utf8Parser.TryParse(span, out Guid tmp, out _, 'D'))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(span, ValueIsEscaped, out value);
         }
     }
 }

@@ -50,9 +50,10 @@ namespace System.Linq
 
                 return (double)sum / span.Length;
             }
-
-            using (IEnumerator<int> e = source.GetEnumerator())
+            else
             {
+                using IEnumerator<int> e = source.GetEnumerator();
+
                 if (!e.MoveNext())
                 {
                     ThrowHelper.ThrowNoElementsException();
@@ -64,6 +65,7 @@ namespace System.Linq
                 while (e.MoveNext())
                 {
                     checked { sum += e.Current; }
+
                     count++;
                 }
 
@@ -99,23 +101,21 @@ namespace System.Linq
                 return TResult.CreateChecked(Sum<TSource, TAccumulator>(span)) / TResult.CreateChecked(span.Length);
             }
 
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (!e.MoveNext())
             {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                TAccumulator sum = TAccumulator.CreateChecked(e.Current);
-                long count = 1;
-                while (e.MoveNext())
-                {
-                    checked { sum += TAccumulator.CreateChecked(e.Current); }
-                    count++;
-                }
-
-                return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
+                ThrowHelper.ThrowNoElementsException();
             }
+
+            TAccumulator sum = TAccumulator.CreateChecked(e.Current);
+            long count = 1;
+            while (e.MoveNext())
+            {
+                checked { sum += TAccumulator.CreateChecked(e.Current); }
+                count++;
+            }
+
+            return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
         }
 
 
@@ -139,28 +139,26 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            using (IEnumerator<TSource?> e = source.GetEnumerator())
+            using IEnumerator<TSource?> e = source.GetEnumerator();
+            while (e.MoveNext())
             {
-                while (e.MoveNext())
+                TSource? value = e.Current;
+                if (value.HasValue)
                 {
-                    TSource? value = e.Current;
-                    if (value.HasValue)
+                    TAccumulator sum = TAccumulator.CreateChecked(value.GetValueOrDefault());
+                    long count = 1;
+
+                    while (e.MoveNext())
                     {
-                        TAccumulator sum = TAccumulator.CreateChecked(value.GetValueOrDefault());
-                        long count = 1;
-
-                        while (e.MoveNext())
+                        value = e.Current;
+                        if (value.HasValue)
                         {
-                            value = e.Current;
-                            if (value.HasValue)
-                            {
-                                checked { sum += TAccumulator.CreateChecked(value.GetValueOrDefault()); }
-                                count++;
-                            }
+                            checked { sum += TAccumulator.CreateChecked(value.GetValueOrDefault()); }
+                            count++;
                         }
-
-                        return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
                     }
+
+                    return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
                 }
             }
 
@@ -193,24 +191,22 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (!e.MoveNext())
             {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                TAccumulator sum = TAccumulator.CreateChecked(selector(e.Current));
-                long count = 1;
-
-                while (e.MoveNext())
-                {
-                    checked { sum += TAccumulator.CreateChecked(selector(e.Current)); }
-                    count++;
-                }
-
-                return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
+                ThrowHelper.ThrowNoElementsException();
             }
+
+            TAccumulator sum = TAccumulator.CreateChecked(selector(e.Current));
+            long count = 1;
+
+            while (e.MoveNext())
+            {
+                checked { sum += TAccumulator.CreateChecked(selector(e.Current)); }
+                count++;
+            }
+
+            return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
         }
 
 
@@ -239,28 +235,26 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            while (e.MoveNext())
             {
-                while (e.MoveNext())
+                TSelector? value = selector(e.Current);
+                if (value.HasValue)
                 {
-                    TSelector? value = selector(e.Current);
-                    if (value.HasValue)
+                    TAccumulator sum = TAccumulator.CreateChecked(value.GetValueOrDefault());
+                    long count = 1;
+
+                    while (e.MoveNext())
                     {
-                        TAccumulator sum = TAccumulator.CreateChecked(value.GetValueOrDefault());
-                        long count = 1;
-
-                        while (e.MoveNext())
+                        value = selector(e.Current);
+                        if (value.HasValue)
                         {
-                            value = selector(e.Current);
-                            if (value.HasValue)
-                            {
-                                checked { sum += TAccumulator.CreateChecked(value.GetValueOrDefault()); }
-                                count++;
-                            }
+                            checked { sum += TAccumulator.CreateChecked(value.GetValueOrDefault()); }
+                            count++;
                         }
-
-                        return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
                     }
+
+                    return TResult.CreateChecked(sum) / TResult.CreateChecked(count);
                 }
             }
 

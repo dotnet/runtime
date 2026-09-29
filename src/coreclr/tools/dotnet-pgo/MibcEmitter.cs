@@ -32,6 +32,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 {
     static class MibcEmitter
     {
+        private static readonly DateTimeOffset s_deterministicZipTimestamp = new(1980, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
         class MIbcGroup : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
         {
             private static int s_emitCount = 0;
@@ -323,6 +325,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 using (ZipArchive file = ZipFile.Open(outputFileName.FullName, ZipArchiveMode.Create))
                 {
                     var entry = file.CreateEntry(outputFileName.Name + ".dll", CompressionLevel.Optimal);
+                    entry.LastWriteTime = s_deterministicZipTimestamp;
                     using (Stream archiveStream = entry.Open())
                     {
                         peFile.CopyTo(archiveStream);

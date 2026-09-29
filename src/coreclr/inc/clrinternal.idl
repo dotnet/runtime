@@ -61,7 +61,7 @@ typedef enum {
     CRST_UNSAFE_COOPGC    = 0x4,  // AVOID THIS! Lock must be taken in cooperative mode.
     CRST_UNSAFE_ANYMODE   = 0x8,  // AVOID THIS! Lock can be taken in either GC mode.
     CRST_DEBUGGER_THREAD  = 0x10, // This lock can be taken on the debugger's helper thread.
-    CRST_HOST_BREAKABLE   = 0x20, // This lock is held while running managed code.  It can be terminated by a host.
+    // CRST_UNUSED        = 0x20,
     // CRST_UNUSED        = 0x40,
     CRST_TAKEN_DURING_SHUTDOWN = 0x80, // This lock is taken during the shutdown sequence in EEShutdown(helper)
     CRST_GC_NOTRIGGER_WHEN_TAKEN = 0x100,

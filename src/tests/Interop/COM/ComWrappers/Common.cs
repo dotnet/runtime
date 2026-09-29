@@ -94,13 +94,13 @@ namespace ComWrappersTests.Common
         }
     }
 
-    public class ITestObjectWrapper : ITest
+    public class ITestObjectWrapperBase : ITest
     {
         private readonly ITestVtbl._SetValue _setValue;
-        private readonly IntPtr _ptr;
-        private bool _released;
+        protected readonly IntPtr _ptr;
+        protected bool _released;
 
-        public ITestObjectWrapper(IntPtr ptr)
+        public ITestObjectWrapperBase(IntPtr ptr)
         {
             _ptr = ptr;
             VtblPtr inst = Marshal.PtrToStructure<VtblPtr>(ptr);
@@ -117,6 +117,24 @@ namespace ComWrappersTests.Common
             return count;
         }
 
+        public void SetValue(int i) => _setValue(_ptr, i);
+    }
+
+    public class ManualReleaseITestObjectWrapper : ITestObjectWrapperBase
+    {
+        public ManualReleaseITestObjectWrapper(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+    }
+
+    public class ITestObjectWrapper : ITestObjectWrapperBase
+    {
+        public ITestObjectWrapper(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         ~ITestObjectWrapper()
         {
             if (_ptr != IntPtr.Zero && !_released)
@@ -124,8 +142,6 @@ namespace ComWrappersTests.Common
                 Marshal.Release(_ptr);
             }
         }
-
-        public void SetValue(int i) => _setValue(_ptr, i);
     }
 
     //
@@ -337,9 +353,18 @@ namespace ComWrappersTests.Common
         }
     }
 
+    [Guid("DA582249-EBf7-437E-BBF8-3B6775BFDB9D")]
+    public interface INotWrappedObject
+    {
+    }
+
+    sealed class NotWrappedObject : INotWrappedObject
+    {
+    }
+
     class ComWrappersHelper
     {
-        private static Guid IID_IReferenceTracker = new Guid("11d3b13a-180e-4789-a8be-7712882893e6");
+        public static readonly Guid IID_IReferenceTracker = new Guid("11d3b13a-180e-4789-a8be-7712882893e6");
 
         [Flags]
         public enum ReleaseFlags

@@ -55,6 +55,22 @@ namespace System.IO.Tests.Enumeration
                 options).ToArray();
         }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(MatchType.Simple)]
+        [InlineData(MatchType.Win32)]
+        public void ReturnSpecialDirectories_NoExpression_ReturnsSpecialDirectories(MatchType matchType)
+        {
+            string[] paths = GetNames(TestDirectory, new EnumerationOptions { ReturnSpecialDirectories = true, AttributesToSkip = 0, MatchType = matchType });
+
+            if (!PlatformDetection.IsWindows10Version20348OrGreater)
+            {
+                Assert.Contains(".", paths);
+            }
+
+            Assert.Contains("..", paths);
+        }
+
         [Fact]
         public void SkippingHiddenFiles()
         {
@@ -77,6 +93,37 @@ namespace System.IO.Tests.Enumeration
         protected override string[] GetNames(string directory, EnumerationOptions options)
         {
             return new DirectoryInfo(directory).GetDirectories("*", options).Select(i => i.Name).ToArray();
+        }
+    }
+
+    public class SpecialDirectoryTests_Directory_GetFileSystemEntries : FileSystemTest
+    {
+        private static string[] GetNames(string directory, string pattern, MatchType matchType)
+        {
+            EnumerationOptions options = new EnumerationOptions
+            {
+                ReturnSpecialDirectories = true,
+                MatchType = matchType,
+                AttributesToSkip = 0
+            };
+
+            return Directory.GetFileSystemEntries(directory, pattern, options)
+                .Select(Path.GetFileName)
+                .ToArray();
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(MatchType.Simple, ".")]
+        [InlineData(MatchType.Win32, ".")]
+        [InlineData(MatchType.Simple, "..")]
+        [InlineData(MatchType.Win32, "..")]
+        public void ReturnSpecialDirectories_WithExpression_ReturnsSpecialDirectory(MatchType matchType, string pattern)
+        {
+            string testDirectory = Directory.CreateDirectory(GetTestFilePath()).FullName;
+            string[] names = GetNames(testDirectory, pattern, matchType);
+
+            Assert.Contains(pattern, names);
         }
     }
 }

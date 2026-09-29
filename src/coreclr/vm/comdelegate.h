@@ -10,7 +10,6 @@
 #ifndef _COMDELEGATE_H_
 #define _COMDELEGATE_H_
 
-class Stub;
 class ShuffleThunkCache;
 
 #include "cgensys.h"
@@ -26,32 +25,25 @@ enum class ShuffleComputationType
 };
 BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType);
 
+struct BindToMethodDetails
+{
+    BOOL selfReferentialTarget; // Whether the delegate's target object is the same as the first argument of the method to bind to. Only meaningful for open instance delegates.
+    PCODE methodPtr;
+    PCODE methodPtrAux;
+    INT_PTR extraData;
+    OBJECTHANDLE loaderAllocatorGCHandle; // The loader allocator needed if the delegate needs to keep it alive
+};
+
 // This class represents the native methods for the Delegate class
 class COMDelegate
 {
-private:
-    // friend VOID CPUSTUBLINKER::EmitShuffleThunk(...);
-    friend class CPUSTUBLINKER;
-
-    static CrstStatic   s_DelegateToFPtrHashCrst;   // Lock for the following hash.
-    static PtrHashMap*  s_pDelegateToFPtrHash;      // Hash table containing the Delegate->FPtr pairs
-                                                    // passed out to unmanaged code.
 public:
-    static ShuffleThunkCache *m_pShuffleThunkCache;
-
     // One time init.
     static void Init();
 
-    static FCDECL3(void, DelegateConstruct, Object* refThis, Object* target, PCODE method);
-
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
-    static FCDECL1(MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
-    static PCODE GetWrapperInvoke(MethodDesc* pMD);
-    // determines where the delegate needs to be wrapped for non-security reason
-    static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
-    // on entry delegate points to the delegate to wrap
-    static DELEGATEREF CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD);
+    FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
+    FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
 
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
@@ -59,42 +51,26 @@ public:
     // Marshals an unmanaged callback to Delegate
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
-#ifdef FEATURE_COMINTEROP
-    static CLRToCOMCallInfo * PopulateCLRToCOMCallInfo(MethodTable * pDelMT);
-#endif // FEATURE_COMINTEROP
-
     static PCODE GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static MethodDesc* GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWORD dwStubFlags);
 
     static void ValidateDelegatePInvoke(MethodDesc* pMD);
 
-    static void RemoveEntryFromFPtrHash(UPTR key);
-
     // Decides if pcls derives from Delegate.
     static BOOL IsDelegate(MethodTable *pMT);
-
-    // Decides if this is a wrapper delegate
-    static BOOL IsWrapperDelegate(DELEGATEREF dRef);
 
     // Get the cpu stub for a delegate invoke.
     static PCODE GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
-    // get the one single delegate invoke stub
-    static PCODE TheDelegateInvokeStub();
+    static MethodDesc* GetMethodDesc(OBJECTREF obj);
+    static MethodDesc* GetMethodDescForOpenVirtualDelegate(DELEGATEREF delegate);
 
-    static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
-    static OBJECTREF GetTargetObject(OBJECTREF obj);
-
-    static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
+    static BOOL HasSingleTarget(DELEGATEREF delegate);
 
     // Throw if the method violates any usage restrictions
     // for UnmanagedCallersOnlyAttribute.
     static void ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD);
 
-private:
-    static Stub* SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);
-
-public:
     static MethodDesc* FindDelegateInvokeMethod(MethodTable *pMT);
     static BOOL IsDelegateInvokeMethod(MethodDesc *pMD);
 
@@ -107,18 +83,22 @@ public:
                                        bool        *pfIsOpenDelegate);
     static MethodDesc* GetDelegateCtor(TypeHandle delegateType, MethodDesc *pTargetMethod, DelegateCtorArgs *pCtorData);
 
-    static void BindToMethod(DELEGATEREF   *pRefThis,
-                             OBJECTREF     *pRefFirstArg,
+    static void BindToMethod(MethodTable* pDelegateMT,
+                             MethodTable   *pTargetMT,
                              MethodDesc    *pTargetMethod,
                              MethodTable   *pExactMethodType,
-                             BOOL           fIsOpenDelegate);
+                             BOOL           fIsOpenDelegate,
+                             QCall::ObjectHandleOnStack targetParameter,
+                             BindToMethodDetails *pBindToMethodDetails);
 };
 
-extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT);
+extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails, QCallExceptionStatus* qcallError);
 
-extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method);
+extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method);
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE method, QCallExceptionStatus* qcallError);
+
+extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method, QCallExceptionStatus* qcallError);
 
 // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their
 // values must be kept in sync with the definition in bcl\system\delegate.cs.
@@ -133,28 +113,20 @@ enum DelegateBindingFlags
     DBF_RelaxedSignature    =   0x00000040, // Allow relaxed signature matching (co/contra variance)
 };
 
-extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
-    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags);
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails,
+    QCallExceptionStatus* qcallError);
 
-extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
-    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags);
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT,
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails,
+    QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d);
+extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d);
-
-extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo);
-
-extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right);
-
+extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance, QCallExceptionStatus* qcallError);
 
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);
-
-void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
-                                          OBJECTREF *pDomain,
-                                          OBJECTREF *pThrowable,
-                                          BOOL       isTerminating);
 
 // Want no unused bits in ShuffleEntry since unused bits can make
 // equivalent ShuffleEntry arrays look unequivalent and deoptimize our
@@ -196,24 +168,21 @@ struct ShuffleEntry
 
 #include <poppack.h>
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 class ShuffleThunkCache : public StubCacheBase
 {
 public:
-    ShuffleThunkCache(LoaderHeap* heap) : StubCacheBase(heap)
+    ShuffleThunkCache(LoaderAllocator* pLoaderAllocator) : StubCacheBase(pLoaderAllocator)
     {
     }
 private:
-    //---------------------------------------------------------
-    // Compile a static delegate shufflethunk. Always returns
-    // STANDALONE since we don't interpret these things.
-    //---------------------------------------------------------
-    virtual DWORD CompileStub(const BYTE *pRawStub,
-                             StubLinker *pstublinker)
+    virtual StubCodeBlockKind CompileStub(const BYTE *pRawStub,
+                                          StubLinker *pstublinker)
     {
         STANDARD_VM_CONTRACT;
 
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
-        return NEWSTUB_FL_THUNK;
+        return STUB_CODE_BLOCK_SHUFFLE_THUNK;
     }
 
     //---------------------------------------------------------
@@ -230,5 +199,6 @@ private:
         return sizeof(ShuffleEntry) * (UINT)(1 + (pse - (ShuffleEntry*)pRawStub));
     }
 };
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif  // _COMDELEGATE_H_

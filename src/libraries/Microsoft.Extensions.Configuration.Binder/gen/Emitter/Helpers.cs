@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -53,15 +54,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private static class TypeDisplayString
             {
                 public const string NullableActionOfBinderOptions = "Action<BinderOptions>?";
-                public const string OptionsBuilderOfTOptions = $"OptionsBuilder<{Identifier.TOptions}>";
-                public const string HashSetOfString = "HashSet<string>";
-                public const string LazyHashSetOfString = "Lazy<HashSet<string>>";
-                public const string ListOfString = "List<string>";
+                public const string OptionsBuilderOfTOptions = $"global::Microsoft.Extensions.Options.OptionsBuilder<{Identifier.TOptions}>";
+                public const string HashSetOfString = "global::System.Collections.Generic.HashSet<string>";
+                public const string LazyHashSetOfString = "Lazy<global::System.Collections.Generic.HashSet<string>>";
+                public const string ListOfString = "global::System.Collections.Generic.List<string>";
             }
 
             private static class Identifier
             {
                 public const string binderOptions = nameof(binderOptions);
+                public const string boundThroughConstructor = nameof(boundThroughConstructor);
                 public const string config = nameof(config);
                 public const string configureBinder = nameof(configureBinder);
                 public const string configureOptions = nameof(configureOptions);
@@ -86,6 +88,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string typedObj = nameof(typedObj);
                 public const string validateKeys = nameof(validateKeys);
                 public const string value = nameof(value);
+                public const string wasNull = nameof(wasNull);
 
                 public const string Add = nameof(Add);
                 public const string AddSingleton = nameof(AddSingleton);
@@ -114,6 +117,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string HasValue = nameof(HasValue);
                 public const string IConfiguration = nameof(IConfiguration);
                 public const string IConfigurationSection = nameof(IConfigurationSection);
+                public const string ConfigurationSection = nameof(ConfigurationSection);
                 public const string Int32 = "int";
                 public const string InterceptsLocation = nameof(InterceptsLocation);
                 public const string InvalidOperationException = nameof(InvalidOperationException);
@@ -133,6 +137,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string Type = nameof(Type);
                 public const string Uri = nameof(Uri);
                 public const string ValidateConfigurationKeys = nameof(ValidateConfigurationKeys);
+                public const string TryGetConfigurationValue = nameof(TryGetConfigurationValue);
                 public const string Value = nameof(Value);
             }
 
@@ -243,6 +248,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool useThrowIfNullMethod, bool voidReturn = false)
             {
+                EmitCheckForNullArgument(paramName, useThrowIfNullMethod, voidReturn);
+                _writer.WriteLine();
+            }
+
+            private void EmitCheckForNullArgument(string paramName, bool useThrowIfNullMethod, bool voidReturn = false)
+            {
                 if (voidReturn)
                 {
                     _writer.WriteLine($$"""
@@ -265,14 +276,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     _writer.WriteLine(throwIfNullExpr);
                 }
-
-                _writer.WriteLine();
             }
 
             private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
 
             private static string GetInitializeMethodDisplayString(ObjectSpec type) =>
                 $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.IdentifierCompatibleSubstring}";
+
+            /// <summary>
+            /// Prefixes an identifier with "@" when it would otherwise be parsed as a C# keyword.
+            /// </summary>
+            private static string EscapeIdentifier(string identifier)
+                => SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
+                    ? "@" + identifier
+                    : identifier;
         }
     }
 }

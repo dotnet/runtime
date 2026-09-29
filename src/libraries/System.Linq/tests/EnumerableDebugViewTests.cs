@@ -72,7 +72,7 @@ namespace System.Linq.Tests
         {
             Type edvType = typeof(Enumerable).GetTypeInfo().Assembly.GetType("System.Linq.SystemCore_EnumerableDebugView");
             ConstructorInfo ctor = edvType.GetTypeInfo().DeclaredConstructors.First();
-            return ctor.Invoke(new object[] { source });
+            return ctor.Invoke([source]);
         }
 
         private static object CreateSystemCore_EnumerableDebugView<T>(IEnumerable<T> source)
@@ -80,7 +80,7 @@ namespace System.Linq.Tests
             Type edvOpenGenericType = typeof(Enumerable).GetTypeInfo().Assembly.GetType("System.Linq.SystemCore_EnumerableDebugView`1");
             Type edvClosedGenericType = edvOpenGenericType.MakeGenericType(typeof(T));
             ConstructorInfo ctor = edvClosedGenericType.GetTypeInfo().DeclaredConstructors.First();
-            return ctor.Invoke(new object[] { source });
+            return ctor.Invoke([source]);
         }
 
         private static T[] GetItems<T>(object debugView)

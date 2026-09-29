@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
 
                 if (length == 0)
                 {
-                    return Array.Empty<T>();
+                    return [];
                 }
 
                 dest = new T[length];
@@ -110,7 +110,14 @@ namespace System.Runtime.CompilerServices
             // COR_ELEMENT_TYPE_I1,I2,I4,I8,U1,U2,U4,U8,R4,R8,I,U,CHAR,BOOLEAN
             => ((1 << (int)et) & 0b_0011_0000_0000_0011_1111_1111_1100) != 0;
 
-        private static ReadOnlySpan<short> PrimitiveWidenTable =>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool CanPrimitiveWiden(CorElementType srcET, CorElementType dstET)
+        {
+            // The primitive widen table
+            //  The index represents source type. The value in the table is a bit vector of destination types.
+            //  If corresponding bit is set in the bit vector, source type can be widened into that type.
+            //  All types widen to themselves.
+            ReadOnlySpan<short> primitiveWidenTable =
             [
                 0x00,      // ELEMENT_TYPE_END
                 0x00,      // ELEMENT_TYPE_VOID
@@ -128,15 +135,13 @@ namespace System.Runtime.CompilerServices
                 0x2000,    // ELEMENT_TYPE_R8   (W = R8)
             ];
 
-        internal static bool CanPrimitiveWiden(CorElementType srcET, CorElementType dstET)
-        {
             Debug.Assert(srcET.IsPrimitiveType() && dstET.IsPrimitiveType());
-            if ((int)srcET >= PrimitiveWidenTable.Length)
+            if ((int)srcET >= primitiveWidenTable.Length)
             {
                 // I or U
                 return srcET == dstET;
             }
-            return (PrimitiveWidenTable[(int)srcET] & (1 << (int)dstET)) != 0;
+            return (primitiveWidenTable[(int)srcET] & (1 << (int)dstET)) != 0;
         }
 
         /// <summary>Provide a fast way to access constant data stored in a module as a ReadOnlySpan{T}</summary>
@@ -145,8 +150,16 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentException"><paramref name="fldHandle"/> does not refer to a field which is an Rva, is misaligned, or T is of an invalid type.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, bool, char, short, ushort, int, uint, long, ulong, float, or double.</remarks>
         [Intrinsic]
-        public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
+        public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
+#if NATIVEAOT
+            // We only support this intrinsic when it occurs within a well-defined IL sequence.
+            // If a call to this method occurs within the recognized sequence, codegen must expand the IL sequence completely.
+            // For any other purpose, the API is currently unsupported.
+            // We shortcut this here instead of in `GetSpanDataFrom` to avoid `typeof(T)` below marking T target of reflection.
+            => throw new PlatformNotSupportedException();
+#else
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
+#endif
 
 
         // The following intrinsics return true if input is a compile-time constant
@@ -165,8 +178,48 @@ namespace System.Runtime.CompilerServices
         internal static bool IsKnownConstant<T>(T t) where T : struct => false;
 #pragma warning restore IDE0060
 
+        // Returns true if the method being compiled is a runtime-async method.
+        // This is folded to a compile-time constant by the JIT and the interpreter.
+        [Intrinsic]
+        internal static bool IsRuntimeAsync() => false;
+
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
+        public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct => IsReferenceOrContainsReferences<T>();
+
+        [Intrinsic]
+        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
+
+        [Intrinsic]
+        internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        [Intrinsic]
+        internal static void SetNextCallAsyncContinuation(object value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool AreTypesEquivalent(object a, object b)
+        {
+            Debug.Assert(a is not null);
+            Debug.Assert(b is not null);
+
+#if FEATURE_TYPEEQUIVALENCE
+            MethodTable* pMTa = GetMethodTable(a);
+            MethodTable* pMTb = GetMethodTable(b);
+
+            if (pMTa == pMTb)
+                return true;
+
+            bool ret = pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence &&
+                       // only use QCall to check the type equivalence scenario
+                       AreTypesEquivalent(pMTa, pMTb);
+
+            GC.KeepAlive(a);
+            GC.KeepAlive(b);
+
+            return ret;
+#else
+            return a.GetType() == b.GetType();
+#endif // FEATURE_TYPEEQUIVALENCE
+        }
     }
 }

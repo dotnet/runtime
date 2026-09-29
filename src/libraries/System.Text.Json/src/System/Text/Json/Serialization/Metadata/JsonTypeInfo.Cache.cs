@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                return _parameterCache != null;
+                return _parameterCache is not null;
             }
         }
 
@@ -73,7 +73,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Defines the core property lookup logic for a given unescaped UTF-8 encoded property name.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal JsonPropertyInfo? GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame, out byte[] utf8PropertyName)
         {
             Debug.Assert(IsConfigured);
@@ -182,7 +181,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 PropertyRef[] newCache = cacheBuilder.ToArray();
                 Debug.Assert(newCache.Length <= PropertyRefCacheBuilder.MaxCapacity);
-                _utf8PropertyCache = cacheBuilder.ToArray();
+                _utf8PropertyCache = newCache;
             }
 
             frame.PropertyRefCacheBuilder = null;

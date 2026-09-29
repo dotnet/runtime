@@ -8,20 +8,21 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Chained implementation of <see cref="IConfigurationProvider"/>
+    /// Provides a chained implementation of <see cref="IConfigurationProvider"/>.
     /// </summary>
     public class ChainedConfigurationProvider : IConfigurationProvider, IDisposable
     {
         private readonly IConfiguration _config;
         private readonly bool _shouldDisposeConfig;
+        private bool _initialLoadCompleted;
 
         /// <summary>
-        /// Initialize a new instance from the source configuration.
+        /// Initializes a new instance from the source configuration.
         /// </summary>
         /// <param name="source">The source configuration.</param>
         public ChainedConfigurationProvider(ChainedConfigurationSource source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             _config = source.Configuration ?? throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             _shouldDisposeConfig = source.ShouldDisposeConfiguration;
@@ -36,12 +37,12 @@ namespace Microsoft.Extensions.Configuration
         /// Tries to get a configuration value for the specified key.
         /// </summary>
         /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        /// <returns><c>True</c> if a value for the specified key was found, otherwise <c>false</c>.</returns>
+        /// <param name="value">When this method returns, contains the value.</param>
+        /// <returns><see langword="true"/> if the chained configuration has a non-<see langword="null"/> value for the specified key, otherwise <see langword="false"/>.</returns>
         public bool TryGet(string key, out string? value)
         {
             value = _config[key];
-            return !string.IsNullOrEmpty(value);
+            return value is not null;
         }
 
         /// <summary>
@@ -52,7 +53,7 @@ namespace Microsoft.Extensions.Configuration
         public void Set(string key, string? value) => _config[key] = value;
 
         /// <summary>
-        /// Returns a change token if this provider supports change tracking, null otherwise.
+        /// Returns a change token if this provider supports change tracking; otherwise returns <see langword="null" />.
         /// </summary>
         /// <returns>The change token.</returns>
         public IChangeToken GetReloadToken() => _config.GetReloadToken();
@@ -60,12 +61,29 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads configuration values from the source represented by this <see cref="IConfigurationProvider"/>.
         /// </summary>
-        public void Load() { }
+        public void Load()
+        {
+            if (!_initialLoadCompleted)
+            {
+                // The initial load is a no-op since the chained configuration is expected to be already loaded by the
+                // time it is used as a source for another configuration. This way we avoid unnecessary change notifications.
+                _initialLoadCompleted = true;
+                return;
+            }
+
+            if (_config is IConfigurationRoot root)
+            {
+                foreach (IConfigurationProvider provider in root.Providers)
+                {
+                    provider.Load();
+                }
+            }
+        }
 
         /// <summary>
-        /// Returns the immediate descendant configuration keys for a given parent path based on this
-        /// <see cref="IConfigurationProvider"/>s data and the set of keys returned by all the preceding
-        /// <see cref="IConfigurationProvider"/>s.
+        /// Returns the immediate descendant configuration keys for a given parent path based on the data of this
+        /// <see cref="IConfigurationProvider"/> and the set of keys returned by all the preceding
+        /// <see cref="IConfigurationProvider"/> objects.
         /// </summary>
         /// <param name="earlierKeys">The child keys returned by the preceding providers for the same parent path.</param>
         /// <param name="parentPath">The parent path.</param>

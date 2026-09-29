@@ -50,7 +50,8 @@ internal sealed class ClassInfo
 
         // Use Dictionary instead of List so that searching for member IDs by name
         // is O(n) instead of O(m * n), where m = memberCount and n = memberNameLength,
-        // in degenerate cases.
+        // in degenerate cases. Since memberCount may be hostile, don't allow it to be
+        // used as the initial capacity in the collection instance.
         Dictionary<string, int> memberNames = new(StringComparer.Ordinal);
         for (int i = 0; i < memberCount; i++)
         {
@@ -58,19 +59,10 @@ internal sealed class ClassInfo
             // however it's impossible to get such output with BinaryFormatter,
             // so we prohibit that on purpose.
             string memberName = reader.ReadString();
-#if NET
-            if (memberNames.TryAdd(memberName, i))
+            if (!memberNames.TryAdd(memberName, i))
             {
-                continue;
+                ThrowHelper.ThrowDuplicateMemberName();
             }
-#else
-            if (!memberNames.ContainsKey(memberName))
-            {
-                memberNames.Add(memberName, i);
-                continue;
-            }
-#endif
-            throw new SerializationException(SR.Format(SR.Serialization_DuplicateMemberName, memberName));
         }
 
         return new ClassInfo(id, typeName, memberNames);

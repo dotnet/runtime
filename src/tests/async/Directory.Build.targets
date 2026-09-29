@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!-- Mono does not support runtime async. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectFullPath)' != '$(MSBuildThisFileDirectory)async.csproj'">
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>

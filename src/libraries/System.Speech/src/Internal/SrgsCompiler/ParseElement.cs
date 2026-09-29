@@ -43,7 +43,7 @@ namespace System.Speech.Internal.SrgsCompiler
         // Token - Required confidence
         internal int _confidence;
 
-        void IElement.PostParse(IElement parent)
+        void IElement.PostParse(IElement? parent)
         {
         }
 

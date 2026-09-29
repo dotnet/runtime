@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
@@ -28,16 +28,22 @@ namespace System
         "TVOS"
 #elif TARGET_ANDROID
         "ANDROID"
+#elif TARGET_OPENHARMONY
+        "OPENHARMONY"
 #elif TARGET_LINUX
         "LINUX"
 #elif TARGET_FREEBSD
         "FREEBSD"
 #elif TARGET_NETBSD
         "NETBSD"
+#elif TARGET_OPENBSD
+        "OPENBSD"
 #elif TARGET_ILLUMOS
         "ILLUMOS"
 #elif TARGET_SOLARIS
         "SOLARIS"
+#elif TARGET_HAIKU
+        "HAIKU"
 #else
 #error Unknown OS, add a corresponding TARGET_* constant to System.Private.CoreLib.Shared.projitems
 #endif
@@ -83,7 +89,7 @@ namespace System
 
         public override string ToString() => VersionString;
 
-        public string VersionString
+        public unsafe string VersionString
         {
             get
             {
@@ -193,6 +199,45 @@ namespace System
         /// </summary>
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
             => IsFreeBSD() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        /// <summary>
+        /// Indicates whether the current application is running on OpenBSD.
+        /// </summary>
+        [NonVersionable]
+        public static bool IsOpenBSD() =>
+#if TARGET_OPENBSD
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Check for the OpenBSD version with a >= version comparison. Used to guard APIs that were added in the given OpenBSD release.
+        /// </summary>
+        public static bool IsOpenBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
+            => IsOpenBSD() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        /// <summary>
+        /// Indicates whether the current application is running on Haiku.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsHaiku() =>
+#if TARGET_HAIKU
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Indicates whether the current application is running on OpenHarmony.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsOpenHarmony() =>
+#if TARGET_OPENHARMONY
+            true;
+#else
+            false;
+#endif
 
         /// <summary>
         /// Indicates whether the current application is running on Android.
@@ -335,13 +380,19 @@ namespace System
             {
                 return current.Minor > minor;
             }
-            if (current.Build != build)
+            // Unspecified build component is to be treated as zero
+            int currentBuild = current.Build < 0 ? 0 : current.Build;
+            build = build < 0 ? 0 : build;
+            if (currentBuild != build)
             {
-                return current.Build > build;
+                return currentBuild > build;
             }
 
-            return current.Revision >= revision
-                || (current.Revision == -1 && revision == 0); // it is unavailable on OSX and Environment.OSVersion.Version.Revision returns -1
+            // Unspecified revision component is to be treated as zero
+            int currentRevision = current.Revision < 0 ? 0 : current.Revision;
+            revision = revision < 0 ? 0 : revision;
+
+            return currentRevision >= revision;
         }
     }
 }

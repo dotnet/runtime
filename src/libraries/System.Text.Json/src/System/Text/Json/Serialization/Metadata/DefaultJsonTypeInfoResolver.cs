@@ -50,15 +50,8 @@ namespace System.Text.Json.Serialization.Metadata
             Justification = "The ctor is marked RequiresDynamicCode.")]
         public virtual JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
         {
-            if (type == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
-
-            if (options == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(options);
 
             _mutable = false;
 
@@ -70,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
             // This should be the last update operation in the resolver to avoid resetting the flag.
             typeInfo.IsCustomized = false;
 
-            if (_modifiers != null)
+            if (_modifiers is not null)
             {
                 foreach (Action<JsonTypeInfo> modifier in _modifiers)
                 {

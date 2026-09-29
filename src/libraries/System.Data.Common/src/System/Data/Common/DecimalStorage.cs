@@ -234,12 +234,14 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             return XmlConvert.ToDecimal(s);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             return XmlConvert.ToString((decimal)value);

@@ -27,7 +27,7 @@ namespace System.Net.Mime.Tests
         [InlineData("text/plain; boundary=hello; charset=us-ascii; name=world", "text/plain", "us-ascii", "hello", "world")]
         [InlineData("text/plain; charset=us-ascii; name=world", "text/plain", "us-ascii", null, "world")]
         public static void Ctor_ContentString_ParsedValueMatchesExpected(
-            string contentType, string expectedMediaType, string expectedCharSet, string expectedBoundary, string expectedName)
+            string contentType, string expectedMediaType, string? expectedCharSet, string? expectedBoundary, string? expectedName)
         {
             var ct = new ContentType(contentType);
             Assert.Equal(expectedMediaType, ct.MediaType);
@@ -58,7 +58,7 @@ namespace System.Net.Mime.Tests
         [InlineData(typeof(FormatException), "text/plain; charset=iso-8859-1; q=1.0, */xml; charset=utf-8; q=0.5")]
         [InlineData(typeof(FormatException), " , */xml; charset=utf-8; q=0.5 ")]
         [InlineData(typeof(FormatException), "text/plain; charset=iso-8859-1; q=1.0 , ")]
-        public static void Ctor_InvalidContentType_Throws(Type exceptionType, string contentType)
+        public static void Ctor_InvalidContentType_Throws(Type exceptionType, string? contentType)
         {
             Assert.Throws(exceptionType, () => new ContentType(contentType));
         }
@@ -148,6 +148,41 @@ namespace System.Net.Mime.Tests
             ct.Name = "";
             Assert.Null(ct.Name);
             Assert.Empty(ct.Parameters);
+        }
+
+        [Theory]
+        [InlineData("=?utf-8?B?Y2Fmw6kudHh0?=", "caf\u00e9.txt")]
+        [InlineData("=?utf-8?b?Y2Fmw6kudHh0?=", "caf\u00e9.txt")]
+        [InlineData("Report =?utf-8?B?Y2Fmw6kudHh0?=", "Report caf\u00e9.txt")]
+        [InlineData("Report =?utf-99?B?Y2Fmw6kudHh0?=", "Report =?utf-99?B?Y2Fmw6kudHh0?=")]
+        [InlineData("Report =?utf-7?B?Y2Fmw6kudHh0?=", "Report =?utf-7?B?Y2Fmw6kudHh0?=")]
+        public static void Name_EncodedWords_AreDecoded(string value, string expected)
+        {
+            var ct = new ContentType($"application/octet-stream; name=\"{value}\"");
+
+            Assert.Equal(expected, ct.Name);
+        }
+
+        [Fact]
+        public static void ToString_EncodedWordWithinInvalidParameterValue_DoesNotBypassEncoding()
+        {
+            var ct = new ContentType();
+            ct.Name = "report\r\nX-Test: injected =?utf-8?B?YQ?=";
+
+            string value = ct.ToString();
+
+            Assert.DoesNotContain("\r\nX-Test:", value, StringComparison.Ordinal);
+            Assert.Contains("=?utf-8?B?", value, StringComparison.Ordinal);
+            Assert.Equal("report\r\nX-Test: injected =?utf-8?B?YQ?=", new ContentType(value).Name);
+        }
+
+        [Fact]
+        public static void ToString_EntireEncodedWordParameter_IsPassedThrough()
+        {
+            var ct = new ContentType();
+            ct.Name = "=?utf-8?B?Y2Fmw6kudHh0?=";
+
+            Assert.Equal("application/octet-stream; name=\"=?utf-8?B?Y2Fmw6kudHh0?=\"", ct.ToString());
         }
 
         [Fact]

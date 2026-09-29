@@ -47,12 +47,15 @@ internal static partial class Interop
         internal const string LOCALE_NAME_USER_DEFAULT = null;
         internal const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int LCIDToLocaleName(int locale, char* pLocaleName, int cchName, uint dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int LocaleNameToLCID(string lpName, uint dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int LCMapStringEx(
                     string? lpLocaleName,
@@ -65,6 +68,7 @@ internal static partial class Interop
                     void* lpReserved,
                     IntPtr sortHandle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", EntryPoint = "FindNLSStringEx", SetLastError = SetLastErrorForDebug)]
         internal static unsafe partial int FindNLSStringEx(
                     char* lpLocaleName,
@@ -78,6 +82,7 @@ internal static partial class Interop
                     void* lpReserved,
                     IntPtr sortHandle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", EntryPoint = "CompareStringEx")]
         internal static unsafe partial int CompareStringEx(
                     char* lpLocaleName,
@@ -90,6 +95,7 @@ internal static partial class Interop
                     void* lpReserved,
                     IntPtr lParam);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", EntryPoint = "CompareStringOrdinal")]
         internal static unsafe partial int CompareStringOrdinal(
                     char* lpString1,
@@ -98,6 +104,7 @@ internal static partial class Interop
                     int cchCount2,
                     [MarshalAs(UnmanagedType.Bool)] bool bIgnoreCase);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", EntryPoint = "FindStringOrdinal", SetLastError = SetLastErrorForDebug)]
         internal static unsafe partial int FindStringOrdinal(
                     uint dwFindStringOrdinalFlags,
@@ -107,6 +114,7 @@ internal static partial class Interop
                     int cchValue,
                     BOOL bIgnoreCase);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool IsNLSDefinedString(
@@ -116,32 +124,41 @@ internal static partial class Interop
                     char* lpString,
                     int cchStr);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll")]
         internal static unsafe partial BOOL GetUserPreferredUILanguages(uint dwFlags, uint* pulNumLanguages, char* pwszLanguagesBuffer, uint* pcchLanguagesBuffer);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int GetLocaleInfoEx(string lpLocaleName, uint LCType, void* lpLCData, int cchData);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool EnumSystemLocalesEx(delegate* unmanaged<char*, uint, void*, BOOL> lpLocaleEnumProcEx, uint dwFlags, void* lParam, IntPtr reserved);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool EnumTimeFormatsEx(delegate* unmanaged<char*, void*, BOOL> lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, out int lpValue);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, IntPtr lpValue);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll")]
         internal static partial int GetUserGeoID(int geoClass);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", EntryPoint = "GetGeoInfoW")]
         internal static unsafe partial int GetGeoInfo(int location, int geoType, char* lpGeoData, int cchData, int LangId);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool EnumCalendarInfoExEx(delegate* unmanaged<char*, uint, IntPtr, void*, BOOL> pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);
@@ -156,6 +173,7 @@ internal static partial class Interop
             internal Guid guidCustomVersion;
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetNLSVersionEx(int function, string localeName, NlsVersionInfoEx* lpVersionInformation);

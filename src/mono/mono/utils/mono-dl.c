@@ -41,118 +41,6 @@ struct MonoDlFallbackHandler {
 
 static GSList *fallback_handlers;
 
-#if defined (_AIX)
-#include <ar.h>
-#include <fcntl.h>
-
-/**
- * On AIX/PASE, a shared library can be contained inside of an ar format
- * archive. Determine if the file is an ar archive or not.
- */
-static gboolean
-is_library_ar_archive (char *path)
-{
-	int lfd, readret;
-	char magic [SAIAMAG];
-	lfd = open (path, O_RDONLY);
-
-	/* don't assume it's an archive on error */
-	if (lfd == -1)
-		return FALSE;
-
-	readret = read (lfd, magic, SAIAMAG);
-	close (lfd);
-	/* check for equality with either version of header */
-	return readret == SAIAMAG &&
-		(memcmp (magic, AIAMAG, SAIAMAG) == 0 ||
-		 memcmp (magic, AIAMAGBIG, SAIAMAG) == 0);
-}
-#endif
-
-/*
- * read a value string from line with any of the following formats:
- * \s*=\s*'string'
- * \s*=\s*"string"
- * \s*=\s*non_white_space_string
- */
-static char*
-read_string (char *p, FILE *file)
-{
-	char *endp;
-	char *startp;
-	while (*p && isspace (*p))
-		++p;
-	if (*p == 0)
-		return NULL;
-	if (*p == '=')
-		p++;
-	while (*p && isspace (*p))
-		++p;
-	if (*p == '\'' || *p == '"') {
-		char t = *p;
-		p++;
-		startp = p;
-		endp = strchr (p, t);
-		/* FIXME: may need to read more from file... */
-		if (!endp)
-			return NULL;
-		*endp = 0;
-		return (char *) g_memdup (startp, GPTRDIFF_TO_UINT ((endp - startp) + 1));
-	}
-	if (*p == 0)
-		return NULL;
-	startp = p;
-	while (*p && !isspace (*p))
-		++p;
-	*p = 0;
-	return (char *) g_memdup (startp, GPTRDIFF_TO_UINT ((p - startp) + 1));
-}
-
-/*
- * parse a libtool .la file and return the path of the file to dlopen ()
- * handling both the installed and uninstalled cases
- */
-static char*
-get_dl_name_from_libtool (const char *libtool_file)
-{
-	FILE* file;
-	char buf [512];
-	char *line, *dlname = NULL, *libdir = NULL, *installed = NULL;
-	if (!(file = fopen (libtool_file, "r")))
-		return NULL;
-	while ((line = fgets (buf, 512, file))) {
-		while (*line && isspace (*line))
-			++line;
-		if (*line == '#' || *line == 0)
-			continue;
-		if (strncmp ("dlname", line, 6) == 0) {
-			g_free (dlname);
-			dlname = read_string (line + 6, file);
-		} else if (strncmp ("libdir", line, 6) == 0) {
-			g_free (libdir);
-			libdir = read_string (line + 6, file);
-		} else if (strncmp ("installed", line, 9) == 0) {
-			g_free (installed);
-			installed = read_string (line + 9, file);
-		}
-	}
-	fclose (file);
-	line = NULL;
-	if (installed && strcmp (installed, "no") == 0) {
-		char *dir = g_path_get_dirname (libtool_file);
-		if (dlname)
-			line = g_strconcat (dir, G_DIR_SEPARATOR_S ".libs" G_DIR_SEPARATOR_S, dlname, (const char*)NULL);
-		g_free (dir);
-	} else {
-		if (libdir && dlname)
-			line = g_strconcat (libdir, G_DIR_SEPARATOR_S, dlname, (const char*)NULL);
-	}
-	g_free (dlname);
-	g_free (libdir);
-	g_free (installed);
-	return line;
-}
-
 static const char *
 fix_libc_name (const char *name)
 {
@@ -278,10 +166,6 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, MonoError
 		}
 	}
 	if (!lib && !dl_fallback) {
-		char *lname;
-		char *llname;
-		const char *suff;
-		const char *ext;
 		/* This platform does not support dlopen */
 		if (name == NULL) {
 			g_free (module);
@@ -289,50 +173,11 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, MonoError
 			return NULL;
 		}
 
-		suff = ".la";
-		ext = strrchr (name, '.');
-		if (ext && strcmp (ext, ".la") == 0)
-			suff = "";
-		lname = g_strconcat (name, suff, (const char*)NULL);
-		llname = get_dl_name_from_libtool (lname);
-		g_free (lname);
-		if (llname) {
-			error_init_reuse (load_error);
-			lib = mono_dl_open_file (llname, lflags, load_error);
-			mono_error_cleanup (load_error);
-
-			if (lib)
-				found_name = g_strdup (llname);
-#if defined (_AIX)
-			/*
-			 * HACK: deal with AIX archive members because libtool
-			 * underspecifies when using --with-aix-soname=svr4 -
-			 * without this check, Mono can't find System.Native
-			 * at build time.
-			 * XXX: Does this also need to be in other places?
-			 */
-			if (!lib && is_library_ar_archive (llname)) {
-				/* try common suffix */
-				char *llaixname;
-				llaixname = g_strconcat (llname, "(shr_64.o)", (const char*)NULL);
-				error_init_reuse (load_error);
-				lib = mono_dl_open_file (llaixname, lflags, load_error);
-				mono_error_cleanup (load_error);
-				if (lib)
-					found_name = g_strdup (llaixname);
-				/* XXX: try another suffix like (shr.o)? */
-				g_free (llaixname);
-			}
-#endif
-			g_free (llname);
-		}
-		if (!lib) {
-			char *error_msg = mono_dl_current_error_string ();
-			mono_error_set_error (error, MONO_ERROR_FILE_NOT_FOUND, "%s", error_msg);
-			g_free (error_msg);
-			g_free (module);
-			return NULL;
-		}
+		char *error_msg = mono_dl_current_error_string ();
+		mono_error_set_error (error, MONO_ERROR_FILE_NOT_FOUND, "%s", error_msg);
+		g_free (error_msg);
+		g_free (module);
+		return NULL;
 	}
 	mono_refcount_init (module, NULL);
 	module->handle = lib;

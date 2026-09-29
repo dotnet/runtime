@@ -18,7 +18,7 @@ import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 import { loadLazyAssembly } from "./lazyLoading";
 import { loadSatelliteAssemblies } from "./satelliteAssemblies";
-import { forceDisposeProxies } from "./gc-handles";
+import { forceDisposeProxies, get_proxy_counts } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { monoStringToStringUnsafe } from "./strings";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
@@ -32,6 +32,7 @@ export function export_internal (): any {
             Module.err("early exit " + exit_code);
         },
         forceDisposeProxies,
+        getProxyCounts: get_proxy_counts,
         mono_wasm_dump_threads: WasmEnableThreads ? mono_wasm_dump_threads : undefined,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
@@ -56,41 +57,41 @@ export function export_internal (): any {
         mono_wasm_get_func_id_to_name_mappings,
 
         // interop
-        get_property,
-        set_property,
-        has_property,
-        get_typeof_property,
-        get_global_this,
-        get_dotnet_instance: () => exportedRuntimeAPI,
-        dynamic_import,
-        mono_wasm_bind_cs_function,
+        getProperty: get_property,
+        setProperty: set_property,
+        hasProperty: has_property,
+        getTypeOfProperty: get_typeof_property,
+        getGlobalThis: get_global_this,
+        getDotnetInstance: () => exportedRuntimeAPI,
+        dynamicImport: dynamic_import,
+        bindCsFunction: mono_wasm_bind_cs_function,
 
         // BrowserWebSocket
-        ws_wasm_create,
-        ws_wasm_open,
-        ws_wasm_send,
-        ws_wasm_receive,
-        ws_wasm_close,
-        ws_wasm_abort,
-        ws_get_state,
+        wsCreate: ws_wasm_create,
+        wsOpen: ws_wasm_open,
+        wsSend: ws_wasm_send,
+        wsReceive: ws_wasm_receive,
+        wsClose: ws_wasm_close,
+        wsAbort: ws_wasm_abort,
+        wsGetState: ws_get_state,
 
         // BrowserHttpHandler
-        http_wasm_supports_streaming_request,
-        http_wasm_supports_streaming_response,
-        http_wasm_create_controller,
-        http_wasm_get_response_type,
-        http_wasm_get_response_status,
-        http_wasm_abort,
-        http_wasm_transform_stream_write,
-        http_wasm_transform_stream_close,
-        http_wasm_fetch,
-        http_wasm_fetch_stream,
-        http_wasm_fetch_bytes,
-        http_wasm_get_response_header_names,
-        http_wasm_get_response_header_values,
-        http_wasm_get_response_bytes,
-        http_wasm_get_response_length,
-        http_wasm_get_streamed_response_bytes,
+        httpSupportsStreamingRequest: http_wasm_supports_streaming_request,
+        httpSupportsStreamingResponse: http_wasm_supports_streaming_response,
+        httpCreateController: http_wasm_create_controller,
+        httpGetResponseType: http_wasm_get_response_type,
+        httpGetResponseStatus: http_wasm_get_response_status,
+        httpAbort: http_wasm_abort,
+        httpTransformStreamWrite: http_wasm_transform_stream_write,
+        httpTransformStreamClose: http_wasm_transform_stream_close,
+        httpFetch: http_wasm_fetch,
+        httpFetchStream: http_wasm_fetch_stream,
+        httpFetchBytes: http_wasm_fetch_bytes,
+        httpGetResponseHeaderNames: http_wasm_get_response_header_names,
+        httpGetResponseHeaderValues: http_wasm_get_response_header_values,
+        httpGetResponseBytes: http_wasm_get_response_bytes,
+        httpGetResponseLength: http_wasm_get_response_length,
+        httpGetStreamedResponseBytes: http_wasm_get_streamed_response_bytes,
 
         // jiterpreter
         jiterpreter_dump_stats,
@@ -118,7 +119,7 @@ export function cwraps_internal (internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,
         mono_wasm_profiler_init_aot: profiler_c_functions.mono_wasm_profiler_init_aot,
-        mono_wasm_profiler_init_browser: profiler_c_functions.mono_wasm_profiler_init_browser,
+        mono_wasm_profiler_init_browser_devtools: profiler_c_functions.mono_wasm_profiler_init_browser_devtools,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
         mono_wasm_print_thread_dump: WasmEnableThreads ? twraps.mono_wasm_print_thread_dump : undefined,
     });

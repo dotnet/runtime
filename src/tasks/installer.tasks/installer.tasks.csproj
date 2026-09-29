@@ -1,24 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
+    <Nullable>disable</Nullable>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- TODO: Remove when a newer SDK with that property exposed is available. -->
+    <NetCoreSdkRoot Condition="'$(NetCoreSdkRoot)' == ''">$([System.IO.Path]::GetDirectoryName('$(BundledRuntimeIdentifierGraphFile)'))\</NetCoreSdkRoot>
   </PropertyGroup>
 
+  <!-- Reference these assemblies from the SDK directly. We do this to avoid bringing the package closure for assemblies we don't use here. -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" />
-    <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
+    <Reference Include="$(NetCoreSdkRoot)Microsoft.Extensions.DependencyModel.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)NuGet.Packaging.dll" Private="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-    <Reference Include="Microsoft.Build.Framework" />
-    <Reference Include="Microsoft.Build.Utilities.v4.0" />
-    <Reference Include="Microsoft.Build" />
-  </ItemGroup>
 </Project>

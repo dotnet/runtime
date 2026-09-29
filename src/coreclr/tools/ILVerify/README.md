@@ -40,34 +40,13 @@ The code is split into three projects:
 
 ## Tests
 
-To test the ILVerification library we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/tests/ilverify/ILTests](../../../tests/ilverify/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method.
+To test the ILVerification library we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/coreclr/tools/ILVerification.Tests/ILTests](../ILVerification.Tests/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method.
 
-The test project itself is under [src/tests/ilverify](../../../tests/ilverify)
+The test project itself is under [src/coreclr/tools/ILVerification.Tests](../ILVerification.Tests)
 
 ### Building and Running Tests
 
-General instructions to build this library can be found [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md).
-
-As the test project is marked with priority=1, simply building the test projects from the root of the project is not enough. For the initial build of priority=1 in release mode, run the following:
-
-```sh
-src/tests/build.(cmd/sh) release -priority=1
-```
-
-It is important to not attempt to build the test project using `dotnet build` or `dotnet test`, as this will invalidate the state of the build and requires a full rebuild of both (see this [issue](https://github.com/dotnet/runtime/issues/43967)).
-
-To incrementally build the ILVerify tests in isolation, run the following:
-
-```sh
-dotnet.(cmd/sh) msbuild ./src/tests/ilverify/ILVerification.Tests.csproj /p:Configuration=Release
-```
-
-In order to run the tests, execute:
-
-```sh
-artifacts/tests/coreclr/(windows/linux).x64.Release/ilverify/ILVerification.Tests.(cmd/sh) -coreroot=artifacts/tests/coreclr/(windows/linux).x64.Release/Tests/Core_Root
-```
-
+To run tests, you can run `./dotnet[.cmd|.sh] test src/coreclr/tools/ILVerification.Tests/ILVerification.Tests.csproj` from the root of the repository.
 
 ### Defining Tests
 

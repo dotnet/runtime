@@ -11,11 +11,23 @@ string StringFromEEAddress(TargetPointer address);
 
 ## Version 1
 
-Global variables used
-| Global Name | Type | Purpose |
+<!-- BEGIN GENERATED: usage contract=DacStreams version=c1 -->
+### Data descriptors used
+
+_None._
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| MiniMetaDataBuffAddress | TargetPointer | Identify where the mini metadata stream exists |
-| MiniMetaDataBuffMaxSize | uint | Identify where the size of the mini metadata stream |
+| `MiniMetaDataBuffAddress` | `pointer` | Identify where the mini metadata stream exists |
+| `MiniMetaDataBuffMaxSize` | `pointer` | Identify where the size of the mini metadata stream |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=DacStreams version=c1 -->
+
 
 Magic numbers
 | Name | Value |
@@ -54,8 +66,8 @@ Following the EENameStream header, there are CountOfNames entries. Each entry be
 ``` csharp
 string StringFromEEAddress(TargetPointer address)
 {
-    TargetPointer miniMetaDataBuffAddress = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffAddress));
-    uint miniMetaDataBuffMaxSize = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffMaxSize));
+    TargetPointer miniMetaDataBuffAddress = _target.Read<uint>(_target.ReadGlobalPointer("MiniMetaDataBuffAddress"));
+    uint miniMetaDataBuffMaxSize = _target.Read<uint>(_target.ReadGlobalPointer("MiniMetaDataBuffMaxSize"));
 
     // Parse MiniMetadataStream according the the format described above to produce a dictionary from pointer to string from the EENameStream.
     // Then lookup in the dictionary, to produce a result if it was present in the table.

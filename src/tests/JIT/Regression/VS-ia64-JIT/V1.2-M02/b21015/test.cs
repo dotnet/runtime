@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b21015;
+
 using System;
 using Xunit;
 
@@ -29,6 +32,7 @@ struct T
 
 public class Tester
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

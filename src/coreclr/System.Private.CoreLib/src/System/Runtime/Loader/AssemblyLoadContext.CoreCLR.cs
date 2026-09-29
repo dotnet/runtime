@@ -11,25 +11,31 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InitializeAssemblyLoadContext")]
         private static partial IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, [MarshalAs(UnmanagedType.Bool)] bool fRepresentsTPALoadContext, [MarshalAs(UnmanagedType.Bool)] bool isCollectible);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_PrepareForAssemblyLoadContextRelease")]
         private static partial void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
         private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalSetProfileRoot(string directoryPath);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
+        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, ObjectHandleOnStack retAssembly);
 
         internal static Assembly[] GetLoadedAssemblies()
         {
@@ -38,33 +44,34 @@ namespace System.Runtime.Loader
             return assemblies!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadedAssemblies")]
         private static partial void GetLoadedAssemblies(ObjectHandleOnStack retAssemblies);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsTracingEnabled();
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceResolvingHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
+        internal static partial void TraceResolvingHandlerInvoked(string assemblyName, string handlerName, string? alcName, string? resultAssemblyName, string? resultAssemblyPath);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
+        internal static partial void TraceAssemblyResolveHandlerInvoked(string assemblyName, string handlerName, string? resultAssemblyName, string? resultAssemblyPath);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
+        internal static partial void TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, [MarshalAs(UnmanagedType.Bool)] bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_TraceSatelliteSubdirectoryPathProbed", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
+        internal static partial void TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
+        private RuntimeAssembly InternalLoadFromPath(string? assemblyPath)
         {
             RuntimeAssembly? loadedAssembly = null;
-            LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, nativeImagePath, ObjectHandleOnStack.Create(ref loadedAssembly));
+            LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, ObjectHandleOnStack.Create(ref loadedAssembly));
             return loadedAssembly!;
         }
 
@@ -83,6 +90,7 @@ namespace System.Runtime.Loader
         }
 
 #if TARGET_WINDOWS
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromInMemoryModule")]
         private static partial IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyBinder, IntPtr hModule, ObjectHandleOnStack retAssembly);
 
@@ -108,41 +116,41 @@ namespace System.Runtime.Loader
         }
 #endif
 
-        // This method is invoked by the VM to resolve a satellite assembly reference
-        // after trying assembly resolution via Load override without success.
-        private static RuntimeAssembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-            // Invoke the ResolveSatelliteAssembly method
-            return context.ResolveSatelliteAssembly(assemblyName);
-        }
-
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)
+        [UnmanagedCallersOnly]
+        private static unsafe IntPtr ResolveUnmanagedDll(char* pUnmanagedDllName, IntPtr gchAssemblyLoadContext, Exception* pException)
         {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-            return context.LoadUnmanagedDll(unmanagedDllName);
+            try
+            {
+                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                return context.LoadUnmanagedDll(new string(pUnmanagedDllName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return default;
+            }
         }
 
         // This method is invoked by the VM to resolve a native library using the ResolvingUnmanagedDll event
         // after trying all other means of resolution.
-        private static IntPtr ResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchManagedAssemblyLoadContext)
+        [UnmanagedCallersOnly]
+        private static unsafe IntPtr ResolveUnmanagedDllUsingEvent(char* pUnmanagedDllName, Assembly* pAssembly, IntPtr gchAssemblyLoadContext, Exception* pException)
         {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-            return context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
+            try
+            {
+                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                return context.GetResolvedUnmanagedDll(*pAssembly, new string(pUnmanagedDllName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return default;
+            }
         }
 
-        // This method is invoked by the VM to resolve an assembly reference using the Resolving event
-        // after trying assembly resolution via Load override and TPA load context without success.
-        private static RuntimeAssembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-            // Invoke the AssemblyResolve event callbacks if wired up
-            return context.ResolveUsingEvent(assemblyName);
-        }
-
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]
         private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
@@ -201,30 +209,54 @@ namespace System.Runtime.Loader
         /// <summary>
         /// Called by the runtime to start an assembly load activity for tracing
         /// </summary>
-        private static void StartAssemblyLoad(ref Guid activityId, ref Guid relatedActivityId)
+        [UnmanagedCallersOnly]
+        private static unsafe void StartAssemblyLoad(Guid* activityId, Guid* relatedActivityId, Exception* pException)
         {
-            // Make sure ActivityTracker is enabled
-            ActivityTracker.Instance.Enable();
+            try
+            {
+                // Make sure ActivityTracker is enabled
+                ActivityTracker.Instance.Enable();
 
-            // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
-            ActivityTracker.Instance.OnStart(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, ref relatedActivityId, EventActivityOptions.Recursive, useTplSource: false);
+                // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
+                ActivityTracker.Instance.OnStart(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref *activityId, ref *relatedActivityId, EventActivityOptions.Recursive, useTplSource: false);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         /// <summary>
         /// Called by the runtime to stop an assembly load activity for tracing
         /// </summary>
-        private static void StopAssemblyLoad(ref Guid activityId)
+        [UnmanagedCallersOnly]
+        private static unsafe void StopAssemblyLoad(Guid* activityId, Exception* pException)
         {
-            // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
-            ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, useTplSource: false);
+            try
+            {
+                // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
+                ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref *activityId, useTplSource: false);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         /// <summary>
         /// Called by the runtime to make sure the default ALC is initialized
         /// </summary>
-        private static void InitializeDefaultContext()
+        [UnmanagedCallersOnly]
+        private static unsafe void InitializeDefaultContext(Exception* pException)
         {
-            _ = Default;
+            try
+            {
+                _ = Default;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 }

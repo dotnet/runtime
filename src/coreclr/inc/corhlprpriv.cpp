@@ -14,62 +14,6 @@
 
 /*************************************************************************************
 *
-* implementation of CQuickMemoryBase
-*
-*************************************************************************************/
-
-template <SIZE_T SIZE, SIZE_T INCREMENT>
-HRESULT CQuickMemoryBase<SIZE, INCREMENT>::ReSizeNoThrow(SIZE_T iItems)
-{
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    // Exercise heap for OOM-fault injection purposes
-    // But we can't do this if current thread suspends EE
-    if (!IsSuspendEEThread ())
-    {
-        BYTE *pTmp = NEW_NOTHROW(iItems);
-        if (!pTmp)
-        {
-            return E_OUTOFMEMORY;
-        }
-        delete [] pTmp;
-    }
-#endif
-#endif
-    BYTE *pbBuffNew;
-    if (iItems <= cbTotal)
-    {
-        iSize = iItems;
-        return NOERROR;
-    }
-
-#ifndef DACCESS_COMPILE
-    // not allowed to do allocation if current thread suspends EE
-    if (IsSuspendEEThread ())
-        return E_OUTOFMEMORY;
-#endif
-    pbBuffNew = NEW_NOTHROW(iItems + INCREMENT);
-    if (!pbBuffNew)
-        return E_OUTOFMEMORY;
-    if (pbBuff)
-    {
-        memcpy(pbBuffNew, pbBuff, cbTotal);
-        delete [] pbBuff;
-    }
-    else
-    {
-        _ASSERTE(cbTotal == SIZE);
-        memcpy(pbBuffNew, rgData, cbTotal);
-    }
-    cbTotal = iItems + INCREMENT;
-    iSize = iItems;
-    pbBuff = pbBuffNew;
-    return NOERROR;
-}
-
-
-/*************************************************************************************
-*
 * get number of bytes consumed by one argument/return type
 *
 *************************************************************************************/
@@ -226,7 +170,7 @@ ErrExit:
 // copy fixed part of VarArg signature to a buffer
 //*****************************************************************************
 HRESULT _GetFixedSigOfVarArg(           // S_OK or error.
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob of COM+ method signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob of method signature
     ULONG   cbSigBlob,                  // [IN] size of signature
     CQuickBytes *pqbSig,                // [OUT] output buffer for fixed part of VarArg Signature
     ULONG   *pcbSigBlob)                // [OUT] number of bytes written to the above output buffer

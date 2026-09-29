@@ -928,15 +928,13 @@ namespace
 
         LPCWSTR name;
         ULONG pchString;
-        BOOL is80Plus;
-        HRESULT hr = import->GetUserString(tkStr, &pchString, &is80Plus, &name);
+        HRESULT hr = import->GetUserString(tkStr, &pchString, &name);
         values.push_back(hr);
         if (hr == S_OK)
         {
             uint32_t hash = HashByteArray(name, pchString * sizeof(WCHAR));
             values.push_back(hash);
             values.push_back(pchString);
-            values.push_back(is80Plus);
         }
         return values;
     }
@@ -1232,7 +1230,7 @@ TEST_P(InternalMetadataImportTest, ImportAPIs)
 {
     auto param = GetParam();
     span<uint8_t> blob = GetMetadataForFile(param);
-    void const* data = blob;
+    void const* data = blob.data();
     uint32_t dataLen = (uint32_t)blob.size();
 
     // Load metadata
@@ -1500,7 +1498,7 @@ TEST_P(InternalMetaDataLongRunningTest, ImportAPIs)
 {
     auto param = GetParam();
     span<uint8_t> blob = GetMetadataForFile(param);
-    void const* data = blob;
+    void const* data = blob.data();
     uint32_t dataLen = (uint32_t)blob.size();
 
     // Load metadata

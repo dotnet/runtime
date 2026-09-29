@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.BindingFlagSupport;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.General.NativeFormat;
@@ -121,7 +120,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         public sealed override int GetHashCode()
         {
-            return _fieldHandle.GetHashCode();
+            return HashCode.Combine(_fieldHandle, _contextTypeInfo, _reflectedType);
         }
 
         public sealed override RuntimeFieldHandle FieldHandle
@@ -130,7 +129,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             {
                 return RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleForComponents(
                     DeclaringType.TypeHandle,
-                    Name);
+                    _fieldHandle);
             }
         }
 
@@ -155,9 +154,11 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         protected sealed override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
 
-        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
+        internal sealed override MetadataReader GetMetadataReader() => _reader;
 
-        protected sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _field.CustomAttributes;
+
+        internal sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
 
         public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType.ToType(), _reader, FieldTypeHandle);
 

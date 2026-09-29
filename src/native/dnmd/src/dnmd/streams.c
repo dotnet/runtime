@@ -6,7 +6,7 @@ bool try_get_string(mdcxt_t* cxt, size_t offset, char const** str)
 
     mdstream_t* h = &cxt->strings_heap;
 
-    // II.24.2.3 - When the #String heap is present, the first entry is always the empty string (i.e., \0). 
+    // II.24.2.3 - When the #String heap is present, the first entry is always the empty string (i.e., \0).
     // II.24.2.2 -  Streams need not be there if they are empty.
     // If the offset into the heap is 0, we can treat that as a "null" index into the heap and return
     // the empty string.
@@ -50,6 +50,10 @@ bool try_get_user_string(mdcxt_t* cxt, size_t offset, mduserstring_t* str, size_
     size_t data_len = h->size - offset;
     uint32_t byte_count;
     if (!decompress_u32(&begin, &data_len, &byte_count))
+        return false;
+
+    // A user string cannot extend beyond the end of the user string heap.
+    if (begin + byte_count > h->ptr + h->size)
         return false;
 
     if (byte_count == 0)
@@ -285,11 +289,88 @@ bool initialize_tables(mdcxt_t* cxt)
 bool validate_tables(mdcxt_t* cxt)
 {
     assert(cxt != NULL);
-    (void)cxt;
+
     // [TODO] Reference ECMA-335 and encode table verification.
-    // [TODO] Validate that tables marked as sorted are actually sorted.
-    // [TODO] Do not allow the *Ptr tables to be present in a compressed table heap.
+
+    // Do not allow the *Ptr indirection tables
+    // to be present in a compressed table heap (#~).
+    if (!(cxt->context_flags & mdc_uncompressed_table_heap))
+    {
+        for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+        {
+            if (table_is_indirect_table((mdtable_id_t)i) && cxt->tables[i].row_count != 0)
+                return false;
+        }
+    }
+
+    // II.22 - Validate that tables marked as sorted are actually sorted.
+    for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+    {
+        mdtable_t* table = &cxt->tables[i];
+        if (!table->is_sorted || table->row_count <= 1)
+            continue;
+
+        md_key_info_t const* keys;
+        uint8_t key_count = get_table_keys((mdtable_id_t)i, &keys);
+        if (key_count == 0)
+            continue;
+
+        for (uint32_t r = 1; r < table->row_count; ++r)
+        {
+            mdcursor_t row = create_cursor(table, r);
+            mdcursor_t next_row = create_cursor(table, r + 1);
+
+            for (uint8_t k = 0; k < key_count; ++k)
+            {
+                col_index_t key_col = index_to_col(keys[k].index, (mdtable_id_t)i);
+
+                access_cxt_t row_acxt;
+                if (!create_access_context(&row, key_col, false, &row_acxt))
+                    return false;
+
+                access_cxt_t next_acxt;
+                if (!create_access_context(&next_row, key_col, false, &next_acxt))
+                    return false;
+
+                uint32_t row_value;
+                if (!read_column_data(&row_acxt, &row_value))
+                    return false;
+
+                uint32_t next_value;
+                if (!read_column_data(&next_acxt, &next_value))
+                    return false;
+
+                // Compare by sort direction - ascending or descending.
+                if (keys[k].descending)
+                {
+                    if (row_value < next_value)
+                        return false;
+                    if (row_value > next_value)
+                        break;
+                }
+                else
+                {
+                    if (row_value > next_value)
+                        return false;
+                    if (row_value < next_value)
+                        break;
+                }
+            }
+        }
+    }
+
     return true;
+}
+
+bool has_pdb(mdcxt_t* cxt)
+{
+#ifdef DNMD_PORTABLE_PDB
+    assert(cxt != NULL);
+    return cxt->pdb.size != 0;
+#else
+    (void)cxt;
+    return false;
+#endif // !DNMD_PORTABLE_PDB
 }
 
 bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb)
@@ -297,10 +378,10 @@ bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb)
 #ifdef DNMD_PORTABLE_PDB
     assert(cxt != NULL && pdb != NULL);
 
-    mdstream_t* h = &cxt->pdb;
-    if (h->size == 0)
+    if (!has_pdb(cxt))
         return false;
 
+    mdstream_t* h = &cxt->pdb;
     uint8_t const* curr = h->ptr;
     size_t curr_len = h->size;
 

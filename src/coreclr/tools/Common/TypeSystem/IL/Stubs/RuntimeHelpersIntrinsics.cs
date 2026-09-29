@@ -3,6 +3,7 @@
 
 using System;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -16,8 +17,7 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers");
-            string methodName = method.Name;
+            Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers"u8);
 
             // All the methods handled below are per-instantiation generic methods
             if (method.Instantiation.Length != 1 || method.IsTypicalMethodDefinition)
@@ -30,7 +30,7 @@ namespace Internal.IL.Stubs
                 return null;
 
             bool result;
-            if (methodName == "IsBitwiseEquatable")
+            if (method.Name == "IsBitwiseEquatable"u8)
             {
                 // Ideally we could detect automatically whether a type is trivially equatable
                 // (i.e., its operator == could be implemented via memcmp). But for now we'll
@@ -57,9 +57,7 @@ namespace Internal.IL.Stubs
                         result = false;
                         if (elementType is MetadataType mdType)
                         {
-                            if (mdType.Module == mdType.Context.SystemModule &&
-                                mdType.Namespace == "System.Text" &&
-                                mdType.Name == "Rune")
+                            if (IsKnownBitwiseEquatableType(mdType))
                             {
                                 result = true;
                             }
@@ -70,7 +68,7 @@ namespace Internal.IL.Stubs
                                 if (equatable.HasValue && !equatable.Value)
                                 {
                                     // Value type that can use memcmp and that doesn't override object.Equals or implement IEquatable<T>.Equals.
-                                    MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+                                    MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
                                     result =
                                         mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
                                         ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals);
@@ -88,6 +86,22 @@ namespace Internal.IL.Stubs
             ILOpcode opcode = result ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
 
             return new ILStubMethodIL(method, new byte[] { (byte)opcode, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), Array.Empty<object>());
+        }
+
+        private static bool IsKnownBitwiseEquatableType(MetadataType type)
+        {
+            if (type.Module != type.Context.SystemModule)
+            {
+                return false;
+            }
+
+            Utf8Span ns = type.Namespace;
+            if (ns == "System"u8)
+            {
+                Utf8Span name = type.Name;
+                return name == "Guid"u8 || name == "Int128"u8 || name == "UInt128"u8;
+            }
+            return ns == "System.Text"u8 && type.Name == "Rune"u8;
         }
     }
 }

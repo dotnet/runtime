@@ -8,10 +8,8 @@
 extern bool g_oldMethodTableFlags;
 #endif
 
-// ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
-// Additionally the platform ABI requires these types and composite type containing them to be similarly
-// aligned when passed as arguments.
-#ifdef TARGET_ARM
+// Some 32-bit platform ABIs require that 64-bit primitive types and composite types containing them are aligned at 64-bit boundaries.
+#if defined(TARGET_ARM) || defined(TARGET_WASM)
 #define FEATURE_64BIT_ALIGNMENT
 #endif
 
@@ -23,6 +21,9 @@ extern bool g_oldMethodTableFlags;
 // Bits stolen from the sync block index that the GC/HandleTable knows about (currently these are at the same
 // positions as the mainline runtime but we can change this below when it becomes apparent how NativeAOT will
 // handle sync blocks).
+#ifdef FEATURE_JAVAMARSHAL
+#define BIT_SBLK_BRIDGE_PENDING             0x80000000
+#endif // FEATURE_JAVAMARSHAL
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 

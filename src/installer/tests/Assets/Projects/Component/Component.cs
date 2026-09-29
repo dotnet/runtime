@@ -47,6 +47,9 @@ namespace Component
         {
             componentCallCount++;
             PrintComponentCallLog(nameof(ThrowException), arg, size);
+
+            // Disable core dumps - test is intentionally crashing
+            Utilities.CoreDump.Disable();
             throw new InvalidOperationException(nameof(ThrowException));
         }
 

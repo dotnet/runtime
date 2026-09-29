@@ -254,7 +254,7 @@ namespace System.Configuration
 
             // in a locked list you cannot remove items that were locked in the parent
             // in an exception list this is legal because it makes the list more restrictive
-            if ((ExceptionList == false) &&
+            if (!ExceptionList &&
                 (((ConfigurationValueFlags)_internalDictionary[name] & ConfigurationValueFlags.Inherited) != 0))
             {
                 if (((ConfigurationValueFlags)_internalDictionary[name] & ConfigurationValueFlags.Modified) == 0)

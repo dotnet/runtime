@@ -6,15 +6,20 @@ set(MDRUNTIME_SOURCES
   mdfileformat.cpp
   metamodel.cpp
   metamodelro.cpp
+  noopmetadataimport.cpp
   recordpool.cpp
   mdinternaldisp.cpp
   mdinternalro.cpp
   strongnameinternal.cpp
+  stgpool.cpp
+  stgpooli.cpp
+  stgpoolreadonly.cpp
 )
 
 set(MDRUNTIME_HEADERS
   ../../inc/caparser.h
   ../../inc/cor.h
+  ../../inc/cordecoderhelpers.h
   ../../inc/corhlpr.h
   ../../inc/corpriv.h
   ../../inc/mdcommon.h
@@ -22,7 +27,6 @@ set(MDRUNTIME_HEADERS
   ../../inc/pedecoder.h
   ../../inc/posterror.h
   ../compiler/regmeta.h
-  ../inc/assemblymdinternaldisp.h
   ../inc/liteweightstgdb.h
   ../inc/mdcolumndescriptors.h
   ../inc/metamodel.h
@@ -31,6 +35,8 @@ set(MDRUNTIME_HEADERS
   ../inc/portablepdbmdds.h
   ../inc/portablepdbmdi.h
   ../inc/recordpool.h
+  ../inc/stgpool.h
+  ../inc/stgpooli.h
   metamodelcolumndefs.h
   mdinternaldisp.h
   mdinternalro.h
@@ -47,15 +53,19 @@ endif (CLR_CMAKE_TARGET_WIN32)
 add_library_clr(mdruntime_dac ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(mdruntime_dac PRIVATE stdafx.h)
+target_link_libraries(mdruntime_dac PUBLIC minipal)
 
 add_library_clr(mdruntime_wks OBJECT ${MDRUNTIME_SOURCES})
 target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_headers(mdruntime_wks PRIVATE stdafx.h)
+target_link_libraries(mdruntime_wks PUBLIC minipal)
 
 add_library_clr(mdruntime-dbi ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime-dbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mdruntime-dbi PRIVATE stdafx.h)
+target_link_libraries(mdruntime-dbi PUBLIC minipal)
 
 add_library_clr(mdruntime_ppdb ${MDRUNTIME_SOURCES})
-target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB SELF_NO_HOST)
 target_precompile_headers(mdruntime_ppdb PRIVATE stdafx.h)
+target_link_libraries(mdruntime_ppdb PUBLIC minipal)

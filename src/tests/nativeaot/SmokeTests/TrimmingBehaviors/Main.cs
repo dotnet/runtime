@@ -9,10 +9,11 @@ success &= RunTest(DeadCodeElimination.Run);
 success &= RunTest(FeatureSwitches.Run);
 success &= RunTest(ILLinkDescriptor.Run);
 success &= RunTest(DependencyInjectionPattern.Run);
+success &= RunTest(UnmanagedCallersOnlyAssociatedSourceType.Run);
 
 return success ? 100 : 1;
 
-static bool RunTest(Func<int> t, [CallerArgumentExpression("t")] string name = null)
+static bool RunTest(Func<int> t, [CallerArgumentExpression(nameof(t))] string name = null)
 {
     Console.WriteLine($"===== Running test {name} =====");
     bool success = true;

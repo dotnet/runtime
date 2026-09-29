@@ -90,6 +90,9 @@ namespace System.Text.RegularExpressions.Tests
                     yield return new object[] { engine, @"\b\w+\b", "abc def ghi jkl", 15, RegexOptions.RightToLeft, 4 };
                     yield return new object[] { RegexEngine.Interpreter, @"(?<=abc)\w", "abcxabcy", 8, RegexOptions.RightToLeft, 2 };
                     yield return new object[] { engine, @"(?<=abc)\w", "abcxabcy", 7, RegexOptions.RightToLeft, 1 };
+
+                    // Balancing groups in negative lookarounds should not be removed
+                    yield return new object[] { engine, @"()(?'-1')(?!(?'-1'))", "abc", 0, RegexOptions.None, 4 };
                 }
             }
         }

@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <PackageDescription>Provides access to Windows system event notifications.
 
 Commonly Used Types:
@@ -104,6 +105,8 @@ Microsoft.Win32.SystemEvents</PackageDescription>
              Link="Common\Interop\Windows\WtsApi32\Interop.WTSUnRegisterSessionNotification.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="Microsoft\Win32\PowerModeChangedEventArgs.cs" />
     <Compile Include="Microsoft\Win32\PowerModeChangedEventHandler.cs" />
     <Compile Include="Microsoft\Win32\PowerModes.cs" />

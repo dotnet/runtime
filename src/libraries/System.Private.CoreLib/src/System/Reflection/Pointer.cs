@@ -32,6 +32,7 @@ namespace System.Reflection
             return new Pointer(ptr, rtType);
         }
 
+        /// <safety>Returns the pointer value previously stored in the boxed Pointer instance; it reads only a managed field and performs no dereference of the pointer.</safety>
         public static void* Unbox(object ptr)
         {
             if (ptr is Pointer p)
@@ -40,7 +41,7 @@ namespace System.Reflection
             throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
         }
 
-        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is Pointer pointer)
             {
@@ -50,7 +51,7 @@ namespace System.Reflection
             return false;
         }
 
-        public override unsafe int GetHashCode() => ((nuint)_ptr).GetHashCode();
+        public override int GetHashCode() => ((nuint)_ptr).GetHashCode();
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
