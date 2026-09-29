@@ -31,7 +31,7 @@ internal static partial class Interop
             internal uint       pbi_svuid;
             internal uint       pbi_svgid;
             internal uint       reserved;
-            internal InlineArray16<byte> pbi_comm; // MAXCOMLEN
+            internal CommBuffer pbi_comm;
             internal NameBuffer pbi_name;
             internal uint       pbi_nfiles;
             internal uint       pbi_pgid;
@@ -41,6 +41,12 @@ internal static partial class Interop
             internal int        pbi_nice;
             internal ulong      pbi_start_tvsec;
             internal ulong      pbi_start_tvusec;
+
+            [InlineArray(MAXCOMLEN)]
+            internal struct CommBuffer
+            {
+                private byte _element0;
+            }
 
             [InlineArray(MAXCOMLEN * 2)]
             internal struct NameBuffer

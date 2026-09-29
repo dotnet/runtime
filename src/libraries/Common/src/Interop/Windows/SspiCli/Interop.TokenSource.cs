@@ -12,10 +12,16 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct TOKEN_SOURCE
         {
-            internal InlineArray8<byte> SourceName; // TOKEN_SOURCE_LENGTH
+            internal SourceNameBuffer SourceName;
             internal LUID SourceIdentifier;
 
             internal const int TOKEN_SOURCE_LENGTH = 8;
+
+            [InlineArray(TOKEN_SOURCE_LENGTH)]
+            internal struct SourceNameBuffer
+            {
+                private byte _element0;
+            }
         }
     }
 }

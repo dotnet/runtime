@@ -29,9 +29,9 @@ internal static partial class Interop
                 set { _isIPv6 = value ? 1u : 0u; }
             }
 
-            internal InlineArray16<byte> Address; // Buffer to fit an IPv4 or IPv6 address (MAX_IP_ADDRESS_BYTES)
-            private  uint _isIPv6;                // Non-zero if this is an IPv6 address; zero for IPv4.
-            internal uint ScopeId;                // Scope ID (IPv6 only)
+            internal AddressBuffer Address; // Buffer to fit an IPv4 or IPv6 address
+            private  uint _isIPv6;          // Non-zero if this is an IPv6 address; zero for IPv4.
+            internal uint ScopeId;          // Scope ID (IPv6 only)
 
             public override int GetHashCode()
             {
@@ -70,6 +70,12 @@ internal static partial class Interop
                 }
 
                 return Address[..addressByteCount].SequenceEqual(other.Address[..addressByteCount]);
+            }
+
+            [InlineArray(MAX_IP_ADDRESS_BYTES)]
+            internal struct AddressBuffer
+            {
+                private byte _element0;
             }
         }
     }

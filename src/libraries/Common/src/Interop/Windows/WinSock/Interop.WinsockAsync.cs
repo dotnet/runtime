@@ -28,8 +28,14 @@ internal static partial class Interop
             internal UIntPtr length;
             internal uint level;
             internal uint type;
-            internal InlineArray16<byte> address; // IPv6AddressLength
+            internal AddressBuffer address;
             internal uint index;
+
+            [InlineArray(IPv6AddressLength)]
+            internal struct AddressBuffer
+            {
+                private byte _element0;
+            }
         }
 
         // Flags equivalent to winsock TRANSMIT_PACKETS_ELEMENT flags
