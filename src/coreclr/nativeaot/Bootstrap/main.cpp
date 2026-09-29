@@ -15,7 +15,7 @@
 // the implementation while the "disabled" one contains stubs (for the linker) only.
 // Supported Linux executables link the enabled variant. Other configurations
 // link the disabled variant and retain the external createdump path.
-extern "C" bool g_createdumpLinked;
+extern bool g_createdumpLinked;
 extern "C" int nativeaot_createdump_main(int argc, const char* argv[]);
 
 #ifdef NATIVEAOT_DLL

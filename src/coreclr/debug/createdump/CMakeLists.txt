@@ -15,7 +15,8 @@ if(CLR_CMAKE_HOST_WIN32)
     set(CREATEDUMP_SOURCES
         main.cpp
         createdumpmain.cpp
-        dumpname.cpp
+        shared/createdumpcore.cpp
+        shared/dumpname.cpp
         createdumpwindows.cpp
         createdump.rc
     )

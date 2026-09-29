@@ -3,10 +3,6 @@
 
 #include "createdumpcore.h"
 
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
-long g_pageSize = 0;
-#endif
-
 // Try reading the executable name from the /proc/<pid>/exe link. Prefer this name to the
 // one reported by status if it is available because the status name is often truncated
 void TryGetExecutableName(pid_t pid, char* name, size_t nameSize)

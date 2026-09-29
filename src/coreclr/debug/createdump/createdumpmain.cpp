@@ -15,7 +15,7 @@ void print_trace_timestamp()
 
 bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
 {
-    if (GetTempPathWrapper(bufferSize, buffer) == 0)
+    if (bufferSize > MAXDWORD || GetTempPathWrapper(static_cast<DWORD>(bufferSize), buffer) == 0)
     {
         return false;
     }

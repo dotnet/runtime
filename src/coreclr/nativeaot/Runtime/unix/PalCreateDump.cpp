@@ -56,7 +56,7 @@
 #ifdef TARGET_LINUX
 // Defined in the nativeaot-createdump-enabled/disabled library.
 // True when the enabled variant is linked into a supported Linux executable.
-extern "C" bool g_createdumpLinked;
+extern bool g_createdumpLinked;
 // True when the linked bootstrap handles the createdump sentinel.
 extern bool g_createdumpDispatchSupported;
 

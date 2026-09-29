@@ -343,7 +343,11 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             assert(end > 0);
 
             // Add module memory region if not already on the list
-            ModuleRegion newModule(regionFlags, start, end, offset, module.Name());
+            ModuleRegion newModule(regionFlags, start, end, offset);
+            if (!newModule.SetFileName(module.Name()))
+            {
+                return;
+            }
             std::set<ModuleRegion>::iterator existingModule = m_moduleMappings.find(newModule);
             if (existingModule == m_moduleMappings.end())
             {
@@ -352,8 +356,8 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                     newModule.Trace("VisitSegment: ");
                 }
                 // Add this module segment to the module mappings list
-                m_moduleMappings.insert(newModule);
                 m_cbModuleMappings += newModule.Size();
+                m_moduleMappings.insert(Move(newModule));
             }
             else
             {
@@ -368,7 +372,11 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                     uint64_t numberPages = newModule.SizeInPages();
                     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE, offset += PAGE_SIZE)
                     {
-                        ModuleRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
+                        ModuleRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset);
+                        if (!gap.SetFileName(newModule.FileName()))
+                        {
+                            return;
+                        }
 
                         const auto& found = m_moduleMappings.find(gap);
                         if (found != m_moduleMappings.end())
@@ -377,8 +385,8 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                             {
                                 gap.Trace("VisitSegment: *");
                             }
-                            m_moduleMappings.insert(gap);
                             m_cbModuleMappings += gap.Size();
+                            m_moduleMappings.insert(Move(gap));
                         }
                     }
                 }

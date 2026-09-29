@@ -75,7 +75,7 @@ static bool InsertDumpRegion(void* container, const MemoryRegion* region)
 }
 
 // Exported symbol so PalCreateDump.cpp can detect that this library is linked.
-extern "C" bool g_createdumpLinked = true;
+bool g_createdumpLinked = true;
 
 void print_trace_timestamp()
 {

@@ -37,12 +37,12 @@ void LogProcessStatus(int pid);
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <assert.h>
 
 extern FILE* g_logfile;
 extern FILE* g_stdout;
 
 #ifdef HOST_UNIX
-#include <assert.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -146,6 +146,7 @@ GetDumpTypeString(DumpType dumpType)
 #include "processinfo.h"
 #endif
 
+#ifdef HOST_UNIX
 template <typename TRegions, typename TCombinedRegions, typename TInsert>
 bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedRegions, TInsert insert)
 {
@@ -207,6 +208,7 @@ bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedReg
 
     return true;
 }
+#endif
 
 void printf_status(const char* format, ...);
 void printf_error(const char* format, ...);
@@ -218,8 +220,10 @@ bool GetDefaultDumpPath(char* buffer, size_t bufferSize);
 bool FormatDumpName(char* name, size_t nameSize, const char* pattern, const char* exeName, int pid);
 int ParseCreateDumpOptions(int argc, char* argv[], CreateDumpOptions* options);
 bool ValidateDumpOptions(const CreateDumpOptions* options);
+#ifdef HOST_UNIX
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize);
 bool AddSpecialDiagInfoRegion(DumpRegionStore& regionStore);
 bool CreateDumpCore(const CreateDumpOptions* options, DumpRegionStore* regionStore);
+#endif
 
 #endif // CREATEDUMPCORE_H
