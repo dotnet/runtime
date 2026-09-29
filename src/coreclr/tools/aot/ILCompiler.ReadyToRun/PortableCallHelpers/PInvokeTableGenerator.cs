@@ -284,15 +284,25 @@ namespace ILCompiler.PortableCallHelpers
                     ? $"\n    int64_t args[{parameterCount}] = {{ {string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => CarriesBits(i) ? "0" : $"(int64_t)arg{i}"))} }};\n"
                       + string.Concat(Enumerable.Range(0, parameterCount).Where(CarriesBits).Select(i => $"    memcpy(&args[{i}], &arg{i}, sizeof(arg{i}));\n"))
                     : string.Empty;
-                string parametersDeclaration = string.Join(", ", parameterCTypes.Select((p, i) => $"{p} arg{i}"));
-                string arguments = string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => $"arg{i}"));
+                // A struct the wasm C ABI returns by reference arrives as a hidden leading pointer to
+                // caller-owned storage, with no return value, so the interpreter writes straight into it.
+                bool returnsViaBuffer = IsPassedByReference(cb.ReturnType);
+                bool hasResult = !cb.IsVoid && !returnsViaBuffer;
+                string returnCType = returnsViaBuffer ? "void" : MapType(cb.ReturnType);
+                string retArg = returnsViaBuffer ? "(int8_t*)sret" : hasResult ? "(int8_t*)&result" : "nullptr";
+                string parametersDeclaration = string.Join(", ",
+                    (returnsViaBuffer ? ["void * sret"] : Array.Empty<string>())
+                    .Concat(parameterCTypes.Select((p, i) => $"{p} arg{i}")));
+                string arguments = string.Join(", ",
+                    (returnsViaBuffer ? ["sret"] : Array.Empty<string>())
+                    .Concat(Enumerable.Range(0, parameterCount).Select(i => $"arg{i}")));
                 string exportFunction = cb.IsExport ?
                     $$"""
 
 
-                    extern "C" {{MapType(cb.ReturnType)}} {{cb.EntryPoint}}({{parametersDeclaration}})
+                    extern "C" {{returnCType}} {{cb.EntryPoint}}({{parametersDeclaration}})
                     {
-                        {{(cb.IsVoid ? "" : "return ")}}Call_{{cb.EntrySymbol}}({{arguments}});
+                        {{(hasResult ? "return " : "")}}Call_{{cb.EntrySymbol}}({{arguments}});
                     }
                     """ : string.Empty;
                 w.Write(
@@ -300,16 +310,16 @@ namespace ILCompiler.PortableCallHelpers
 
                     static MethodDesc* MD_{{cb.EntrySymbol}} = nullptr;
                     static {{
-                    MapType(cb.ReturnType)}} Call_{{cb.EntrySymbol}}({{parametersDeclaration}})
+                    returnCType}} Call_{{cb.EntrySymbol}}({{parametersDeclaration}})
                     {{{argsDeclaration}}
                         // Lazy lookup of MethodDesc for the function export scenario.
                         if (!MD_{{cb.EntrySymbol}})
                         {
                             LookupUnmanagedCallersOnlyMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
                         }{{
-                        (!cb.IsVoid ? $"{w.NewLine}{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
-                        ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{(cb.IsVoid ? "nullptr" : "(int8_t*)&result")}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
-                        (!cb.IsVoid ? $"{w.NewLine}    return result;" : "")}}
+                        (hasResult ? $"{w.NewLine}{w.NewLine}    {returnCType} result;" : "")}}
+                        ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{retArg}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
+                        (hasResult ? $"{w.NewLine}    return result;" : "")}}
                     }{{exportFunction}}
 
                     """);

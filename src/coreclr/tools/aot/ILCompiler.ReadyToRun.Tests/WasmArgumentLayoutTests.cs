@@ -855,6 +855,83 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
+    /// Native code calls a reverse thunk with the wasm C ABI, which returns a struct it cannot pass as a
+    /// single scalar through a hidden leading pointer instead of a return value. The thunk has to take
+    /// that pointer and hand it to the interpreter as the return buffer, or the indirect call from
+    /// native code traps with a signature mismatch.
+    /// </summary>
+    [Fact]
+    public void PortableCallHelpersGeneratorReturnsStructsThroughHiddenPointerInReverseThunks()
+    {
+        string source = """
+            using System.Runtime.InteropServices;
+
+            public struct FloatPair
+            {
+                public float X;
+                public float Y;
+            }
+
+            public struct Width
+            {
+                public float Value;
+            }
+
+            public static class Callbacks
+            {
+                [UnmanagedCallersOnly]
+                public static FloatPair GetPair(nint self, int unused) => default;
+
+                [UnmanagedCallersOnly]
+                public static Width GetWidth(nint self) => default;
+
+                [UnmanagedCallersOnly(EntryPoint = "export_pair")]
+                public static FloatPair ExportPair(int value) => default;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.True(exitCode == 0, log.ToString());
+
+            string reverse = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+            Assert.Contains("static void Call_Callbacks__Callbacks_GetPair_I32_I32_RetS8(void * sret, void * arg0, int32_t arg1)", reverse);
+            Assert.Contains("static float Call_Callbacks__Callbacks_GetWidth_I32_RetF32(void * arg0)", reverse);
+            Assert.Contains("extern \"C\" void export_pair(void * sret, int32_t arg0)", reverse);
+            Assert.Contains("Call_Callbacks__Callbacks_ExportPair_I32_RetS8(sret, arg0);", reverse);
+            Assert.Contains("(int8_t*)sret, (PCODE)&Call_Callbacks__Callbacks_GetPair_I32_I32_RetS8", reverse);
+            Assert.DoesNotContain("RetS8(void * arg", reverse);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
     /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
     /// reads, so the attributes it applies are the ones the type system will resolve.
     /// </summary>
