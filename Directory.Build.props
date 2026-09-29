@@ -90,8 +90,6 @@
     <NetCoreAppMinimum Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
     <!-- TODO: Replace NetCoreAppMinimum with NetMinimum in this repo -->
     <NetMinimum>$(NetCoreAppMinimum)</NetMinimum>
-    <!-- Use net11.0 pack metadata when synthesizing net12.0 pack entries. -->
-    <TargetingPackBaselineTargetFramework>net11.0</TargetingPackBaselineTargetFramework>
 
     <NetCoreAppToolCurrentVersion>11.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
@@ -108,11 +106,6 @@
 
     <ApiCompatNetCoreAppBaselineVersion>11.0.0-rc.1.26425.128</ApiCompatNetCoreAppBaselineVersion>
     <ApiCompatNetCoreAppBaselineTFM>net11.0</ApiCompatNetCoreAppBaselineTFM>
-  </PropertyGroup>
-
-  <!-- The current SDK doesn't yet include .NET 12 package pruning data. -->
-  <PropertyGroup>
-    <AllowMissingPrunePackageData Condition="'$(NetCoreAppCurrentVersion)' == '12.0'">true</AllowMissingPrunePackageData>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
