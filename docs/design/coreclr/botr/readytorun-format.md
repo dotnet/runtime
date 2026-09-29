@@ -1191,7 +1191,9 @@ for parameters because their placement in the transition block depends on it.
 **Hidden parameters** (inserted between `this` and explicit parameters, in order):
 
 1. **Generic context** (`i`): present when the method requires an inst method desc or
-   method table argument.
+   method table argument. It is encoded like a pointer argument: without an async
+   continuation it occupies the same slot as a leading pointer argument, and callers such as
+   `InitHelpers.CallClassConstructor` pass it as one.
 2. **Async continuation** (`a`): present for async calls.
 
 Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
