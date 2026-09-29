@@ -230,10 +230,10 @@ inline DWORD MethodTable::GetAttrClass()
 }
 
 //==========================================================================================
-inline BOOL MethodTable::IsNotTightlyPacked()
+inline BOOL MethodTable::IsTightlyPacked()
 {
     WRAPPER_NO_CONTRACT;
-    return GetClass()->IsNotTightlyPacked();
+    return !GetClass()->IsNotTightlyPacked();
 }
 
 //==========================================================================================

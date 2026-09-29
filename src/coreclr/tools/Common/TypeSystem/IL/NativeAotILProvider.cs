@@ -123,11 +123,6 @@ namespace Internal.IL
                     return new InstantiatedMethodIL(method, emit.Link(method.GetMethodDefinition()));
                 }
             }
-            else if (owningType.Name == "RuntimeHelpers"u8)
-            {
-                if (owningType.Namespace == "System.Runtime.CompilerServices"u8)
-                    return RuntimeHelpersIntrinsics.EmitIL(method);
-            }
             else if (owningType.Name == "Comparer`1"u8)
             {
                 if (method.Name == "Create"u8 && owningType.Namespace == "System.Collections.Generic"u8)
