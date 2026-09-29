@@ -50,16 +50,21 @@ convert_to_absolute_path(MDRUNTIMERW_SOURCES ${MDRUNTIMERW_SOURCES})
 
 add_library_clr(mdruntimerw_dac ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw_dac PROPERTIES DAC_COMPONENT TRUE)
+target_compile_definitions(mdruntimerw_dac PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
 target_precompile_headers(mdruntimerw_dac PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw_wks OBJECT ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
+if (FEATURE_CORPROFILER)
+    target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
+endif()
 target_precompile_headers(mdruntimerw_wks PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw-dbi ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw-dbi PROPERTIES DBI_COMPONENT TRUE)
+target_compile_definitions(mdruntimerw-dbi PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
 target_precompile_headers(mdruntimerw-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw_ppdb ${MDRUNTIMERW_SOURCES})
-target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB SELF_NO_HOST)
+target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB FEATURE_METADATA_PUBLIC_INTERFACES SELF_NO_HOST)
 target_precompile_headers(mdruntimerw_ppdb PRIVATE stdafx.h)

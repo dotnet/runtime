@@ -52,7 +52,7 @@ typedef DPTR(PEAssembly) PTR_PEAssembly;
 //    The source of the PEImage does not change the PEAssembly itself.
 //
 // 2. Dynamic - a reflection emit assembly
-//    It has no PEImage. Its metadata comes from an IMetaDataEmit and it uses the binder
+//    It has no PEImage. Its metadata comes from internal import and emit interfaces and it uses the binder
 //    of the assembly that created it.
 //
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
@@ -137,18 +137,19 @@ public:
     // ------------------------------------------------------------
 
     IMDInternalImport *GetMDImport();
+    IMDInternalEmit *GetMDInternalEmit();
 
-#ifndef DACCESS_COMPILE
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     IMetaDataEmit *GetEmitter();
     IMetaDataImport2 *GetRWImporter();
-#else
+#elif defined(DACCESS_COMPILE)
     TADDR GetMDInternalRWAddress();
     BOOL HasReadWriteMetadata()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_MDImportIsRW_Debugger_Use_Only;
     }
-#endif // DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED && !DACCESS_COMPILE
 
     void ConvertMDInternalToReadWrite();
 
@@ -303,7 +304,7 @@ public:
 
     static PEAssembly* Open(BINDER_SPACE::Assembly* pBoundAssembly);
 
-    static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit, AssemblyBinder* pDynamicAssemblyBinder);
+    static PEAssembly* Create(IMDInternalEmit* pEmit, AssemblyBinder* pDynamicAssemblyBinder);
 
       // ------------------------------------------------------------
       // Utility functions
@@ -330,7 +331,8 @@ private:
 #else
     PEAssembly(
         BINDER_SPACE::Assembly* pBoundAssembly,
-        IMetaDataEmit* pEmit,
+        IMDInternalEmit* pEmit,
+        IMDInternalImport* pImport,
         AssemblyBinder* pDynamicAssemblyBinder = NULL
     );
 
@@ -338,8 +340,10 @@ private:
 #endif
 
     void OpenMDImport();
+#ifdef PROFILING_SUPPORTED
     void OpenImporter();
     void OpenEmitter();
+#endif // PROFILING_SUPPORTED
 
 private:
 
@@ -376,8 +380,11 @@ private:
 #endif
     };
 
+#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
     IMetaDataImport2* m_pImporter;
     IMetaDataEmit* m_pEmitter;
+#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
+    IMDInternalEmit* m_pMDInternalEmit;
 
     Volatile<LONG>           m_refCount;
 

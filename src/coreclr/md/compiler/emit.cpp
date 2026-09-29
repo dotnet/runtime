@@ -370,6 +370,7 @@ ErrExit:
 //*****************************************************************************
 // Create a reference, in an emit scope, to a TypeDef in another scope.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
     const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
@@ -436,6 +437,7 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportType
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Create and set a MemberRef record.
@@ -524,6 +526,7 @@ ErrExit:
 //*****************************************************************************
 // Create a MemberRef record based on a member in an import scope.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
     const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
@@ -625,6 +628,7 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportMember
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Define and set a Event record.
@@ -2944,6 +2948,7 @@ HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
 //*****************************************************************************
 // Apply edit and continue changes to this metadata.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 STDMETHODIMP RegMeta::ApplyEditAndContinue(   // S_OK or error.
     IUnknown    *pUnk)                  // [IN] Metadata from the delta PE.
 {
@@ -2975,5 +2980,6 @@ ErrExit:
     return E_NOTIMPL;
 #endif //!FEATURE_METADATA_EMIT_ALL
 } // RegMeta::ApplyEditAndContinue
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 #endif //FEATURE_METADATA_EMIT

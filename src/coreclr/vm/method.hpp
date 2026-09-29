@@ -1004,24 +1004,6 @@ public:
         return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
     }
 
-#ifndef DACCESS_COMPILE
-    IMetaDataEmit* GetEmitter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        _ASSERTE(pModule != NULL);
-        return pModule->GetEmitter();
-    }
-
-    IMetaDataImport* GetRWImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        _ASSERTE(pModule != NULL);
-        return pModule->GetRWImporter();
-    }
-#endif // !DACCESS_COMPILE
-
 #ifdef FEATURE_COMINTEROP
     WORD GetComSlot();
     LONG GetComDispid();

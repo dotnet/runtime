@@ -5,7 +5,7 @@
 //
 
 //
-// Implementation of some internal APIs from code:IMetaDataHelper and code:IMetaDataEmitHelper.
+// Implementation of some internal APIs from code:IMetaDataHelper and code:IMDInternalEmit.
 //
 //*****************************************************************************
 #include "stdafx.h"
@@ -40,13 +40,22 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
     IMDCommon   *pAssemImportMDCommon = NULL;
     IMDCommon   *pImportMDCommon = NULL;
 
-    RegMeta     *pRegMetaAssemEmit = static_cast<RegMeta*>(pAssemEmit);
+    ReleaseHolder<IMDInternalEmit> pInternalAssemEmit;
+    ReleaseHolder<IMDInternalEmit> pInternalEmit;
+    RegMeta     *pRegMetaAssemEmit = NULL;
     RegMeta     *pRegMetaEmit = NULL;
 
     CQuickBytes qkSigEmit;
     ULONG       cbEmit;
 
-    pRegMetaEmit = static_cast<RegMeta*>(pEmit);
+    if (pAssemEmit != NULL)
+    {
+        IfFailGo(pAssemEmit->QueryInterface(IID_IMDInternalEmit, (void **)&pInternalAssemEmit));
+        pRegMetaAssemEmit = static_cast<RegMeta*>((IMDInternalEmit *)pInternalAssemEmit);
+    }
+
+    IfFailGo(pEmit->QueryInterface(IID_IMDInternalEmit, (void **)&pInternalEmit));
+    pRegMetaEmit = static_cast<RegMeta*>((IMDInternalEmit *)pInternalEmit);
 
     {
         // This function can cause new TypeRef being introduced.
@@ -100,50 +109,6 @@ ErrExit:
 
 #if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_INTERNAL_APIS)
 
-//*****************************************************************************
-// Helper : Set ResolutionScope of a TypeRef
-//
-// Implements internal API code:IMetaDataEmitHelper::SetResolutionScopeHelper.
-//*****************************************************************************
-HRESULT RegMeta::SetResolutionScopeHelper(  // Return hresult.
-    mdTypeRef   tr,                     // [IN] TypeRef record to update
-    mdToken     rs)                     // [IN] new ResolutionScope
-{
-    HRESULT      hr = NOERROR;
-    TypeRefRec * pTypeRef;
-
-    LOCKWRITE();
-
-    IfFailGo(m_pStgdb->m_MiniMd.GetTypeRefRecord(RidFromToken(tr), &pTypeRef));
-    IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_TypeRef, TypeRefRec::COL_ResolutionScope, pTypeRef, rs));
-
-ErrExit:
-    return hr;
-} // RegMeta::SetResolutionScopeHelper
-
-
-//*****************************************************************************
-// Helper : Set offset of a ManifestResource
-//
-// Implements internal API code:IMetaDataEmitHelper::SetManifestResourceOffsetHelper.
-//*****************************************************************************
-HRESULT
-RegMeta::SetManifestResourceOffsetHelper(
-    mdManifestResource mr,          // [IN] The manifest token
-    ULONG              ulOffset)    // [IN] new offset
-{
-    HRESULT hr = NOERROR;
-    ManifestResourceRec * pRec;
-
-    LOCKWRITE();
-
-    IfFailGo(m_pStgdb->m_MiniMd.GetManifestResourceRecord(RidFromToken(mr), &pRec));
-    pRec->SetOffset(ulOffset);
-
-ErrExit:
-    return hr;
-} // RegMeta::SetManifestResourceOffsetHelper
-
 //*******************************************************************************
 //
 // Following APIs are used by reflection emit.
@@ -153,7 +118,7 @@ ErrExit:
 //*******************************************************************************
 // helper to define method semantics
 //
-// Implements internal API code:IMetaDataEmitHelper::DefineMethodSemanticsHelper.
+// Implements internal API code:IMDInternalEmit::DefineMethodSemanticsHelper.
 //*******************************************************************************
 HRESULT RegMeta::DefineMethodSemanticsHelper(
     mdToken     tkAssociation,          // [IN] property or event token
@@ -171,7 +136,7 @@ ErrExit:
 //*******************************************************************************
 // helper to set field layout
 //
-// Implements internal API code:IMetaDataEmitHelper::SetFieldLayoutHelper.
+// Implements internal API code:IMDInternalEmit::SetFieldLayoutHelper.
 //*******************************************************************************
 HRESULT RegMeta::SetFieldLayoutHelper(  // Return hresult.
     mdFieldDef  fd,                     // [IN] field to associate the layout info
@@ -209,7 +174,7 @@ ErrExit:
 //*******************************************************************************
 // helper to define event
 //
-// Implements internal API code:IMetaDataEmitHelper::DefineEventHelper.
+// Implements internal API code:IMDInternalEmit::DefineEventHelper.
 //*******************************************************************************
 STDMETHODIMP RegMeta::DefineEventHelper(    // Return hresult.
     mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined
@@ -232,91 +197,9 @@ ErrExit:
 
 
 //*******************************************************************************
-// helper to add a declarative security blob to a class or method
-//
-// Implements internal API code:IMetaDataEmitHelper::AddDeclarativeSecurityHelper.
-//*******************************************************************************
-STDMETHODIMP RegMeta::AddDeclarativeSecurityHelper(
-    mdToken     tk,                     // [IN] Parent token (typedef/methoddef)
-    DWORD       dwAction,               // [IN] Security action (CorDeclSecurity)
-    void const  *pValue,                // [IN] Permission set blob
-    DWORD       cbValue,                // [IN] Byte count of permission set blob
-    mdPermission*pmdPermission)         // [OUT] Output permission token
-{
-    HRESULT         hr = S_OK;
-    DeclSecurityRec *pDeclSec = NULL;
-    RID             iDeclSec;
-    short           sAction = static_cast<short>(dwAction);
-    mdPermission    tkPerm  = mdTokenNil;
-
-    LOCKWRITE();
-    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
-
-    _ASSERTE(TypeFromToken(tk) == mdtTypeDef || TypeFromToken(tk) == mdtMethodDef || TypeFromToken(tk) == mdtAssembly);
-
-    // Check for valid Action.
-    if (sAction == 0 || sAction > dclMaximumValue)
-        IfFailGo(E_INVALIDARG);
-
-    if (CheckDups(MDDupPermission))
-    {
-        hr = ImportHelper::FindPermission(&(m_pStgdb->m_MiniMd), tk, sAction, &tkPerm);
-
-        if (SUCCEEDED(hr))
-        {
-            // Set output parameter.
-            if (pmdPermission)
-                *pmdPermission = tkPerm;
-            if (IsENCOn())
-                IfFailGo(m_pStgdb->m_MiniMd.GetDeclSecurityRecord(RidFromToken(tkPerm), &pDeclSec));
-            else
-            {
-                hr = META_S_DUPLICATE;
-                goto ErrExit;
-            }
-        }
-        else if (hr != CLDB_E_RECORD_NOTFOUND)
-            IfFailGo(hr);
-    }
-
-    // Create a new record.
-    if (!pDeclSec)
-    {
-        IfFailGo(m_pStgdb->m_MiniMd.AddDeclSecurityRecord(&pDeclSec, &iDeclSec));
-        tkPerm = TokenFromRid(iDeclSec, mdtPermission);
-
-        // Set output parameter.
-        if (pmdPermission)
-            *pmdPermission = tkPerm;
-
-        // Save parent and action information.
-        IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_DeclSecurity, DeclSecurityRec::COL_Parent, pDeclSec, tk));
-        pDeclSec->SetAction(sAction);
-
-        // Turn on the internal security flag on the parent.
-        if (TypeFromToken(tk) == mdtTypeDef)
-            IfFailGo(_TurnInternalFlagsOn(tk, tdHasSecurity));
-        else if (TypeFromToken(tk) == mdtMethodDef)
-            IfFailGo(_TurnInternalFlagsOn(tk, mdHasSecurity));
-        IfFailGo(UpdateENCLog(tk));
-    }
-
-    // Write the blob into the record.
-    IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_DeclSecurity, DeclSecurityRec::COL_PermissionSet,
-                                        pDeclSec, pValue, cbValue));
-
-    IfFailGo(UpdateENCLog(tkPerm));
-
-ErrExit:
-
-    return hr;
-} // RegMeta::AddDeclarativeSecurityHelper
-
-
-//*******************************************************************************
 // helper to set type's extends column
 //
-// Implements internal API code:IMetaDataEmitHelper::SetTypeParent.
+// Implements internal API code:IMDInternalEmit::SetTypeParent.
 //*******************************************************************************
 HRESULT RegMeta::SetTypeParent(         // Return hresult.
     mdTypeDef   td,                     // [IN] Type definition
@@ -338,7 +221,7 @@ ErrExit:
 //*******************************************************************************
 // helper to set type's extends column
 //
-// Implements internal API code:IMetaDataEmitHelper::AddInterfaceImpl.
+// Implements internal API code:IMDInternalEmit::AddInterfaceImpl.
 //*******************************************************************************
 HRESULT RegMeta::AddInterfaceImpl(      // Return hresult.
     mdTypeDef   td,                     // [IN] Type definition

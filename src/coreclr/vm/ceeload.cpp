@@ -1622,6 +1622,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 #endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
+#ifdef PROFILING_SUPPORTED
 //
 // Wrapper for Module::GetRWImporter + QI when writing is not needed.
 //
@@ -1671,6 +1672,7 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
 
     return hr;
 }
+#endif // PROFILING_SUPPORTED
 
 // a special token that indicates no reader could be created - don't try again
 static ISymUnmanagedReader* const k_pInvalidSymReader = (ISymUnmanagedReader*)0x1;
@@ -3871,7 +3873,11 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     m_pInMemoryWriter = new RefClassWriter();
 
-    IfFailThrow(m_pInMemoryWriter->Init(GetCeeGen(), GetEmitter(), szName));
+    IfFailThrow(m_pInMemoryWriter->Init(
+        GetCeeGen(),
+        GetPEAssembly()->GetMDInternalEmit(),
+        GetMDImport(),
+        szName));
 
     m_CrstLeafLock.Init(CrstLeafLock);
 }
@@ -3916,15 +3922,15 @@ public:
         WRAPPER_NO_CONTRACT;
         (void)Release();
     }
-    HRESULT SetMDUpdateMode(IMetaDataEmit *pEmitter, ULONG updateMode)
+    HRESULT SetMDUpdateMode(IMDInternalEmit *pEmitter, ULONG updateMode)
     {
         LIMITED_METHOD_CONTRACT;
         HRESULT hr = S_OK;
 
         _ASSERTE(updateMode != UINT32_MAX);
 
-        IfFailRet(pEmitter->QueryInterface(IID_IMDInternalEmit, (void **)&m_pInternalEmitter));
-        _ASSERTE(m_pInternalEmitter != NULL);
+        m_pInternalEmitter = pEmitter;
+        m_pInternalEmitter->AddRef();
 
         IfFailRet(m_pInternalEmitter->SetMDUpdateMode(updateMode, &m_OriginalMDUpdateMode));
         _ASSERTE(m_OriginalMDUpdateMode != UINT32_MAX);
@@ -3996,7 +4002,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     CONTRACTL_END;
 
     // Do not release the emitter. This is a weak reference.
-    IMetaDataEmit *pEmitter = this->GetEmitter();
+    IMDInternalEmit *pEmitter = m_pInMemoryWriter->GetEmitter();
     _ASSERTE(pEmitter != NULL);
 
     HRESULT hr;

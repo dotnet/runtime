@@ -473,12 +473,17 @@ RegMeta::QueryInterface(
 
     if (riid == IID_IUnknown)
     {
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
         *ppUnk = (IUnknown *)(IMetaDataImport2 *)this;
+#else
+        *ppUnk = static_cast<IUnknown *>(static_cast<IMDCommon *>(this));
+#endif
     }
     else if (riid == IID_IMDCommon)
     {
         *ppUnk = (IMDCommon *)this;
     }
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     else if (riid == IID_IMetaDataImport)
     {
         *ppUnk = (IMetaDataImport2 *)this;
@@ -491,6 +496,7 @@ RegMeta::QueryInterface(
     {
         *ppUnk = (IMetaDataAssemblyImport *)this;
     }
+#endif
     else if (riid == IID_IMetaDataTables)
     {
         *ppUnk = static_cast<IMetaDataTables *>(this);
@@ -505,7 +511,7 @@ RegMeta::QueryInterface(
         *ppUnk = static_cast<IMetaDataInfo *>(this);
     }
 
-#ifdef FEATURE_METADATA_EMIT
+#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     else if (riid == IID_IMetaDataEmit)
     {
         *ppUnk = (IMetaDataEmit2 *)this;
@@ -532,7 +538,7 @@ RegMeta::QueryInterface(
         *ppUnk = (IMetaDataAssemblyEmit *)this;
         fIsInterfaceRW = true;
     }
-#endif //FEATURE_METADATA_EMIT
+#endif // FEATURE_METADATA_EMIT && FEATURE_METADATA_PUBLIC_INTERFACES
 
 
 #ifdef FEATURE_METADATA_EMIT_ALL
@@ -550,20 +556,13 @@ RegMeta::QueryInterface(
     else if (riid == IID_IMDInternalEmit)
     {
         *ppUnk = static_cast<IMDInternalEmit *>(this);
+        fIsInterfaceRW = true;
     }
     else if (riid == IID_IGetIMDInternalImport)
     {
         *ppUnk = static_cast<IGetIMDInternalImport *>(this);
     }
 #endif //FEATURE_METADATA_INTERNAL_APIS
-
-#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_INTERNAL_APIS)
-    else if (riid == IID_IMetaDataEmitHelper)
-    {
-        *ppUnk = (IMetaDataEmitHelper *)this;
-        fIsInterfaceRW = true;
-    }
-#endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS
 
 #ifdef FEATURE_METADATA_IN_VM
 #ifdef FEATURE_COMINTEROP
@@ -579,7 +578,9 @@ RegMeta::QueryInterface(
                 if (m_pFreeThreadedMarshaler == NULL)
                 {
                     // First time! Create the FreeThreadedMarshaler
-                    IfFailGo(CoCreateFreeThreadedMarshaler((IUnknown *)(IMetaDataEmit2 *)this, &m_pFreeThreadedMarshaler));
+                    IfFailGo(CoCreateFreeThreadedMarshaler(
+                        (IUnknown *)(IMetaDataEmit2 *)this,
+                        &m_pFreeThreadedMarshaler));
                 }
             }
 
@@ -1404,7 +1405,11 @@ HRESULT RegMeta::GetIMDInternalImport(
     MDInternalRW *pInternalRW = NULL;
     bool          isLockedForWrite = false;
     IUnknown     *pIUnkInternal = NULL;
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     IUnknown     *pThis = (IMetaDataImport2*)this;
+#else
+    IUnknown     *pThis = static_cast<IUnknown *>(static_cast<IMDCommon *>(this));
+#endif
 
     pIUnkInternal = this->GetCachedInternalInterface(TRUE);
     if (pIUnkInternal)

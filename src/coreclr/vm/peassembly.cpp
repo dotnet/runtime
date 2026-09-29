@@ -275,6 +275,7 @@ TADDR PEAssembly::GetIL(RVA il)
 
 #ifndef DACCESS_COMPILE
 
+#ifdef PROFILING_SUPPORTED
 void PEAssembly::OpenImporter()
 {
     CONTRACTL
@@ -298,6 +299,7 @@ void PEAssembly::OpenImporter()
     if (InterlockedCompareExchangeT(&m_pImporter, pIMDImport, NULL) != NULL)
         pIMDImport->Release();
 }
+#endif // PROFILING_SUPPORTED
 
 void PEAssembly::ConvertMDInternalToReadWrite()
 {
@@ -316,6 +318,7 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     // Take a local copy of *ppImport.  This may be a pointer to an RO
     //  or to an RW MDInternalXX.
     pOld = m_pMDImport;
+#ifdef PROFILING_SUPPORTED
     IMetaDataImport *pIMDImport = m_pImporter;
     if (pIMDImport != NULL)
     {
@@ -331,6 +334,7 @@ void PEAssembly::ConvertMDInternalToReadWrite()
         }
     }
     else
+#endif // PROFILING_SUPPORTED
     {
         // If an RO, convert to an RW, return S_OK.  If already RW, no conversion
         //  needed, return S_FALSE.
@@ -393,6 +397,7 @@ void PEAssembly::OpenMDImport()
     m_pMDImport->AddRef();
 }
 
+#ifdef PROFILING_SUPPORTED
 void PEAssembly::OpenEmitter()
 {
     CONTRACTL
@@ -416,6 +421,7 @@ void PEAssembly::OpenEmitter()
     if (InterlockedCompareExchangeT(&m_pEmitter, pIMDEmit, NULL) != NULL)
         pIMDEmit->Release();
 }
+#endif // PROFILING_SUPPORTED
 
 // ------------------------------------------------------------
 // PE file access
@@ -632,7 +638,8 @@ ULONG PEAssembly::GetPEImageTimeDateStamp()
 
 PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBoundAssembly,
-                IMetaDataEmit* pEmit,
+                IMDInternalEmit* pEmit,
+                IMDInternalImport* pImport,
                 AssemblyBinder* pDynamicAssemblyBinder /*= NULL*/)
     :
 #ifdef LOGGING
@@ -641,8 +648,11 @@ PEAssembly::PEAssembly(
       m_PEImage{NULL}
     , m_MDImportIsRW_Debugger_Use_Only{FALSE}
     , m_pMDImport{NULL}
+#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
     , m_pImporter{NULL}
     , m_pEmitter{NULL}
+#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
+    , m_pMDInternalEmit{NULL}
     , m_refCount{1}
     , m_pHostAssembly{nullptr}
     , m_pAssemblyBinder{nullptr}
@@ -650,7 +660,8 @@ PEAssembly::PEAssembly(
     CONTRACTL
     {
         // A PEAssembly is either bound by an AssemblyBinder or dynamic (reflection emit)
-        PRECONDITION((pBoundAssembly == NULL) != (pEmit == NULL));
+        PRECONDITION((pBoundAssembly == NULL) != (pEmit == NULL && pImport == NULL));
+        PRECONDITION((pEmit == NULL) == (pImport == NULL));
         // A bound assembly takes its binder from the bind result, not from a caller.
         PRECONDITION(pBoundAssembly == NULL || pDynamicAssemblyBinder == NULL);
         STANDARD_VM_CHECK;
@@ -669,13 +680,13 @@ PEAssembly::PEAssembly(
     }
 
     // Open metadata eagerly to minimize failure windows
-    if (pEmit == NULL)
+    if (pImport == NULL)
         OpenMDImport(); //constructor, cannot race with anything
     else
     {
-        IfFailThrow(GetMDInternalInterfaceFromPublic(pEmit, IID_IMDInternalImport,
-                                                     (void **)&m_pMDImport));
-        m_pEmitter = pEmit;
+        m_pMDImport = pImport;
+        pImport->AddRef();
+        m_pMDInternalEmit = pEmit;
         pEmit->AddRef();
         m_MDImportIsRW_Debugger_Use_Only = TRUE;
     }
@@ -725,6 +736,7 @@ PEAssembly::~PEAssembly()
 
     GCX_PREEMP();
 
+#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
     if (m_pImporter != NULL)
     {
         m_pImporter->Release();
@@ -735,6 +747,13 @@ PEAssembly::~PEAssembly()
     {
         m_pEmitter->Release();
         m_pEmitter = NULL;
+    }
+#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
+
+    if (m_pMDInternalEmit != NULL)
+    {
+        m_pMDInternalEmit->Release();
+        m_pMDInternalEmit = NULL;
     }
 
     if (m_pMDImport != NULL)
@@ -788,29 +807,35 @@ PEAssembly *PEAssembly::DoOpenSystem()
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    return new PEAssembly(pBoundAssembly, NULL);
+    return new PEAssembly(pBoundAssembly, NULL, NULL);
 }
 
 PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBoundAssembly)
 {
-    return new PEAssembly(pBoundAssembly, NULL);
+    return new PEAssembly(pBoundAssembly, NULL, NULL);
 };
 
 /* static */
-PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBinder *pDynamicAssemblyBinder)
+PEAssembly *PEAssembly::Create(IMDInternalEmit *pInternalEmit, AssemblyBinder *pDynamicAssemblyBinder)
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(pAssemblyEmit));
+        PRECONDITION(CheckPointer(pInternalEmit));
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
     // Set up the metadata pointers in the PEAssembly. (This is the only identity
     // we have.)
-    ReleaseHolder<IMetaDataEmit> pEmit;
-    pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    return new PEAssembly(NULL, pEmit, pDynamicAssemblyBinder);
+    ReleaseHolder<IGetIMDInternalImport> pGetInternalImport;
+    IfFailThrow(pInternalEmit->QueryInterface(
+        IID_IGetIMDInternalImport,
+        (void **)&pGetInternalImport));
+
+    ReleaseHolder<IMDInternalImport> pInternalImport;
+    IfFailThrow(pGetInternalImport->GetIMDInternalImport(&pInternalImport));
+
+    return new PEAssembly(NULL, pInternalEmit, pInternalImport, pDynamicAssemblyBinder);
 }
 
 #endif // #ifndef DACCESS_COMPILE

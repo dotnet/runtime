@@ -34,8 +34,8 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
     ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMetaDataAssemblyEmit   *pAssemEmit,    // [IN] assembly emit scope.
-    IMetaDataEmit           *emit,          // [IN] emit interface
+    IMDInternalEmit         *pAssemEmit,    // [IN] assembly emit scope.
+    IMDInternalEmit         *emit,          // [IN] emit interface
     CQuickBytes             *pqkSigEmit,    // [OUT] buffer to hold translated signature
     ULONG                   *pcbSig);       // [OUT] count of bytes in the translated signature
 #endif //!DACCESS_COMPILE
@@ -137,8 +137,8 @@ HRESULT MDInternalRO::TranslateSigWithScope(
     ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMetaDataAssemblyEmit*  pAssemEmit,     // [IN] assembly emit scope.
-    IMetaDataEmit*          emit,           // [IN] emit interface
+    IMDInternalEmit*        pAssemEmit,     // [IN] assembly emit scope.
+    IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
@@ -226,7 +226,29 @@ HRESULT MDInternalRO::EnumMethodImplInit( // return hresult
     HENUMInternal   *phEnumBody,          // [OUT] buffer to fill for enumerator data for MethodBody tokens.
     HENUMInternal   *phEnumDecl)          // [OUT] buffer to fill for enumerator data for MethodDecl tokens.
 {
-    return EnumInit(TBL_MethodImpl << 24, td, phEnumBody);
+    _ASSERTE(TypeFromToken(td) == mdtTypeDef && !IsNilToken(td));
+    _ASSERTE(phEnumBody && phEnumDecl);
+
+    HENUMInternal::ZeroEnum(phEnumBody);
+    HENUMInternal::ZeroEnum(phEnumDecl);
+
+    phEnumBody->m_tkKind = (TBL_MethodImpl << 24);
+    phEnumBody->m_EnumType = MDSimpleEnum;
+
+    HRESULT hr = m_LiteWeightStgdb.m_MiniMd.getMethodImplsForClass(
+        RidFromToken(td),
+        &phEnumBody->u.m_ulEnd,
+        &phEnumBody->u.m_ulStart);
+    if (FAILED(hr))
+        return hr;
+
+    if (phEnumBody->u.m_ulEnd < phEnumBody->u.m_ulStart)
+        return CLDB_E_FILE_CORRUPT;
+
+    phEnumBody->m_ulCount = phEnumBody->u.m_ulEnd - phEnumBody->u.m_ulStart;
+    phEnumBody->u.m_ulCur = phEnumBody->u.m_ulStart;
+
+    return S_OK;
 } // MDInternalRO::EnumMethodImplInit
 
 //*****************************************************************************
@@ -270,32 +292,6 @@ MDInternalRO::EnumMethodImplNext(  // return hresult
 
     return S_OK;
 } // MDInternalRO::EnumMethodImplNext
-
-//*****************************************
-// Reset the enumerator to the beginning.
-//*****************************************
-void MDInternalRO::EnumMethodImplReset(
-    HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-    HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-{
-    _ASSERTE(phEnumBody && ((phEnumBody->m_tkKind >> 24) == TBL_MethodImpl));
-    _ASSERTE(phEnumBody->m_EnumType == MDSimpleEnum);
-
-    phEnumBody->u.m_ulCur = phEnumBody->u.m_ulStart;
-} // MDInternalRO::EnumMethodImplReset
-
-
-//*****************************************
-// Close the enumerator.
-//*****************************************
-void MDInternalRO::EnumMethodImplClose(
-    HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-    HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-{
-    _ASSERTE(phEnumBody && ((phEnumBody->m_tkKind >> 24) == TBL_MethodImpl));
-    _ASSERTE(phEnumBody->m_EnumType == MDSimpleEnum);
-} // MDInternalRO::EnumMethodImplClose
-
 
 //******************************************************************************
 // enumerator for global functions
@@ -458,18 +454,6 @@ HRESULT MDInternalRO::EnumInit(     // return S_FALSE if record not found
         phEnum->u.m_ulStart = 1;
         phEnum->u.m_ulEnd = m_LiteWeightStgdb.m_MiniMd.getCountManifestResources() + 1;
         break;
-    case mdtModuleRef:
-        _ASSERTE(IsNilToken(tkParent));
-        phEnum->u.m_ulStart = 1;
-        phEnum->u.m_ulEnd = m_LiteWeightStgdb.m_MiniMd.getCountModuleRefs() + 1;
-        break;
-    case (TBL_MethodImpl << 24):
-        _ASSERTE(! IsNilToken(tkParent));
-        IfFailGo(m_LiteWeightStgdb.m_MiniMd.getMethodImplsForClass(
-            RidFromToken(tkParent),
-            &phEnum->u.m_ulEnd,
-            &phEnum->u.m_ulStart));
-        break;
     default:
         _ASSERTE(!"ENUM INIT not implemented for the compressed format!");
         IfFailGo(E_NOTIMPL);
@@ -513,14 +497,6 @@ HRESULT MDInternalRO::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountTypeRefs();
         break;
 
-    case mdtMemberRef:
-        phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountMemberRefs();
-        break;
-
-    case mdtSignature:
-        phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountStandAloneSigs();
-        break;
-
     case mdtMethodDef:
         phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountMethods();
         break;
@@ -529,32 +505,12 @@ HRESULT MDInternalRO::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountMethodSpecs();
         break;
 
-    case mdtFieldDef:
-        phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountFields();
-        break;
-
     case mdtTypeSpec:
         phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountTypeSpecs();
         break;
 
     case mdtAssemblyRef:
         phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountAssemblyRefs();
-        break;
-
-    case mdtModuleRef:
-        phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountModuleRefs();
-        break;
-
-    case mdtTypeDef:
-        phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountTypeDefs();
-        break;
-
-    case mdtFile:
-        phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountFiles();
-        break;
-
-    case mdtCustomAttribute:
-        phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountCustomAttributes();
         break;
 
     default:

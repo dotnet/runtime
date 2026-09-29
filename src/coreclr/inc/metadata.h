@@ -18,6 +18,7 @@
 
 class IMetaModelCommon;
 class MDInternalRW;
+struct IMDInternalEmit;
 
 inline int IsGlobalMethodParentTk(mdTypeDef td)
 {
@@ -324,20 +325,12 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         return phEnumBody->m_ulCount;
     }
 
-    STDMETHOD_(void, EnumMethodImplReset)(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-        HENUMInternal   *phEnumDecl) PURE;  // [IN] MethodDecl enumerator.
-
     __checkReturn
     STDMETHOD(EnumMethodImplNext)(          // return hresult (S_OK = TRUE, S_FALSE = FALSE or error code)
         HENUMInternal   *phEnumBody,        // [IN] input enum for MethodBody
         HENUMInternal   *phEnumDecl,        // [IN] input enum for MethodDecl
         mdToken         *ptkBody,           // [OUT] return token for MethodBody
         mdToken         *ptkDecl) PURE;     // [OUT] return token for MethodDecl
-
-    STDMETHOD_(void, EnumMethodImplClose)(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-        HENUMInternal   *phEnumDecl) PURE;  // [IN] MethodDecl enumerator.
 
     //*****************************************
     // Enumerator helpers for memberdef, memberref, interfaceimp,
@@ -939,8 +932,8 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         ULONG       cbHashValue,            // [IN] count of bytes in the hash value.
         PCCOR_SIGNATURE pbSigBlob,          // [IN] signature in the importing scope
         ULONG       cbSigBlob,              // [IN] count of bytes of signature
-        IMetaDataAssemblyEmit *pAssemEmit,  // [IN] assembly emit scope.
-        IMetaDataEmit *emit,                // [IN] emit interface
+        IMDInternalEmit *pAssemEmit,        // [IN] assembly emit scope.
+        IMDInternalEmit *emit,              // [IN] emit interface
         CQuickBytes *pqkSigEmit,            // [OUT] buffer to hold translated signature
         ULONG       *pcbSig) PURE;          // [OUT] count of bytes in the translated signature
 
@@ -1078,6 +1071,229 @@ DECLARE_INTERFACE_(IMDInternalEmit, IUnknown)
 
     STDMETHOD(SetMDUpdateMode)(
         ULONG updateMode, ULONG *pPreviousUpdateMode) PURE;
+
+    STDMETHOD(SetModuleProps)(
+        LPCWSTR szName) PURE;
+
+    STDMETHOD(GetSaveSize)(
+        CorSaveSize fSave,
+        DWORD *pdwSaveSize) PURE;
+
+    STDMETHOD(SaveToMemory)(
+        void *pbData,
+        ULONG cbData) PURE;
+
+    STDMETHOD(DefineTypeDef)(
+        LPCWSTR szTypeDef,
+        DWORD dwTypeDefFlags,
+        mdToken tkExtends,
+        mdToken rtkImplements[],
+        mdTypeDef *ptd) PURE;
+
+    STDMETHOD(DefineNestedType)(
+        LPCWSTR szTypeDef,
+        DWORD dwTypeDefFlags,
+        mdToken tkExtends,
+        mdToken rtkImplements[],
+        mdTypeDef tdEncloser,
+        mdTypeDef *ptd) PURE;
+
+    STDMETHOD(DefineMethod)(
+        mdTypeDef td,
+        LPCWSTR szName,
+        DWORD dwMethodFlags,
+        PCCOR_SIGNATURE pvSigBlob,
+        ULONG cbSigBlob,
+        ULONG ulCodeRVA,
+        DWORD dwImplFlags,
+        mdMethodDef *pmd) PURE;
+
+    STDMETHOD(DefineMethodImpl)(
+        mdTypeDef td,
+        mdToken tkBody,
+        mdToken tkDecl) PURE;
+
+    STDMETHOD(DefineTypeRefByName)(
+        mdToken tkResolutionScope,
+        LPCWSTR szName,
+        mdTypeRef *ptr) PURE;
+
+    STDMETHOD(DefineMemberRef)(
+        mdToken tkImport,
+        LPCWSTR szName,
+        PCCOR_SIGNATURE pvSigBlob,
+        ULONG cbSigBlob,
+        mdMemberRef *pmr) PURE;
+
+    STDMETHOD(SetClassLayout)(
+        mdTypeDef td,
+        DWORD dwPackSize,
+        COR_FIELD_OFFSET rFieldOffsets[],
+        ULONG ulClassSize) PURE;
+
+    STDMETHOD(GetTokenFromSig)(
+        PCCOR_SIGNATURE pvSig,
+        ULONG cbSig,
+        mdSignature *pmsig) PURE;
+
+    STDMETHOD(DefineModuleRef)(
+        LPCWSTR szName,
+        mdModuleRef *pmur) PURE;
+
+    STDMETHOD(GetTokenFromTypeSpec)(
+        PCCOR_SIGNATURE pvSig,
+        ULONG cbSig,
+        mdTypeSpec *ptypespec) PURE;
+
+    STDMETHOD(DefineUserString)(
+        LPCWSTR szString,
+        ULONG cchString,
+        mdString *pstk) PURE;
+
+    STDMETHOD(SetMethodProps)(
+        mdMethodDef md,
+        DWORD dwMethodFlags,
+        ULONG ulCodeRVA,
+        DWORD dwImplFlags) PURE;
+
+    STDMETHOD(DefinePinvokeMap)(
+        mdToken tk,
+        DWORD dwMappingFlags,
+        LPCWSTR szImportName,
+        mdModuleRef mrImportDLL) PURE;
+
+    STDMETHOD(DefineCustomAttribute)(
+        mdToken tkOwner,
+        mdToken tkCtor,
+        void const *pCustomAttribute,
+        ULONG cbCustomAttribute,
+        mdCustomAttribute *pcv) PURE;
+
+    STDMETHOD(DefineField)(
+        mdTypeDef td,
+        LPCWSTR szName,
+        DWORD dwFieldFlags,
+        PCCOR_SIGNATURE pvSigBlob,
+        ULONG cbSigBlob,
+        DWORD dwCPlusTypeFlag,
+        void const *pValue,
+        ULONG cchValue,
+        mdFieldDef *pmd) PURE;
+
+    STDMETHOD(DefineProperty)(
+        mdTypeDef td,
+        LPCWSTR szProperty,
+        DWORD dwPropFlags,
+        PCCOR_SIGNATURE pvSig,
+        ULONG cbSig,
+        DWORD dwCPlusTypeFlag,
+        void const *pValue,
+        ULONG cchValue,
+        mdMethodDef mdSetter,
+        mdMethodDef mdGetter,
+        mdMethodDef rmdOtherMethods[],
+        mdProperty *pmdProp) PURE;
+
+    STDMETHOD(DefineParam)(
+        mdMethodDef md,
+        ULONG ulParamSeq,
+        LPCWSTR szName,
+        DWORD dwParamFlags,
+        DWORD dwCPlusTypeFlag,
+        void const *pValue,
+        ULONG cchValue,
+        mdParamDef *ppd) PURE;
+
+    STDMETHOD(SetFieldProps)(
+        mdFieldDef fd,
+        DWORD dwFieldFlags,
+        DWORD dwCPlusTypeFlag,
+        void const *pValue,
+        ULONG cchValue) PURE;
+
+    STDMETHOD(SetPropertyProps)(
+        mdProperty pr,
+        DWORD dwPropFlags,
+        DWORD dwCPlusTypeFlag,
+        void const *pValue,
+        ULONG cchValue,
+        mdMethodDef mdSetter,
+        mdMethodDef mdGetter,
+        mdMethodDef rmdOtherMethods[]) PURE;
+
+    STDMETHOD(SetParamProps)(
+        mdParamDef pd,
+        LPCWSTR szName,
+        DWORD dwParamFlags,
+        DWORD dwCPlusTypeFlag,
+        void const *pValue,
+        ULONG cchValue) PURE;
+
+    STDMETHOD(SetMethodImplFlags)(
+        mdMethodDef md,
+        DWORD dwImplFlags) PURE;
+
+    STDMETHOD(SetFieldRVA)(
+        mdFieldDef fd,
+        ULONG ulRVA) PURE;
+
+    STDMETHOD(DefineMethodSpec)(
+        mdToken tkParent,
+        PCCOR_SIGNATURE pvSigBlob,
+        ULONG cbSigBlob,
+        mdMethodSpec *pmi) PURE;
+
+    STDMETHOD(DefineGenericParam)(
+        mdToken tk,
+        ULONG ulParamSeq,
+        DWORD dwParamFlags,
+        LPCWSTR szName,
+        DWORD reserved,
+        mdToken rtkConstraints[],
+        mdGenericParam *pgp) PURE;
+
+    STDMETHOD(DefineAssembly)(
+        const void *pbPublicKey,
+        ULONG cbPublicKey,
+        ULONG ulHashAlgId,
+        LPCWSTR szName,
+        const ASSEMBLYMETADATA *pMetaData,
+        DWORD dwAssemblyFlags,
+        mdAssembly *pma) PURE;
+
+    STDMETHOD(DefineAssemblyRef)(
+        const void *pbPublicKeyOrToken,
+        ULONG cbPublicKeyOrToken,
+        LPCWSTR szName,
+        const ASSEMBLYMETADATA *pMetaData,
+        const void *pbHashValue,
+        ULONG cbHashValue,
+        DWORD dwAssemblyRefFlags,
+        mdAssemblyRef *pmdar) PURE;
+
+    STDMETHOD(DefineMethodSemanticsHelper)(
+        mdToken tkAssociation,
+        DWORD dwFlags,
+        mdMethodDef md) PURE;
+
+    STDMETHOD(SetFieldLayoutHelper)(
+        mdFieldDef fd,
+        ULONG ulOffset) PURE;
+
+    STDMETHOD(DefineEventHelper)(
+        mdTypeDef td,
+        LPCWSTR szEvent,
+        DWORD dwEventFlags,
+        mdToken tkEventType,
+        mdEvent *pmdEvent) PURE;
+
+    STDMETHOD(SetTypeParent)(
+        mdTypeDef td,
+        mdToken tkExtends) PURE;
+
+    STDMETHOD(AddInterfaceImpl)(
+        mdTypeDef td,
+        mdToken tkInterface) PURE;
 
 }; // IMDInternalEmit
 

@@ -120,13 +120,15 @@ struct CaNamedArg;
 //
 
 class RegMeta :
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     public IMetaDataImport2,
     public IMetaDataAssemblyImport,
+#endif
     public IMetaDataTables2
 
     , public IMetaDataInfo
 
-#ifdef FEATURE_METADATA_EMIT
+#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
 #ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
     , public IMetaDataEmit2
 #else
@@ -146,10 +148,6 @@ class RegMeta :
     , public IGetIMDInternalImport
 #endif
 
-#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_INTERNAL_APIS)
-    , public IMetaDataEmitHelper
-#endif
-
     , public IMDCommon
 {
     friend class CImportTlb;
@@ -162,8 +160,8 @@ class RegMeta :
             ULONG                   cbHashValue,
             PCCOR_SIGNATURE         pbSigBlob,
             ULONG                   cbSigBlob,
-            IMetaDataAssemblyEmit*  pAssemEmit,
-            IMetaDataEmit*          emit,
+            IMDInternalEmit*        pAssemEmit,
+            IMDInternalEmit*        emit,
             CQuickBytes*            pqkSigEmit,
             ULONG*                  pcbSig);
 public:
@@ -1234,7 +1232,7 @@ public:
 #ifdef FEATURE_METADATA_INTERNAL_APIS
 
 //*****************************************************************************
-// IMetaDataEmitHelper
+// IMDInternalEmit
 //*****************************************************************************
     STDMETHODIMP DefineMethodSemanticsHelper(
         mdToken     tkAssociation,          // [IN] property or event token
@@ -1252,21 +1250,6 @@ public:
         mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class
         mdEvent     *pmdEvent);             // [OUT] output event token
 
-    STDMETHODIMP AddDeclarativeSecurityHelper(
-        mdToken     tk,                     // [IN] Parent token (typedef/methoddef)
-        DWORD       dwAction,               // [IN] Security action (CorDeclSecurity)
-        void const  *pValue,                // [IN] Permission set blob
-        DWORD       cbValue,                // [IN] Byte count of permission set blob
-        mdPermission*pmdPermission);        // [OUT] Output permission token
-
-    STDMETHODIMP SetResolutionScopeHelper(  // Return hresult.
-        mdTypeRef   tr,                     // [IN] TypeRef record to update
-        mdToken     rs);                    // [IN] new ResolutionScope
-
-    STDMETHODIMP SetManifestResourceOffsetHelper(  // Return hresult.
-        mdManifestResource mr,              // [IN] The manifest token
-        ULONG       ulOffset);              // [IN] new offset
-
     STDMETHODIMP SetTypeParent(             // Return hresult.
         mdTypeDef   td,                     // [IN] Type definition
         mdToken     tkExtends);             // [IN] parent type
@@ -1274,10 +1257,6 @@ public:
     STDMETHODIMP AddInterfaceImpl(          // Return hresult.
         mdTypeDef   td,                     // [IN] Type definition
         mdToken     tkInterface);           // [IN] interface type
-
-//*****************************************************************************
-// IMDInternalEmit
-//*****************************************************************************
 
     STDMETHODIMP ChangeMvid(                // S_OK or error.
         REFGUID newMvid);                   // GUID to use as the MVID
