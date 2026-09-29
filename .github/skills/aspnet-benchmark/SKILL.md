@@ -196,12 +196,12 @@ If the load-test numbers show a difference (or don't, and you need to know why) 
 
 #### ⚠️ Symbol Resolution Warnings
 
-- **Precompiled (R2R/crossgen) framework symbols are not resolved automatically.** `perfcollect` needs a `crossgen2` tool matching the exact runtime build to map native framework code back to method names; without it, framework frames show up unresolved/hex-only in the trace. When profiling a **locally-built** runtime you don't need to hunt one down — your own build already produced the exact matching binary at `artifacts/bin/crossgen2_publish/<arch>/<config>/crossgen2`. Copy (or symlink) it next to `libcoreclr.so` in the directory you're actually running from (e.g. the testhost/SDK-overlay shared framework folder from Step 3) before collecting:
+- **Precompiled (R2R/crossgen) framework symbols are not resolved automatically.** `perfcollect` needs a `crossgen2` tool matching the exact runtime build to map native framework code back to method names; without it, framework frames show up unresolved/hex-only in the trace. When profiling a **locally-built** runtime you don't need to hunt one down — your own build already produced the exact matching binary at `artifacts/bin/coreclr/<os>.<arch>.<config>/crossgen2-published/crossgen2`. Copy (or symlink) it next to `libcoreclr.so` in the directory you're actually running from (e.g. the testhost/SDK-overlay shared framework folder from Step 3) before collecting:
 
   ```bash
   # Use a path anchored to <runtime-repo> (or `cd` back there first) — a bare relative
   # path resolves under the PlatformBenchmarks output directory left by Step 4 instead.
-  cp <runtime-repo>/artifacts/bin/crossgen2_publish/<arch>/Release/crossgen2 "$SDK_FX"/
+  cp <runtime-repo>/artifacts/bin/coreclr/<os>.<arch>.Release/crossgen2-published/crossgen2 "$SDK_FX"/
   ```
 
   For a runtime you didn't build yourself, see the "Resolving Framework Symbols" section of [linux-performance-tracing.md](../../../docs/project/linux-performance-tracing.md) instead (it walks through obtaining a matching `crossgen2` via a self-contained publish).
