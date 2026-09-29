@@ -184,8 +184,6 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
-        public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
-
         internal RuntimeModule GetRuntimeModule() => RuntimeTypeHandle.GetModule(this);
 
         protected override TypeCode GetTypeCodeImpl()

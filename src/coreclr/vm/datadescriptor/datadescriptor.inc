@@ -23,7 +23,7 @@
 // src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
 // to match.
 #ifndef CDAC_RECOMMENDED_READER_VERSION
-#define CDAC_RECOMMENDED_READER_VERSION 1
+#define CDAC_RECOMMENDED_READER_VERSION 2
 #endif
 
 // When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
@@ -482,6 +482,14 @@ CDAC_TYPE_FIELD(AppDomain, T_POINTER, RootAssembly, cdac_data<AppDomain>::RootAs
 CDAC_TYPE_FIELD(AppDomain, TYPE(ArrayListBase), AssemblyList, cdac_data<AppDomain>::AssemblyList)
 CDAC_TYPE_FIELD(AppDomain, T_POINTER, FriendlyName, cdac_data<AppDomain>::FriendlyName)
 CDAC_TYPE_END(AppDomain)
+
+CDAC_TYPE_BEGIN(ExternalMemoryHandle)
+CDAC_TYPE_INDETERMINATE(ExternalMemoryHandle)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Next, cdac_data<ExternalMemoryHandle>::Next)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, MethodTable, cdac_data<ExternalMemoryHandle>::MethodTable)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Memory, cdac_data<ExternalMemoryHandle>::Memory)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_UINT32, GCFlags, cdac_data<ExternalMemoryHandle>::GCFlags)
+CDAC_TYPE_END(ExternalMemoryHandle)
 
 CDAC_TYPE_BEGIN(SystemDomain)
 CDAC_TYPE_INDETERMINATE(SystemDomain)
@@ -973,6 +981,12 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, MinVirtualIP, cdac_data<ReadyToRunInf
 CDAC_TYPE_END(ReadyToRunInfo)
 
 #ifdef TARGET_WASM
+CDAC_TYPE_BEGIN(VirtualIPRangeSection)
+CDAC_TYPE_INDETERMINATE(VirtualIPRangeSection)
+CDAC_TYPE_FIELD(VirtualIPRangeSection, TYPE(RangeSection), RangeSection, cdac_data<VirtualIPRangeSection>::RangeSection)
+CDAC_TYPE_FIELD(VirtualIPRangeSection, T_POINTER, Next, cdac_data<VirtualIPRangeSection>::Next)
+CDAC_TYPE_END(VirtualIPRangeSection)
+
 CDAC_TYPE_BEGIN(FunctionTableIndexRangeSection)
 CDAC_TYPE_INDETERMINATE(FunctionTableIndexRangeSection)
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, MinFunctionTableIndex, cdac_data<FunctionTableIndexRangeSection>::MinFunctionTableIndex)
@@ -1790,6 +1804,7 @@ CDAC_GLOBAL_POINTER(CanonMethodTable, &::g_pCanonMethodTableClass)
 CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
 CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
+CDAC_GLOBAL_POINTER(ExternalMemoryHandles, cdac_data<ExternalMemoryHandle>::HandlesHead)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(MulticastDelegateMethodTable, &::g_pMulticastDelegateClass)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
@@ -1831,6 +1846,7 @@ CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManag
 CDAC_GLOBAL_POINTER(InterpreterJitManagerAddress, cdac_data<ExecutionManager>::InterpreterJitManagerAddress)
 #endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
+CDAC_GLOBAL_POINTER(VirtualIPRangeList, cdac_data<ExecutionManager>::VirtualIPRangeListAddress)
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
 #endif // TARGET_WASM
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
@@ -1890,6 +1906,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeMutableTypeSystem, c1)
 #endif // FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(Exception, c1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, c1)
+CDAC_GLOBAL_CONTRACT(ExternalMemoryHandles, c1)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
 CDAC_GLOBAL_CONTRACT(ManagedTypeSource, c1)

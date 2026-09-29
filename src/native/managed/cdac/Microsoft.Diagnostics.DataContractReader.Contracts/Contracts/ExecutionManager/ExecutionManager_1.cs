@@ -32,8 +32,8 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public bool IsGcSafe(TargetCodePointer instructionPointer) => _executionManagerCore.IsGcSafe(instructionPointer);
     public uint GetStackParameterSize(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetStackParameterSize(codeInfoHandle);
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
-    public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
-    public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
+    public JitManagerInfo? GetJitManagerInfo(JitManagerKind kind) => _executionManagerCore.GetJitManagerInfo(kind);
+    public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos(JitManagerKind kind) => _executionManagerCore.GetCodeHeapInfos(kind);
     public IReadOnlyList<TargetPointer> GetDynamicFunctionTableEntries(TargetPointer tableAddress) => _executionManagerCore.GetDynamicFunctionTableEntries(tableAddress);
     public CodeKind GetCodeKind(TargetCodePointer codeAddress) => _executionManagerCore.GetCodeKind(codeAddress);
     public TargetPointer FindReadyToRunModule(TargetPointer address) => _executionManagerCore.FindReadyToRunModule(address);

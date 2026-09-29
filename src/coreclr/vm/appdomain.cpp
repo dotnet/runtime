@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "appdomain.hpp"
+#include "externalmemoryhandle.h"
 #include "peimagelayout.inl"
 #include "field.h"
 #include "strongnameinternal.h"

@@ -5165,7 +5165,7 @@ void PromoteCarefully(promote_func   fn,
     // shrink the current reserved stack space. That causes the real limit of the stack to move up and
     // the range can be reused for other purposes. But the sc->stack_limit is stable during the scan.
     // Even on Windows, we care just about the stack above the stack_limit.
-    if ((sc->thread_under_crawl->IsAddressInStack(*ppObj)) && (PTR_TO_TADDR(*ppObj) >= sc->stack_limit))
+    if (sc->thread_under_crawl != NULL && sc->thread_under_crawl->IsAddressInStack(*ppObj) && (PTR_TO_TADDR(*ppObj) >= sc->stack_limit))
     {
         return;
     }

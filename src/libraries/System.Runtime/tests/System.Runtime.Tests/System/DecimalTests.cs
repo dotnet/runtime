@@ -864,6 +864,10 @@ namespace System.Tests
             yield return new object[] { "0", defaultStyle, null, 0m };
             yield return new object[] { "123", defaultStyle, null, 123m };
             yield return new object[] { "  123  ", defaultStyle, null, 123m };
+
+            // Whitespace between a leading sign and the digits (mirrors trailing sign + AllowTrailingWhite)
+            yield return new object[] { "- 123", NumberStyles.AllowLeadingWhite | NumberStyles.AllowLeadingSign, invariantFormat, -123m };
+            yield return new object[] { "  -  123  ", NumberStyles.Number, invariantFormat, -123m };
             yield return new object[] { (567.89m).ToString(), defaultStyle, null, 567.89m };
             yield return new object[] { (-567.89m).ToString(), defaultStyle, null, -567.89m };
             yield return new object[] { "0.6666666666666666666666666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 0.6666666666666666666666666666m };
