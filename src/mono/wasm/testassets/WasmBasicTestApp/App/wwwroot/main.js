@@ -121,12 +121,10 @@ switch (testCase) {
                 throw error;
             });
         }
-        dotnet.withModuleConfig({
-            onDownloadResourceProgress: (loaded, total) => {
-                console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
-                if (loaded === total && loaded !== 0) {
-                    testOutput("DownloadResourceProgress: Finished");
-                }
+        dotnet.withDownloadResourceProgress((loaded, total) => {
+            console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
+            if (loaded === total && loaded !== 0) {
+                testOutput("DownloadResourceProgress: Finished");
             }
         });
         break;

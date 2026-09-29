@@ -17,7 +17,6 @@ using Xunit;
 //
 // The inner frames are marked AggressiveInlining so that the inlining actually happens
 // rather than being left to the profitability heuristic, which rejects these callees.
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameContexts
 {
     private sealed class NamedContext : SynchronizationContext
@@ -100,17 +99,9 @@ public class Async2InlinedFrameContexts
     }
 
     [Fact]
-    public static void SynchronizationContextIsRestoredPerFrame()
+    public static async Task SynchronizationContextIsRestoredPerFrame()
     {
-        SynchronizationContext original = SynchronizationContext.Current;
-        try
-        {
-            ContextFoo().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        await ContextFoo();
 
         // Bar awaited Baz having set ctx2, so Bar resumes on ctx2. Foo awaited Bar having
         // set ctx1, so Foo resumes on ctx1.
@@ -148,9 +139,9 @@ public class Async2InlinedFrameContexts
     }
 
     [Fact]
-    public static void ExecutionContextIsRestoredPerFrame()
+    public static async Task ExecutionContextIsRestoredPerFrame()
     {
-        LocalFoo().GetAwaiter().GetResult();
+        await LocalFoo();
 
         // Each frame sees the AsyncLocal value it set, because every frame boundary
         // restores the ExecutionContext that frame captured.
@@ -189,16 +180,5 @@ public class Async2InlinedFrameContexts
     }
 
     [Fact]
-    public static void ContextsSurviveRepeatedSuspensions()
-    {
-        SynchronizationContext original = SynchronizationContext.Current;
-        try
-        {
-            LoopFoo(4).GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
-    }
+    public static async Task ContextsSurviveRepeatedSuspensions() => await LoopFoo(4);
 }

@@ -66,6 +66,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                 _ems_.FS.createPath("/", virtualWorkingDirectory!, true, true);
                 _ems_.FS.chdir(virtualWorkingDirectory!);
             }
+            // SpecialFolder.CommonApplicationData maps to /usr/share
+            _ems_.FS.createPath("/", "usr/share", true, true);
         }, ...asCallbackArray(_ems_.Module.preInit)];
 
         // preInit runs before Emscripten assigns the native WASM exports.

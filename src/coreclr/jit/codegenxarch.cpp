@@ -2451,7 +2451,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 #ifdef TARGET_X86
         int spOffset = -(int)frameSize;
 
-        if (m_compiler->info.compPublishStubParam)
+        if (m_compiler->compHasSecretStubArgument())
         {
             GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
             spOffset += REGSIZE_BYTES;
@@ -2462,7 +2462,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
-        if (m_compiler->info.compPublishStubParam)
+        if (m_compiler->compHasSecretStubArgument())
         {
             GetEmitter()->emitIns_R(INS_pop, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
             GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, frameSize);
@@ -6421,7 +6421,7 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
     assert(!varTypeIsFloating(op2Type));
 
     instruction ins;
-    var_types   type = TYP_UNKNOWN;
+    emitAttr    size = EA_ATTR(tree->GetCompareSize());
 
     if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE, GT_TEST))
     {
@@ -6440,18 +6440,12 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
 #endif
             (op2->IsCnsIntOrI() && FitsIn<uint8_t>(op2->AsIntCon()->IconValue())))
         {
-            type = TYP_UBYTE;
+            size = EA_1BYTE;
         }
     }
     else if (tree->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE, GT_BT))
     {
         ins = INS_bt;
-
-        // BT is a bit special in that the index is used modulo 32. We allow
-        // mixing the types of op1/op2 because of that -- even if the index is
-        // TYP_INT but the op size is TYP_LONG the instruction itself will
-        // ignore the upper part of the register anyway.
-        type = genActualType(op1->TypeGet());
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
@@ -6487,49 +6481,17 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
         ins = INS_cmp;
     }
 
-    if (type == TYP_UNKNOWN)
+    assert((genTypeSize(op1Type) >= EA_SIZE_IN_BYTES(size)) || !op1->isUsedFromMemory());
+    assert((genTypeSize(op2Type) >= EA_SIZE_IN_BYTES(size)) || !op2->isUsedFromMemory());
+    assert(!op2->IsCnsIntOrI() || (size != EA_1BYTE) || FitsIn<int8_t>(op2->AsIntCon()->IconValue()) ||
+           FitsIn<uint8_t>(op2->AsIntCon()->IconValue()));
+    assert(!op2->IsCnsIntOrI() || (size != EA_2BYTE) || FitsIn<int16_t>(op2->AsIntCon()->IconValue()) ||
+           FitsIn<uint16_t>(op2->AsIntCon()->IconValue()));
+    assert(size <= EA_PTRSIZE);
+
+    if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, size))
     {
-        if (op1Type == op2Type)
-        {
-            type = op1Type;
-        }
-        else if (genTypeSize(op1Type) == genTypeSize(op2Type))
-        {
-            // If the types are different but have the same size then we'll use TYP_INT or TYP_LONG.
-            // This primarily deals with small type mixes (e.g. byte/ubyte) that need to be widened
-            // and compared as int. We should not get long type mixes here but handle that as well
-            // just in case.
-            type = genTypeSize(op1Type) == 8 ? TYP_LONG : TYP_INT;
-        }
-        else
-        {
-            // In the types are different simply use TYP_INT. This deals with small type/int type
-            // mixes (e.g. byte/short ubyte/int) that need to be widened and compared as int.
-            // Lowering is expected to handle any mixes that involve long types (e.g. int/long).
-            type = TYP_INT;
-        }
-
-        // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
-        assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
-        // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
-        assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || tree->IsUnsigned());
-        // If op1 is smaller then it cannot be in memory, we're probably missing a cast
-        assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
-        // If op2 is smaller then it cannot be in memory, we're probably missing a cast
-        assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
-        // If we ended up with a small type and op2 is a constant then make sure we don't lose constant bits
-        assert(!op2->IsCnsIntOrI() || !varTypeIsSmall(type) || FitsIn(type, op2->AsIntCon()->IconValue()));
-    }
-
-    // The type cannot be larger than the machine word size
-    assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
-    // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
-    assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
-
-    if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, type))
-    {
-        emitAttr size    = emitTypeSize(type);
-        bool     canSkip = m_compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
+        bool canSkip = m_compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
                        !op2->isUsedFromMemory() && emit->IsRedundantCmp(size, op1->GetRegNum(), op2->GetRegNum());
 
         if (!canSkip)
@@ -6553,12 +6515,12 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
 //
 // Parameters:
 //    tree   - the compare node
-//    opType - type of the compare
+//    opSize - operand size of the compare
 //
 // Returns:
 //    True if the compare can be omitted.
 //
-bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType)
+bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, emitAttr opSize)
 {
     GenTree* op1 = tree->gtGetOp1();
     assert(tree->gtGetOp2()->IsIntegralConst(0));
@@ -6587,14 +6549,13 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
         cond = *mutableCond;
     }
 
-    if (GetEmitter()->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(opType), cond))
+    if (GetEmitter()->AreFlagsSetToZeroCmp(op1->GetRegNum(), opSize, cond))
     {
         JITDUMP("Not emitting compare due to flags being already set\n");
         return true;
     }
 
-    if ((mutableCond != nullptr) &&
-        GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
+    if ((mutableCond != nullptr) && GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), opSize, cond))
     {
         JITDUMP("Not emitting compare due to sign being already set; modifying [%06u] to check sign flag\n",
                 Compiler::dspTreeID(consumer));
