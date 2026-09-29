@@ -416,14 +416,16 @@ namespace System.Net.Security.Tests
 
         [ConditionalTheory(typeof(TestConfiguration), nameof(TestConfiguration.SupportsRenegotiation))]
         [MemberData(nameof(PeerRenegotiationProtocolsData))]
-        public async Task PeerRenegotiation_SetsRenegotiationState(SslProtocols protocol)
+        public async Task PeerRenegotiation_SetsReauthenticationState(SslProtocols protocol)
         {
             using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
 
-            FieldInfo isRenegoField = typeof(SslStream).GetField("_isRenego", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(isRenegoField);
+            FieldInfo isReAuthenticationField = typeof(SslStream).GetField("_isReAuthentication", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(isReAuthenticationField);
             FieldInfo authenticationOptionsField = typeof(SslStream).GetField("_sslAuthenticationOptions", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(authenticationOptionsField);
+            FieldInfo remoteCertificateField = typeof(SslStream).GetField("_remoteCertificate", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(remoteCertificateField);
 
             var serverOptions = new SslServerAuthenticationOptions
             {
@@ -433,13 +435,18 @@ namespace System.Net.Security.Tests
                 RemoteCertificateValidationCallback = (_, _, _, _) => true,
             };
 
+            int clientValidationCallbackCount = 0;
             var clientOptions = new SslClientAuthenticationOptions
             {
                 TargetHost = Guid.NewGuid().ToString("N"),
                 EnabledSslProtocols = protocol,
                 AllowRenegotiation = true,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+                RemoteCertificateValidationCallback = (_, _, _, _) =>
+                {
+                    clientValidationCallbackCount++;
+                    return true;
+                },
             };
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
@@ -450,8 +457,9 @@ namespace System.Net.Security.Tests
                     client.AuthenticateAsClientAsync(clientOptions),
                     server.AuthenticateAsServerAsync(serverOptions));
                 await TestHelper.PingPong(client, server);
+                Assert.Equal(1, clientValidationCallbackCount);
 
-                bool wasRenegotiatingDuringSelection = false;
+                bool wasReauthenticatingDuringSelection = false;
                 object authenticationOptions = authenticationOptionsField.GetValue(client);
                 Type authenticationOptionsType = typeof(SslStream).Assembly.GetType("System.Net.Security.SslAuthenticationOptions");
                 Assert.NotNull(authenticationOptionsType);
@@ -461,7 +469,14 @@ namespace System.Net.Security.Tests
                 Assert.NotNull(certSelectionDelegateProperty);
                 certSelectionDelegateProperty.SetValue(authenticationOptions, (LocalCertificateSelectionCallback)((sender, _, _, _, _) =>
                 {
-                    wasRenegotiatingDuringSelection = (bool)isRenegoField.GetValue(sender);
+                    wasReauthenticatingDuringSelection = (bool)isReAuthenticationField.GetValue(sender);
+
+                    object clientConnectionInfo = connectionInfo.GetValue(sender);
+                    tlsResumed.SetValue(clientConnectionInfo, true);
+                    connectionInfo.SetValue(sender, clientConnectionInfo);
+
+                    using X509Certificate2 remoteCertificate = (X509Certificate2)remoteCertificateField.GetValue(sender);
+                    remoteCertificateField.SetValue(sender, null);
                     return clientCertificate;
                 }));
 
@@ -471,8 +486,9 @@ namespace System.Net.Security.Tests
                 await server.WriteAsync(new byte[1]);
                 Assert.Equal(1, await clientRead);
 
-                Assert.True(wasRenegotiatingDuringSelection);
-                Assert.False((bool)isRenegoField.GetValue(client));
+                Assert.True(wasReauthenticatingDuringSelection);
+                Assert.False((bool)isReAuthenticationField.GetValue(client));
+                Assert.Equal(protocol == SslProtocols.Tls12 ? 2 : 1, clientValidationCallbackCount);
             }
         }
 

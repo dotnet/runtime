@@ -1146,7 +1146,7 @@ namespace System.Net.Security
 
                 return VerifyRemoteCertificateCore(
                     this,
-                    !_isRenego,
+                    !_isRenego && !_isReAuthentication,
                     _sslAuthenticationOptions,
                     _securityContext,
                     ref _remoteCertificate,
@@ -1203,7 +1203,7 @@ namespace System.Net.Security
         {
             return VerifyRemoteCertificateCore(
                 this,
-                !_isRenego,
+                !_isRenego && !_isReAuthentication,
                 _sslAuthenticationOptions,
                 _securityContext,
                 ref _remoteCertificate,
