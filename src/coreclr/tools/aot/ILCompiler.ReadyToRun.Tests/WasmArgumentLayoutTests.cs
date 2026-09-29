@@ -719,6 +719,65 @@ public class WasmArgumentLayoutTests
         Assert.Equal(tokens[1], InteropSignature.GetAbiToken(type));
     }
 
+    [Theory]
+    [InlineData("int", "System.Int128", "l2")]
+    [InlineData("System.Int128", "int", "l2")]
+    [InlineData("int", "System.Runtime.Intrinsics.Vector128<int>", "V")]
+    [InlineData("System.Runtime.Intrinsics.Vector128<int>", "int", "V")]
+    public void PortableCallHelpersGeneratorRejectsUnsupportedSignatureTokens(
+        string returnType, string parameterType, string expectedToken)
+    {
+        string source = $$"""
+            using System;
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                [UnmanagedCallersOnly(EntryPoint = "callback")]
+                public static {{returnType}} Handle({{parameterType}} value) => default;
+            }
+            """;
+
+        AssertPortableCallHelpersGeneratorRejects(source, $"has unsupported signature token '{expectedToken}'");
+    }
+
+    private void AssertPortableCallHelpersGeneratorRejects(string source, string expectedError)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains(expectedError, log.ToString());
+        }
+        finally
+        {
+            // The type system maps an input assembly with FileShare.Read and never releases it - the
+            // context is not disposable - so on Windows the compiled input cannot be deleted while
+            // this process lives. Cleaning up is best effort rather than a second way to fail.
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
     private const string CoreLibSimpleName = "System.Private.CoreLib";
 
     /// <summary>
@@ -933,7 +992,77 @@ public class WasmArgumentLayoutTests
             Assert.Contains("extern \"C\" void export_pair(void * sret, int32_t arg0)", reverse);
             Assert.Contains("Call_Callbacks__Callbacks_ExportPair_I32_RetS8(sret, arg0);", reverse);
             Assert.Contains("(int8_t*)sret, (PCODE)&Call_Callbacks__Callbacks_GetPair_I32_I32_RetS8", reverse);
+            Assert.Contains("((void(*)(void *, int32_t))r2r)(sret, arg0);", reverse);
             Assert.DoesNotContain("RetS8(void * arg", reverse);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// The generated wrapper only needs to reach the R2R native entrypoint for callbacks exported by
+    /// name: native code calls the extern "C" export (and thus the wrapper) directly. Every other
+    /// reverse thunk is handed out by the runtime, which already prefers R2R code before falling back to
+    /// the interpreter wrapper, so the dispatch is emitted for exports alone.
+    /// </summary>
+    [Theory]
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_export\")]", true)]
+    [InlineData("[UnmanagedCallersOnly]", false)]
+    public void PortableCallHelpersGeneratorEmitsR2RDispatchForExportsOnly(string attribute, bool expectR2RDispatch)
+    {
+        string source = $$"""
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                {{attribute}}
+                public static int Handle(int value) => value;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.Equal(0, exitCode);
+            string reverseHelpers = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+
+            // CoreLib is part of the scan context, so its own exported callbacks emit R2R dispatch too.
+            // Scope the assertions to this callback's mangled symbol to test the gating in isolation.
+            const string mySymbol = "R2RCode_Callbacks__Exports_Handle";
+            if (expectR2RDispatch)
+            {
+                Assert.Contains(mySymbol, reverseHelpers);
+                Assert.Contains($"__atomic_load_n(&{mySymbol}", reverseHelpers);
+                Assert.Contains($"__atomic_store_n(&{mySymbol}", reverseHelpers);
+            }
+            else
+            {
+                Assert.DoesNotContain(mySymbol, reverseHelpers);
+            }
         }
         finally
         {
