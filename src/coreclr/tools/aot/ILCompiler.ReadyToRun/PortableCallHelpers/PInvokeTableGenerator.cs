@@ -294,8 +294,18 @@ namespace ILCompiler.PortableCallHelpers
                     ? $"\n\n    int64_t args[{parameterCount}] = {{ {string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => CarriesBits(i) ? "0" : $"(int64_t)arg{i}"))} }};"
                       + string.Concat(Enumerable.Range(0, parameterCount).Where(CarriesBits).Select(i => $"\n    memcpy(&args[{i}], &arg{i}, sizeof(arg{i}));"))
                     : string.Empty;
-                string parametersDeclaration = string.Join(", ", parameterCTypes.Select((p, i) => $"{p} arg{i}"));
-                string arguments = string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => $"arg{i}"));
+                // A struct the wasm C ABI returns by reference arrives as a hidden leading pointer to
+                // caller-owned storage, with no return value, so the interpreter writes straight into it.
+                bool returnsViaBuffer = IsPassedByReference(cb.ReturnType);
+                bool hasResult = !cb.IsVoid && !returnsViaBuffer;
+                string returnCType = returnsViaBuffer ? "void" : MapType(cb.ReturnType);
+                string retArg = returnsViaBuffer ? "(int8_t*)sret" : hasResult ? "(int8_t*)&result" : "nullptr";
+                string parametersDeclaration = string.Join(", ",
+                    (returnsViaBuffer ? ["void * sret"] : Array.Empty<string>())
+                    .Concat(parameterCTypes.Select((p, i) => $"{p} arg{i}")));
+                string arguments = string.Join(", ",
+                    (returnsViaBuffer ? ["sret"] : Array.Empty<string>())
+                    .Concat(Enumerable.Range(0, parameterCount).Select(i => $"arg{i}")));
 
                 // A partial R2R image can compile an UnmanagedCallersOnly callback to native code. That R2R
                 // code is the directly-callable native entrypoint (same ABI as this wrapper's parameters), so
@@ -306,10 +316,11 @@ namespace ILCompiler.PortableCallHelpers
                 // other reverse thunk is handed out by the runtime through GetUnmanagedCallersOnlyThunk, which
                 // already returns the R2R native code directly and only falls back to this interpreter wrapper
                 // when the method has no native code -- so the dispatch would be dead code there.
-                string paramTypesOnly = string.Join(", ", parameterCTypes);
-                string r2rDispatch = cb.IsVoid
-                    ? $"((void(*)({paramTypesOnly}))r2r)({arguments});{w.NewLine}        return;"
-                    : $"return (({MapType(cb.ReturnType)}(*)({paramTypesOnly}))r2r)({arguments});";
+                string paramTypesOnly = string.Join(", ",
+                    (returnsViaBuffer ? ["void *"] : Array.Empty<string>()).Concat(parameterCTypes));
+                string r2rDispatch = hasResult
+                    ? $"return (({returnCType}(*)({paramTypesOnly}))r2r)({arguments});"
+                    : $"((void(*)({paramTypesOnly}))r2r)({arguments});{w.NewLine}        return;";
                 // Cache the resolved entrypoint in a per-callback static, published with acquire/release
                 // atomics: these are native entry points that can be entered concurrently, and the value is
                 // computed identically on every call, so the racing read/write is benign but must not tear.
@@ -336,9 +347,9 @@ namespace ILCompiler.PortableCallHelpers
                     $$"""
 
 
-                    extern "C" {{MapType(cb.ReturnType)}} {{cb.EntryPoint}}({{parametersDeclaration}})
+                    extern "C" {{returnCType}} {{cb.EntryPoint}}({{parametersDeclaration}})
                     {
-                        {{(cb.IsVoid ? "" : "return ")}}Call_{{cb.EntrySymbol}}({{arguments}});
+                        {{(hasResult ? "return " : "")}}Call_{{cb.EntrySymbol}}({{arguments}});
                     }
                     """ : string.Empty;
                 w.Write(
@@ -346,16 +357,16 @@ namespace ILCompiler.PortableCallHelpers
 
                     static MethodDesc* MD_{{cb.EntrySymbol}} = nullptr;{{r2rStaticDecl}}
                     static {{
-                    MapType(cb.ReturnType)}} Call_{{cb.EntrySymbol}}({{parametersDeclaration}})
+                    returnCType}} Call_{{cb.EntrySymbol}}({{parametersDeclaration}})
                     {
                         // Lazy lookup of MethodDesc for the function export scenario.
                         if (!MD_{{cb.EntrySymbol}})
                         {
                             LookupUnmanagedCallersOnlyMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
                         }{{r2rSection}}{{argsDeclaration}}{{
-                        (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
-                        ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{(cb.IsVoid ? "nullptr" : "(int8_t*)&result")}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
-                        (!cb.IsVoid ? $"{w.NewLine}    return result;" : "")}}
+                        (hasResult ? $"{w.NewLine}    {returnCType} result;" : "")}}
+                        ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{retArg}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
+                        (hasResult ? $"{w.NewLine}    return result;" : "")}}
                     }{{exportFunction}}
 
                     """);
@@ -422,12 +433,6 @@ namespace ILCompiler.PortableCallHelpers
                 {
                     throw new LogAsErrorException(
                         $"UnmanagedCallersOnly callback '{cb.Method}' has unsupported signature token '{token}', which the generated native wrapper does not support.");
-                }
-
-                if (!cb.IsVoid && IsPassedByReference(cb.ReturnType))
-                {
-                    throw new LogAsErrorException(
-                        $"UnmanagedCallersOnly callback '{cb.Method}' has return type '{cb.ReturnType}' that uses a hidden return buffer, which the generated native wrapper does not support.");
                 }
 
                 static bool IsUnsupportedToken(string token) =>
