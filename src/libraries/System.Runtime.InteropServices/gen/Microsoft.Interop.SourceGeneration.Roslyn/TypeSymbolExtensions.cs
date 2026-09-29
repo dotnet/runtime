@@ -59,7 +59,7 @@ namespace Microsoft.Interop
 
             static unsafe bool IsStrictlyBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation)
             {
-                if (t.SpecialType is not SpecialType.None)
+                if (t.SpecialType is not Microsoft.CodeAnalysis.SpecialType.None)
                 {
                     return t.SpecialType.IsAlwaysBlittable();
                 }
@@ -78,7 +78,7 @@ namespace Microsoft.Interop
                             return true;
                         }
 
-                        if (t.ContainingAssembly.Equals(compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly, SymbolEqualityComparer.Default))
+                        if (t.ContainingAssembly.Equals(compilation.GetSpecialType(Microsoft.CodeAnalysis.SpecialType.System_Object).ContainingAssembly, SymbolEqualityComparer.Default))
                         {
                             if (t.ToDisplayString() == TypeNames.System_Guid) // .NET has established that Guid is blittable and matches the shape of the Win32 GUID type exactly and always will.
                             {
@@ -165,36 +165,9 @@ namespace Microsoft.Interop
             return true;
         }
 
-        public static bool IsIntegralType(this SpecialType type)
-        {
-            return type is SpecialType.System_SByte
-                or SpecialType.System_Byte
-                or SpecialType.System_Int16
-                or SpecialType.System_UInt16
-                or SpecialType.System_Int32
-                or SpecialType.System_UInt32
-                or SpecialType.System_Int64
-                or SpecialType.System_UInt64
-                or SpecialType.System_IntPtr
-                or SpecialType.System_UIntPtr;
-        }
+        public static bool IsIntegralType(this Microsoft.CodeAnalysis.SpecialType type) => type.ToInteropSpecialType().IsIntegralType();
 
-        public static bool IsAlwaysBlittable(this SpecialType type)
-        {
-            return type is SpecialType.System_Void
-                    or SpecialType.System_SByte
-                    or SpecialType.System_Byte
-                    or SpecialType.System_Int16
-                    or SpecialType.System_UInt16
-                    or SpecialType.System_Int32
-                    or SpecialType.System_UInt32
-                    or SpecialType.System_Int64
-                    or SpecialType.System_UInt64
-                    or SpecialType.System_IntPtr
-                    or SpecialType.System_UIntPtr
-                    or SpecialType.System_Single
-                    or SpecialType.System_Double;
-        }
+        public static bool IsAlwaysBlittable(this Microsoft.CodeAnalysis.SpecialType type) => type.ToInteropSpecialType().IsAlwaysBlittable();
 
         public static bool IsConstructedFromEqualTypes(this ITypeSymbol type, ITypeSymbol other)
         {

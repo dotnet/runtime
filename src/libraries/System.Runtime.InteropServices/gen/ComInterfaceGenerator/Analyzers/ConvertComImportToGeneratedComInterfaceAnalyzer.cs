@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
@@ -216,14 +217,14 @@ namespace Microsoft.Interop.Analyzers
                 _stringMarshallingInfoProvider = stringMarshallingInfoProvider;
             }
 
-            public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == SpecialType.System_String;
+            public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == RoslynSpecialType.System_String;
             public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
                 => new TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation.String, _stringMarshallingInfoProvider.GetMarshallingInfo(type, indirectionDepth, useSiteAttributes, marshallingInfoCallback));
         }
 
         private sealed class ExplicitlyUnsupportedMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
         {
-            public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type is { TypeKind: TypeKind.Array or TypeKind.Delegate } or { SpecialType: SpecialType.System_Array or SpecialType.System_Object };
+            public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type is { TypeKind: TypeKind.Array or TypeKind.Delegate } or { SpecialType: RoslynSpecialType.System_Array or RoslynSpecialType.System_Object };
             public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback) => new TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation.ExplicitlyUnsupported, NoMarshallingInfo.Instance);
         }
     }

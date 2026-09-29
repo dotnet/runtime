@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-
 namespace Microsoft.Interop
 {
     /// <summary>
@@ -28,44 +26,6 @@ namespace Microsoft.Interop
             DiagnosticFormattedName = original.DiagnosticFormattedName;
         }
 
-        public static ManagedTypeInfo CreateTypeInfoForTypeSymbol(ITypeSymbol type)
-        {
-            string typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            string diagnosticFormattedName = type.ToDisplayString();
-            if (type.SpecialType != SpecialType.None)
-            {
-                return new SpecialTypeInfo(typeName, diagnosticFormattedName, type.SpecialType);
-            }
-            if (type.TypeKind == TypeKind.Enum)
-            {
-                return new EnumTypeInfo(typeName, diagnosticFormattedName, ((INamedTypeSymbol)type).EnumUnderlyingType!.SpecialType);
-            }
-            if (type.TypeKind == TypeKind.Pointer)
-            {
-                return new PointerTypeInfo(typeName, diagnosticFormattedName, IsFunctionPointer: false);
-            }
-            if (type.TypeKind == TypeKind.FunctionPointer)
-            {
-                return new PointerTypeInfo(typeName, diagnosticFormattedName, IsFunctionPointer: true);
-            }
-            if (type.TypeKind == TypeKind.Array && type is IArrayTypeSymbol { IsSZArray: true } arraySymbol)
-            {
-                return new SzArrayType(CreateTypeInfoForTypeSymbol(arraySymbol.ElementType));
-            }
-            if (type.TypeKind == TypeKind.Delegate)
-            {
-                return new DelegateTypeInfo(typeName, diagnosticFormattedName, type is INamedTypeSymbol { IsGenericType: true });
-            }
-            if (type.TypeKind == TypeKind.TypeParameter)
-            {
-                return new TypeParameterTypeInfo(typeName, diagnosticFormattedName);
-            }
-            if (type.IsValueType)
-            {
-                return new ValueTypeInfo(typeName, diagnosticFormattedName, type.IsRefLikeType);
-            }
-            return new ReferenceTypeInfo(typeName, diagnosticFormattedName);
-        }
     }
 
     public sealed record SpecialTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)

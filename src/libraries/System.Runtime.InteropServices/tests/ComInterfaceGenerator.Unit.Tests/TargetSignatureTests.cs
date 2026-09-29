@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.Interop;
 using Xunit;
 
+using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.CodeAnalysis.Testing.EmptySourceGeneratorProvider, Microsoft.Interop.Analyzers.ComInterfaceGeneratorDiagnosticsAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
@@ -246,7 +247,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
             {
-                Assert.Equal(SpecialType.System_Int32, signature.ReturnType.SpecialType);
+                Assert.Equal(RoslynSpecialType.System_Int32, signature.ReturnType.SpecialType);
             });
         }
 
@@ -268,10 +269,10 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
             {
-                Assert.Equal(SpecialType.System_Int32, signature.ReturnType.SpecialType);
+                Assert.Equal(RoslynSpecialType.System_Int32, signature.ReturnType.SpecialType);
                 Assert.Equal(2, signature.Parameters.Length);
-                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(SpecialType.System_Void)), signature.Parameters[0].Type, SymbolEqualityComparer.Default);
-                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(SpecialType.System_Int64)), signature.Parameters[^1].Type, SymbolEqualityComparer.Default);
+                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(RoslynSpecialType.System_Void)), signature.Parameters[0].Type, SymbolEqualityComparer.Default);
+                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(RoslynSpecialType.System_Int64)), signature.Parameters[^1].Type, SymbolEqualityComparer.Default);
             });
         }
 
@@ -294,8 +295,8 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
             {
-                Assert.Equal(SpecialType.System_Int64, signature.ReturnType.SpecialType);
-                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(SpecialType.System_Void)), Assert.Single(signature.Parameters).Type, SymbolEqualityComparer.Default);
+                Assert.Equal(RoslynSpecialType.System_Int64, signature.ReturnType.SpecialType);
+                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(RoslynSpecialType.System_Void)), Assert.Single(signature.Parameters).Type, SymbolEqualityComparer.Default);
             });
         }
 

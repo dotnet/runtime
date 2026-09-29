@@ -139,26 +139,127 @@ public class CodeWritingTests
     [InlineData("")]
     [InlineData("ordinary")]
     [InlineData("quotes\"slash\\new\nline\r\t")]
-    [InlineData("\0")]
-    [InlineData("\u2028\u2029")]
-    [InlineData("\ud800")]
-    [InlineData("\udc00")]
+    [InlineData("\0\a\b\f\n\r\t\v'\"\\")]
+    [InlineData("\u00011234\u001fabcdef")]
+    [InlineData("\u007f\u0080\u0085\u009f")]
+    [InlineData("\u00a0\u1680\u2000\u2028\u2029\u202f\u205f\u3000")]
+    [InlineData("\u00ad\u061c\u200b\u200c\u200d\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2060\u2066\u2067\u2068\u2069\ufeff")]
+    [InlineData("\u0378\ue000\uf8ff\ufffe\uffff")]
+    [InlineData("\U00010000\U0001f600\U000e0001\U000f0000\U000fffff\U0010ffff")]
     public void StringLiteralsPreserveTheirValues(string value)
     {
         string source = CodeWriterHelpers.StringLiteral(value);
+        Assert.Equal(Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(value, quote: true), source);
         LiteralExpressionSyntax literal = Assert.IsType<LiteralExpressionSyntax>(SyntaxFactory.ParseExpression(source));
         Assert.False(literal.ContainsDiagnostics);
         Assert.Equal(value, literal.Token.ValueText);
     }
 
     [Theory]
-    [InlineData("event", "@event")]
-    [InlineData("record", "@record")]
-    [InlineData("@class", "@class")]
-    [InlineData("ordinary", "ordinary")]
-    public void IdentifiersAreEscaped(string identifier, string expected)
+    [InlineData(0x0000, 0xffff)]
+    [InlineData(0x10000, 0x10ffff)]
+    public void StringLiteralsMatchRoslynForAllUtf16CodeUnitsAndSurrogatePairs(int first, int last)
     {
-        Assert.Equal(expected, CodeWriterHelpers.EscapeIdentifier(identifier));
+        for (int codePoint = first; codePoint <= last; codePoint++)
+        {
+            string value = codePoint <= char.MaxValue
+                ? ((char)codePoint).ToString()
+                : char.ConvertFromUtf32(codePoint);
+
+            Assert.Equal(
+                Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(value, quote: true),
+                CodeWriterHelpers.StringLiteral(value));
+        }
+    }
+
+    [Theory]
+    [InlineData(0xd800)]
+    [InlineData(0xdc00)]
+    [InlineData(0xdbff)]
+    [InlineData(0xdfff)]
+    [InlineData(0xd800, 0xdc00)]
+    [InlineData(0xdbff, 0xdfff)]
+    [InlineData(0xdc00, 0xd800)]
+    [InlineData(0xd800, 0xd800, 0xdc00, 0xdc00)]
+    [InlineData(0xdbff, 0xdfff, 0xdbff)]
+    [InlineData(0xd800, (int)'"', 0xdc00, (int)'\\', 0xdbff, (int)'\n', 0xdfff)]
+    public void StringLiteralsPreserveMixedAndUnpairedSurrogates(params int[] codeUnits)
+    {
+        // Construct at execution time: attribute strings cannot preserve unpaired surrogates.
+        string value = new string(codeUnits.Select(static codeUnit => (char)codeUnit).ToArray());
+        StringLiteralsPreserveTheirValues(value);
+        StringLiteralsPreserveTheirValues("prefix\"\\0123456789abcdef" + value + "fedcba9876543210\\\"suffix");
+    }
+
+    [Fact]
+    public void StringLiteralsRejectNull()
+    {
+        Assert.Throws<ArgumentNullException>("value", static () => CodeWriterHelpers.StringLiteral(null!));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("event")]
+    [InlineData("record")]
+    [InlineData("extension")]
+    [InlineData("var")]
+    [InlineData("_")]
+    [InlineData("@class")]
+    [InlineData("Class")]
+    [InlineData("CLASS")]
+    [InlineData("className")]
+    [InlineData("myclass")]
+    [InlineData("cl\u200bass")]
+    [InlineData("\\u0063lass")]
+    [InlineData("dynamic")]
+    [InlineData("nint")]
+    [InlineData("nuint")]
+    [InlineData("notnull")]
+    [InlineData("value")]
+    [InlineData("args")]
+    [InlineData("closed")]
+    [InlineData("safe")]
+    [InlineData("union")]
+    [InlineData("ordinary")]
+    public void IdentifiersAreEscaped(string identifier)
+    {
+        bool isKeyword = SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None
+            || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None;
+        Assert.Equal(isKeyword ? "@" + identifier : identifier, CodeWriterHelpers.EscapeIdentifier(identifier));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("ordinary")]
+    [InlineData("event")]
+    [InlineData("record")]
+    [InlineData("closed")]
+    [InlineData("safe")]
+    [InlineData("union")]
+    [InlineData("@event")]
+    public void IdentifierEscapingUsesTheSuppliedKeywordClassification(string identifier)
+    {
+        Assert.Equal(identifier, CodeWriterHelpers.EscapeIdentifier(identifier, isKeyword: false));
+        Assert.Equal("@" + identifier, CodeWriterHelpers.EscapeIdentifier(identifier, isKeyword: true));
+    }
+
+    [Fact]
+    public void IdentifiersMatchRoslynKeywordAndContextualKeywordSets()
+    {
+        // Enumerate all token spellings: the keyword-kind enumerators omit var and underscore.
+        foreach (SyntaxKind kind in Enum.GetValues<SyntaxKind>())
+        {
+            string text = SyntaxFacts.GetText(kind);
+            if (string.IsNullOrEmpty(text))
+            {
+                continue;
+            }
+
+            foreach (string identifier in new[] { text, "@" + text, text.ToUpperInvariant(), text + "Suffix", "Prefix" + text })
+            {
+                IdentifiersAreEscaped(identifier);
+            }
+        }
     }
 
     [Theory]
@@ -428,7 +529,7 @@ public class CodeWritingTests
         Compilation compilation = TestUtils.CreateCompilation(source);
         Assert.DoesNotContain(compilation.GetDiagnostics(), static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         INamedTypeSymbol definition = compilation.GetTypeByMetadataName("TUnmanagedElement.Marshaller`2")!;
-        ITypeSymbol managedElement = compilation.GetSpecialType(SpecialType.System_Int32);
+        ITypeSymbol managedElement = compilation.GetSpecialType(Microsoft.CodeAnalysis.SpecialType.System_Int32);
         INamedTypeSymbol entryPoint = definition.Construct(managedElement, definition.TypeParameters[1]);
         Assert.True(ManualTypeMarshallingHelper.TryGetLinearCollectionMarshallersFromEntryType(
             entryPoint,

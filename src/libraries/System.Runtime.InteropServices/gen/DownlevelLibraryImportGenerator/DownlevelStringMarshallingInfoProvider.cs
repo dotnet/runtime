@@ -23,7 +23,7 @@ namespace Microsoft.Interop
             _defaultMarshallingInfo = defaultMarshallingInfo;
         }
 
-        public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == SpecialType.System_String;
+        public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_String;
 
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -324,46 +323,6 @@ namespace Microsoft.Interop
                 MarshalDirection.Bidirectional => StubIdentifierContext.Stage.CleanupCallerAllocated,
                 _ => throw new UnreachableException()
             };
-        }
-
-        /// <summary>
-        /// Ensure that the count of a collection is available at call time if the parameter is not an out parameter.
-        /// It only looks at an indirection level of 0 (the size of the outer array), so there are some holes in
-        /// analysis if the parameter is a multidimensional array, but that case seems very unlikely to be hit.
-        /// </summary>
-        public static void ValidateCountInfoAvailableAtCall(MarshalDirection stubDirection, TypePositionInfo info, GeneratorDiagnosticsBag generatorDiagnostics, IMethodSymbol symbol, DiagnosticDescriptor outParamDescriptor, DiagnosticDescriptor returnValueDescriptor)
-        {
-            // In managed to unmanaged stubs, we can always just get the length of managed object
-            // We only really need to be concerned about unmanaged to managed stubs
-            if (stubDirection is MarshalDirection.ManagedToUnmanaged)
-                return;
-
-            if (!(info.RefKind is RefKind.Out
-                    || info.ManagedIndex is TypePositionInfo.ReturnIndex)
-                && info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
-                && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo)
-            {
-                if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
-                {
-                    Location location = TypePositionInfo.GetLocation(info, symbol);
-                    generatorDiagnostics.ReportDiagnostic(
-                        DiagnosticInfo.Create(
-                            outParamDescriptor,
-                            location,
-                            info.InstanceIdentifier,
-                            countInfo.ElementInfo.InstanceIdentifier));
-                }
-                else if (countInfo.ElementInfo.ManagedIndex is TypePositionInfo.ReturnIndex)
-                {
-                    Location location = TypePositionInfo.GetLocation(info, symbol);
-                    generatorDiagnostics.ReportDiagnostic(
-                        DiagnosticInfo.Create(
-                            returnValueDescriptor,
-                            location,
-                            info.InstanceIdentifier));
-                }
-                // If the parameter is multidimensional and a higher indirection level parameter is ByValue [Out], then we should warn.
-            }
         }
 
         public static string GetManagedParameterModifiers(TypePositionInfo typeInfo)

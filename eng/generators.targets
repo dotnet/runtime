@@ -55,6 +55,10 @@
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration.Roslyn\Microsoft.Interop.SourceGeneration.Roslyn.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DownlevelLibraryImportGenerator\DownlevelLibraryImportGenerator.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"

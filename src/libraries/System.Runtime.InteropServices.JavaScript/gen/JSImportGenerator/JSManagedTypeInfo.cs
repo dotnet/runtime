@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -14,42 +15,42 @@ namespace Microsoft.Interop.JavaScript
             string fullTypeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             switch (type)
             {
-                case { SpecialType: SpecialType.System_Void }:
+                case { SpecialType: RoslynSpecialType.System_Void }:
                     return new JSSimpleTypeInfo(KnownManagedType.Void, "void");
-                case { SpecialType: SpecialType.System_Boolean }:
+                case { SpecialType: RoslynSpecialType.System_Boolean }:
                     return new JSSimpleTypeInfo(KnownManagedType.Boolean, "bool");
-                case { SpecialType: SpecialType.System_Byte }:
+                case { SpecialType: RoslynSpecialType.System_Byte }:
                     return new JSSimpleTypeInfo(KnownManagedType.Byte, "byte");
-                case { SpecialType: SpecialType.System_Char }:
+                case { SpecialType: RoslynSpecialType.System_Char }:
                     return new JSSimpleTypeInfo(KnownManagedType.Char, "char");
-                case { SpecialType: SpecialType.System_Int16 }:
+                case { SpecialType: RoslynSpecialType.System_Int16 }:
                     return new JSSimpleTypeInfo(KnownManagedType.Int16, "short");
-                case { SpecialType: SpecialType.System_Int32 }:
+                case { SpecialType: RoslynSpecialType.System_Int32 }:
                     return new JSSimpleTypeInfo(KnownManagedType.Int32, "int");
-                case { SpecialType: SpecialType.System_Int64 }:
+                case { SpecialType: RoslynSpecialType.System_Int64 }:
                     return new JSSimpleTypeInfo(KnownManagedType.Int64, "long");
-                case { SpecialType: SpecialType.System_Single }:
+                case { SpecialType: RoslynSpecialType.System_Single }:
                     return new JSSimpleTypeInfo(KnownManagedType.Single, "float");
-                case { SpecialType: SpecialType.System_Double }:
+                case { SpecialType: RoslynSpecialType.System_Double }:
                     return new JSSimpleTypeInfo(KnownManagedType.Double, "double");
-                case { SpecialType: SpecialType.System_IntPtr }:
-                case IPointerTypeSymbol { PointedAtType.SpecialType: SpecialType.System_Void }:
+                case { SpecialType: RoslynSpecialType.System_IntPtr }:
+                case IPointerTypeSymbol { PointedAtType.SpecialType: RoslynSpecialType.System_Void }:
                     return new JSSimpleTypeInfo(KnownManagedType.IntPtr, "nint");
-                case { SpecialType: SpecialType.System_DateTime }:
+                case { SpecialType: RoslynSpecialType.System_DateTime }:
                     return new JSSimpleTypeInfo(KnownManagedType.DateTime, fullTypeName);
                 case ITypeSymbol when fullTypeName == "global::System.DateTimeOffset":
                     return new JSSimpleTypeInfo(KnownManagedType.DateTimeOffset, fullTypeName);
                 case ITypeSymbol when fullTypeName == "global::System.Exception":
                     return new JSSimpleTypeInfo(KnownManagedType.Exception, fullTypeName);
-                case { SpecialType: SpecialType.System_Object }:
+                case { SpecialType: RoslynSpecialType.System_Object }:
                     return new JSSimpleTypeInfo(KnownManagedType.Object, "object");
-                case { SpecialType: SpecialType.System_String }:
+                case { SpecialType: RoslynSpecialType.System_String }:
                     return new JSSimpleTypeInfo(KnownManagedType.String, "string");
                 case ITypeSymbol when fullTypeName == "global::System.Runtime.InteropServices.JavaScript.JSObject":
                     return new JSSimpleTypeInfo(KnownManagedType.JSObject, fullTypeName);
 
                 //nullable
-                case INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T } nullable:
+                case INamedTypeSymbol { ConstructedFrom.SpecialType: RoslynSpecialType.System_Nullable_T } nullable:
                     if (CreateJSTypeInfoForTypeSymbol(nullable.TypeArguments[0]) is JSSimpleTypeInfo uti)
                     {
                         return new JSNullableTypeInfo(uti);

@@ -165,7 +165,7 @@ namespace Microsoft.Interop.JavaScript
                 InstanceIdentifier = Constants.ArgumentException,
                 ManagedIndex = TypePositionInfo.ExceptionIndex,
                 NativeIndex = signatureElements.Length,
-                RefKind = RefKind.Out,
+                RefKind = Microsoft.Interop.RefKind.Out,
                 IsErrorHandlingPosition = true,
             });
 
@@ -178,7 +178,7 @@ namespace Microsoft.Interop.JavaScript
                     {
                         ManagedIndex = TypePositionInfo.ReturnIndex,
                         NativeIndex = allElements.Length,
-                        RefKind = RefKind.Out,
+                        RefKind = Microsoft.Interop.RefKind.Out,
                     });
                 }
             }

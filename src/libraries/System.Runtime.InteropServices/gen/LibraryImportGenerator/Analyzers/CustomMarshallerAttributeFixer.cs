@@ -13,6 +13,8 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Editing;
+using RoslynRefKind = Microsoft.CodeAnalysis.RefKind;
+using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 using static Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer;
 
 namespace Microsoft.Interop.Analyzers
@@ -245,7 +247,7 @@ namespace Microsoft.Interop.Analyzers
                 newMembers.Add(
                     gen.WithAccessorDeclarations(
                         gen.PropertyDeclaration(ShapeMemberNames.BufferSize,
-                            gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)),
+                            gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(RoslynSpecialType.System_Int32)),
                             Accessibility.Public,
                             DeclarationModifiers.Static),
                         gen.GetAccessorDeclaration(statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) })));
@@ -259,7 +261,7 @@ namespace Microsoft.Interop.Analyzers
                         parameters: new[]
                         {
                             gen.ParameterDeclaration("managed", gen.TypeExpression(managedType)),
-                            gen.ParameterDeclaration("numElements", type: gen.TypeExpression(SpecialType.System_Int32), refKind: RefKind.Out),
+                            gen.ParameterDeclaration("numElements", type: gen.TypeExpression(RoslynSpecialType.System_Int32), refKind: RoslynRefKind.Out),
                         },
                         returnType: unmanagedTypeSyntax.Value,
                         accessibility: Accessibility.Public,
@@ -275,7 +277,7 @@ namespace Microsoft.Interop.Analyzers
                         parameters: new[]
                         {
                             gen.ParameterDeclaration("unmanaged", unmanagedTypeSyntax.Value),
-                            gen.ParameterDeclaration("numElements", type: gen.TypeExpression(SpecialType.System_Int32)),
+                            gen.ParameterDeclaration("numElements", type: gen.TypeExpression(RoslynSpecialType.System_Int32)),
                         },
                         returnType: gen.TypeExpression(managedType),
                         accessibility: Accessibility.Public,
@@ -306,7 +308,7 @@ namespace Microsoft.Interop.Analyzers
                         parameters: new[]
                         {
                             gen.ParameterDeclaration("unmanaged", unmanagedTypeSyntax.Value),
-                            gen.ParameterDeclaration("numElements", gen.TypeExpression(SpecialType.System_Int32))
+                            gen.ParameterDeclaration("numElements", gen.TypeExpression(RoslynSpecialType.System_Int32))
                         },
                         returnType: gen.TypeExpression(spanOfT.Construct(typeParameters[typeParameters.Length - 1])),
                         accessibility: Accessibility.Public,
@@ -322,7 +324,7 @@ namespace Microsoft.Interop.Analyzers
                         parameters: new[]
                         {
                             gen.ParameterDeclaration("unmanaged", unmanagedTypeSyntax.Value),
-                            gen.ParameterDeclaration("numElements", gen.TypeExpression(SpecialType.System_Int32))
+                            gen.ParameterDeclaration("numElements", gen.TypeExpression(RoslynSpecialType.System_Int32))
                         },
                         returnType: gen.TypeExpression(readOnlySpanOfT.Construct(typeParameters[typeParameters.Length - 1])),
                         accessibility: Accessibility.Public,
@@ -379,7 +381,7 @@ namespace Microsoft.Interop.Analyzers
                 {
                     return gen.TypeExpression(unmanagedType);
                 }
-                return gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_IntPtr));
+                return gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(RoslynSpecialType.System_IntPtr));
             }
 
             ITypeSymbol CreateManagedElementTypeSymbol()
@@ -393,7 +395,7 @@ namespace Microsoft.Interop.Analyzers
                     return ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
                 }
 
-                return editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_IntPtr);
+                return editor.SemanticModel.Compilation.GetSpecialType(RoslynSpecialType.System_IntPtr);
             }
         }
 
@@ -457,7 +459,7 @@ namespace Microsoft.Interop.Analyzers
                 newMembers.Add(
                     gen.WithAccessorDeclarations(
                         gen.PropertyDeclaration(ShapeMemberNames.BufferSize,
-                            gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)),
+                            gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(RoslynSpecialType.System_Int32)),
                             Accessibility.Public,
                             DeclarationModifiers.Static),
                         gen.GetAccessorDeclaration(statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) })));
@@ -490,7 +492,7 @@ namespace Microsoft.Interop.Analyzers
                         ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesSource,
                         parameters: new[]
                         {
-                            gen.ParameterDeclaration("numElements", gen.TypeExpression(SpecialType.System_Int32))
+                            gen.ParameterDeclaration("numElements", gen.TypeExpression(RoslynSpecialType.System_Int32))
                         },
                         returnType: gen.TypeExpression(readOnlySpanOfT.Construct(typeParameters[typeParameters.Length - 1])),
                         accessibility: Accessibility.Public,
@@ -504,7 +506,7 @@ namespace Microsoft.Interop.Analyzers
                         ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination,
                         parameters: new[]
                         {
-                            gen.ParameterDeclaration("numElements", gen.TypeExpression(SpecialType.System_Int32))
+                            gen.ParameterDeclaration("numElements", gen.TypeExpression(RoslynSpecialType.System_Int32))
                         },
                         returnType: gen.TypeExpression(spanOfT.Construct(managedElementTypeSymbol.Value)),
                         accessibility: Accessibility.Public,
@@ -546,7 +548,7 @@ namespace Microsoft.Interop.Analyzers
                 {
                     return gen.TypeExpression(unmanagedType);
                 }
-                return gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_IntPtr));
+                return gen.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(RoslynSpecialType.System_IntPtr));
             }
 
             ITypeSymbol CreateManagedElementTypeSymbol()
@@ -560,7 +562,7 @@ namespace Microsoft.Interop.Analyzers
                     return ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
                 }
 
-                return editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_IntPtr);
+                return editor.SemanticModel.Compilation.GetSpecialType(RoslynSpecialType.System_IntPtr);
             }
         }
 

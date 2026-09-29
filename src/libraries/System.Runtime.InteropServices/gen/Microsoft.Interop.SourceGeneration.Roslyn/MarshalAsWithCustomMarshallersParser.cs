@@ -59,7 +59,7 @@ namespace Microsoft.Interop
                 MarshallingInfo elementMarshallingInfo = NoMarshallingInfo.Instance;
                 if (arrayInfo.ArraySubType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
                 {
-                    if (elementType.SpecialType == SpecialType.System_String)
+                    if (elementType.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_String)
                     {
                         elementMarshallingInfo = CreateStringMarshallingInfo(elementType, new MarshalAsScalarInfo(arrayInfo.ArraySubType, arrayInfo.CharEncoding));
                     }
@@ -80,12 +80,12 @@ namespace Microsoft.Interop
                 return ArrayMarshallingInfoProvider.CreateArrayMarshallingInfo(_compilation, type, elementType, arrayInfo.CountInfo, elementMarshallingInfo);
             }
 
-            if (type.SpecialType == SpecialType.System_String)
+            if (type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_String)
             {
                 return CreateStringMarshallingInfo(type, marshalAsInfo);
             }
 
-            if (type.SpecialType == SpecialType.System_Object && marshalAsInfo is MarshalAsScalarInfo(UnmanagedType.Struct, _))
+            if (type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Object && marshalAsInfo is MarshalAsScalarInfo(UnmanagedType.Struct, _))
             {
                 return CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, TypeNames.ComVariantMarshaller);
             }

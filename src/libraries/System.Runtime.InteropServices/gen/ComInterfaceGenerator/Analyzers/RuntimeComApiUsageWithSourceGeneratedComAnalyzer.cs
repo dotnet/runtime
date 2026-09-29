@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Operations;
+using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
@@ -143,7 +144,7 @@ namespace Microsoft.Interop.Analyzers
                     if (operation.Type is INamedTypeSymbol { IsComImport: true } && !enableGeneratedComInterfaceComImportInterop)
                     {
                         IOperation operand = operation.Operand;
-                        if (operand is IConversionOperation { Type.SpecialType: SpecialType.System_Object } objConversion)
+                        if (operand is IConversionOperation { Type.SpecialType: RoslynSpecialType.System_Object } objConversion)
                         {
                             operand = objConversion.Operand;
                         }
@@ -171,7 +172,7 @@ namespace Microsoft.Interop.Analyzers
                         if (recognizer(operation.Type))
                         {
                             IOperation operand = operation.Operand;
-                            if (operand is IConversionOperation { Type.SpecialType: SpecialType.System_Object } objConversion)
+                            if (operand is IConversionOperation { Type.SpecialType: RoslynSpecialType.System_Object } objConversion)
                             {
                                 operand = objConversion.Operand;
                             }

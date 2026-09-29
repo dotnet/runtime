@@ -3,23 +3,9 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    /// <summary>
-    /// Type used to pass on default marshalling details.
-    /// </summary>
-    /// <remarks>
-    /// This type used to pass default marshalling details to the various marshalling info parsers.
-    /// Since it contains a <see cref="INamedTypeSymbol"/>, it should not be used as a field on any types
-    /// derived from <see cref="MarshallingInfo"/>. See remarks on <see cref="MarshallingInfo"/>.
-    /// </remarks>
-    public sealed record DefaultMarshallingInfo(
-        CharEncoding CharEncoding,
-        INamedTypeSymbol? StringMarshallingCustomType
-    );
-
     // The following types are modeled to fit with the current prospective spec
     // for C# vNext discriminated unions. Once discriminated unions are released,
     // these should be updated to be implemented as a discriminated union.
@@ -29,7 +15,7 @@ namespace Microsoft.Interop
     /// </summary>
     /// <remarks>
     /// Types derived from this are used to represent the stub information calculated from the semantic model.
-    /// To support incremental generation, they must not include any types derived from <see cref="ISymbol"/>.
+    /// To support incremental generation, they must not retain compiler symbols or syntax trees.
     /// </remarks>
     public abstract record MarshallingInfo
     {

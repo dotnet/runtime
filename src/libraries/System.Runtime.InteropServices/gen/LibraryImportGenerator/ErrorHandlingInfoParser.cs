@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using RoslynRefKind = Microsoft.CodeAnalysis.RefKind;
+using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 
 namespace Microsoft.Interop
 {
@@ -50,7 +52,7 @@ namespace Microsoft.Interop
 
             ErrorHandlingLocation location = (ErrorHandlingLocation)locationValue;
             if (location == ErrorHandlingLocation.ReturnValue
-                && method.ReturnType.SpecialType != SpecialType.System_Void
+                && method.ReturnType.SpecialType != RoslynSpecialType.System_Void
                 && !SymbolEqualityComparer.Default.Equals(method.ReturnType, managedType))
             {
                 diagnostics.ReportConfigurationNotSupported(attribute, nameof(TypeNames.ErrorHandlerAttribute));
@@ -59,7 +61,7 @@ namespace Microsoft.Interop
 
             if (location == ErrorHandlingLocation.LastParameter
                 && (method.Parameters.Length == 0
-                    || method.Parameters[method.Parameters.Length - 1] is not { RefKind: RefKind.Out or RefKind.Ref } lastParameter
+                    || method.Parameters[method.Parameters.Length - 1] is not { RefKind: RoslynRefKind.Out or RoslynRefKind.Ref } lastParameter
                     || !SymbolEqualityComparer.Default.Equals(lastParameter.Type, managedType)))
             {
                 diagnostics.ReportConfigurationNotSupported(attribute, nameof(TypeNames.ErrorHandlerAttribute));

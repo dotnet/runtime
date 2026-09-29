@@ -19,6 +19,8 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
+using RoslynRefKind = Microsoft.CodeAnalysis.RefKind;
+using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
@@ -254,13 +256,13 @@ namespace Microsoft.Interop.Analyzers
                         generatedDeclaration,
                         new[]
                         {
-                        editor.Generator.ParameterDeclaration("@return", editor.Generator.GetType(generatedDeclaration), refKind: RefKind.Out)
+                        editor.Generator.ParameterDeclaration("@return", editor.Generator.GetType(generatedDeclaration), refKind: RoslynRefKind.Out)
                         });
                 }
 
                 generatedDeclaration = editor.Generator.WithType(
                     generatedDeclaration,
-                    editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
+                    editor.Generator.TypeExpression(editor.SemanticModel.Compilation.GetSpecialType(RoslynSpecialType.System_Int32)));
             }
 
             if (unmanagedCallConvAttributeMaybe is not null)
@@ -701,13 +703,13 @@ namespace Microsoft.Interop.Analyzers
         {
             foreach (IParameterSymbol param in method.Parameters)
             {
-                if (param.Type.SpecialType is SpecialType.System_String or SpecialType.System_Char)
+                if (param.Type.SpecialType is RoslynSpecialType.System_String or RoslynSpecialType.System_Char)
                 {
                     return true;
                 }
             }
 
-            return method.ReturnType.SpecialType is SpecialType.System_String or SpecialType.System_Char;
+            return method.ReturnType.SpecialType is RoslynSpecialType.System_String or RoslynSpecialType.System_Char;
         }
     }
 }

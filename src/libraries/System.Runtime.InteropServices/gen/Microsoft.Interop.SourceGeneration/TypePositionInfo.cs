@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -84,53 +79,6 @@ namespace Microsoft.Interop
             return ManagedIndex == other.ManagedIndex && NativeIndex == other.NativeIndex;
         }
 
-        public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, MarshallingInfo marshallingInfo, Compilation compilation)
-        {
-            var typeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(paramSymbol.Type), marshallingInfo)
-            {
-                InstanceIdentifier = CodeWriterHelpers.EscapeIdentifier(paramSymbol.Name),
-                RefKind = paramSymbol.RefKind,
-                ByValueContentsMarshalKind = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation),
-                ScopedKind = paramSymbol.ScopedKind,
-                IsExplicitThis = ((ParameterSyntax?)paramSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax())?.Modifiers.Any(SyntaxKind.ThisKeyword) ?? false
-            };
-
-            return typeInfo;
-        }
-
-        public static Location GetLocation(TypePositionInfo info, IMethodSymbol methodSymbol)
-        {
-            if (info.ManagedIndex is UnsetIndex)
-                return Location.None;
-
-            if (info.ManagedIndex is ReturnIndex or ErrorIndex)
-                return methodSymbol.Locations[0];
-
-            return methodSymbol.Parameters[info.ManagedIndex].Locations[0];
-        }
-
-        private static ByValueContentsMarshalKind GetByValueContentsMarshalKind(IEnumerable<AttributeData> attributes, Compilation compilation)
-        {
-            INamedTypeSymbol outAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
-            INamedTypeSymbol inAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_InAttribute)!;
-
-            ByValueContentsMarshalKind marshalKind = ByValueContentsMarshalKind.Default;
-
-            foreach (AttributeData attr in attributes)
-            {
-                if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, outAttributeType))
-                {
-                    marshalKind |= ByValueContentsMarshalKind.Out;
-                }
-                else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, inAttributeType))
-                {
-                    marshalKind |= ByValueContentsMarshalKind.In;
-                }
-
-            }
-
-            return marshalKind;
-        }
     }
 
     public enum ErrorHandlingLocation

@@ -30,7 +30,7 @@ namespace Microsoft.Interop
         public ManagedToNativeStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
-            GeneratorDiagnosticsBag diagnosticsBag,
+            IGeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorResolver generatorResolver,
             CodeEmitOptions codeEmitOptions)
         {
@@ -75,7 +75,7 @@ namespace Microsoft.Interop
             {
                 hasErrorHandler |= generator.TypeInfo.IsErrorHandlingPosition;
                 noMarshallingNeeded &= (generator.IsBlittable() && !generator.TypeInfo.IsByRef) || generator.IsForwarder();
-                HasForwardedTypes |= generator.IsForwarder() && generator is { TypeInfo.ManagedType: not SpecialTypeInfo { SpecialType: Microsoft.CodeAnalysis.SpecialType.System_Void } };
+                HasForwardedTypes |= generator.IsForwarder() && generator is { TypeInfo.ManagedType: not SpecialTypeInfo { SpecialType: SpecialType.System_Void } };
             }
 
             NoMarshallingRequired = !setLastError

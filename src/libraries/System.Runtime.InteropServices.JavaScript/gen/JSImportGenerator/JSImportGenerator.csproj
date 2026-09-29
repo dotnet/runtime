@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration.Roslyn\Microsoft.Interop.SourceGeneration.Roslyn.csproj" />
   </ItemGroup>
 
   <ItemGroup>

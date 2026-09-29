@@ -13,7 +13,7 @@ namespace Microsoft.Interop
     /// </summary>
     public sealed class BooleanMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
-        public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == SpecialType.System_Boolean;
+        public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Boolean;
 
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {

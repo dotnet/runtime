@@ -30,7 +30,7 @@ namespace Microsoft.Interop
                     (node, ct) => true,
                     // Only allow DisableRuntimeMarshalling attributes from the attribute type in the core assembly.
                     // Otherwise the runtime isn't going to respect it and invalid behavior can happen.
-                    (context, ct) => SymbolEqualityComparer.Default.Equals(context.Attributes[0].AttributeClass.ContainingAssembly, context.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly))
+                    (context, ct) => SymbolEqualityComparer.Default.Equals(context.Attributes[0].AttributeClass.ContainingAssembly, context.SemanticModel.Compilation.GetSpecialType(Microsoft.CodeAnalysis.SpecialType.System_Object).ContainingAssembly))
                 .Where(valid => valid)
                 .Collect()
                 .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty ? EnvironmentFlags.DisableRuntimeMarshalling : EnvironmentFlags.None);

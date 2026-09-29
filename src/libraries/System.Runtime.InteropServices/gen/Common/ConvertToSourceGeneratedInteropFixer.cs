@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
+using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 
 namespace Microsoft.Interop.Analyzers
 {
@@ -237,7 +238,7 @@ namespace Microsoft.Interop.Analyzers
         {
             foreach (IParameterSymbol parameter in methodSymbol.Parameters)
             {
-                if (parameter.Type.SpecialType == SpecialType.System_Boolean
+                if (parameter.Type.SpecialType == RoslynSpecialType.System_Boolean
                     && !parameter.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
                 {
                     SyntaxNode generatedParameterSyntax = generator.GetParameters(generatedDeclaration)[parameter.Ordinal];
@@ -246,7 +247,7 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            if (methodSymbol.ReturnType.SpecialType == SpecialType.System_Boolean
+            if (methodSymbol.ReturnType.SpecialType == RoslynSpecialType.System_Boolean
                 && !methodSymbol.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
             {
                 generatedDeclaration = generator.AddReturnAttributes(generatedDeclaration,
