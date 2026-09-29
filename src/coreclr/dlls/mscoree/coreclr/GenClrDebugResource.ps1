@@ -15,7 +15,8 @@ function Parse-Int {
     return [System.Int32]::Parse($hexValue, [System.Globalization.NumberStyles]::HexNumber)
 }
 
-$clrDebugResource = [System.IO.BinaryWriter]::new([System.IO.File]::OpenWrite($out))
+$resourceStream = [System.IO.MemoryStream]::new()
+$clrDebugResource = [System.IO.BinaryWriter]::new($resourceStream)
 
 try {
     # We're creating the resource with the following layout (represented as a C struct)
@@ -26,7 +27,7 @@ try {
     #   int dacTimeStamp;
     #   int dacImageSize;
     #   int dbiTimeStamp;
-    #   int dacImageSize;
+    #   int dbiImageSize;
     # };
 
     # Write the debug resource version
@@ -44,4 +45,20 @@ try {
 }
 finally {
     $clrDebugResource.Dispose()
+}
+
+$resourceBytes = $resourceStream.ToArray()
+$writeResource = -not [System.IO.File]::Exists($out)
+
+if (-not $writeResource) {
+    $existingBytes = [System.IO.File]::ReadAllBytes($out)
+    $writeResource = $existingBytes.Length -ne $resourceBytes.Length
+
+    for ($i = 0; -not $writeResource -and $i -lt $resourceBytes.Length; $i++) {
+        $writeResource = $existingBytes[$i] -ne $resourceBytes[$i]
+    }
+}
+
+if ($writeResource) {
+    [System.IO.File]::WriteAllBytes($out, $resourceBytes)
 }
