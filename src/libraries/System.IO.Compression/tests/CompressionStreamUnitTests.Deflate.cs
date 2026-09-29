@@ -98,17 +98,22 @@ namespace System.IO.Compression
             MemoryStream[] warmOutputs = new MemoryStream[warmCount];
             SafeHandle[] warmStates = new SafeHandle[warmCount];
 
-            for (int i = 0; i < warmCount; i++)
+            try
             {
-                warmOutputs[i] = new MemoryStream();
-                warmCompressors[i] = new DeflateStream(warmOutputs[i], CompressionLevel.Optimal, leaveOpen: true);
-                warmStates[i] = GetZLibStreamHandle(warmCompressors[i]);
+                for (int i = 0; i < warmCount; i++)
+                {
+                    warmOutputs[i] = new MemoryStream();
+                    warmCompressors[i] = new DeflateStream(warmOutputs[i], CompressionLevel.Optimal, leaveOpen: true);
+                    warmStates[i] = GetZLibStreamHandle(warmCompressors[i]);
+                }
             }
-
-            for (int i = 0; i < warmCompressors.Length; i++)
+            finally
             {
-                warmCompressors[i].Dispose();
-                warmOutputs[i].Dispose();
+                for (int i = 0; i < warmCompressors.Length; i++)
+                {
+                    warmCompressors[i]?.Dispose();
+                    warmOutputs[i]?.Dispose();
+                }
             }
 
             for (int i = 0; i < DeflaterPoolCapacity; i++)
@@ -167,35 +172,67 @@ namespace System.IO.Compression
                 DeflateStream[] compressors = new DeflateStream[compressorCount];
                 object[] states = new object[compressorCount];
 
-                for (int i = 0; i < compressorCount; i++)
+                try
                 {
-                    input[i] = Enumerable.Range(0, 2048).Select(j => (byte)(j + i + batch)).ToArray();
-                    compressedData[i] = new MemoryStream();
-                    compressors[i] = new DeflateStream(compressedData[i], CompressionLevel.Optimal, leaveOpen: true);
-                    states[i] = GetZLibStreamHandle(compressors[i]);
-                    compressors[i].Write(input[i]);
-                }
-
-                for (int i = 0; i < compressorCount; i++)
-                {
-                    for (int j = i + 1; j < compressorCount; j++)
+                    for (int i = 0; i < compressorCount; i++)
                     {
-                        Assert.NotSame(states[i], states[j]);
+                        input[i] = Enumerable.Range(0, 2048).Select(j => (byte)(j + i + batch)).ToArray();
+                        compressedData[i] = new MemoryStream();
+                        compressors[i] = new DeflateStream(compressedData[i], CompressionLevel.Optimal, leaveOpen: true);
+                        states[i] = GetZLibStreamHandle(compressors[i]);
+                        compressors[i].Write(input[i]);
                     }
 
-                    compressors[i].Dispose();
-                }
+                    for (int i = 0; i < compressorCount; i++)
+                    {
+                        for (int j = i + 1; j < compressorCount; j++)
+                        {
+                            Assert.NotSame(states[i], states[j]);
+                        }
 
-                for (int i = 0; i < compressorCount; i++)
+                        compressors[i].Dispose();
+                    }
+
+                    for (int i = 0; i < compressorCount; i++)
+                    {
+                        compressedData[i].Position = 0;
+                        using var decompressor = new DeflateStream(compressedData[i], CompressionMode.Decompress);
+                        using var decompressedData = new MemoryStream();
+                        decompressor.CopyTo(decompressedData);
+                        Assert.Equal(input[i], decompressedData.ToArray());
+                    }
+                }
+                finally
                 {
-                    compressedData[i].Position = 0;
-                    using var decompressor = new DeflateStream(compressedData[i], CompressionMode.Decompress);
-                    using var decompressedData = new MemoryStream();
-                    decompressor.CopyTo(decompressedData);
-                    Assert.Equal(input[i], decompressedData.ToArray());
-                    compressedData[i].Dispose();
+                    for (int i = 0; i < compressorCount; i++)
+                    {
+                        compressors[i]?.Dispose();
+                        compressedData[i]?.Dispose();
+                    }
                 }
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void DeflaterPool_ParallelStreamsRoundTrip()
+        {
+            const int WorkerCount = 8;
+            const int Iterations = 16;
+
+            Parallel.For(0, WorkerCount, worker =>
+            {
+                for (int iteration = 0; iteration < Iterations; iteration++)
+                {
+                    byte[] input = Enumerable.Range(0, 2048).Select(i => (byte)(i + worker * Iterations + iteration)).ToArray();
+                    using var compressedData = new MemoryStream();
+                    using (var compressor = new DeflateStream(compressedData, CompressionLevel.Optimal, leaveOpen: true))
+                    {
+                        compressor.Write(input);
+                    }
+
+                    Assert.Equal(input, Decompress(compressedData.ToArray()));
+                }
+            });
         }
 
         [Theory]
@@ -208,54 +245,67 @@ namespace System.IO.Compression
             DeflateStream[] activeCompressors = new DeflateStream[DeflaterPoolCapacity];
             MemoryStream[] activeOutputs = new MemoryStream[DeflaterPoolCapacity];
 
-            for (int i = 0; i < DeflaterPoolCapacity; i++)
+            try
             {
-                activeOutputs[i] = new MemoryStream();
-                activeCompressors[i] = new DeflateStream(activeOutputs[i], CompressionLevel.Optimal, leaveOpen: true);
-            }
-
-            var failingDestination = new ThrowsAfterNWritesStream(writesAllowedBeforeThrow: 0);
-            var failingCompressor = new DeflateStream(failingDestination, CompressionLevel.Optimal, leaveOpen: true);
-            object failedState = GetZLibStreamHandle(failingCompressor);
-
-            if (useAsync)
-            {
-                await Assert.ThrowsAsync<IOException>(() => failingCompressor.WriteAsync(input).AsTask());
-                await Assert.ThrowsAsync<IOException>(async () => await failingCompressor.DisposeAsync());
-            }
-            else
-            {
-                Assert.Throws<IOException>(() => failingCompressor.Write(input));
-                Assert.Throws<IOException>(() => failingCompressor.Dispose());
-            }
-
-            Assert.True(failingDestination.DidThrow);
-            failingDestination.StopThrowing();
-
-            using (var compressedData = new MemoryStream())
-            {
-                object reusedState;
-                using (var compressor = new DeflateStream(compressedData, CompressionLevel.Optimal, leaveOpen: true))
+                for (int i = 0; i < DeflaterPoolCapacity; i++)
                 {
-                    reusedState = GetZLibStreamHandle(compressor);
-                    if (useAsync)
+                    activeOutputs[i] = new MemoryStream();
+                    activeCompressors[i] = new DeflateStream(activeOutputs[i], CompressionLevel.Optimal, leaveOpen: true);
+                }
+
+                object failedState;
+                using (var failingDestination = new ThrowsAfterNWritesStream(writesAllowedBeforeThrow: 0))
+                using (var failingCompressor = new DeflateStream(failingDestination, CompressionLevel.Optimal, leaveOpen: true))
+                {
+                    try
                     {
-                        await compressor.WriteAsync(input);
+                        failedState = GetZLibStreamHandle(failingCompressor);
+                        if (useAsync)
+                        {
+                            await Assert.ThrowsAsync<IOException>(() => failingCompressor.WriteAsync(input).AsTask());
+                            await Assert.ThrowsAsync<IOException>(async () => await failingCompressor.DisposeAsync());
+                        }
+                        else
+                        {
+                            Assert.Throws<IOException>(() => failingCompressor.Write(input));
+                            Assert.Throws<IOException>(() => failingCompressor.Dispose());
+                        }
+
+                        Assert.True(failingDestination.DidThrow);
                     }
-                    else
+                    finally
                     {
-                        compressor.Write(input);
+                        failingDestination.StopThrowing();
                     }
                 }
 
-                Assert.Same(failedState, reusedState);
-                Assert.Equal(input, Decompress(compressedData.ToArray()));
-            }
+                using (var compressedData = new MemoryStream())
+                {
+                    object reusedState;
+                    using (var compressor = new DeflateStream(compressedData, CompressionLevel.Optimal, leaveOpen: true))
+                    {
+                        reusedState = GetZLibStreamHandle(compressor);
+                        if (useAsync)
+                        {
+                            await compressor.WriteAsync(input);
+                        }
+                        else
+                        {
+                            compressor.Write(input);
+                        }
+                    }
 
-            for (int i = 0; i < DeflaterPoolCapacity; i++)
+                    Assert.Same(failedState, reusedState);
+                    Assert.Equal(input, Decompress(compressedData.ToArray()));
+                }
+            }
+            finally
             {
-                activeCompressors[i].Dispose();
-                activeOutputs[i].Dispose();
+                for (int i = 0; i < DeflaterPoolCapacity; i++)
+                {
+                    activeCompressors[i]?.Dispose();
+                    activeOutputs[i]?.Dispose();
+                }
             }
         }
 
