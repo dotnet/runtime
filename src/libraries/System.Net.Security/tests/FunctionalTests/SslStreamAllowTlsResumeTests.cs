@@ -414,6 +414,76 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ConditionalTheory(typeof(TestConfiguration), nameof(TestConfiguration.SupportsRenegotiation))]
+        [MemberData(nameof(PeerRenegotiationProtocolsData))]
+        public async Task PeerRenegotiation_SetsRenegotiationState(SslProtocols protocol)
+        {
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+            FieldInfo isRenegoField = typeof(SslStream).GetField("_isRenego", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(isRenegoField);
+            FieldInfo authenticationOptionsField = typeof(SslStream).GetField("_sslAuthenticationOptions", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(authenticationOptionsField);
+
+            var serverOptions = new SslServerAuthenticationOptions
+            {
+                EnabledSslProtocols = protocol,
+                AllowRenegotiation = true,
+                ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false),
+                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+            };
+
+            var clientOptions = new SslClientAuthenticationOptions
+            {
+                TargetHost = Guid.NewGuid().ToString("N"),
+                EnabledSslProtocols = protocol,
+                AllowRenegotiation = true,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+            };
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions));
+                await TestHelper.PingPong(client, server);
+
+                bool wasRenegotiatingDuringSelection = false;
+                object authenticationOptions = authenticationOptionsField.GetValue(client);
+                Type authenticationOptionsType = typeof(SslStream).Assembly.GetType("System.Net.Security.SslAuthenticationOptions");
+                Assert.NotNull(authenticationOptionsType);
+                PropertyInfo certSelectionDelegateProperty = authenticationOptionsType.GetProperty(
+                    "CertSelectionDelegate",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                Assert.NotNull(certSelectionDelegateProperty);
+                certSelectionDelegateProperty.SetValue(authenticationOptions, (LocalCertificateSelectionCallback)((sender, _, _, _, _) =>
+                {
+                    wasRenegotiatingDuringSelection = (bool)isRenegoField.GetValue(sender);
+                    return clientCertificate;
+                }));
+
+                byte[] buffer = new byte[1];
+                ValueTask<int> clientRead = client.ReadAsync(buffer);
+                await server.NegotiateClientCertificateAsync();
+                await server.WriteAsync(new byte[1]);
+                Assert.Equal(1, await clientRead);
+
+                Assert.True(wasRenegotiatingDuringSelection);
+                Assert.False((bool)isRenegoField.GetValue(client));
+            }
+        }
+
+        public static IEnumerable<object[]> PeerRenegotiationProtocolsData()
+        {
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, false))
+            {
+                yield return new object[] { protocol };
+            }
+        }
+
         public static IEnumerable<object[]> RevalidateSwitchData()
         {
             foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
