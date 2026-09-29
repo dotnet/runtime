@@ -217,9 +217,6 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
         //
         ReportMem(m_dacGlobals.SystemDomain__m_pSystemDomain, sizeof(SystemDomain));
 
-        // The shared empty string buffer is referenced by cached paths.
-        SString::Empty().EnumMemoryRegions(CLRDATA_ENUM_MEM_DEFAULT);
-
         // We need IGCHeap pointer to make EEVersion work
         ReportMem(m_dacGlobals.dac__g_pGCHeap, sizeof(IGCHeap *));
 
