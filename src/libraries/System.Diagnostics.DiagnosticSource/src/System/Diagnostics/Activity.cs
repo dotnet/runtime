@@ -1755,6 +1755,19 @@ namespace System.Diagnostics
                 }
             }
 
+            public TagsLinkedList(ReadOnlySpan<KeyValuePair<string, object?>> tags)
+            {
+                Debug.Assert(tags.Length > 0);
+
+                _last = _first = new DiagNode<KeyValuePair<string, object?>>(tags[0]);
+
+                for (int i = 1; i < tags.Length; i++)
+                {
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(tags[i]);
+                    _last = _last.Next;
+                }
+            }
+
             public DiagNode<KeyValuePair<string, object?>>? First => _first;
 
             public TagsLinkedList(IEnumerable<KeyValuePair<string, object?>> list) => Add(list);

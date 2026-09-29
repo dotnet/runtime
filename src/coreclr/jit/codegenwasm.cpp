@@ -474,7 +474,27 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         return;
     }
 
-    // TODO-WASM: shadow stack maintenance
+    // Restore __stack_pointer to the value it had on entry
+    if (m_compiler->opts.IsReversePInvoke())
+    {
+        assert(m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX);
+        regNumber fpReg = GetFramePointerReg(ROOT_FUNC_IDX);
+        regNumber spReg = GetStackPointerReg(ROOT_FUNC_IDX);
+        assert(spReg != REG_NA);
+
+        // The FP local is fixed after the prolog; the SP local is only moved by localloc, which
+        // requires a frame pointer.
+        regNumber frameBaseReg = (fpReg != REG_NA) ? fpReg : spReg;
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(frameBaseReg));
+        if (genTotalFrameSize() != 0)
+        {
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, genTotalFrameSize());
+            GetEmitter()->emitIns(INS_I_add);
+        }
+        GetEmitter()->emitIns_I(INS_global_set, EA_HANDLE_CNS_RELOC,
+                                (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->stackPointer);
+    }
+
     // TODO-WASM: we need to handle the end-of-function case if we reach the end of a codegen for a function
     // and do NOT have an epilog. In those cases we currently will not emit an end instruction.
     if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
