@@ -849,9 +849,6 @@ public class WasmArgumentLayoutTests
             {
                 Assert.Equal(0, exitCode);
                 Assert.DoesNotContain("declares more than one", log.ToString());
-                string reverseHelpers = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
-                Assert.Contains("__atomic_load_n", reverseHelpers);
-                Assert.Contains("__atomic_store_n", reverseHelpers);
             }
         }
         finally
@@ -859,6 +856,74 @@ public class WasmArgumentLayoutTests
             // The type system maps an input assembly with FileShare.Read and never releases it - the
             // context is not disposable - so on Windows the compiled input cannot be deleted while
             // this process lives. Cleaning up is best effort rather than a second way to fail.
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
+    /// The generated wrapper only needs to reach the R2R native entrypoint for callbacks exported by
+    /// name: native code calls the extern "C" export (and thus the wrapper) directly. Every other
+    /// reverse thunk is handed out by the runtime, which already prefers R2R code before falling back to
+    /// the interpreter wrapper, so the dispatch is emitted for exports alone.
+    /// </summary>
+    [Theory]
+    [InlineData("[UnmanagedCallersOnly(EntryPoint = \"cb_export\")]", true)]
+    [InlineData("[UnmanagedCallersOnly]", false)]
+    public void PortableCallHelpersGeneratorEmitsR2RDispatchForExportsOnly(string attribute, bool expectR2RDispatch)
+    {
+        string source = $$"""
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                {{attribute}}
+                public static int Handle(int value) => value;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.Equal(0, exitCode);
+            string reverseHelpers = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+
+            if (expectR2RDispatch)
+            {
+                Assert.Contains("GetR2RNativeCodeForUnmanagedCallersOnly", reverseHelpers);
+                Assert.Contains("__atomic_load_n", reverseHelpers);
+                Assert.Contains("__atomic_store_n", reverseHelpers);
+            }
+            else
+            {
+                Assert.DoesNotContain("GetR2RNativeCodeForUnmanagedCallersOnly", reverseHelpers);
+                Assert.DoesNotContain("__atomic_load_n", reverseHelpers);
+                Assert.DoesNotContain("__atomic_store_n", reverseHelpers);
+            }
+        }
+        finally
+        {
             try
             {
                 Directory.Delete(workingDirectory, recursive: true);
