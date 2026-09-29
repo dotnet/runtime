@@ -552,6 +552,7 @@ public class TestPlaceholderTarget : Target
 
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
     public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context) => throw new NotImplementedException();
+    public override bool TryGetRuntimeImageBase(out TargetPointer imageBase) => throw new NotImplementedException();
 
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;

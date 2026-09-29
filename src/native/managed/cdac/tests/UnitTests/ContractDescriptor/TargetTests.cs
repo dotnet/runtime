@@ -386,7 +386,7 @@ public unsafe partial class TargetTests
 
     // The contracts required by the data-access interfaces, advertised at the versions
     // CoreCLRContracts registers. Mirrors CoreCLRContracts.ValidateForDataAccess.
-    private static readonly IReadOnlyDictionary<string, string> s_requiredDataAccessContracts =
+    internal static readonly IReadOnlyDictionary<string, string> s_requiredDataAccessContracts =
         new Dictionary<string, string>
         {
             ["AuxiliarySymbols"] = "c1",
