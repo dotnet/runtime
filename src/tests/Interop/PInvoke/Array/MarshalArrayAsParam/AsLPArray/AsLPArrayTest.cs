@@ -713,7 +713,7 @@ public unsafe class ArrayPinningTests
         }
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsBuiltInComEnabled))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
     [MemberData(nameof(CurrencyCases))]
     public static void CurrencyArrayDoesNotPassManagedContentsDirectly(int length, bool useDelegate, int direction)
     {
@@ -987,6 +987,7 @@ public unsafe class ArrayPinningTests
 }
 
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/13395", typeof(Utilities), nameof(Utilities.IsNativeAot))]
 public unsafe class AnsiCharArrayTests
 {
     private const uint CpAcp = 0;
