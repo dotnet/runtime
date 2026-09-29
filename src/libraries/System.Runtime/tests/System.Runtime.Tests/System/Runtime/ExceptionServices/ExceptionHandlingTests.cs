@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -248,6 +249,46 @@ namespace System.Runtime.ExceptionServices.Tests
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static int DereferenceNull(int[]? array) => array![0];
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [SkipOnMono("ExceptionHandling.GetCurrentException is not supported on Mono")]
+        public void GetCurrentException_NonExceptionObject_ReturnsRuntimeWrappedException()
+        {
+            var dynamicMethod = new DynamicMethod("ThrowObject", typeof(void), [typeof(object)], typeof(ExceptionHandlingTests).Module);
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Throw);
+            var throwObject = dynamicMethod.CreateDelegate<Action<object>>();
+
+            object thrownObject = "thrown object";
+            Exception? inFinally = null;
+            Exception? inCatch = new Exception();
+
+            RuntimeWrappedException caught = Assert.Throws<RuntimeWrappedException>(() =>
+            {
+                try
+                {
+                    try
+                    {
+                        throwObject(thrownObject);
+                    }
+                    finally
+                    {
+                        inFinally = ExceptionHandling.GetCurrentException();
+                    }
+                }
+                catch (RuntimeWrappedException)
+                {
+                    inCatch = ExceptionHandling.GetCurrentException();
+                    throw;
+                }
+            });
+
+            RuntimeWrappedException wrapped = Assert.IsType<RuntimeWrappedException>(inFinally);
+            Assert.Same(thrownObject, wrapped.WrappedException);
+            Assert.Same(caught, wrapped);
+            Assert.Null(inCatch);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
