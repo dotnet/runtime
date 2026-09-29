@@ -190,7 +190,7 @@ async function grade(events) {
 test("candidate-read grader requires successful unfiltered reads for every candidate", async () => {
     const events = [
         call("bash", "search", {
-            command: trustedSearchCommand,
+            command: `cd /tmp\n${trustedSearchCommand}`,
         }),
         result("bash", "search", {
             content: `Process exited with code 0\n${JSON.stringify([
