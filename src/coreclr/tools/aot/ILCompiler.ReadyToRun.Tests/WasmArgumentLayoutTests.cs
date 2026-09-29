@@ -909,17 +909,18 @@ public class WasmArgumentLayoutTests
             Assert.Equal(0, exitCode);
             string reverseHelpers = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
 
+            // CoreLib is part of the scan context, so its own exported callbacks emit R2R dispatch too.
+            // Scope the assertions to this callback's mangled symbol to test the gating in isolation.
+            const string mySymbol = "R2RCode_Callbacks__Exports_Handle";
             if (expectR2RDispatch)
             {
-                Assert.Contains("GetR2RNativeCodeForUnmanagedCallersOnly", reverseHelpers);
-                Assert.Contains("__atomic_load_n", reverseHelpers);
-                Assert.Contains("__atomic_store_n", reverseHelpers);
+                Assert.Contains(mySymbol, reverseHelpers);
+                Assert.Contains($"__atomic_load_n(&{mySymbol}", reverseHelpers);
+                Assert.Contains($"__atomic_store_n(&{mySymbol}", reverseHelpers);
             }
             else
             {
-                Assert.DoesNotContain("GetR2RNativeCodeForUnmanagedCallersOnly", reverseHelpers);
-                Assert.DoesNotContain("__atomic_load_n", reverseHelpers);
-                Assert.DoesNotContain("__atomic_store_n", reverseHelpers);
+                Assert.DoesNotContain(mySymbol, reverseHelpers);
             }
         }
         finally
