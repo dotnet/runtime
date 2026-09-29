@@ -212,9 +212,9 @@ namespace Internal.Runtime.TypeLoader
                     // Dynamic types have an extra pointer-sized field that contains a pointer to their template type
                     cbEEType += IntPtr.Size;
 
-                    bool[] gcBitfield = null;
+                    MethodTable* elementEEType = null;
                     int cbGCDesc = isMdArray
-                        ? GetMdArrayGCDescSize((ArrayType)state.TypeBeingBuilt, out gcBitfield)
+                        ? GetMdArrayGCDescSize((ArrayType)state.TypeBeingBuilt, out elementEEType)
                         : RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
                     int cbGCDescAligned = MemoryHelpers.AlignUp(cbGCDesc, IntPtr.Size);
 
@@ -235,7 +235,7 @@ namespace Internal.Runtime.TypeLoader
 
                     if (isMdArray)
                     {
-                        CreateMdArrayGCDesc(gcBitfield, pEEType, cbGCDesc, ((ArrayType)state.TypeBeingBuilt).Rank);
+                        CreateMdArrayGCDesc(elementEEType, pEEType, cbGCDesc);
                     }
                     else
                     {
@@ -341,30 +341,54 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private static void CreateMdArrayGCDesc(bool[] gcBitfield, MethodTable* pEEType, int cbGCDesc, int arrayRank)
+        private static void CreateMdArrayGCDesc(MethodTable* elementEEType, MethodTable* pEEType, int cbGCDesc)
         {
             pEEType->ContainsGCPointers = cbGCDesc != 0;
             if (cbGCDesc == 0)
                 return;
 
-            if (gcBitfield is null || IsAllGCPointers(gcBitfield))
+            int baseSize = (int)pEEType->BaseSize;
+            nint* gcDesc = (nint*)pEEType;
+            nint* elementGCDesc = (nint*)elementEEType;
+            // A series spanning the entire boxed payload has only the two header words subtracted.
+            if (elementEEType == null || elementGCDesc[-3] == -2 * IntPtr.Size)
             {
-                int baseSize = (int)pEEType->BaseSize;
-                IntPtr* gcDescStart = (IntPtr*)((byte*)pEEType - cbGCDesc);
-                gcDescStart[0] = new IntPtr(-baseSize);
-                gcDescStart[1] = new IntPtr(baseSize - sizeof(IntPtr));
-                gcDescStart[2] = new IntPtr(1);
+                gcDesc[-3] = -baseSize;
+                gcDesc[-2] = baseSize - IntPtr.Size;
+                gcDesc[-1] = 1;
+                return;
             }
-            else
+
+            int elementBaseSize = (int)elementEEType->BaseSize;
+            int series = (int)elementGCDesc[-1];
+            int firstOffset = (int)elementGCDesc[-2];
+            gcDesc[-1] = -series;
+            gcDesc[-2] = baseSize - 2 * IntPtr.Size + firstOffset;
+            elementGCDesc -= 2;
+
+#if TARGET_64BIT
+            int* ptr = (int*)(gcDesc - 2) - 1;
+#else
+            short* ptr = (short*)(gcDesc - 2) - 1;
+#endif
+            for (int i = 0; i < series; i++)
             {
-                CreateArrayGCDesc(gcBitfield, arrayRank, ((void**)pEEType) - 1);
+                int offset = (int)*elementGCDesc--;
+                int length = (int)*elementGCDesc-- + elementBaseSize;
+                // The last skip wraps to the first GC pointer in the next unboxed element.
+                int nextOffset = i + 1 < series
+                    ? (int)*elementGCDesc
+                    : firstOffset + elementBaseSize - 2 * IntPtr.Size;
+                Debug.Assert(length > 0 && nextOffset >= offset + length);
+                *ptr-- = (short)(nextOffset - offset - length);
+                *ptr-- = (short)(length / IntPtr.Size);
             }
         }
 
-        private static int GetMdArrayGCDescSize(ArrayType arrayType, out bool[] gcBitfield)
+        private static int GetMdArrayGCDescSize(ArrayType arrayType, out MethodTable* elementEEType)
         {
             Debug.Assert(arrayType.IsMdArray);
-            gcBitfield = null;
+            elementEEType = null;
             TypeDesc elementType = arrayType.ElementType;
             if (!elementType.IsValueType)
             {
@@ -376,109 +400,13 @@ namespace Internal.Runtime.TypeLoader
             if (elementHandle.IsNull())
                 elementHandle = elementType.ComputeTemplate().RuntimeTypeHandle;
 
-            MethodTable* elementMethodTable = elementHandle.ToEETypePtr();
-            if (!elementMethodTable->ContainsGCPointers)
+            elementEEType = elementHandle.ToEETypePtr();
+            if (!elementEEType->ContainsGCPointers)
                 return 0;
 
-            // Decode the boxed element's GCDesc, excluding the object header and MethodTable pointer.
-            int size = (int)elementMethodTable->BaseSize;
-            gcBitfield = new bool[size / IntPtr.Size - 2];
-            void** ptr = (void**)elementMethodTable - 1;
-            int count = (int)*ptr--;
-            Debug.Assert(count > 0);
-            while (count-- > 0)
-            {
-                int offset = (int)*ptr-- / IntPtr.Size - 1;
-                int length = ((int)*ptr-- + size) / IntPtr.Size;
-                Debug.Assert(offset >= 0 && length > 0);
-                for (int i = 0; i < length; i++)
-                    gcBitfield[offset + i] = true;
-            }
-
-            if (IsAllGCPointers(gcBitfield))
-                return 3 * IntPtr.Size;
-
-            int series = CreateArrayGCDesc(gcBitfield, arrayType.Rank, null);
+            int series = (int)((nint*)elementEEType)[-1];
             Debug.Assert(series > 0);
             return (series + 2) * IntPtr.Size;
-        }
-
-        private static bool IsAllGCPointers(bool[] bitfield)
-        {
-            int count = bitfield.Length;
-            Debug.Assert(count > 0);
-
-            for (int i = 0; i < count; i++)
-            {
-                if (!bitfield[i])
-                    return false;
-            }
-
-            return true;
-        }
-
-        private static int CreateArrayGCDesc(bool[] bitfield, int rank, void* gcdesc)
-        {
-            void** baseOffsetPtr = (void**)gcdesc - 1;
-
-#if TARGET_64BIT
-            int* ptr = (int*)baseOffsetPtr - 1;
-#else
-            short* ptr = (short*)baseOffsetPtr - 1;
-#endif
-            int baseOffset = 2 + 2 * rank / (sizeof(IntPtr) / sizeof(int));
-
-            int numSeries = 0;
-            int i = 0;
-
-            int first = -1;
-            int last = 0;
-            short numPtrs = 0;
-            while (i < bitfield.Length)
-            {
-                if (bitfield[i])
-                {
-                    if (first == -1)
-                    {
-                        first = i;
-                        baseOffset += first;
-                    }
-                    else if (gcdesc != null)
-                    {
-                        *ptr-- = (short)((i - last) * IntPtr.Size);
-                        *ptr-- = numPtrs;
-                    }
-
-                    numSeries++;
-                    numPtrs = 0;
-
-                    while ((i < bitfield.Length) && (bitfield[i]))
-                    {
-                        numPtrs++;
-                        i++;
-                    }
-
-                    last = i;
-                }
-                else
-                {
-                    i++;
-                }
-            }
-
-            if (gcdesc != null)
-            {
-                if (numSeries > 0)
-                {
-                    *ptr-- = (short)((first + bitfield.Length - last) * IntPtr.Size);
-                    *ptr-- = numPtrs;
-
-                    *(void**)gcdesc = (void*)-numSeries;
-                    *baseOffsetPtr = (void*)(baseOffset * IntPtr.Size);
-                }
-            }
-
-            return numSeries;
         }
 
         public static RuntimeTypeHandle CreateFunctionPointerEEType(uint hashCodeOfNewType, RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, FunctionPointerType functionPointerType)
