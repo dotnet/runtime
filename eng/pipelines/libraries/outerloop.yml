@@ -163,3 +163,17 @@ extends:
                       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                       extraHelixArguments: /p:BrowserHost=$(_hostedOs)
                       useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+
+          # Full trimmed CoreCLR ReadyToRun library tests
+          - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+            parameters:
+              platforms:
+                - browser_wasm
+              nameSuffix: _R2R
+              readyToRun: true
+              timeoutInMinutes: 480
+              extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+              alwaysRun: true
+              useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              scenarios:
+                - WasmTestOnChrome
