@@ -38,6 +38,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task EnumSubstitutions()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task FeatureGuardSubstitutionsDisabled()
         {
             return RunTest(allowMissingWarnings: true);

@@ -117,5 +117,17 @@ namespace ILLink.RoslynAnalyzer.Tests
             return RunTest(allowMissingWarnings: true);
         }
 
+        [Fact]
+        public Task DynamicDependencyWithNestedReturnTypeReference()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
+        public Task DynamicDependencyWithNestedTypeReference()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
     }
 }
