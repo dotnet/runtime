@@ -186,7 +186,9 @@ public partial class CILParser
             ShouldCommit = shouldCommit;
         }
 
-        internal bool ShouldCommit { get; }
+        internal bool ShouldCommit { get; private set; }
+
+        internal void Invalidate() => ShouldCommit = false;
 
         internal BlobBuilder Data { get; } = new();
 

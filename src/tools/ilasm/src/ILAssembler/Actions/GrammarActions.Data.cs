@@ -85,7 +85,17 @@ internal sealed partial class GrammarActions
     }
 
     internal byte GetCilDataSection() => 2;
-    internal int ParseDataItemCount(IToken token) => ParseInt32(token);
+    internal int ParseDataItemCount(CILParser.DataDeclarationBuilder builder, IToken token)
+    {
+        int diagnosticCount = _diagnostics.Count;
+        int count = ParseInt32(token);
+        if (_diagnostics.Count != diagnosticCount)
+        {
+            builder.Invalidate();
+        }
+
+        return count;
+    }
 
     internal void AddDataString(CILParser.DataDeclarationBuilder builder, string value)
         => builder.Data.WriteUTF16(value);

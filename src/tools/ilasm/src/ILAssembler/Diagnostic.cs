@@ -63,6 +63,7 @@ public static class DiagnosticIds
     public const string InvalidVTableEntry = "ILA0043";
     public const string DuplicateExportOrdinal = "ILA0044";
     public const string UnsupportedVTableDeclaration = "ILA0045";
+    public const string InvalidOctalLiteral = "ILA0046";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -112,4 +113,5 @@ internal static class DiagnosticMessageTemplates
     public const string InvalidVTableSlot = "Method '{0}' references invalid VTable slot {1}; VTable entry {2} contains {3} slots";
     public const string DuplicateExportOrdinal = "Export '{0}' uses ordinal {1}, which is already assigned to a different VTable target";
     public const string UnsupportedVTableDeclaration = "Raw .vtable declarations are not supported; use .vtfixup instead";
+    public const string InvalidOctalLiteral = "The value '{0}' is not a valid octal literal";
 }

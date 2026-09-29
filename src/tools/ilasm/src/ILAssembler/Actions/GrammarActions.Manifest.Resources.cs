@@ -79,6 +79,7 @@ internal sealed partial class GrammarActions
                         DiagnosticMessageTemplates.FileNotFound,
                         header.Alias),
                     location);
+                _manifestResources.WriteInt32(0);
             }
             else
             {

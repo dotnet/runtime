@@ -76,6 +76,45 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
+        [InlineData("018")]
+        [InlineData("09")]
+        [InlineData("-018")]
+        public void InvalidOctalIntegerLiteral_ReportsDiagnostic(string literal)
+        {
+            string source = $$"""
+                .class public auto ansi beforefieldinit Test
+                {
+                    .pack {{literal}}
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidOctalLiteral, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal($"The value '{literal}' is not a valid octal literal", error.Message);
+        }
+
+        [Fact]
+        public void OctalIntegerLiteral_ParsesValidDigits()
+        {
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                """
+                .class public auto ansi beforefieldinit Test
+                {
+                    .pack 010
+                }
+                """,
+                new Options());
+
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+
+            Assert.Equal(8, type.GetLayout().PackingSize);
+        }
+
+        [Theory]
         [InlineData("not-a-number", double.MaxValue)]
         [InlineData("-not-a-number", double.MinValue)]
         public void InvalidFloatingLiteral_SaturatesWithOriginalSign(string text, double expected)

@@ -2230,24 +2230,24 @@ ddBody [CILParser.DataDeclarationBuilder Builder]:
 ddItemList [CILParser.DataDeclarationBuilder Builder]:
 	(ddItem[$Builder] ',')* ddItem[$Builder];
 
-ddItemCount returns [int Value]
+ddItemCount [CILParser.DataDeclarationBuilder Builder] returns [int Value]
 @init {_localctx.Value = 1;}
 :
 	/* EMPTY */
-	| '[' count = int32 ']' {_localctx.Value = Actions.ParseDataItemCount($count.start);};
+	| '[' count = int32 ']' {_localctx.Value = Actions.ParseDataItemCount($Builder, $count.start);};
 
 ddItem [CILParser.DataDeclarationBuilder Builder]:
 	CHAR PTR '(' stringValue = compQstring ')' {Actions.AddDataString($Builder, $stringValue.Value);}
 	| REF '(' target = id ')' {Actions.AddDataReference($Builder, $target.start);}
 	| REF target = id {Actions.AddDataReference($Builder, $target.start);}
 	| 'bytearray' '(' byteValue = bytes ')' {Actions.AddDataBytes($Builder, $byteValue.Value);}
-	| kind = (FLOAT32 | FLOAT64_) '(' floatingValue = float64 ')' count = ddItemCount
+	| kind = (FLOAT32 | FLOAT64_) '(' floatingValue = float64 ')' count = ddItemCount[$Builder]
 		{Actions.AddFloatingPointData($Builder, $kind, $floatingValue.Value, $count.Value);}
-	| kind = INT64_ '(' int64Value = int64 ')' count = ddItemCount
+	| kind = INT64_ '(' int64Value = int64 ')' count = ddItemCount[$Builder]
 		{Actions.AddInt64Data($Builder, $kind, $int64Value.start, $count.Value);}
-	| kind = (INT32_ | INT16 | INT8) '(' integerValue = int32 ')' count = ddItemCount
+	| kind = (INT32_ | INT16 | INT8) '(' integerValue = int32 ')' count = ddItemCount[$Builder]
 		{Actions.AddIntegerData($Builder, $kind, $integerValue.start, $count.Value);}
-	| kind = (FLOAT32 | FLOAT64_ | INT64_ | INT32_ | INT16 | INT8) count = ddItemCount
+	| kind = (FLOAT32 | FLOAT64_ | INT64_ | INT32_ | INT16 | INT8) count = ddItemCount[$Builder]
 		{Actions.AddZeroData($Builder, $kind, $count.Value);};
 
 /*  Default values declaration for fields, parameters and verbal form of CA blob description  */

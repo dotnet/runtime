@@ -66,9 +66,9 @@ namespace ILAssembler
 
         internal double ParseFloatingInteger(IToken token)
         {
-            if (!ParseIntegerValue(token.Text.AsSpan(), out long value))
+            if (!ParseIntegerValue(token.Text.AsSpan(), out long value, out bool invalidOctal))
             {
-                ReportLiteralOutOfRange(token);
+                ReportIntegerParseError(token, invalidOctal);
                 value = 0;
             }
 
@@ -93,9 +93,13 @@ namespace ILAssembler
         }
 
         private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result)
+            => ParseIntegerValue(value, out result, out _);
+
+        private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result, out bool invalidOctal)
         {
             NumberStyles parseStyle = NumberStyles.None;
             bool negate = false;
+            invalidOctal = false;
             if (value.StartsWith("-".AsSpan()))
             {
                 negate = true;
@@ -113,17 +117,18 @@ namespace ILAssembler
                 result = 0;
                 for (int i = 0; i < value.Length; i++)
                 {
+                    int digitValue = value[i] - '0';
+                    if (digitValue < 0 || digitValue > 7)
+                    {
+                        result = 0;
+                        invalidOctal = true;
+                        return false;
+                    }
                     if (i != 0)
                     {
                         result *= 8;
                     }
 
-                    int digitValue = value[i] - '0';
-                    if (digitValue < 0 || digitValue > 7)
-                    {
-                        // COMPAT: native ilasm skips invalid digits silently
-                        continue;
-                    }
                     result += digitValue;
                 }
                 if (negate) result = -result;
@@ -161,12 +166,28 @@ namespace ILAssembler
             return true;
         }
 
+        private void ReportIntegerParseError(IToken token, bool invalidOctal)
+        {
+            if (invalidOctal)
+            {
+                _diagnostics.Add(new Diagnostic(
+                    DiagnosticIds.InvalidOctalLiteral,
+                    DiagnosticSeverity.Error,
+                    string.Format(DiagnosticMessageTemplates.InvalidOctalLiteral, token.Text),
+                    Location.From(token, _documents)));
+            }
+            else
+            {
+                ReportLiteralOutOfRange(token);
+            }
+        }
+
         internal int ParseInt32(IToken token)
         {
             ReadOnlySpan<char> value = token.Text.AsSpan();
-            if (!ParseIntegerValue(value, out long num))
+            if (!ParseIntegerValue(value, out long num, out bool invalidOctal))
             {
-                ReportLiteralOutOfRange(token);
+                ReportIntegerParseError(token, invalidOctal);
                 return 0;
             }
 
@@ -177,9 +198,9 @@ namespace ILAssembler
         private long ParseInt64(IToken token)
         {
             ReadOnlySpan<char> value = token.Text.AsSpan();
-            if (!ParseIntegerValue(value, out long num))
+            if (!ParseIntegerValue(value, out long num, out bool invalidOctal))
             {
-                ReportLiteralOutOfRange(token);
+                ReportIntegerParseError(token, invalidOctal);
                 return 0;
             }
 

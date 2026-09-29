@@ -14583,21 +14583,24 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class DdItemCountContext : ParserRuleContext {
+		public CILParser.DataDeclarationBuilder Builder;
 		public int Value;
 		public Int32Context count;
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context int32() {
 			return GetRuleContext<Int32Context>(0);
 		}
-		public DdItemCountContext(ParserRuleContext parent, int invokingState)
+		public DdItemCountContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public DdItemCountContext(ParserRuleContext parent, int invokingState, CILParser.DataDeclarationBuilder Builder)
 			: base(parent, invokingState)
 		{
+			this.Builder = Builder;
 		}
 		public override int RuleIndex { get { return RULE_ddItemCount; } }
 	}
 
 	[RuleVersion(0)]
-	public DdItemCountContext ddItemCount() {
-		DdItemCountContext _localctx = new DdItemCountContext(Context, State);
+	public DdItemCountContext ddItemCount(CILParser.DataDeclarationBuilder Builder) {
+		DdItemCountContext _localctx = new DdItemCountContext(Context, State, Builder);
 		EnterRule(_localctx, 298, RULE_ddItemCount);
 		_localctx.Value = 1;
 		try {
@@ -14710,7 +14713,7 @@ public partial class CILParser : Parser {
 				_localctx.count = int32();
 				State = 3033;
 				Match(T__42);
-				_localctx.Value = Actions.ParseDataItemCount((_localctx.count!=null?(_localctx.count.Start):null));
+				_localctx.Value = Actions.ParseDataItemCount(_localctx.Builder, (_localctx.count!=null?(_localctx.count.Start):null));
 				}
 				break;
 			default:
@@ -14860,7 +14863,7 @@ public partial class CILParser : Parser {
 				State = 3064;
 				Match(T__30);
 				State = 3065;
-				_localctx.count = ddItemCount();
+				_localctx.count = ddItemCount(_localctx.Builder);
 				Actions.AddFloatingPointData(_localctx.Builder, _localctx.kind, _localctx.floatingValue.Value, _localctx.count.Value);
 				}
 				break;
@@ -14876,7 +14879,7 @@ public partial class CILParser : Parser {
 				State = 3071;
 				Match(T__30);
 				State = 3072;
-				_localctx.count = ddItemCount();
+				_localctx.count = ddItemCount(_localctx.Builder);
 				Actions.AddInt64Data(_localctx.Builder, _localctx.kind, (_localctx.int64Value!=null?(_localctx.int64Value.Start):null), _localctx.count.Value);
 				}
 				break;
@@ -14900,7 +14903,7 @@ public partial class CILParser : Parser {
 				State = 3078;
 				Match(T__30);
 				State = 3079;
-				_localctx.count = ddItemCount();
+				_localctx.count = ddItemCount(_localctx.Builder);
 				Actions.AddIntegerData(_localctx.Builder, _localctx.kind, (_localctx.integerValue!=null?(_localctx.integerValue.Start):null), _localctx.count.Value);
 				}
 				break;
@@ -14918,7 +14921,7 @@ public partial class CILParser : Parser {
 				    Consume();
 				}
 				State = 3083;
-				_localctx.count = ddItemCount();
+				_localctx.count = ddItemCount(_localctx.Builder);
 				Actions.AddZeroData(_localctx.Builder, _localctx.kind, _localctx.count.Value);
 				}
 				break;
