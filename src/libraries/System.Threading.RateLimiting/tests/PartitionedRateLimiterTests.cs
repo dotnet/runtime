@@ -548,7 +548,7 @@ namespace System.Threading.RateLimiting.Tests
             // partition as idle even though NoopLimiter reports IdleDuration == null.
             BackdateLastAccessTimestamp<string, int>(limiter, key: 1);
 
-            await Utils.RunTimerFunc<string, int>(limiter);
+            await Utils.RunTimerFunc<string>(limiter);
             Assert.Null(GetLazyLimiterEntry<string, int>(limiter, key: 1));
 
             lease = limiter.AttemptAcquire("");
@@ -578,7 +578,7 @@ namespace System.Threading.RateLimiting.Tests
 
             BackdateLastAccessTimestamp<string, int>(limiter, key: 1);
 
-            await Utils.RunTimerFunc<string, int>(limiter);
+            await Utils.RunTimerFunc<string>(limiter);
 
             lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
