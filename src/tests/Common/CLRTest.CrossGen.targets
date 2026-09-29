@@ -105,6 +105,13 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       __cg2ExitCode=0
       __r2rDumpExitCode=0
 
+      # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible dotnet runtime in the path.
+      if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+          __DotNet="$__TestDotNetCmd"
+      else
+          __DotNet=dotnet
+      fi
+
       RunCrossgen2OnFiles() {
         date +%H:%M:%S
         __OutputFile=$1
@@ -113,14 +120,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __ResponseFile="$__OutputFile.rsp"
         rm "$__ResponseFile" 2>/dev/null
 
-        __R2RDumpCommand=$_DebuggerFullPath
-        # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-        if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-            __R2RDumpCommand+=" $__TestDotNetCmd"
-        else
-            __R2RDumpCommand+=" dotnet"
-        fi
-        __R2RDumpCommand+=" $CORE_ROOT/R2RDump/R2RDump.dll"
+        __R2RDumpCommand="$_DebuggerFullPath $__DotNet $CORE_ROOT/R2RDump/R2RDump.dll"
 
         __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
         __Command+=" @$__ResponseFile"
@@ -244,7 +244,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       if [ "$(TargetOS)" == "wasi" ] && [ $__cg2ExitCode -eq 0 ] && [ $__r2rDumpExitCode -eq 0 ]; then
         (
           mkdir -p IL-CG2/wasi-r2r/comp || exit 1
-          "$__TestDotNetCmd" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$CORE_ROOT/corerun" "/p:OutputDirectory=$PWD/IL-CG2/wasi-r2r/work" "/p:OutputPath=$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/IL-CG2/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD"
+          "$__DotNet" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$CORE_ROOT/corerun" "/p:OutputDirectory=$PWD/IL-CG2/wasi-r2r/work" "/p:OutputPath=$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/IL-CG2/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD"
         )
         __linkExitCode=$?
         if [ $__linkExitCode -ne 0 ]; then
