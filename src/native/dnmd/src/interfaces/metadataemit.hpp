@@ -8,18 +8,19 @@
 
 #include <cor.h>
 #include <corhdr.h>
+#include <metadataemithelper.h>
 
 #include <cstdint>
 #include <atomic>
 
-class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyEmit>
+class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyEmit, IMetaDataEmitHelper>
 {
     mdhandle_view _md_ptr;
 
 protected:
     bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
     {
-        if (riid == IID_IMetaDataEmit || riid == IID_IMetaDataEmit)
+        if (riid == IID_IMetaDataEmit || riid == IID_IMetaDataEmit2)
         {
             *ppvObject = static_cast<IMetaDataEmit2*>(this);
             return true;
@@ -27,6 +28,11 @@ protected:
         else if (riid == IID_IMetaDataAssemblyEmit)
         {
             *ppvObject = static_cast<IMetaDataAssemblyEmit*>(this);
+            return true;
+        }
+        else if (riid == IID_IMetaDataEmitHelper)
+        {
+            *ppvObject = static_cast<IMetaDataEmitHelper*>(this);
             return true;
         }
         return false;
@@ -467,6 +473,16 @@ public: // IMetaDataAssemblyEmit
         mdToken     tkImplementation,
         DWORD       dwOffset,
         DWORD       dwResourceFlags) override;
+
+public: // IMetaDataEmitHelper
+    STDMETHOD(DefineMethodSemanticsHelper)(mdToken tkAssociation, DWORD dwFlags, mdMethodDef md) override;
+    STDMETHOD(SetFieldLayoutHelper)(mdFieldDef fd, ULONG ulOffset) override;
+    STDMETHOD(DefineEventHelper)(mdTypeDef td, LPCWSTR szEvent, DWORD dwEventFlags, mdToken tkEventType, mdEvent *pmdEvent) override;
+    STDMETHOD(AddDeclarativeSecurityHelper)(mdToken tk, DWORD dwAction, void const *pValue, DWORD cbValue, mdPermission *pmdPermission) override;
+    STDMETHOD(SetResolutionScopeHelper)(mdTypeRef tr, mdToken rs) override;
+    STDMETHOD(SetManifestResourceOffsetHelper)(mdManifestResource mr, ULONG ulOffset) override;
+    STDMETHOD(SetTypeParent)(mdTypeDef td, mdToken tkExtends) override;
+    STDMETHOD(AddInterfaceImpl)(mdTypeDef td, mdToken tkInterface) override;
 };
 
 #endif

@@ -641,8 +641,8 @@ HRESULT MetadataEmit::DefineEvent(
     assert(TypeFromToken(td) == mdtTypeDef && td != mdTypeDefNil);
     assert(IsNilToken(tkEventType) || TypeFromToken(tkEventType) == mdtTypeDef ||
                 TypeFromToken(tkEventType) == mdtTypeRef || TypeFromToken(tkEventType) == mdtTypeSpec);
-    assert(TypeFromToken(mdAddOn) == mdtMethodDef && mdAddOn != mdMethodDefNil);
-    assert(TypeFromToken(mdRemoveOn) == mdtMethodDef && mdRemoveOn != mdMethodDefNil);
+    assert(IsNilToken(mdAddOn) || TypeFromToken(mdAddOn) == mdtMethodDef);
+    assert(IsNilToken(mdRemoveOn) || TypeFromToken(mdRemoveOn) == mdtMethodDef);
     assert(IsNilToken(mdFire) || TypeFromToken(mdFire) == mdtMethodDef);
     assert(szEvent && pmdEvent);
 
@@ -3170,6 +3170,126 @@ HRESULT MetadataEmit::SetManifestResourceProps(
     }
 
     // TODO: Update ENC Log
+
+    return S_OK;
+}
+
+HRESULT MetadataEmit::DefineMethodSemanticsHelper(mdToken tkAssociation, DWORD dwFlags, mdMethodDef md)
+{
+    if ((TypeFromToken(tkAssociation) != mdtProperty && TypeFromToken(tkAssociation) != mdtEvent)
+        || TypeFromToken(md) != mdtMethodDef || IsNilToken(md))
+        return E_INVALIDARG;
+
+    mdcursor_t association;
+    mdcursor_t method;
+    if (!md_token_to_cursor(MetaData(), tkAssociation, &association)
+        || !md_token_to_cursor(MetaData(), md, &method))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    return AddMethodSemantic(MetaData(), association, static_cast<CorMethodSemanticsAttr>(dwFlags), md);
+}
+
+HRESULT MetadataEmit::SetFieldLayoutHelper(mdFieldDef fd, ULONG ulOffset)
+{
+    if (TypeFromToken(fd) != mdtFieldDef || IsNilToken(fd) || ulOffset == UINT32_MAX)
+        return E_INVALIDARG;
+
+    mdcursor_t field;
+    if (!md_token_to_cursor(MetaData(), fd, &field))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    return FindOrCreateParentedRow(MetaData(), fd, mdtid_FieldLayout, mdtFieldLayout_Field, [ulOffset](mdcursor_t row)
+    {
+        return md_set_column_value_as_constant(row, mdtFieldLayout_Offset, ulOffset) ? S_OK : E_FAIL;
+    });
+}
+
+HRESULT MetadataEmit::DefineEventHelper(mdTypeDef td, LPCWSTR szEvent, DWORD dwEventFlags, mdToken tkEventType, mdEvent *pmdEvent)
+{
+    return DefineEvent(td, szEvent, dwEventFlags, tkEventType,
+        mdMethodDefNil, mdMethodDefNil, mdMethodDefNil, nullptr, pmdEvent);
+}
+
+HRESULT MetadataEmit::AddDeclarativeSecurityHelper(
+    mdToken tk, DWORD dwAction, void const *pValue, DWORD cbValue, mdPermission *pmdPermission)
+{
+    if ((TypeFromToken(tk) != mdtTypeDef && TypeFromToken(tk) != mdtMethodDef && TypeFromToken(tk) != mdtAssembly)
+        || IsNilToken(tk) || pmdPermission == nullptr || (cbValue != 0 && pValue == nullptr)
+        || dwAction == 0 || dwAction > dclMaximumValue)
+        return E_INVALIDARG;
+
+    return DefinePermissionSet(tk, dwAction, pValue, cbValue, pmdPermission);
+}
+
+HRESULT MetadataEmit::SetResolutionScopeHelper(mdTypeRef tr, mdToken rs)
+{
+    if (TypeFromToken(tr) != mdtTypeRef || IsNilToken(tr))
+        return E_INVALIDARG;
+
+    mdcursor_t typeRef;
+    if (!md_token_to_cursor(MetaData(), tr, &typeRef))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    return md_set_column_value_as_token(typeRef, mdtTypeRef_ResolutionScope, rs) ? S_OK : E_FAIL;
+}
+
+HRESULT MetadataEmit::SetManifestResourceOffsetHelper(mdManifestResource mr, ULONG ulOffset)
+{
+    if (TypeFromToken(mr) != mdtManifestResource || IsNilToken(mr))
+        return E_INVALIDARG;
+
+    mdcursor_t resource;
+    if (!md_token_to_cursor(MetaData(), mr, &resource))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    return md_set_column_value_as_constant(resource, mdtManifestResource_Offset, ulOffset) ? S_OK : E_FAIL;
+}
+
+HRESULT MetadataEmit::SetTypeParent(mdTypeDef td, mdToken tkExtends)
+{
+    if (TypeFromToken(td) != mdtTypeDef || IsNilToken(td) || tkExtends == UINT32_MAX)
+        return E_INVALIDARG;
+
+    return SetTypeDefProps(td, UINT32_MAX, tkExtends, nullptr);
+}
+
+HRESULT MetadataEmit::AddInterfaceImpl(mdTypeDef td, mdToken tkInterface)
+{
+    if (TypeFromToken(td) != mdtTypeDef || IsNilToken(td) || IsNilToken(tkInterface)
+        || (TypeFromToken(tkInterface) != mdtTypeDef
+            && TypeFromToken(tkInterface) != mdtTypeRef
+            && TypeFromToken(tkInterface) != mdtTypeSpec))
+        return E_INVALIDARG;
+
+    mdcursor_t typeDef;
+    if (!md_token_to_cursor(MetaData(), td, &typeDef))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    mdcursor_t existing;
+    uint32_t count;
+    if (md_create_cursor(MetaData(), mdtid_InterfaceImpl, &existing, &count))
+    {
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            mdToken parent;
+            mdToken iface;
+            if (!md_get_column_value_as_token(existing, mdtInterfaceImpl_Class, &parent)
+                || !md_get_column_value_as_token(existing, mdtInterfaceImpl_Interface, &iface))
+                return CLDB_E_FILE_CORRUPT;
+
+            if (parent == td && iface == tkInterface)
+                return S_OK;
+
+            if (i + 1 < count && !md_cursor_next(&existing))
+                return CLDB_E_FILE_CORRUPT;
+        }
+    }
+
+    md_added_row_t row;
+    if (!md_append_row(MetaData(), mdtid_InterfaceImpl, &row)
+        || !md_set_column_value_as_token(row, mdtInterfaceImpl_Class, td)
+        || !md_set_column_value_as_token(row, mdtInterfaceImpl_Interface, tkInterface))
+        return E_FAIL;
 
     return S_OK;
 }

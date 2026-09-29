@@ -10,6 +10,7 @@
 
 #include <cor.h>
 #include <corhdr.h>
+#include <metadataemithelper.h>
 
 #include <cstdint>
 #include <mutex>
@@ -45,7 +46,7 @@ public:
 };
 
 template<typename TImport, typename TEmit>
-class ThreadSafeImportEmit : public TearOffBase<IMetaDataImport2, IMetaDataEmit2, IMetaDataAssemblyImport, IMetaDataAssemblyEmit>
+class ThreadSafeImportEmit : public TearOffBase<IMetaDataImport2, IMetaDataEmit2, IMetaDataAssemblyImport, IMetaDataAssemblyEmit, IMetaDataEmitHelper>
 {
     pal::ReadWriteLock _lock;
     // owning reference to the thread-unsafe object that provides the underlying implementation.
@@ -76,6 +77,11 @@ protected:
         if (riid == IID_IMetaDataAssemblyEmit)
         {
             *ppvObject = static_cast<IMetaDataAssemblyEmit*>(this);
+            return true;
+        }
+        if (riid == IID_IMetaDataEmitHelper)
+        {
+            *ppvObject = static_cast<IMetaDataEmitHelper*>(this);
             return true;
         }
         return false;
@@ -1701,6 +1707,56 @@ public: // IMetaDataAssemblyEmit
     {
         std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
         return _emit->SetManifestResourceProps(mr, tkImplementation, dwOffset, dwResourceFlags);
+    }
+
+public: // IMetaDataEmitHelper
+    STDMETHOD(DefineMethodSemanticsHelper)(mdToken tkAssociation, DWORD dwFlags, mdMethodDef md) override
+    {
+        std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
+        return _emit->DefineMethodSemanticsHelper(tkAssociation, dwFlags, md);
+    }
+
+    STDMETHOD(SetFieldLayoutHelper)(mdFieldDef fd, ULONG ulOffset) override
+    {
+        std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
+        return _emit->SetFieldLayoutHelper(fd, ulOffset);
+    }
+
+    STDMETHOD(DefineEventHelper)(mdTypeDef td, LPCWSTR szEvent, DWORD dwEventFlags, mdToken tkEventType, mdEvent *pmdEvent) override
+    {
+        std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
+        return _emit->DefineEventHelper(td, szEvent, dwEventFlags, tkEventType, pmdEvent);
+    }
+
+    STDMETHOD(AddDeclarativeSecurityHelper)(
+        mdToken tk, DWORD dwAction, void const *pValue, DWORD cbValue, mdPermission *pmdPermission) override
+    {
+        std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
+        return _emit->AddDeclarativeSecurityHelper(tk, dwAction, pValue, cbValue, pmdPermission);
+    }
+
+    STDMETHOD(SetResolutionScopeHelper)(mdTypeRef tr, mdToken rs) override
+    {
+        std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
+        return _emit->SetResolutionScopeHelper(tr, rs);
+    }
+
+    STDMETHOD(SetManifestResourceOffsetHelper)(mdManifestResource mr, ULONG ulOffset) override
+    {
+        std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
+        return _emit->SetManifestResourceOffsetHelper(mr, ulOffset);
+    }
+
+    STDMETHOD(SetTypeParent)(mdTypeDef td, mdToken tkExtends) override
+    {
+        std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
+        return _emit->SetTypeParent(td, tkExtends);
+    }
+
+    STDMETHOD(AddInterfaceImpl)(mdTypeDef td, mdToken tkInterface) override
+    {
+        std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
+        return _emit->AddInterfaceImpl(td, tkInterface);
     }
 };
 

@@ -12,7 +12,8 @@ set(SOURCES
 	assemblyref.cpp
 	param.cpp
 	fieldmarshal.cpp
-	fieldrva.cpp)
+	fieldrva.cpp
+	metadataemithelper.cpp)
 
 set(HEADERS emit.hpp)
 
