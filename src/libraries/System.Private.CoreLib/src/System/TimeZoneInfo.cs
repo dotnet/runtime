@@ -333,7 +333,10 @@ namespace System
                 }
             }
 
-            return TryGetUtcOffset(dateTime, out TimeSpan offset) ? offset : _baseUtcOffset;
+            // For an invalid (DST gap) local time TryGetUtcOffset returns false. Fall back to the standard
+            // offset (base plus the applicable rule's BaseUtcOffsetDelta) so GetUtcOffset and DateTimeOffset
+            // stay consistent with ConvertTime/ToUniversalTime for zones that changed their standard offset.
+            return TryGetUtcOffset(dateTime, out TimeSpan offset) ? offset : new TimeSpan(GetStandardUtcOffsetTicks(dateTime));
         }
 
         /// <summary>
