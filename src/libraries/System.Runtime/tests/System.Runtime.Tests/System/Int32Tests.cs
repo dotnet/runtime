@@ -351,6 +351,20 @@ namespace System.Tests
             yield return new object[] { "  0  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, 0 };
             yield return new object[] { "  000000000  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, 0 };
 
+            // Whitespace between a leading sign and the digits (mirrors trailing sign + AllowTrailingWhite)
+            yield return new object[] { "- 123", NumberStyles.AllowLeadingWhite | NumberStyles.AllowLeadingSign, null, -123 };
+            yield return new object[] { "+ 123", NumberStyles.AllowLeadingWhite | NumberStyles.AllowLeadingSign, null, 123 };
+            yield return new object[] { "  -  123  ", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign, null, -123 };
+            yield return new object[] { "- 123", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign, null, -123 };
+            yield return new object[] { "- 123", NumberStyles.Integer, CultureInfo.InvariantCulture, -123 };
+            yield return new object[] { "- 123", NumberStyles.Number, CultureInfo.InvariantCulture, -123 };
+
+            NumberFormatInfo customSigns = new NumberFormatInfo() { NegativeSign = "~", PositiveSign = "++" };
+            yield return new object[] { "~ 123", NumberStyles.Integer, customSigns, -123 };
+            yield return new object[] { "++ 123", NumberStyles.Integer, customSigns, 123 };
+            yield return new object[] { "~ 123", NumberStyles.Number, customSigns, -123 };
+            yield return new object[] { "- 123", NumberStyles.Number, new NumberFormatInfo() { NumberNegativePattern = 2 }, -123 };
+
             // AllowThousands
             NumberFormatInfo thousandsFormat = new NumberFormatInfo() { NumberGroupSeparator = "|" };
             yield return new object[] { "1000", NumberStyles.AllowThousands, thousandsFormat, 1000 };
@@ -374,6 +388,10 @@ namespace System.Tests
             // AllowParentheses
             yield return new object[] { "123", NumberStyles.AllowParentheses, null, 123 };
             yield return new object[] { "(123)", NumberStyles.AllowParentheses, null, -123 };
+
+            // Whitespace between an opening parenthesis and the digits (AllowLeadingWhite)
+            yield return new object[] { "(   123)", NumberStyles.AllowLeadingWhite | NumberStyles.AllowParentheses, null, -123 };
+            yield return new object[] { "( 123 )", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowParentheses, null, -123 };
 
             // AllowDecimalPoint
             NumberFormatInfo decimalFormat = new NumberFormatInfo() { NumberDecimalSeparator = "|" };
@@ -525,6 +543,8 @@ namespace System.Tests
             yield return new object[] { "-+123", NumberStyles.AllowLeadingSign, null, typeof(FormatException) };
             yield return new object[] { "- 123", NumberStyles.AllowLeadingSign, null, typeof(FormatException) };
             yield return new object[] { "+ 123", NumberStyles.AllowLeadingSign, null, typeof(FormatException) };
+            yield return new object[] { "-   ", NumberStyles.Integer, null, typeof(FormatException) };
+            yield return new object[] { "(   123)", NumberStyles.AllowParentheses, null, typeof(FormatException) };
 
             // AllowTrailingSign
             yield return new object[] { "123-+", NumberStyles.AllowTrailingSign, null, typeof(FormatException) };
@@ -1115,6 +1135,8 @@ namespace System.Tests
             yield return new object[] { "-456xyz", NumberStyles.Integer, null, -456, 4 };
             yield return new object[] { "+0xyz", NumberStyles.Integer, null, 0, 2 };
             yield return new object[] { "-0xyz", NumberStyles.Integer, null, 0, 2 };
+            yield return new object[] { "  -  123xyz", NumberStyles.Integer, CultureInfo.InvariantCulture, -123, 8 };
+            yield return new object[] { "- 123xyz", NumberStyles.Number, CultureInfo.InvariantCulture, -123, 5 };
 
             // HexNumber with trailing invalid characters
             yield return new object[] { "ABCxyz", NumberStyles.HexNumber, null, 0xABC, 3 };
@@ -1172,6 +1194,7 @@ namespace System.Tests
             yield return new object[] { "  +123abc", NumberStyles.Integer, nonInvariantSignFormat, 123, 6 };
             yield return new object[] { "  \u2212456xyz", NumberStyles.Integer, nonInvariantSignFormat, -456, 6 };
             yield return new object[] { "  \u2212456", NumberStyles.Integer, nonInvariantSignFormat, -456, 6 };
+            yield return new object[] { "  \u2212 456xyz", NumberStyles.Integer, nonInvariantSignFormat, -456, 7 };
             yield return new object[] { "  123  abc", NumberStyles.Integer, nonInvariantSignFormat, 123, 7 };
         }
 
@@ -1201,6 +1224,10 @@ namespace System.Tests
             if (value.All(c => c < 128))
             {
                 Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+            else
+            {
+                Assert.Equal(Encoding.UTF8.GetByteCount(value.AsSpan(0, expectedCharsConsumed)), bytesConsumed);
             }
         }
 

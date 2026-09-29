@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sal.h>
 #include "config.h"
+#include "PalCreateDump.h"
 #include <pthread.h>
 #include <string.h>
 #include <assert.h>
@@ -15,7 +16,6 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #ifdef TARGET_LINUX
 #include <sys/auxv.h>
 #endif
@@ -23,7 +23,9 @@
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #endif
+#ifndef HOST_WASM
 #include <sys/wait.h>
+#endif
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -67,7 +69,7 @@ bool g_selfRestartCreatedump = false;
 const char* const SelfCreateDumpPath = "/proc/self/exe";
 #endif
 
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
 // of entries if every createdump option/argument is passed.
@@ -399,7 +401,7 @@ CreateCrashDump(
     return true;
 }
 
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
 // Helper function to prevent compiler from optimizing away a variable
 #if defined(__llvm__)
@@ -434,7 +436,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     // If enabled, launch the create minidump utility and wait until it completes
     if (g_argvCreateDump[0] != nullptr)
     {
@@ -520,7 +522,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
         free(signalAddressArg);
         free(exceptionRecordArg);
     }
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
 
 void
@@ -564,7 +566,7 @@ PalGenerateCoreDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     const char* argvCreateDump[MAX_ARGV_ENTRIES];
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -583,7 +585,7 @@ PalGenerateCoreDump(
     return result;
 #else
     return false;
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
 
 /*++
@@ -602,7 +604,7 @@ Return
 bool
 PalCreateDumpInitialize()
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     bool enabled = false;
     RhConfig::Environment::TryGetBooleanValue("DbgEnableMiniDump", &enabled);
     if (enabled)
@@ -723,7 +725,7 @@ PalCreateDumpInitialize()
             return false;
         }
     }
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
     return true;
 }
