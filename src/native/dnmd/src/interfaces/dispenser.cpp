@@ -17,16 +17,26 @@
 
 #include <cstring>
 
+#if !defined(_MSC_VER) && !defined(DNMD_USE_CORECLR_GUIDS)
+extern "C" const GUID MetaDataCheckDuplicatesFor =
+    { 0x30fe7be8, 0xd7d9, 0x11d2, { 0x9f, 0x80, 0x00, 0xc0, 0x4f, 0x79, 0xa0, 0xa3 } };
+#endif
+
 namespace
 {
+    constexpr uint32_t SupportedDuplicateChecks =
+        MDDupDefault | MDDupTypeDef | MDDupModuleRef | MDDupExportedType |
+        MDDupAssemblyRef | MDDupPermission | MDDupFile;
+
     class MDDispenser final : public TearOffBase<IMetaDataDispenserEx>
     {
         bool _threadSafe = false;
+        uint32_t _duplicateChecks = MDDupDefault;
     private:
         minipal::com_ptr<ControllingIUnknown> CreateExposedObject(minipal::com_ptr<ControllingIUnknown> unknown, DNMDOwner* owner)
         {
             mdhandle_view handle_view{ owner };
-            MetadataEmit* emit = unknown->CreateAndAddTearOff<MetadataEmit>(handle_view);
+            MetadataEmit* emit = unknown->CreateAndAddTearOff<MetadataEmit>(handle_view, _duplicateChecks);
             MetadataImportRO* import = unknown->CreateAndAddTearOff<MetadataImportRO>(handle_view);
             if (!_threadSafe)
             {
@@ -189,7 +199,19 @@ namespace
             REFGUID     optionid,
             VARIANT const *value) override
         {
-            if (optionid == MetaDataThreadSafetyOptions)
+                if (value == nullptr)
+                    return E_INVALIDARG;
+
+                if (optionid == MetaDataCheckDuplicatesFor)
+                {
+                    if (V_VT(value) != VT_UI4 || (V_UI4(value) & ~SupportedDuplicateChecks) != 0)
+                        return E_INVALIDARG;
+
+                    _duplicateChecks = V_UI4(value);
+                    return S_OK;
+                }
+
+                if (optionid == MetaDataThreadSafetyOptions)
             {
                 _threadSafe = V_UI4(value) == CorThreadSafetyOptions::MDThreadSafetyOn;
                 return S_OK;
@@ -201,6 +223,16 @@ namespace
             REFGUID     optionid,
             VARIANT *pvalue) override
         {
+            if (pvalue == nullptr)
+                return E_INVALIDARG;
+
+            if (optionid == MetaDataCheckDuplicatesFor)
+            {
+                V_VT(pvalue) = VT_UI4;
+                V_UI4(pvalue) = _duplicateChecks;
+                return S_OK;
+            }
+
             if (optionid == MetaDataThreadSafetyOptions)
             {
                 V_UI4(pvalue) = _threadSafe ? CorThreadSafetyOptions::MDThreadSafetyOn : CorThreadSafetyOptions::MDThreadSafetyOff;

@@ -2,6 +2,8 @@
 #include "importhelpers.hpp"
 #include "signatures.hpp"
 #include "pal.hpp"
+#include <array>
+#include <cctype>
 #include <limits>
 #include <fstream>
 #include <stack>
@@ -48,6 +50,137 @@ namespace
             *nspace = typeName;
             *name = pos + 1;
         }
+    }
+
+    template<typename Match>
+    HRESULT FindExisting(mdhandle_t md, mdtable_id_t table, Match match, mdToken* token)
+    {
+        mdcursor_t row;
+        uint32_t count;
+        if (!md_create_cursor(md, table, &row, &count))
+            return S_FALSE;
+
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            HRESULT hr = match(row);
+            if (FAILED(hr))
+                return hr;
+            if (hr == S_OK)
+                return md_cursor_to_token(row, token) ? S_OK : CLDB_E_FILE_CORRUPT;
+            if (i + 1 < count && !md_cursor_next(&row))
+                return CLDB_E_FILE_CORRUPT;
+        }
+        return S_FALSE;
+    }
+
+    HRESULT MatchString(mdcursor_t row, col_index_t column, char const* expected)
+    {
+        char const* actual;
+        if (!md_get_column_value_as_utf8(row, column, &actual))
+            return CLDB_E_FILE_CORRUPT;
+        return std::strcmp(actual, expected) == 0 ? S_OK : S_FALSE;
+    }
+
+    HRESULT MatchToken(mdcursor_t row, col_index_t column, mdToken expected)
+    {
+        mdToken actual;
+        if (!md_get_column_value_as_token(row, column, &actual))
+            return CLDB_E_FILE_CORRUPT;
+        return actual == expected ? S_OK : S_FALSE;
+    }
+
+    HRESULT MatchConstant(mdcursor_t row, col_index_t column, uint32_t expected)
+    {
+        uint32_t actual;
+        if (!md_get_column_value_as_constant(row, column, &actual))
+            return CLDB_E_FILE_CORRUPT;
+        return actual == expected ? S_OK : S_FALSE;
+    }
+
+    HRESULT MatchBlob(mdcursor_t row, col_index_t column, void const* expected, uint32_t expectedLength)
+    {
+        uint8_t const* actual;
+        uint32_t actualLength;
+        if (!md_get_column_value_as_blob(row, column, &actual, &actualLength))
+            return CLDB_E_FILE_CORRUPT;
+        return actualLength == expectedLength &&
+            (actualLength == 0 || (expected != nullptr && std::memcmp(actual, expected, actualLength) == 0))
+            ? S_OK : S_FALSE;
+    }
+
+    bool EqualsIgnoreAsciiCase(char const* left, char const* right)
+    {
+        while (*left != '\0' && *right != '\0')
+        {
+            if (std::tolower(static_cast<unsigned char>(*left)) !=
+                std::tolower(static_cast<unsigned char>(*right)))
+                return false;
+            ++left;
+            ++right;
+        }
+        return *left == *right;
+    }
+
+    HRESULT PublicKeyToken(uint8_t const* key, uint32_t length, std::array<uint8_t, 8>& token)
+    {
+        // The ECMA pseudo-key has a predefined token instead of a hashed public key.
+        constexpr uint8_t ecmaKey[] = { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
+        if (length == sizeof(ecmaKey) && std::memcmp(key, ecmaKey, length) == 0)
+        {
+            token = { 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 };
+            return S_OK;
+        }
+
+        uint32_t header[3];
+        if (length < sizeof(header))
+            return CORSEC_E_INVALID_PUBLICKEY;
+        std::memcpy(header, key, sizeof(header));
+        if (header[2] != length - sizeof(header) ||
+            (header[1] != 0 && ((header[1] & (7u << 13)) != (4u << 13) ||
+                                (header[1] & 511u) < 4)) ||
+            (header[0] != 0 && (header[0] & (7u << 13)) != (1u << 13)) ||
+            header[2] == 0 || key[sizeof(header)] != 0x06)
+            return CORSEC_E_INVALID_PUBLICKEY;
+
+        std::array<uint8_t, pal::SHA1_HASH_SIZE> hash;
+        if (!pal::ComputeSha1Hash({ key, length }, hash))
+            return CORSEC_E_INVALID_PUBLICKEY;
+        std::reverse_copy(hash.end() - token.size(), hash.end(), token.begin());
+        return S_OK;
+    }
+
+    HRESULT MatchAssemblyRefKey(mdcursor_t row, void const* key, uint32_t length, DWORD flags)
+    {
+        uint8_t const* existingKey;
+        uint32_t existingLength;
+        if (!md_get_column_value_as_blob(row, mdtAssemblyRef_PublicKeyOrToken, &existingKey, &existingLength))
+            return CLDB_E_FILE_CORRUPT;
+        if ((length == 0) != (existingLength == 0))
+            return S_FALSE;
+        if (length == 0)
+            return S_OK;
+
+        uint32_t existingFlags;
+        if (!md_get_column_value_as_constant(row, mdtAssemblyRef_Flags, &existingFlags))
+            return CLDB_E_FILE_CORRUPT;
+        if (((flags ^ existingFlags) & afPublicKey) == 0)
+            return MatchBlob(row, mdtAssemblyRef_PublicKeyOrToken, key, length);
+
+        std::array<uint8_t, 8> token;
+        if ((flags & afPublicKey) != 0)
+        {
+            HRESULT hr = PublicKeyToken(static_cast<uint8_t const*>(key), length, token);
+            if (FAILED(hr))
+                return hr;
+            return existingLength == token.size() && std::memcmp(existingKey, token.data(), token.size()) == 0
+                ? S_OK : S_FALSE;
+        }
+
+        HRESULT hr = PublicKeyToken(existingKey, existingLength, token);
+        if (FAILED(hr))
+            return hr;
+        return length == token.size() && std::memcmp(key, token.data(), token.size()) == 0
+            ? S_OK : S_FALSE;
     }
 }
 
@@ -187,19 +320,59 @@ HRESULT MetadataEmit::DefineTypeDef(
         mdToken     rtkImplements[],
         mdTypeDef   *ptd)
 {
-    md_added_row_t c;
-    if (!md_append_row(MetaData(), mdtid_TypeDef, &c))
-        return E_FAIL;
+    return DefineTypeDefCore(szTypeDef, dwTypeDefFlags, tkExtends, rtkImplements, mdTypeDefNil, ptd);
+}
 
+HRESULT MetadataEmit::DefineTypeDefCore(
+        LPCWSTR     szTypeDef,
+        DWORD       dwTypeDefFlags,
+        mdToken     tkExtends,
+        mdToken     rtkImplements[],
+        mdTypeDef   tdEncloser,
+        mdTypeDef   *ptd)
+{
     pal::StringConvert<WCHAR, char> cvt(szTypeDef);
     if (!cvt.Success())
         return E_INVALIDARG;
 
-    // TODO: Check for duplicate type definitions
-
     char const* ns;
     char const* name;
     SplitTypeName(cvt, &ns, &name);
+
+    if (CheckDuplicates(MDDupTypeDef))
+    {
+        HRESULT hr = FindExisting(MetaData(), mdtid_TypeDef, [&](mdcursor_t row)
+        {
+            HRESULT match = MatchString(row, mdtTypeDef_TypeNamespace, ns);
+            if (match != S_OK)
+                return match;
+            match = MatchString(row, mdtTypeDef_TypeName, name);
+            if (match != S_OK)
+                return match;
+
+            mdTypeDef candidate;
+            if (!md_cursor_to_token(row, &candidate))
+                return CLDB_E_FILE_CORRUPT;
+            mdcursor_t nestedRows{}, nestedRow{};
+            uint32_t count;
+            bool isNested = md_create_cursor(MetaData(), mdtid_NestedClass, &nestedRows, &count) &&
+                md_find_row_from_cursor(nestedRows, mdtNestedClass_NestedClass, RidFromToken(candidate), &nestedRow);
+            if (!isNested)
+                return IsNilToken(tdEncloser) ? S_OK : S_FALSE;
+            if (IsNilToken(tdEncloser))
+                return S_FALSE;
+            return MatchToken(nestedRow, mdtNestedClass_EnclosingClass, tdEncloser);
+        }, ptd);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
+
+    md_added_row_t c;
+    if (!md_append_row(MetaData(), mdtid_TypeDef, &c))
+        return E_FAIL;
+
     if (!md_set_column_value_as_utf8(c, mdtTypeDef_TypeNamespace, ns))
         return E_FAIL;
     if (!md_set_column_value_as_utf8(c, mdtTypeDef_TypeName, name))
@@ -261,11 +434,19 @@ HRESULT MetadataEmit::DefineTypeDef(
         }
     }
 
-    // TODO: Update Enc Log
-
     if (!md_cursor_to_token(c, ptd))
         return E_FAIL;
 
+    if (!IsNilToken(tdEncloser))
+    {
+        md_added_row_t nestedClass;
+        if (!md_append_row(MetaData(), mdtid_NestedClass, &nestedClass) ||
+            !md_set_column_value_as_token(nestedClass, mdtNestedClass_NestedClass, *ptd) ||
+            !md_set_column_value_as_token(nestedClass, mdtNestedClass_EnclosingClass, tdEncloser))
+            return E_FAIL;
+    }
+
+    // TODO: Update Enc Log
     return S_OK;
 }
 
@@ -277,25 +458,10 @@ HRESULT MetadataEmit::DefineNestedType(
         mdTypeDef   tdEncloser,
         mdTypeDef   *ptd)
 {
-    HRESULT hr;
-
     if (TypeFromToken(tdEncloser) != mdtTypeDef || IsNilToken(tdEncloser))
         return E_INVALIDARG;
 
-    RETURN_IF_FAILED(DefineTypeDef(szTypeDef, dwTypeDefFlags, tkExtends, rtkImplements, ptd));
-
-    md_added_row_t c;
-    if (!md_append_row(MetaData(), mdtid_NestedClass, &c))
-        return E_FAIL;
-
-    if (!md_set_column_value_as_token(c, mdtNestedClass_NestedClass, *ptd))
-        return E_FAIL;
-
-    if (!md_set_column_value_as_token(c, mdtNestedClass_EnclosingClass, tdEncloser))
-        return E_FAIL;
-
-    // TODO: Update ENC log
-    return S_OK;
+    return DefineTypeDefCore(szTypeDef, dwTypeDefFlags, tkExtends, rtkImplements, tdEncloser, ptd);
 }
 
 HRESULT MetadataEmit::SetHandler(
@@ -385,21 +551,36 @@ HRESULT MetadataEmit::DefineTypeRefByName(
         LPCWSTR     szName,
         mdTypeRef   *ptr)
 {
-    md_added_row_t c;
-    if (!md_append_row(MetaData(), mdtid_TypeRef, &c))
-        return E_FAIL;
-
-    if (!md_set_column_value_as_token(c, mdtTypeRef_ResolutionScope, tkResolutionScope))
-        return E_FAIL;
-
     pal::StringConvert<WCHAR, char> cv(szName);
-
     if (!cv.Success())
         return E_FAIL;
 
     char const* ns;
     char const* name;
     SplitTypeName(cv, &ns, &name);
+
+    if (CheckDuplicates(MDDupTypeRef))
+    {
+        HRESULT hr = FindExisting(MetaData(), mdtid_TypeRef, [&](mdcursor_t row)
+        {
+            HRESULT match = MatchToken(row, mdtTypeRef_ResolutionScope, tkResolutionScope);
+            if (match != S_OK)
+                return match;
+            match = MatchString(row, mdtTypeRef_TypeNamespace, ns);
+            return match == S_OK ? MatchString(row, mdtTypeRef_TypeName, name) : match;
+        }, ptr);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
+
+    md_added_row_t c;
+    if (!md_append_row(MetaData(), mdtid_TypeRef, &c))
+        return E_FAIL;
+
+    if (!md_set_column_value_as_token(c, mdtTypeRef_ResolutionScope, tkResolutionScope))
+        return E_FAIL;
 
     if (!md_set_column_value_as_utf8(c, mdtTypeRef_TypeNamespace, ns))
         return E_FAIL;
@@ -476,7 +657,23 @@ HRESULT MetadataEmit::DefineMemberRef(
         return E_INVALIDARG;
     char const* name = cvt;
 
-    // TODO: Check for duplicates
+    if (CheckDuplicates(MDDupMemberRef))
+    {
+        if (cbSigBlob != 0 && pvSigBlob == nullptr)
+            return E_INVALIDARG;
+        HRESULT hr = FindExisting(MetaData(), mdtid_MemberRef, [&](mdcursor_t row)
+        {
+            HRESULT match = MatchToken(row, mdtMemberRef_Class, tkImport);
+            if (match != S_OK)
+                return match;
+            match = MatchString(row, mdtMemberRef_Name, name);
+            return match == S_OK ? MatchBlob(row, mdtMemberRef_Signature, pvSigBlob, cbSigBlob) : match;
+        }, pmr);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
 
     md_added_row_t c;
     if (!md_append_row(MetaData(), mdtid_MemberRef, &c))
@@ -854,9 +1051,26 @@ HRESULT MetadataEmit::DefinePermissionSet(
         ULONG       cbPermission,
         mdPermission *ppm)
 {
-    // TODO: Check for duplicates
     assert(TypeFromToken(tk) == mdtTypeDef || TypeFromToken(tk) == mdtMethodDef ||
              TypeFromToken(tk) == mdtAssembly);
+
+    if (CheckDuplicates(MDDupPermission))
+    {
+        mdPermission existing;
+        HRESULT hr = FindExisting(MetaData(), mdtid_DeclSecurity, [&](mdcursor_t row)
+        {
+            HRESULT match = MatchToken(row, mdtDeclSecurity_Parent, tk);
+            return match == S_OK ? MatchConstant(row, mdtDeclSecurity_Action, dwAction) : match;
+        }, &existing);
+        if (hr == S_OK)
+        {
+            if (ppm != nullptr)
+                *ppm = existing;
+            return META_S_DUPLICATE;
+        }
+        if (FAILED(hr))
+            return hr;
+    }
 
     md_added_row_t c;
     if (!md_append_row(MetaData(), mdtid_DeclSecurity, &c))
@@ -923,6 +1137,18 @@ HRESULT MetadataEmit::GetTokenFromSig(
         ULONG       cbSig,
         mdSignature *pmsig)
 {
+    if (CheckDuplicates(MDDupSignature))
+    {
+        if (cbSig != 0 && pvSig == nullptr)
+            return E_INVALIDARG;
+        HRESULT hr = FindExisting(MetaData(), mdtid_StandAloneSig,
+            [&](mdcursor_t row) { return MatchBlob(row, mdtStandAloneSig_Signature, pvSig, cbSig); }, pmsig);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
+
     md_added_row_t c;
     if (!md_append_row(MetaData(), mdtid_StandAloneSig, &c))
         return E_FAIL;
@@ -942,12 +1168,24 @@ HRESULT MetadataEmit::DefineModuleRef(
         LPCWSTR     szName,
         mdModuleRef *pmur)
 {
+    pal::StringConvert<WCHAR, char> cvt(szName);
+    if (!cvt.Success())
+        return E_INVALIDARG;
+    char const* name = cvt;
+
+    if (CheckDuplicates(MDDupModuleRef))
+    {
+        HRESULT hr = FindExisting(MetaData(), mdtid_ModuleRef,
+            [&](mdcursor_t row) { return MatchString(row, mdtModuleRef_Name, name); }, pmur);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
+
     md_added_row_t c;
     if (!md_append_row(MetaData(), mdtid_ModuleRef, &c))
         return E_FAIL;
-
-    pal::StringConvert<WCHAR, char> cvt(szName);
-    char const* name = cvt;
 
     if (!md_set_column_value_as_utf8(c, mdtModuleRef_Name, name))
         return E_FAIL;
@@ -980,6 +1218,18 @@ HRESULT MetadataEmit::GetTokenFromTypeSpec(
         ULONG       cbSig,
         mdTypeSpec *ptypespec)
 {
+    if (CheckDuplicates(MDDupTypeSpec))
+    {
+        if (cbSig != 0 && pvSig == nullptr)
+            return E_INVALIDARG;
+        HRESULT hr = FindExisting(MetaData(), mdtid_TypeSpec,
+            [&](mdcursor_t row) { return MatchBlob(row, mdtTypeSpec_Signature, pvSig, cbSig); }, ptypespec);
+        if (hr == S_OK)
+            return S_OK;
+        if (FAILED(hr))
+            return hr;
+    }
+
     md_added_row_t c;
     if (!md_append_row(MetaData(), mdtid_TypeSpec, &c))
         return E_FAIL;
@@ -2318,6 +2568,19 @@ HRESULT MetadataEmit::DefineMethodSpec(
     if (cbSigBlob == 0 || pvSigBlob == nullptr || pmi == nullptr)
         return META_E_BAD_INPUT_PARAMETER;
 
+    if (CheckDuplicates(MDDupMethodSpec))
+    {
+        HRESULT hr = FindExisting(MetaData(), mdtid_MethodSpec, [&](mdcursor_t row)
+        {
+            HRESULT match = MatchToken(row, mdtMethodSpec_Method, tkParent);
+            return match == S_OK ? MatchBlob(row, mdtMethodSpec_Instantiation, pvSigBlob, cbSigBlob) : match;
+        }, pmi);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
+
     md_added_row_t c;
     if (!md_append_row(MetaData(), mdtid_MethodSpec, &c))
         return E_FAIL;
@@ -2649,6 +2912,52 @@ HRESULT MetadataEmit::DefineAssemblyRef(
     if (!cvt.Success())
         return E_INVALIDARG;
 
+    pal::StringConvert<WCHAR, char> cvtLocale(pMetaData->szLocale == nullptr ? W("") : pMetaData->szLocale);
+    if (!cvtLocale.Success())
+        return E_INVALIDARG;
+
+    uint32_t majorVersion = pMetaData->usMajorVersion != std::numeric_limits<uint16_t>::max() ? pMetaData->usMajorVersion : 0;
+    uint32_t minorVersion = pMetaData->usMinorVersion != std::numeric_limits<uint16_t>::max() ? pMetaData->usMinorVersion : 0;
+    uint32_t buildNumber = pMetaData->usBuildNumber != std::numeric_limits<uint16_t>::max() ? pMetaData->usBuildNumber : 0;
+    uint32_t revisionNumber = pMetaData->usRevisionNumber != std::numeric_limits<uint16_t>::max() ? pMetaData->usRevisionNumber : 0;
+    if (CheckDuplicates(MDDupAssemblyRef))
+    {
+        char const* name = cvt;
+        char const* locale = cvtLocale;
+        uint32_t keyLength = pbPublicKeyOrToken == nullptr ? 0 : cbPublicKeyOrToken;
+        bool unifyVersion = EqualsIgnoreAsciiCase(name, "mscorlib") ||
+            EqualsIgnoreAsciiCase(name, "microsoft.visualc");
+        HRESULT hr = FindExisting(MetaData(), mdtid_AssemblyRef, [&](mdcursor_t row)
+        {
+            HRESULT match = MatchString(row, mdtAssemblyRef_Name, name);
+            if (match != S_OK)
+                return match;
+            match = MatchString(row, mdtAssemblyRef_Culture, locale);
+            if (match != S_OK)
+                return match;
+            match = MatchConstant(row, mdtAssemblyRef_MajorVersion, majorVersion);
+            if (match != S_OK)
+                return match;
+            match = MatchConstant(row, mdtAssemblyRef_MinorVersion, minorVersion);
+            if (match != S_OK)
+                return match;
+            if (!unifyVersion)
+            {
+                match = MatchConstant(row, mdtAssemblyRef_BuildNumber, buildNumber);
+                if (match != S_OK)
+                    return match;
+                match = MatchConstant(row, mdtAssemblyRef_RevisionNumber, revisionNumber);
+                if (match != S_OK)
+                    return match;
+            }
+            return MatchAssemblyRefKey(row, pbPublicKeyOrToken, keyLength, dwAssemblyRefFlags);
+        }, pmdar);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
+
     md_added_row_t c;
     if (!md_append_row(MetaData(), mdtid_AssemblyRef, &c))
         return E_FAIL;
@@ -2690,38 +2999,21 @@ HRESULT MetadataEmit::DefineAssemblyRef(
     if (!md_set_column_value_as_utf8(c, mdtAssemblyRef_Name, name))
         return E_FAIL;
 
-    uint32_t majorVersion = pMetaData->usMajorVersion != std::numeric_limits<uint16_t>::max() ? pMetaData->usMajorVersion : 0;
     if (!md_set_column_value_as_constant(c, mdtAssemblyRef_MajorVersion, majorVersion))
         return E_FAIL;
 
-    uint32_t minorVersion = pMetaData->usMinorVersion != std::numeric_limits<uint16_t>::max() ? pMetaData->usMinorVersion : 0;
     if (!md_set_column_value_as_constant(c, mdtAssemblyRef_MinorVersion, minorVersion))
         return E_FAIL;
 
-    uint32_t buildNumber = pMetaData->usBuildNumber != std::numeric_limits<uint16_t>::max() ? pMetaData->usBuildNumber : 0;
     if (!md_set_column_value_as_constant(c, mdtAssemblyRef_BuildNumber, buildNumber))
         return E_FAIL;
 
-    uint32_t revisionNumber = pMetaData->usRevisionNumber != std::numeric_limits<uint16_t>::max() ? pMetaData->usRevisionNumber : 0;
     if (!md_set_column_value_as_constant(c, mdtAssemblyRef_RevisionNumber, revisionNumber))
         return E_FAIL;
 
-    if (pMetaData->szLocale != nullptr)
-    {
-        pal::StringConvert<WCHAR, char> cvtLocale(pMetaData->szLocale);
-        if (!cvtLocale.Success())
-            return E_INVALIDARG;
-
-        char const* locale = cvtLocale;
-        if (!md_set_column_value_as_utf8(c, mdtAssemblyRef_Culture, locale))
-            return E_FAIL;
-    }
-    else
-    {
-        char const* locale = nullptr;
-        if (!md_set_column_value_as_utf8(c, mdtAssemblyRef_Culture, locale))
-            return E_FAIL;
-    }
+    char const* locale = cvtLocale;
+    if (!md_set_column_value_as_utf8(c, mdtAssemblyRef_Culture, locale))
+        return E_FAIL;
 
     if (!md_cursor_to_token(c, pmdar))
         return E_FAIL;
@@ -2743,12 +3035,20 @@ HRESULT MetadataEmit::DefineFile(
     if (!cvt.Success())
         return E_INVALIDARG;
 
-    md_added_row_t c;
+    char const* name = cvt;
+    if (CheckDuplicates(MDDupFile))
+    {
+        HRESULT hr = FindExisting(MetaData(), mdtid_File,
+            [&](mdcursor_t row) { return MatchString(row, mdtFile_Name, name); }, pmdf);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
 
+    md_added_row_t c;
     if (!md_append_row(MetaData(), mdtid_File, &c))
         return E_FAIL;
-
-    char const* name = cvt;
 
     if (!md_set_column_value_as_utf8(c, mdtFile_Name, name))
         return E_FAIL;
@@ -2786,18 +3086,44 @@ HRESULT MetadataEmit::DefineExportedType(
         DWORD       dwExportedTypeFlags,
         mdExportedType   *pmdct)
 {
-    md_added_row_t c;
-    if (!md_append_row(MetaData(), mdtid_ExportedType, &c))
-        return E_FAIL;
-
     pal::StringConvert<WCHAR, char> cvt(szName);
     if (!cvt.Success())
         return E_INVALIDARG;
 
-    // TODO: check for duplicates
     char const* ns;
     char const* name;
     SplitTypeName(cvt, &ns, &name);
+
+    if (CheckDuplicates(MDDupExportedType))
+    {
+        bool nested = TypeFromToken(tkImplementation) == mdtExportedType && !IsNilToken(tkImplementation);
+        HRESULT hr = FindExisting(MetaData(), mdtid_ExportedType, [&](mdcursor_t row)
+        {
+            HRESULT match = MatchString(row, mdtExportedType_TypeNamespace, ns);
+            if (match != S_OK)
+                return match;
+            match = MatchString(row, mdtExportedType_TypeName, name);
+            if (match != S_OK)
+                return match;
+
+            mdToken implementation;
+            if (!md_get_column_value_as_token(row, mdtExportedType_Implementation, &implementation))
+                return CLDB_E_FILE_CORRUPT;
+            bool existingNested = TypeFromToken(implementation) == mdtExportedType && !IsNilToken(implementation);
+            if (nested != existingNested)
+                return S_FALSE;
+            return !nested || implementation == tkImplementation ? S_OK : S_FALSE;
+        }, pmdct);
+        if (hr == S_OK)
+            return META_S_DUPLICATE;
+        if (FAILED(hr))
+            return hr;
+    }
+
+    md_added_row_t c;
+    if (!md_append_row(MetaData(), mdtid_ExportedType, &c))
+        return E_FAIL;
+
     if (!md_set_column_value_as_utf8(c, mdtExportedType_TypeNamespace, ns))
         return E_FAIL;
     if (!md_set_column_value_as_utf8(c, mdtExportedType_TypeName, name))

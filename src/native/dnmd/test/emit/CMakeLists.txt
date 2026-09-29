@@ -13,6 +13,7 @@ set(SOURCES
 	param.cpp
 	fieldmarshal.cpp
 	fieldrva.cpp
+	duplicates.cpp
 	metadataemithelper.cpp)
 
 set(HEADERS emit.hpp)

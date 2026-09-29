@@ -16,6 +16,20 @@
 class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyEmit, IMetaDataEmitHelper>
 {
     mdhandle_view _md_ptr;
+    uint32_t _duplicateChecks;
+
+    bool CheckDuplicates(CorCheckDuplicatesFor flag) const
+    {
+        return (_duplicateChecks & flag) != 0;
+    }
+
+    HRESULT DefineTypeDefCore(
+        LPCWSTR szTypeDef,
+        DWORD dwTypeDefFlags,
+        mdToken tkExtends,
+        mdToken rtkImplements[],
+        mdTypeDef tdEncloser,
+        mdTypeDef *ptd);
 
 protected:
     bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
@@ -39,9 +53,10 @@ protected:
     }
 
 public:
-    MetadataEmit(IUnknown* controllingUnknown, mdhandle_view md_ptr)
+    MetadataEmit(IUnknown* controllingUnknown, mdhandle_view md_ptr, uint32_t duplicateChecks)
         : TearOffBase(controllingUnknown)
         , _md_ptr{ std::move(md_ptr) }
+        , _duplicateChecks{ duplicateChecks }
     { }
 
     virtual ~MetadataEmit() = default;
