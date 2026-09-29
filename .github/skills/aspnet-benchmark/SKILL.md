@@ -89,9 +89,6 @@ BACKUP_DIR="/tmp/netcoreapp_sdk_backup.$$"
 mkdir "$BACKUP_DIR"   # fails loudly (no -p) if this exact path somehow already exists
 rsync -a --delete "$SDK_FX"/ "$BACKUP_DIR"/
 
-# Record the pre-overlay checksum so Step 6's restore can be verified against it.
-md5sum "$SDK_FX"/System.Private.CoreLib.dll
-
 # Overlay with the local build.
 rsync -a --delete "$TESTHOST_FX"/ "$SDK_FX"/
 ```
@@ -159,10 +156,10 @@ Repeat Steps 4-5 for each configuration being compared (e.g. once with the env v
 
    ```bash
    rsync -a --delete "$BACKUP_DIR"/ "$SDK_FX"/
-   md5sum "$SDK_FX"/System.Private.CoreLib.dll   # must match the checksum recorded in Step 3 before overlaying
+   diff --recursive --brief "$BACKUP_DIR" "$SDK_FX"   # no output and exit code 0 means an exact content restore
    ```
 
-3. Remove `$BACKUP_DIR` and any log files once restoration is verified.
+3. Remove `$BACKUP_DIR` and any log files only after the recursive comparison succeeds.
 
 ### Profiling a Benchmark Run with `perfcollect`
 
@@ -204,7 +201,7 @@ If the load-test numbers show a difference (or don't, and you need to know why) 
   ```bash
   # Use a path anchored to <runtime-repo> (or `cd` back there first) — a bare relative
   # path resolves under the PlatformBenchmarks output directory left by Step 4 instead.
-  cp <runtime-repo>/artifacts/bin/crossgen2_publish/x64/Release/crossgen2 "$SDK_FX"/
+  cp <runtime-repo>/artifacts/bin/crossgen2_publish/<arch>/Release/crossgen2 "$SDK_FX"/
   ```
 
   For a runtime you didn't build yourself, see the "Resolving Framework Symbols" section of [linux-performance-tracing.md](../../../docs/project/linux-performance-tracing.md) instead (it walks through obtaining a matching `crossgen2` via a self-contained publish).
