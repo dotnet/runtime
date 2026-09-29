@@ -72,6 +72,7 @@ Findings 48 to 54 are in the ICU-based globalization code, so their repros only 
 | 53 | CompareInfo (ICU) | Culture-aware `StartsWith`/`EndsWith` accept an affix that splits a grapheme or an expansion, so `"कि".StartsWith("क")` and `"เก".StartsWith("ก")` are true while `IndexOf` is -1 (Indic vowel signs, Hangul jamo, Thai prevowels, ligatures with IgnoreCase; backwards even `"e\u0301".EndsWith("\u0301")`) | Medium | Yes | [53](repros/53-CompareInfo-AffixSplitsGrapheme.cs) |
 | 54 | CompareInfo (ICU) | Repeated culture-aware backward searches reuse a cached ICU search object and return stale matches: `LastIndexOf(..., out matchLength)` gives matchLength -1 (or -5, -11) or an earlier index on the second identical call, and `IsSuffix` flips from true to false | Medium | Yes | [54](repros/54-CompareInfo-LastIndexOf-StaleSearchState.cs) |
 | 55 | Compression | The new span decoders `DeflateDecoder`/`ZLibDecoder`/`GZipDecoder` can't decode a valid stream of empty data into an empty destination (`TryDecompress` is false; Brotli and Zstandard accept it), and `ZstandardDecoder.Decompress` returns `Done` instead of throwing after `Dispose` | Low | Yes | [55](repros/55-CompressionDecoders-SpanEdgeCases.cs) |
+| 56 | Compression (zstd) | `ZstandardDecoder.TryDecompress` accepts frames with a raw/RLE block larger than the window, which the format forbids and `Decompress`/`ZstandardStream` reject, so the same bytes decode or fail depending on the API | Low | Yes | [56](repros/56-Zstandard-OneShotAcceptsOversizedBlock.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -341,6 +342,10 @@ The trigger is a value that starts with a combining mark, where the source has a
 
 [Repro](repros/55-CompressionDecoders-SpanEdgeCases.cs). `DeflateDecoder.Decompress` starts with `if (destination.IsEmpty && source.Length > 0) return OperationStatus.DestinationTooSmall;`. So zlib never gets to see the end-of-stream marker of a stream whose payload is empty. `DeflateDecoder.TryDecompress(stream, Span<byte>.Empty, out _)` returns false for the 2-byte deflate encoding of nothing, and so do `ZLibDecoder` and `GZipDecoder`, which wrap it. `BrotliDecoder.TryDecompress` and `ZstandardDecoder.TryDecompress` return true for the same case. A caller that sizes the output from a stored length, like a length-prefixed record of length 0, gets a failure for valid data. `ZstandardDecoder.Decompress` has the same early `DestinationTooSmall` return. Separately, `ZstandardDecoder.Decompress` checks its `_finished` flag before `EnsureNotDisposed`. Once a frame has been decoded, calling it after `Dispose` returns `Done` instead of throwing `ObjectDisposedException`; `DeflateDecoder` throws as documented. Both are small, but these APIs are new in .NET 11, so now is a cheap time to fix them. Found by `CompressionCodecsFuzzer`'s exact-size destination check.
 
+### 56. Zstandard one-shot and streaming decoders disagree
+
+[Repro](repros/56-Zstandard-OneShotAcceptsOversizedBlock.cs). The frame in the repro declares a 1 KB window and then carries an 8254-byte RLE block. The Zstandard format caps a block at `Block_Maximum_Size = min(Window_Size, 128 KB)` (RFC 8878, section 3.1.1.2), so the frame is invalid. `ZstandardDecoder.Decompress` returns `InvalidData` and `ZstandardStream` throws `InvalidDataException`, because zstd's streaming path checks `cBlockSize > blockSizeMax` ("Block Size Exceeds Maximum"). `ZstandardDecoder.TryDecompress` returns true with 8255 bytes. It calls `ZSTD_decompress`, and in the bundled zstd 1.5.7 the one-shot `ZSTD_decompressFrame` never compares raw or RLE block sizes with `blockSizeMax`. The leniency is upstream's, but .NET offers both paths as interchangeable APIs, so a component that validates with one and decodes with the other sees different data. The one-shot writes stay within the destination, so there's no memory-safety impact. Relatedly, and by design, the one-shot path ignores `maxWindowLog2`, since it needs no window buffer. A frame declaring a 1 GB window decodes one-shot while the streaming decoder throws `IOException`. Found by `CompressionCodecsFuzzer`, which compares the one-shot and streaming decoders.
+
 ## Things that looked like bugs but aren't
 
 - `NrbfDecoderFuzzer` OOM on the repo's own seed `largeArrayOfNulls.nrbf`: the input asks for an `Array.MaxLength` array, and the `ArrayRecord.GetArray` docs tell callers to check `Lengths` first. It only fails on machines that can't allocate 16 GB.
@@ -395,7 +400,7 @@ Clean runs, with the known issues above tolerated so the fuzzers could get past 
 | IPNetwork and IPEndPoint parsing, string/span/UTF-8 | `IPNetworkEndPointFuzzer` | 0.7M (finding 45) |
 | HTTP header value parsers (MediaType, CacheControl, ...), round-trip | `HttpHeaderValuesFuzzer` | 0.9M |
 | ICU globalization interop: sort keys, culture-aware search, normalization, IDN, casing, guard-paged buffers | `GlobalizationIcuFuzzer` | in progress (findings 48 to 54) |
-| Span compression codecs over native zlib-ng and zstd: Deflate/ZLib/GZip/Zstandard encoders and decoders vs the Stream classes | `CompressionCodecsFuzzer` | in progress (finding 55) |
+| Span compression codecs over native zlib-ng and zstd: Deflate/ZLib/GZip/Zstandard encoders and decoders vs the Stream classes | `CompressionCodecsFuzzer` | in progress (findings 55 and 56) |
 
 A planted tie-breaking bug in `argmin-blocks` was caught by the saved corpus in under a second, so the clean result on those branches means something.
 

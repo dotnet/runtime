@@ -231,6 +231,13 @@ internal sealed class CompressionCodecsFuzzer : IFuzzer
             return;
         }
 
+        if (!done && codec is ZstdCodec && !s_strict)
+        {
+            // Finding 56: zstd's one-shot path skips the block-size-vs-window check the streaming path makes, and (by design) the
+            // maxWindowLog2 limit, so it accepts frames the streaming decoder rejects.
+            return;
+        }
+
         // A complete stream that fits: streaming must finish, consume everything and produce the same bytes.
         Check(done && consumed == data.Length, $"TryDecompress succeeded but streaming Decompress finished={done} after {consumed} bytes: {context}");
         Check(streamed.AsSpan().SequenceEqual(oneShot), $"streaming Decompress produced {streamed.Length} bytes, TryDecompress {oneShot.Length}, or different bytes: {context}");
