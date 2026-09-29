@@ -167,7 +167,7 @@ namespace System.Formats.Tar
         {
             if (!string.IsNullOrEmpty(value))
             {
-                id = unchecked((int)long.Parse(value, CultureInfo.InvariantCulture));
+                id = ToUidGid(long.Parse(value, CultureInfo.InvariantCulture));
                 return true;
             }
 
@@ -223,11 +223,22 @@ namespace System.Formats.Tar
 
         /// <summary>Parses a uid or gid numeric field.</summary>
         /// <remarks>
-        /// Unix uid_t and gid_t are unsigned, and archives may contain values larger than <see cref="int.MaxValue"/>
-        /// (for example, GNU base-256 encoded fields). The value is reinterpreted as <see cref="int"/> without an
+        /// Unix uid_t and gid_t are 32-bit unsigned, and archives may contain values larger than <see cref="int.MaxValue"/>
+        /// (for example, GNU base-256 encoded fields). Such values are reinterpreted as <see cref="int"/> without an
         /// overflow check, which matches how <see cref="TarWriter"/> stores uid and gid values read from the file system.
+        /// Values that don't fit in 32 bits can't be a valid id and are rejected.
         /// </remarks>
-        internal static int ParseUidGid(ReadOnlySpan<byte> buffer) => unchecked((int)ParseNumeric<long>(buffer));
+        internal static int ParseUidGid(ReadOnlySpan<byte> buffer) => ToUidGid(ParseNumeric<long>(buffer));
+
+        private static int ToUidGid(long value)
+        {
+            if (value < int.MinValue || value > uint.MaxValue)
+            {
+                ThrowInvalidNumber();
+            }
+
+            return unchecked((int)value);
+        }
 
         /// <summary>Parses a numeric field.</summary>
         internal static T ParseNumeric<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>, IBinaryInteger<T>
