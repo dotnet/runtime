@@ -2269,9 +2269,19 @@ void gc_heap::background_mark_phase ()
         }
     }
 
-    // We need to void alloc contexts here 'cause while background_ephemeral_sweep is running
+    // We need to retire alloc contexts here 'cause while background_ephemeral_sweep is running
     // we can't let the user code consume the left over parts in these alloc contexts.
-    repair_allocation_contexts (FALSE);
+#ifdef MULTIPLE_HEAPS
+    // Allocation contexts are process-wide, so a single GC thread must retire their accounting.
+    bgc_t_join.join(this, gc_join_bgc_retire_alloc_contexts);
+    if (bgc_t_join.joined())
+#endif //MULTIPLE_HEAPS
+    {
+        repair_allocation_contexts (FALSE);
+#ifdef MULTIPLE_HEAPS
+        bgc_t_join.restart();
+#endif //MULTIPLE_HEAPS
+    }
 
     dprintf (2, ("end of bgc mark: gen2 free list space: %zu, free obj space: %zu",
         generation_free_list_space (generation_of (max_generation)),

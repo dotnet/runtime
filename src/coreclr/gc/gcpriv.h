@@ -2429,6 +2429,8 @@ private:
     PER_HEAP_ISOLATED_METHOD void destroy_semi_shared();
     PER_HEAP_METHOD void repair_allocation_contexts (BOOL repair_p);
     PER_HEAP_METHOD void fix_allocation_contexts (BOOL for_gc_p);
+    PER_HEAP_METHOD void retire_allocation_context (alloc_context* acontext);
+    PER_HEAP_ISOLATED_METHOD void retire_allocation (gc_alloc_context* acontext, void*);
 #ifdef MULTIPLE_HEAPS
     PER_HEAP_ISOLATED_METHOD void fix_allocation_contexts_heaps ();
     PER_HEAP_ISOLATED_METHOD void fix_allocation_context_heaps (gc_alloc_context* acontext, void*);

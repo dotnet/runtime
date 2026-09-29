@@ -226,7 +226,8 @@ enum gc_join_stage
     gc_join_disable_software_write_watch = 38,
     gc_join_merge_temp_fl = 39,
     gc_join_bridge_processing = 40,
-    gc_join_max = 41
+    gc_join_bgc_retire_alloc_contexts = 41,
+    gc_join_max = 42
 };
 
 enum gc_join_flavor
