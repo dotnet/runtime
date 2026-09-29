@@ -1567,7 +1567,7 @@ namespace
         args.Thread->StartThread();
 
         // Wait for the thread to be in its main loop
-        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE, false);
         args.ThreadStartedEvent.CloseEvent();
         _ASSERTE(res == WAIT_OBJECT_0);
 
@@ -1631,7 +1631,7 @@ namespace
         }
 
         // Wait for the thread to be in its main loop
-        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE);
+        uint32_t res = args.ThreadStartedEvent.Wait(INFINITE, FALSE, false);
         args.ThreadStartedEvent.CloseEvent();
         _ASSERTE(res == WAIT_OBJECT_0);
 

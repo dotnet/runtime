@@ -2568,21 +2568,6 @@ public:
     bool FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
-public:
-    PrepareCodeConfig *GetNextInSameThread() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_nextInSameThread;
-    }
-
-    void SetNextInSameThread(PrepareCodeConfig *config)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(config == nullptr || m_nextInSameThread == nullptr);
-
-        m_nextInSameThread = config;
-    }
-
 protected:
     MethodDesc* m_pMethodDesc;
     NativeCodeVersion m_nativeCodeVersion;
@@ -2613,7 +2598,6 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
-    PrepareCodeConfig *m_nextInSameThread;
 };
 
 #ifdef FEATURE_CODE_VERSIONING

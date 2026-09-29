@@ -63,6 +63,7 @@ namespace System.Text.Json.SourceGeneration
 
             public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
+            private JsonNumberHandling _contextNumberHandling;
 
             public void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, params object?[]? messageArgs)
             {
@@ -147,12 +148,14 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                if (!TryGetNestedTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
+                if (!ContainingTypeUtilities.TryGetContainingTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
                 {
                     // Class or one of its containing types is not partial so we can't add to it.
                     ReportDiagnostic(DiagnosticDescriptors.ContextClassesMustBePartial, _contextClassLocation, contextTypeSymbol.Name);
                     return null;
                 }
+
+                _contextNumberHandling = options?.GetEffectiveNumberHandling() ?? JsonNumberHandling.Strict;
 
                 // Enqueue attribute data for spec generation
                 foreach (TypeToGenerate rootSerializableType in rootSerializableTypes)
@@ -189,45 +192,8 @@ namespace System.Text.Json.SourceGeneration
                 _genericTypeDefinitions.Clear();
                 _typesToGenerate.Clear();
                 _contextClassLocation = null;
+                _contextNumberHandling = default;
                 return contextGenSpec;
-            }
-
-            private static bool TryGetNestedTypeDeclarations(ClassDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? typeDeclarations)
-            {
-                typeDeclarations = null;
-
-                for (TypeDeclarationSyntax? currentType = contextClassSyntax; currentType != null; currentType = currentType.Parent as TypeDeclarationSyntax)
-                {
-                    StringBuilder stringBuilder = new();
-                    bool isPartialType = false;
-
-                    foreach (SyntaxToken modifier in currentType.Modifiers)
-                    {
-                        stringBuilder.Append(modifier.Text);
-                        stringBuilder.Append(' ');
-                        isPartialType |= modifier.IsKind(SyntaxKind.PartialKeyword);
-                    }
-
-                    if (!isPartialType)
-                    {
-                        typeDeclarations = null;
-                        return false;
-                    }
-
-                    stringBuilder.Append(currentType.GetTypeKindKeyword());
-                    stringBuilder.Append(' ');
-
-                    INamedTypeSymbol? typeSymbol = semanticModel.GetDeclaredSymbol(currentType, cancellationToken);
-                    Debug.Assert(typeSymbol != null);
-
-                    string typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                    stringBuilder.Append(typeName);
-
-                    (typeDeclarations ??= new()).Add(stringBuilder.ToString());
-                }
-
-                Debug.Assert(typeDeclarations?.Count > 0);
-                return true;
             }
 
             private TypeRef EnqueueType(ITypeSymbol type, JsonSourceGenerationMode? generationMode)
@@ -1801,11 +1767,13 @@ namespace System.Text.Json.SourceGeneration
             {
                 string unionTypeName = unionType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                 Dictionary<JsonValueType, List<string>> valueTypeToTypes = new();
+                JsonNumberHandling? unionNumberHandling = GetNumberHandling(unionType);
 
                 foreach (ITypeSymbol caseType in caseTypes)
                 {
                     string caseTypeName = caseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                    JsonValueType valueTypes = GetSupportedJsonValueTypes(caseType);
+                    JsonNumberHandling effectiveNumberHandling = unionNumberHandling ?? GetNumberHandling(caseType) ?? _contextNumberHandling;
+                    JsonValueType valueTypes = GetSupportedJsonValueTypes(caseType, effectiveNumberHandling);
 
                     for (int flag = 1; flag <= (int)JsonValueType.Boolean; flag <<= 1)
                     {
@@ -1850,7 +1818,7 @@ namespace System.Text.Json.SourceGeneration
             //
             // User-defined converters are conservatively classified as potentially representing
             // every JSON value shape, matching the JsonConverter base implementation.
-            private JsonValueType GetSupportedJsonValueTypes(ITypeSymbol type)
+            private JsonValueType GetSupportedJsonValueTypes(ITypeSymbol type, JsonNumberHandling numberHandling)
             {
                 if (HasCustomConverterAttribute(type))
                 {
@@ -1890,7 +1858,7 @@ namespace System.Text.Json.SourceGeneration
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal64Type) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal128Type))
                 {
-                    return HasAllowReadingFromString(type)
+                    return (numberHandling & JsonNumberHandling.AllowReadingFromString) != 0
                         ? JsonValueType.Number | JsonValueType.String
                         : JsonValueType.Number;
                 }
@@ -2005,26 +1973,25 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
-            private bool HasAllowReadingFromString(ITypeSymbol type)
+            private JsonNumberHandling? GetNumberHandling(ITypeSymbol type)
             {
                 INamedTypeSymbol? numberHandlingAttr = _knownSymbols.JsonNumberHandlingAttributeType;
                 if (numberHandlingAttr is null)
                 {
-                    return false;
+                    return null;
                 }
 
                 foreach (AttributeData attr in type.GetAttributes())
                 {
                     if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, numberHandlingAttr) &&
                         attr.ConstructorArguments.Length > 0 &&
-                        attr.ConstructorArguments[0].Value is int handlingValue &&
-                        ((JsonNumberHandling)handlingValue & JsonNumberHandling.AllowReadingFromString) != 0)
+                        attr.ConstructorArguments[0].Value is int handlingValue)
                     {
-                        return true;
+                        return (JsonNumberHandling)handlingValue;
                     }
                 }
 
-                return false;
+                return null;
             }
 
             private bool TryResolveCollectionType(

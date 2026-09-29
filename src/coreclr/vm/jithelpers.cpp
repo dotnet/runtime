@@ -2186,6 +2186,22 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
+// Called at a catch resumption point, once the restore-context unwind has completed and managed
+// code is about to run again. This does not touch the thread's GC mode; it only lifts the
+// restriction installed before ResumeAfterCatch -- see the comment on t_gcModeSwitchPermitted.
+// Only WebAssembly emits a call to this helper, but the definition is unconditional so the helper
+// table links everywhere.
+EXTERN_C FCDECL0(void, JIT_ResumeAfterCatch);
+FCIMPL0(void, JIT_ResumeAfterCatch)
+{
+    FCALL_CONTRACT;
+
+#ifdef _DEBUG
+    t_gcModeSwitchPermitted = true;
+#endif // _DEBUG
+}
+FCIMPLEND
+
 #ifdef DEBUGGING_SUPPORTED
 void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
 {
@@ -2284,6 +2300,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
 #endif
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads != 0)
         {
@@ -2320,6 +2337,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
         frame->currentThread = thread;
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads != 0)
         {
@@ -2346,6 +2364,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     // Manually inline the fast path in Thread::EnablePreemptiveGC().
     // This is a trade off with GC suspend performance. We are opting
     // to make this exit faster.
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
@@ -2369,6 +2388,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     // Manually inline the fast path in Thread::EnablePreemptiveGC().
     // This is a trade off with GC suspend performance. We are opting
     // to make this exit faster.
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)

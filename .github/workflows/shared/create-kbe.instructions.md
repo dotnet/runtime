@@ -39,17 +39,29 @@ responsible for:
 
 ## Search for an existing KBE
 
-Search open `dotnet/runtime` issues with the `Known Build Error` label.
+Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
+these variations in order and inspect every returned candidate. Narrow overly
+broad queries instead of truncating results. GitHub best-match ranking can
+place noisier hits above the correct one.
 
-Use the issue search and full-issue read transports available in the caller's
-environment. If using `search_issues`, include `user` in the requested fields so
-integrity filtering can recognize trusted bot authors.
+Use the lookup tools required by the caller; this shared file does not change
+its tool policy. For GitHub MCP lookups, use `search_issues` for issues and
+`search_pull_requests` for PRs. When supplying a `fields` filter, include
+`user` and `labels` alongside `number`, `title`, and `state`; otherwise retain
+the full response. The integrity gateway uses `user.login` to recognize
+trusted bots before filtering results.
 
-Regardless of transport, inspect the full issue before deciding whether it is a
-semantic/non-exact match. Never infer a match from search metadata, and never
-conclude that a query missed until every returned candidate has been read.
-GitHub best-match ranking can place noisier hits above the correct one, so try
-these variations in order and inspect all returned candidates from each:
+Preserve the complete lookup response before extracting candidate numbers or
+titles. Never pipe it through `grep`, `head`, or a projection that discards
+filtered markers, errors, author metadata, or result counts. A failed,
+malformed, incomplete, or unreadable lookup is not an empty result. Report the
+retrieval failure to the caller and do not create a KBE for that signature
+while the lookup remains inconclusive.
+These rules also apply to candidate body and comments reads. Do not switch
+retrieval paths to work around an integrity-filtered or denied read.
+When the caller provides a bounded issue-search wrapper, use that wrapper for
+every issue query and read every returned candidate through the caller's
+full-issue transport before making a duplicate decision.
 
 1. Full `[FAIL]` line.
 2. Assertion text.
@@ -116,16 +128,21 @@ If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
 `skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
-If the issue search fails, or a full candidate read fails or returns a
-`[Filtered]` marker for any candidate from a KBE-oriented search, treat it as a
-likely existing-KBE hit and record
+If an issue search fails, or a full candidate read fails or returns a
+`[Filtered]` marker for a KBE-oriented search, treat it as a likely
+existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
-If a full read fails or returns a `[Filtered]` marker for any plain tracker
+If a full read fails or returns a `[Filtered]` marker for a plain tracker
 candidate, stop the search and record
 `skipped: integrity-filtered tracker candidate, needs human review`. Do not
 continue to issue creation.
+
+If any other lookup returns a `[Filtered]` or `[DIFC-FILTERED]` marker, treat it
+as a possible existing candidate and record
+`skipped: integrity-filtered candidate, needs human review`. A hidden result
+does not establish whether the issue is an unlabeled tracker or a KBE.
 
 On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
@@ -163,8 +180,23 @@ search misses, also search recently closed KBEs with the same pair:
 Apply the closed-candidate timing and full candidate-verification rules below
 to any pair match.
 
-On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
-it from the build metadata, not the queue time) against the issue's `closed_at`:
+Read each candidate's body and comments before applying the recurrence rules.
+If a candidate is identified as a duplicate, follow only explicit duplicate
+links and read each linked issue's body and comments through
+the same permitted tools until reaching an original that is not itself a
+duplicate. Track visited issues. If a link is missing or ambiguous, the chain
+is cyclic, or any read is inconclusive, report the incomplete lookup and do
+not file.
+
+Apply the full candidate verification to the original. Use only its issue
+number, state, and `closed_at` for the timing and recurring-signature rules
+below, counting each original once. Reuse a matching open KBE rather than
+filing a recurrence against its closed duplicate. A duplicate closure does
+not establish that the failure was fixed.
+
+On a verified closed-original hit, compare the failing AzDO build's `finishTime`
+(read it from the build metadata, not the queue time) against that original's
+`closed_at`:
 
 - Closed **after** the failing build finished, or closed within the last 7 days:
   the failure is already handled or under active triage. Record
@@ -266,10 +298,10 @@ hit, record `existing-PR #<n>`.
 
 ### Integrity-filtered PR candidate
 
-If any PR search above returns a `[Filtered]` marker for a candidate whose
-title, source symbol, or assertion slice overlaps the failing signature, do
-**not** assume no fix exists and file a fresh KBE. The filter hides a real PR
-you are not permitted to read, and it may already handle this failure. Record
+If any PR search above returns a `[Filtered]` or `[DIFC-FILTERED]` marker, do
+**not** assume no fix exists and file a fresh KBE. Do not require visible
+title, source-symbol, or assertion overlap before stopping, since filtering
+may hide those fields. The hidden PR may already handle this failure. Record
 `skipped: integrity-filtered candidate, needs human review` and stop for this
 signature. A human can confirm whether the hidden PR fixes the failure; filing a
 duplicate KBE that is immediately closed as "fixed by" the hidden PR is a
@@ -316,8 +348,7 @@ so explicitly in the KBE body with both the fix PR `#<n>` and the post-fix build
 For every `<n>` you plan to embed into source, issue bodies, or PR bodies
 (`Linked KBE: #<n>`, `Tracking: dotnet/runtime#<n>`,
 `[ActiveIssue("...issues/<n>")]`, inline comments referencing an issue, and so
-on), read `dotnet/runtime#<n>` in full and verify that it is still open before
-reusing it.
+on), verify that `dotnet/runtime#<n>` is still open before reusing it.
 
 If the issue does not exist or is no longer open, stop and treat it as an
 unhandled case that needs human review.

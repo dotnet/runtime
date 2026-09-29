@@ -1,3 +1,7 @@
+import { fileURLToPath } from "node:url";
+
+const trustedHelperPath = fileURLToPath(new URL("./search-kbe-issues.cjs", import.meta.url));
+
 function callKey(event) {
     return JSON.stringify([event.agentId ?? null, event.data.toolCallId]);
 }
@@ -22,21 +26,93 @@ function resultText(result) {
     }
 }
 
+function resultIssueNumber(result) {
+    if (typeof result === "string") {
+        try {
+            return resultIssueNumber(JSON.parse(result));
+        } catch {
+            return undefined;
+        }
+    }
+
+    if (typeof result !== "object" || result === null) {
+        return undefined;
+    }
+
+    const issue = typeof result.issue === "object" && result.issue !== null
+        ? result.issue
+        : result;
+    if (Number.isInteger(issue.number)) {
+        return issue.number;
+    }
+
+    if (result.structuredContent !== undefined) {
+        const number = resultIssueNumber(result.structuredContent);
+        if (number !== undefined) {
+            return number;
+        }
+    }
+
+    if (typeof result.content === "string") {
+        const number = resultIssueNumber(result.content);
+        if (number !== undefined) {
+            return number;
+        }
+    }
+
+    if (Array.isArray(result.content)) {
+        for (const content of result.content) {
+            if (typeof content?.text !== "string") {
+                continue;
+            }
+
+            const number = resultIssueNumber(content.text);
+            if (number !== undefined) {
+                return number;
+            }
+        }
+    }
+
+    if (Array.isArray(result.contents)) {
+        for (const content of result.contents) {
+            if (typeof content?.text !== "string") {
+                continue;
+            }
+
+            const number = resultIssueNumber(content.text);
+            if (number !== undefined) {
+                return number;
+            }
+        }
+    }
+
+    return undefined;
+}
+
 function isSearchHarnessCall(event) {
     if (event.type !== "tool_call" || !/^(bash|powershell)$/.test(event.data.toolName)) {
         return false;
     }
 
     const command = event.data.arguments?.command;
-    return typeof command === "string" &&
-        /(?:^|[\\/])search-kbe-issues\.cjs(?:\s|$)/.test(command);
+    if (typeof command !== "string") {
+        return false;
+    }
+
+    const normalizedCommand = command.replaceAll("\\", "/");
+    const normalizedPath = (process.env.KBE_SEARCH_HELPER ?? trustedHelperPath).replaceAll("\\", "/");
+    const escapedPath = normalizedPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const invocation = new RegExp(
+        `^\\s*node(?:\\.exe)?\\s+(?:"${escapedPath}"|'${escapedPath}'|${escapedPath})(?:\\s|$)`,
+    );
+    const environmentInvocation = /^\s*node(?:\.exe)?\s+"\$KBE_SEARCH_HELPER"(?:\s|$)/;
+
+    return invocation.test(normalizedCommand) || environmentInvocation.test(command);
 }
 
 function isIssueReadCall(event) {
-    const toolName = event.data?.toolName;
     return event.type === "tool_call" &&
-        typeof toolName === "string" &&
-        (toolName === "issue_read" || /^(?:mcp__)?github[-_.]+issue_read$/.test(toolName));
+        /^(?:mcp__)?github[-_.]+issue_read$/.test(event.data.toolName);
 }
 
 function parseCandidates(result) {
@@ -87,6 +163,7 @@ class KbeCandidateReadsGrader {
         }
 
         const calls = new Map();
+        const pendingSearches = new Set();
         const candidates = new Map();
         const reads = new Map();
         const errors = [];
@@ -96,11 +173,14 @@ class KbeCandidateReadsGrader {
             if (event.type === "tool_call") {
                 if (isSearchHarnessCall(event)) {
                     harnessCallCount++;
-                    calls.set(callKey(event), { kind: "search" });
+                    const key = callKey(event);
+                    calls.set(key, { kind: "search" });
+                    pendingSearches.add(key);
                 } else if (isIssueReadCall(event)) {
                     const args = event.data.arguments ?? {};
                     calls.set(callKey(event), {
                         kind: "read",
+                        callIndex: index,
                         number: Number(args.issue_number),
                         validScope: args.owner === "dotnet" &&
                             args.repo === "runtime" &&
@@ -114,6 +194,7 @@ class KbeCandidateReadsGrader {
                 }
 
                 if (call.kind === "search") {
+                    pendingSearches.delete(callKey(event));
                     if (!event.data.success) {
                         errors.push("search-kbe-issues call failed");
                         continue;
@@ -129,14 +210,22 @@ class KbeCandidateReadsGrader {
                         errors.push(error instanceof Error ? error.message : String(error));
                     }
                 } else if (call.validScope && Number.isInteger(call.number) &&
-                    event.data.success && !resultText(event.data.result).includes("[Filtered]")) {
-                    reads.set(call.number, index);
+                    event.data.success &&
+                    !(event.data.result &&
+                        typeof event.data.result === "object" &&
+                        event.data.result.isError === true) &&
+                    resultIssueNumber(event.data.result) === call.number &&
+                    !resultText(event.data.result).includes("[Filtered]")) {
+                    reads.set(call.number, call.callIndex);
                 }
             }
         }
 
         if (harnessCallCount === 0) {
             errors.push("search-kbe-issues was not called");
+        }
+        if (pendingSearches.size > 0) {
+            errors.push("search-kbe-issues call did not return a result");
         }
 
         const missing = [...candidates]

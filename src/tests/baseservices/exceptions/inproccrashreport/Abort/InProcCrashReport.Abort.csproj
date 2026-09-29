@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);INPROC_SCENARIO_ABORT</DefineConstants>
+  </PropertyGroup>
+
+  <Import Project="../Shared/InProcCrashReport.Unix.props" />
+</Project>

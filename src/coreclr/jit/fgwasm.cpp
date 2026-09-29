@@ -348,7 +348,10 @@ public:
                         else
                         {
                             JITDUMP("Multiple try entries in SCC %u entry set\n", m_num);
-                            NYI_WASM("SCC with multiple try entry headers");
+                            // Multiple try entries in an SCC is currently not supported. These cases appear to be
+                            // relatively rare, and it would potentially require some fairly complex additional handling
+                            // to support them.
+                            IMPL_LIMITATION("Wasm SCC with multiple try entry headers");
                         }
                     }
                 }
@@ -3261,6 +3264,8 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     //
     BlockToBlockMap    resumePads(getAllocator(CMK_FlowEdge));
     BlockToFlowEdgeMap continuationEdges(getAllocator(CMK_FlowEdge));
+    bool const         verifyGCModeTransitions =
+        IsReadyToRun() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
 
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
@@ -3309,6 +3314,16 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
             GenTree* const store = gtNewStoreLclVarNode(resumeIPLocalNum, zero);
             LIR::Range     range = LIR::SeqTree(this, store);
             LIR::AsRange(resumePad).InsertAtEnd(std::move(range));
+
+            if (verifyGCModeTransitions)
+            {
+                // Reaching this pad means this dispatcher accepted the resumption. A nonmatching
+                // inner dispatcher takes the rethrow edge and must leave transitions forbidden.
+                GenTree* resumeAfterCatch = gtNewHelperCallNode(CORINFO_HELP_JIT_RESUME_AFTER_CATCH, TYP_VOID);
+                resumeAfterCatch          = fgMorphCall(resumeAfterCatch->AsCall());
+                gtSetEvalOrder(resumeAfterCatch);
+                LIR::AsRange(resumePad).InsertAtEnd(LIR::SeqTree(this, resumeAfterCatch));
+            }
 
             resumePads.Set(continuation, resumePad);
 
@@ -3622,7 +3637,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 //
                 const unsigned filterIndex             = block->getHndIndex();
                 const unsigned clauseIndex             = compEHTabOrderToVMClauseOrder[filterIndex];
-                clauses[clauseIndex].clause.ClassToken = virtualIP;
+                clauses[clauseIndex].clause.ClassToken = vipFirstInFunc ? func->startVirtualIP : virtualIP;
             }
 
             // Record the required Virtual IP and store-site/entry flags for each block.

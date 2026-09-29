@@ -1669,7 +1669,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
         GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
         assert(testCopyExpr->OperIs(GT_JTRUE));
         GenTree* sideEffList = nullptr;
-        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_OBS_EFFECT);
         if (sideEffList == nullptr)
         {
             fgRemoveStmt(prevTestBlock, testCopyStmt);
@@ -3372,9 +3372,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         if (srcSize == 8)
                         {
                             assert(tree->TypeIs(TYP_INT));
-                            GenTree* castOp = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
-                            castOp->SetMorphed(this);
-                            *otherOpPtr = castOp;
+                            *otherOpPtr = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
                         }
                     }
                     return true;
@@ -4781,14 +4779,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             //
             if (m_canHoistSideEffects)
             {
-                // Is the value of the whole tree loop invariant?
-                if (!treeIsInvariant)
+                if (!treeIsHoistable)
                 {
-                    // We have a tree that is not loop invariant and we thus cannot hoist
-                    assert(treeIsHoistable == false);
-
                     // Check if we should clear m_canHoistSideEffects.
-                    // If 'tree' can throw an exception then we need to set m_canHoistSideEffects to false.
+                    // If 'tree' cannot be hoisted and can throw an exception then we need to set
+                    // m_canHoistSideEffects to false.
                     // Note that calls are handled below
                     if (tree->OperMayThrow(m_compiler) && !tree->IsCall())
                     {
@@ -4824,11 +4819,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                         }
 
                         // Additional check for helper calls that throw exceptions
-                        if (!treeIsInvariant)
+                        if (!treeIsHoistable)
                         {
-                            // We have a tree that is not loop invariant and we thus cannot hoist
-                            assert(treeIsHoistable == false);
-
                             // Does this helper call throw?
                             if (!s_helperCallProperties.NoThrow(helpFunc))
                             {
@@ -5365,6 +5357,17 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                     if (lvaVarAddrExposed(lcl->GetLclNum()))
                     {
                         memoryHavoc |= memoryKindSet(ByrefExposed);
+                    }
+                }
+                break;
+
+                case GT_IND:
+                case GT_BLK:
+                {
+                    if (tree->AsIndir()->IsVolatile())
+                    {
+                        // On a loop backedge, memory operations in a subsequent iteration may follow this acquire.
+                        memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                     }
                 }
                 break;

@@ -19,6 +19,7 @@
 #define REPEAT_COUNT 10000
 
 LONG GlobalCounter_InterlockedDecrement64_test2 = 0;
+LONG CompletedThreads_InterlockedDecrement64_test2 = 0;
 void DecrementCounter_InterlockedDecrement64_test2(void);
 
 PALTEST(miscellaneous_InterlockedDecrement64_test2_paltest_interlockeddecrement64_test2, "miscellaneous/InterlockedDecrement64/test2/paltest_interlockeddecrement64_test2")
@@ -60,15 +61,10 @@ PALTEST(miscellaneous_InterlockedDecrement64_test2_paltest_interlockeddecrement6
 			}
 		}
 
-		//Wait for all threads to finish
+		WaitForThreadCompletion(&CompletedThreads_InterlockedDecrement64_test2, MAX_THREADS);
 		for (i=0;i<MAX_THREADS;i++)
 		{
-
-			if (WAIT_OBJECT_0 != WaitForSingleObject (hThread[i], INFINITE))
- 			{
-	 			Fail ("Main: Wait for Single Object failed.  Failing test.\n"
-				"GetLastError returned %d\n", GetLastError());  
- 			}
+			CloseHandle(hThread[i]);
 		}
 		
 		/* Compare the value of  global counter with zero.  
@@ -92,7 +88,7 @@ void DecrementCounter_InterlockedDecrement64_test2(void)
 	{
 		InterlockedDecrement(&GlobalCounter_InterlockedDecrement64_test2);
 	}
+	InterlockedIncrement(&CompletedThreads_InterlockedDecrement64_test2);
 }
-
 
 

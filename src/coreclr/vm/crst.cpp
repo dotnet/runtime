@@ -24,6 +24,7 @@
 #ifndef DACCESS_COMPILE
 Volatile<LONG> g_ShutdownCrstUsageCount = 0;
 
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 //-----------------------------------------------------------------
 // Initialize critical section
 //-----------------------------------------------------------------
@@ -76,6 +77,7 @@ void CrstBase::Destroy()
 
     ResetFlags();
 }
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #endif // DACCESS_COMPILE
 
@@ -90,6 +92,7 @@ void CrstBase::Destroy()
 // Argument:
 //     input: noLevelCheckFlag - indicates whether to check the crst level
 // Note: Throws
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/))
 {
 #ifdef _DEBUG
@@ -99,11 +102,10 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     }
 #endif
 }
+#endif // FEATURE_MULTITHREADING || _DEBUG
 #else // !DACCESS_COMPILE
 
-
-
-
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/))
 {
     //-------------------------------------------------------------------------------------------
@@ -281,7 +283,7 @@ void CrstBase::Leave()
     }
 #endif //_DEBUG
 } // CrstBase::Leave
-
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #ifdef _DEBUG
 

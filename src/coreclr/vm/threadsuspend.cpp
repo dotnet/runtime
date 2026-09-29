@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "threadsuspend.h"
 
@@ -1582,7 +1583,7 @@ LPrepareRetry:
         }
         else
         {
-            ClrSleepEx(ABORT_POLL_TIMEOUT, FALSE);
+            minipal_sleep(ABORT_POLL_TIMEOUT);
         }
 
 
@@ -1618,7 +1619,7 @@ LPrepareRetry:
             }
             else
             {
-                ClrSleepEx(100, FALSE);
+                minipal_sleep(100);
             }
         }
 
@@ -4396,7 +4397,7 @@ BOOL Thread::WaitForDebugSuspendHelper(void)
                 ThreadState newState = (ThreadState)(oldState | TS_DebugSyncSuspended);
                 if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
                 {
-                    result = m_DebugSuspendEvent.Wait(INFINITE,FALSE);
+                    result = m_DebugSuspendEvent.Wait(INFINITE, FALSE, false);
 #if _DEBUG
                     newState = m_State;
                     _ASSERTE(!(newState & TS_DebugSyncSuspended));

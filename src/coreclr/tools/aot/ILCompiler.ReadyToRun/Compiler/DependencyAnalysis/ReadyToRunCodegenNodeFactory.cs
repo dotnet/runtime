@@ -466,6 +466,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmInterpreterToR2RThunkNode(this, key);
             });
 
+            _wasmClosedStaticRetBufThunks = new NodeCache<WasmClosedStaticRetBufThunkKey, WasmClosedStaticRetBufThunkNode>(key =>
+            {
+                return new WasmClosedStaticRetBufThunkNode(this, key.Signature);
+            });
+
             _wasmVirtualDispatchThunks = new NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode>(key =>
             {
                 return new WasmVirtualDispatchThunkNode(this, key.Signature);
@@ -1019,6 +1024,30 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
         }
 
+        private readonly struct WasmClosedStaticRetBufThunkKey : IEquatable<WasmClosedStaticRetBufThunkKey>
+        {
+            public WasmSignature Signature { get; }
+
+            public WasmClosedStaticRetBufThunkKey(WasmSignature signature)
+            {
+                Signature = signature;
+            }
+
+            public bool Equals(WasmClosedStaticRetBufThunkKey other) =>
+                Signature.FuncType.Equals(other.Signature.FuncType);
+
+            public override bool Equals(object obj) =>
+                obj is WasmClosedStaticRetBufThunkKey other && Equals(other);
+
+            public override int GetHashCode() => Signature.FuncType.GetHashCode();
+        }
+
+        private NodeCache<WasmClosedStaticRetBufThunkKey, WasmClosedStaticRetBufThunkNode> _wasmClosedStaticRetBufThunks;
+        public WasmClosedStaticRetBufThunkNode WasmClosedStaticRetBufThunk(WasmSignature wasmSignature)
+        {
+            return _wasmClosedStaticRetBufThunks.GetOrAdd(new WasmClosedStaticRetBufThunkKey(wasmSignature));
+        }
+
         private readonly struct WasmVirtualDispatchThunkKey : IEquatable<WasmVirtualDispatchThunkKey>
         {
             public WasmSignature Signature { get; }
@@ -1516,6 +1545,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             WasmFuncType funcType = WasmLowering.GetSignature(method).FuncType;
             return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+
+        public WasmTypeNode WasmTypeNode(INodeWithTypeSignature node)
+        {
+            return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(node).FuncType);
         }
 
         internal WasmMethodRelativeVirtualIPNode WasmMethodRelativeVirtualIP(MethodWithGCInfo method)
