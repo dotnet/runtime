@@ -217,10 +217,10 @@ internal sealed class GlobalizationIcuFuzzer : IFuzzer
     // so compare with marks removed. Finding 53: SimpleAffix accepts an affix that splits a grapheme (Indic vowel signs, Hangul jamo,
     // and backwards even a nonspacing mark). An IsSuffix
     // match that ends inside an expansion (a suffix U+0307 against U+0130) reports matchLength 0, which can't be checked.
-    private static bool IsKnownMatchLengthIssue(CompareInfo compareInfo, CompareOptions options, string value, string matched, int matchLength, string what) =>
+    private static bool IsKnownMatchLengthIssue(CompareInfo compareInfo, CompareOptions options, string source, string value, string matched, int matchLength, string what) =>
         (what == "IsSuffix" && (matchLength == 0 || compareInfo.Compare(value, string.Empty, options) == 0)) ||
         (IsShifted(compareInfo, options) && (matchLength == 0 || HasMark(Decompose(matched + value)))) ||
-        (what is "IsPrefix" or "IsSuffix" && (HasHangul(matched + value) || HasMark(matched + value) || Decompose(matched + value) != matched + value));
+        (what is "IsPrefix" or "IsSuffix" && (HasHangul(source + value) || HasMark(source + value) || Decompose(source + value) != source + value));
 
     private static string Decompose(string text)
     {
@@ -274,7 +274,7 @@ internal sealed class GlobalizationIcuFuzzer : IFuzzer
 
         Check(index <= source.Length && matchLength >= 0 && index + matchLength <= source.Length, () => $"{what}={index} matchLength={matchLength} is outside the {source.Length}-char source: {context}");
         string matched = source.Substring(index, matchLength);
-        if (!s_strict && IsKnownMatchLengthIssue(compareInfo, options, value, matched, matchLength, what))
+        if (!s_strict && IsKnownMatchLengthIssue(compareInfo, options, source, value, matched, matchLength, what))
         {
             return;
         }
