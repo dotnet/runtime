@@ -374,9 +374,9 @@ internal static class CreatedumpValidation
         {
             throw new InvalidOperationException($"The {scenarioName} child output has no createdump status marker.");
         }
-        if (usedExternal && !combinedOutput.Contains("Dump successfully written", StringComparison.Ordinal))
+        if (!combinedOutput.Contains("Dump successfully written", StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("External createdump did not report successful dump generation.");
+            throw new InvalidOperationException("Createdump did not report successful dump generation.");
         }
 
         ulong deletedMappingProbe = ParseHexOutputValue(stdout, "DELETED_MAPPING_PROBE=0x");
@@ -439,6 +439,7 @@ internal static class CreatedumpValidation
             throw new InvalidDataException($"ELF machine {machine} does not match expected machine {expectedMachine}.");
         }
 
+        // Only read the bytes we care about from the program header table.
         ulong programHeaderOffset = BinaryPrimitives.ReadUInt64LittleEndian(header.AsSpan(32));
         ushort programHeaderEntrySize = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(54));
         ushort programHeaderCount = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(56));
