@@ -3334,8 +3334,7 @@ namespace System
                 Guid result;
 #if FEATURE_COMINTEROP
                 Debug.Assert(OperatingSystem.IsWindows());
-                // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
-                if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
+                if (IsGenericCOMObjectImpl())
                 {
                     GetComObjectGuidWorker(this, &result);
                 }
@@ -4062,8 +4061,7 @@ namespace System
 
         // We need to check the type handle values - not the instances - to determine if the runtime type is a generic ComObject.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool IsGenericCOMObjectImpl() =>
-            System.Runtime.CompilerServices.TypeHandle.AreSameType(GetNativeTypeHandle(), System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>());
+        internal bool IsGenericCOMObjectImpl() => m_handle == RuntimeTypeHandle.ToIntPtr(typeof(__ComObject).TypeHandle);
 #else
         protected override bool IsCOMObjectImpl() => false;
 
