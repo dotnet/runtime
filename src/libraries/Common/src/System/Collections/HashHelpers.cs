@@ -173,13 +173,14 @@ namespace System.Collections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint FastMod(uint value, uint divisor, ulong multiplier)
         {
-            // We use modified Daniel Lemire's fastmod algorithm (https://github.com/dotnet/runtime/pull/406),
-            // which allows to avoid the long multiplication if the divisor is less than 2**31.
             Debug.Assert(divisor <= int.MaxValue);
 
-            // This is equivalent of (uint)Math.BigMul(multiplier * value, divisor, out _). This version
-            // is faster than BigMul currently because we only need the high bits.
+#if NET
+            uint highbits = (uint)Math.BigMul(multiplier * value, divisor, out _);
+#else
+            // Modified Lemire fastmod for targets without the 64-bit Math.BigMul overload.
             uint highbits = (uint)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
+#endif
 
             Debug.Assert(highbits == value % divisor);
             return highbits;
