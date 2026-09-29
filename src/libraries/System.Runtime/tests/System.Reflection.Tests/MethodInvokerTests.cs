@@ -101,8 +101,8 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance()
         {
             ConstructorInfo constructor = typeof(AbstractRefConstructorTarget).GetConstructor(
@@ -126,8 +126,8 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance_RegularArguments()
         {
             ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
@@ -156,8 +156,8 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance_ManyRegularArguments()
         {
             ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
