@@ -97,7 +97,7 @@ public unsafe class ThisCallTest
             TestCLong(instance);
             // Marshal.GetFunctionPointerForDelegate needs a stub created at run time, which CoreCLR
             // on wasm cannot allocate.
-            if (!(PlatformDetection.IsWasm && PlatformDetection.IsCoreCLR))
+            if (!PlatformDetection.IsWasm)
             {
                 Test8ByteHFAReverse();
                 Test4ByteHFAReverse();
