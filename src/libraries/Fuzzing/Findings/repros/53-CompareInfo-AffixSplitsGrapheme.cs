@@ -1,0 +1,49 @@
+// Finding: on ICU, culture-aware StartsWith/EndsWith accept a prefix or suffix that splits a grapheme cluster, while
+// IndexOf/LastIndexOf (correctly) don't, so a string can "start with" something it doesn't "contain". In every culture, with
+// CompareOptions.None or IgnoreCase:
+//   "कि".StartsWith("क", CurrentCulture) = true     but  "कि".IndexOf("क", CurrentCulture)      = -1  (Hindi KA + vowel sign I)
+//   "கி".StartsWith("க", CurrentCulture) = true     but  IndexOf = -1                               (Tamil)
+//   "가나".StartsWith("ᄀ")         = true     but  IndexOf = -1  (the syllable's leading conjoining jamo)
+//   "é".EndsWith("́")        = true     but  "é".LastIndexOf("́") = -1  (even plain Latin, backwards)
+//
+// StartsWith/EndsWith go through SimpleAffix in pal_collation.c, which walks raw collation elements. Going forward it refuses a
+// match followed by a *nonspacing* mark (it checks for an element with primary weight 0 and a secondary weight, which is why
+// "é".StartsWith("e") is false), but Indic vowel signs, viramas and Hangul vowel/final jamo have primary weights, so the
+// check doesn't fire. Going backward there's no such check at all. IndexOf/LastIndexOf use ICU usearch, which only accepts
+// matches on grapheme boundaries. With IgnoreWidth or IgnoreKanaType (the usearch-based ComplexStartsWith/ComplexEndsWith path)
+// StartsWith/EndsWith agree with IndexOf.
+// Run: dotnet run 53-CompareInfo-AffixSplitsGrapheme.cs   (on Linux or macOS; Windows uses NLS)
+using System.Globalization;
+
+if (OperatingSystem.IsWindows())
+{
+    Console.WriteLine("This repro targets the ICU implementation (Linux/macOS). NOT REPRODUCED");
+    return;
+}
+
+bool reproduced = false;
+(string Text, string Prefix, string Suffix, string What)[] cases =
+[
+    ("कि", "क", "ि", "Hindi KA + vowel sign I"),
+    ("கி", "க", "ி", "Tamil KA + vowel sign I"),
+    ("क्ष", "क", "ष", "Hindi conjunct KSSA"),
+    ("가나", "ᄀ", "ᅡ", "Hangul syllables vs conjoining jamo"),
+    ("é", "e", "́", "Latin e + combining acute"),
+];
+
+foreach (string cultureName in new[] { "", "en-US", "hi-IN", "ko-KR" })
+{
+    CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName);
+    foreach ((string text, string prefix, string suffix, string what) in cases)
+    {
+        bool startsWith = text.StartsWith(prefix, StringComparison.CurrentCulture);
+        int indexOf = text.IndexOf(prefix, StringComparison.CurrentCulture);
+        bool endsWith = text.EndsWith(suffix, StringComparison.CurrentCulture);
+        int lastIndexOf = text.LastIndexOf(suffix, StringComparison.CurrentCulture);
+        Console.WriteLine($"[{(cultureName.Length == 0 ? "invariant" : cultureName)}] {what}: StartsWith={startsWith} IndexOf={indexOf}; EndsWith={endsWith} LastIndexOf={lastIndexOf}");
+        reproduced |= (startsWith && indexOf != 0) || (endsWith && lastIndexOf < 0);
+    }
+}
+
+Console.WriteLine("Expected: StartsWith(x) implies IndexOf(x) == 0 and EndsWith(x) implies LastIndexOf(x) >= 0.");
+Console.WriteLine(reproduced ? "REPRODUCED" : "NOT REPRODUCED");

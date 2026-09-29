@@ -11,6 +11,8 @@ dotnet run 03-Tensor-ToString-OutOfBoundsRead.cs
 
 Each repro prints what it observed next to what was expected and ends with `REPRODUCED` or `NOT REPRODUCED`. The ones that need a NuGet package pin the 11.0 RC1 version with `#:package`, so they show the bug in shipped bits. This folder has its own `global.json`, `NuGet.config` and empty `Directory.Build.*` files so the repros don't pick up the runtime repo's build setup.
 
+Findings 48 to 54 are in the ICU-based globalization code, so their repros only show the bug on Linux and macOS. On Windows, .NET uses NLS and the repros say so.
+
 ## Summary
 
 | # | Area | Finding | Severity | Shipped in 11.0 RC1? | Repro |
@@ -61,7 +63,14 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 44 | Number parsing | UTF-8 `TryParse`/`Parse` reads past the end of the span when matching a 3-byte NaN/Infinity symbol or sign: `AccessViolationException` at a page boundary, and a UTF-8/UTF-16 mismatch | High (memory safety) | Yes | [44](repros/44-NumberParsing-Utf8-OutOfBoundsRead.cs) |
 | 45 | IPNetwork | `IPNetwork` silently masks host bits after the prefix although the constructor, `Parse` and `TryParse` all document that they reject them | Low | Yes | [45](repros/45-IPNetwork-SilentHostBitMasking.cs) |
 | 46 | HttpHeaders | `StringWithQualityHeaderValue` keeps a q-value with more than 3 decimals but `ToString` rounds to 3, so it doesn't round-trip | Low | Yes | [46](repros/46-StringWithQualityHeaderValue-QualityRoundTrip.cs) |
-| 47 | CompositeFormat | `CompositeFormat.Parse` doesn't bound the hole index, so it accepts `Int32`-overflowing indices that `string.Format` rejects; `MinimumArgumentCount` wraps and formatting throws `IndexOutOfRangeException` | Low | Yes | [47](repros/47-CompositeFormat-IndexOverflow.cs) |
+| 47 | CompositeFormat | `CompositeFormat.Parse` doesn't bound the hole index or the alignment, so it accepts values `string.Format` rejects: `MinimumArgumentCount` wraps, formatting throws `IndexOutOfRangeException`, and `{0,2147483647}` runs out of memory | Low-Medium | Yes | [47](repros/47-CompositeFormat-IndexOverflow.cs) |
+| 48 | IdnMapping (ICU) | `GetAscii(string)`/`GetUnicode(string)` return the caller's casing when ICU's answer differs only by case, while `TryGetAscii`/`TryGetUnicode` and the index overloads return ICU's lowercased output | Low | Yes | [48](repros/48-IdnMapping-GetAscii-CasePreservation.cs) |
+| 49 | CompareInfo (ICU) | `IgnoreNonSpace` without `IgnoreCase` is case-sensitive in `Compare` but case-insensitive in `IndexOf`/`LastIndexOf`/`IsPrefix`/`IsSuffix`, except when the ASCII fast path runs | Medium | Yes | [49](repros/49-CompareInfo-IgnoreNonSpace-SearchIgnoresCase.cs) |
+| 50 | CompareInfo (ICU) | `IsSuffix(..., out matchLength)` with an ignorable suffix (`"\0"`, ZWJ, soft hyphen) sets `matchLength` to the whole source length instead of 0 | Medium | Yes | [50](repros/50-CompareInfo-IsSuffix-IgnorableMatchLength.cs) |
+| 51 | CompareInfo (ICU) | In shifted collation (`IgnoreSymbols`, or any th-TH search) a value of only combining marks is treated as ignorable by `IndexOf`/`LastIndexOf`/`IsPrefix`, so with CurrentCulture th-TH `"abc".Contains("\u0E48")` (a Thai tone mark) is true | Medium | Yes | [51](repros/51-CompareInfo-IgnoreSymbols-CombiningMarksIgnorable.cs) |
+| 52 | IdnMapping (ICU) | `GetUnicode` throws for ASCII names with `--` in label positions 3-4 (`r3---sn-abcd.googlevideo.com`) that `GetAscii` accepts unchanged | Low | Yes | [52](repros/52-IdnMapping-GetUnicode-Hyphen34.cs) |
+| 53 | CompareInfo (ICU) | Culture-aware `StartsWith`/`EndsWith` accept an affix that splits a grapheme, so `"कि".StartsWith("क")` is true while `IndexOf` is -1 (Indic vowel signs, Hangul jamo; backwards even `"e\u0301".EndsWith("\u0301")`) | Medium | Yes | [53](repros/53-CompareInfo-AffixSplitsGrapheme.cs) |
+| 54 | CompareInfo (ICU) | Repeated culture-aware backward searches reuse a cached ICU search object and return stale matches: `LastIndexOf(..., out matchLength)` gives matchLength -1 (or -5, -11) or an earlier index on the second identical call, and `IsSuffix` flips from true to false | Medium | Yes | [54](repros/54-CompareInfo-LastIndexOf-StaleSearchState.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -276,7 +285,54 @@ The tail should subtract the 2 it read from `range` (or set `range` from `byteOf
 
 ### 47. CompositeFormat argument index overflow
 
-[Repro](repros/47-CompositeFormat-IndexOverflow.cs). The digit loop in `CompositeFormat.TryParseLiterals` does `index = index * 10 + ch - '0'` with no overflow or upper-bound check, unlike `string.Format`, whose parser rejects an argument index above 1,000,000 with `FormatException`. So `CompositeFormat.Parse("{2147483648}")` succeeds with a wrapped `ArgIndex`; the resulting object reports `MinimumArgumentCount = 0` (the wrapped index is negative and skipped by the `ArgIndex >= 0` check), and `"{9999999999}"` reports a wrapped positive `1410065408`. Two consequences: `string.Format(compositeFormat, args)` throws `IndexOutOfRangeException` rather than the documented `FormatException`, and `MinimumArgumentCount` misreports how many arguments the format needs, which a caller may use to size an argument array. `string.Format(string, args)` rejects all of these with `FormatException`. Capping the index the way the shared format parser does fixes it. Found by `CompositeFormatFuzzer`.
+[Repro](repros/47-CompositeFormat-IndexOverflow.cs). The digit loop in `CompositeFormat.TryParseLiterals` does `index = index * 10 + ch - '0'` with no overflow or upper-bound check, unlike `string.Format`, whose parser rejects an argument index above 1,000,000 with `FormatException`. So `CompositeFormat.Parse("{2147483648}")` succeeds with a wrapped `ArgIndex`; the resulting object reports `MinimumArgumentCount = 0` (the wrapped index is negative and skipped by the `ArgIndex >= 0` check), and `"{9999999999}"` reports a wrapped positive `1410065408`. Two consequences: `string.Format(compositeFormat, args)` throws `IndexOutOfRangeException` rather than the documented `FormatException`, and `MinimumArgumentCount` misreports how many arguments the format needs, which a caller may use to size an argument array. `string.Format(string, args)` rejects all of these with `FormatException`. The alignment loop right after it has the same gap. `string.Format` stops at a width of 1,000,000 and throws `FormatException`, but `CompositeFormat.Parse("{0,99999999}")` succeeds and formatting pads to 100 million chars. `{0,2147483647}` throws `OutOfMemoryException`, and `{0,4294967295}` wraps to -1 and silently becomes a left-aligned width of 1. A service that accepts a user-supplied format and pre-parses it with `CompositeFormat` can be made to allocate gigabytes, where `string.Format` would have refused the string. Capping both values the way the `StringBuilder.AppendFormat` parser does (`IndexLimit`/`WidthLimit`) fixes it. Found by `CompositeFormatFuzzer`; the alignment half showed up as OOMs and timeouts in a later campaign.
+
+### 48. IdnMapping string overloads keep the input's casing
+
+[Repro](repros/48-IdnMapping-GetAscii-CasePreservation.cs). ICU's UTS #46 mapping lowercases, so `uidna_nameToASCII("Example.COM")` gives `example.com`. `IcuGetAsciiCore` then calls `GetStringForOutput`, which returns the *original* string whenever ICU's output matches it under `Ordinal.EqualsIgnoreCase`. That was meant to save an allocation, but it changes the answer, and only when the whole string is converted (the check needs `originalString.Length == input.Length`). The result on Linux and macOS:
+
+- `GetAscii("Example.COM")` returns `"Example.COM"`.
+- `GetAscii("xExample.COM", 1)` returns `"example.com"`.
+- `TryGetAscii("Example.COM", ...)` writes `"example.com"`.
+- `GetAscii("xn--BCHER-KVA.de")` returns the uppercase punycode unchanged.
+
+`GetUnicode`/`TryGetUnicode` split the same way. Code that compares the result ordinally, like a host allow-list or a cache key, gets different answers depending on the overload. Found by `GlobalizationIcuFuzzer`, which compares the string and span overloads.
+
+### 49. IgnoreNonSpace searches ignore case on ICU
+
+[Repro](repros/49-CompareInfo-IgnoreNonSpace-SearchIgnoresCase.cs). For `IgnoreNonSpace` without `IgnoreCase`, `pal_collation.c` runs the collator at primary strength with `UCOL_CASE_LEVEL` on. `ucol_strcoll` honours the case level, so `Compare("a", "A", IgnoreNonSpace)` is -1. The search APIs use ICU `usearch`, which only compares collation elements masked to the primary weight and never looks at the case level. So `IndexOf("ä", "A", IgnoreNonSpace)` returns 0, and the text it matched doesn't compare equal to the value under the same options. For all-ASCII input the invariant and `en-*` cultures take the managed ordinal fast path in `CompareInfo.Icu.cs`, which *is* case-sensitive. That gives `IndexOf("a", "A", IgnoreNonSpace)` = -1 in en-US but 0 in de-DE and ja-JP. Found by `GlobalizationIcuFuzzer`'s "the matched slice compares equal to the value" check.
+
+### 50. IsSuffix match length for an ignorable suffix
+
+[Repro](repros/50-CompareInfo-IsSuffix-IgnorableMatchLength.cs). `CompareInfo.IsSuffix("Strasse", "\0", CompareOptions.None, out int matchLength)` correctly returns true, since an ignorable suffix matches anything, but sets `matchLength` to 7 instead of 0. `IsPrefix` reports 0 for the same value. The cause is `SimpleAffix_Iterators` in `pal_collation.c`, the path for `None` and `IgnoreCase`. Before each step it saves `ucol_getOffset(pSourceIterator)` and then calls `ucol_previous`. On a freshly opened iterator `ucol_getOffset` returns 0, although the first `ucol_previous` starts at the end of the text. When every element of the pattern is ignorable, the pattern runs out before the source iterator has moved, so the saved offset is still that initial 0. `SimpleAffix` then returns `textLength - 0`. Callers that trim with the match length (`source[..^matchLength]`) delete the whole string. Starting `capturedOffset` at `textLength` for backward searches, or setting the offset explicitly, would fix it. It accounted for almost all of the crashes in the first `GlobalizationIcuFuzzer` campaign.
+
+### 51. IgnoreSymbols treats combining marks as ignorable in searches
+
+[Repro](repros/51-CompareInfo-IgnoreSymbols-CombiningMarksIgnorable.cs). With `IgnoreSymbols` on ICU, `IndexOf("abc", "\u0308", IgnoreSymbols)` returns 0 with a match length of 0, `LastIndexOf` returns 3 and `IsPrefix` returns true. So a value made only of combining marks (optionally with punctuation) "matches" in every string. Meanwhile `IsSuffix` returns false and `Compare("", "\u0308", IgnoreSymbols)` is -1, meaning the value isn't ignorable. `IgnoreSymbols` turns on `alternate=shifted`. ICU `usearch`'s `getCE()` discards any collation element numerically below `variableTop` when shifting is on. A combining mark's element has primary weight 0, so its 32-bit value is below `variableTop` and gets dropped as if it were a symbol, leaving an empty pattern. `ucol_strcoll` handles shifted mode correctly. The root cause is in ICU, but .NET exposes it through `CompareInfo`; the native shim could fall back to a `Compare`-based ignorable check before trusting a zero-length match.
+
+Thai makes this user-visible without any special options. CLDR's Thai collation turns on `alternate=shifted` by default, so with `CurrentCulture` set to th-TH, `"abc".Contains("\u0E48", StringComparison.CurrentCulture)` is true and `IndexOf` returns 0. U+0E48 is MAI EK, a Thai tone mark, so searching Thai text for a tone mark always "finds" it at position 0. The dropped marks also make forward and backward search disagree: in zh-Hans-CN with `IgnoreCase | IgnoreSymbols`, `IndexOf("]\u0F73A\u304C]\u0F73\u0001\u0001", "A\u304C]")` is 2 while `LastIndexOf` is -1. Found by `GlobalizationIcuFuzzer`.
+
+### 52. IdnMapping.GetUnicode rejects names GetAscii accepts
+
+[Repro](repros/52-IdnMapping-GetUnicode-Hyphen34.cs). `GlobalizationNative_ToAscii` in `pal_idna.c` masks out `UIDNA_ERROR_HYPHEN_3_4` "to have a consistent behavior with Windows". `GlobalizationNative_ToUnicode` doesn't. So `GetAscii("ab--cd.example")` returns the name unchanged while `GetUnicode` of that result throws `ArgumentException` ("Decoded string is not a valid IDN name"). The same happens for real host names shaped like YouTube's CDN hosts (`r3---sn-abcd.googlevideo.com`). `TryGetUnicode` behaves the same way. Masking the same bit in `ToUnicode` would make the two directions agree. Found by `GlobalizationIcuFuzzer`'s round-trip check.
+
+### 53. StartsWith/EndsWith accept an affix that splits a grapheme
+
+[Repro](repros/53-CompareInfo-AffixSplitsGrapheme.cs). On ICU, in every culture, with `CompareOptions.None` or `IgnoreCase`:
+
+- `"कि".StartsWith("क", CurrentCulture)` is true, but `IndexOf` is -1 and `Contains` is false (Hindi KA + vowel sign I). Tamil, Bengali, conjuncts with a virama and Tibetan behave the same.
+- `"가나".StartsWith("\u1100")` is true, but `IndexOf("\u1100")` is -1 (the syllable's leading conjoining jamo).
+- `"e\u0301".EndsWith("\u0301")` is true, but `LastIndexOf("\u0301")` is -1. This one is plain Latin, going backwards.
+
+`StartsWith`/`EndsWith` go through `SimpleAffix` in `pal_collation.c`, which walks raw collation elements. Going forward it refuses a match that is followed by a *nonspacing* mark: it looks for an element with primary weight 0 and a secondary weight, which is why `"e\u0301".StartsWith("e")` is false. Indic vowel signs, viramas and Hangul vowel/final jamo have primary weights, so that check doesn't fire. Going backward there is no such check at all. `IndexOf`/`LastIndexOf` use ICU `usearch`, which only accepts matches on grapheme boundaries. The two disagree, and `IsPrefix(..., out matchLength)` returns a length that cuts the cluster. With `IgnoreWidth` or `IgnoreKanaType`, the usearch-based `ComplexStartsWith`/`ComplexEndsWith` path runs and the results agree with `IndexOf`. A boundary check on the source after the match (or before it, for suffixes) would fix it. Found by `GlobalizationIcuFuzzer`'s "IsPrefix implies IndexOf == 0" check.
+
+### 54. Stale state in cached ICU search objects
+
+[Repro](repros/54-CompareInfo-LastIndexOf-StaleSearchState.cs). In a fresh process, calling `CompareInfo.LastIndexOf("\t\u0301q", "\u0301q", CompareOptions.None, out int matchLength)` twice gives index 1 and matchLength 2 the first time, then index 1 and matchLength **-1**. A negative match length breaks the API contract, and `Substring(index, matchLength)` or `AsSpan(index, matchLength)` throws on it. Other inputs return stale values like -5 or -11. The stale state can also change the index: for source `"unu\0\u0345\0\0\0\0\0\u0010\0\0\u0345"` and value `"\u0345\0\0"` with `IgnoreCase`, successive identical calls return 13, 4 and 13. `IsSuffix` with `IgnoreKanaType` or `IgnoreWidth` goes through `ComplexEndsWith`, which adds `usearch_getMatchedLength` to the match index. For `("\v\u0301q", "\u0301q")` it returns true and then false.
+
+The trigger is a value that starts with a combining mark, where the source has a control or whitespace character (`\t`, `\n`, `\r`, `\v`, `\f`, U+0085, U+2028) right before the match, so the mark starts a new grapheme. Forward searches aren't affected, and a forward search in between clears the problem, so the results depend on call history. The cache lives in `GetSearchIteratorUsingCollator` (`pal_collation.c`). The first search for each options value opens a fresh `UStringSearch`. Later searches borrow it and only call `usearch_setText`/`usearch_setPattern`, and `usearch_last` on the reused object then reports a stale match. Calling `usearch_reset` on a borrowed iterator, or refusing a negative `usearch_getMatchedLength`, would be the place to fix it.
+
+`ComplexEndsWith` passes `pText + matchEnd` with length `textLength - matchEnd` to `CanIgnoreAllCollationElements`, so a stale match end outside `[0, textLength]` would read out of bounds natively. Out of 200,000 random backward searches, 112 returned a negative match length, but the match end always stayed inside the string, and the guard-paged fuzzer never faulted. So I have no evidence of a memory-safety impact. Found by `GlobalizationIcuFuzzer`, which compares the span and string overloads.
 
 ## Things that looked like bugs but aren't
 
@@ -293,6 +349,7 @@ The tail should subtract the 2 it read from `range` (or set `range` from `byteOf
 - A failed `TryFormat` (destination too small) may leave partial data in the destination buffer for DateTime and the other formatters. `charsWritten` is 0 and the return is false, which is all the contract promises; the buffer contents are undefined on failure.
 - `IPAddress.TryParse` accepts forms `IPNetwork` callers might not expect (a bare `10` as `0.0.0.10`, IPv4 with fewer than four parts), so `10/8` parses as the network `0.0.0.0/8`. That is `IPAddress`'s long-standing inet_aton-style behavior, not an `IPNetwork` bug.
 - The SIMD `Vector`/`Matrix4x4`/`Quaternion` dot products and matrix multiply reassociate their sums, so they differ from a left-to-right scalar sum by a rounding step, and with infinities of opposite sign one path gives `Inf` where the other gives `NaN`. That's allowed floating-point non-associativity, so the vector fuzzer compares those within a conditioning-aware tolerance.
+- `CompareInfo.IndexOf("", c)` returns 0 when `c` is ignorable (`\0`, `\u200D`). An ignorable value matches at the start of any string, including the empty one. My oracle wrongly required the index to be less than the source length.
 - `BigInteger`: about 290K executions over the new kernels (repeated limbs, factors of 3/5/7, `B^k - 1` divisors, Toom-sized operands) turned up nothing.
 
 ## Coverage
@@ -329,6 +386,7 @@ Clean runs, with the known issues above tolerated so the fuzzers could get past 
 | Vector2/3/4, Matrix4x4, Quaternion, Plane vs scalar references | `NumericsVectorsFuzzer` | 2.4M (SIMD mostly inlined, low coverage) |
 | IPNetwork and IPEndPoint parsing, string/span/UTF-8 | `IPNetworkEndPointFuzzer` | 0.7M (finding 45) |
 | HTTP header value parsers (MediaType, CacheControl, ...), round-trip | `HttpHeaderValuesFuzzer` | 0.9M |
+| ICU globalization interop: sort keys, culture-aware search, normalization, IDN, casing, guard-paged buffers | `GlobalizationIcuFuzzer` | in progress (findings 48 to 54) |
 
 A planted tie-breaking bug in `argmin-blocks` was caught by the saved corpus in under a second, so the clean result on those branches means something.
 

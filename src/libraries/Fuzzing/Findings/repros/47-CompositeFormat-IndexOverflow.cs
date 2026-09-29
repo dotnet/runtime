@@ -5,6 +5,9 @@
 // reports a wrapped positive count like 1410065408. Two consequences: string.Format(compositeFormat, args) throws
 // IndexOutOfRangeException instead of the documented FormatException, and MinimumArgumentCount lies about how many arguments the
 // format needs. string.Format(string, args) rejects all of these with FormatException.
+// The alignment loop has the same gap: string.Format caps the width below 1,000,000, but CompositeFormat accepts any width, so
+// "{0,99999999}" parses and formatting it pads to 100 million chars, "{0,2147483647}" runs out of memory, and "{0,4294967295}"
+// wraps to -1 and silently becomes a left-aligned width of 1.
 // Run: dotnet run 47-CompositeFormat-IndexOverflow.cs
 using System.Globalization;
 using System.Text;
@@ -33,6 +36,27 @@ foreach (string format in new[] { "{2147483648}", "{9999999999}", "{111111111117
     }
 
     Console.WriteLine($"{format,-16}: string.Format -> {stringFormat}; CompositeFormat.Parse -> {parseResult}; format(cf) -> {composeResult}");
+}
+
+// Alignment: string.Format rejects these; CompositeFormat parses them.
+foreach (string format in new[] { "{0,99999999}", "{0,4294967295}", "{0,2147483647}" })
+{
+    string stringFormat;
+    try { string.Format(CultureInfo.InvariantCulture, format, values); stringFormat = "succeeded"; }
+    catch (FormatException) { stringFormat = "FormatException"; }
+
+    string composeResult;
+    try
+    {
+        CompositeFormat composite = CompositeFormat.Parse(format);
+        string result = string.Format(CultureInfo.InvariantCulture, composite, values);
+        composeResult = $"parsed and formatted to {result.Length:N0} chars";
+    }
+    catch (FormatException) { composeResult = "FormatException"; }
+    catch (OutOfMemoryException) { composeResult = "parsed, then OutOfMemoryException while formatting"; }
+
+    Console.WriteLine($"{format,-16}: string.Format -> {stringFormat}; CompositeFormat -> {composeResult}");
+    reproduced |= stringFormat == "FormatException" && composeResult != "FormatException";
 }
 
 Console.WriteLine(reproduced ? "REPRODUCED" : "NOT REPRODUCED");

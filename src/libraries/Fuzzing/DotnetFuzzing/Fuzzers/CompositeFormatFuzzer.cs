@@ -43,8 +43,10 @@ internal sealed class CompositeFormatFuzzer : IFuzzer
         }
 
         string format = builder.ToString();
-        if (format.Length > 1000)
+        if (format.Length > 1000 || HasOverflowingIndex(format))
         {
+            // A digit run of 1,000,000 or more is a huge index/alignment (finding 47) or a huge numeric precision like N902915902,
+            // which both APIs honor by producing that many digits. Neither is worth the memory.
             return;
         }
 
@@ -92,10 +94,9 @@ internal sealed class CompositeFormatFuzzer : IFuzzer
         int required = composite!.MinimumArgumentCount;
         Check(required >= 0, () => $"CompositeFormat '{Escape(format)}' has negative MinimumArgumentCount {required}");
 
-        if (required > s_args.Length || HasOverflowingIndex(format))
+        if (required > s_args.Length)
         {
-            // string.Format with our fixed args would throw for the missing index, and an index that overflows Int32 (finding 47)
-            // makes CompositeFormat and string.Format diverge; neither is a disagreement worth flagging again.
+            // string.Format with our fixed args would throw for the missing index.
             return;
         }
 
@@ -124,29 +125,37 @@ internal sealed class CompositeFormatFuzzer : IFuzzer
         }
     }
 
-    // Finding 47: CompositeFormat.Parse accepts a hole index that overflows Int32, which string.Format rejects, so a format with
-    // such an index (a run of more than 9 digits right after '{') is skipped from the equality check.
+    // Finding 47: CompositeFormat.Parse accepts a hole index or alignment that string.Format rejects (string.Format caps both
+    // below 1,000,000), and formatting a huge alignment pads to that many chars. Any digit run worth 1,000,000 or more is
+    // skipped from the equality check. That also catches some literal text, which only costs a little coverage.
     private static bool HasOverflowingIndex(string format)
     {
-        for (int i = 0; i < format.Length - 1; i++)
+        for (int i = 0; i < format.Length; i++)
         {
-            if (format[i] == '{' && format[i + 1] != '{' && format[i + 1] != '}')
+            if (!char.IsAsciiDigit(format[i]))
             {
-                int digits = 0;
-                int j = i + 1;
-                while (j < format.Length && char.IsAsciiDigit(format[j]))
-                {
-                    digits++;
-                    j++;
-                }
-
-                if (digits >= 10 || (digits > 0 && long.Parse(format.AsSpan(i + 1, digits)) > 1_000_000))
-                {
-                    return true;
-                }
-
-                i = j - 1;
+                continue;
             }
+
+            int j = i;
+            while (j < format.Length && format[j] == '0')
+            {
+                j++;
+            }
+
+            int significant = 0;
+            while (j < format.Length && char.IsAsciiDigit(format[j]))
+            {
+                significant++;
+                j++;
+            }
+
+            if (significant >= 7)
+            {
+                return true;
+            }
+
+            i = j - 1;
         }
 
         return false;
