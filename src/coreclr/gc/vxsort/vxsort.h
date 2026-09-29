@@ -582,10 +582,33 @@ private:
         TV LT0 = MT::load_vec(preAlignedLeft);
         auto rtMask = MT::get_cmpgt_mask(RT0, P);
         auto ltMask = MT::get_cmpgt_mask(LT0, P);
-        const auto rtPopCountRightPart = max(MT::mask_popcount(rtMask), (T)rightAlign);
+        const auto rtPopCountRightPart = MT::mask_popcount(rtMask);
         const auto ltPopCountRightPart = MT::mask_popcount(ltMask);
         const auto rtPopCountLeftPart  = N - rtPopCountRightPart;
         const auto ltPopCountLeftPart  = N - ltPopCountRightPart;
+
+        // When leftAlign < 0, LT0's low (-leftAlign) lanes are "junk": elements read from
+        // before `left` that belong to an already-settled, ancestor partition range rather than
+        // the current [left, right] range. Symmetrically, when rightAlign > 0, RT0's high
+        // (rightAlign) lanes are junk elements read from beyond `right`. These junk elements
+        // still get compared against the *current* pivot and compress-stored/permuted together
+        // with the real elements, in lane order, so they are NOT guaranteed to all land on one
+        // side of the pivot - i.e. it is not guaranteed that all junk-left lanes are <= pivot,
+        // nor that all junk-right lanes are > pivot.
+        // tmpStartLeft/tmpStartRight must be moved past exactly the junk elements that were
+        // written into the tmp buffers so they aren't copied back into the array later. Skipping
+        // the constant junk-lane count rather than the actual number of junk lanes that landed on
+        // that side can make tmpStartLeft end up *after* tmpLeft (or the mirrored case on the right),
+        // yielding a negative tmp size that is later passed to memcpy as a huge unsigned byte count,
+        // causing an access violation.
+        const auto ltJunkLaneMask = (leftAlign < 0)
+            ? (decltype(ltMask))((1u << (-leftAlign)) - 1)
+            : (decltype(ltMask))0;
+        const auto rtJunkLaneMask = (rightAlign > 0)
+            ? (decltype(rtMask))(((1u << rightAlign) - 1) << (N - rightAlign))
+            : (decltype(rtMask))0;
+        const auto ltJunkBelowPivot = MT::mask_popcount((decltype(ltMask))(~ltMask & ltJunkLaneMask));
+        const auto rtJunkAbovePivot = MT::mask_popcount((decltype(rtMask))(rtMask & rtJunkLaneMask));
 
         if (MT::supports_compress_writes()) {
           MT::store_compress_vec((TV *) (tmpRight + N - rtPopCountRightPart), RT0, rtMask);
@@ -597,12 +620,12 @@ private:
           MT::store_compress_vec((TV *) (tmpRight + N - ltPopCountRightPart), LT0, ltMask);
           tmpRight -= ltPopCountRightPart & lai;
           tmpLeft += ltPopCountLeftPart & lai;
-          tmpStartLeft += -leftAlign & lai;
+          tmpStartLeft += ltJunkBelowPivot & lai;
           readLeft += (leftAlign + N) & lai;
 
           MT::store_compress_vec((TV*) tmpLeft, RT0, ~rtMask);
           tmpLeft += rtPopCountLeftPart & rai;
-          tmpStartRight -= rightAlign & rai;
+          tmpStartRight -= rtJunkAbovePivot & rai;
         }
         else {
 #ifdef VXSORT_STATS
@@ -621,12 +644,12 @@ private:
             tmpRight -= ltPopCountRightPart & lai;
 
             tmpLeft += ltPopCountLeftPart & lai;
-            tmpStartLeft += -leftAlign & lai;
+            tmpStartLeft += ltJunkBelowPivot & lai;
             readLeft += (leftAlign + N) & lai;
 
             MT::store_vec((TV*) tmpLeft, RT0);
             tmpLeft += rtPopCountLeftPart & rai;
-            tmpStartRight -= rightAlign & rai;
+            tmpStartRight -= rtJunkAbovePivot & rai;
         }
     }
 
