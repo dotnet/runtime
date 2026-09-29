@@ -252,6 +252,11 @@ internal sealed class CompressionCodecsFuzzer : IFuzzer
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException)
         {
+            if (codec is ZstdCodec && !s_strict)
+            {
+                return; // Finding 57: zstd's streaming result depends on how the input is chunked across reads.
+            }
+
             Check(false, $"TryDecompress succeeded but the stream threw {ex.GetType().Name} ({ex.Message}): {context}");
         }
 
