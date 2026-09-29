@@ -168,7 +168,9 @@ search misses, also search recently closed KBEs with the same pair:
 Apply the closed-candidate timing and full candidate-verification rules below
 to any pair match.
 
-If a candidate is identified as a duplicate, follow the linked issues through
+Read each candidate's body and comments before applying the recurrence rules.
+If a candidate is identified as a duplicate, follow only explicit duplicate
+links and read each linked issue's body and comments through
 the same permitted tools until reaching an original that is not itself a
 duplicate. Track visited issues. If a link is missing or ambiguous, the chain
 is cyclic, or any read is inconclusive, report the incomplete lookup and do
