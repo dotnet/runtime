@@ -208,6 +208,38 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
+        [InlineData(new byte[] { 0x80, 0, 0, 1, 0, 0, 0, 0 })] // uint.MaxValue + 1
+        [InlineData(new byte[] { 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF })]
+        [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF })] // int.MinValue - 1
+        public void GnuBase256UidGid_LargerThan32Bits_Throws(byte[] fieldBytes)
+        {
+            byte[] tarData = CreateEntryWithRawUidGid(fieldBytes, fieldBytes);
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void PaxUidGid_LargerThan32Bits_Throws()
+        {
+            // Write a valid 10 digit uid, then replace it in the extended attributes with one larger than uint.MaxValue.
+            MemoryStream stream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "dir", new Dictionary<string, string>() { { "uid", "3059377464" } }));
+            }
+
+            byte[] tarData = stream.ToArray();
+            byte[] original = System.Text.Encoding.ASCII.GetBytes("uid=3059377464");
+            int index = tarData.AsSpan().IndexOf(original);
+            Assert.True(index >= 0);
+            System.Text.Encoding.ASCII.GetBytes("uid=9999999999").CopyTo(tarData, index);
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Theory]
         [InlineData("2147483647", int.MaxValue)]
         [InlineData("3059377464", unchecked((int)3059377464u))]
         [InlineData("4294967295", -1)]
