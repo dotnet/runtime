@@ -662,7 +662,7 @@ namespace System
                 // We get here if the dateTime is invalid in the source time zone.
                 // Preserve the historical behavior of throwing if the computed UTC time is
                 // outside the DateTime range, rather than silently clamping it later.
-                DateTime invalidTimeUtc = new DateTime(dateTime.Ticks + sourceTimeZone.BaseUtcOffset.Ticks, DateTimeKind.Utc);
+                DateTime invalidTimeUtc = new DateTime(dateTime.Ticks - sourceTimeZone.BaseUtcOffset.Ticks, DateTimeKind.Utc);
                 utcTicks = invalidTimeUtc.Ticks;
             }
 
