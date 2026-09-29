@@ -8,9 +8,10 @@
 #include <sys/types.h>
 
 #ifndef __APPLE__
-// typedef for our parsing of the auxv variables in /proc/pid/auxv.
+// Typedefs for parsing the target process ELF metadata.
 #if TARGET_64BIT
 typedef Elf64_auxv_t elf_aux_entry;
+typedef Elf64_Phdr elf_program_header;
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
@@ -18,6 +19,7 @@ typedef Elf64_auxv_t elf_aux_entry;
 #define PRIxA PRIA PRIx
 #else
 typedef Elf32_auxv_t elf_aux_entry;
+typedef Elf32_Phdr elf_program_header;
 #define PRIx PRIx32
 #define PRIu PRIu32
 #define PRId PRId32
@@ -36,6 +38,8 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 #define MAX_LONGPATH   1024
 #endif
 
+// To allow both external and linked createdump to share some common algorithms
+// we have this class that allows each to supply its container and the necessary callbacks for managing memory regions.
 class DumpRegionStore
 {
 public:
@@ -95,12 +99,12 @@ class ProcessInfo
     int m_fdMem = -1;                               // /proc/<pid>/mem handle
     int m_fdPagemap = -1;                           // /proc/<pid>/pagemap handle
     bool m_canUseProcVmReadSyscall;
-    DynamicArray<elf_aux_entry> m_auxvEntries;
-    elf_aux_val_t m_auxvValues[AT_MAX]{};
+    DynamicArray<elf_aux_entry> m_auxvEntries;      // full auxv entries
+    elf_aux_val_t m_auxvValues[AT_MAX]{};           // auxv values
 #endif
-    DynamicArray<ThreadSnapshot> m_threads;
-    DynamicArray<ModuleRegion> m_moduleMappings;
-    DynamicArray<MemoryRegion> m_otherMappings;
+    DynamicArray<ThreadSnapshot> m_threads;         // threads found and suspended
+    DynamicArray<ModuleRegion> m_moduleMappings;    // module memory mappings
+    DynamicArray<MemoryRegion> m_otherMappings;     // other memory mappings
 
 public:
     explicit ProcessInfo(const CreateDumpOptions& options) noexcept :

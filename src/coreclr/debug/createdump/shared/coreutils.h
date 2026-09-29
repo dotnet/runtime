@@ -8,6 +8,8 @@
 
 #define INITIAL_CAPACITY 64
 
+// We have an OwnedString and a DynamicArray class to avoid using the standard library containers.
+
 template <typename T>
 T&& Move(T& value) noexcept
 {

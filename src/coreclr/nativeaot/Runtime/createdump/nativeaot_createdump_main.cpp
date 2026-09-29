@@ -5,6 +5,10 @@
 #include "dumpwriter.h"
 #include <time.h>
 
+// Exported symbol so PalCreateDump.cpp can detect that this library is linked.
+bool g_createdumpLinked = true;
+
+// Regions is a sorted array of non-overlapping memory regions
 static size_t FindDumpRegionInsertionIndex(const DynamicArray<MemoryRegion>* regions, uint64_t startAddress)
 {
     size_t low = 0;
@@ -73,9 +77,6 @@ static bool InsertDumpRegion(void* container, const MemoryRegion* region)
     (*regions)[index] = *region;
     return true;
 }
-
-// Exported symbol so PalCreateDump.cpp can detect that this library is linked.
-bool g_createdumpLinked = true;
 
 void print_trace_timestamp()
 {
@@ -196,7 +197,7 @@ exit:
     return result;
 }
 
-extern "C" int nativeaot_createdump_main(int argc, const char* argv[])
+int nativeaot_createdump_main(int argc, const char* argv[])
 {
     CreateDumpOptions options{};
     int exitCode = ParseCreateDumpOptions(argc, (char**)argv, &options);

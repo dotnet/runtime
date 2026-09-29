@@ -97,16 +97,10 @@ enum class AppModelType
 typedef struct
 {
     const char* DumpPathTemplate;
-    const char* LogFilePath;
-
     enum DumpType DumpType;
     enum AppModelType AppModel;
-
     bool CreateDump;
     bool CrashReport;
-    bool Diagnostics;
-    bool Verbose;
-
     int Pid;
     int CrashThread;
     int Signal;
@@ -147,6 +141,9 @@ GetDumpTypeString(DumpType dumpType)
 #endif
 
 #ifdef HOST_UNIX
+// This algorithm allows for both implementations of createdump to combine contiguous memory regions.
+// Each supplies its own list of memory regions and a way to insert the combined regions so linked
+// createdump doesn't need to depend on libstdc++ containers.
 template <typename TRegions, typename TCombinedRegions, typename TInsert>
 bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedRegions, TInsert insert)
 {
@@ -155,25 +152,15 @@ bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedReg
 
     // MEMORY_REGION_FLAG_SHARED and MEMORY_REGION_FLAG_PRIVATE are internal flags that
     // don't affect the core dump so ignore them when comparing the flags.
-    uint32_t flags = 0;
-    uint64_t start = 0;
-    uint64_t end = 0;
-    bool hasRegion = false;
+    uint32_t flags = regions.begin()->Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
+    uint64_t start = regions.begin()->StartAddress();
+    uint64_t end = start;
 
     for (const MemoryRegion& region : regions)
     {
-        uint32_t regionFlags = region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
-        if (!hasRegion)
-        {
-            flags = regionFlags;
-            start = region.StartAddress();
-            end = region.EndAddress();
-            hasRegion = true;
-            continue;
-        }
-
         // To combine a region it needs to be contiguous, same permissions and memory backed flag.
-        if (end == region.StartAddress() && flags == regionFlags)
+        if ((end == region.StartAddress()) &&
+            (flags == (region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK)))
         {
             end = region.EndAddress();
         }
@@ -183,7 +170,7 @@ bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedReg
             {
                 return false;
             }
-            flags = regionFlags;
+            flags = region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
             start = region.StartAddress();
             end = region.EndAddress();
         }

@@ -6,7 +6,7 @@
 
 bool g_createdumpLinked = false;
 
-extern "C" int nativeaot_createdump_main(int, const char*[])
+int nativeaot_createdump_main(int, const char*[])
 {
     return 1;
 }

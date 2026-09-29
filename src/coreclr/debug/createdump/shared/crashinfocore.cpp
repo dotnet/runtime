@@ -135,6 +135,7 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRe
         // Nothing to do
         return 0;
     }
+    // Go page by page and split the region into valid sub-regions
     uint64_t pageStart = memoryRegion.StartAddress();
     uint64_t numberPages = memoryRegion.Size() / PAGE_SIZE;
     uint64_t subRegionStart, subRegionEnd;
@@ -165,7 +166,7 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRe
                     return -1;
                 }
             }
-            subRegionStart = subRegionEnd = pageStart + PAGE_SIZE;
+            subRegionStart = subRegionEnd = pageRegion.EndAddress();
         }
     }
 

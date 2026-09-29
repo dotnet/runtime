@@ -5,7 +5,6 @@
 
 int g_readProcessMemoryErrno = 0;
 
-
 //
 // Suspends all the threads and creating a list of them. Should be the before gathering any info about the process.
 //
@@ -110,17 +109,11 @@ bool ProcessInfo::GetAuxvEntries()
 
 void ProcessInfo::CalculateRuntimeBaseAddress()
 {
-#if TARGET_64BIT
-    typedef Elf64_Phdr elf_program_header;
-#else
-    typedef Elf32_Phdr elf_program_header;
-#endif
-
-    uint64_t programHeaders = m_auxvValues[AT_PHDR];
+    uint64_t programHeadersStartAddress = m_auxvValues[AT_PHDR];
     uint64_t programHeaderCount = m_auxvValues[AT_PHNUM];
     uint64_t programHeaderSize = m_auxvValues[AT_PHENT];
-    if (programHeaders == 0 || programHeaderCount == 0 || programHeaderSize != sizeof(elf_program_header) ||
-        programHeaderCount > (UINT64_MAX - programHeaders) / programHeaderSize)
+    if (programHeadersStartAddress == 0 || programHeaderCount == 0 || programHeaderSize != sizeof(elf_program_header) ||
+        programHeaderCount > (UINT64_MAX - programHeadersStartAddress) / programHeaderSize)
     {
         return;
     }
@@ -129,16 +122,16 @@ void ProcessInfo::CalculateRuntimeBaseAddress()
     {
         elf_program_header programHeader;
         size_t read = 0;
-        if (!ReadProcessMemory(programHeaders + (index * programHeaderSize), &programHeader, sizeof(programHeader), &read) ||
+        if (!ReadProcessMemory(programHeadersStartAddress + (index * programHeaderSize), &programHeader, sizeof(programHeader), &read) ||
             read != sizeof(programHeader))
         {
             return;
         }
 
-        if (programHeader.p_type == PT_PHDR && programHeaders >= programHeader.p_vaddr)
+        if (programHeader.p_type == PT_PHDR && programHeadersStartAddress >= programHeader.p_offset)
         {
-            // AT_PHDR is relocated; PT_PHDR.p_vaddr is not. Their difference is the ELF load bias.
-            m_runtimeBaseAddress = programHeaders - programHeader.p_vaddr;
+            // AT_PHDR points to PT_PHDR.p_offset in the mapped ELF image.
+            m_runtimeBaseAddress = programHeadersStartAddress - programHeader.p_offset;
             TRACE("Runtime base address: %" PRIA PRIx64 "\n", m_runtimeBaseAddress);
             return;
         }
