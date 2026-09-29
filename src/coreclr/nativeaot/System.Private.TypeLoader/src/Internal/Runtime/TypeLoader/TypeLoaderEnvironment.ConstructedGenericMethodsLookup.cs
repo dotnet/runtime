@@ -16,7 +16,7 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class TypeLoaderEnvironment
     {
-        internal class GenericMethodEntry
+        internal sealed class GenericMethodEntry
         {
             private int? _hashCode;
             public bool _isRegisteredSuccessfully;
@@ -43,7 +43,7 @@ namespace Internal.Runtime.TypeLoader
                 return base.Equals(obj);
             }
 
-            public virtual bool IsEqualToEntryByComponentsComparison(GenericMethodEntry other)
+            public bool IsEqualToEntryByComponentsComparison(GenericMethodEntry other)
             {
                 if (!other._declaringTypeHandle.Equals(_declaringTypeHandle))
                     return false;
@@ -130,21 +130,15 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal abstract class GenericMethodLookupData
+        internal readonly struct GenericMethodLookupData
         {
-            internal abstract int LookupHashCode();
-            internal abstract bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle);
-            internal abstract bool MatchGenericMethodEntry(GenericMethodEntry entry);
-        }
-        internal class MethodDescBasedGenericMethodLookup : GenericMethodLookupData
-        {
-            protected InstantiatedMethod _methodToLookup;
+            private readonly InstantiatedMethod _methodToLookup;
 
-            internal MethodDescBasedGenericMethodLookup(InstantiatedMethod methodToLookup) { _methodToLookup = methodToLookup; }
+            internal GenericMethodLookupData(InstantiatedMethod methodToLookup) { _methodToLookup = methodToLookup; }
 
-            internal override int LookupHashCode() { return _methodToLookup.GetHashCode(); }
+            internal int LookupHashCode() { return _methodToLookup.GetHashCode(); }
 
-            internal override bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle)
+            internal bool MatchParsedEntry(ref NativeParser entryParser, ref ExternalReferencesTable externalReferencesLookup, TypeManagerHandle moduleHandle)
             {
                 //
                 // Entries read from the hashtable are loaded as GenericMethodDescs, and compared to the input.
@@ -188,7 +182,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
 
-            internal override bool MatchGenericMethodEntry(GenericMethodEntry entry)
+            internal bool MatchGenericMethodEntry(GenericMethodEntry entry)
             {
                 TypeSystemContext context = _methodToLookup.Context;
 
@@ -261,7 +255,7 @@ namespace Internal.Runtime.TypeLoader
             NativeHashtable hashtable;
             ExternalReferencesTable externalReferencesLookup;
 
-            MethodDescBasedGenericMethodLookup lookupData = new MethodDescBasedGenericMethodLookup(method);
+            GenericMethodLookupData lookupData = new GenericMethodLookupData(method);
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
@@ -324,7 +318,7 @@ namespace Internal.Runtime.TypeLoader
 
             methodPointer = templateMethod.FunctionPointer;
 
-            if (!TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out dictionaryPointer))
+            if (!TryLookupGenericMethodDictionary(new GenericMethodLookupData(method), out dictionaryPointer))
             {
                 using (_typeLoaderLock.EnterScope())
                 {

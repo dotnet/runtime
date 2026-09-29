@@ -32,16 +32,6 @@ namespace Internal.Runtime.TypeLoader
         public IntPtr MethodEntryPoint;
 
         /// <summary>
-        /// Raw method entrypoint
-        /// </summary>
-        public IntPtr RawMethodEntryPoint;
-
-        /// <summary>
-        /// Method dictionary for components
-        /// </summary>
-        public IntPtr DictionaryComponent;
-
-        /// <summary>
         /// Dynamic invoke cookie
         /// </summary>
         public uint DynamicInvokeCookie;
@@ -54,25 +44,6 @@ namespace Internal.Runtime.TypeLoader
 
     public sealed partial class TypeLoaderEnvironment
     {
-        /// <summary>
-        /// Compare two arrays sequentially.
-        /// </summary>
-        /// <param name="seq1">First array to compare</param>
-        /// <param name="seq2">Second array to compare</param>
-        /// <returns>
-        /// true = arrays have the same values and Equals holds for all pairs of elements
-        /// with the same indices
-        /// </returns>
-        private static bool SequenceEqual<T>(T[] seq1, T[] seq2)
-        {
-            if (seq1.Length != seq2.Length)
-                return false;
-            for (int i = 0; i < seq1.Length; i++)
-                if (!seq1[i].Equals(seq2[i]))
-                    return false;
-            return true;
-        }
-
         /// <summary>
         /// Locate blob with given ID and create native reader on it.
         /// </summary>
@@ -658,8 +629,9 @@ namespace Internal.Runtime.TypeLoader
                 externalReferences.InitializeCommonFixupsTable(module);
 
                 var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
-                var entryData = new InvokeMapEntryDataEnumerator<PreloadedTypeComparator, IntPtr>(
-                    new PreloadedTypeComparator(declaringTypeHandle, genericMethodTypeArgumentHandles),
+                var entryData = new InvokeMapEntryDataEnumerator(
+                    declaringTypeHandle,
+                    genericMethodTypeArgumentHandles,
                     module.Handle,
                     methodHandle,
                     methodHandleModule);
@@ -672,10 +644,7 @@ namespace Internal.Runtime.TypeLoader
                     if (!entryData.IsMatchingOrCompatibleEntry())
                         continue;
 
-                    if (entryData.GetMethodEntryPoint(
-                        out methodInvokeMetadata.MethodEntryPoint,
-                        out methodInvokeMetadata.DictionaryComponent,
-                        out methodInvokeMetadata.RawMethodEntryPoint))
+                    if (entryData.GetMethodEntryPoint(out methodInvokeMetadata.MethodEntryPoint))
                     {
                         methodInvokeMetadata.MappingTableModule = module;
                         methodInvokeMetadata.DynamicInvokeCookie = entryData._dynamicInvokeCookie;
@@ -690,72 +659,11 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        // Api surface for controlling invoke map enumeration.
-        private interface IInvokeMapEntryDataDeclaringTypeAndGenericMethodParameterHandling<TDictionaryComponentType>
-        {
-            bool GetTypeDictionary(out TDictionaryComponentType dictionary);
-            bool GetMethodDictionary(MethodNameAndSignature nameAndSignature, out TDictionaryComponentType dictionary);
-            bool IsUninterestingDictionaryComponent(TDictionaryComponentType dictionary);
-            bool CompareMethodInstantiation(RuntimeTypeHandle[] methodInstantiation);
-            bool CanInstantiationsShareCode(RuntimeTypeHandle[] methodInstantiation, CanonicalFormKind canonFormKind);
-            IntPtr ProduceFatFunctionPointerMethodEntryPoint(IntPtr methodEntrypoint, TDictionaryComponentType dictionary);
-        }
-
-        // Comparator for invoke map when used to find an invoke map entry and the search data is a set of
-        // pre-loaded types, and metadata handles.
-        private struct PreloadedTypeComparator : IInvokeMapEntryDataDeclaringTypeAndGenericMethodParameterHandling<IntPtr>
-        {
-            private readonly RuntimeTypeHandle _declaringTypeHandle;
-            private readonly RuntimeTypeHandle[] _genericMethodTypeArgumentHandles;
-
-            public PreloadedTypeComparator(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
-            {
-                _declaringTypeHandle = declaringTypeHandle;
-                _genericMethodTypeArgumentHandles = genericMethodTypeArgumentHandles;
-            }
-
-            public bool GetTypeDictionary(out IntPtr dictionary)
-            {
-                dictionary = RuntimeAugments.GetPointerFromTypeHandle(_declaringTypeHandle);
-                Debug.Assert(dictionary != IntPtr.Zero);
-                return true;
-            }
-
-            public bool GetMethodDictionary(MethodNameAndSignature nameAndSignature, out IntPtr dictionary)
-            {
-                return TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(_declaringTypeHandle,
-                    _genericMethodTypeArgumentHandles,
-                    nameAndSignature,
-                    out dictionary);
-            }
-
-            public bool IsUninterestingDictionaryComponent(IntPtr dictionary)
-            {
-                return dictionary == IntPtr.Zero;
-            }
-
-            public IntPtr ProduceFatFunctionPointerMethodEntryPoint(IntPtr methodEntrypoint, IntPtr dictionary)
-            {
-                return FunctionPointerOps.GetGenericMethodFunctionPointer(methodEntrypoint, dictionary);
-            }
-
-            public bool CompareMethodInstantiation(RuntimeTypeHandle[] methodInstantiation)
-            {
-                return SequenceEqual(_genericMethodTypeArgumentHandles, methodInstantiation);
-            }
-
-            public bool CanInstantiationsShareCode(RuntimeTypeHandle[] methodInstantiation, CanonicalFormKind canonFormKind)
-            {
-                return TypeLoaderEnvironment.Instance.CanInstantiationsShareCode(methodInstantiation, _genericMethodTypeArgumentHandles, canonFormKind);
-            }
-        }
-
-        // Enumerator for discovering methods in the InvokeMap. This is generic to allow highly efficient
-        // searching of this table with multiple different input data formats.
-        private struct InvokeMapEntryDataEnumerator<TLookupMethodInfo, TDictionaryComponentType> where TLookupMethodInfo : IInvokeMapEntryDataDeclaringTypeAndGenericMethodParameterHandling<TDictionaryComponentType>
+        private struct InvokeMapEntryDataEnumerator
         {
             // Read-only inputs
-            private TLookupMethodInfo _lookupMethodInfo;
+            private readonly RuntimeTypeHandle _declaringTypeHandle;
+            private readonly RuntimeTypeHandle[] _genericMethodTypeArgumentHandles;
             private readonly TypeManagerHandle _moduleHandle;
             private readonly TypeManagerHandle _moduleForMethodHandle;
             private readonly MethodHandle _methodHandle;
@@ -772,12 +680,14 @@ namespace Internal.Runtime.TypeLoader
             private bool _isMatchingMethodHandleAndDeclaringType;
 
             public InvokeMapEntryDataEnumerator(
-                TLookupMethodInfo lookupMethodInfo,
+                RuntimeTypeHandle declaringTypeHandle,
+                RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
                 TypeManagerHandle moduleHandle,
                 MethodHandle methodHandle,
                 TypeManagerHandle moduleForMethodHandle)
             {
-                _lookupMethodInfo = lookupMethodInfo;
+                _declaringTypeHandle = declaringTypeHandle;
+                _genericMethodTypeArgumentHandles = genericMethodTypeArgumentHandles;
                 _moduleHandle = moduleHandle;
                 _methodHandle = methodHandle;
                 _moduleForMethodHandle = moduleForMethodHandle;
@@ -842,26 +752,28 @@ namespace Internal.Runtime.TypeLoader
                 if ((_flags & InvokeTableFlags.IsGenericMethod) == 0)
                     return true;
 
-                return _lookupMethodInfo.CanInstantiationsShareCode(_methodInstantiation, CanonicalFormKind.Specific);
+                return TypeLoaderEnvironment.Instance.CanInstantiationsShareCode(_methodInstantiation, _genericMethodTypeArgumentHandles);
             }
 
-            public bool GetMethodEntryPoint(out IntPtr methodEntrypoint, out TDictionaryComponentType dictionaryComponent, out IntPtr rawMethodEntrypoint)
+            public bool GetMethodEntryPoint(out IntPtr methodEntrypoint)
             {
                 // Debug-only sanity check before proceeding (IsMatchingOrCompatibleEntry is called from TryGetDynamicMethodInvokeInfo)
                 Debug.Assert(IsMatchingOrCompatibleEntry());
 
-                rawMethodEntrypoint = _methodEntrypoint;
                 methodEntrypoint = IntPtr.Zero;
-
-                if (!GetDictionaryComponent(out dictionaryComponent) || !GetMethodEntryPointComponent(dictionaryComponent, out methodEntrypoint))
+                if (!GetDictionaryComponent(out IntPtr dictionaryComponent))
                     return false;
+
+                methodEntrypoint = dictionaryComponent == IntPtr.Zero
+                    ? _methodEntrypoint
+                    : FunctionPointerOps.GetGenericMethodFunctionPointer(_methodEntrypoint, dictionaryComponent);
 
                 return true;
             }
 
-            private bool GetDictionaryComponent(out TDictionaryComponentType dictionaryComponent)
+            private bool GetDictionaryComponent(out IntPtr dictionaryComponent)
             {
-                dictionaryComponent = default(TDictionaryComponentType);
+                dictionaryComponent = IntPtr.Zero;
 
                 if (((_flags & InvokeTableFlags.RequiresInstArg) == 0) || !_hasEntryPoint)
                     return true;
@@ -869,30 +781,18 @@ namespace Internal.Runtime.TypeLoader
                 // Dictionary for non-generic method is the type handle of the declaring type
                 if ((_flags & InvokeTableFlags.IsGenericMethod) == 0)
                 {
-                    return _lookupMethodInfo.GetTypeDictionary(out dictionaryComponent);
+                    dictionaryComponent = RuntimeAugments.GetPointerFromTypeHandle(_declaringTypeHandle);
+                    Debug.Assert(dictionaryComponent != IntPtr.Zero);
+                    return true;
                 }
 
                 // Dictionary for generic method (either found statically or constructed dynamically)
-                return _lookupMethodInfo.GetMethodDictionary(new MethodNameAndSignature(ModuleList.Instance.GetMetadataReaderForModule(_moduleHandle), _methodHandle), out dictionaryComponent);
+                return TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(
+                    _declaringTypeHandle,
+                    _genericMethodTypeArgumentHandles,
+                    new MethodNameAndSignature(ModuleList.Instance.GetMetadataReaderForModule(_moduleHandle), _methodHandle),
+                    out dictionaryComponent);
             }
-
-            private bool GetMethodEntryPointComponent(TDictionaryComponentType dictionaryComponent, out IntPtr methodEntrypoint)
-            {
-                methodEntrypoint = _methodEntrypoint;
-
-                if (_lookupMethodInfo.IsUninterestingDictionaryComponent(dictionaryComponent))
-                    return true;
-
-                methodEntrypoint = _lookupMethodInfo.ProduceFatFunctionPointerMethodEntryPoint(_methodEntrypoint, dictionaryComponent);
-
-                return true;
-            }
-        }
-
-        public bool TryGetMetadataForTypeMethodNameAndSignature(RuntimeTypeHandle declaringTypeHandle, MethodNameAndSignature nameAndSignature, out QMethodDefinition methodHandle)
-        {
-            methodHandle = new QMethodDefinition(nameAndSignature.Reader, nameAndSignature.Handle);
-            return true;
         }
     }
 }

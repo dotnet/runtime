@@ -55,7 +55,7 @@ namespace Internal.Runtime.TypeLoader
 
             IntPtr methodDictionary;
 
-            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup(method), out methodDictionary))
+            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new TypeLoaderEnvironment.GenericMethodLookupData(method), out methodDictionary))
             {
                 TypeLoaderLogger.WriteLine("Found DICT = " + methodDictionary.LowLevelToString() + " for method " + method.ToString());
                 method.AssociateWithRuntimeMethodDictionary(methodDictionary);
@@ -143,15 +143,12 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderLogger.WriteLine("Preparing type " + type.ToString() + " ...");
 
             TypeBuilderState state = type.GetTypeBuilderStateIfExist();
-            bool hasTypeHandle = type.RetrieveRuntimeTypeHandleIfPossible();
-
-            // If this type has type handle, do nothing and return unless we should prepare even in the presence of a type handle
-            if (hasTypeHandle)
+            if (type.RetrieveRuntimeTypeHandleIfPossible())
                 return;
 
             state ??= type.GetOrCreateTypeBuilderState();
 
-            // If this type was already prepared, do nothing unless we are re-preparing it for the purpose of loading the field layout
+            // Avoid recursively preparing the same type.
             if (state.HasBeenPrepared)
             {
                 return;
@@ -160,41 +157,17 @@ namespace Internal.Runtime.TypeLoader
             state.HasBeenPrepared = true;
             state.NeedsTypeHandle = true;
 
-            if (!hasTypeHandle)
-            {
-                InsertIntoNeedsTypeHandleList(type);
-            }
-
-            bool noExtraPreparation = false; // Set this to true for types which don't need other types to be prepared. I.e GenericTypeDefinitions
+            InsertIntoNeedsTypeHandleList(type);
 
             if (type is DefType typeAsDefType)
             {
-                if (typeAsDefType.HasInstantiation)
-                {
-                    if (typeAsDefType.IsTypeDefinition)
-                    {
-                        noExtraPreparation = true;
-                    }
-                    else
-                    {
-                        // This call to ComputeTemplate will find the native layout info for the type, and the template
-                        // For metadata loaded types, a template will not exist, but we may find the NativeLayout describing the generic dictionary
-                        TypeDesc.ComputeTemplate(state, false);
+                Debug.Assert(typeAsDefType.HasInstantiation && !typeAsDefType.IsTypeDefinition);
+                TypeDesc.ComputeTemplate(state);
 
-                        Debug.Assert(state.TemplateType == null || (state.TemplateType is DefType && !state.TemplateType.RuntimeTypeHandle.IsNull()));
+                foreach (var instArg in typeAsDefType.Instantiation)
+                    RegisterForPreparation(instArg);
 
-                        // Collect dependencies
-
-                        // We need the instantiation arguments to register a generic type
-                        foreach (var instArg in typeAsDefType.Instantiation)
-                            RegisterForPreparation(instArg);
-
-                        ParseNativeLayoutInfo(state, type);
-                    }
-                }
-
-                if (!noExtraPreparation)
-                    state.PrepareStaticGCLayout();
+                ParseNativeLayoutInfo(state, type);
             }
             else if (type is ParameterizedType)
             {
@@ -226,14 +199,10 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(false);
             }
 
-            // Need to prepare the base type first since it is used to compute interfaces
-            if (!noExtraPreparation)
-            {
-                PrepareBaseTypeAndDictionaries(type);
-                PrepareRuntimeInterfaces(type);
+            PrepareBaseTypeAndDictionaries(type);
+            PrepareRuntimeInterfaces(type);
 
-                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete.");
-            }
+            TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete.");
         }
 
         /// <summary>
@@ -241,8 +210,6 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         private void PrepareRuntimeInterfaces(TypeDesc type)
         {
-            // Prepare all the interfaces that might be used. (This can be a superset of the
-            // interfaces explicitly in the NativeLayout.)
             foreach (DefType interfaceType in type.RuntimeInterfaces)
             {
                 PrepareType(interfaceType);
@@ -381,18 +348,6 @@ namespace Internal.Runtime.TypeLoader
                         state.NonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
-                    case BagElementKind.GcStaticDataSize:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.GcStaticDataSize");
-                        // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        state.GcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        break;
-
-                    case BagElementKind.ThreadStaticDataSize:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.ThreadStaticDataSize");
-                        // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        state.ThreadDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        break;
-
                     case BagElementKind.GcStaticDesc:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.GcStaticDesc");
                         state.GcStaticDesc = context.GetGCStaticInfo(typeInfoParser.GetUnsigned());
@@ -424,87 +379,6 @@ namespace Internal.Runtime.TypeLoader
             type.ParseBaseType(context, baseTypeParser);
         }
 
-        /// <summary>
-        /// Wraps information about how a type is laid out into one package.  Types may have been laid out by
-        /// TypeBuilder (which means they have a gc bitfield), or they could be types that were laid out by NUTC
-        /// (which means we only have a GCDesc for them).  This struct wraps both of those possibilities into
-        /// one package to be able to write that layout to another bitfield we are constructing.  (This is for
-        /// struct fields.)
-        /// </summary>
-        internal unsafe struct GCLayout
-        {
-            private bool[] _bitfield;
-            private unsafe void* _gcdesc;
-            private int _size;
-
-            public static GCLayout None { get { return default(GCLayout); } }
-            public static GCLayout SingleReference { get; } = new GCLayout([true]);
-
-            public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }
-
-            public GCLayout(bool[] bitfield)
-            {
-                Debug.Assert(bitfield != null);
-
-                _bitfield = bitfield;
-                _gcdesc = null;
-                _size = 0;
-            }
-
-            public GCLayout(RuntimeTypeHandle rtth)
-            {
-                MethodTable* MethodTable = rtth.ToEETypePtr();
-                Debug.Assert(MethodTable != null);
-
-                _bitfield = null;
-                _gcdesc = MethodTable->ContainsGCPointers ? (void**)MethodTable - 1 : null;
-                _size = (int)MethodTable->BaseSize;
-            }
-
-            /// <summary>
-            /// Gets this layout in bitfield array.
-            /// </summary>
-            /// <returns>The layout in bitfield.</returns>
-            public bool[] AsBitfield()
-            {
-                // This method should only be called when not none.
-                Debug.Assert(!IsNone);
-
-                // Ensure exactly one of these two are set.
-                Debug.Assert(_gcdesc != null ^ _bitfield != null);
-
-                return _bitfield ?? WriteGCDescToBitfield();
-            }
-
-            private unsafe bool[] WriteGCDescToBitfield()
-            {
-                void** ptr = (void**)_gcdesc;
-                Debug.Assert(_gcdesc != null);
-
-                // Number of series
-                int count = (int)*ptr-- - 1;
-                Debug.Assert(count >= 0);
-
-                // Ensure capacity for the values we are about to write
-                int capacity = _size / IntPtr.Size - 2;
-                bool[] bitfield = new bool[capacity];
-
-                while (count-- >= 0)
-                {
-                    int offs = (int)*ptr-- / IntPtr.Size - 1;
-                    int len = ((int)*ptr-- + _size) / IntPtr.Size;
-
-                    Debug.Assert(len > 0);
-                    Debug.Assert(offs >= 0);
-
-                    for (int i = 0; i < len; i++)
-                        bitfield[offs + i] = true;
-                }
-
-                return bitfield;
-            }
-        }
-
         private unsafe void AllocateRuntimeType(TypeDesc type)
         {
             TypeBuilderState state = type.GetTypeBuilderState();
@@ -513,7 +387,7 @@ namespace Internal.Runtime.TypeLoader
 
             RuntimeTypeHandle rtt = EETypeCreator.CreateEEType(type, state);
 
-            if (state.ThreadDataSize != 0)
+            if (state.ThreadStaticDesc != IntPtr.Zero)
                 TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadStaticDesc);
 
             TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->RawBaseSize.LowLevelToString());
@@ -726,13 +600,16 @@ namespace Internal.Runtime.TypeLoader
                     RuntimeTypeHandle elementTypeHandle = GetRuntimeTypeHandle(typeAsSzArrayType.ElementType);
                     state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(elementTypeHandle);
 
-                    ushort componentSize = (ushort)IntPtr.Size;
-                    unsafe
+                    if (typeAsSzArrayType.IsMdArray)
                     {
-                        if (typeAsSzArrayType.ElementType.IsValueType)
-                            componentSize = checked((ushort)elementTypeHandle.ToEETypePtr()->ValueTypeSize);
+                        ushort componentSize = (ushort)IntPtr.Size;
+                        unsafe
+                        {
+                            if (typeAsSzArrayType.ElementType.IsValueType)
+                                componentSize = checked((ushort)elementTypeHandle.ToEETypePtr()->ValueTypeSize);
+                        }
+                        state.HalfBakedRuntimeTypeHandle.SetComponentSize(componentSize);
                     }
-                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(componentSize);
 
                     FinishInterfaces(state);
                 }

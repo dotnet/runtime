@@ -218,11 +218,5 @@ namespace Internal.TypeSystem
 
             return templateType;
         }
-
-        internal bool IsTemplateCanonical()
-        {
-            TypeDesc templateType = ComputeTemplate(false);
-            return templateType != null;
-        }
     }
 }

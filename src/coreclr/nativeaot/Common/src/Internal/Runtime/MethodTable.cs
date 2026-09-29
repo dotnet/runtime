@@ -209,7 +209,7 @@ namespace Internal.Runtime
             set
             {
                 Debug.Assert(HasComponentSize);
-                _uFlags |= (uint)value;
+                _uFlags = (_uFlags & ~(uint)ushort.MaxValue) | value;
             }
 #endif
         }

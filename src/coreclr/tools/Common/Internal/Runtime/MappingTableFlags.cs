@@ -5,12 +5,6 @@ using System;
 
 namespace Internal.Runtime
 {
-    internal struct DynamicInvokeMapEntry
-    {
-        public const uint IsImportMethodFlag = 0x40000000;
-        public const uint InstantiationDetailIndexMask = 0x3FFFFFFF;
-    }
-
     internal struct VirtualInvokeTableEntry
     {
         public const int GenericVirtualMethod = 1;
@@ -28,13 +22,6 @@ namespace Internal.Runtime
         HasEntrypoint = 0x00000020,
         // = 0x00000040,
         NeedsParameterInterpretation = 0x00000080,
-        CallingConventionDefault = 0x00000000,
-        Cdecl = 0x00001000,
-        Winapi = 0x00002000,
-        StdCall = 0x00003000,
-        ThisCall = 0x00004000,
-        FastCall = 0x00005000,
-        CallingConventionMask = 0x00007000,
     }
 
     [Flags]
@@ -50,7 +37,7 @@ namespace Internal.Runtime
         // = 0x04,
         // = 0x08,
         FieldOffsetEncodedDirectly = 0x20,
-        IsAnyCanonicalEntry = 0x40,
+        // = 0x40,
         IsInitOnly = 0x80
     }
 }

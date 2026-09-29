@@ -13,8 +13,6 @@ namespace Internal.TypeSystem
     // Includes functionality for runtime type loading
     public partial class DefType
     {
-        internal static readonly LayoutInt MaximumAlignmentPossible = new LayoutInt(8);
-
         public virtual bool HasNativeLayout
         {
             get

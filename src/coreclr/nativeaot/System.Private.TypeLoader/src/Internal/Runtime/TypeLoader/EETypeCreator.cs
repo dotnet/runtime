@@ -3,7 +3,6 @@
 
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -145,46 +144,24 @@ namespace Internal.Runtime.TypeLoader
                     pTemplateEEType = pTemplateEEType->DynamicTemplateType;
                 }
 
-                int baseSize = 0;
-
-                bool isValueType;
-                bool hasDispatchMap;
-                bool hasFinalizer;
-                bool isNullable;
-                bool isArray;
-                bool isGeneric;
-                bool hasSealedVTable;
-                uint flags;
-                ushort runtimeInterfacesLength = 0;
-                IntPtr typeManager = IntPtr.Zero;
-
-                if (state.RuntimeInterfaces != null)
-                {
-                    runtimeInterfacesLength = checked((ushort)state.RuntimeInterfaces.Length);
-                }
-
-                baseSize = (int)pTemplateEEType->RawBaseSize;
-                isValueType = pTemplateEEType->IsValueType;
-                hasFinalizer = pTemplateEEType->IsFinalizable;
-                hasDispatchMap = pTemplateEEType->HasDispatchMap;
-                isNullable = pTemplateEEType->IsNullable;
-                flags = pTemplateEEType->Flags;
-                isArray = pTemplateEEType->IsArray;
-                isGeneric = pTemplateEEType->IsGeneric;
-                hasSealedVTable = pTemplateEEType->HasSealedVTableEntries;
-                typeManager = pTemplateEEType->PointerToTypeManager;
-                Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
-
-                flags |= (uint)EETypeFlags.IsDynamicTypeFlag;
+                int baseSize = (int)pTemplateEEType->RawBaseSize;
+                bool hasFinalizer = pTemplateEEType->IsFinalizable;
+                bool hasDispatchMap = pTemplateEEType->HasDispatchMap;
+                bool isGeneric = pTemplateEEType->IsGeneric;
+                bool hasSealedVTable = pTemplateEEType->HasSealedVTableEntries;
+                ushort runtimeInterfacesLength = pTemplateEEType->NumInterfaces;
+                Debug.Assert(runtimeInterfacesLength == (state.RuntimeInterfaces?.Length ?? 0));
+                uint flags = pTemplateEEType->Flags | (uint)EETypeFlags.IsDynamicTypeFlag;
+                bool isMdArray = state.TypeBeingBuilt.IsMdArray;
 
                 int numFunctionPointerTypeParameters = 0;
-                if (state.TypeBeingBuilt.IsMdArray)
+                if (isMdArray)
                 {
                     // If we're building an MDArray, the template is object[,] and we
                     // need to recompute the base size.
                     baseSize = IntPtr.Size + // sync block
                         2 * IntPtr.Size + // EETypePtr + Length
-                        state.ArrayRank.Value * sizeof(int) * 2; // 2 ints per rank for bounds
+                        ((ArrayType)state.TypeBeingBuilt).Rank * sizeof(int) * 2; // 2 ints per rank for bounds
                 }
                 else if (state.TypeBeingBuilt.IsFunctionPointer)
                 {
@@ -210,23 +187,17 @@ namespace Internal.Runtime.TypeLoader
                 if (allocatedNonGCDataSize != 0)
                     dynamicTypeFlags |= DynamicTypeFlags.HasNonGCStatics;
 
-                if (state.GcDataSize != 0)
+                if (state.GcStaticDesc != IntPtr.Zero)
                     dynamicTypeFlags |= DynamicTypeFlags.HasGCStatics;
 
-                if (state.ThreadDataSize != 0)
+                if (state.ThreadStaticDesc != IntPtr.Zero)
                     dynamicTypeFlags |= DynamicTypeFlags.HasThreadStatics;
 
-                ushort numVtableSlots = state.NumVTableSlots;
+                ushort numVtableSlots = pTemplateEEType->NumVtableSlots;
 
                 // Compute the MethodTable size and allocate it
                 MethodTable* pEEType;
                 {
-                    // In order to get the size of the MethodTable to allocate we need the following information
-                    // 1) The number of VTable slots (from the TypeBuilderState)
-                    // 2) The number of Interfaces (from the template)
-                    // 3) Whether or not there is a finalizer (from the template)
-                    // 4) Optional fields size
-                    // 5) Whether or not the type has sealed virtuals (from the TypeBuilderState)
                     int cbEEType = (int)MethodTable.GetSizeofEEType(
                         numVtableSlots,
                         runtimeInterfacesLength,
@@ -236,13 +207,16 @@ namespace Internal.Runtime.TypeLoader
                         isGeneric,
                         numFunctionPointerTypeParameters,
                         allocatedNonGCDataSize != 0,
-                        state.GcDataSize != 0,
-                        state.ThreadDataSize != 0);
+                        state.GcStaticDesc != IntPtr.Zero,
+                        state.ThreadStaticDesc != IntPtr.Zero);
 
                     // Dynamic types have an extra pointer-sized field that contains a pointer to their template type
                     cbEEType += IntPtr.Size;
 
-                    int cbGCDesc = GetInstanceGCDescSize(state, pTemplateEEType, isValueType, isArray);
+                    bool[] gcBitfield = null;
+                    int cbGCDesc = isMdArray
+                        ? GetMdArrayGCDescSize((ArrayType)state.TypeBeingBuilt, out gcBitfield)
+                        : RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
                     int cbGCDescAligned = MemoryHelpers.AlignUp(cbGCDesc, IntPtr.Size);
 
                     // Allocate enough space for the MethodTable + gcDescSize
@@ -258,12 +232,17 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->NumVtableSlots = numVtableSlots;
                     pEEType->NumInterfaces = runtimeInterfacesLength;
                     pEEType->HashCode = hashCodeOfNewType;
-                    pEEType->PointerToTypeManager = typeManager;
+                    pEEType->PointerToTypeManager = pTemplateEEType->PointerToTypeManager;
 
-                    // Write the GCDesc
-                    bool isSzArray = isArray ? state.ArrayRank < 1 : false;
-                    int arrayRank = isArray ? state.ArrayRank.Value : 0;
-                    CreateInstanceGCDesc(state, pTemplateEEType, pEEType, baseSize, cbGCDesc, isValueType, isArray, isSzArray, arrayRank);
+                    if (isMdArray)
+                    {
+                        CreateMdArrayGCDesc(gcBitfield, pEEType, cbGCDesc, ((ArrayType)state.TypeBeingBuilt).Rank);
+                    }
+                    else
+                    {
+                        // Specific-canonical templates have the same instance layout, including SZ-array elements.
+                        Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
+                    }
                     Debug.Assert(pEEType->ContainsGCPointers == (cbGCDesc != 0));
 
                     // Copy VTable entries from template type
@@ -299,15 +278,7 @@ namespace Internal.Runtime.TypeLoader
                 pEEType->DynamicTemplateType = pTemplateEEType;
                 pEEType->DynamicTypeFlags = dynamicTypeFlags;
 
-                int nonGCStaticDataOffset = 0;
-
-                if (!isArray)
-                {
-                    nonGCStaticDataOffset = state.HasStaticConstructor ? -TypeBuilder.ClassConstructorOffset : 0;
-
-                    // If we have a class constructor, our NonGcDataSize MUST be non-zero
-                    Debug.Assert(!state.HasStaticConstructor || (allocatedNonGCDataSize != 0));
-                }
+                int nonGCStaticDataOffset = state.HasStaticConstructor ? -TypeBuilder.ClassConstructorOffset : 0;
 
                 if (isGeneric)
                 {
@@ -326,7 +297,7 @@ namespace Internal.Runtime.TypeLoader
                     }
                 }
 
-                if (state.ThreadDataSize != 0)
+                if (state.ThreadStaticDesc != IntPtr.Zero)
                 {
                     state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue(pEEType->TypeManager);
 
@@ -336,7 +307,7 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->DynamicThreadStaticsIndex = (IntPtr)threadStaticIndex;
                 }
 
-                if (state.GcDataSize != 0)
+                if (state.GcStaticDesc != IntPtr.Zero)
                 {
                     // Statics are allocated on GC heap
                     object obj = RuntimeAugments.RawNewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
@@ -371,83 +342,66 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private static void CreateInstanceGCDesc(TypeBuilderState state, MethodTable* pTemplateEEType, MethodTable* pEEType, int baseSize, int cbGCDesc, bool isValueType, bool isArray, bool isSzArray, int arrayRank)
+        private static void CreateMdArrayGCDesc(bool[] gcBitfield, MethodTable* pEEType, int cbGCDesc, int arrayRank)
         {
-            var gcBitfield = state.InstanceGCLayout;
-            if (isArray)
+            pEEType->ContainsGCPointers = cbGCDesc != 0;
+            if (cbGCDesc == 0)
+                return;
+
+            if (gcBitfield is null || IsAllGCPointers(gcBitfield))
             {
-                if (cbGCDesc != 0)
-                {
-                    pEEType->ContainsGCPointers = true;
-                    if (state.IsArrayOfReferenceTypes || IsAllGCPointers(gcBitfield))
-                    {
-                        IntPtr* gcDescStart = (IntPtr*)((byte*)pEEType - cbGCDesc);
-                        // Series size
-                        gcDescStart[0] = new IntPtr(-baseSize);
-                        // Series offset
-                        gcDescStart[1] = new IntPtr(baseSize - sizeof(IntPtr));
-                        // NumSeries
-                        gcDescStart[2] = new IntPtr(1);
-                    }
-                    else
-                    {
-                        CreateArrayGCDesc(gcBitfield, arrayRank, isSzArray, ((void**)pEEType) - 1);
-                    }
-                }
-                else
-                {
-                    pEEType->ContainsGCPointers = false;
-                }
+                int baseSize = (int)pEEType->BaseSize;
+                IntPtr* gcDescStart = (IntPtr*)((byte*)pEEType - cbGCDesc);
+                gcDescStart[0] = new IntPtr(-baseSize);
+                gcDescStart[1] = new IntPtr(baseSize - sizeof(IntPtr));
+                gcDescStart[2] = new IntPtr(1);
             }
             else
             {
-                Debug.Assert(gcBitfield == null);
-
-                if (pTemplateEEType != null)
-                {
-                    Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
-                    pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
-                }
-                else
-                {
-                    pEEType->ContainsGCPointers = false;
-                }
+                CreateArrayGCDesc(gcBitfield, arrayRank, ((void**)pEEType) - 1);
             }
         }
 
-        private static unsafe int GetInstanceGCDescSize(TypeBuilderState state, MethodTable* pTemplateEEType, bool isValueType, bool isArray)
+        private static int GetMdArrayGCDescSize(ArrayType arrayType, out bool[] gcBitfield)
         {
-            var gcBitfield = state.InstanceGCLayout;
-            if (isArray)
+            Debug.Assert(arrayType.IsMdArray);
+            gcBitfield = null;
+            TypeDesc elementType = arrayType.ElementType;
+            if (!elementType.IsValueType)
             {
-                if (state.IsArrayOfReferenceTypes ||
-                    (gcBitfield != null && IsAllGCPointers(gcBitfield)))
-                {
-                    // For efficiency this is special cased and encoded as one serie
-                    return 3 * sizeof(IntPtr);
-                }
-                else
-                {
-                    int series = 0;
-                    if (gcBitfield != null)
-                        series = CreateArrayGCDesc(gcBitfield, 1, true, null);
-
-                    return series > 0 ? (series + 2) * IntPtr.Size : 0;
-                }
+                Debug.Assert(!elementType.IsByRef);
+                return elementType.IsPointer || elementType.IsFunctionPointer ? 0 : 3 * IntPtr.Size;
             }
-            else
+
+            RuntimeTypeHandle elementHandle = elementType.GetRuntimeTypeHandle();
+            if (elementHandle.IsNull())
+                elementHandle = elementType.ComputeTemplate().RuntimeTypeHandle;
+
+            MethodTable* elementMethodTable = elementHandle.ToEETypePtr();
+            if (!elementMethodTable->ContainsGCPointers)
+                return 0;
+
+            // Decode the boxed element's GCDesc, excluding the object header and MethodTable pointer.
+            int size = (int)elementMethodTable->BaseSize;
+            gcBitfield = new bool[size / IntPtr.Size - 2];
+            void** ptr = (void**)elementMethodTable - 1;
+            int count = (int)*ptr--;
+            Debug.Assert(count > 0);
+            while (count-- > 0)
             {
-                Debug.Assert(gcBitfield == null);
-
-                if (pTemplateEEType != null)
-                {
-                    return RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
-                }
-                else
-                {
-                    return 0;
-                }
+                int offset = (int)*ptr-- / IntPtr.Size - 1;
+                int length = ((int)*ptr-- + size) / IntPtr.Size;
+                Debug.Assert(offset >= 0 && length > 0);
+                for (int i = 0; i < length; i++)
+                    gcBitfield[offset + i] = true;
             }
+
+            if (IsAllGCPointers(gcBitfield))
+                return 3 * IntPtr.Size;
+
+            int series = CreateArrayGCDesc(gcBitfield, arrayType.Rank, null);
+            Debug.Assert(series > 0);
+            return (series + 2) * IntPtr.Size;
         }
 
         private static bool IsAllGCPointers(bool[] bitfield)
@@ -464,11 +418,8 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private static unsafe int CreateArrayGCDesc(bool[] bitfield, int rank, bool isSzArray, void* gcdesc)
+        private static int CreateArrayGCDesc(bool[] bitfield, int rank, void* gcdesc)
         {
-            if (bitfield == null)
-                return 0;
-
             void** baseOffsetPtr = (void**)gcdesc - 1;
 
 #if TARGET_64BIT
@@ -476,11 +427,7 @@ namespace Internal.Runtime.TypeLoader
 #else
             short* ptr = (short*)baseOffsetPtr - 1;
 #endif
-            int baseOffset = 2;
-            if (!isSzArray)
-            {
-                baseOffset += 2 * rank / (sizeof(IntPtr) / sizeof(int));
-            }
+            int baseOffset = 2 + 2 * rank / (sizeof(IntPtr) / sizeof(int));
 
             int numSeries = 0;
             int i = 0;
@@ -599,7 +546,6 @@ namespace Internal.Runtime.TypeLoader
             {
                 Debug.Assert(0 == state.NonGcDataSize);
                 Debug.Assert(!state.HasStaticConstructor);
-                Debug.Assert(0 == state.GcDataSize);
                 Debug.Assert(0 == state.ThreadStaticOffset);
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);
                 Debug.Assert(IntPtr.Zero == state.ThreadStaticDesc);
@@ -660,7 +606,15 @@ namespace Internal.Runtime.TypeLoader
                 return -1;
 
             // Dictionary slot is the first slot in the vtable after the base type's vtable entries
-            return type.BaseType != null ? type.BaseType.GetOrCreateTypeBuilderState().NumVTableSlots : 0;
+            DefType baseType = type.BaseType;
+            if (baseType is null)
+                return 0;
+
+            RuntimeTypeHandle baseTypeHandle = baseType.GetRuntimeTypeHandle();
+            if (baseTypeHandle.IsNull())
+                baseTypeHandle = baseType.ComputeTemplate().RuntimeTypeHandle;
+
+            return baseTypeHandle.ToEETypePtr()->NumVtableSlots;
         }
     }
 }
