@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => HasAsyncContinuation;
-        bool INodeWithTypeSignature.HasGenericContextArg => _wasmSignature.SignatureString.Contains(WasmLowering.GenericContextSigChar);
+        bool INodeWithTypeSignature.HasGenericContextArg => _wasmSignature.SignatureString.Contains('g');
 
         private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
 

@@ -403,11 +403,6 @@ namespace Internal.JitInterface
         public static bool IsEmptyStruct(TypeDesc type) => false;
 
         /// <summary>
-        /// Signature encoding of the hidden generic context argument.
-        /// </summary>
-        public const char GenericContextSigChar = 'g';
-
-        /// <summary>
         /// Maps a WasmValueType to its single-character signature encoding.
         /// </summary>
         // internal rather than private so the call-helper generator can encode a single type with the
@@ -443,7 +438,7 @@ namespace Internal.JitInterface
             'S' or 'A' => "a struct passed by reference",
             'T' => "the 'this' argument",
             'p' => "the portable entry point argument",
-            GenericContextSigChar => "the generic context argument",
+            'g' => "the generic context argument",
             'a' => "the async continuation argument",
             'e' => "an empty struct",
             _ => $"an unrecognized element '{c}'"
@@ -469,7 +464,7 @@ namespace Internal.JitInterface
         {
             string sig = wasmSignature.SignatureString;
             LoweringFlags flags = LoweringFlags.None;
-            if (sig.Contains(GenericContextSigChar))
+            if (sig.Contains('g'))
             {
                 flags |= LoweringFlags.HasGenericContextArg;
             }
@@ -519,7 +514,7 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            if (pos < sig.Length && sig[pos] == GenericContextSigChar)
+            if (pos < sig.Length && sig[pos] == 'g')
             {
                 pos++;
             }
@@ -779,7 +774,7 @@ namespace Internal.JitInterface
             if (flags.HasFlag(LoweringFlags.HasGenericContextArg))
             {
                 result.Add(pointerType); // generic context
-                sigBuilder.Append(GenericContextSigChar);
+                sigBuilder.Append('g');
             }
 
             if (flags.HasFlag(LoweringFlags.IsAsyncCall))

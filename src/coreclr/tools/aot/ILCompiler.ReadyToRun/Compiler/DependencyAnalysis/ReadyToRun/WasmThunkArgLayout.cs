@@ -107,7 +107,7 @@ internal sealed class WasmThunkArgLayout
             AddHiddenArg(WasmThunkArgKind.RetBuf, TransitionBlock.InvalidOffset);
         }
 
-        if (sig[pos] == WasmLowering.GenericContextSigChar)
+        if (sig[pos] == 'g')
         {
             Debug.Assert(argit.HasParamType);
             AddHiddenArg(WasmThunkArgKind.GenericContext, argit.GetParamTypeArgOffset());
