@@ -4062,7 +4062,8 @@ namespace System
 
         // We need to check the type handle values - not the instances - to determine if the runtime type is a generic ComObject.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool IsGenericCOMObjectImpl() => m_handle == ((RuntimeType)typeof(__ComObject)).m_handle;
+        internal bool IsGenericCOMObjectImpl() =>
+            System.Runtime.CompilerServices.TypeHandle.AreSameType(GetNativeTypeHandle(), System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>());
 #else
         protected override bool IsCOMObjectImpl() => false;
 
