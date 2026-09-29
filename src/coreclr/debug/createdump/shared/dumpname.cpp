@@ -56,7 +56,7 @@ static bool AppendFormat(
 bool
 FormatDumpName(char* name, size_t nameSize, const char* pattern, const char* exeName, int pid)
 {
-    assert(name != nullptr && nameSize == MAX_LONGPATH && pattern != nullptr && exeName != nullptr);
+    assert(name != nullptr && nameSize >= MAX_LONGPATH && pattern != nullptr && exeName != nullptr);
 
     const char* p = pattern;
     if (*p == '|')

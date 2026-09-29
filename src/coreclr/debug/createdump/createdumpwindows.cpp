@@ -28,7 +28,7 @@ CreateDump(const CreateDumpOptions& options)
     _ASSERTE(!options.CrashReport);
 
     AStringHolder pszName = new char[MAX_LONGPATH + 1];
-    char pathName[MAX_LONGPATH + 1];
+    char pathName[MAX_DUMP_PATH];
     std::string dumpPath;
 
     // On Windows, createdump is restricted for security reasons to only the .NET process (parent process) that launched createdump
@@ -52,7 +52,7 @@ CreateDump(const CreateDumpOptions& options)
         printf_error("Get process name FAILED - %s\n", GetLastErrorString().c_str());
         goto exit;
     }
-    if (!FormatDumpName(pathName, MAX_LONGPATH, options.DumpPathTemplate, pszName, pid))
+    if (!FormatDumpName(pathName, sizeof(pathName), options.DumpPathTemplate, pszName, pid))
     {
         goto exit;
     }

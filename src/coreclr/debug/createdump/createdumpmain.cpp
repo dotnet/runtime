@@ -4,7 +4,6 @@
 #include "createdump.h"
 #include "minipal/time.h"
 
-bool linkedCreateDump = false;
 uint64_t g_ticksPerMS = 0;
 uint64_t g_startTime = 0;
 

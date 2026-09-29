@@ -71,6 +71,8 @@ extern FILE* g_stdout;
 #define MAX_LONGPATH   1024
 #endif
 
+#define MAX_DUMP_PATH 4096
+
 #ifdef HOST_WINDOWS
 #define DEFAULT_DUMP_PATH "%TEMP%\\"
 #define DEFAULT_DUMP_TEMPLATE "dump.%p.dmp"

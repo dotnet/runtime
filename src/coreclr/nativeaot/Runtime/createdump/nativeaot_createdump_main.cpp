@@ -151,9 +151,9 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
         goto exit;
     }
 
-    char dumpPath[MAX_LONGPATH + 1];
+    char dumpPath[MAX_DUMP_PATH];
     // Format the dump pattern template
-    if (!FormatDumpName(dumpPath, MAX_LONGPATH, options->DumpPathTemplate, processInfo.Name(), options->Pid))
+    if (!FormatDumpName(dumpPath, sizeof(dumpPath), options->DumpPathTemplate, processInfo.Name(), options->Pid))
     {
         goto exit;
     }

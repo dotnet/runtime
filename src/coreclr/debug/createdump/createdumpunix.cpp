@@ -80,9 +80,9 @@ CreateDump(const CreateDumpOptions& options)
         crashInfo->AddThreadStacks();
     }
 
-    char pathName[MAX_LONGPATH + 1];
+    char pathName[MAX_DUMP_PATH];
     // Format the dump pattern template now that the process name on MacOS has been obtained
-    if (!FormatDumpName(pathName, MAX_LONGPATH, options.DumpPathTemplate, crashInfo->Name(), options.Pid))
+    if (!FormatDumpName(pathName, sizeof(pathName), options.DumpPathTemplate, crashInfo->Name(), options.Pid))
     {
         goto exit;
     }
