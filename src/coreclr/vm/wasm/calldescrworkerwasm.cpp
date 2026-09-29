@@ -7,10 +7,33 @@
 // Forward declaration
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp);
 
-static void RunPrestub(MethodDesc* pMethod)
+// Mirrors the exception handling of PreStubWorker for a call from CallDescrWorkerInternal: exceptions are
+// rethrown to the native caller, and the method being prepared is added to the exception's stack trace.
+static void RunPrestub(MethodDesc* pMethod, UINT_PTR stackTraceSP)
 {
-    GCX_PREEMP();
-    (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+    EX_TRY
+    {
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+
+        {
+            GCX_PREEMP();
+            (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        }
+
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true /* nativeRethrow */);
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(true /* nativeRethrow */);
+    }
+    EX_CATCH
+    {
+        OBJECTHANDLE ohThrowable = GetThread()->LastThrownObjectHandle();
+        if (ohThrowable != NULL)
+        {
+            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, stackTraceSP, pMethod, NULL);
+        }
+        EX_RETHROW;
+    }
+    EX_END_CATCH
 }
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
@@ -34,12 +57,12 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
             Thread* pThread = GetThread();
             PrestubMethodFrame frame(pTransitionBlock, pMethod);
             frame.Push(pThread);
-            RunPrestub(pMethod);
+            RunPrestub(pMethod, (UINT_PTR)pTransitionBlock);
             frame.Pop(pThread);
         }
         else
         {
-            RunPrestub(pMethod);
+            RunPrestub(pMethod, (UINT_PTR)pCallDescrData->pSrc);
         }
         targetIp = pMethod->GetInterpreterCode();
     }
