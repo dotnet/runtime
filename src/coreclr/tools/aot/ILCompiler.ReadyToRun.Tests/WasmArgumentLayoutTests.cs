@@ -109,6 +109,22 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
+    [InlineData(MethodSignatureFlags.None, "iip")]
+    [InlineData(MethodSignatureFlags.CallingConventionVarargs, "iip")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionCdecl, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionStdCall, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionThisCall, "ii")]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConvention, "ii")]
+    public void SignatureCallingConventionSelectsLowering(MethodSignatureFlags callingConvention, string expectedSignature)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
+        MethodSignature signature = new MethodSignature(callingConvention | MethodSignatureFlags.Static, 0, int32Type, [int32Type]);
+
+        Assert.Equal(expectedSignature, WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.None).SignatureString);
+    }
+
+    [Theory]
     [InlineData(MethodSignatureFlags.None)]
     [InlineData(MethodSignatureFlags.CallingConventionVarargs)]
     [InlineData(MethodSignatureFlags.UnmanagedCallingConventionCdecl)]

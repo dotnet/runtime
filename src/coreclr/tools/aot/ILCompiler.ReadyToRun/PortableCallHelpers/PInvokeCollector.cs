@@ -223,9 +223,7 @@ namespace ILCompiler.PortableCallHelpers
                 string signature;
                 try
                 {
-                    // WasmLowering only infers the native lowering from the extensible 'unmanaged'
-                    // convention, so name it for the cdecl, stdcall and thiscall encodings too.
-                    signature = WasmLowering.GetSignature(calliSignature, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly).SignatureString;
+                    signature = WasmLowering.GetSignature(calliSignature, WasmLowering.LoweringFlags.None).SignatureString;
                     foreach (string token in InteropSignature.ParseSignatureTokens(signature))
                         InteropSignature.TokenToNativeType(token);
                 }

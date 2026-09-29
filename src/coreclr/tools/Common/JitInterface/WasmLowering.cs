@@ -668,7 +668,7 @@ namespace Internal.JitInterface
 
         public static WasmSignature GetSignature(MethodSignature signature, LoweringFlags flags)
         {
-            if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly) && signature.Flags.HasFlag(MethodSignatureFlags.UnmanagedCallingConvention))
+            if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) is not 0 and not MethodSignatureFlags.CallingConventionVarargs)
             {
                 flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }
