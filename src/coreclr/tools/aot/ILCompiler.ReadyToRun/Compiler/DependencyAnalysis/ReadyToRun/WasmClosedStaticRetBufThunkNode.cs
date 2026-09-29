@@ -69,6 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(!instructionEncoder.Is64Bit);
             Debug.Assert(_signature.SignatureString[0] == 'S');
             Debug.Assert(!_signature.SignatureString.Contains('a'));
+            Debug.Assert(!_signature.SignatureString.Contains('g'));
 
             ReadOnlySpan<WasmValueType> parameters = _signature.FuncType.Params.Types;
             Debug.Assert(parameters.Length >= 4);

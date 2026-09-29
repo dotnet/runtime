@@ -3832,12 +3832,13 @@ namespace Internal.JitInterface
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
                     MethodDesc method = methodHandle is null ? null : HandleToObject(methodHandle);
                     // A closed static delegate target needs an adapter only when Invoke returns
-                    // through a hidden buffer ('S') and has no async-continuation hidden argument.
+                    // through a hidden buffer ('S') and has no async-continuation or generic context hidden argument.
                     if (method is not null &&
                         method.OwningType.IsDelegate &&
                         method.Name == "Invoke"u8 &&
                         wasmSig.SignatureString[0] == 'S' &&
-                        !wasmSig.SignatureString.Contains('a'))
+                        !wasmSig.SignatureString.Contains('a') &&
+                        !wasmSig.SignatureString.Contains('g'))
                     {
                         AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }
@@ -3874,10 +3875,11 @@ namespace Internal.JitInterface
                     ReadOnlySpan<WasmValueType> parameters = wasmSig.FuncType.Params.Types;
                     // The adapter accepts the managed instance shape
                     // (sp, this, retbuf, ..., pep). Require an indirect aggregate return,
-                    // no async-continuation argument, and pointer-typed this/retbuf positions.
+                    // no async-continuation or generic context argument, and pointer-typed this/retbuf positions.
                     if (!sig.IsStatic &&
                         wasmSig.SignatureString[0] == 'S' &&
                         !wasmSig.SignatureString.Contains('a') &&
+                        !wasmSig.SignatureString.Contains('g') &&
                         parameters.Length >= 4 &&
                         parameters[1] == WasmValueType.I32 &&
                         parameters[2] == WasmValueType.I32)
