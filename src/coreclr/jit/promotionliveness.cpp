@@ -647,6 +647,42 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
 }
 
 //------------------------------------------------------------------------
+// IsReplacementUsed:
+//   Check if a replacement field is used before being defined in a block.
+//
+// Parameters:
+//   bb               - The block
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the upward-exposed use set.
+//
+bool PromotionLiveness::IsReplacementUsed(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    unsigned index = m_structLclToTrackedIndex[structLcl] + 1 + replacementIndex;
+    return BitVecOps::IsMember(m_bvTraits, m_bbInfo[bb->bbNum].VarUse, index);
+}
+
+//------------------------------------------------------------------------
+// IsReplacementDefined:
+//   Check if a replacement field is fully defined in a block.
+//
+// Parameters:
+//   bb               - The block
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the definition set.
+//
+bool PromotionLiveness::IsReplacementDefined(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    unsigned index = m_structLclToTrackedIndex[structLcl] + 1 + replacementIndex;
+    return BitVecOps::IsMember(m_bvTraits, m_bbInfo[bb->bbNum].VarDef, index);
+}
+
+//------------------------------------------------------------------------
 // IsReplacementLiveIn:
 //   Check if a replacement field is live at the start of a basic block.
 //
