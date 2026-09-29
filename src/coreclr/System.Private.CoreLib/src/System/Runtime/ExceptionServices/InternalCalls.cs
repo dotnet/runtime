@@ -49,6 +49,10 @@ namespace System.Runtime.ExceptionServices
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GetCurrentExInfo")]
+        [SuppressGCTransition]
+        internal static unsafe partial EH.ExInfo* RhpGetCurrentExInfo();
+
         [StackTraceHidden]
         [DebuggerHidden]
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]

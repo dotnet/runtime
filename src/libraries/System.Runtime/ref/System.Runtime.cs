@@ -15478,6 +15478,7 @@ namespace System.Runtime.ExceptionServices
     }
     public static partial class ExceptionHandling
     {
+        public static System.Exception? GetCurrentException() { throw null; }
         public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception) { }
     }
