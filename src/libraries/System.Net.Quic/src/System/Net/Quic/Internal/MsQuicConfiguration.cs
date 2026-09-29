@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -211,16 +212,6 @@ internal static partial class MsQuicConfiguration
 
     private static unsafe MsQuicConfigurationSafeHandle CreateInternal(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
     {
-        SslStreamCertificateContext? context = null;
-        if (certificate is X509Certificate2 cert && intermediates is null)
-        {
-            // MsQuic will not lookup intermediates in local CA store if not explicitly provided,
-            // so we build the cert context to get on feature parity with SslStream. Note that this code
-            // path runs after the MsQuicConfigurationCache check.
-            context = SslStreamCertificateContext.Create(cert, additionalCertificates: null, offline: false);
-            intermediates = context.IntermediateCertificates;
-        }
-
         QUIC_HANDLE* handle;
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
@@ -236,8 +227,18 @@ internal static partial class MsQuicConfiguration
             "ConfigurationOpen failed");
         MsQuicConfigurationSafeHandle configurationHandle = new MsQuicConfigurationSafeHandle(handle);
 
+        SslStreamCertificateContext? context = null;
+
         try
         {
+            if (certificate is X509Certificate2 cert && intermediates is null)
+            {
+                // Build the local chain after the configuration cache check. Avoid OCSP fetches
+                // because we have no way to pass the staple to the MsQuic API anyway.
+                context = CreateCertificateContext(null, cert, additionalCertificates: null, offline: false, trust: null, noOcspFetch: true);
+                intermediates = context.IntermediateCertificates;
+            }
+
             QUIC_CREDENTIAL_CONFIG config = new QUIC_CREDENTIAL_CONFIG
             {
                 Flags = flags,
@@ -322,18 +323,18 @@ internal static partial class MsQuicConfiguration
         {
             if (context is not null)
             {
-                // For Schannel, we pass reference only to the leaf, for
-                // OpenSSL, we serialize all certs, in either case we don't need
-                // to hold onto the intermediate certs references
-                foreach (X509Certificate2 cert in context.IntermediateCertificates)
-                {
-                    cert.Dispose();
-                }
+                ReleaseResources(context);
             }
         }
 
         return configurationHandle;
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(SslStreamCertificateContext.Create))]
+    private static extern SslStreamCertificateContext CreateCertificateContext(SslStreamCertificateContext? context, X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline, SslCertificateTrust? trust, bool noOcspFetch);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method)]
+    private static extern void ReleaseResources(SslStreamCertificateContext context);
 
     private static QUIC_ALLOWED_CIPHER_SUITE_FLAGS CipherSuitePolicyToFlags(CipherSuitesPolicy cipherSuitesPolicy)
     {
