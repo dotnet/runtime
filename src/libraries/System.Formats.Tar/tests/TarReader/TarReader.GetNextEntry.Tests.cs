@@ -95,7 +95,6 @@ namespace System.Formats.Tar.Tests
             byte[] buffer = new byte[2048]; // Four additional end markers (512 each)
             Array.Fill<byte>(buffer, 0x0);
             archive.Write(buffer);
-            long expectedPosition = archive.Position; // After reading the first null entry, should not advance more
             archive.Seek(0, SeekOrigin.Begin);
 
             await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
@@ -103,7 +102,7 @@ namespace System.Formats.Tar.Tests
 
             Assert.NotNull(await GetNextEntry(reader, async: async));
             Assert.Null(await GetNextEntry(reader, async: async));
-            expectedPosition = archive.Position;
+            long expectedPosition = archive.Position; // After reading the first null entry, should not advance more
             Assert.Null(await GetNextEntry(reader, async: async));
             Assert.Equal(expectedPosition, archive.Position);
         }
@@ -253,7 +252,6 @@ namespace System.Formats.Tar.Tests
                 entry.DataStream.ReadByte(); // Reading is possible as long as we don't move to the next entry
 
                 TarEntry entry2 = await GetNextEntry(reader, async: async);
-                // Attempting to read the next entries should automatically move the position pointer to the beginning of the next header
                 // Attempting to read the next entry should automatically move the position pointer to the beginning of the next header
                 Assert.NotNull(entry2);
                 Assert.Equal(format, entry2.Format);
@@ -633,8 +631,6 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(GetBooleanData))]
         public async Task Read_PaxEntryWithOnlyLinkpath_PreservesUstarPrefix(bool async)
         {
-            // TarReader_GetNextEntry_Tests.Read_PaxEntryWithOnlyLinkpath_PreservesUstarPrefix
-            // Async variant of
             // macOS bsdtar writes symlinks whose link target exceeds 100 bytes as a
             // PAX extended attributes entry (typeflag 'x') containing only "linkpath",
             // followed by a standard USTAR entry that uses the prefix/name split.

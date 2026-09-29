@@ -94,7 +94,6 @@ namespace System.Formats.Tar.Tests
 
             DirectoryInfo fromDir = Directory.CreateDirectory(Path.Combine(root.Path, "fromdir"));
             // Create a hierarchy of directories.
-            // Create a hierarcy of directories.
             var directories = new DirectoryInfo[]
             {
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir")),                      // 'fromdir/dir'
