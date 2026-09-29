@@ -257,11 +257,10 @@ internal static class CreatedumpValidation
                 return Pass;
             }
 
-            // Uncomment when linked createdump support is added.
-            // if (automaticUsedExternal)
-            // {
-            //     throw new InvalidDataException("The automatic scenario did not use linked createdump.");
-            // }
+            if (automaticUsedExternal)
+            {
+                throw new InvalidDataException("The automatic scenario did not use linked createdump.");
+            }
 
             bool forcedUsedExternal = RunScenario(
                 processPath,

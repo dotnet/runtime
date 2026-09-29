@@ -40,6 +40,23 @@ bool g_diagnosticsVerbose = false;
 long g_pageSize = 0;
 #endif
 
+bool ValidateDumpOptions(const CreateDumpOptions* options)
+{
+    if (options->CrashReport && (options->AppModel == AppModelType::SingleFile || options->AppModel == AppModelType::NativeAOT))
+    {
+        printf_error("The app model does not support crash report generation\n");
+        return false;
+    }
+
+    if (options->DumpType != DumpType::Full && options->AppModel == AppModelType::NativeAOT)
+    {
+        printf_error("The app model only supports full dump generation\n");
+        return false;
+    }
+
+    return true;
+}
+
 int ParseCreateDumpOptions(int argc, char* argv[], CreateDumpOptions* options)
 {
     options->DumpType = DumpType::Heap;
