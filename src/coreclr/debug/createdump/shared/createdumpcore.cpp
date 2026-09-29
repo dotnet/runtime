@@ -202,6 +202,27 @@ printf_error(const char* format, ...)
 #ifdef HOST_UNIX
 
 void
+LogProcessStatus(int pid)
+{
+    if (kill(pid, 0) == 0)
+    {
+        printf_status("Target process is alive\n");
+    }
+    else
+    {
+        int err = errno;
+        if (err == ESRCH)
+        {
+            printf_error("Target process terminated\n");
+        }
+        else
+        {
+            printf_error("kill(%d, 0) FAILED %s (%d)\n", pid, strerror(err), err);
+        }
+    }
+}
+
+void
 trace_prefix(const char* format, va_list args)
 {
     // Only add this prefix if logging to the console

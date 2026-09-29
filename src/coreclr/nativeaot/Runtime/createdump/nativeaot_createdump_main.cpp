@@ -106,7 +106,7 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
     }
 
     bool result = false;
-    bool initialized = false;
+    bool processInitialized = false;
     DynamicArray<MemoryRegion> dumpRegions;
     DynamicArray<MemoryRegion> combinedRegions;
     DumpRegionStore regionStore{ &dumpRegions, &FindDumpRegionOverlap, &InsertDumpRegion };
@@ -124,7 +124,7 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
         printf_status("Crashing thread %04x signal %d (%04x)\n", options->CrashThread, options->Signal, options->Signal);
     }
 
-    initialized = true;
+    processInitialized = true;
 
     if (!processInfo.EnumerateAndSuspendThreads())
     {
@@ -168,20 +168,13 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
     printf_status("Writing %s to file %s\n", GetDumpTypeString(options->DumpType), dumpPath);
 
     processInfo.CalculateRuntimeBaseAddress();
+
     {
         DumpWriter dumpWriter(processInfo, processInfo.ModuleMappings(), dumpRegions);
 
         // Write the actual dump file
-        if (!dumpWriter.OpenDump(dumpPath))
+        if (!dumpWriter.OpenAndWriteDump(dumpPath))
         {
-            goto exit;
-        }
-        if (!dumpWriter.WriteDump())
-        {
-            printf_error("Writing dump FAILED\n");
-
-            // Delete the partial dump file on error
-            remove(dumpPath);
             goto exit;
         }
     }
@@ -189,23 +182,8 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
     result = true;
 
 exit:
-    if (kill(options->Pid, 0) == 0)
-    {
-        printf_status("Target process is alive\n");
-    }
-    else
-    {
-        int err = errno;
-        if (err == ESRCH)
-        {
-            printf_error("Target process terminated\n");
-        }
-        else
-        {
-            printf_error("kill(%d, 0) FAILED %s (%d)\n", options->Pid, strerror(err), err);
-        }
-    } 
-    if (initialized)
+    LogProcessStatus(options->Pid);
+    if (processInitialized)
     {
         processInfo.CleanupAndResumeProcess();
     }
@@ -233,6 +211,23 @@ extern "C" int nativeaot_createdump_main(int argc, const char* argv[])
         options.DumpPathTemplate = defaultDumpPath;
     }
 
-    bool result = LinkedCreateDump(&options);
-    return result ? 0 : 1;
+    if (LinkedCreateDump(&options))
+    {
+        printf_status("Dump successfully written\n");
+    }
+    else
+    {
+        printf_error("Failure writing dump\n");
+        exitCode = -1;
+    }
+
+    fflush(stderr);
+    fflush(g_stdout);
+
+    if (g_logfile != nullptr)
+    {
+        fflush(g_logfile);
+        fclose(g_logfile);
+    }
+    return exitCode;
 }

@@ -119,37 +119,14 @@ CreateDump(const CreateDumpOptions& options)
         DumpWriter dumpWriter(processInfo, moduleMappings, dumpRegions);
 #endif
         // Write the actual dump file
-        if (!dumpWriter.OpenDump(dumpPath.c_str()))
+        if (!dumpWriter.OpenAndWriteDump(dumpPath.c_str()))
         {
-            goto exit;
-        }
-        if (!dumpWriter.WriteDump())
-        {
-            printf_error("Writing dump FAILED\n");
-
-            // Delete the partial dump file on error
-            remove(dumpPath.c_str());
             goto exit;
         }
     }
     result = true;
 exit:
-    if (kill(options.Pid, 0) == 0)
-    {
-        printf_status("Target process is alive\n");
-    }
-    else
-    {
-        int err = errno;
-        if (err == ESRCH)
-        {
-            printf_error("Target process terminated\n");
-        }
-        else
-        {
-            printf_error("kill(%d, 0) FAILED %s (%d)\n", options.Pid, strerror(err), err);
-        }
-    }
+    LogProcessStatus(options.Pid);
     crashInfo->CleanupAndResumeProcess();
     if (processInitialized)
     {

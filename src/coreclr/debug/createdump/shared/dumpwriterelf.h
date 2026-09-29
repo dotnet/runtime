@@ -56,11 +56,12 @@ private:
 public:
     DumpWriter(ProcessInfo& processInfo, const DynamicArray<ModuleRegion>& moduleMappings, const DynamicArray<MemoryRegion>& dumpRegions);
     virtual ~DumpWriter();
-    bool OpenDump(const char* dumpFileName);
-    bool WriteDump();
+    bool OpenAndWriteDump(const char* dumpFileName);
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
+    bool OpenDump(const char* dumpFileName);
+    bool WriteDump();
     bool WriteDiagInfo(size_t size);
     bool WriteProcessInfo();
     bool WriteAuxv();

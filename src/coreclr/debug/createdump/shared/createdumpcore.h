@@ -16,6 +16,7 @@ extern bool g_diagnosticsVerbose;
 #ifdef HOST_UNIX
 extern void trace_printf(const char* format, ...) CREATEDUMP_FORMAT_PRINTF(1, 2);
 extern void trace_verbose_printf(const char* format, ...) CREATEDUMP_FORMAT_PRINTF(1, 2);
+void LogProcessStatus(int pid);
 #define TRACE(args...) trace_printf(args)
 #define TRACE_VERBOSE(args...) trace_verbose_printf(args)
 #else

@@ -14,6 +14,22 @@ DumpWriter::~DumpWriter()
 }
 
 bool
+DumpWriter::OpenAndWriteDump(const char* dumpFileName)
+{
+    if (!OpenDump(dumpFileName))
+    {
+        return false;
+    }
+    if (!WriteDump())
+    {
+        printf_error("Writing dump FAILED\n");
+        remove(dumpFileName);
+        return false;
+    }
+    return true;
+}
+
+bool
 DumpWriter::OpenDump(const char* dumpFileName)
 {
     m_fd = open(dumpFileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
