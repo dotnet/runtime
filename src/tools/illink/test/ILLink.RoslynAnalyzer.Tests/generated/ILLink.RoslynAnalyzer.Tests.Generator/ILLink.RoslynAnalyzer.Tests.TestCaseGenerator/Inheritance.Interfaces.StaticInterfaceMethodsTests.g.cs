@@ -8,12 +8,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
     {
 
         [Fact]
-        public Task DescriptorPreservedTypeIsReflectionVisible()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task InstanceMethodsWithOverridesSwept()
         {
             return RunTest(allowMissingWarnings: true);
@@ -27,12 +21,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 
         [Fact]
         public Task OverrideInSaveAssembly()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task StaticAbstractMethodsPreservedViaDescriptor()
         {
             return RunTest(allowMissingWarnings: true);
         }

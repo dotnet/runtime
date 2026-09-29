@@ -56,12 +56,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task TypeMapAssemblyTargetRemovedWhenAllEntriesTrimmed()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task UnderlyingSystemType()
         {
             return RunTest(allowMissingWarnings: true);

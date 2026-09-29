@@ -68,12 +68,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task NestedFinallyInFinallyHandler()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task ReplacedJumpTarget()
         {
             return RunTest(allowMissingWarnings: true);

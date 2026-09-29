@@ -64,12 +64,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task NestedTypeForwarderUsedViaReflection()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task RootedForwarderWithExportedTypesIsHandled()
         {
             return RunTest(allowMissingWarnings: true);
