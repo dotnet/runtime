@@ -100,7 +100,9 @@ namespace System.Reflection.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance()
         {
             ConstructorInfo constructor = typeof(AbstractRefConstructorTarget).GetConstructor(
@@ -123,7 +125,9 @@ namespace System.Reflection.Tests
             Assert.Equal(85, constructorArguments[0]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance_RegularArguments()
         {
             ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
@@ -151,7 +155,9 @@ namespace System.Reflection.Tests
             Assert.Throws<MemberAccessException>(() => invoker.Invoke(null, nullTargetArguments.AsSpan()));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134900", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Constructor_AbstractDeclaringTypeWithExistingInstance_ManyRegularArguments()
         {
             ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
