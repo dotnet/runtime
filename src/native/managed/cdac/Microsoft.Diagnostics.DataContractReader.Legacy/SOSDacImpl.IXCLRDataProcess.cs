@@ -298,7 +298,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             IExecutionManager eman = _target.Contracts.ExecutionManager;
             string? resultName = null;
 
-            TargetCodePointer managedCodeAddr = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(codeAddr);
+            TargetCodePointer managedCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeAddr);
             if (eman.GetCodeBlockHandle(managedCodeAddr) is CodeBlockHandle codeBlock)
             {
                 if (displacement is not null)

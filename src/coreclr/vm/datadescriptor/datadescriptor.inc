@@ -782,9 +782,6 @@ CDAC_TYPE_FIELD(MethodDesc, T_UINT16, Flags, cdac_data<MethodDesc>::Flags)
 CDAC_TYPE_FIELD(MethodDesc, T_UINT16, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
 CDAC_TYPE_FIELD(MethodDesc, T_UINT8, EntryPointFlags, cdac_data<MethodDesc>::EntryPointFlags)
 CDAC_TYPE_FIELD(MethodDesc, T_POINTER, CodeData, cdac_data<MethodDesc>::CodeData)
-#ifdef FEATURE_INTERPRETER
-CDAC_TYPE_FIELD(MethodDesc, T_POINTER, InterpreterCode, cdac_data<MethodDesc>::InterpreterCode)
-#endif // FEATURE_INTERPRETER
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(MethodDesc, T_POINTER, GCCoverageInfo, offsetof(MethodDesc, m_GcCover))
 #endif // HAVE_GCCOVER
@@ -865,9 +862,7 @@ CDAC_TYPE_END(CodePointer)
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_BEGIN(PortableEntryPoint)
 CDAC_TYPE_INDETERMINATE(PortableEntryPoint)
-CDAC_TYPE_FIELD(PortableEntryPoint, T_POINTER, ActualCode, cdac_data<PortableEntryPoint>::ActualCode)
 CDAC_TYPE_FIELD(PortableEntryPoint, T_POINTER, MethodDesc, cdac_data<PortableEntryPoint>::MethodDesc)
-CDAC_TYPE_FIELD(PortableEntryPoint, T_INT32, Flags, cdac_data<PortableEntryPoint>::Flags)
 CDAC_TYPE_END(PortableEntryPoint)
 #endif
 

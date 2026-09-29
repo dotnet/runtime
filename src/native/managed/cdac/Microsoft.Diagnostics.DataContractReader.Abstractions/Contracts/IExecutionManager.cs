@@ -110,11 +110,6 @@ public interface IExecutionManager : IContract
     TargetPointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => throw new NotImplementedException();
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => throw new NotImplementedException();
-    // Map a method entry point to the code start that diagnostics report and that resolves through
-    // GetCodeBlockHandle: interpreter bytecode for interpreter precodes and interpreted portable entry
-    // points, or the synthetic virtual IP for Wasm ReadyToRun portable entry points. Other addresses
-    // are returned unchanged. Mirrors GetDiagnosticCodeStartFromEntryPoint in native code (precode.cpp).
-    TargetCodePointer GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint) => throw new NotImplementedException();
     bool IsFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();

@@ -12,7 +12,6 @@ internal sealed partial class MethodDesc : IData<MethodDesc>
     [Field] public partial ushort Flags3AndTokenRemainder { get; }
     [Field] public partial byte EntryPointFlags { get; }
     [Field] public partial TargetPointer CodeData { get; }
-    [Field] public partial TargetPointer? InterpreterCode { get; }
     [Field] public partial TargetPointer? GCCoverageInfo { get; }
 }
 
