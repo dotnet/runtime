@@ -70,8 +70,8 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 #else
     int fd = -1;
 
-#ifndef TARGET_ANDROID
-    // Bionic doesn't have shm_{open,unlink}
+#if !defined(TARGET_ANDROID) && !defined(TARGET_WASI)
+    // Bionic and wasi-libc don't have shm_{open,unlink}
     // POSIX fallback
     if (fd == -1)
     {
@@ -82,7 +82,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
         shm_unlink(name);
     }
-#endif // !TARGET_ANDROID
+#endif // !TARGET_ANDROID && !TARGET_WASI
 
     if (fd == -1)
     {
@@ -427,8 +427,8 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 #else
         int fd = -1;
     
-#ifndef TARGET_ANDROID
-        // Bionic doesn't have shm_{open,unlink}
+#if !defined(TARGET_ANDROID) && !defined(TARGET_WASI)
+        // Bionic and wasi-libc don't have shm_{open,unlink}
         // POSIX fallback
         if (fd == -1)
         {
@@ -439,7 +439,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
             fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
             shm_unlink(name);
         }
-#endif // !TARGET_ANDROID
+#endif // !TARGET_ANDROID && !TARGET_WASI
 #endif
         if (fd != -1)
         {
