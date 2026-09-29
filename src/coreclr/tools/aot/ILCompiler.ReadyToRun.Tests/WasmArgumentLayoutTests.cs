@@ -108,6 +108,30 @@ public class WasmArgumentLayoutTests
         Assert.True(lowered.FuncType.Returns.Types.IsEmpty);
     }
 
+    /// <summary>
+    /// Without an async continuation the generic context occupies the slot of a leading pointer argument,
+    /// and callers rely on that: InitHelpers.CallClassConstructor calls a shared generic class constructor
+    /// as delegate*&lt;void*, void&gt;. Both shapes must produce the same thunk key.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false, false, "vip")]
+    [InlineData(false, false, true, "viip")]
+    [InlineData(true, false, true, "vTiip")]
+    [InlineData(false, true, true, "S16iip")]
+    [InlineData(true, true, true, "S16Tiip")]
+    public void GenericContextEncodesAsLeadingPointerArgument(bool hasThis, bool returnsStruct, bool hasArgument, string expectedSignature)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc returnType = returnsStruct ? MakeAlignedEightBlob(context, 16) : context.GetWellKnownType(WellKnownType.Void);
+        MethodSignatureFlags flags = hasThis ? MethodSignatureFlags.None : MethodSignatureFlags.Static;
+        TypeDesc[] arguments = hasArgument ? [context.GetWellKnownType(WellKnownType.Int32)] : [];
+        MethodSignature withContext = new MethodSignature(flags, 0, returnType, arguments);
+        MethodSignature withPointer = new MethodSignature(flags, 0, returnType, [context.GetWellKnownType(WellKnownType.IntPtr), .. arguments]);
+
+        Assert.Equal(expectedSignature, WasmLowering.GetSignature(withContext, WasmLowering.LoweringFlags.HasGenericContextArg).SignatureString);
+        Assert.Equal(expectedSignature, WasmLowering.GetSignature(withPointer, WasmLowering.LoweringFlags.None).SignatureString);
+    }
+
     [Theory]
     [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "iiaip",
         "GenericContext@8:1 AsyncContinuation@16:2 Argument@24:3")]
