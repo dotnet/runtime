@@ -14,7 +14,12 @@ namespace System.IO.Compression
     /// </summary>
     internal sealed class Deflater : IDisposable
     {
-        private readonly ZLibNative.ZLibStreamHandle _zlibStream;
+        // Sixteen maximum-sized states cap idle native memory at roughly 5.2 MiB.
+        private const int MaxPooledDeflateStates = 16;
+        private static readonly object s_poolLock = new();
+        private static readonly DeflaterState?[] s_pool = new DeflaterState?[MaxPooledDeflateStates];
+        private static int s_nextEvictionIndex;
+        private DeflaterState _state;
         private MemoryHandle _inputBufferHandle;
         private bool _isDisposed;
         private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
@@ -27,10 +32,13 @@ namespace System.IO.Compression
         // on the stream explicitly.
         private object SyncLock => this;
 
-        private Deflater(ZLibNative.ZLibStreamHandle zlibStream)
+        private Deflater(DeflaterState state)
         {
-            _zlibStream = zlibStream;
+            _state = state;
         }
+
+        private ZLibNative.ZLibStreamHandle ZLibStream =>
+            _state.Stream;
 
         ~Deflater()
         {
@@ -39,26 +47,67 @@ namespace System.IO.Compression
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            try
+            {
+                Dispose(true);
+            }
+            finally
+            {
+                GC.SuppressFinalize(this);
+            }
         }
 
         private void Dispose(bool disposing)
         {
-            if (!_isDisposed)
+            if (_isDisposed)
             {
-                if (disposing)
+                return;
+            }
+
+            if (!disposing)
+            {
+                try
                 {
-                    _zlibStream.Dispose();
+                    // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of).
+                    DeallocateInputBufferHandle(resetStreamHandle: false);
+                }
+                catch
+                {
+                    // Finalization must not allow exceptions from a custom memory manager to escape.
                 }
 
-                // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of).
-                DeallocateInputBufferHandle(resetStreamHandle: false);
+                _state = default;
                 _isDisposed = true;
+                return;
             }
+
+            ZLibNative.ZLibStreamHandle? zlibStream = null;
+            DeflaterState state;
+            try
+            {
+                lock (SyncLock)
+                {
+                    zlibStream = ZLibStream;
+                    zlibStream.NextOut = ZLibNative.ZNullPtr;
+                    zlibStream.AvailOut = 0;
+                    DeallocateInputBufferHandleCore(resetStreamHandle: true);
+                    state = _state;
+                    _state = default; // Detach native state before transferring it to the pool.
+                    _isDisposed = true;
+                }
+            }
+            catch
+            {
+                _state = default;
+                _isDisposed = true;
+                zlibStream?.Dispose();
+                throw;
+            }
+
+            ReturnToPool(state);
         }
 
-        public bool NeedsInput() => 0 == _zlibStream.AvailIn;
+        public bool NeedsInput() => 0 == ZLibStream.AvailIn;
 
         internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
@@ -69,8 +118,8 @@ namespace System.IO.Compression
             {
                 _inputBufferHandle = inputBuffer.Pin();
 
-                _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
-                _zlibStream.AvailIn = (uint)inputBuffer.Length;
+                ZLibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
+                ZLibStream.AvailIn = (uint)inputBuffer.Length;
             }
         }
 
@@ -82,8 +131,8 @@ namespace System.IO.Compression
 
             lock (SyncLock)
             {
-                _zlibStream.NextIn = (IntPtr)inputBufferPtr;
-                _zlibStream.AvailIn = (uint)count;
+                ZLibStream.NextIn = (IntPtr)inputBufferPtr;
+                ZLibStream.AvailIn = (uint)count;
             }
         }
 
@@ -101,7 +150,7 @@ namespace System.IO.Compression
             finally
             {
                 // Before returning, make sure to release input buffer if necessary:
-                if (0 == _zlibStream.AvailIn)
+                if (0 == ZLibStream.AvailIn)
                 {
                     DeallocateInputBufferHandle(resetStreamHandle: true);
                 }
@@ -116,11 +165,11 @@ namespace System.IO.Compression
             {
                 fixed (byte* bufPtr = &outputBuffer[0])
                 {
-                    _zlibStream.NextOut = (IntPtr)bufPtr;
-                    _zlibStream.AvailOut = (uint)outputBuffer.Length;
+                    ZLibStream.NextOut = (IntPtr)bufPtr;
+                    ZLibStream.AvailOut = (uint)outputBuffer.Length;
 
                     ZErrorCode errC = Deflate(flushCode);
-                    bytesRead = outputBuffer.Length - (int)_zlibStream.AvailOut;
+                    bytesRead = outputBuffer.Length - (int)ZLibStream.AvailOut;
 
                     return errC;
                 }
@@ -146,7 +195,7 @@ namespace System.IO.Compression
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
 
 
-            // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
+            // Note: we require that NeedsInput() == true, i.e. that 0 == ZLibStream.AvailIn.
             // If there is still input left we should never be getting here; instead we
             // should be calling GetDeflateOutput.
 
@@ -186,11 +235,18 @@ namespace System.IO.Compression
         {
             if (resetStreamHandle)
             {
-                _zlibStream.AvailIn = 0;
-                _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                ZLibStream.AvailIn = 0;
+                ZLibStream.NextIn = ZLibNative.ZNullPtr;
             }
 
-            _inputBufferHandle.Dispose();
+            try
+            {
+                _inputBufferHandle.Dispose();
+            }
+            finally
+            {
+                _inputBufferHandle = default;
+            }
         }
 
         private ZErrorCode Deflate(ZFlushCode flushCode)
@@ -198,7 +254,7 @@ namespace System.IO.Compression
             ZErrorCode errC;
             try
             {
-                errC = _zlibStream.Deflate(flushCode);
+                errC = ZLibStream.Deflate(flushCode);
             }
             catch (Exception cause)
             {
@@ -215,10 +271,10 @@ namespace System.IO.Compression
                     return errC;  // This is a recoverable error
 
                 case ZErrorCode.StreamError:
-                    throw new ZLibException(SR.ZLibErrorInconsistentStream, "deflate", (int)errC, _zlibStream.GetErrorMessage());
+                    throw new ZLibException(SR.ZLibErrorInconsistentStream, "deflate", (int)errC, ZLibStream.GetErrorMessage());
 
                 default:
-                    throw new ZLibException(SR.ZLibErrorUnexpected, "deflate", (int)errC, _zlibStream.GetErrorMessage());
+                    throw new ZLibException(SR.ZLibErrorUnexpected, "deflate", (int)errC, ZLibStream.GetErrorMessage());
             }
         }
 
@@ -226,9 +282,100 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
 
+            DeflaterState? pooledState = RentDeflateState(compressionLevel, strategy, windowBits, memLevel);
+            if (pooledState is DeflaterState state)
+            {
+                try
+                {
+                    if (state.Reset())
+                    {
+                        return new Deflater(state);
+                    }
+                }
+                catch
+                {
+                    state.Dispose();
+                    throw;
+                }
+
+                state.Dispose();
+            }
+
             ZLibNative.ZLibStreamHandle zlibStream = ZLibNative.ZLibStreamHandle.CreateForDeflate(compressionLevel, windowBits, memLevel, strategy);
 
-            return new Deflater(zlibStream);
+            return new Deflater(new DeflaterState(zlibStream, compressionLevel, strategy, windowBits, memLevel));
+        }
+
+        private static DeflaterState? RentDeflateState(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
+        {
+            lock (s_poolLock)
+            {
+                for (int i = 0; i < s_pool.Length; i++)
+                {
+                    if (s_pool[i] is DeflaterState state && state.Matches(compressionLevel, strategy, windowBits, memLevel))
+                    {
+                        s_pool[i] = null;
+                        return state;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static void ReturnToPool(DeflaterState state)
+        {
+            DeflaterState? evictedState = null;
+            lock (s_poolLock)
+            {
+                for (int i = 0; i < s_pool.Length; i++)
+                {
+                    if (s_pool[i] is null)
+                    {
+                        s_pool[i] = state;
+                        return;
+                    }
+                }
+
+                // When full, evict entries in round-robin slot order so new configurations displace old ones.
+                int evictionIndex = s_nextEvictionIndex;
+                evictedState = s_pool[evictionIndex];
+                s_pool[evictionIndex] = state;
+                s_nextEvictionIndex = (evictionIndex + 1) % s_pool.Length;
+            }
+
+            evictedState?.Dispose();
+        }
+
+        private readonly struct DeflaterState
+        {
+            private readonly ZLibNative.ZLibStreamHandle? _stream;
+            private readonly ZLibNative.CompressionLevel _compressionLevel;
+            private readonly ZLibNative.CompressionStrategy _strategy;
+            private readonly int _windowBits;
+            private readonly int _memLevel;
+
+            internal ZLibNative.ZLibStreamHandle Stream =>
+                _stream ?? throw new ObjectDisposedException(nameof(Deflater));
+
+            internal DeflaterState(ZLibNative.ZLibStreamHandle stream, ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
+            {
+                _stream = stream;
+                _compressionLevel = compressionLevel;
+                _strategy = strategy;
+                _windowBits = windowBits;
+                _memLevel = memLevel;
+            }
+
+            internal bool Matches(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel) =>
+                _compressionLevel == compressionLevel &&
+                _strategy == strategy &&
+                _windowBits == windowBits &&
+                _memLevel == memLevel;
+
+            internal bool Reset() => Stream.DeflateReset() == ZErrorCode.Ok;
+
+            internal void Dispose() => Stream.Dispose();
         }
     }
 }
