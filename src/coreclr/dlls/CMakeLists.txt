@@ -5,11 +5,11 @@ if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 if (NOT (CLR_CMAKE_TARGET_WIN32 AND FEATURE_CROSSBITNESS))
     if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-        add_subdirectory(mscordbi)
         add_subdirectory(mscordbi_universal)
 
-        # Only build the DAC when not using the cDAC memory enumerator
+        # Only build the legacy DAC and DBI when not using the cDAC memory enumerator.
         if (NOT CLR_DUMP_ENUMERATOR_PATH)
+            add_subdirectory(mscordbi)
             add_subdirectory(mscordac)
         endif()
     endif()
