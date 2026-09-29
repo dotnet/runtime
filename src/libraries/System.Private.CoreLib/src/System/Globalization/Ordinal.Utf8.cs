@@ -326,6 +326,7 @@ namespace System.Globalization
             return EqualsStringIgnoreCaseUtf8(ref Unsafe.AddByteOffset(ref charA, byteOffset), lengthA - range, ref Unsafe.AddByteOffset(ref charB, byteOffset), lengthB - range);
         }
 
+        // Not optimized for large inputs yet: the only callers (number parsing) pass short sign symbols.
         internal static bool StartsWithIgnoreCaseUtf8(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix)
         {
             // NOTE: Two UTF-8 inputs of different length might compare as equal under

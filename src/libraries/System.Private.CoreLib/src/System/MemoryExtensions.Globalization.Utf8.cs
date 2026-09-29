@@ -64,7 +64,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool StartsWithOrdinalIgnoreCaseUtf8(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value)
         {
-            // Local copies let the JIT pass the untouched parameters to the general path as is.
             ReadOnlySpan<byte> source = span;
             ReadOnlySpan<byte> prefix = value;
 
