@@ -2085,9 +2085,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
         gen0_seg = heap_segment_next (gen0_seg);
     }
 #else //USE_REGIONS
-    // For segments ephemeral seg does not change.
-    heap_segment* current_eph_seg = pGenGCHeap->ephemeral_heap_segment;
-    gen0_size = current_alloc_allocated - heap_segment_mem (current_eph_seg);
+    gen0_size = current_alloc_allocated - generation_allocation_start (gen);
 #endif //USE_REGIONS
 
     // Defense-in-depth clamp: gen0 frag counters are updated by the allocator under a different lock.
