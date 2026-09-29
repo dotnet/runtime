@@ -2099,9 +2099,9 @@ ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
             }
         }
 
-        // Also look through any long-typed integral constant that fits in an int.
+        // Also look through long constants that fit in an int, but not relocatable handles.
         int intCns;
-        if (IsVNIntegralConstant(vn, &intCns))
+        if ((!m_compiler->opts.compReloc || !IsVNHandle(vn)) && IsVNIntegralConstant(vn, &intCns))
         {
             return VNForIntCon(intCns);
         }
@@ -4936,6 +4936,11 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+
+            case GT_GT:
+            case GT_GE:
+            case GT_LT:
+            case GT_LE:
                 if (m_compiler->opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
                 {
                     return false;
@@ -4944,10 +4949,15 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
 
             case GT_EQ:
             case GT_NE:
-            case GT_GT:
-            case GT_GE:
-            case GT_LT:
-            case GT_LE:
+                if (m_compiler->opts.compReloc && (IsVNHandle(arg0VN) != IsVNHandle(arg1VN)))
+                {
+                    // Relocatable handles can only be compared with other handles or zero.
+                    ValueNum nonHandleVN = IsVNHandle(arg0VN) ? arg1VN : arg0VN;
+                    if (nonHandleVN != VNZeroForType(TypeOfVN(nonHandleVN)))
+                    {
+                        return false;
+                    }
+                }
                 break;
 
             default:
@@ -7234,6 +7244,11 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 
         if (IsVNConstant(vn))
         {
+            if (m_compiler->opts.compReloc && IsVNHandle(vn))
+            {
+                return VNVisit::Abort;
+            }
+
             var_types vnTy = TypeOfVN(vn);
             if (vnTy == TYP_INT)
             {

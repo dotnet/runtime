@@ -18097,6 +18097,16 @@ GenTree* Compiler::gtFoldExprBinaryConst(GenTreeOp* tree)
         return op2;
     }
 
+    if (opts.compReloc && tree->OperIs(GT_EQ, GT_NE) && (op1->IsIconHandle() != op2->IsIconHandle()))
+    {
+        // Relocatable handles can only be compared with other handles or zero.
+        GenTree* nonHandle = op1->IsIconHandle() ? op2 : op1;
+        if (!nonHandle->IsIntegralConst(0))
+        {
+            return tree;
+        }
+    }
+
     if (tree->OperIs(GT_BOUNDS_CHECK))
     {
         ssize_t index  = op1->AsIntCon()->IconValue();
