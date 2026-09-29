@@ -385,6 +385,29 @@ namespace Wasm.Build.Tests
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.9-preview.2.2"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
+        // Use the in-build wasm crossgen and task shim when the test leg provides them.
+        protected static string GetR2RBuildArgs(Configuration config)
+        {
+            string? baseDir = EnvironmentVariables.BaseDir;
+            if (string.IsNullOrEmpty(baseDir))
+                return string.Empty;
+
+            string hostArch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+            string crossgenDir = Path.Combine(baseDir, "coreclr", $"browser.wasm.{config}", hostArch, "crossgen2");
+            string shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config.ToString());
+            string shimProps = Path.Combine(shimDir, "Microsoft.NET.CrossGen.props");
+            string shimTargets = Path.Combine(shimDir, "Microsoft.NET.CrossGen.targets");
+
+            var args = new List<string>();
+            if (Directory.Exists(crossgenDir))
+                args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
+            if (File.Exists(shimProps))
+                args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
+            if (File.Exists(shimTargets))
+                args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
+            return string.Join(" ", args);
+        }
+
         protected static string s_mainReturns42 = @"
             public class TestClass {
                 public static int Main()

@@ -515,7 +515,7 @@ EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersSta
 // delegates to the shared SamplingProfiler_OnSamplepoint (which owns the adaptive skip counter).
 EXTERN_C void JIT_WasmProfSamplepointImpl(uintptr_t callersStackPointer)
 {
-#if defined(ENABLE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
+#if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
     extern bool SamplingProfiler_IsActive();
     extern void SamplingProfiler_OnSamplepoint();
 
@@ -539,7 +539,7 @@ EXTERN_C void JIT_WasmProfSamplepointImpl(uintptr_t callersStackPointer)
     inlinedCallFrame.Pop();
 #else
     UNREFERENCED_PARAMETER(callersStackPointer);
-#endif // ENABLE_PERFTRACING && PERFTRACING_DISABLE_THREADS
+#endif // FEATURE_PERFTRACING && PERFTRACING_DISABLE_THREADS
 }
 
 // Naked shim modeled on JIT_PollGC: publish the caller's shadow SP to the __stack_pointer global
