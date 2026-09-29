@@ -112,95 +112,15 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
-  <!-- Fallback exported runtime methods and functions for the emcc link step.
-       Used when the workload path is active and native.wasm.targets is not available.
-       TODO-WASM https://github.com/dotnet/runtime/issues/126100#issuecomment-4925516500: Keep this list in sync with eng/native.wasm.targets.
-       When building in-tree, native.wasm.targets is imported AFTER this target (below)
-       and its GenerateEmccExports definition wins (MSBuild last-definition-wins). -->
-  <Target Name="GenerateEmccExports"
-          Condition="'$(TargetsBrowser)' == 'true'">
-    <ItemGroup>
-      <EmccExportedRuntimeMethod Include="FS" />
-      <EmccExportedRuntimeMethod Include="HEAP8" />
-      <EmccExportedRuntimeMethod Include="HEAP16" />
-      <EmccExportedRuntimeMethod Include="HEAPU8" />
-      <EmccExportedRuntimeMethod Include="HEAPU16" />
-      <EmccExportedRuntimeMethod Include="HEAP32" />
-      <EmccExportedRuntimeMethod Include="HEAPU32" />
-      <EmccExportedRuntimeMethod Include="HEAPF32" />
-      <EmccExportedRuntimeMethod Include="HEAPF64" />
-      <EmccExportedRuntimeMethod Include="HEAP64" />
-      <EmccExportedRuntimeMethod Include="HEAPU64" />
-      <EmccExportedRuntimeMethod Include="out" />
-      <EmccExportedRuntimeMethod Include="err" />
-      <EmccExportedRuntimeMethod Include="ccall" />
-      <EmccExportedRuntimeMethod Include="cwrap" />
-      <EmccExportedRuntimeMethod Include="setValue" />
-      <EmccExportedRuntimeMethod Include="getValue" />
-      <EmccExportedRuntimeMethod Include="UTF8ToString" />
-      <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
-      <EmccExportedRuntimeMethod Include="lengthBytesUTF8" />
-      <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
-      <EmccExportedRuntimeMethod Include="safeSetTimeout" />
-      <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
-      <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
-      <EmccExportedRuntimeMethod Include="abort" />
-
-      <EmccExportedFunction Include="_free" />
-      <EmccExportedFunction Include="_htons" />
-      <EmccExportedFunction Include="_malloc" />
-      <EmccExportedFunction Include="_sbrk" />
-      <EmccExportedFunction Include="_memalign" />
-      <EmccExportedFunction Include="_posix_memalign" />
-      <EmccExportedFunction Include="_memset" />
-      <EmccExportedFunction Include="_ntohs" />
-      <EmccExportedFunction Include="stackAlloc" />
-      <EmccExportedFunction Include="stackRestore" />
-      <EmccExportedFunction Include="stackSave" />
-      <EmccExportedFunction Include="___stack_pointer" />
-      <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
-      <EmccExportedFunction Include="___async_continuation" />
-    </ItemGroup>
-
-    <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->
-    <ItemGroup>
-      <EmccIncomingModuleJSAPI Include="ENVIRONMENT" />
-      <EmccIncomingModuleJSAPI Include="arguments" />
-      <EmccIncomingModuleJSAPI Include="canvas" />
-      <EmccIncomingModuleJSAPI Include="dynamicLibraries" />
-      <EmccIncomingModuleJSAPI Include="elementPointerLock" />
-      <EmccIncomingModuleJSAPI Include="instantiateWasm" />
-      <EmccIncomingModuleJSAPI Include="locateFile" />
-      <EmccIncomingModuleJSAPI Include="monitorRunDependencies" />
-      <EmccIncomingModuleJSAPI Include="noExitRuntime" />
-      <EmccIncomingModuleJSAPI Include="noInitialRun" />
-      <EmccIncomingModuleJSAPI Include="onAbort" />
-      <EmccIncomingModuleJSAPI Include="onExit" />
-      <EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
-      <EmccIncomingModuleJSAPI Include="postRun" />
-      <EmccIncomingModuleJSAPI Include="preInit" />
-      <EmccIncomingModuleJSAPI Include="preRun" />
-      <EmccIncomingModuleJSAPI Include="print" />
-      <EmccIncomingModuleJSAPI Include="printErr" />
-      <EmccIncomingModuleJSAPI Include="setStatus" />
-      <EmccIncomingModuleJSAPI Include="statusMessage" />
-      <EmccIncomingModuleJSAPI Include="stderr" />
-      <EmccIncomingModuleJSAPI Include="stdin" />
-      <EmccIncomingModuleJSAPI Include="stdout" />
-      <EmccIncomingModuleJSAPI Include="thisProgram" />
-      <EmccIncomingModuleJSAPI Include="wasm" />
-      <EmccIncomingModuleJSAPI Include="websocket" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods.
-       Only available in-tree (RepositoryEngineeringDir is set by the build system).
-       When present its GenerateEmccExports target overrides the fallback above
-       (MSBuild last-definition-wins), so the in-tree list is always authoritative. -->
+  <!-- Import shared native.wasm.targets, which defines GenerateEmccExports (exported functions/methods
+       and the INCOMING_MODULE_JS_API allowlist) plus the Emscripten SDK, ICU, and the relink registry.
+       In-tree it is imported from the engineering dir below; in the workload it ships next to this file
+       in the Sdk pack (Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj). Exactly one of the two imports
+       fires, so GenerateEmccExports is always defined without a duplicated copy in this file. -->
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"
           Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)native.wasm.targets')" />
 
-  <!-- Import the static runtime-pack settings and relink registry. -->
+  <!-- In the workload/pack layout native.wasm.targets sits next to this file; in-tree this path does not exist. -->
   <Import Project="$(MSBuildThisFileDirectory)native.wasm.targets"
           Condition="Exists('$(MSBuildThisFileDirectory)native.wasm.targets')" />
 
