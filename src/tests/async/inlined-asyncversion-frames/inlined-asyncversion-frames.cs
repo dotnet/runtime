@@ -14,7 +14,6 @@ using Xunit;
 // await has to take the enclosing frame's contexts, so that a suspension records that the
 // frame resumed. Getting that wrong leaves the enclosing frame believing it never resumed
 // and running its context handling again on stale state.
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedAsyncVersionFrames
 {
     // Completes synchronously for even values and asynchronously for odd ones, so a loop
@@ -95,12 +94,12 @@ public class Async2InlinedAsyncVersionFrames
     [Theory]
     [InlineData(false, 16L)]
     [InlineData(true, 3L)]
-    public static void SuspendingInsideInlinedAsyncVersion(bool other, long expected)
+    public static async Task SuspendingInsideInlinedAsyncVersion(bool other, long expected)
     {
         int[] values = new int[] { 1, 2, 3 };
         for (int i = 0; i < 20; i++)
         {
-            Assert.Equal(expected, Call(values, other).GetAwaiter().GetResult());
+            Assert.Equal(expected, await Call(values, other));
         }
     }
 
@@ -113,12 +112,12 @@ public class Async2InlinedAsyncVersionFrames
     }
 
     [Fact]
-    public static void SuspendingInsideSeveralInlinedFrames()
+    public static async Task SuspendingInsideSeveralInlinedFrames()
     {
         int[] values = new int[] { 1, 2, 3 };
         for (int i = 0; i < 20; i++)
         {
-            Assert.Equal(19L, CallBoth(values).GetAwaiter().GetResult());
+            Assert.Equal(19L, await CallBoth(values));
         }
     }
 }

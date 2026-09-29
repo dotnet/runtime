@@ -12294,8 +12294,8 @@ bool Compiler::impFoldAwaitedTopOfStack()
 //
 // Remarks:
 //   The memory pointed to by implicit byrefs is owned by the callee but
-//   usually exists on the caller's frame (or on the heap for some reflection
-//   invoke scenarios). This function helps catch situations where the caller
+//   usually exists on the caller's frame (or in GC-protected native memory for
+//   some runtime invoke scenarios). This function helps catch situations where the caller
 //   reads from the memory after the invocation, for example due to a bug in
 //   the JIT's own last-use copy elision for implicit byrefs.
 //
@@ -14041,7 +14041,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (curArgVal->gtFlags & GTF_ALL_EFFECT)
     {
         argInfo->argHasGlobRef = (curArgVal->gtFlags & GTF_GLOB_REF) != 0;
-        argInfo->argHasSideEff = (curArgVal->gtFlags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) != 0;
+        argInfo->argHasSideEff = (curArgVal->gtFlags & GTF_OBS_EFFECT) != 0;
     }
 
     if (curArgVal->OperIs(GT_LCL_VAR))

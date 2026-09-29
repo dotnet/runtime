@@ -129,16 +129,16 @@ public class Async2Devirtualize
         return await obj.GetValue();
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
+    [Fact]
+    public static async Task TestEntryPoint()
     {
-        Assert.Equal(42, CallOnNewOpenDerived().Result);
-        Assert.Equal(43, CallOnNewOpenInterfaceImpl().Result);
-        Assert.Equal(2, CallOnSealed(new SealedDerived()).Result);
-        Assert.Equal(3, CallOnSealedNoYield(new SealedDerivedNoYield()).Result);
-        Assert.Equal(10, CallOnSealedInterface(new SealedInterfaceImpl()).Result);
-        Assert.Equal(11, CallOnSealedInterfaceNoYield(new SealedInterfaceImplNoYield()).Result);
-        Assert.Equal(10, CallOnInterface(new SealedInterfaceImpl()).Result);
-        Assert.Equal(11, CallOnInterface(new SealedInterfaceImplNoYield()).Result);
+        Assert.Equal(42, await CallOnNewOpenDerived());
+        Assert.Equal(43, await CallOnNewOpenInterfaceImpl());
+        Assert.Equal(2, await CallOnSealed(new SealedDerived()));
+        Assert.Equal(3, await CallOnSealedNoYield(new SealedDerivedNoYield()));
+        Assert.Equal(10, await CallOnSealedInterface(new SealedInterfaceImpl()));
+        Assert.Equal(11, await CallOnSealedInterfaceNoYield(new SealedInterfaceImplNoYield()));
+        Assert.Equal(10, await CallOnInterface(new SealedInterfaceImpl()));
+        Assert.Equal(11, await CallOnInterface(new SealedInterfaceImplNoYield()));
     }
 }

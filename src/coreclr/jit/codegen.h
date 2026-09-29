@@ -357,7 +357,6 @@ protected:
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(
              unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& seg, class RegGraph* graph);
-    void genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void genEnregisterIncomingStackArgs();
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 
@@ -957,7 +956,7 @@ protected:
     void genCompareFloat(GenTreeOp* treeNode);
     void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
-    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, emitAttr opSize);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
 #endif
 
