@@ -67,8 +67,8 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
         public static T[] CreateFilled<T>(int length, Func<int, T> factory)
         {
-            ArgumentNullException.ThrowIfNull(factory);
             ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentNullException.ThrowIfNull(factory);
 
             T[] array = GC.AllocateUninitializedArray<T>(length);
 

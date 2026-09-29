@@ -4669,7 +4669,7 @@ namespace System.Tests
         [InlineData(0, 10)]
         [InlineData(5, 10)]
         [InlineData(1000, 10)]
-        public void CreateFilled_FillValue(int length, int value)
+        public void CreateFilled_Value_ValueType(int length, int value)
         {
             var array = Array.CreateFilled<int>(length, value);
             var expected = new int[length];
@@ -4680,8 +4680,24 @@ namespace System.Tests
             Assert.Equal(expected, array);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        [InlineData(1000)]
+        public void CreateFilled_Value_ReferenceType(int length)
+        {
+            var value = new object();
+            var array = Array.CreateFilled<object>(length, value);
+            var expected = new object[length];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = value;
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(expected, array);
+        }
+
         [Fact]
-        public void CreateFilled_FillValue_Empty()
+        public void CreateFilled_Value_Empty()
         {
             var array = Array.CreateFilled<int>(0, 0);
             Assert.Empty(array);
@@ -4690,17 +4706,17 @@ namespace System.Tests
         [Fact]
         public void CreateFilled_NullFactory_Throws()
         {
-            Assert.Throws<ArgumentNullException>(() => Array.CreateFilled<Foo2>(7, (Func<int, Foo2>)null));
-            Assert.Throws<ArgumentNullException>(() => Array.CreateFilled<int>(7, (Func<int, int>)null));
+            Assert.Throws<ArgumentNullException>("factory", () => Array.CreateFilled<Foo2>(7, (Func<int, Foo2>)null));
+            Assert.Throws<ArgumentNullException>("factory", () => Array.CreateFilled<int>(7, (Func<int, int>)null));
         }
 
         [Fact]
         public void CreateFilled_NegativeLength_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => Array.CreateFilled<int>(-1, index => index));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Array.CreateFilled<object>(-1, index => new object()));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Array.CreateFilled<object>(-1, new object()));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Array.CreateFilled<int>(-1, 8));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<int>(-1, index => index));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<object>(-1, index => new object()));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<object>(-1, new object()));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<int>(-1, 8));
         }
 
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
