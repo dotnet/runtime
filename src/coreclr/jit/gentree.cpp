@@ -5496,6 +5496,9 @@ bool Compiler::gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile,
 //
 bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 {
+    // Rationalization sequences replacement trees before the compilation enters LIR.
+    assert((fgOrder == FGOrderTree) || (mostRecentlyActivePhase == PHASE_RATIONALIZE));
+
     if (impIsInvariant(firstNode) || impIsInvariant(secondNode))
     {
         // Invariant operands need no sequencing.
@@ -5532,9 +5535,6 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 //
 void Compiler::gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp)
 {
-    // Rationalization sequences replacement trees before the compilation enters LIR.
-    assert((fgOrder == FGOrderTree) || ((fgNodeThreading == NodeThreading::AllTrees) && !compRationalIRForm));
-
     if (gtCanSwapOrder(*firstOp, *secondOp))
     {
         return;
