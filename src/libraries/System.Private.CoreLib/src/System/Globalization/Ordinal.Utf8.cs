@@ -333,73 +333,61 @@ namespace System.Globalization
             // inputs being different length will mean that they can never compare as
             // equal under an OrdinalIgnoreCase comparer.
 
-            while (!prefix.IsEmpty && !source.IsEmpty)
+            while (!prefix.IsEmpty)
             {
-                uint a = source[0];
-                uint b = prefix[0];
-
-                if ((a | b) > 0x7F)
+                if (source.IsEmpty)
                 {
-                    // No non-ASCII scalar is equal to an ASCII one under ordinal casing, so both must be non-ASCII to match
-                    return ((a & b) > 0x7F) && StartsWithStringIgnoreCaseNonAsciiUtf8(source, prefix);
-                }
-
-                // Ordinal equals or lowercase equals if the result ends up in the a-z range
-                if ((a != b) && (((a | 0x20) != (b | 0x20)) || !char.IsAsciiLetter((char)a)))
-                {
+                    // The source ended before the prefix
                     return false;
                 }
 
-                source = source.Slice(1);
-                prefix = prefix.Slice(1);
-            }
+                uint a = source[0];
+                uint b = prefix[0];
 
-            // Success if we reached the end of the prefix
-            return prefix.IsEmpty;
-        }
+                if ((a | b) <= 0x7F)
+                {
+                    // Ordinal equals or lowercase equals if the result ends up in the a-z range
+                    if ((a != b) && (((a | 0x20) != (b | 0x20)) || !char.IsAsciiLetter((char)a)))
+                    {
+                        return false;
+                    }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool StartsWithStringIgnoreCaseNonAsciiUtf8(ReadOnlySpan<byte> spanA, ReadOnlySpan<byte> spanB)
-        {
-            // NLS/ICU doesn't provide native UTF-8 support so we need to do our own corresponding ordinal comparison
+                    source = source.Slice(1);
+                    prefix = prefix.Slice(1);
+                    continue;
+                }
 
-            do
-            {
-                OperationStatus statusA = Rune.DecodeFromUtf8(spanA, out Rune runeA, out int bytesConsumedA);
-                OperationStatus statusB = Rune.DecodeFromUtf8(spanB, out Rune runeB, out int bytesConsumedB);
+                if ((a ^ b) > 0x7F)
+                {
+                    // No non-ASCII scalar is equal to an ASCII one under ordinal casing
+                    return false;
+                }
+
+                // NLS/ICU doesn't provide native UTF-8 support so we need to do our own corresponding ordinal comparison
+                OperationStatus statusA = Rune.DecodeFromUtf8(source, out Rune runeA, out int bytesConsumedA);
+                OperationStatus statusB = Rune.DecodeFromUtf8(prefix, out Rune runeB, out int bytesConsumedB);
 
                 if (statusA != statusB)
                 {
-                    // OperationStatus don't match; fail immediately
                     return false;
                 }
 
                 if (statusA == OperationStatus.Done)
                 {
-                    if (Rune.ToUpperOrdinal(runeA) != Rune.ToUpperOrdinal(runeB))
+                    if ((runeA != runeB) && (Rune.ToUpperOrdinal(runeA) != Rune.ToUpperOrdinal(runeB)))
                     {
-                        // Runes don't match when ignoring case; fail immediately
                         return false;
                     }
                 }
-                else if (!spanA.Slice(0, bytesConsumedA).SequenceEqual(spanB.Slice(0, bytesConsumedB)))
+                else if (!source.Slice(0, bytesConsumedA).SequenceEqual(prefix.Slice(0, bytesConsumedB)))
                 {
-                    // OperationStatus match, but bytesConsumed or the sequence of bytes consumed do not; fail immediately
+                    // Invalid sequences must match exactly
                     return false;
                 }
 
-                // The current runes or invalid byte sequences matched, slice and continue.
-                // We'll exit the loop when the entirety of spanB has been processed.
-                //
-                // In the scenario where spanA is empty before spanB, we'll end up with that
-                // span returning OperationStatus.NeedMoreData and bytesConsumed=0 while spanB
-                // will return a different OperationStatus or different bytesConsumed and thus
-                // fail the operation.
-
-                spanA = spanA.Slice(bytesConsumedA);
-                spanB = spanB.Slice(bytesConsumedB);
+                source = source.Slice(bytesConsumedA);
+                prefix = prefix.Slice(bytesConsumedB);
             }
-            while (spanB.Length != 0);
 
             return true;
         }    }
