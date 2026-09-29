@@ -51,18 +51,26 @@ Treat local results as an initial signal, not a definitive performance measureme
 git clone https://github.com/aspnet/Benchmarks.git
 ```
 
-The relevant app is `src/BenchmarksApps/TechEmpower/PlatformBenchmarks` — a raw Kestrel `HttpApplication` implementation of the TechEmpower benchmark suite (JSON serialization, plaintext, fortunes, single/multiple queries, updates). It targets the latest `net*.0` TFM.
+The relevant apps are:
 
-### Step 2: Publish the App Against the Repo's Own SDK
+- `src/BenchmarksApps/TechEmpower/PlatformBenchmarks` — a raw Kestrel `HttpApplication` implementation of the TechEmpower benchmark suite (JSON serialization, plaintext, fortunes, single/multiple queries, updates).
+- `src/BenchmarksApps/BasicMinimalApi` — an ASP.NET Core Minimal APIs application whose `/todos` endpoint returns JSON.
 
-Build/publish the app with the dotnet/runtime repo's own SDK (`<runtime-repo>/.dotnet/dotnet`), not a system-wide SDK, so the app targets the same TFM as your local build:
+### Step 2: Build the Apps Against the Repo's Own SDK
+
+Build both apps with the dotnet/runtime repo's own SDK (`<runtime-repo>/.dotnet/dotnet`), not a system-wide SDK, so they target the same TFM as your local build:
 
 ```bash
-cd Benchmarks/src/BenchmarksApps/TechEmpower/PlatformBenchmarks
-<runtime-repo>/.dotnet/dotnet build -c Release
+TFM='<tfm>'
+
+cd <benchmarks-repo>/src/BenchmarksApps/TechEmpower/PlatformBenchmarks
+<runtime-repo>/.dotnet/dotnet build -c Release -p:TargetFrameworks="$TFM"
+
+cd <benchmarks-repo>/src/BenchmarksApps/BasicMinimalApi
+<runtime-repo>/.dotnet/dotnet build -c Release -p:TargetFramework="$TFM" -p:TargetFrameworks="$TFM"
 ```
 
-This produces `bin/Release/<tfm>/PlatformBenchmarks.dll`.
+This produces `bin/Release/<tfm>/PlatformBenchmarks.dll` and `bin/Release/<tfm>/BasicMinimalApi.dll` under their respective project directories.
 
 ### Step 3: Make the Repo's SDK Run Against Your Local Runtime Build
 
@@ -90,24 +98,38 @@ rsync -a --delete "$TESTHOST_FX"/ "$SDK_FX"/
 
 **This mutates the repo's own SDK shared framework in place.** Never skip the backup step, and always restore it when done (Step 6) — leaving it mutated will silently break every other use of that SDK on the machine. Keep `$BACKUP_DIR` and the recorded checksum around until Step 6 has verified the restore.
 
-### Step 4: Run the App and Verify It's Serving Requests
+### Step 4: Run Each App and Verify It's Serving Requests
+
+Run one app at a time because both commands below listen on port 5000. Start with `PlatformBenchmarks`:
 
 ```bash
-cd Benchmarks/src/BenchmarksApps/TechEmpower/PlatformBenchmarks/bin/Release/<tfm>
+cd <benchmarks-repo>/src/BenchmarksApps/TechEmpower/PlatformBenchmarks/bin/Release/"$TFM"
 <runtime-repo>/.dotnet/dotnet exec PlatformBenchmarks.dll --urls http://127.0.0.1:5000 &
 sleep 5
 curl -sS http://127.0.0.1:5000/json
 ```
 
-This leaves the terminal's working directory inside `PlatformBenchmarks/bin/Release/<tfm>` for the rest of the session. Any later step that references a path relative to `<runtime-repo>` (such as copying `crossgen2` below) must either `cd` back to `<runtime-repo>` first or use an absolute/`<runtime-repo>`-anchored path — a bare relative path resolves under this benchmark output directory instead and the copy silently fails or copies nothing.
+After running its load tests, stop `PlatformBenchmarks`, then run `BasicMinimalApi`:
+
+```bash
+cd <benchmarks-repo>/src/BenchmarksApps/BasicMinimalApi/bin/Release/"$TFM"
+<runtime-repo>/.dotnet/dotnet exec BasicMinimalApi.dll --urls http://127.0.0.1:5000 &
+sleep 5
+curl -sS http://127.0.0.1:5000/todos
+```
+
+These commands leave the terminal's working directory inside the selected app's `bin/Release/<tfm>` directory. Any later step that references a path relative to `<runtime-repo>` (such as copying `crossgen2` below) must either `cd` back to `<runtime-repo>` first or use an absolute/`<runtime-repo>`-anchored path — a bare relative path resolves under the benchmark output directory instead and the copy silently fails or copies nothing.
 
 Set whatever env var/`AppContext` switch you're comparing (e.g. `DOTNET_USE_IO_URING=1`/`=0`) *before* starting the process — it's read once at startup.
 
-### Step 5: Run `wrk` (or `bombardier` on Windows) Against It
+### Step 5: Run `wrk` (or `bombardier` on Windows) Against Each App
 
 ```bash
 wrk -t12 -c256 -d15s --latency http://127.0.0.1:5000/json
+wrk -t12 -c256 -d15s --latency http://127.0.0.1:5000/todos
 ```
+
+Run the `/json` command while `PlatformBenchmarks` is running and the `/todos` command while `BasicMinimalApi` is running.
 
 - `-t`: number of `wrk` threads — a good default is the machine's core count.
 - `-c`: number of concurrent connections — 256 is a reasonable default for a many-concurrent-connections scenario.
@@ -118,6 +140,7 @@ On Windows, use `bombardier` instead, with equivalent options:
 
 ```powershell
 bombardier -c 256 -d 15s -l http://127.0.0.1:5000/json
+bombardier -c 256 -d 15s -l http://127.0.0.1:5000/todos
 ```
 
 - `-c`: concurrent connections (same meaning as `wrk -c`).
@@ -127,11 +150,11 @@ bombardier -c 256 -d 15s -l http://127.0.0.1:5000/json
 
 Run **at least two** runs per configuration (there's meaningful run-to-run variance) and report both, along with p50/p99 latency, not just a single throughput number. Present the results in a table.
 
-Repeat Steps 4-5 for each configuration being compared (e.g. once with the env var on, once with it off), reusing the same overlay — only the running process needs to be restarted between configurations, not the overlay.
+Repeat Steps 4-5 for each configuration being compared (e.g. once with the env var on, once with it off) and for both apps, reusing the same overlay — only the running process needs to be restarted between configurations, not the overlay. Do not conclude that a change is beneficial unless neither app regresses.
 
 ### Step 6: Clean Up
 
-1. Kill the server process(es) — find the actual `dotnet exec ... PlatformBenchmarks.dll` PID (not the shell that launched it) with `pgrep -af PlatformBenchmarks` and `kill <pid>`.
+1. Kill the server process — find the actual `dotnet exec ... PlatformBenchmarks.dll` or `dotnet exec ... BasicMinimalApi.dll` PID (not the shell that launched it) with `pgrep -af PlatformBenchmarks` or `pgrep -af BasicMinimalApi`, then use `kill <pid>`.
 2. **Restore the SDK's shared framework from the backup** and verify it via checksum before considering the machine clean:
 
    ```bash
@@ -280,16 +303,17 @@ Crank's `--application.options.outputFiles` uploads local files into the applica
 To make the overlay actually take effect, publish the job **self-contained** instead, so the local runtime bits become part of `published/` itself and the later `outputFiles` copy overwrites them in place:
 
 ```bash
-CONFIG=https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml
+CONFIG='<scenario-config-url>'
+SCENARIO='<scenario-name>'
 PROFILE='<configured-machine-profile>'
 TFM='<benchmark-tfm>'
 SDK_VERSION='<exact-sdk-version>'
 RUNTIME_VERSION='<exact-runtime-version>'
 ASPNET_VERSION='<exact-aspnet-version>'
-RUN=/absolute/path/to/results/json-candidate-a
+RUN='/absolute/path/to/results/<scenario>-candidate-a'
 
 crank \
-  --config "$CONFIG" --scenario json --profile "$PROFILE" \
+  --config "$CONFIG" --scenario "$SCENARIO" --profile "$PROFILE" \
   --application.framework "$TFM" \
   --application.selfContained true \
   --application.sdkVersion "$SDK_VERSION" \
@@ -305,13 +329,18 @@ crank \
   --json "$RUN.json"
 ```
 
+Run the command once for each implementation, setting these values:
+
+| Implementation | `CONFIG` | `SCENARIO` | Example `RUN` suffix |
+|---|---|---|---|
+| PlatformBenchmarks | `https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml` | `json` | `json-candidate-a` |
+| Minimal APIs | `https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/goldilocks.benchmarks.yml` | `basicminimalapivanilla` | `basicminimalapivanilla-candidate-a` |
+
 Create the results directory beforehand and use a unique run name for every launch. Replace angle-bracket placeholders before executing. Quote `"$OVERLAY/*"` so Crank, not the shell, expands the upload pattern. Extend the `sha256sum` list to cover the complete selected payload and compare the downloaded output with the local manifest. Keep the scenario's configured connection count, warmup, and duration unless the experiment specifically requires changing them; the scenario owners tune these defaults and may update them over time.
 
 `--application.selfContained true` still needs `--application.runtimeVersion`/`--application.aspNetCoreVersion` pinned to the versions matching your overlay's ABI, since the self-contained publish step is what brings those shared-framework files into `published/` in the first place — `outputFiles` only replaces specific files afterward, it doesn't provision the rest of the runtime. Confirm the `beforeScript`'s `sha256sum` output in the build log matches the overlay's own manifest to prove the substitution actually landed, and check the downloaded build log for the `--self-contained` publish flag.
 
-The example's `published/` paths and `/bin/sh` command are for the standard Linux PlatformBenchmarks job; adapt them if the job uses a different layout or OS. Confirm the build logs show the intended framework versions and that the application uses the deployed replacements, not an incompatible or separately located shared framework. File presence alone is not proof that a module was loaded; use module paths/build IDs from a diagnostic trace when investigating binding.
-
-Repeat the comparison with the Minimal APIs scenario. Reuse the same command and options, but set `CONFIG` to `https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/goldilocks.benchmarks.yml`, select `--scenario basicminimalapivanilla`, and use a distinct `RUN` name.
+The example's `published/` paths and `/bin/sh` command are for the standard Linux jobs used by these scenarios; adapt them if the job uses a different layout or OS. Confirm the build logs show the intended framework versions and that the application uses the deployed replacements, not an incompatible or separately located shared framework. File presence alone is not proof that a module was loaded; use module paths/build IDs from a diagnostic trace when investigating binding.
 
 Do not accept the runtime change based on only one implementation. Compare baseline and candidate results for both `json` and `basicminimalapivanilla`, investigating any regression before concluding that the change is beneficial.
 
