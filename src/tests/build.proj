@@ -280,7 +280,7 @@
 
   <Target Name="CrossgenFramework"
       DependsOnTargets="GenerateLayout"
-      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
+      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and '$(TargetArchitecture)' != 'wasm' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>

@@ -24,31 +24,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly ImportThunkKind _thunkKind;
 
-        private readonly ImportSectionNode _containingImportSection;
-
         public override bool StaticDependenciesAreComputed => true;
 
         public override bool IsShareable => false;
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
         /// <summary>
-        /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
-        /// import section. Optionally they may also contain a relocation for a specific indirection cell to fix up.
+        /// Import thunks call a runtime-provided helper that fixes up the indirection cell identified by the portable entrypoint.
         /// </summary>
-        public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, bool useJumpableStub)
         {
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
             _typeNode = factory.WasmTypeNode(wasmSignature);
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
-            _containingImportSection = containingImportSection;
 
-            if (useVirtualCall)
-            {
-                // In wasm we should always be using a helper to get the function pointer target, and then dispatching on that instead of using a thunk
-                throw new System.NotSupportedException(nameof(useVirtualCall));
-            }
-            else if (useJumpableStub)
+            if (useJumpableStub)
             {
                 _thunkKind = ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell;
             }
@@ -75,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append("WasmDelayLoadHelper->"u8);
             _helperCell.AppendMangledName(nameMangler, sb);
-            sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind},Sig:{_wasmSignature.SignatureString})");
+            sb.Append($"(Kind:{_thunkKind},Sig:{_wasmSignature.SignatureString})");
         }
 
         protected override string GetName(NodeFactory factory)
@@ -131,10 +122,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             result = _wasmSignature.CompareTo(otherNode._wasmSignature);
-            if (result != 0)
-                return result;
-
-            result = ((ImportSectionNode)_containingImportSection).CompareToImpl((ImportSectionNode)otherNode._containingImportSection, comparer);
             if (result != 0)
                 return result;
 

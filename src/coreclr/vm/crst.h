@@ -138,23 +138,6 @@ public:
 #endif
 
 private:
-    // Some Crsts have a "shutdown" mode.
-    // A Crst in shutdown mode can only be taken / released by special
-    // (the helper / finalizer / shutdown) threads. Any other thread that tries to take
-    // the a "shutdown" crst will immediately release the Crst and instead just block forever.
-    //
-    // This prevents random threads from blocking the special threads from doing finalization on shutdown.
-    //
-    // Unfortunately, each Crst needs its own "shutdown" flag because we can't convert all the locks
-    // into shutdown locks at once. For eg, the TSL needs to suspend the runtime before
-    // converting to a shutdown lock. But it can't suspend the runtime while holding
-    // a UNSAFE_ANYMODE lock (such as the debugger-lock). So at least the debugger-lock
-    // and TSL need to be set separately.
-    //
-    // So for such Crsts, it's the caller's responsibility to detect if the crst is in
-    // shutdown mode, and if so, call this function after enter.
-    void ReleaseAndBlockForShutdownIfNotSpecialThread();
-
     // Enter & Leave are deliberately private to force callers to use the
     // Holder class.  If you bypass the Holder class and access these members
     // directly, your lock is not exception-safe.
@@ -165,8 +148,15 @@ private:
     // the only one with a pointer to the crst.)
     //
     // For obvious reasons, this parameter must never be made public.
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    // There is no wait to make GC-safe, no other thread to orphan a shutdown lock,
+    // and no debugger helper thread to exclude. Keep these inline so holders disappear too.
+    void Enter() { LIMITED_METHOD_CONTRACT; }
+    void Leave() { LIMITED_METHOD_CONTRACT; }
+#else
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
     void Leave();
+#endif
 
 #ifndef DACCESS_COMPILE
     DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
@@ -206,7 +196,11 @@ public:
     // Clean up critical section
     // Safe to call multiple times or on non-initialized critical section
     //-----------------------------------------------------------------
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    void Destroy() { LIMITED_METHOD_CONTRACT; }
+#else
     void Destroy();
+#endif
 
 #ifdef _DEBUG
     //-----------------------------------------------------------------
@@ -265,6 +259,9 @@ public:
     }
 
 protected:
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    void InitWorker(CrstFlags flags) { LIMITED_METHOD_CONTRACT; }
+#else
     void InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags);
 
 #ifdef _DEBUG
@@ -328,6 +325,7 @@ private:
     {
         m_dwFlags = 0;
     }
+#endif // !FEATURE_MULTITHREADING && !_DEBUG
 
     // ------------------------------- Holders ------------------------------
 public:
@@ -468,7 +466,9 @@ class CrstExplicitInit : public CrstStatic
 {
 public:
     CrstExplicitInit() {
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
         m_dwFlags = 0;
+#endif
     }
      ~CrstExplicitInit() {
 #ifndef DACCESS_COMPILE

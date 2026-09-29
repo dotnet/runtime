@@ -68,10 +68,10 @@
 
   <!-- OS-specific settings for non-benchmarks collections -->
 
-  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(AGENT_OS)' == 'Windows_NT' ">
+  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(CollectionName)' != 'aspire' and '$(AGENT_OS)' == 'Windows_NT' ">
     <AssembliesDirectoryOnHelix>%HELIX_WORKITEM_PAYLOAD%\binaries</AssembliesDirectoryOnHelix>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(AGENT_OS)' != 'Windows_NT' ">
+  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(CollectionName)' != 'aspire' and '$(AGENT_OS)' != 'Windows_NT' ">
     <AssembliesDirectoryOnHelix>$HELIX_WORKITEM_PAYLOAD/binaries</AssembliesDirectoryOnHelix>
   </PropertyGroup>
 
@@ -91,6 +91,15 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(CollectionName)' == 'aspnet2' and '$(AGENT_OS)' != 'Windows_NT' ">
     <CrankWorkDirectory>$HELIX_WORKITEM_PAYLOAD</CrankWorkDirectory>
+  </PropertyGroup>
+
+  <!-- OS-specific settings for Aspire collections -->
+
+  <PropertyGroup Condition=" '$(CollectionName)' == 'aspire' and '$(AGENT_OS)' == 'Windows_NT' ">
+    <AspireWorkDirectory>%HELIX_WORKITEM_PAYLOAD%</AspireWorkDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionName)' == 'aspire' and '$(AGENT_OS)' != 'Windows_NT' ">
+    <AspireWorkDirectory>$HELIX_WORKITEM_PAYLOAD</AspireWorkDirectory>
   </PropertyGroup>
 
   <!-- Common non-OS-specific settings -->
@@ -156,7 +165,7 @@
 
   <!-- Define the Helix work item command and timeout for each collection type -->
 
-  <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
+  <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(CollectionName)' != 'aspire'">
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) $(InputKind) $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory) $(TargetArgs)</WorkItemCommand>
     <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
@@ -168,6 +177,11 @@
 
   <PropertyGroup Condition="'$(CollectionName)' == 'aspnet2'">
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory) --work_dir $(CrankWorkDirectory) </WorkItemCommand>
+    <WorkItemTimeout>3:00</WorkItemTimeout>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CollectionName)' == 'aspire'">
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_nativeaot_app.py --core_root $(SuperPMIDirectory) --work_dir $(AspireWorkDirectory)</WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -238,7 +252,7 @@
   <!-- For non-benchmark collections, we create one Helix work item for each sub-directory
        in the `InputArtifacts` directory.
   -->
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(CollectionName)' != 'aspire'">
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(InputArtifacts)))"/>
     <Partition Include="@(PartitionDirectories -> '%(Filename)')" CollectAssemblies="%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
@@ -309,7 +323,11 @@
     <Crank_Partition Include="Partition0" Index="0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
+  <ItemGroup Condition="'$(CollectionName)' == 'aspire'">
+    <Aspire_Partition Include="Partition0" Index="0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(CollectionName)' != 'aspire'">
     <HelixWorkItem Include="@(Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(AssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.CollectAssemblies)</PayloadDirectory>
@@ -347,5 +365,15 @@
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
-  </ItemGroup> 
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(CollectionName)' == 'aspire'">
+    <HelixWorkItem Include="@(Aspire_Partition)">
+      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(WorkItemCommand) --output_mch $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct</DownloadFilesFromResults>
+    </HelixWorkItem>
+  </ItemGroup>
 </Project>

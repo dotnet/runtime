@@ -374,6 +374,7 @@ public class JsAsset
 public class SymbolsAsset
 {
     public string name { get; set; }
+    public string hash { get; set; }
     public string cache { get; set; }
 }
 

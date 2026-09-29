@@ -262,7 +262,7 @@ namespace System.Net.Sockets
         public static bool OSSupportsIPv6 => SocketProtocolSupportPal.OSSupportsIPv6;
         [UnsupportedOSPlatformGuard("wasi")]
         // OpenBSD does not support dual-mode (IPv4-mapped IPv6) sockets: setting IPV6_V6ONLY to 0 fails with EINVAL.
-        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6 && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
+        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6 && !OperatingSystem.IsOpenBSD();
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool OSSupportsThreads => !OperatingSystem.IsWasi();
         public static bool OSSupportsUnixDomainSockets => SocketProtocolSupportPal.OSSupportsUnixDomainSockets;
@@ -1089,8 +1089,10 @@ namespace System.Net.Sockets
 
             Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
-            Socket socket = CreateAcceptSocket(acceptedSocketHandle, _rightEndPoint.Create(socketAddress));
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint!, socket.LocalEndPoint);
+            // macOS can return accept() success with an empty remote sockaddr when the peer reset before accept.
+            EndPoint? remoteEndPoint = socketAddress.Size > 0 ? _rightEndPoint.Create(socketAddress) : null;
+            Socket socket = CreateAcceptSocket(acceptedSocketHandle, remoteEndPoint);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, remoteEndPoint, socket.LocalEndPoint);
             return socket;
         }
 

@@ -109,6 +109,7 @@ public enum DataType
     InterpByteCodeStart,
     InterpMethod,
     InterpMethodContextFrame,
+    VirtualIPRangeSection,
     FunctionTableIndexRangeSection,
     Array,
     Delegate,
@@ -228,6 +229,9 @@ public enum DataType
     EnCAddedStaticField,
     EnCSyncBlockInfo,
     UnorderedArrayBase,
+
+    LayoutEEClass,
+    EEClassLayoutInfo,
 }
 
 public static class DataTypeTargetExtensions

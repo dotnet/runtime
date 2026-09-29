@@ -80,6 +80,9 @@ namespace System.Runtime.InteropServices
             public int StringLen2;
         }
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
         private static unsafe partial void ProcessAttributes(
             QCallAssembly assembly,
@@ -90,9 +93,15 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedProxyTypeMap,
             CallbackContext* context);
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key);
 
+#if CORECLR
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+#endif
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
         private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type);
 
@@ -410,8 +419,14 @@ namespace System.Runtime.InteropServices
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, string key, [NotNullWhen(true)] out Type? type)
             {
                 IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key);
-                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
-                return type != null;
+                if (handle == IntPtr.Zero)
+                {
+                    type = null;
+                    return false;
+                }
+
+                type = RuntimeTypeHandle.GetRuntimeTypeFromHandle(handle);
+                return true;
             }
 
             protected override bool TryGetOrLoadType(string key, [NotNullWhen(true)] out Type? type)
@@ -485,8 +500,13 @@ namespace System.Runtime.InteropServices
             {
                 RuntimeType rtKey = (RuntimeType)key;
                 IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey));
-                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
-                return type != null;
+                if (handle == IntPtr.Zero)
+                {
+                    type = null;
+                    return false;
+                }
+                type = RuntimeTypeHandle.GetRuntimeTypeFromHandle(handle);
+                return true;
             }
 
             protected override bool TryGetOrLoadType(Type key, [NotNullWhen(true)] out Type? type)

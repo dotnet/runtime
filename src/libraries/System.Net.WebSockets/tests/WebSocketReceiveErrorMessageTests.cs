@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.Http.Functional.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134264", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
     public class WebSocketReceiveErrorMessageTests
     {
         // The test WebSocket is created with isServer:false, so received frames must NOT be masked
@@ -71,7 +73,7 @@ namespace System.Net.WebSockets.Tests
             stream.Position = 0;
             using WebSocket webSocket = WebSocket.CreateFromStream(stream, isServer: false, subProtocol: null, Timeout.InfiniteTimeSpan);
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var cts = new CancellationTokenSource(TestHelper.PassingTestTimeout);
             return await Assert.ThrowsAsync<WebSocketException>(() =>
                 webSocket.ReceiveAsync(new byte[1024], cts.Token));
         }

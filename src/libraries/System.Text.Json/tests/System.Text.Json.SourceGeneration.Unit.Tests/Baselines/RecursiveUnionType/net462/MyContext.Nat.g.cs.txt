@@ -40,8 +40,8 @@ namespace TestApp
                         return value switch
                         {
                             null => ((global::System.Type?)null, (object?)null),
-                            { Value: bool caseValue0 } => (typeof(bool), (object?)caseValue0),
-                            { Value: global::TestApp.Nat caseValue1 } => (typeof(global::TestApp.Nat), (object?)caseValue1),
+                            bool caseValue0 => (typeof(bool), (object?)caseValue0),
+                            global::TestApp.Nat caseValue1 => (typeof(global::TestApp.Nat), (object?)caseValue1),
                         };
                     },
                     TypeClassifier = null,

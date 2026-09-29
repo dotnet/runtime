@@ -19,11 +19,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 {
     private const int TYPE_MASK_OFFSET = 27; // offset of type in field desc flags2
     private readonly Target _target;
-    private readonly TargetPointer _freeObjectMethodTablePointer;
-    private readonly TargetPointer _objectMethodTablePointer;
-    private TargetPointer _continuationMethodTablePointer;
-    private TargetPointer _continuationSingletonEEClassPointer;
-    private readonly TargetPointer _multicastDelegateMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _freeObjectMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _objectMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationSingletonEEClassPointer;
+    private readonly CachedValue<TargetPointer> _multicastDelegateMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
     private readonly MethodValidation _methodValidation;
@@ -40,6 +40,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public void Flush(FlushScope scope)
     {
+        _freeObjectMethodTablePointer.Clear();
+        _objectMethodTablePointer.Clear();
+        _continuationMethodTablePointer.Clear();
+        _continuationSingletonEEClassPointer.Clear();
+        _multicastDelegateMethodTablePointer.Clear();
         _methodTables.Clear();
         _methodDescs.Clear();
         _typeHandles.Clear();
@@ -438,16 +443,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     internal RuntimeTypeSystem_1(Target target)
     {
         _target = target;
-        _freeObjectMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
-        _objectMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
-        _continuationMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
-        _continuationSingletonEEClassPointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
-        _multicastDelegateMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.MulticastDelegateMethodTable));
+        _freeObjectMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable)));
+        _objectMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)));
+        _continuationMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable)));
+        _continuationSingletonEEClassPointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass)));
+        _multicastDelegateMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MulticastDelegateMethodTable)));
         _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         _typeValidation = new TypeValidation(target, _continuationMethodTablePointer, _continuationSingletonEEClassPointer);
         _methodValidation = new MethodValidation(target, _methodDescAlignment);
@@ -456,29 +456,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
     internal TargetPointer ObjectMethodTablePointer => _objectMethodTablePointer;
-    internal TargetPointer ContinuationMethodTablePointer
-    {
-        get
-        {
-            if (_continuationMethodTablePointer != TargetPointer.Null)
-                return _continuationMethodTablePointer;
-            _continuationMethodTablePointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
-            return _continuationMethodTablePointer;
-        }
-    }
-
-    internal TargetPointer ContinuationSingletonEEClassPointer
-    {
-        get
-        {
-            if (_continuationSingletonEEClassPointer != TargetPointer.Null)
-                return _continuationSingletonEEClassPointer;
-            _continuationSingletonEEClassPointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
-            return _continuationSingletonEEClassPointer;
-        }
-    }
+    internal TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
+    internal TargetPointer ContinuationSingletonEEClassPointer => _continuationSingletonEEClassPointer;
 
     internal ulong MethodDescAlignment => _methodDescAlignment;
 
@@ -814,6 +793,41 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             || t == CorElementType.I
             || t == CorElementType.U;
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    // Mirrors CEEInfo::getClassAlignmentRequirementStatic for managed value types. TypeDesc and
+    // native-value-type paths are omitted because the managed signature decoder cannot produce them.
+    public int GetClassAlignmentRequirement(ITypeHandle typeHandle)
+    {
+        int result = _target.PointerSize;
+        if (!typeHandle.IsMethodTable())
+            return result;
+
+        TargetPointer eeClassPtr = GetClassPointer(typeHandle);
+        if (eeClassPtr != TargetPointer.Null)
+        {
+            Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPtr);
+
+            // LayoutInfo aliases unrelated memory unless HasLayout is set.
+            if (eeClass.HasLayout)
+            {
+                Data.EEClassLayoutInfo layoutInfo =
+                    _target.ProcessedData.GetOrAdd<Data.LayoutEEClass>(eeClassPtr).LayoutInfo;
+                if (layoutInfo.LayoutType == (byte)Data.EEClassLayoutInfo.Type.Sequential || layoutInfo.IsBlittable)
+                {
+                    result = layoutInfo.AlignmentRequirement;
+                }
+            }
+        }
+
+        // RequiresAlign8 is only set on FEATURE_64BIT_ALIGNMENT targets.
+        if (result < 8 && RequiresAlign8(typeHandle))
+        {
+            result = 8;
+        }
+
+        return result;
+    }
+
     public bool IsContinuationWithoutMetadata(ITypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer

@@ -181,6 +181,13 @@ static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mut
         {
             return;
         }
+
+        auto visitDef = [&](const auto& def) {
+            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);
+            return GenTree::VisitResult::Continue;
+        };
+        node->VisitLogicalLocalDefs(compiler, visitDef);
+        return;
     }
     else if (node->OperIs(GT_LCL_ADDR))
     {
@@ -260,7 +267,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
 //   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
 //   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
 //
-//   At entry, only parameters and OSR locals are considered mutated.
+//   At entry, parameters, parameter register targets, and OSR locals are considered mutated.
 //
 void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
 {
@@ -271,13 +278,13 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
         VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
     }
 
-    // Parameters and OSR locals are considered mutated at method entry.
+    // Parameters, parameter register targets, and OSR locals are non-default at method entry.
     for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
     {
         unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
+        if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget || varDsc->lvIsOSRLocal)
         {
             VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
         }
@@ -345,13 +352,21 @@ static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutat
 {
     if (node->IsCall())
     {
-        auto visitDef = [&](GenTreeLclVarCommon* lcl) {
-            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(lcl), mutated);
+        auto visitDef = [&](const auto& def) {
+            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);
             return GenTree::VisitResult::Continue;
         };
-        node->VisitLocalDefNodes(compiler, visitDef);
+        node->VisitLogicalLocalDefs(compiler, visitDef);
     }
-    else if (node->OperIsLocalStore() || node->OperIs(GT_LCL_ADDR))
+    else if (node->OperIsLocalStore())
+    {
+        auto visitDef = [&](const auto& def) {
+            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);
+            return GenTree::VisitResult::Continue;
+        };
+        node->VisitLogicalLocalDefs(compiler, visitDef);
+    }
+    else if (node->OperIs(GT_LCL_ADDR))
     {
         MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
     }

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
@@ -25,14 +24,9 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             Scope = new QScopeDefinition(reader, scope);
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(Scope.Reader, Scope.ScopeDefinition.CustomAttributes))
-                    yield return cad;
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => Scope.Reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => Scope.ScopeDefinition.CustomAttributes;
 
         public sealed override IEnumerable<TypeInfo> DefinedTypes
         {

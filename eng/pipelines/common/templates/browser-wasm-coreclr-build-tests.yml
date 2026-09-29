@@ -44,8 +44,12 @@ jobs:
         dependsOn:
           - ${{ if eq(platform, 'browser_wasm') }}:
             - build_browser_wasm_linux_Release_CoreCLR
+            - build_browser_wasm_linux_Release_MultiThreaded_BuildOnly
+            - build_browser_wasm_linux_Release_SingleThreaded_BuildOnly
           - ${{ if eq(platform, 'browser_wasm_win') }}:
             - build_browser_wasm_windows_Release_CoreCLR
+            - build_browser_wasm_windows_Release_MultiThreaded_BuildOnly
+            - build_browser_wasm_windows_Release_SingleThreaded_BuildOnly
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
         nameSuffix: CoreCLR_WasmBuildTests
@@ -82,6 +86,39 @@ jobs:
           #     TargetFolder: '$(Build.SourcesDirectory)/artifacts'
           #     CleanTargetFolder: false
 
+          # The wasm-tools workload manifest and its runtime packs are produced by the Mono build.
+          # Stage all of its shipping packages so workload installation resolves the CI manifests
+          # and packs from the same local feed.
+          - task: DownloadPipelineArtifact@2
+            displayName: Download built nugets for Mono singlethreaded runtime
+            inputs:
+              buildType: current
+              artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
+
+          - task: CopyFiles@2
+            displayName: Copy Mono shipping packages
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
+              Contents: packages/$(_BuildConfig)/Shipping/**
+              TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+              CleanTargetFolder: false
+
+          - task: DownloadPipelineArtifact@2
+            displayName: Download built nugets for Mono multi-threaded runtime
+            inputs:
+              buildType: current
+              artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
+              targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
+
+          - task: CopyFiles@2
+            displayName: Copy Mono multithreading runtime pack
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
+              Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
+              TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+              CleanTargetFolder: false
+
           # Download WBT - TODO-WASM: This points to "mono" build, altough 
           - task: DownloadPipelineArtifact@2
             displayName: Download Wasm.Build.Tests
@@ -98,27 +135,12 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
-          # Provision emsdk on this agent so the shared wasm tool cache is populated
-          # before sendtohelix runs. The upstream runtime-build job acquires emsdk on
-          # its own agent (via src/coreclr/runtime.proj's BuildRuntimeDependsOnTargets),
-          # but that state is not shipped in its build artifacts. Mono WBT provisions
-          # implicitly because it builds the runtime in the same job; CoreCLR WBT is
-          # split across two agents, so we acquire it here on the WBT agent.
-          - ${{ if eq(platform, 'browser_wasm_win') }}:
-            - script: build.cmd -s provision.emsdk -os browser -c $(_BuildConfig)
-              displayName: Provision emsdk
-              workingDirectory: $(Build.SourcesDirectory)
-          - ${{ else }}:
-            - script: ./build.sh -s provision.emsdk -os browser -c $(_BuildConfig)
-              displayName: Provision emsdk
-              workingDirectory: $(Build.SourcesDirectory)
-
         # build WBT
         buildArgs: >-
           $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
           /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Build.binlog
           /p:Configuration=$(_BuildConfig)
-          /p:TestUsingWorkloads=false
+          /p:TestUsingWorkloads=true
           /p:InstallWorkloadForTesting=true
           /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false

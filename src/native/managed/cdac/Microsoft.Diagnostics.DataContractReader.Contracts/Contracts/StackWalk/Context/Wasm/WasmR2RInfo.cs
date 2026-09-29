@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wa
 
 /// <summary>
 /// cDAC implementation of <see cref="IWasmR2RInfo"/>, mirroring the native
-/// <c>ExecutionManager::{FindFunctionTableIndexRangeSection, IsFuncletFunctionIndex,
+/// <c>ExecutionManager::{FindFunctionTableIndexRangeSection,
 /// GetWasmVirtualIPFromFunctionTableIndex}</c> in <c>src/coreclr/vm/codeman.cpp</c>. It resolves an
 /// R2R function table entry index against the <c>FunctionTableIndexRangeList</c> to its owning
 /// module's <see cref="Data.ReadyToRunInfo"/>, then reads the corresponding
@@ -15,16 +15,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wa
 /// </summary>
 internal sealed class WasmR2RInfo : IWasmR2RInfo
 {
-    // RUNTIME_FUNCTION__IsFunclet: the funclet flag is the high bit of BeginAddress (clrnt.h).
-    private const uint FuncletFlag = 0x80000000;
-
     private readonly Target _target;
     private readonly RuntimeFunctionLookup _runtimeFunctions;
 
     public WasmR2RInfo(Target target)
     {
         _target = target;
-        _runtimeFunctions = RuntimeFunctionLookup.Create(target);
+        _runtimeFunctions = RuntimeFunctionLookup.Create(target, isWasm: true);
     }
 
     // Mirrors ExecutionManager::FindFunctionTableIndexRangeSection.
@@ -76,7 +73,7 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
         while (true)
         {
             Data.RuntimeFunction runtimeFunction = GetRuntimeFunction(r2rInfo, localIndex);
-            if ((runtimeFunction.BeginAddress & FuncletFlag) != 0)
+            if (_runtimeFunctions.IsFunclet(runtimeFunction))
             {
                 if (localIndex == 0)
                     return false;
@@ -84,7 +81,7 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
                 continue;
             }
 
-            baseVirtualIP = minVirtualIP.Value + runtimeFunction.BeginAddress;
+            baseVirtualIP = minVirtualIP.Value + _runtimeFunctions.GetBeginAddress(runtimeFunction);
             return true;
         }
     }

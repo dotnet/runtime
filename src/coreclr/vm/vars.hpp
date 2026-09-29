@@ -594,11 +594,16 @@ typedef DPTR(GSCookie) PTR_GSCookie;
 #endif
 
 #ifndef DACCESS_COMPILE
-// const is so that it gets placed in the .text section (which is read-only)
+#ifdef FEATURE_READONLY_GS_COOKIE
+
+// const places the cookie in a read-only data section.
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
 extern "C" RAW_KEYWORD(volatile) READONLY_ATTR const GSCookie s_gsCookie;
+#else
+extern "C" RAW_KEYWORD(volatile) GSCookie s_gsCookie;
+#endif // FEATURE_READONLY_GS_COOKIE
 
 inline
 GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&s_gsCookie); }

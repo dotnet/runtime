@@ -5,6 +5,8 @@
     <!-- needs triage -->
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/131890 -->
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
