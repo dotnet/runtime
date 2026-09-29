@@ -344,7 +344,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
 
             // Add module memory region if not already on the list
             ModuleRegion newModule(regionFlags, start, end, offset);
-            if (!newModule.SetFileName(module.Name()))
+            if (!newModule.SetFileName(module.Name().c_str()))
             {
                 return;
             }

@@ -7,7 +7,8 @@
 #include "specialdiaginfo.h"
 #include "coreutils.h"
 
-#if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)) || defined(__riscv)
+#if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv))
+#define CREATEDUMP_RUNTIME_PAGE_SIZE
 extern long g_pageSize;
 #define PAGE_SIZE g_pageSize
 #endif

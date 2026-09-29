@@ -19,7 +19,7 @@ CreateDump(const CreateDumpOptions& options)
     bool result = false;
 
     // Initialize PAGE_SIZE
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
+#ifdef CREATEDUMP_RUNTIME_PAGE_SIZE
     g_pageSize = minipal_getpagesize();
 #endif
     TRACE("PAGE_SIZE %lu\n", (unsigned long)PAGE_SIZE);

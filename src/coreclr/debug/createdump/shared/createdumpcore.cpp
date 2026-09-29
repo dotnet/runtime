@@ -36,7 +36,7 @@ FILE *g_stdout = stdout;
 bool g_diagnostics = false;
 bool g_diagnosticsVerbose = false;
 
-#if defined(HOST_UNIX) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv))
+#ifdef CREATEDUMP_RUNTIME_PAGE_SIZE
 long g_pageSize = 0;
 #endif
 

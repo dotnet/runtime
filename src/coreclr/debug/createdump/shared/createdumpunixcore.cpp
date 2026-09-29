@@ -92,7 +92,7 @@ bool ProcessInfo::Initialize()
         fprintf(stderr, "[createdump] Invalid system page size: %ld\n", pageSize);
         return false;
     }
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
+#ifdef CREATEDUMP_RUNTIME_PAGE_SIZE
     // it may have been initialized in the external createdump
     if (g_pageSize == 0)
     {
