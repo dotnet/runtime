@@ -201,6 +201,13 @@ bool Compiler::optCopyProp(
             continue;
         }
 
+        // JIT may recalculate EH-liveness under OptRepeat, so we wouldn't want such an otherwise enregisterable local
+        // on a field load.
+        if (tree->OperIs(GT_LCL_FLD) && !newLclVarDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+
         if (varDsc->lvOnlyUsedOnSynchronousPath || newLclVarDsc->lvOnlyUsedOnSynchronousPath)
         {
             // Do not touch these -- it will likely cause us to unnecessarily save state to the continuation.
