@@ -146,10 +146,10 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
     if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #if defined(__VFP_FP__) && !defined(__SOFTFP__)
-        context->Fpscr = m_vfpRegisters.fpscr;
+        context->Fpscr = m_snapshot.m_vfpRegisters.fpscr;
 
-        assert(sizeof(context->D) == sizeof(m_vfpRegisters.fpregs));
-        memcpy(context->D, m_vfpRegisters.fpregs, sizeof(context->D));
+        assert(sizeof(context->D) == sizeof(m_snapshot.m_vfpRegisters.fpregs));
+        memcpy(context->D, m_snapshot.m_vfpRegisters.fpregs, sizeof(context->D));
 #endif
     }
 #elif defined(__loongarch64)
