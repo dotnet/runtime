@@ -259,7 +259,9 @@ internal sealed class GlobalizationIcuFuzzer : IFuzzer
 
     // Hangul syllables/jamo, and Thai/Lao prevowels, which the collation reorders with the following consonant.
     private static bool HasHangul(string text) => text.Any(c => c is (>= '\u1100' and <= '\u11FF') or (>= '\uAC00' and <= '\uD7A3') or (>= '\u3130' and <= '\u318F')
-        or (>= '\u0E40' and <= '\u0E44') or (>= '\u0EC0' and <= '\u0EC4'));
+        or (>= '\u0E40' and <= '\u0E44') or (>= '\u0EC0' and <= '\u0EC4')
+        // Characters whose collation expands although NFKD leaves them alone (ß = ss, ẞ, æ, œ, ĸ, đ...).
+        or '\u00DF' or '\u1E9E' or '\u00E6' or '\u00C6' or '\u0153' or '\u0152' or '\u0138' or '\u0111' or '\u0110' or '\u00F0' or '\u00FE' or '\u00DE');
 
     private static bool IsIgnorable(CompareInfo compareInfo, string source, int index, CompareOptions options) =>
         index > 0 && compareInfo.Compare(source.Substring(0, index), string.Empty, options) == 0;

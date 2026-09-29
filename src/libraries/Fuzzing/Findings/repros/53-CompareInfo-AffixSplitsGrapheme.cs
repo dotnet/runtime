@@ -9,6 +9,8 @@
 //   "ﬁx".StartsWith("f", CurrentCultureIgnoreCase) = true  but  IndexOf(..., CurrentCultureIgnoreCase) = -1  (ligature; also Ⅸ/I, ǆ/d)
 //   "ŉ".EndsWith("n", CurrentCultureIgnoreCase) = true  but  LastIndexOf = -1, and IsSuffix("ŉ\0", "n", IgnoreCase, out len)
 //   reports len = 1, a slice that holds only the "\0" and not the matched text
+//   "Straße".EndsWith("se", CurrentCultureIgnoreCase) = true  but  Contains("se") = false; and "Fuß".EndsWith("s") is true
+//   while "groß".EndsWith("ss") is false (ß collates as "ss", and the backward check stops halfway through it)
 //
 // StartsWith/EndsWith go through SimpleAffix in pal_collation.c, which walks raw collation elements. Going forward it refuses a
 // match followed by a *nonspacing* mark (it checks for an element with primary weight 0 and a secondary weight, which is why
@@ -66,6 +68,15 @@ foreach ((string text, string prefix) in new[] { ("\uFB01x", "f"), ("\u2168", "I
     int lastIndexOf = "\u0149".LastIndexOf("n", StringComparison.CurrentCultureIgnoreCase);
     bool isSuffix = CultureInfo.CurrentCulture.CompareInfo.IsSuffix("\u0149\0", "n", CompareOptions.IgnoreCase, out int suffixLength);
     Console.WriteLine($"[en-US, IgnoreCase] \"\\u0149\": EndsWith(\"n\")={endsWith} LastIndexOf={lastIndexOf}; IsSuffix(\"\\u0149\\0\", \"n\") = {isSuffix}, matchLength {suffixLength}");
+    reproduced |= endsWith && lastIndexOf < 0;
+}
+
+// German sharp s, which collates as "ss".
+foreach ((string text, string suffix) in new[] { ("Straße", "se"), ("Fuß", "s"), ("groß", "ss") })
+{
+    bool endsWith = text.EndsWith(suffix, StringComparison.CurrentCultureIgnoreCase);
+    int lastIndexOf = text.LastIndexOf(suffix, StringComparison.CurrentCultureIgnoreCase);
+    Console.WriteLine($"[en-US, IgnoreCase] \"{text}\".EndsWith(\"{suffix}\")={endsWith} LastIndexOf={lastIndexOf}");
     reproduced |= endsWith && lastIndexOf < 0;
 }
 
