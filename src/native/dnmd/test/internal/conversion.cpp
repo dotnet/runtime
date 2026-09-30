@@ -12,6 +12,7 @@
 #include <gtest/gtest.h>
 #include <atomic>
 #include <chrono>
+#include <cstring>
 #include <future>
 #include <thread>
 #include <vector>
@@ -168,6 +169,84 @@ TEST(InternalConversion, NewWritableScopeSharesPublicAndInternalIdentity)
     IMDInternalImport* alreadyWritable = nullptr;
     EXPECT_EQ(S_FALSE, ConvertDNMDInternalImport(internal.p, &alreadyWritable));
     EXPECT_EQ(internal.p, alreadyWritable);
+}
+
+TEST(InternalConversion, MissingAssemblyCustomAttributeReturnsFalse)
+{
+    minipal::com_ptr<IMetaDataDispenserEx> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenserEx, (void**)&dispenser));
+    VARIANT option{};
+    V_VT(&option) = VT_UI4;
+    V_UI4(&option) = MDThreadSafetyOn;
+    ASSERT_EQ(S_OK, dispenser->SetOption(MetaDataThreadSafetyOptions, &option));
+
+    minipal::com_ptr<IMDInternalImport> internal;
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0,
+        IID_IMDInternalImport, (IUnknown**)&internal));
+    minipal::com_ptr<IMetaDataAssemblyEmit> assemblyEmit;
+    ASSERT_EQ(S_OK, internal->QueryInterface(IID_IMetaDataAssemblyEmit, (void**)&assemblyEmit));
+    ASSEMBLYMETADATA metadata{};
+    mdAssembly assembly;
+    ASSERT_EQ(S_OK, assemblyEmit->DefineAssembly(nullptr, 0, 0,
+        W("Dynamic"), &metadata, 0, &assembly));
+
+    void const* blob = reinterpret_cast<void const*>(1);
+    ULONG size = UINT32_MAX;
+    EXPECT_EQ(S_FALSE, internal->GetCustomAttributeByName(assembly,
+        "System.Diagnostics.DebuggableAttribute", &blob, &size));
+    EXPECT_EQ(nullptr, blob);
+    EXPECT_EQ(0u, size);
+}
+
+TEST(InternalConversion, FindsCustomAttributeInUnsortedTable)
+{
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0,
+        IID_IMetaDataEmit, (IUnknown**)&emit));
+    minipal::com_ptr<IMDInternalImport> internal;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMDInternalImport, (void**)&internal));
+
+    mdTypeDef first, second;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("First"), tdPublic, mdTypeDefNil, nullptr, &first));
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("Second"), tdPublic, mdTypeDefNil, nullptr, &second));
+    mdTypeRef attributeType;
+    ASSERT_EQ(S_OK, emit->DefineTypeRefByName(TokenFromRid(1, mdtModule),
+        W("Example.CustomAttribute"), &attributeType));
+    BYTE signature[] = { IMAGE_CEE_CS_CALLCONV_DEFAULT | IMAGE_CEE_CS_CALLCONV_HASTHIS, 0, ELEMENT_TYPE_VOID };
+    mdMemberRef constructor;
+    ASSERT_EQ(S_OK, emit->DefineMemberRef(attributeType, W(".ctor"), signature,
+        sizeof(signature), &constructor));
+
+    BYTE value[] = { 1, 0, 0, 0 };
+    mdCustomAttribute attribute;
+    ASSERT_EQ(S_OK, emit->DefineCustomAttribute(second, constructor, value, sizeof(value), &attribute));
+    ASSERT_EQ(S_OK, emit->DefineCustomAttribute(first, constructor, value, sizeof(value), &attribute));
+
+    minipal::com_ptr<IDNMDOwner> owner;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IDNMDOwner, (void**)&owner));
+    mdcursor_t start, matched;
+    uint32_t rowCount, matchCount;
+    ASSERT_TRUE(md_create_cursor(owner->MetaData(), mdtid_CustomAttribute, &start, &rowCount));
+    EXPECT_EQ(MD_RANGE_NOT_SUPPORTED, md_find_range_from_cursor(
+        start, mdtCustomAttribute_Parent, first, &matched, &matchCount));
+
+    void const* data = nullptr;
+    ULONG size = 0;
+    ASSERT_EQ(S_OK, internal->GetCustomAttributeByName(first,
+        "Example.CustomAttribute", &data, &size));
+    ASSERT_EQ(sizeof(value), size);
+    EXPECT_EQ(0, std::memcmp(data, value, size));
+    EXPECT_EQ(S_OK, internal->GetCustomAttributeByName(first,
+        "Example.CustomAttribute", &data, nullptr));
+
+    data = value;
+    size = UINT32_MAX;
+    EXPECT_EQ(S_FALSE, internal->GetCustomAttributeByName(TokenFromRid(1, mdtModule),
+        "Example.CustomAttribute", &data, &size));
+    EXPECT_EQ(nullptr, data);
+    EXPECT_EQ(0u, size);
 }
 
 TEST(InternalConversion, ReadOnlyConversionClonesDataAndBridgesIdentity)

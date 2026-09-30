@@ -2768,19 +2768,28 @@ STDMETHODIMP InternalMetadataImportRO::GetCustomAttributeByName(
     mdcursor_t cursor;
     uint32_t count;
     if (!md_create_cursor(m_handle.get(), mdtid_CustomAttribute, &cursor, &count))
-        return CLDB_E_RECORD_NOTFOUND;
+    {
+        if (ppData != nullptr)
+            *ppData = nullptr;
+        if (pcbData != nullptr)
+            *pcbData = 0;
+        return S_FALSE;
+    }
 
     mdcursor_t custAttrCurr;
     uint32_t custAttrCount;
     md_range_result_t result = md_find_range_from_cursor(cursor, mdtCustomAttribute_Parent, tkObj, &custAttrCurr, &custAttrCount);
-    assert(result != MD_RANGE_NOT_SUPPORTED);
+    if (result == MD_RANGE_NOT_SUPPORTED)
+    {
+        custAttrCurr = cursor;
+        custAttrCount = count;
+    }
     if (result == MD_RANGE_NOT_FOUND)
     {
         if (ppData != nullptr)
-        {
             *ppData = nullptr;
+        if (pcbData != nullptr)
             *pcbData = 0;
-        }
         return S_FALSE;
     }
 
@@ -2854,7 +2863,8 @@ STDMETHODIMP InternalMetadataImportRO::GetCustomAttributeByName(
                     if (!md_get_column_value_as_blob(custAttrCurr, mdtCustomAttribute_Value, &data, &dataLen))
                         return CLDB_E_FILE_CORRUPT;
                     *ppData = data;
-                    *pcbData = dataLen;
+                    if (pcbData != nullptr)
+                        *pcbData = dataLen;
                 }
                 return S_OK;
             }
@@ -2862,11 +2872,10 @@ STDMETHODIMP InternalMetadataImportRO::GetCustomAttributeByName(
         RETURN_IF_FAILED(hr);
     }
 
-    if (ppData)
-    {
+    if (ppData != nullptr)
         *ppData = nullptr;
+    if (pcbData != nullptr)
         *pcbData = 0;
-    }
     return S_FALSE;
 }
 
