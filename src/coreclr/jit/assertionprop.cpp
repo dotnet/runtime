@@ -5263,12 +5263,21 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 // Arguments:
 //   vn         - VN to check
 //   assertions - set of live assertions
-//   budget     - limits the depth of recursion when chasing assertions across VNs.
 //
 // Return Value:
 //   True if the VN could be proven non-null.
 //
-bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
+bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
+{
+    // Bound PHI-walk attempts across all recursive branches of this query.
+    unsigned remainingWalks = 128;
+    return optAssertionVNIsNonNull(vn, assertions, 10, remainingWalks);
+}
+
+// Recursive proof search. Direct proofs remain available after either limit is reached.
+// depthRemaining limits nesting; remainingWalks is shared by all vn and vnBase walks.
+bool Compiler::optAssertionVNIsNonNull(
+    ValueNum vn, ASSERT_VALARG_TP assertions, int depthRemaining, unsigned& remainingWalks)
 {
     if ((vn == ValueNumStore::NoVN) || !varTypeIsI(vnStore->TypeOfVN(vn)))
     {
@@ -5311,29 +5320,30 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
         }
     }
 
-    if (budget <= 0)
+    if ((depthRemaining <= 0) || (remainingWalks == 0))
     {
         return false;
     }
 
-    // Inspect the reaching assertions for the vn and vnBase.
-    //
-    auto visitor = [this, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
-        return optAssertionVNIsNonNull(reachingVN, reachingAssertions, budget - 1) ? AssertVisit::Continue
-                                                                                   : AssertVisit::Abort;
+    auto visitor = [this, depthRemaining, &remainingWalks](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsNonNull(reachingVN, reachingAssertions, depthRemaining - 1, remainingWalks)
+                   ? AssertVisit::Continue
+                   : AssertVisit::Abort;
     };
 
+    --remainingWalks;
     if (optVisitReachingAssertions(vn, visitor) == AssertVisit::Continue)
     {
         return true;
     }
 
-    if ((vnBase != vn) && (optVisitReachingAssertions(vnBase, visitor) == AssertVisit::Continue))
+    if ((vnBase == vn) || (remainingWalks == 0))
     {
-        return true;
+        return false;
     }
 
-    return false;
+    --remainingWalks;
+    return optVisitReachingAssertions(vnBase, visitor) == AssertVisit::Continue;
 }
 
 /*****************************************************************************
