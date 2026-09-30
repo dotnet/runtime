@@ -342,10 +342,11 @@ RegMeta::GetMetadata(
 HRESULT RegMeta::ChangeMvid(            // S_OK or error.
     REFGUID newMvid)                    // GUID to use as the MVID
 {
-#ifdef FEATURE_METADATA_CORECLR
-    return E_NOTIMPL;
-#else
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    // ILAsm uses this API to produce a deterministic MVID.
     return GetMiniMd()->ChangeMvid(newMvid);
+#else
+    return E_NOTIMPL;
 #endif
 }
 

@@ -52,7 +52,7 @@ target_compile_definitions(mdcompiler_dac PRIVATE FEATURE_METADATA_PUBLIC_INTERF
 target_precompile_headers(mdcompiler_dac PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler_wks OBJECT ${MDCOMPILER_SOURCES})
-target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_CORECLR FEATURE_METADATA_EMIT_ALL)
+target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 if (FEATURE_CORPROFILER)
     target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
 endif()

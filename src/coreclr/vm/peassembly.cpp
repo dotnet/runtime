@@ -648,10 +648,10 @@ PEAssembly::PEAssembly(
       m_PEImage{NULL}
     , m_MDImportIsRW_Debugger_Use_Only{FALSE}
     , m_pMDImport{NULL}
-#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
+#ifdef PROFILING_SUPPORTED
     , m_pImporter{NULL}
     , m_pEmitter{NULL}
-#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED
     , m_pMDInternalEmit{NULL}
     , m_refCount{1}
     , m_pHostAssembly{nullptr}
@@ -736,7 +736,7 @@ PEAssembly::~PEAssembly()
 
     GCX_PREEMP();
 
-#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
+#ifdef PROFILING_SUPPORTED
     if (m_pImporter != NULL)
     {
         m_pImporter->Release();
@@ -748,7 +748,7 @@ PEAssembly::~PEAssembly()
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
-#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED
 
     if (m_pMDInternalEmit != NULL)
     {

@@ -139,7 +139,7 @@ public:
     IMDInternalImport *GetMDImport();
     IMDInternalEmit *GetMDInternalEmit();
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#ifdef PROFILING_SUPPORTED
     IMetaDataEmit *GetEmitter();
     IMetaDataImport2 *GetRWImporter();
 #elif defined(DACCESS_COMPILE)
@@ -149,7 +149,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_MDImportIsRW_Debugger_Use_Only;
     }
-#endif // PROFILING_SUPPORTED && !DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED
 
     void ConvertMDInternalToReadWrite();
 
@@ -380,10 +380,10 @@ private:
 #endif
     };
 
-#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
+#ifdef PROFILING_SUPPORTED
     IMetaDataImport2* m_pImporter;
     IMetaDataEmit* m_pEmitter;
-#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED
     IMDInternalEmit* m_pMDInternalEmit;
 
     Volatile<LONG>           m_refCount;

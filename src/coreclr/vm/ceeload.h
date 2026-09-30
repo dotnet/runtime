@@ -1032,7 +1032,7 @@ public:
         return m_pPEAssembly->GetMDImport();
     }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#ifdef PROFILING_SUPPORTED
     IMetaDataEmit *GetEmitter()
     {
         WRAPPER_NO_CONTRACT;
@@ -1048,7 +1048,7 @@ public:
     }
 
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
-#endif // PROFILING_SUPPORTED && !DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED
 
 #if defined(FEATURE_READYTORUN)
     BOOL IsInSameVersionBubble(Module *target);
