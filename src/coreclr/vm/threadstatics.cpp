@@ -490,7 +490,7 @@ void FreeThreadStaticData(Thread* pThread)
         }
     }
 
-    delete[] (uint8_t*)pOldCollectibleTlsArrayData;
+    delete[] pOldCollectibleTlsArrayData;
 
     while (pOldInFlightData != NULL)
     {
