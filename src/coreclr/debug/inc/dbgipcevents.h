@@ -248,7 +248,7 @@ struct MSLAYOUT DebuggerIPCControlBlock
 
     //.............................................................................
     // Everything above this point must have the exact same binary layout as v1.1.
-    // See protocol details below.
+    // The version 2 baseline layout is recorded in IPCControlBlock.md.
     //.............................................................................
 
     RemoteHANDLE               m_leftSideUnmanagedWaitEvent;
