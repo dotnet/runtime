@@ -14428,11 +14428,16 @@ bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry,
-                          BOOL mayUsePrecompiledPInvokeMethods)
+                          BOOL mayUsePrecompiledPInvokeMethods,
+                          ReadyToRunInfo *pSignatureSource)
 {
     STANDARD_VM_CONTRACT;
 
-    PCCOR_SIGNATURE pBlob = currentModule->GetNativeFixupBlobData(fixupRva);
+    // A supplemental (lazily-attached) R2R image stores its fixup signatures in its own image, not in
+    // currentModule's primary R2R image, so resolve the blob against it when provided.
+    PCCOR_SIGNATURE pBlob = (pSignatureSource != NULL)
+        ? (PCCOR_SIGNATURE)pSignatureSource->GetImage()->GetRvaData(fixupRva)
+        : currentModule->GetNativeFixupBlobData(fixupRva);
 
     BYTE kind = *pBlob++;
 
@@ -14440,7 +14445,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     if (kind & READYTORUN_FIXUP_ModuleOverride)
     {
-        pInfoModule = currentModule->GetModuleFromIndex(CorSigUncompressData(pBlob));
+        // Resolve the module index against the supplemental image's manifest when this fixup comes from one.
+        pInfoModule = currentModule->GetModuleFromIndex(CorSigUncompressData(pBlob), pSignatureSource);
         kind &= ~READYTORUN_FIXUP_ModuleOverride;
     }
 
@@ -14453,7 +14459,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_TypeHandle:
     case READYTORUN_FIXUP_TypeDictionary:
         {
-            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
+            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob, CLASS_LOADED, NULL, pSignatureSource);
 
             if (!th.IsTypeDesc())
             {
@@ -14471,7 +14477,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_MethodHandle:
     case READYTORUN_FIXUP_MethodDictionary:
         {
-            MethodDesc * pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            MethodDesc * pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
 
             if (currentModule->IsReadyToRun())
             {
@@ -14490,7 +14496,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             // found for it may belong to a canonical instantiation of that base type, so walk the parent chain of
             // the (exact) type from the token to recover the exact declaring type.
             TypeHandle thOwner;
-            MethodDesc * pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, &thOwner);
+            MethodDesc * pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, &thOwner, pSignatureSource);
 
             MethodTable * pOwnerMT = thOwner.GetMethodTable();
             MethodTable * pDeclaringMT;
@@ -14518,7 +14524,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 
     case READYTORUN_FIXUP_FieldHandle:
-        result = (size_t) ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
+        result = (size_t) ZapSig::DecodeField(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
         break;
 
     case READYTORUN_FIXUP_StringHandle:
@@ -14583,7 +14589,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_MethodEntry:
         {
-            pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
 
             if (currentModule->IsReadyToRun())
             {
@@ -14599,7 +14605,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 #ifdef HAS_PINVOKE_IMPORT_PRECODE
     case READYTORUN_FIXUP_IndirectPInvokeTarget:
         {
-            MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
 
             _ASSERTE(pMethod->IsPInvoke());
             PInvokeMethodDesc *pMD = (PInvokeMethodDesc*)pMethod;
@@ -14612,7 +14618,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             if (mayUsePrecompiledPInvokeMethods)
             {
-                MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+                MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
 
                 _ASSERTE(pMethod->IsPInvoke());
                 PInvoke::ResolvePInvokeTarget((PInvokeMethodDesc*)pMethod);
@@ -14627,7 +14633,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_FieldAddress:
         {
-            FieldDesc *pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
+            FieldDesc *pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
 
             pField->GetEnclosingMethodTable()->CheckRestore();
 
@@ -14732,7 +14738,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_FieldOffset:
         {
-            FieldDesc * pFD = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
+            FieldDesc * pFD = ZapSig::DecodeField(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
             _ASSERTE(!pFD->IsStatic());
             _ASSERTE(!pFD->IsFieldOfValueType());
 
@@ -14746,7 +14752,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_FieldBaseOffset:
         {
-            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
+            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob, CLASS_LOADED, NULL, pSignatureSource);
 
             MethodTable * pMT = th.AsMethodTable();
             _ASSERTE(!pMT->IsValueType());
@@ -14761,7 +14767,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_Check_TypeLayout:
     case READYTORUN_FIXUP_Verify_TypeLayout:
         {
-            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
+            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob, CLASS_LOADED, NULL, pSignatureSource);
             MethodTable * pMT = th.AsMethodTable();
             _ASSERTE(pMT->IsValueType());
 
@@ -14866,7 +14872,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             DWORD dwExpectedOffset = CorSigUncompressData(pBlob);
 
-            FieldDesc * pFD = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
+            FieldDesc * pFD = ZapSig::DecodeField(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
             _ASSERTE(!pFD->IsStatic());
 
             DWORD dwOffset = pFD->GetOffset();
@@ -14884,7 +14890,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             DWORD baseOffset = CorSigUncompressData(pBlob);
             DWORD fieldOffset = CorSigUncompressData(pBlob);
-            FieldDesc* pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
+            FieldDesc* pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
             MethodTable *pEnclosingMT = pField->GetApproxEnclosingMethodTable();
             pEnclosingMT->CheckRestore();
             DWORD actualFieldOffset = pField->GetOffset();
@@ -14939,15 +14945,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)CorSigUncompressData(updatedSignature);
 
             SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
-            ZapSig::Context zapSigContext(pInfoModule, (void *)currentModule, ZapSig::NormalTokens);
+            ZapSig::Context zapSigContext(pInfoModule, (void *)currentModule, ZapSig::NormalTokens, pSignatureSource);
             MethodDesc *pDeclMethod = ZapSig::DecodeMethod(pInfoModule, updatedSignature, &typeContext, &zapSigContext, NULL, NULL, NULL, &updatedSignature, TRUE);
-            TypeHandle thImpl = ZapSig::DecodeType(currentModule, pInfoModule, updatedSignature, CLASS_LOADED, &updatedSignature);
+            TypeHandle thImpl = ZapSig::DecodeType(currentModule, pInfoModule, updatedSignature, CLASS_LOADED, &updatedSignature, pSignatureSource);
 
             MethodDesc *pImplMethodCompiler = NULL;
 
             if ((flags & READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverridden) != 0)
             {
-                pImplMethodCompiler = ZapSig::DecodeMethod(currentModule, pInfoModule, updatedSignature);
+                pImplMethodCompiler = ZapSig::DecodeMethod(currentModule, pInfoModule, updatedSignature, NULL, pSignatureSource);
             }
 
             MethodDesc *pImplMethodRuntime;
@@ -15113,7 +15119,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 {
                     EX_TRY
                     {
-                        types.Append(ZapSig::DecodeType(currentModule, pInfoModule, pBlob, CLASS_LOAD_APPROXPARENTS, &pBlob));
+                        types.Append(ZapSig::DecodeType(currentModule, pInfoModule, pBlob, CLASS_LOAD_APPROXPARENTS, &pBlob, pSignatureSource));
                     }
                     EX_CATCH
                     {
@@ -15124,7 +15130,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 }
                 else
                 {
-                    types.Append(ZapSig::DecodeType(currentModule, pInfoModule, pBlob, CLASS_LOAD_APPROXPARENTS, &pBlob));
+                    types.Append(ZapSig::DecodeType(currentModule, pInfoModule, pBlob, CLASS_LOAD_APPROXPARENTS, &pBlob, pSignatureSource));
                 }
             }
 
@@ -15136,7 +15142,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 {
                     EX_TRY
                     {
-                        pMDCompare = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+                        pMDCompare = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
                     }
                     EX_CATCH
                     {
@@ -15146,7 +15152,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 }
                 else
                 {
-                    pMDCompare = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+                    pMDCompare = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob, NULL, pSignatureSource);
                 }
             }
 

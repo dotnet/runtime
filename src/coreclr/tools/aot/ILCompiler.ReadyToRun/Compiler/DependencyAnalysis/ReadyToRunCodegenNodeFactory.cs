@@ -71,6 +71,10 @@ namespace ILCompiler.DependencyAnalysis
         public bool StripInliningInfo;
         public bool StripDebugInfo;
         public bool StripILBodies;
+        // Composite mode only: emit the composite image but skip rewriting each input into a component
+        // stub. Used for the lazy half of the browser-wasm R2R split, where the eager standalone image
+        // already serves as the component and the composite carries only the complement native code.
+        public bool SuppressComponentRewrite;
         public HashSet<MethodDesc> CompiledMethodDefs;
     }
 

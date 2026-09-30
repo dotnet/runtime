@@ -67,6 +67,15 @@ namespace ILCompiler
         public abstract bool VersionsWithModule(ModuleDesc module);
 
         /// <summary>
+        /// Returns true when a cross-module type reference to the given module should be encoded as the
+        /// defining module's typeDef (a direct, version-specific metadata token) rather than a version-resilient
+        /// manifest reference. Only valid when the referenced modules form a closed, MVID-locked deployment.
+        /// </summary>
+        /// <param name="module">Defining module of the referenced type</param>
+        /// <returns>True if the type reference may be hard-bound to the defining module's token</returns>
+        public virtual bool HardBindTypeReference(ModuleDesc module) => false;
+
+        /// <summary>
         /// Checks if the given PInvoke method can produce a PInvoke stub in the current compilation, depending on the method's
         /// signature and the compilation policy.
         /// </summary>
