@@ -9,6 +9,11 @@
 // Used by the ICLRDataTarget and ICLRDataEnumMemoryRegionsCallback implementations.
 DEFINE_GUID(IID_IUnknown, 0x00000000, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
+#if defined(HOST_ARM64)
+// Used by the PAL interlocked helpers.
+bool g_arm64_atomics_present = false;
+#endif
+
 #define TEMP_DIRECTORY_PATH "/tmp/"
 
 // Used to construct the default dump path.
