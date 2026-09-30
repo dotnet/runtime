@@ -513,7 +513,7 @@ public:
         return m_FiberPtrId == UNKNOWN_ID;
     }
 #endif
-    void Clear()
+    void Clear() noexcept
     {
         LIMITED_METHOD_CONTRACT;
         m_FiberPtrId = UNKNOWN_ID;
@@ -540,13 +540,13 @@ CLRMapViewOfFile(
 BOOL
 CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
-    );
+    ) noexcept;
 
 struct CLRMapViewTraits final
 {
     using Type = void*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type ptr)
+    static void Free(Type ptr) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
@@ -564,7 +564,7 @@ struct PALPEFileTraits final
 {
     using Type = void*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type ptr)
+    static void Free(Type ptr) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
@@ -593,7 +593,7 @@ struct NativeLibraryHandleTraits final
 {
     using Type = NATIVE_LIBRARY_HANDLE;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type h)
+    static void Free(Type h) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 

@@ -120,7 +120,7 @@ namespace ILCompiler.PortableCallHelpers
             var generator = new PInvokeTableGenerator(log);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, PInvokeFileName), log,
-                w => generator.EmitPInvokeTable(w, options.PInvokeModules, pinvokes));
+                w => generator.EmitPInvokeTable(w, context.Target, options.PInvokeModules, pinvokes));
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, ReversePInvokeFileName), log,
                 w => generator.EmitNativeToInterp(w, callbacks));
