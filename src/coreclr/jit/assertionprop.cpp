@@ -5256,6 +5256,66 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     return false;
 }
 
+bool Compiler::NonNullPhiMemo::TryGet(ValueNum vn, int depth, bool* result) const
+{
+    if ((map == nullptr) || (depth < 1) || (depth > 10))
+    {
+        return false;
+    }
+
+    NonNullPhiResult entry;
+    if (!map->Lookup(vn, &entry))
+    {
+        return false;
+    }
+
+    const uint16_t bit = static_cast<uint16_t>(1u << (depth - 1));
+    if ((entry.completed & bit) == 0)
+    {
+        return false;
+    }
+
+    *result = (entry.nonNull & bit) != 0;
+    return true;
+}
+
+void Compiler::NonNullPhiMemo::Record(Compiler* comp, ValueNum vn, int depth, bool result)
+{
+    if ((depth < 1) || (depth > 10))
+    {
+        return;
+    }
+
+    if (map == nullptr)
+    {
+        map = new (comp, CMK_AssertionProp) NonNullPhiMap(comp->getAllocator(CMK_AssertionProp));
+    }
+
+    // Recursive walks may have recorded other depths for this VN. Read them now.
+    NonNullPhiResult entry;
+    const bool       exists = map->Lookup(vn, &entry);
+    const uint16_t   bit    = static_cast<uint16_t>(1u << (depth - 1));
+
+    entry.completed |= bit;
+    if (result)
+    {
+        entry.nonNull |= bit;
+    }
+    else
+    {
+        entry.nonNull &= static_cast<uint16_t>(~bit);
+    }
+
+    if (exists)
+    {
+        map->Set(vn, entry, NonNullPhiMap::Overwrite);
+    }
+    else
+    {
+        map->Set(vn, entry);
+    }
+}
+
 //------------------------------------------------------------------------
 // optAssertionVNIsNonNull: See if we can prove that the value of a VN is
 // non-null using assertions.
@@ -5263,21 +5323,18 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 // Arguments:
 //   vn         - VN to check
 //   assertions - set of live assertions
+//   budget     - limits the depth of recursion when chasing assertions across VNs.
 //
 // Return Value:
 //   True if the VN could be proven non-null.
 //
-bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
+bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
 {
-    // Bound PHI-walk attempts across all recursive branches of this query.
-    unsigned remainingWalks = 128;
-    return optAssertionVNIsNonNull(vn, assertions, 10, remainingWalks);
+    NonNullPhiMemo memo;
+    return optAssertionVNIsNonNullImpl(vn, assertions, budget, memo);
 }
 
-// Recursive proof search. Direct proofs remain available after either limit is reached.
-// depthRemaining limits nesting; remainingWalks is shared by all vn and vnBase walks.
-bool Compiler::optAssertionVNIsNonNull(
-    ValueNum vn, ASSERT_VALARG_TP assertions, int depthRemaining, unsigned& remainingWalks)
+bool Compiler::optAssertionVNIsNonNullImpl(ValueNum vn, ASSERT_VALARG_TP assertions, int depth, NonNullPhiMemo& memo)
 {
     if ((vn == ValueNumStore::NoVN) || !varTypeIsI(vnStore->TypeOfVN(vn)))
     {
@@ -5320,30 +5377,39 @@ bool Compiler::optAssertionVNIsNonNull(
         }
     }
 
-    if ((depthRemaining <= 0) || (remainingWalks == 0))
+    if (depth <= 0)
     {
         return false;
     }
 
-    auto visitor = [this, depthRemaining, &remainingWalks](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
-        return optAssertionVNIsNonNull(reachingVN, reachingAssertions, depthRemaining - 1, remainingWalks)
-                   ? AssertVisit::Continue
-                   : AssertVisit::Abort;
+    return optAssertionVNIsNonNullPhiWalk(vn, depth, memo) ||
+           ((vnBase != vn) && optAssertionVNIsNonNullPhiWalk(vnBase, depth, memo));
+}
+
+bool Compiler::optAssertionVNIsNonNullPhiWalk(ValueNum vn, int depth, NonNullPhiMemo& memo)
+{
+    // The caller has checked its incoming assertions. This walk obtains new assertions
+    // from the PHI's own edges, so its result depends on the VN and remaining depth.
+    bool result;
+    if (memo.TryGet(vn, depth, &result))
+    {
+        return result;
+    }
+
+    VNPhiDef phiDef;
+    if (!vnStore->GetPhiDef(vn, &phiDef))
+    {
+        return false;
+    }
+
+    auto visitor = [this, depth, &memo](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsNonNullImpl(reachingVN, reachingAssertions, depth - 1, memo) ? AssertVisit::Continue
+                                                                                            : AssertVisit::Abort;
     };
 
-    --remainingWalks;
-    if (optVisitReachingAssertions(vn, visitor) == AssertVisit::Continue)
-    {
-        return true;
-    }
-
-    if ((vnBase == vn) || (remainingWalks == 0))
-    {
-        return false;
-    }
-
-    --remainingWalks;
-    return optVisitReachingAssertions(vnBase, visitor) == AssertVisit::Continue;
+    result = optVisitReachingAssertions(vn, visitor) == AssertVisit::Continue;
+    memo.Record(this, vn, depth, result);
+    return result;
 }
 
 /*****************************************************************************
