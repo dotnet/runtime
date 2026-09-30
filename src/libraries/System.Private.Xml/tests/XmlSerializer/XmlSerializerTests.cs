@@ -183,6 +183,88 @@ public static partial class XmlSerializerTests
         Assert.Null(y.P2);  // Arrays stay null
     }
 
+    // These runtime-only test types are not included in the SerializableAssembly used by the pre-generated serializer tests.
+#if !XMLSERIALIZERGENERATORTESTS
+    [Fact]
+    public static void Xml_PrimitiveArraysAndCollections()
+    {
+        var value = new PrimitiveCollections
+        {
+            Chars = new[] { 'A', '\u03A9' },
+            Dates = new[] { new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc) },
+            Times = new[] { new DateTime(1, 1, 1, 3, 4, 5, DateTimeKind.Utc) },
+            DateOnlyValues = new[] { new DateOnly(2024, 1, 2) },
+            TimeOnlyValues = new[] { new TimeOnly(3, 4, 5) },
+            Integers = new List<int> { -1, 0, 42 },
+            EnumerableIntegers = new IntEnumerableCollection { 5, 6 },
+            EmptyIntegers = Array.Empty<int>(),
+            Enums = new[] { PrimitiveCollectionEnum.One, PrimitiveCollectionEnum.Two },
+            NullableIntegers = new int?[] { 7, null, 9 },
+            BoxedIntegers = new ArrayList { 10, 11 },
+        };
+
+        PrimitiveCollections actual = SerializeAndDeserialize(
+            value,
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <PrimitiveCollections xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Chars>
+                <char>65</char>
+                <char>937</char>
+              </Chars>
+              <Dates>
+                <date>2024-01-02</date>
+              </Dates>
+              <Times>
+                <time>03:04:05.0000000Z</time>
+              </Times>
+              <DateOnlyValues>
+                <dateOnly>2024-01-02</dateOnly>
+              </DateOnlyValues>
+              <TimeOnlyValues>
+                <timeOnly>03:04:05</timeOnly>
+              </TimeOnlyValues>
+              <Integers>
+                <int>-1</int>
+                <int>0</int>
+                <int>42</int>
+              </Integers>
+              <EnumerableIntegers>
+                <int>5</int>
+                <int>6</int>
+              </EnumerableIntegers>
+              <EmptyIntegers />
+              <Enums>
+                <PrimitiveCollectionEnum>One</PrimitiveCollectionEnum>
+                <PrimitiveCollectionEnum>Two</PrimitiveCollectionEnum>
+              </Enums>
+              <NullableIntegers>
+                <int>7</int>
+                <int xsi:nil="true" />
+                <int>9</int>
+              </NullableIntegers>
+              <BoxedIntegers>
+                <int>10</int>
+                <int>11</int>
+              </BoxedIntegers>
+            </PrimitiveCollections>
+            """);
+
+        Assert.Equal(value.Chars, actual.Chars);
+        Assert.Equal(value.Dates, actual.Dates);
+        Assert.Equal(value.Times, actual.Times);
+        Assert.Equal(value.DateOnlyValues, actual.DateOnlyValues);
+        Assert.Equal(value.TimeOnlyValues, actual.TimeOnlyValues);
+        Assert.Equal(value.Integers, actual.Integers);
+        Assert.Equal(value.EnumerableIntegers, actual.EnumerableIntegers);
+        Assert.Empty(actual.EmptyIntegers);
+        Assert.Equal(value.Enums, actual.Enums);
+        Assert.Equal(value.NullableIntegers, actual.NullableIntegers);
+        Assert.Equal(value.BoxedIntegers.Cast<int>(), actual.BoxedIntegers.Cast<int>());
+    }
+
+#endif
+
     [Fact]
     public static void Xml_ArrayAsGetOnly()
     {

@@ -4,6 +4,7 @@ parameters:
   isWasmOnlyBuild: false
   platforms: []
   extraBuildArgs: ''
+  useHelixMonitor: false
 
 jobs:
 
@@ -14,13 +15,13 @@ jobs:
 # testBuildArgs below).
 #
 # Merged-runner mode; xharness dispatches via helixpublishwitharcade.proj.
-# Reuses the wasi_wasm helix queue (ubuntu-26.04-helix-webassembly-amd64).
+# Reuses the CoreCLR browser/WASI Helix queue (ubuntu-26.04-helix-webassembly-amd64).
 #
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: coreclr
     platforms: ${{ parameters.platforms }}
@@ -53,6 +54,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             # Curated test-tree subset -- expand as gates stabilize.
             testBuildArgs: >-
               -priority1

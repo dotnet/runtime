@@ -9,17 +9,27 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct ComWrappers_1 : IComWrappers
+internal readonly struct ComWrappers_1 : IComWrappers
 {
     private static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
     private const int CallerDefinedIUnknown = 1;
-    private TargetPointer? _mowTableAddr = null;
-    private TargetPointer? _nativeObjectWrapperCWTAddr = null;
+    private readonly CachedValue<TargetPointer> _mowTableAddr;
+    private readonly CachedValue<TargetPointer> _nativeObjectWrapperCWTAddr;
     private readonly Target _target;
 
     public ComWrappers_1(Target target)
     {
         _target = target;
+        _mowTableAddr = new(() => Data.ComWrappers.AllManagedObjectWrapperTable(target)
+            ?? throw new InvalidOperationException("Failed to resolve ComWrappers.s_allManagedObjectWrapperTable static field."));
+        _nativeObjectWrapperCWTAddr = new(() => Data.ComWrappers.NativeObjectWrapperTable(target)
+            ?? throw new InvalidOperationException("Failed to resolve ComWrappers.s_nativeObjectWrapperTable static field."));
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _mowTableAddr.Clear();
+        _nativeObjectWrapperCWTAddr.Clear();
     }
 
     public TargetPointer GetComWrappersIdentity(TargetPointer address)
@@ -110,15 +120,14 @@ internal struct ComWrappers_1 : IComWrappers
     public List<TargetPointer> GetMOWs(TargetPointer obj, out bool hasMOWTable)
     {
         hasMOWTable = false;
-        _mowTableAddr ??= Data.ComWrappers.AllManagedObjectWrapperTable(_target)
-            ?? throw new InvalidOperationException("Failed to resolve ComWrappers.s_allManagedObjectWrapperTable static field.");
+        TargetPointer mowTableAddr = _mowTableAddr;
 
         List<TargetPointer> mows = new List<TargetPointer>();
 
-        if (_mowTableAddr.Value == TargetPointer.Null)
+        if (mowTableAddr == TargetPointer.Null)
             return mows;
         IConditionalWeakTable cwt = _target.Contracts.ConditionalWeakTable;
-        if (cwt.TryGetValue(_mowTableAddr.Value, obj, out TargetPointer mowListObj))
+        if (cwt.TryGetValue(mowTableAddr, obj, out TargetPointer mowListObj))
         {
             hasMOWTable = true;
             Data.List listData = _target.ProcessedData.GetOrAdd<Data.List>(mowListObj);
@@ -147,12 +156,11 @@ internal struct ComWrappers_1 : IComWrappers
 
     public TargetPointer GetComWrappersRCWForObject(TargetPointer obj)
     {
-        _nativeObjectWrapperCWTAddr ??= Data.ComWrappers.NativeObjectWrapperTable(_target)
-            ?? throw new InvalidOperationException("Failed to resolve ComWrappers.s_nativeObjectWrapperTable static field.");
-        if (_nativeObjectWrapperCWTAddr.Value == TargetPointer.Null)
+        TargetPointer nativeObjectWrapperCWTAddr = _nativeObjectWrapperCWTAddr;
+        if (nativeObjectWrapperCWTAddr == TargetPointer.Null)
             return TargetPointer.Null;
         IConditionalWeakTable cwt = _target.Contracts.ConditionalWeakTable;
-        _ = cwt.TryGetValue(_nativeObjectWrapperCWTAddr.Value, obj, out TargetPointer rcw);
+        _ = cwt.TryGetValue(nativeObjectWrapperCWTAddr, obj, out TargetPointer rcw);
         return rcw;
     }
 }

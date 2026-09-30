@@ -375,6 +375,7 @@ enum GenTreeFlags : unsigned
 
     GTF_PERSISTENT_SIDE_EFFECTS = GTF_ASG | GTF_CALL,
     GTF_SIDE_EFFECT             = GTF_PERSISTENT_SIDE_EFFECTS | GTF_EXCEPT,
+    GTF_OBS_EFFECT              = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF,
     GTF_GLOB_EFFECT             = GTF_SIDE_EFFECT | GTF_GLOB_REF,
     GTF_ALL_EFFECT              = GTF_GLOB_EFFECT | GTF_ORDER_SIDEEFF,
 
@@ -600,14 +601,13 @@ enum GenTreeDebugFlags : unsigned short
 {
     GTF_DEBUG_NONE              = 0x0000, // No debug flags.
 
-    GTF_DEBUG_NODE_MORPHED      = 0x0001, // the node has been morphed (in the global morphing phase)
     GTF_DEBUG_NODE_SMALL        = 0x0002,
     GTF_DEBUG_NODE_LARGE        = 0x0004,
     GTF_DEBUG_NODE_CG_PRODUCED  = 0x0008, // genProduceReg has been called on this node
     GTF_DEBUG_NODE_CG_CONSUMED  = 0x0010, // genConsumeReg has been called on this node
     GTF_DEBUG_NODE_LSRA_ADDED   = 0x0020, // This node was added by LSRA
 
-    GTF_DEBUG_NODE_MASK         = 0x003F, // These flags are all node (rather than operation) properties.
+    GTF_DEBUG_NODE_MASK         = 0x003E, // These flags are all node (rather than operation) properties.
 
     GTF_DEBUG_VAR_CSE_REF       = 0x8000, // GT_LCL_VAR -- This is a CSE LCL_VAR node
     GTF_DEBUG_CAST_DONT_FOLD    = 0x4000, // GT_CAST    -- Try to prevent this cast from being folded
@@ -749,22 +749,6 @@ public:
     bool operator!=(const ValueSize& other) const
     {
         return !operator==(other);
-    }
-};
-
-struct LocalDef
-{
-    GenTreeLclVarCommon* Def;
-    bool                 IsEntire;
-    ssize_t              Offset;
-    ValueSize            Size;
-
-    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size)
-        : Def(def)
-        , IsEntire(isEntire)
-        , Offset(offset)
-        , Size(size)
-    {
     }
 };
 
@@ -1108,25 +1092,6 @@ public:
 
 #if defined(DEBUG)
     GenTreeDebugFlags gtDebugFlags;
-    unsigned short    gtMorphCount;
-    void              SetMorphed(Compiler* compiler, bool doChilren = false);
-
-    bool WasMorphed() const
-    {
-        return (gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0;
-    }
-
-    void ClearMorphed()
-    {
-        gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-    }
-#else
-    void SetMorphed(Compiler* compiler, bool doChildren = false)
-    {
-    }
-    void ClearMorphed()
-    {
-    }
 #endif
 
     ValueNumPair gtVNPair;
@@ -1642,7 +1607,7 @@ public:
     bool isEmbeddedMaskingCompatible(Compiler*  comp,
                                      unsigned   tgtMaskSize,
                                      var_types& tgtSimdBaseType,
-                                     size_t*    broadcastOpIndex = nullptr) const;
+                                     size_t*    broadcastOpIndex = nullptr);
 #endif // TARGET_XARCH
     bool isEmbeddedMaskingCompatible() const;
 #else
@@ -1939,12 +1904,6 @@ public:
 
     bool OperIsLIR() const
     {
-        if (OperIs(GT_NOP))
-        {
-            // NOPs may only be present in LIR if they do not produce a value.
-            return IsNothingNode();
-        }
-
         return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 
@@ -2176,11 +2135,20 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    template <typename TVisitor>
-    VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
+    bool IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def);
 
     template <typename TVisitor>
-    VisitResult VisitLocalDefNodes(Compiler* comp, TVisitor visitor);
+    VisitResult VisitLocalDef(Compiler* comp, GenTreeLclVarCommon* def, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLocalDef(
+        Compiler* comp, GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor);
 
     bool HasAnyLocalDefs(Compiler* comp);
 
@@ -2474,7 +2442,7 @@ public:
     bool gtSetFlags() const;
 
 #ifdef DEBUG
-    static int         gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
+    static int         gtDispFlags(GenTreeFlags flags);
     static const char* gtGetHandleKindString(GenTreeFlags flags);
 #endif
 
@@ -3256,6 +3224,10 @@ struct GenTreeOp : public GenTreeUnOp
     // checks if we will use the division by constant optimization this node
     // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
     void CheckDivideByConstOptimized(Compiler* comp);
+
+#ifdef TARGET_XARCH
+    unsigned GetCompareSize() const;
+#endif // TARGET_XARCH
 
     GenTree*& ReturnValueRef()
     {
@@ -4539,6 +4511,12 @@ struct AsyncCallInfo
     // records that behavior.
     ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 
+    // Continuation context handling of the inlined frames enclosing this call, innermost
+    // first: one entry per frame that logically returns to its caller when this call
+    // suspends, i.e. the handling of the call that inlined that frame. The root method's
+    // frame has no entry since it never transitions.
+    jitstd::vector<::ContinuationContextHandling>* InlineFrameContextHandling = nullptr;
+
     // Is this 'await valueTask.AsTask()'? These come with special semantics as
     // they no longer transparently forward continuation context handling to an
     // underlying IValueTaskSource, if present.
@@ -5273,6 +5251,12 @@ struct GenTreeCall final : public GenTree
         return *asyncInfo;
     }
 
+    AsyncCallInfo& GetAsyncInfo()
+    {
+        assert(IsAsync());
+        return *asyncInfo;
+    }
+
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.
     //
@@ -5875,9 +5859,6 @@ struct GenTreeCall final : public GenTree
 
     union
     {
-        // The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph
-        CORINFO_CONST_LOOKUP* gtCallCookie;
-
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo* gtInlineCandidateInfo;
         // gtInlineCandidateInfoList is used when we have more than one GDV candidate
@@ -5932,6 +5913,8 @@ struct GenTreeCall final : public GenTree
     bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
 
     CorInfoHelpFunc GetHelperNum() const;
+
+    ExceptionSetFlags CallExceptions() const;
 
     bool AreArgsComplete() const;
 
@@ -7421,6 +7404,12 @@ struct GenTreeVecCon : public GenTree
     bool IsNaN(var_types simdBaseType) const;
 
     bool IsNegativeZero(var_types simdBaseType) const;
+
+    bool ContainsNaN(var_types simdBaseType) const;
+
+    bool ContainsNegativeZero(var_types simdBaseType) const;
+
+    bool ContainsPositiveZero(var_types simdBaseType) const;
 
     bool IsZero() const
     {

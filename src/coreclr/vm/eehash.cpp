@@ -68,7 +68,6 @@ EEHashEntry_t * EEUnicodeStringLiteralHashTableHelper::AllocateEntry(EEStringDat
     {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return NULL;);
     }
     CONTRACTL_END
 
@@ -92,7 +91,6 @@ void EEUnicodeStringLiteralHashTableHelper::DeleteEntry(EEHashEntry_t *pEntry, v
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -116,7 +114,6 @@ BOOL EEUnicodeStringLiteralHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, E
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -216,7 +213,6 @@ EEHashEntry_t *EEClassFactoryInfoHashTableHelper::AllocateEntry(ClassFactoryInfo
     {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return NULL;);
     }
     CONTRACTL_END
 

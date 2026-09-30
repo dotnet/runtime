@@ -6,8 +6,9 @@ applyTo: "src/**"
 
 Code conventions for any change under `src/`, applied when authoring and when reviewing. Also
 apply the language file for the code in question (`csharp`, `native`), `tests` for test changes,
-and any matching area file (`core-runtime`, `jit`, `system-net-*`, `extensions-*`, `compression`,
-`cdac`). Where a more specific file conflicts with a general one, the more specific file wins.
+and any matching area file (`core-runtime`, `jit`, `illink`, `system-net-*`, `extensions-*`,
+`compression`, `cdac`). Where a more specific file conflicts with a general one, the more
+specific file wins.
 
 Pull-request process — scope, benchmark evidence, API approval, backport — is in
 [`copilot-instructions.md`](/.github/copilot-instructions.md). Build and test workflow is in the

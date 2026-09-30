@@ -420,7 +420,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 #if HAS_FIXED_REGISTER_SET
     // Shouldn't be used before it is set in genFnProlog()
-    m_compiler->compCalleeRegsPushed = UninitializedWord<unsigned>(m_compiler);
+    m_compiler->compCalleeRegsPushed = UninitializedWord<unsigned>();
 #endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
@@ -472,7 +472,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
@@ -783,6 +782,23 @@ void CodeGenInterface::genUpdateLife(GenTree* tree)
 void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
 {
     m_compiler->compUpdateLife</*ForCodeGen*/ true>(newLife);
+}
+
+//------------------------------------------------------------------------
+// genUpdateVarReg: Update the current register location for a multi-reg lclVar
+//
+// Arguments:
+//    varDsc   - the LclVarDsc for the lclVar
+//    tree     - the lclVar node
+//    regIndex - the index of the register in the node
+//
+// inline
+void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
+{
+    // This should only be called for multireg lclVars.
+    assert(m_compiler->lvaEnregMultiRegVars);
+    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
+    varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
 }
 
 #ifndef TARGET_WASM
@@ -1334,7 +1350,23 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
 // TODO-WASM: Prove whether a given addressing mode obeys the Wasm rules.
 // See https://github.com/dotnet/runtime/pull/122897#issuecomment-3721304477 for more details.
 #if defined(TARGET_WASM)
-    return false;
+    // Wasm only folds "base + constant" into the memarg. See "Lowering::GetFoldableAddrMode" for why a GC-typed
+    // base and a non-negative constant prove the addition does not wrap. A relocatable constant cannot fold
+    // because that would drop the relocation.
+    //
+    if (!addr->OperIs(GT_ADD) || addr->gtOverflow() || !varTypeIsGC(addr->gtGetOp1()) ||
+        !addr->gtGetOp2()->IsCnsIntOrI() || addr->gtGetOp2()->AsIntCon()->ImmedValNeedsReloc(m_compiler) ||
+        (addr->gtGetOp2()->AsIntCon()->IconValue() < 0))
+    {
+        return false;
+    }
+
+    *revPtr = false;
+    *rv1Ptr = addr->gtGetOp1();
+    *rv2Ptr = nullptr;
+    *mulPtr = 0;
+    *cnsPtr = addr->gtGetOp2()->AsIntCon()->IconValue();
+    return true;
 #endif // TARGET_WASM
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1815,6 +1847,14 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 #endif
 
+        // We can't provide an accurate location if the local is allocated on the UnknownSizeFrame.
+        // TODO-SVE: Remove this once vector register calling convention is supported, as we shouldn't
+        // be using the return buffer then.
+        if (m_compiler->lvaIsUnknownSizeLocal(lclNum))
+        {
+            return;
+        }
+
         info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
     }
     else if (call->HasMultiRegRetVal())
@@ -2149,7 +2189,7 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     //
     if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !m_compiler->IsAot())
     {
-        for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER; i++)
+        for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER_SMALL; i++)
         {
             m_compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
@@ -2227,7 +2267,7 @@ void CodeGen::genGenerateMachineCode()
         }
 
         printf(" for ");
-        printf(Target::g_tgtCPUName);
+        printf("%s", Target::g_tgtCPUName);
 
 #if defined(TARGET_XARCH)
         // Check ISA directly here instead of using
@@ -2552,7 +2592,8 @@ void CodeGen::genEmitMachineCode()
 #else
     if (m_compiler->opts.disAsm)
     {
-        printf("\n; Total bytes of code %d\n\n", codeSize);
+        printf("\n; Total bytes of code %d for method %s (%s)\n\n", codeSize,
+               m_compiler->eeGetMethodFullName(m_compiler->info.compMethodHnd), m_compiler->compGetTieringName(true));
     }
 #endif
 
@@ -2884,25 +2925,70 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
 
 #if !defined(TARGET_WASM)
 
+#ifdef DEBUG
+// -----------------------------------------------------------------------------
+// genCheckTailCallEpilogRegisters:
+//   Check that the tailcall arguments do not use registers trashed by the epilog.
+//
+// Parameters:
+//   call - The tailcall node
+//
+void CodeGen::genCheckTailCallEpilogRegisters(GenTreeCall* call)
+{
+    if (!call->IsFastTailCall())
+    {
+        return;
+    }
+
+    regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
+    if (m_compiler->getNeedsGSSecurityCookie())
+    {
+        trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true, call);
+    }
+
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
+        {
+            if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
+            {
+                JITDUMP("Tail call node:\n");
+                DISPTREE(call);
+                JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
+                assert(!"Argument to tailcall may be trashed by epilog");
+            }
+        }
+    }
+}
+#endif // DEBUG
+
 // -----------------------------------------------------------------------------
 // genGetGSCookieTempRegs:
 //   Get a mask of registers to use for the GS cookie check generated in a
 //   block.
 //
 // Parameters:
-//   tailCall - Whether the block is a tailcall
+//   tailCall     - Whether the block is a tailcall
+//   tailCallNode - The tailcall node, if available
 //
 // Returns:
 //   Mask of all the registers that can be used. Some targets may need more
 //   than one register.
 //
-regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
+regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall, GenTreeCall* tailCallNode)
 {
 #ifdef TARGET_AMD64
     if (tailCall)
     {
+        if ((tailCallNode != nullptr) &&
+            (tailCallNode->gtArgs.FindWellKnownArg(WellKnownArg::SecretStubParam) != nullptr))
+        {
+            return RBM_R11;
+        }
+
         // If we are tailcalling then arg regs cannot be used. For both SysV and winx64 that
-        // leaves rax, r10, r11. rax and r11 are used for indirection cells, so we pick r10.
+        // leaves rax, r10, r11. Rax and r11 are used for indirection cells, so we pick r10
+        // unless it is used for the secret stub argument, in which case we pick r11.
         return RBM_R10;
     }
     // Otherwise on x64 (win-x64, SysV and Swift) r9 is never used for return values
@@ -2935,84 +3021,14 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
 #endif // !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------
-// genGCWriteBarrier: Generate a write barrier for a node.
+// genGCWriteBarrier: Generate a write barrier.
 //
 // Arguments:
-//   store - the GT_STOREIND node
-//   wbf   - already computed write barrier form to use
+//   wbf - already computed write barrier form to use
 //
-void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf)
+void CodeGen::genGCWriteBarrier(GCInfo::WriteBarrierForm wbf)
 {
     CorInfoHelpFunc helper = genWriteBarrierHelperForWriteBarrierForm(wbf);
-
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    // Under FEATURE_COUNT_GC_WRITE_BARRIERS, we will add an extra argument to the
-    // checked write barrier call denoting the kind of address being written to.
-    //
-    if (helper == CORINFO_HELP_CHECKED_ASSIGN_REF)
-    {
-        CheckedWriteBarrierKinds wbKind  = CWBKind_Unclassified;
-        GenTree*                 tgtAddr = store->Addr();
-
-        while (tgtAddr->OperIs(GT_ADD, GT_LEA))
-        {
-            if (tgtAddr->OperIs(GT_LEA) && tgtAddr->AsAddrMode()->HasBase())
-            {
-                tgtAddr = tgtAddr->AsAddrMode()->Base();
-            }
-            else if (tgtAddr->OperIs(GT_ADD) && tgtAddr->AsOp()->gtGetOp2()->IsCnsIntOrI())
-            {
-                tgtAddr = tgtAddr->AsOp()->gtGetOp1();
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        if (tgtAddr->OperIs(GT_LCL_VAR))
-        {
-            unsigned   lclNum = tgtAddr->AsLclVar()->GetLclNum();
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-            if (lclNum == m_compiler->info.compRetBuffArg)
-            {
-                wbKind = CWBKind_RetBuf
-            }
-            else if (varDsc->TypeIs(TYP_BYREF))
-            {
-                wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
-            }
-        }
-        else if (tgtAddr->OperIs(GT_LCL_ADDR))
-        {
-            // Ideally, we should have eliminated the barrier for this case.
-            wbKind = CWBKind_AddrOfLocal;
-        }
-
-#if 0
-#ifdef DEBUG
-        // Enable this to sample the unclassified trees.
-        static int unclassifiedBarrierSite = 0;
-        if (wbKind == CWBKind_Unclassified)
-        {
-            unclassifiedBarrierSite++;
-            printf("unclassifiedBarrierSite = %d:\n", unclassifiedBarrierSite);
-            m_compiler->gtDispTree(store);
-            printf(""); // Flush.
-            printf("\n");
-        }
-#endif // DEBUG
-#endif // 0
-
-        AddStackLevel(4);
-        inst_IV(INS_push, wbKind);
-        genEmitHelperCall(helper,
-                          4,           // argSize
-                          EA_PTRSIZE); // retSize
-        SubtractStackLevel(4);
-        return;
-    }
-#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 
     genEmitHelperCall(helper,
                       0,           // argSize
@@ -3214,7 +3230,7 @@ public:
             printf("  %s", getRegName(regNode->reg));
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
-                printf("\n    <- %s", getRegName(incoming->from->reg), varTypeName(incoming->type));
+                printf("\n    <- %s (%s)", getRegName(incoming->from->reg), varTypeName(incoming->type));
 
                 if (incoming->destOffset != 0)
                 {
@@ -3406,34 +3422,6 @@ void CodeGen::genSpillOrAddRegisterParam(
 }
 
 // -----------------------------------------------------------------------------
-// genSpillOrAddNonStandardRegisterParam: Handle a non-standard register parameter either
-// by homing it to stack immediately, or by adding it to the register graph.
-//
-// Parameters:
-//    lclNum    - Local that represents the non-standard parameter
-//    sourceReg - Register that the non-standard parameter is in on entry to the function
-//    graph     - The register graph to add to
-//
-void CodeGen::genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, RegGraph* graph)
-{
-    LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(varDsc->TypeGet()), emitActualTypeSize(varDsc), sourceReg, lclNum, 0);
-    }
-
-    if (varDsc->lvIsInReg())
-    {
-        RegNode* sourceRegNode = graph->GetOrAdd(sourceReg);
-        RegNode* destRegNode   = graph->GetOrAdd(varDsc->GetRegNum());
-        if (sourceRegNode != destRegNode)
-        {
-            graph->AddEdge(sourceRegNode, destRegNode, TYP_I_IMPL, 0);
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
 // genHomeRegisterParams: Move all register parameters to their initial
 // assigned location.
 //
@@ -3478,13 +3466,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                                               lclNum, seg.Offset);
                 }
             }
-        }
-
-        if (m_compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE) &&
-            m_compiler->lvaGetDesc(m_compiler->lvaStubArgumentVar)->lvOnFrame)
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
-                                      m_compiler->lvaStubArgumentVar, 0);
         }
 
         return;
@@ -3546,11 +3527,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 genSpillOrAddRegisterParam(lclNum, segment.Offset, lclNum, segment, &graph);
             }
         }
-    }
-
-    if (m_compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE))
-    {
-        genSpillOrAddNonStandardRegisterParam(m_compiler->lvaStubArgumentVar, REG_SECRET_STUB_PARAM, &graph);
     }
 
     DBEXEC(VERBOSE, graph.Dump());
@@ -6954,7 +6930,7 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         *first = false;
 
         fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
-        fprintf(file, "\"MethodID\":%lld,", (int64_t)context->GetCallee());
+        fprintf(file, "\"MethodID\":%lld,", (long long)context->GetCallee());
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
         fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().GetSourceTypes());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
@@ -6995,7 +6971,7 @@ void CodeGen::genReportRichDebugInfoToFile()
     }
 
     // MethodID in ETW events are the method handles.
-    fprintf(file, "{\"MethodID\":%lld,", (INT64)m_compiler->info.compMethodHnd);
+    fprintf(file, "{\"MethodID\":%lld,", (long long)m_compiler->info.compMethodHnd);
     // Print inline tree.
     fprintf(file, "\"InlineTree\":");
 

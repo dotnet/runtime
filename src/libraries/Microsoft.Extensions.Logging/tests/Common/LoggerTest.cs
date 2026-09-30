@@ -126,7 +126,6 @@ namespace Microsoft.Extensions.Logging.Test
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedForDisabledLoggers()
         {
             var provider = new Mock<ILoggerProvider>();
@@ -153,7 +152,6 @@ namespace Microsoft.Extensions.Logging.Test
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedWhenScopesAreDisabled()
         {
             var provider = new Mock<ILoggerProvider>();
@@ -179,7 +177,6 @@ namespace Microsoft.Extensions.Logging.Test
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ScopesAreNotCreatedInIScopeProviderWhenScopesAreDisabled()
         {
             var provider = new Mock<ILoggerProvider>();
@@ -213,7 +210,6 @@ namespace Microsoft.Extensions.Logging.Test
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void CaptureScopesIsReadFromConfiguration()
         {
             var provider = new Mock<ILoggerProvider>();

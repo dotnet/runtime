@@ -14,10 +14,10 @@
 #define _METADATA_H_
 
 #include "ex.h"
+#include <minipal/rwlock.h>
 
 class IMetaModelCommon;
 class MDInternalRW;
-class UTSemReadWrite;
 
 inline int IsGlobalMethodParentTk(mdTypeDef td)
 {
@@ -151,7 +151,7 @@ struct HENUMInternal
 
     // This will only clear the content of enum and will not free the memory of enum
     static void ClearEnum(
-        HENUMInternal   *pmdEnum);
+        HENUMInternal   *pmdEnum) noexcept;
 
     // create a HENUMInternal. This will allocate the memory
     __checkReturn
@@ -293,6 +293,8 @@ EXTERN_GUID(IID_IMDInternalImport, 0x1b119f60, 0xc507, 0x4024, 0xbb, 0x39, 0xf8,
 #define INTERFACE IMDInternalImport
 DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
 {
+    STDMETHOD_(ULONG, Release)() noexcept PURE;
+
     //*****************************************************************************
     // return the count of entries of a given kind in a scope
     // For example, pass in mdtMethodDef will tell you how many MethodDef
@@ -403,7 +405,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     } // MDInternalRW::EnumReset
 
     void EnumClose(
-        HENUMInternal *phEnum)        // [IN] the enumerator to be closed
+        HENUMInternal *phEnum) noexcept // [IN] the enumerator to be closed
     {
         _ASSERTE( phEnum->m_EnumType == MDSimpleEnum ||
             phEnum->m_EnumType == MDDynamicArrayEnum);
@@ -950,9 +952,9 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD_(IUnknown *, GetCachedPublicInterface)(BOOL fWithLock) PURE;   // return the cached public interface
     __checkReturn
     STDMETHOD(SetCachedPublicInterface)(IUnknown *pUnk) PURE;  // no return value
-    STDMETHOD_(UTSemReadWrite*, GetReaderWriterLock)() PURE;   // return the reader writer lock
+    STDMETHOD_(minipal_rwlock*, GetReaderWriterLock)() PURE;   // return the reader writer lock
     __checkReturn
-    STDMETHOD(SetReaderWriterLock)(UTSemReadWrite * pSem) PURE;
+    STDMETHOD(SetReaderWriterLock)(minipal_rwlock * pLock) PURE;
 
     STDMETHOD_(mdModule, GetModuleFromScope)() PURE;             // [OUT] Put mdModule token here.
 
@@ -1182,6 +1184,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
@@ -1199,6 +1202,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
@@ -1215,6 +1219,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
@@ -1230,6 +1235,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);

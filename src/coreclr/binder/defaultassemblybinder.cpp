@@ -203,7 +203,7 @@ HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssem
 
     EX_TRY
     {
-        hr = GetAppContext()->SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths, TRUE /* fAcquireLock */);
+        hr = GetAppContext()->SetupBindingPaths(sTrustedPlatformAssemblies, sPlatformResourceRoots, sAppPaths);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -231,4 +231,3 @@ HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAss
 
     return hr;
 }
-

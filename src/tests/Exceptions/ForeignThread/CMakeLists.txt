@@ -9,7 +9,7 @@ if(NOT CLR_CMAKE_HOST_WIN32)
 endif()
 
 # add the executable
-add_library (ForeignThreadExceptionsNative SHARED ${SOURCES})
+add_library (ForeignThreadExceptionsNative ${TEST_LIB_TYPE} ${SOURCES})
 
 # add the install targets
 install (TARGETS ForeignThreadExceptionsNative DESTINATION bin)

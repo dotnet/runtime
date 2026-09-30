@@ -68,6 +68,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/dotnet-counters.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/dotnet-cpu-profiler.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/dotnet-gcdump.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/dotnet-pgo-trace.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/exit.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/per-module.ts"

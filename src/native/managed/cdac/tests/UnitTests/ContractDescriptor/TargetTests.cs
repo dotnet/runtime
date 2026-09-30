@@ -246,8 +246,26 @@ public unsafe partial class TargetTests
         ContractDescriptorHelpers.Fill(descriptor, targetTestHelpers.Arch, descriptorJson.Length, 0xdddddddd, 0, 0xeeeeeeee);
 
         FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTargetFromRawDescriptor(descriptor, descriptorJson, []));
-        Assert.IsType<System.Text.Json.JsonException>(ex.InnerException);
+        Assert.IsAssignableFrom<System.Text.Json.JsonException>(ex.InnerException);
         Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Create_UnsupportedDataDescriptorVersion_ThrowsFormatException(MockTarget.Architecture arch)
+    {
+        int?[] unsupportedVersions = [null, 0, 1, 3];
+
+        foreach (int? version in unsupportedVersions)
+        {
+            TargetTestHelpers targetTestHelpers = new(arch);
+            ContractDescriptorBuilder builder = new(targetTestHelpers);
+            ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+            descriptorBuilder.SetVersion(version);
+
+            FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTarget(descriptorBuilder));
+            Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+        }
     }
 
     [Theory]
@@ -383,6 +401,7 @@ public unsafe partial class TargetTests
             ["EcmaMetadata"] = "c1",
             ["Exception"] = "c1",
             ["ExecutionManager"] = "c1",
+            ["ExternalMemoryHandles"] = "c1",
             ["FeatureFlags"] = "c1",
             ["GC"] = "c1",
             ["GCInfo"] = "c1",
@@ -471,6 +490,52 @@ public unsafe partial class TargetTests
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
         Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_Net11Target_DoesNotRequireExternalMemoryHandles(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder
+            .SetContracts(
+                s_requiredDataAccessContracts
+                    .Where(static pair => pair.Key != "ExternalMemoryHandles")
+                    .ToDictionary(static pair => pair.Key, static pair => pair.Value))
+            .SetGlobals(
+            [
+                (Constants.Globals.RuntimeProductVersionString, null, "11.0.0", "string"),
+            ]);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_Net12Target_RequiresExternalMemoryHandles(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder
+            .SetContracts(
+                s_requiredDataAccessContracts
+                    .Where(static pair => pair.Key != "ExternalMemoryHandles")
+                    .ToDictionary(static pair => pair.Key, static pair => pair.Value))
+            .SetGlobals(
+            [
+                (Constants.Globals.RuntimeProductVersionString, null, "12.0.0", "string"),
+            ]);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        ContractMissingException ex = Assert.Throws<ContractMissingException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
+        Assert.Equal("ExternalMemoryHandles", ex.ContractName);
     }
 
     [Theory]

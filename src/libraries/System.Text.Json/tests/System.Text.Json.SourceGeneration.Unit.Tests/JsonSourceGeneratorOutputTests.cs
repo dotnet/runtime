@@ -143,6 +143,98 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void RecursiveUnionType()
+        {
+            // Declared with [Union] rather than the `union` keyword: the Microsoft.CodeAnalysis
+            // version this project builds against cannot parse `union`, but the generator also
+            // recognizes a union by the attribute plus a public object-typed Value property,
+            // and derives its cases from the public single-parameter constructors.
+            //
+            // These test projects run against Roslyn versions that predate union pattern matching.
+            // Pin the resulting generated-code diagnostics instead of ignoring them entirely.
+            JsonSourceGeneratorResult result = VerifyAgainstBaseline("""
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(Nat))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct Nat
+                    {
+                        public Nat(bool value) => Value = value;
+                        public Nat(Nat value) => Value = value;
+                        public object Value { get; }
+                    }
+                }
+                """, nameof(RecursiveUnionType), disableDiagnosticValidation: true);
+
+            AssertLegacyCompilerDiagnostics(result, "CS0037", "CS8121");
+        }
+
+        [Fact]
+        public void RecursiveNullableUnionType()
+        {
+            // Same as RecursiveUnionType, but the self-referential case is nullable, so it is
+            // also the union's null case. The emitted root-level arm has to pattern match the
+            // unwrapped Nat while still reporting typeof(Nat?) as the case type.
+            JsonSourceGeneratorResult result = VerifyAgainstBaseline("""
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(Nat))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct Nat
+                    {
+                        public Nat(bool value) => Value = value;
+                        public Nat(Nat? value) => Value = value;
+                        public object Value { get; }
+                    }
+                }
+                """, nameof(RecursiveNullableUnionType), disableDiagnosticValidation: true);
+
+            AssertLegacyCompilerDiagnostics(result, "CS0037", "CS8121");
+        }
+
+        [Fact]
+        public void SubclassCaseUnionType()
+        {
+            // A class union is not sealed, so a case type can derive from the union itself.
+            // The root-level union pattern must match its payload rather than the union instance.
+            JsonSourceGeneratorResult result = VerifyAgainstBaseline("""
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(Shape))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public class Shape
+                    {
+                        public Shape(int value) => Value = value;
+                        public Shape(Circle value) => Value = value;
+                        protected Shape() => Value = null;
+
+                        [JsonIgnore]
+                        public object Value { get; }
+                    }
+
+                    public sealed class Circle : Shape
+                    {
+                        public double Radius { get; set; }
+                    }
+                }
+                """, nameof(SubclassCaseUnionType), disableDiagnosticValidation: true);
+
+            AssertLegacyCompilerDiagnostics(result, "CS8121");
+        }
+
+        [Fact]
         public void JsonPropertyNameAttribute()
         {
             VerifyAgainstBaseline("""
@@ -354,7 +446,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         /// generated file matches the corresponding baseline in
         /// <c>Baselines/{testId}/{tfm}/{hintName}.cs.txt</c>.
         /// </summary>
-        private void VerifyAgainstBaseline(string source, string testId, bool disableDiagnosticValidation = false, CSharpParseOptions? parseOptions = null)
+        private JsonSourceGeneratorResult VerifyAgainstBaseline(string source, string testId, bool disableDiagnosticValidation = false, CSharpParseOptions? parseOptions = null)
         {
             Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: disableDiagnosticValidation, logger: logger);
@@ -404,7 +496,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     IO.File.WriteAllText(absPath, generatedSourceText.ToString());
                 }
 
-                return;
+                return result;
             }
 #else
             // Collect expected baseline files from disk.
@@ -436,6 +528,23 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 bool matches = RoslynTestUtils.CompareLines(expectedLines, generatedSourceText, out string errorMessage);
                 Assert.True(matches, $"Baseline mismatch for {baselineFileName}.\n{errorMessage}");
             }
+
+            return result;
+#endif
+        }
+
+        private static void AssertLegacyCompilerDiagnostics(JsonSourceGeneratorResult result, params string[] expectedIds)
+        {
+#if NET
+            string[] actualIds = result.NewCompilation.GetDiagnostics()
+                .Where(diagnostic =>
+                    diagnostic.Severity is DiagnosticSeverity.Error &&
+                    diagnostic.Location.SourceTree?.FilePath.EndsWith(".g.cs", StringComparison.Ordinal) is true)
+                .Select(diagnostic => diagnostic.Id)
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.Equal(expectedIds.OrderBy(id => id, StringComparer.Ordinal), actualIds);
 #endif
         }
 

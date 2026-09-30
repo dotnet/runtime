@@ -996,11 +996,15 @@ struct ReleaseHolderTraits final
 {
     using Type = TYPE*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type value)
+    static void Free(Type value) noexcept
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_MODE_PREEMPTIVE;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
 
         if (value != NULL)
             value->Release();
@@ -1017,7 +1021,7 @@ struct HandleTraits final
 {
     using Type = HANDLE;
     static Type Default() { return INVALID_HANDLE_VALUE; }
-    static void Free(Type h)
+    static void Free(Type h) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         if (h != NULL && h != Default())
@@ -1030,7 +1034,7 @@ struct MapViewTraits final
 {
     using Type = void*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type h)
+    static void Free(Type h) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         if (h != NULL)
@@ -1045,7 +1049,7 @@ struct LocalAllocTraits final
 {
     using Type = T;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type h)
+    static void Free(Type h) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 #ifdef HOST_WINDOWS
@@ -1064,7 +1068,7 @@ struct HModuleTraits final
 {
     using Type = HMODULE;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type h)
+    static void Free(Type h) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         if (h != NULL)
@@ -1088,7 +1092,7 @@ struct ResetPointerTraits final
 {
     using Type = T*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type p)
+    static void Free(Type p) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         if (p == NULL)
@@ -1117,7 +1121,7 @@ struct CoTaskMemTraits final
 {
     using Type = T*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type value)
+    static void Free(Type value) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         if (value != NULL)
@@ -1127,53 +1131,6 @@ struct CoTaskMemTraits final
 
 template<typename T>
 using CoTaskMemHolder = LifetimeHolder<CoTaskMemTraits<T>>;
-
-//-----------------------------------------------------------------------------
-// StubHolder : holder for runtime-emitted Stub-like objects.
-// On scope exit, calls DecRef through the executable-memory
-// writer-holder so the refcount field can be written.
-//
-// Note: StubHolder does NOT call IncRef on assignment - the caller owns
-// matching IncRef/DecRef pairing on the value it hands to the holder.
-//
-// Usage example:
-//
-//  {
-//      StubHolder<Stub> foo;
-//      foo = new Stub();
-//      foo->AddRef();
-//  } // foo->DecRef() on out of scope
-//-----------------------------------------------------------------------------
-template<typename T>
-class ExecutableWriterHolderNoLog;
-
-class ExecutableAllocator;
-
-template<typename T>
-struct StubTraits final
-{
-    using Type = T*;
-    static constexpr Type Default() { return nullptr; }
-    static void Free(Type value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        if (value != nullptr)
-        {
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-#ifdef HOST_UNIX
-            ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
-#else
-            ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__);
-#endif
-#endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-            ExecutableWriterHolderNoLog<T> stubWriterHolder(value, sizeof(T));
-            stubWriterHolder.GetRW()->DecRef();
-        }
-    }
-};
-
-template<typename T>
-using StubHolder = LifetimeHolder<StubTraits<T>>;
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
@@ -1219,7 +1176,7 @@ struct HKEYTraits final
 {
     using Type = HKEY;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type h)
+    static void Free(Type h) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         if (h != NULL)
@@ -1235,7 +1192,7 @@ struct BSTRTraits final
 {
     using Type = BSTR;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type h)
+    static void Free(Type h) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         if (h != NULL)

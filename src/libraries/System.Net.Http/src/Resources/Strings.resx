@@ -501,6 +501,9 @@
   <data name="net_http_content_write_larger_than_content_length" xml:space="preserve">
     <value>Unable to write content to request stream; content would exceed Content-Length.</value>
   </data>
+  <data name="net_http_qpack_invalid_index" xml:space="preserve">
+    <value>The HTTP/3 server attempted to reference the static table index {0}, which does not exist.</value>
+  </data>
   <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
     <value>The HTTP/3 server attempted to reference a dynamic table index that does not exist.</value>
   </data>
@@ -592,7 +595,7 @@
     <value>The HTTP/1.1 response chunk was too large.</value>
   </data>
   <data name="net_unsupported_extended_connect" xml:space="preserve">
-    <value>Failed to establish web socket connection over HTTP/2 because extended CONNECT is not supported. Try to downgrade the request version to HTTP/1.1.</value>
+    <value>The HTTP/2 server does not support extended CONNECT requests. Try to downgrade the request version to HTTP/1.1.</value>
   </data>
   <data name="net_ping_request_timed_out" xml:space="preserve">
     <value>The HTTP/2 server didn't respond to a ping request within the configured KeepAlivePingDelay.</value>

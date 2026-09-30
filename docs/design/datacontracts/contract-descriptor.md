@@ -73,7 +73,7 @@ a JSON string.
 
 ``` jsonc
 {
-  "version": "0",
+  "version": 2,
   "baseline": "example-64",
   "types":
   {
@@ -102,4 +102,3 @@ target platform.
 
 In scenarios where multiple .NET runtimes may be present in a single process, diagnostic tooling
 should look for the symbol in each loaded module to discover all the runtimes.
-

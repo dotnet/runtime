@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>True</Optimize>
+    <HasMergedInTests>true</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ConstrainedCall\class1.cs" />
+    <Compile Include="ConstrainedCall\class2.cs" />
+    <Compile Include="ConstrainedCall\vt1.cs" />
+    <Compile Include="ConstrainedCall\vt2.cs" />
+    <Compile Include="ConstrainedCall\vt3.cs" />
+    <Compile Include="ConstrainedCall\vt4.cs" />
+    <Compile Include="Constraints\Call_instance01.cs" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

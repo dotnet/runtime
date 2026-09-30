@@ -1009,6 +1009,15 @@ namespace System.IO.Compression
                 // Data needs to come from two sources, and we must thus copy data into a single address space.
                 else
                 {
+                    // FilenameLength, ExtraFieldLength, and FileCommentLength are read directly from the header and
+                    // can be up to ushort.MaxValue each, so the buffer we're about to rent could be up to ~192KB.
+                    // If the stream is seekable, fail fast when the header claims more trailing data than actually
+                    // remains in the stream, avoiding a wasted large allocation for every malformed entry.
+                    if (furtherReads.CanSeek && bytesToRead > furtherReads.Length - furtherReads.Position)
+                    {
+                        return false;
+                    }
+
                     if (dynamicHeaderSize > StackAllocationThreshold)
                     {
                         arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);

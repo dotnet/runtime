@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
-    <!-- Interpreter reports locals as pinned, causing generation demotion that this test does not expect -->
-    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetGeneration.cs" />

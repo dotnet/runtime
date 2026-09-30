@@ -12,9 +12,11 @@ public static class Constants
         public const string SystemDomain = nameof(SystemDomain);
         public const string ThreadStore = nameof(ThreadStore);
         public const string FinalizerThread = nameof(FinalizerThread);
+        public const string VirtualIPRangeList = nameof(VirtualIPRangeList);
         public const string FunctionTableIndexRangeList = nameof(FunctionTableIndexRangeList);
         public const string GCThread = nameof(GCThread);
         public const string Debugger = nameof(Debugger);
+        public const string DebuggerPatchTable = nameof(DebuggerPatchTable);
         public const string MaxHijackFunctions = nameof(MaxHijackFunctions);
         public const string CLRJitAttachState = nameof(CLRJitAttachState);
         public const string CORDebuggerControlFlags = nameof(CORDebuggerControlFlags);
@@ -39,6 +41,7 @@ public static class Constants
         public const string CanonMethodTable = nameof(CanonMethodTable);
         public const string ContinuationSingletonEEClass = nameof(ContinuationSingletonEEClass);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
+        public const string ExternalMemoryHandles = nameof(ExternalMemoryHandles);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
@@ -90,6 +93,7 @@ public static class Constants
 
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
+        public const string InterpreterJitManagerAddress = nameof(InterpreterJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
         public const string ThePreStub = nameof(ThePreStub);
 

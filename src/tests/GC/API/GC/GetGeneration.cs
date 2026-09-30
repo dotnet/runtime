@@ -119,10 +119,13 @@ public class GetGenerationTest
 
 
 
+    // Interpreted frames report their locals as pinned, causing generation demotion that this test does not expect.
+    public static bool IsTestCodeCompiled => !Utilities.IsCoreClrInterpreter || PlatformDetection.IsReadyToRunCompiled;
+
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
-    [SkipOnPlatform(TestPlatforms.Browser, "GC generational behavior differs on browser-wasm")]
-    [Fact]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "WebAssembly reports stack roots as pinned, causing generation demotion that this test does not expect. See https://github.com/dotnet/runtime/issues/134803.")]
+    [ConditionalFact(typeof(GetGenerationTest), nameof(IsTestCodeCompiled))]
     public static int TestEntryPoint()
     {
         GetGenerationTest t = new GetGenerationTest();

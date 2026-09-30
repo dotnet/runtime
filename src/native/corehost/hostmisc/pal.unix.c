@@ -102,6 +102,10 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
 #if HAVE_DIRENT_D_TYPE
         int entry_type = entry->d_type;
 #else
+#define DT_UNKNOWN 0
+#define DT_DIR 4
+#define DT_REG 8
+#define DT_LNK 10
         int entry_type = DT_UNKNOWN;
 #endif
 
@@ -357,11 +361,6 @@ bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)
     return true;
 }
 
-// Two-level stringize so PATH_MAX's value (not its name) can be used as an
-// explicit sscanf field width below.
-#define PROC_MAPS_STR2(x) #x
-#define PROC_MAPS_STR(x) PROC_MAPS_STR2(x)
-
 // dlopen on some systems only finds a loaded library when given its full path.
 // As a fallback, scan /proc/self/maps for a mapped file whose name contains
 // library_name. On success sets *dll and *out_path (heap-allocated, caller
@@ -378,8 +377,12 @@ static bool get_loaded_library_from_proc_maps(const pal_char_t* library_name, pa
     char found_path[PATH_MAX + 1];
     while (getline(&line, &line_cap, file) != -1)
     {
+        // Build the sscanf format dynamically to safely handle parenthesized PATH_MAX values on some platforms (like Haiku)
+        char fmt[64];
+        snprintf(fmt, sizeof(fmt), "%%*p-%%*p %%*[-rwxsp] %%*p %%*[:0-9a-f] %%*d %%%ds\n", PATH_MAX);
+
         char buf[PATH_MAX + 1]; // + 1 for the NUL terminator
-        if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %" PROC_MAPS_STR(PATH_MAX) "s\n", buf) == 1)
+        if (sscanf(line, fmt, buf) == 1)
         {
             const char* last_sep = strrchr(buf, DIR_SEPARATOR);
             if (last_sep == NULL)

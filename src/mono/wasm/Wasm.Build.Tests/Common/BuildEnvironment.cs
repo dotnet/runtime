@@ -105,17 +105,18 @@ namespace Wasm.Build.Tests
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
 
-            IsWorkloadWithMultiThreadingForDefaultFramework = IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
-            if (IsWorkload && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
+            UseWebcil = EnvironmentVariables.UseWebcil;
+            IsMonoRuntime = EnvironmentVariables.RuntimeFlavor == "Mono";
+            IsCoreClrRuntime = EnvironmentVariables.RuntimeFlavor == "CoreCLR";
+
+            // Only Mono ships a multithreaded browser-wasm runtime pack.
+            IsWorkloadWithMultiThreadingForDefaultFramework = !IsCoreClrRuntime && IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
+            if (IsWorkload && !IsCoreClrRuntime && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
             {
                 throw new Exception(
                             "Expected the multithreading runtime pack to be available when running on CI." +
                             $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
             }
-
-            UseWebcil = EnvironmentVariables.UseWebcil;
-            IsMonoRuntime = EnvironmentVariables.RuntimeFlavor == "Mono";
-            IsCoreClrRuntime = EnvironmentVariables.RuntimeFlavor == "CoreCLR";
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
                 throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");
@@ -149,24 +150,6 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmTestExitOnUnhandledError"] = "true";
                 EnvVars["WasmTestLogExitCode"] = "true";
                 // EnvVars["WasmTestAppendElementOnExit"] = "true"; // only used by xharness // https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
-
-                // Flow paths required by BrowserWasmApp.CoreCLR.targets into the dotnet-new-generated
-                // test project builds so its import chain (native.wasm.targets / AcquireEmscriptenSdk.targets)
-                // and UsingTask for WasmAppBuilder.dll resolve on both Helix and local runs.
-                // Names match those read by data/Local.Directory.Build.{props,targets}; MSBuild exposes
-                // env vars as properties with the same name, so SCREAMING_SNAKE keys stay consistent.
-                if (!string.IsNullOrEmpty(EnvironmentVariables.RepositoryEngineeringDir))
-                    EnvVars["REPOSITORY_ENGINEERING_DIR"] = EnvironmentVariables.RepositoryEngineeringDir;
-                if (!string.IsNullOrEmpty(EnvironmentVariables.BrowserBuildTargetsDir))
-                    EnvVars["BROWSER_BUILD_TARGETS_DIR"] = EnvironmentVariables.BrowserBuildTargetsDir;
-                if (!string.IsNullOrEmpty(EnvironmentVariables.WasmAppBuilderTasksAssemblyPath))
-                    EnvVars["WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH"] = EnvironmentVariables.WasmAppBuilderTasksAssemblyPath;
-                if (!string.IsNullOrEmpty(EnvironmentVariables.EmsdkPath))
-                    EnvVars["EMSDK_PATH"] = EnvironmentVariables.EmsdkPath;
-                if (!string.IsNullOrEmpty(EnvironmentVariables.MinipalIncludeDir))
-                    EnvVars["MINIPAL_INCLUDE_DIR"] = EnvironmentVariables.MinipalIncludeDir;
-                if (!string.IsNullOrEmpty(EnvironmentVariables.CoreCLRVmWasmIncludeDir))
-                    EnvVars["CORECLR_VM_WASM_INCLUDE_DIR"] = EnvironmentVariables.CoreCLRVmWasmIncludeDir;
             }
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");

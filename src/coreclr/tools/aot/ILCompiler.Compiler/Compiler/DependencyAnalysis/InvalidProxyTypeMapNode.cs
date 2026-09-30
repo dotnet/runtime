@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, null);
             Vertex throwingMethodStubVertex = externalReferences.EncodeReferenceToMethod(writer, ThrowingMethodStub);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex);
             return section.Place(tuple);

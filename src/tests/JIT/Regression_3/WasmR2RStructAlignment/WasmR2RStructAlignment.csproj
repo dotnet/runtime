@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>true</Optimize>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AlwaysUseCrossGen2 Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'">true</AlwaysUseCrossGen2>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'browser' or '$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

@@ -9,10 +9,6 @@ namespace System
 {
     internal static partial class LocalAppContextSwitches
     {
-        // OpenBSD's GSS-API (Heimdal) cannot drive password-based NTLM and reports a
-        // missing Kerberos TGT as a missing credential, so managed NTLM is used there.
-        internal static readonly bool IsOpenBsd = RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
-
         private static int s_disableTlsResume;
         internal static bool DisableTlsResume
         {
@@ -41,6 +37,13 @@ namespace System
             get => GetCachedSwitchValue("System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux", ref s_enableOcspStapling);
         }
 
+        private static int s_useLegacySslStreamHandshake;
+        internal static bool UseLegacySslStreamHandshake
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("System.Net.Security.UseLegacySslStreamHandshake", "DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAMHANDSHAKE", ref s_useLegacySslStreamHandshake);
+        }
+
 #if !TARGET_WINDOWS
         private static int s_useManagedNtlm;
         [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
@@ -48,8 +51,7 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetCachedSwitchValue("System.Net.Security.UseManagedNtlm", ref s_useManagedNtlm,
-                defaultValue: OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
-                IsOpenBsd ||
+                defaultValue: OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsOpenBSD() ||
                 (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase)));
         }
 #endif

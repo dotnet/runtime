@@ -44,7 +44,11 @@ public:
 #ifdef TARGET_WASM
             MultiplyUsed = 0x08, // Set by lowering on nodes that the RA should allocate into
                                  // a dedicated register (WASM local), for multiple uses.
-#endif                           // TARGET_WASM
+
+            FoldedAddr = 0x10, // Set by lowering on a GT_LCL_ADDR whose frame offset is folded into
+                               // the memarg of the indirection using it. Codegen for such a node
+                               // emits just the frame pointer.
+#endif                         // TARGET_WASM
         };
     };
 

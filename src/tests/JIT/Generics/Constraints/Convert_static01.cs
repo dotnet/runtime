@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Constraints_Convert_static01;
+
 using System;
 using Xunit;
 
@@ -50,6 +52,7 @@ public class Test_Convert_static01
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

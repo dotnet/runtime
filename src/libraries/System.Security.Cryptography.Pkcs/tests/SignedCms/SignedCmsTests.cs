@@ -192,11 +192,11 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 () => new SignedCms(SubjectIdentifierType.SubjectKeyIdentifier, null, true));
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void CheckSignature_ExtraStore_IsAdditional()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+            cms.Decode(SignedDocuments.RsaPkcs1Sha256OneSignerIssuerAndSerialNumber);
 
             // Assert.NotThrows
             cms.CheckSignature(true);
@@ -205,10 +205,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(new X509Certificate2Collection(), true);
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void Decode_IgnoresExtraData()
         {
-            byte[] basis = SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber;
+            byte[] basis = SignedDocuments.RsaPkcs1Sha256OneSignerIssuerAndSerialNumber;
             byte[] data = new byte[basis.Length + 60];
             data.AsSpan(basis.Length).Fill(0x5E);
             basis.AsSpan().CopyTo(data);
@@ -1233,11 +1233,11 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void UntrustedCertFails_WhenTrustChecked()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+            cms.Decode(SignedDocuments.RsaPkcs1Sha256OneSignerIssuerAndSerialNumber);
 
             // Assert.NoThrow
             cms.CheckSignature(true);
@@ -1496,6 +1496,30 @@ namespace System.Security.Cryptography.Pkcs.Tests
             signedCms.CheckSignature(true);
         }
 
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        public static void CheckSignature_Pkcs1_Rsa1024WithSha1()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+
+            // Assert.NoThrows
+            signedCms.CheckSignature(true);
+        }
+
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        public static void CheckSignature_Pkcs1_Rsa1024WithSha1_CounterSigned()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
+
+            SignerInfo signer = signedCms.SignerInfos[0];
+            Assert.Single(signer.CounterSignerInfos);
+
+            // Assert.NoThrows
+            signer.CounterSignerInfos[0].CheckSignature(true);
+            signedCms.CheckSignature(true);
+        }
+
         [Fact]
         public static void CheckSignature_Pkcs1_Sha1_Declared_Sha256WithRsa()
         {
@@ -1542,20 +1566,22 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(contentHex, signedCms.ContentInfo.Content.ByteArrayToHex());
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void CheckSignedEncrypted_IssuerSerial_FromNetFx()
         {
             CheckSignedEncrypted(
-                SignedDocuments.SignedCmsOverEnvelopedCms_IssuerSerial_NetFx,
-                SubjectIdentifierType.IssuerAndSerialNumber);
+                SignedDocuments.SignedCmsOverEnvelopedCms_IssuerSerial_Sha256_NetFx,
+                SubjectIdentifierType.IssuerAndSerialNumber,
+                Certificates.RSA2048Sha256KeyTransfer1);
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void CheckSignedEncrypted_SKID_FromNetFx()
         {
             CheckSignedEncrypted(
-                SignedDocuments.SignedCmsOverEnvelopedCms_SKID_NetFx,
-                SubjectIdentifierType.SubjectKeyIdentifier);
+                SignedDocuments.SignedCmsOverEnvelopedCms_SKID_Sha256_NetFx,
+                SubjectIdentifierType.SubjectKeyIdentifier,
+                Certificates.RSA2048Sha256KeyTransfer1);
         }
 
         [Fact]
@@ -1590,7 +1616,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.Encode();
         }
 
-        private static void CheckSignedEncrypted(byte[] docBytes, SubjectIdentifierType expectedType)
+        private static void CheckSignedEncrypted(
+            byte[] docBytes,
+            SubjectIdentifierType expectedType,
+            CertLoader? decryptionCert = null)
         {
             SignedCms signedCms = new SignedCms();
             signedCms.Decode(docBytes);
@@ -1607,7 +1636,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             EnvelopedCms envelopedCms = new EnvelopedCms();
             envelopedCms.Decode(signedCms.ContentInfo.Content);
 
-            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert = (decryptionCert ?? Certificates.RSAKeyTransferCapi1).TryGetCertificateWithPrivateKey())
             {
                 envelopedCms.Decrypt(new X509Certificate2Collection(cert));
             }

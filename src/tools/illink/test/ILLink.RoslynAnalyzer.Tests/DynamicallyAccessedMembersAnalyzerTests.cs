@@ -3,7 +3,10 @@
 
 using System.Threading.Tasks;
 using ILLink.Shared;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
+using SourceGenerators.Tests;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
     ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
@@ -367,6 +370,96 @@ namespace ILLink.RoslynAnalyzer.Tests
                 .WithSpan(11, 9, 11, 34)
                 .WithSpan(15, 5, 18, 6)
                 .WithArguments("System.Type.GetMethod(String)", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
+
+        [Fact]
+        public Task SourceMethodInReferencedProjectReturnTypeDoesNotMatchTargetMethod()
+        {
+            var referencedSource = """
+            using System;
+
+            public class Referenced
+            {
+                public static Type GetFoo()
+                {
+                    return typeof(Referenced);
+                }
+            }
+            """;
+
+            var source = """
+            class C
+            {
+                public static void Main()
+                {
+                    Referenced.GetFoo().GetMethod("Bar");
+                }
+            }
+            """;
+
+            // (5,9): warning IL2075: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'. The return value of method 'Referenced.GetFoo()' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+            // No code fix location is expected, because 'Referenced.GetFoo()' is declared outside of the compilation being analyzed.
+            return VerifyDynamicallyAccessedMembersAnalyzerWithProjectReference(source, referencedSource,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
+                .WithSpan(5, 9, 5, 45)
+                .WithArguments("System.Type.GetMethod(String)", "Referenced.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
+
+        [Fact]
+        public Task AnnotatedOverrideDoesNotOfferCodeFixOnBaseInReferencedProject()
+        {
+            // The analyzer only offers to annotate an unannotated override. It must not offer to change
+            // the base method's contract, regardless of which compilation contains the base method.
+            var referencedSource = """
+            using System;
+
+            public class Base
+            {
+                public virtual void M(Type t) {}
+            }
+            """;
+
+            var source = """
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+
+            class Derived : Base
+            {
+                public override void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {}
+            }
+            """;
+
+            // (6,108): warning IL2092: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 't' of method 'Derived.M(Type)' don't match overridden parameter 't' of method 'Base.M(Type)'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+            return VerifyDynamicallyAccessedMembersAnalyzerWithProjectReference(source, referencedSource,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
+                .WithSpan(6, 108, 6, 109)
+                .WithArguments("t", "Derived.M(Type)", "t", "Base.M(Type)"));
+        }
+
+        /// <summary>
+        /// Runs the analyzer against <paramref name="source"/>, with <paramref name="referencedSource"/> compiled
+        /// separately and referenced via a <see cref="Microsoft.CodeAnalysis.CompilationReference"/>, which is how the
+        /// IDE models a project-to-project reference. Symbols exposed that way are source symbols whose declaring
+        /// syntax lives in a syntax tree that is not part of the compilation being analyzed, so no code fix location
+        /// may be attached to diagnostics about them - otherwise Roslyn rejects the diagnostic and reports AD0001.
+        /// </summary>
+        static Task VerifyDynamicallyAccessedMembersAnalyzerWithProjectReference(
+            string source,
+            string referencedSource,
+            params DiagnosticResult[] expected)
+        {
+            var referencedCompilation = CSharpCompilation.Create(
+                assemblyName: "ReferencedProject",
+                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(referencedSource, new CSharpParseOptions(LanguageVersion.Preview)) },
+                references: LiveReferencePack.GetMetadataReferences(),
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            return VerifyCS.VerifyAnalyzerAsync(
+                source,
+                consoleApplication: false,
+                TestCaseUtils.UseMSBuildProperties(MSBuildPropertyOptionNames.EnableTrimAnalyzer),
+                additionalReferences: new[] { referencedCompilation.ToMetadataReference() },
+                expected: expected);
         }
 
         #endregion

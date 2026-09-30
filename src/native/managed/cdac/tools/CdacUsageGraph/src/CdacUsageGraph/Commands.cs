@@ -25,9 +25,15 @@ internal static class Commands
         root.Options.Add(outputOption);
         root.SetAction(parseResult =>
         {
-            AnalysisOptions options = new AnalysisOptions(
-                parseResult.GetValue(cdacRootOption)!,
-                parseResult.GetValue(outputOption)!);
+            DirectoryInfo cdacRoot = parseResult.GetValue(cdacRootOption)!;
+            UsageGraphAnalysisOptions options = new(
+                Path.Combine(
+                    cdacRoot.FullName,
+                    CdacSymbols.ContractsProjectDirectory,
+                    CdacSymbols.ContractsProjectFile),
+                CdacSymbols.CoreCLRContractsMetadataName,
+                cdacRoot.FullName,
+                parseResult.GetValue(outputOption)!.FullName);
             return new AnalysisPipeline(options).Run();
         });
 
@@ -71,7 +77,13 @@ internal static class Commands
             FileInfo meanings = parseResult.GetValue(meaningsOption) ?? Locator.MeaningsFile(cdacRoot);
             FileInfo overrides = parseResult.GetValue(overridesOption) ?? Locator.OverridesFile(cdacRoot);
 
-            UsageGraph graph = AnalysisPipeline.BuildGraph(cdacRoot.FullName);
+            UsageGraph graph = UsageGraphAnalyzer.Analyze(new UsageGraphAnalysisOptions(
+                Path.Combine(
+                    cdacRoot.FullName,
+                    CdacSymbols.ContractsProjectDirectory,
+                    CdacSymbols.ContractsProjectFile),
+                CdacSymbols.CoreCLRContractsMetadataName,
+                cdacRoot.FullName));
             DocGenerator generator = new DocGenerator(
                 graph,
                 DocDescriptorMeanings.Load(meanings.FullName),

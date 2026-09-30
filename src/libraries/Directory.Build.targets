@@ -1,4 +1,12 @@
 <Project>
+  <!-- Set this after the project body has finalized IsTestProject. Do not propagate the
+       resulting value through project references; each referenced project must decide
+       independently whether it is a browser test app that should be published with R2R. -->
+  <PropertyGroup Condition="'$(TestWasmReadyToRun)' == 'true' and '$(IsTestProject)' == 'true' and '$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == ''">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <_TestWasmReadyToRunImplicit>true</_TestWasmReadyToRunImplicit>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- Override strong name key to default to Open for test projects,
          Tests which wish to control this should set TestStrongNameKeyId. -->
@@ -270,5 +278,12 @@
   <PropertyGroup>
     <PackageId Condition="'$(IsSourceProject)' == 'true' and '$(IsPackable)' != 'true'">$(MSBuildProjectName)-project</PackageId>
   </PropertyGroup>
+
+  <!-- Apply this after all imported targets have added their project references so explicit
+       GlobalPropertiesToRemove metadata is augmented instead of replacing this default. -->
+  <ItemGroup Condition="'$(_TestWasmReadyToRunImplicit)' == 'true'">
+    <ProjectReference Update="@(ProjectReference)"
+                      GlobalPropertiesToRemove="%(GlobalPropertiesToRemove);PublishReadyToRun" />
+  </ItemGroup>
 
 </Project>

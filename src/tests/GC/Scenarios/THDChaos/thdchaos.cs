@@ -12,6 +12,7 @@ namespace DefaultNamespace {
     using System.Threading;
     using System;
     using System.IO;
+    using System.Runtime.InteropServices;
     using TestLibrary;
 
     public class ThdChaos
@@ -38,6 +39,13 @@ namespace DefaultNamespace {
             else
             {
                 iThrd = 20;
+            }
+
+            // 32-bit Arm has a limited address space, creating too many threads at once
+            // can exhaust it and result in OutOfMemoryException.
+            if( RuntimeInformation.ProcessArchitecture == Architecture.Arm && iThrd > 5 )
+            {
+                iThrd = 5;
             }
 
             ThdChaos Mv_ThdChaos = new ThdChaos();

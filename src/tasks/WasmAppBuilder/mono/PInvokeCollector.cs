@@ -290,7 +290,7 @@ internal sealed class PInvokeCollector {
             {
                 if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
                     cattr.ConstructorArguments.Count > 0 &&
-                    cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                    MatchesTargetOS(cattr.ConstructorArguments[0].Value?.ToString()))
                 {
                     return PlatformSupport.Unsupported;
                 }
@@ -298,7 +298,7 @@ internal sealed class PInvokeCollector {
                     cattr.ConstructorArguments.Count > 0)
                 {
                     hasSupportedOSPlatform = true;
-                    if (cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                    if (MatchesTargetOS(cattr.ConstructorArguments[0].Value?.ToString()))
                         hasSupportedTarget = true;
                 }
             }
@@ -312,6 +312,22 @@ internal sealed class PInvokeCollector {
             return hasSupportedTarget ? PlatformSupport.Supported : PlatformSupport.Unsupported;
 
         return PlatformSupport.Unknown;
+    }
+
+    private bool MatchesTargetOS(string? platformName)
+    {
+        if (string.Equals(platformName, _targetOS, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (platformName?.StartsWith(_targetOS, StringComparison.OrdinalIgnoreCase) != true)
+            return false;
+
+#if NETFRAMEWORK
+        string version = platformName.Substring(_targetOS.Length);
+#else
+        ReadOnlySpan<char> version = platformName.AsSpan(_targetOS.Length);
+#endif
+        return Version.TryParse(version, out _);
     }
 }
 

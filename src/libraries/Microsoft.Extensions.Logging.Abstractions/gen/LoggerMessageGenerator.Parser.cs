@@ -342,6 +342,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Diag(DiagnosticDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
                                     }
 
+                                    bool hasMessage = !string.IsNullOrEmpty(msg);
                                     bool foundLogger = false;
                                     bool foundException = false;
                                     bool foundLogLevel = level != null;
@@ -456,11 +457,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, paramSymbol.Locations[0], paramName);
                                             forceAsTemplateParams = true;
                                         }
-                                        else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
+                                        else if (hasMessage && lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
                                         {
                                             Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
                                         }
-                                        else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey($"@{paramName}") && !lm.TemplateMap.ContainsKey(lp.CodeName))
+                                        else if (hasMessage && lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey($"@{paramName}") && !lm.TemplateMap.ContainsKey(lp.CodeName))
                                         {
                                             Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
                                         }

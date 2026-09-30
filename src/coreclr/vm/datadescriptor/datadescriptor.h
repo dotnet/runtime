@@ -22,6 +22,7 @@
 #include "threads.h"
 #include "vars.hpp"
 #include "exinfo.h"
+#include "externalmemoryhandle.h"
 
 #include "configure.h"
 
@@ -31,6 +32,8 @@
 
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
+#include "../debug/ee/walker.h"
+#include "../debug/ee/controller.h"
 #include "patchpointinfo.h"
 
 #ifdef HAVE_GCCOVER

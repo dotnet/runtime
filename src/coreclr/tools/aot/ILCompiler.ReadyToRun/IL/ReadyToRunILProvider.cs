@@ -265,6 +265,10 @@ namespace Internal.IL
             {
                 return ars.EmitIL();
             }
+            else if (((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method))
+            {
+                return ((ILStubMethod)method).EmitIL();
+            }
             else
             {
                 return null;

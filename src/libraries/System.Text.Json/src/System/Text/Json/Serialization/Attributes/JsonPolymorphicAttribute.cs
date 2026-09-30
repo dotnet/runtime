@@ -34,7 +34,11 @@ namespace System.Text.Json.Serialization
         /// Setting this property overrides <see cref="JsonSerializerOptions.InferClosedTypePolymorphism"/>
         /// for the annotated type, so an explicit <see langword="false"/> suppresses inference even when it is
         /// enabled globally. When the property is left unset the globally configured value is used.
-        /// Inference is skipped when explicit <see cref="JsonDerivedTypeAttribute"/> registrations are declared.
+        /// If the annotated type declares one or more <see cref="JsonDerivedTypeAttribute"/> registrations,
+        /// inference is skipped for that type and only the explicitly registered derived types are used.
+        /// Closed derived types are expanded recursively and only terminal derived types are registered.
+        /// Polymorphism configuration declared on derived types applies to their respective contracts and does
+        /// not affect inference for the annotated type.
         /// </remarks>
         public bool InferClosedTypePolymorphism
         {

@@ -105,6 +105,36 @@ public unsafe partial class TargetTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void SubDescriptor_UnsupportedDataDescriptorVersion_ThrowsFormatException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+
+        ContractDescriptorBuilder.DescriptorBuilder subDescriptor = new(builder);
+        subDescriptor.SetVersion(1);
+        subDescriptor.CreateSubDescriptor(SubDescriptorAddr, SubDescriptorJsonAddr, SubDescriptorPointerDataAddr);
+
+        uint subDescriptorPointerAddr = 0x12465312;
+        byte[] pointerDataBytes = new byte[targetTestHelpers.PointerSize];
+        targetTestHelpers.WritePointer(pointerDataBytes, SubDescriptorAddr);
+        builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = subDescriptorPointerAddr,
+            Data = pointerDataBytes,
+            Name = "SubDescriptorPointerData"
+        });
+
+        ContractDescriptorBuilder.DescriptorBuilder primaryDescriptor = new(builder);
+        primaryDescriptor
+            .SetSubDescriptors([("GC", 1u)])
+            .SetIndirectValues([0, subDescriptorPointerAddr]);
+
+        FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTarget(primaryDescriptor));
+        Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void SubDescriptor_Multiple_Nested(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);

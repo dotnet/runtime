@@ -19,6 +19,7 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMapAssemblyTarget<DuplicateTypeMapEntriesAcrossAssemblies>("TypeMapLib3")]
 
 [assembly: TypeMapAssemblyTarget<UnknownAssemblyReference>("DoesNotExist")]
+[assembly: TypeMapAssemblyTarget<BlobOnlyAttributeTypeNames>("TypeMapBlobOnlyLib")]
 
 [assembly: TypeMap<TypicalUseCase>("1", typeof(C1))]
 [assembly: TypeMap<TypicalUseCase>("2", typeof(S1))]
@@ -311,6 +312,28 @@ public class TypeMap
                 Assert.True(hasTypeMapAssemblyTargets, "R2R image should contain TypeMapAssemblyTargets section");
             }
         }
+    }
+
+    [Fact]
+    public static void Validate_BlobOnlyAttributeTypeNames()
+    {
+        Console.WriteLine(nameof(Validate_BlobOnlyAttributeTypeNames));
+
+        IReadOnlyDictionary<string, Type> externalMap = TypeMapping.GetOrCreateExternalTypeMapping<BlobOnlyAttributeTypeNames>();
+        Assert.Equal(typeof(C1), externalMap["blob_only_c1"]);
+        Assert.Equal(typeof(S1), externalMap["blob_only_s1"]);
+        Assert.Equal(typeof(Lib5Type1), externalMap["lib5_type1"]);
+        Assert.True(externalMap.TryGetValue("lib5_type1", out Type? cachedExternalType));
+        Assert.Equal(typeof(Lib5Type1), cachedExternalType);
+
+        IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<BlobOnlyAttributeTypeNames>();
+        Assert.Equal(typeof(S1), proxyMap[typeof(C1)]);
+        Assert.Equal(typeof(C1), proxyMap[typeof(S1)]);
+        Assert.Equal(typeof(Lib5Proxy1), proxyMap[new Lib5Type1().GetType()]);
+        Assert.Equal(typeof(C1), proxyMap[new DupType_MapObject().GetType()]);
+        Assert.Equal(typeof(S1), proxyMap[new DupType_MapString().GetType()]);
+        Assert.True(proxyMap.TryGetValue(typeof(Lib5Type1), out Type? cachedProxyType));
+        Assert.Equal(typeof(Lib5Proxy1), cachedProxyType);
     }
 
     [Fact]

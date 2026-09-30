@@ -95,8 +95,8 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     // If we ever support fibers, then we need to use something more unique than that.
     IfFailThrow(pProcess->GetDAC()->GetUniqueThreadID(vmThread, &m_dwUniqueID)); // may throw
 
-    LOG((LF_CORDB, LL_INFO1000, "CT::CT new thread 0x%p vmptr=0x%p id=0x%x\n",
-        this, m_vmThreadToken, m_dwUniqueID));
+    LOG((LF_CORDB, LL_INFO1000, "CT::CT new thread 0x%p vmptr=0x%zx id=0x%x\n",
+        this, (size_t)VmPtrToCookie(m_vmThreadToken), m_dwUniqueID));
 
     // Unique ID should never be 0.
     _ASSERTE(m_dwUniqueID != 0);
@@ -679,7 +679,7 @@ HRESULT CordbThread::SetDebugState(CorDebugThreadState state)
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    LOG((LF_CORDB, LL_INFO1000, "CT::SDS: thread=0x%08x 0x%x, state=%d\n", this, m_id, state));
+    LOG((LF_CORDB, LL_INFO1000, "CT::SDS: thread=%p 0x%zx, state=%d\n", this, (size_t)m_id, state));
 
     // @dbgtodo- , sync - decide on how to suspend a thread. V2 leverages synchronization
     // (see below). For V3, do we just hard suspend the thread?
@@ -1642,17 +1642,17 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     event.SetIP.fIsIL = fIsIL;
 
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: Info:thread:0x%x"
-        "mod:0x%x  MethodDef:0x%x offset:0x%x  il?:0x%x\n",
+    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: Info:thread:0x%zx"
+        "mod:0x%zx  MethodDef:0x%x offset:0x%zx  il?:0x%x\n",
          GetCurrentThreadId(),
-         VmPtrToCookie(m_vmThreadToken),
-         VmPtrToCookie(vmAssembly),
+         (size_t)VmPtrToCookie(m_vmThreadToken),
+         (size_t)VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
 
-    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent):0x%x **********\n",
-        sizeof(DebuggerIPCEvent)));
+    LOG((LF_CORDB, LL_INFO10000, "[%x] CT::SIP: sizeof(DebuggerIPCEvent):0x%zx **********\n",
+        GetCurrentThreadId(), sizeof(DebuggerIPCEvent)));
 
     HRESULT hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
 
@@ -6740,6 +6740,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
                                       EMPTY_BUFFER,
                                       MemoryRange(pLocalValue, REG_SIZE),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                       &pValue);  // throws
 
         *ppValue = pValue;
@@ -6773,6 +6774,7 @@ HRESULT CordbNativeFrame::GetLocalDoubleRegisterValue(
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -6822,6 +6824,7 @@ CordbNativeFrame::GetLocalMemoryValue(CORDB_ADDRESS address,
                                       TargetBuffer(address, CordbValue::GetSizeForType(pType, kUnboxed)),
                                       MemoryRange(NULL, 0),
                                       NULL,
+                                      VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                       &pValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -6877,6 +6880,7 @@ CordbNativeFrame::GetLocalRegisterMemoryValue(CorDebugRegister highWordReg,
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -6924,6 +6928,7 @@ CordbNativeFrame::GetLocalMemoryRegisterValue(CORDB_ADDRESS highWordAddress,
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -7035,6 +7040,7 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
                                           EMPTY_BUFFER,
                                           MemoryRange(&(pThread->m_floatValues[index]), sizeof(double)),
                                           pRegHolder,
+                                          VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                           &pValue);  // throws
 
             *ppValue = pValue;
@@ -7141,6 +7147,7 @@ HRESULT CordbNativeFrame::GetLocalTwoRegisterValue(DWORD            lowReg,
                                       EMPTY_BUFFER,
                                       MemoryRange(NULL, 0),
                                       pRegHolder,
+                                      VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                       ppValue);  // throws
     }
     EX_CATCH_HRESULT(hr);
@@ -9031,6 +9038,7 @@ CordbEval::CordbEval(CordbThread *pThread)
       m_evalDuringException(false)
 {
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
+    m_vmExternalMemoryOwner = VMPTR_DebuggerExternalMemoryOwner::NullPtr();
     m_debuggerEvalKey = LSPTR_DEBUGGEREVAL::NullPtr();
 
     m_resultType.elementType = ELEMENT_TYPE_VOID;
@@ -9133,6 +9141,20 @@ HRESULT CordbEval::SendCleanup()
     // Release the cached HandleValue for the result. This may cleanup resources,
     // like our object handle to the func-eval result.
     m_pHandleValue.Clear();
+    m_pValueClassResult.Clear();
+
+    if (!m_vmExternalMemoryOwner.IsNull() && GetProcess()->IsSafeToSendEvents())
+    {
+        DebuggerIPCEvent event;
+        GetProcess()->InitIPCEvent(
+            &event,
+            DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER,
+            false,
+            m_thread->GetAppDomain()->GetADToken());
+        event.DisposeExternalMemoryOwner.vmExternalMemoryOwner = m_vmExternalMemoryOwner;
+        hr = WORST_HR(hr, GetProcess()->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
+        m_vmExternalMemoryOwner = VMPTR_DebuggerExternalMemoryOwner::NullPtr();
+    }
 
 
     return hr;
@@ -9784,7 +9806,7 @@ BOOL CordbEval::DoAppDomainsMatch( CordbAppDomain * pAppDomain,
 
         if ((pValueAppDomain != NULL) && (pValueAppDomain != pAppDomain))
         {
-            LOG((LF_CORDB,LL_INFO1000, "CordbEval::DADM - AD mismatch. appDomain=0x%08x, param #%d=0x%08x, must fail.\n",
+            LOG((LF_CORDB,LL_INFO1000, "CordbEval::DADM - AD mismatch. appDomain=%p, param #%d=%p, must fail.\n",
                 pAppDomain, i, pValueAppDomain));
             return FALSE;
         }
@@ -9797,7 +9819,7 @@ BOOL CordbEval::DoAppDomainsMatch( CordbAppDomain * pAppDomain,
 
         if( pTypeAppDomain != NULL && pTypeAppDomain != pAppDomain )
         {
-            LOG((LF_CORDB,LL_INFO1000, "CordbEval::DADM - AD mismatch. appDomain=0x%08x, type param #%d=0x%08x, must fail.\n",
+            LOG((LF_CORDB,LL_INFO1000, "CordbEval::DADM - AD mismatch. appDomain=%p, type param #%d=%p, must fail.\n",
                 pAppDomain, i, pTypeAppDomain));
             return FALSE;
         }
@@ -10460,16 +10482,35 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
         }
         else
         {
-            TargetBuffer remoteValue(m_resultAddr, CordbValue::GetSizeForType(pType, kBoxed));
+            bool boxed = m_resultType.elementType != ELEMENT_TYPE_VALUETYPE;
+            if (!boxed && m_pValueClassResult != NULL)
+            {
+                CordbVCObjectValue *pValueClassResult = m_pValueClassResult;
+                *ppResult = static_cast<ICorDebugValue *>(
+                    static_cast<ICorDebugObjectValue *>(pValueClassResult));
+                m_pValueClassResult->ExternalAddRef();
+                return S_OK;
+            }
+
+            TargetBuffer remoteValue(m_resultAddr, CordbValue::GetSizeForType(pType, boxed ? kBoxed : kUnboxed));
             // Now that we have the module, go ahead and create the result.
 
             CordbValue::CreateValueByType(pAppDomain,
                                           pType,
-                                          true,
+                                          boxed,
                                           remoteValue,
                                           MemoryRange(NULL, 0),
                                           NULL,
+                                          boxed ? VMPTR_DebuggerExternalMemoryOwner::NullPtr() : m_vmExternalMemoryOwner,
                                           ppResult);  // throws
+
+            if (!boxed)
+            {
+                CordbVCObjectValue *pValueClassResult = static_cast<CordbVCObjectValue *>(
+                    static_cast<ICorDebugObjectValue *>(*ppResult));
+                m_pValueClassResult.Assign(pValueClassResult);
+                m_vmExternalMemoryOwner = VMPTR_DebuggerExternalMemoryOwner::NullPtr();
+            }
         }
 
     }
@@ -11214,6 +11255,7 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
                     TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, CordbValue::GetSizeForType(pType, kUnboxed)),
                     MemoryRange(NULL, 0),
                     NULL,
+                    VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                     ppValue);
                 foundArg = true;
                 break;
@@ -11393,6 +11435,7 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
                     TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, CordbValue::GetSizeForType(pType, kUnboxed)),
                     MemoryRange(NULL, 0),
                     NULL,
+                    VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                     ppValue);
                 foundLocal = true;
                 break;

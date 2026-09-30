@@ -205,10 +205,9 @@ public:
     virtual
     void SuspendEE(SUSPEND_REASON reason) PURE_VIRTUAL
 
-    // Resumes all paused threads, with a boolean indicating
-    // if the EE is being restarted because a GC is complete.
+    // Resumes all paused threads.
     virtual
-    void RestartEE(bool bFinishedGC) PURE_VIRTUAL
+    void RestartEE(bool bUnused) PURE_VIRTUAL
 
     // Performs a stack walk of all managed threads and invokes the given promote_func
     // on all GC roots encountered on the stack. Depending on the condemned generation,
@@ -468,6 +467,14 @@ public:
 
     virtual
     void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args) PURE_VIRTUAL
+
+    // The following method is available only with EE_INTERFACE_MAJOR_VERSION >= 5
+
+    // Returns true when the client is still processing cross references handed to it by a
+    // previous call to TriggerClientBridgeProcessing. While that is the case any new set of
+    // cross references would be discarded by the client, so the GC can skip computing it.
+    virtual
+    bool IsClientBridgeProcessingActive() PURE_VIRTUAL
 };
 
 #endif // _GCINTERFACE_EE_H_

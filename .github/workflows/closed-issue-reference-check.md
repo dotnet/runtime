@@ -150,21 +150,42 @@ steps:
         | sort_by(-.total_count)
       ' "$states" > "$ranked"
 
-      # Drop issues that already carry the advisory marker; keep up to MAX candidates.
-      # marker_present reads comments newest page first and stops as soon as the marker
-      # is found; it returns 2 on a REST failure so the run aborts rather than treating
-      # the error as "no marker" and re-advising the issue.
-      marker="<!-- closed-issue-reference-check:advice -->"
+      # Drop issues that already carry structured advisory data. For comments posted
+      # before safe-outputs.data was available, require both this workflow's framework
+      # provenance and the advisory heading. Return 2 on a REST failure so the run
+      # aborts rather than treating the error as "no advice" and posting a duplicate.
+      legacy_call_id='gh-aw-workflow-call-id: dotnet/runtime/closed-issue-reference-check'
+      legacy_workflow_id='gh-aw-workflow-id: closed-issue-reference-check'
+      legacy_agentic_id='workflow_id: closed-issue-reference-check'
+      legacy_advice='**Closed issue referenced by a test-disabling or guarding construct.**'
       marker_present() {
-        local num="$1" resp last page body
-        resp="$(gh api "repos/${REPO}/issues/${num}/comments?per_page=100" -i 2>/dev/null)" || return 2
-        last="$(printf '%s' "$resp" | sed -n 's/.*[?&]page=\([0-9]*\)>; rel="last".*/\1/p' | head -1)"
-        for (( page=${last:-1}; page>=2; page-- )); do
-          body="$(gh api "repos/${REPO}/issues/${num}/comments?per_page=100&page=${page}" -q '.[].body' 2>/dev/null)" || return 2
-          printf '%s' "$body" | grep -qF "$marker" && return 0
-        done
-        printf '%s' "$resp" | grep -qF "$marker" && return 0
-        return 1
+        local num="$1" pages
+        pages="$(gh api --paginate --slurp "repos/${REPO}/issues/${num}/comments?per_page=100" 2>/dev/null)" || return 2
+        jq -e \
+          --argjson target_issue "$num" \
+          --arg legacy_call_id "$legacy_call_id" \
+          --arg legacy_workflow_id "$legacy_workflow_id" \
+          --arg legacy_agentic_id "$legacy_agentic_id" \
+          --arg legacy_advice "$legacy_advice" '
+            def has_structured_advice($body):
+              any(
+                ($body
+                  | split("Structured data:")[1:][]
+                  | split("```json")[1:][]
+                  | split("```")[0]
+                  | fromjson?);
+                .workflow_artifact == "closed-issue-reference-check"
+                  and .artifact_kind == "advice"
+                  and .target_issue == $target_issue
+              );
+            any(.[][]; (.body // "") as $body
+              | has_structured_advice($body)
+                or
+                ((($body | contains($legacy_call_id))
+                  or ($body | contains($legacy_workflow_id))
+                  or ($body | contains($legacy_agentic_id)))
+                 and ($body | contains($legacy_advice))))
+          ' <<< "$pages" >/dev/null
       }
       keptnums="$(mktemp)"; keptn=0
       while read -r num; do
@@ -191,6 +212,20 @@ safe-outputs:
   add-comment:
     target: "*"
     max: 5
+  data:
+    type: object
+    properties:
+      workflow_artifact:
+        type: string
+        enum: [closed-issue-reference-check]
+      artifact_kind:
+        type: string
+        enum: [advice]
+      target_issue:
+        type: integer
+        minimum: 1
+    required: [workflow_artifact, artifact_kind, target_issue]
+    additionalProperties: false
   noop:
     report-as-issue: false
 
@@ -212,7 +247,7 @@ You only suggest; you never act. The one write you can make is an `add_comment` 
 
 - **Work from `issue-candidates.json` only.** The scan already collected the references and the construct each one sits in, so never grow the candidate set. The issue's own content is not the point — the code around each reference is.
 - **Judge by construct.** An `ActiveIssue` reference to a closed issue is always a finding — flag it regardless of any nearby comment, because the attribute must point at an active issue. For a `Skip` or a `build-exclusion`, read the lines around the reference and flag only where the issue link is the sole explanation; a reference that already carries a clear reason next to it is fine, leave it.
-- **One comment per issue, ever.** Each comment carries the hidden marker `<!-- closed-issue-reference-check:advice -->`. The scan already removed issues that have this marker, so the candidate set is free of already-advised issues; never post a second time on the same issue. Stop after 5 comments in a run.
+- **One comment per issue, ever.** Each new comment carries structured advisory data. The scan already removed issues with that data, plus legacy comments identified by this workflow's framework provenance and advisory heading, so the candidate set is free of already-advised issues; never post a second time on the same issue. Stop after 5 comments in a run.
 
 ## Steps
 
@@ -223,13 +258,24 @@ You only suggest; you never act. The one write you can make is an `add_comment` 
 **3 — Comment.** For each issue that still has at least one flagged reference — any `ActiveIssue`, or a link-only `Skip`/`build-exclusion` — post one `add_comment` in this shape, listing those references and their `kind`:
 
 ```markdown
-<!-- closed-issue-reference-check:advice -->
 **Closed issue referenced by a test-disabling or guarding construct.** An `[ActiveIssue(...)]` must only reference an active issue, so if one points here the issue should be reopened or the attribute removed and the test re-enabled. A `Skip` or project exclusion should state its reason in the code rather than rely on the issue link — make it self-describing, or reopen the issue if it was not actually fixed.
 
 **Referenced at:**
 - `path/to/File.cs:123` — ActiveIssue
 - `path/to/tests.proj:370` — build-exclusion
 ```
+
+Provide this separate `data` object on the `add_comment` call (do not paste it into the body):
+
+```json
+{
+  "workflow_artifact": "closed-issue-reference-check",
+  "artifact_kind": "advice",
+  "target_issue": <issue-number>
+}
+```
+
+`safe-outputs.data` validates the object and appends it after sanitization as a `Structured data:` fenced JSON block.
 
 ## Nothing to do
 
