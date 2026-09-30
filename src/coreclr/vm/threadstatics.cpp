@@ -1350,7 +1350,7 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 void EnumThreadMemoryRegions(ThreadLocalData *pThreadLocalData, CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
-    DacEnumMemoryRegion(dac_cast<TADDR>(pThreadLocalData->pCollectibleTlsArrayData), pThreadLocalData->cCollectibleTlsData, flags);
+    DacEnumMemoryRegion(dac_cast<TADDR>(pThreadLocalData->pCollectibleTlsArrayData), pThreadLocalData->cCollectibleTlsData * sizeof(OBJECTHANDLE), flags);
     PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
     while (pInFlightData != NULL)
     {
