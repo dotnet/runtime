@@ -6,8 +6,11 @@
 #include <array>
 #include <atomic>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <thread>
 #include <vector>
+#include <minipal/guid.h>
 
 namespace
 {
@@ -17,6 +20,86 @@ namespace
         ASSERT_EQ(S_OK, emit->GetSaveSize(cssAccurate, &size));
         image.resize(size);
         ASSERT_EQ(S_OK, emit->SaveToMemory(image.data(), size));
+    }
+
+    struct TempMetadataFile
+    {
+        std::filesystem::path path;
+
+        ~TempMetadataFile()
+        {
+            std::error_code ignored;
+            std::filesystem::remove(path, ignored);
+        }
+
+        bool Write(std::vector<uint8_t> const& bytes) const
+        {
+            std::ofstream file(path, std::ios::binary | std::ios::trunc);
+            if (!file)
+                return false;
+            file.write(reinterpret_cast<char const*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+            return file.good();
+        }
+    };
+
+    std::vector<uint8_t> WrapMetadataInPE(std::vector<uint8_t> const& metadata, bool pe64)
+    {
+        constexpr size_t ntOffset = 0x80;
+        constexpr size_t sectionOffset = 0x200;
+        constexpr size_t metadataOffset = 0x300;
+        std::vector<uint8_t> image(metadataOffset + metadata.size());
+
+        IMAGE_DOS_HEADER dos{};
+        dos.e_magic = IMAGE_DOS_SIGNATURE;
+        dos.e_lfanew = static_cast<LONG>(ntOffset);
+        std::memcpy(image.data(), &dos, sizeof(dos));
+
+        size_t ntSize;
+        if (pe64)
+        {
+            IMAGE_NT_HEADERS64 nt{};
+            nt.Signature = 0x00004550;
+            nt.FileHeader.Machine = IMAGE_FILE_MACHINE_AMD64;
+            nt.FileHeader.NumberOfSections = 1;
+            nt.FileHeader.SizeOfOptionalHeader = static_cast<WORD>(sizeof(IMAGE_OPTIONAL_HEADER64));
+            nt.OptionalHeader.Magic = 0x20b;
+            nt.OptionalHeader.NumberOfRvaAndSizes = 16;
+            nt.OptionalHeader.SizeOfHeaders = static_cast<DWORD>(sectionOffset);
+            nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress = 0x2000;
+            nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size = sizeof(IMAGE_COR20_HEADER);
+            ntSize = sizeof(nt);
+            std::memcpy(image.data() + ntOffset, &nt, ntSize);
+        }
+        else
+        {
+            IMAGE_NT_HEADERS32 nt{};
+            nt.Signature = 0x00004550;
+            nt.FileHeader.Machine = IMAGE_FILE_MACHINE_I386;
+            nt.FileHeader.NumberOfSections = 1;
+            nt.FileHeader.SizeOfOptionalHeader = static_cast<WORD>(sizeof(IMAGE_OPTIONAL_HEADER32));
+            nt.OptionalHeader.Magic = 0x10b;
+            nt.OptionalHeader.NumberOfRvaAndSizes = 16;
+            nt.OptionalHeader.SizeOfHeaders = static_cast<DWORD>(sectionOffset);
+            nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress = 0x2000;
+            nt.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size = sizeof(IMAGE_COR20_HEADER);
+            ntSize = sizeof(nt);
+            std::memcpy(image.data() + ntOffset, &nt, ntSize);
+        }
+
+        IMAGE_SECTION_HEADER section{};
+        section.VirtualAddress = 0x2000;
+        section.Misc.VirtualSize = static_cast<DWORD>(image.size() - sectionOffset);
+        section.PointerToRawData = static_cast<DWORD>(sectionOffset);
+        section.SizeOfRawData = static_cast<DWORD>(image.size() - sectionOffset);
+        std::memcpy(image.data() + ntOffset + ntSize, &section, sizeof(section));
+
+        IMAGE_COR20_HEADER cor{};
+        cor.cb = sizeof(cor);
+        cor.MetaData.VirtualAddress = 0x2100;
+        cor.MetaData.Size = static_cast<DWORD>(metadata.size());
+        std::memcpy(image.data() + sectionOffset, &cor, sizeof(cor));
+        std::memcpy(image.data() + metadataOffset, metadata.data(), metadata.size());
+        return image;
     }
 }
 
@@ -199,4 +282,59 @@ TEST(Import, ReadOnlyReopenPreservesConcurrentReaders)
     }
     writer.join();
     EXPECT_TRUE(succeeded);
+}
+
+TEST(Import, OpenScopeReadsMetadataAndManagedPEFiles)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+    mdTypeDef expected;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("FromFile"), tdPublic, mdTypeDefNil, nullptr, &expected));
+    std::vector<uint8_t> metadata;
+    ASSERT_NO_FATAL_FAILURE(SaveScopeImage(emit.p, metadata));
+
+    GUID identifier;
+    ASSERT_TRUE(minipal_guid_v4_create(&identifier));
+#ifdef BUILD_WINDOWS
+    TempMetadataFile file{ std::filesystem::temp_directory_path() /
+        (std::wstring(L"dnmd-") + std::to_wstring(identifier.Data1) +
+            std::to_wstring(identifier.Data2) + L"-\u00e9.dll") };
+    WSTR_string path = file.path.wstring();
+#else
+    TempMetadataFile file{ std::filesystem::temp_directory_path() /
+        std::filesystem::u8path("dnmd-" + std::to_string(identifier.Data1) +
+            std::to_string(identifier.Data2) + "-\u00e9.dll") };
+    std::u16string utf16Path = file.path.u16string();
+    WSTR_string path(utf16Path.begin(), utf16Path.end());
+#endif
+
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+    for (std::vector<uint8_t> const& contents : { metadata, WrapMetadataInPE(metadata, false),
+        WrapMetadataInPE(metadata, true) })
+    {
+        ASSERT_TRUE(file.Write(contents));
+        minipal::com_ptr<IMetaDataImport> import;
+        ASSERT_EQ(S_OK, dispenser->OpenScope(path.c_str(), ofRead,
+            IID_IMetaDataImport, (IUnknown**)&import));
+        mdTypeDef actual;
+        ASSERT_EQ(S_OK, import->FindTypeDefByName(W("FromFile"), mdTokenNil, &actual));
+        EXPECT_EQ(expected, actual);
+    }
+
+    ASSERT_TRUE(file.Write(WrapMetadataInPE(metadata, false)));
+    WSTR_string uri = W("file:");
+    uri += path;
+    minipal::com_ptr<IMetaDataImport> prefixed;
+    ASSERT_EQ(S_OK, dispenser->OpenScope(uri.c_str(), ofRead,
+        IID_IMetaDataImport, (IUnknown**)&prefixed));
+
+    ASSERT_TRUE(file.Write({ 'M', 'Z', 0, 0 }));
+    IUnknown* invalid = reinterpret_cast<IUnknown*>(1);
+    EXPECT_EQ(COR_E_BADIMAGEFORMAT, dispenser->OpenScope(path.c_str(), ofRead,
+        IID_IMetaDataImport, &invalid));
+    EXPECT_EQ(nullptr, invalid);
+    EXPECT_EQ(E_INVALIDARG, dispenser->OpenScope(path.c_str(), ofTakeOwnership,
+        IID_IMetaDataImport, &invalid));
+    EXPECT_EQ(nullptr, invalid);
 }

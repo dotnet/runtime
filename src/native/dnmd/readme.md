@@ -13,6 +13,9 @@ DNMD provides the following tools:
 - `mddump` - Utility for dumping ECMA-335 tables.
 - `mdmerge` - Utility for merging EnC deltas into ECMA-335 tables.
 
+`IMetaDataDispenser::OpenScope` accepts raw ECMA-335 metadata files and managed
+PE32/PE32+ files. `OpenScopeOnMemory` accepts raw metadata rather than a PE image.
+
 The primary goal of DNMD is to explore the benefits of a rewrite of the metadata APIs in the .NET runtime. The rewrite has the following constraints:
 
 - Must be sharable across any existing .NET runtime implementation.

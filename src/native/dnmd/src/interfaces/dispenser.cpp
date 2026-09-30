@@ -17,7 +17,10 @@
 #include <minipal/guid.h>
 #include <minipal/rwlock.h>
 
+#include <cerrno>
+#include <cstddef>
 #include <cstring>
+#include <fstream>
 #include <limits>
 #include <memory>
 
@@ -28,6 +31,115 @@ extern "C" const GUID MetaDataCheckDuplicatesFor =
 
 namespace
 {
+    constexpr uint16_t PE32Magic = 0x10b;
+    constexpr uint16_t PE32PlusMagic = 0x20b;
+    constexpr uint32_t PESignature = 0x00004550;
+
+    template<typename T>
+    bool ReadPEValue(uint8_t const* image, size_t size, size_t offset, T& value)
+    {
+        if (offset > size || sizeof(value) > size - offset)
+            return false;
+        std::memcpy(&value, image + offset, sizeof(value));
+        return true;
+    }
+
+    bool MapRva(uint8_t const* image, size_t size, size_t sectionsOffset, uint16_t sectionCount,
+                uint32_t sizeOfHeaders, uint32_t rva, size_t length, size_t& offset)
+    {
+        if (rva < sizeOfHeaders && length <= sizeOfHeaders - rva &&
+            rva <= size && length <= size - rva)
+        {
+            offset = rva;
+            return true;
+        }
+
+        for (uint16_t i = 0; i < sectionCount; ++i)
+        {
+            IMAGE_SECTION_HEADER section;
+            if (!ReadPEValue(image, size, sectionsOffset + size_t(i) * sizeof(section), section))
+                return false;
+            if (rva < section.VirtualAddress)
+                continue;
+            uint32_t sectionOffset = rva - section.VirtualAddress;
+            if (sectionOffset > section.SizeOfRawData || length > section.SizeOfRawData - sectionOffset ||
+                section.PointerToRawData > size || sectionOffset > size - section.PointerToRawData ||
+                length > size - section.PointerToRawData - sectionOffset)
+                continue;
+            offset = size_t(section.PointerToRawData) + sectionOffset;
+            return true;
+        }
+        return false;
+    }
+
+    bool FindPEMetadata(uint8_t const* image, size_t size, size_t& metadataOffset, uint32_t& metadataSize)
+    {
+        IMAGE_DOS_HEADER dos;
+        if (!ReadPEValue(image, size, 0, dos) || dos.e_magic != IMAGE_DOS_SIGNATURE || dos.e_lfanew < 0)
+            return false;
+
+        size_t ntOffset = static_cast<size_t>(dos.e_lfanew);
+        uint32_t signature;
+        IMAGE_FILE_HEADER fileHeader;
+        if (!ReadPEValue(image, size, ntOffset, signature) || signature != PESignature ||
+            !ReadPEValue(image, size, ntOffset + sizeof(signature), fileHeader))
+            return false;
+
+        size_t optionalOffset = ntOffset + sizeof(signature) + sizeof(fileHeader);
+        if (optionalOffset > size || fileHeader.SizeOfOptionalHeader > size - optionalOffset)
+            return false;
+        uint16_t magic;
+        if (!ReadPEValue(image, size, optionalOffset, magic))
+            return false;
+
+        IMAGE_DATA_DIRECTORY comDirectory;
+        uint32_t sizeOfHeaders, directoryCount;
+        size_t directoryOffset;
+        if (magic == PE32Magic)
+        {
+            directoryOffset = offsetof(IMAGE_OPTIONAL_HEADER32, DataDirectory);
+            if (!ReadPEValue(image, size, optionalOffset + offsetof(IMAGE_OPTIONAL_HEADER32, SizeOfHeaders), sizeOfHeaders) ||
+                !ReadPEValue(image, size, optionalOffset + offsetof(IMAGE_OPTIONAL_HEADER32, NumberOfRvaAndSizes), directoryCount))
+                return false;
+        }
+        else if (magic == PE32PlusMagic)
+        {
+            directoryOffset = offsetof(IMAGE_OPTIONAL_HEADER64, DataDirectory);
+            if (!ReadPEValue(image, size, optionalOffset + offsetof(IMAGE_OPTIONAL_HEADER64, SizeOfHeaders), sizeOfHeaders) ||
+                !ReadPEValue(image, size, optionalOffset + offsetof(IMAGE_OPTIONAL_HEADER64, NumberOfRvaAndSizes), directoryCount))
+                return false;
+        }
+        else
+        {
+            return false;
+        }
+
+        size_t requiredOptionalSize = directoryOffset +
+            (IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR + 1) * sizeof(IMAGE_DATA_DIRECTORY);
+        if (directoryCount <= IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR ||
+            fileHeader.SizeOfOptionalHeader < requiredOptionalSize ||
+            !ReadPEValue(image, size, optionalOffset + directoryOffset +
+                IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR * sizeof(IMAGE_DATA_DIRECTORY), comDirectory) ||
+            comDirectory.VirtualAddress == 0 || comDirectory.Size < sizeof(IMAGE_COR20_HEADER))
+            return false;
+
+        size_t sectionsOffset = optionalOffset + fileHeader.SizeOfOptionalHeader;
+        if (sectionsOffset > size || fileHeader.NumberOfSections > (size - sectionsOffset) / sizeof(IMAGE_SECTION_HEADER))
+            return false;
+        size_t corOffset;
+        if (!MapRva(image, size, sectionsOffset, fileHeader.NumberOfSections, sizeOfHeaders,
+            comDirectory.VirtualAddress, sizeof(IMAGE_COR20_HEADER), corOffset))
+            return false;
+        IMAGE_COR20_HEADER corHeader;
+        if (!ReadPEValue(image, size, corOffset, corHeader) ||
+            corHeader.cb < sizeof(corHeader) || corHeader.MetaData.Size == 0)
+            return false;
+
+        metadataSize = corHeader.MetaData.Size;
+        return MapRva(image, size, sectionsOffset, fileHeader.NumberOfSections, sizeOfHeaders,
+            corHeader.MetaData.VirtualAddress, metadataSize, metadataOffset);
+    }
+
     constexpr uint32_t SupportedDuplicateChecks =
         MDDupDefault | MDDupTypeDef | MDDupModuleRef | MDDupExportedType |
         MDDupAssemblyRef | MDDupPermission | MDDupFile;
@@ -171,11 +283,59 @@ namespace
             REFIID      riid,
             IUnknown** ppIUnk) override
         {
-            UNREFERENCED_PARAMETER(szScope);
-            UNREFERENCED_PARAMETER(dwOpenFlags);
-            UNREFERENCED_PARAMETER(riid);
-            UNREFERENCED_PARAMETER(ppIUnk);
-            return E_NOTIMPL;
+            if (ppIUnk == nullptr)
+                return E_INVALIDARG;
+            *ppIUnk = nullptr;
+            if (szScope == nullptr || szScope[0] == 0 || (dwOpenFlags & ofTakeOwnership) != 0)
+                return E_INVALIDARG;
+
+            if (szScope[0] == 'f' && szScope[1] == 'i' && szScope[2] == 'l' &&
+                szScope[3] == 'e' && szScope[4] == ':')
+                szScope += 5;
+
+#ifdef BUILD_WINDOWS
+            std::ifstream file(szScope, std::ios::binary | std::ios::ate);
+#else
+            pal::StringConvert<WCHAR, char> path(szScope);
+            if (!path.Success())
+                return E_INVALIDARG;
+            char const* fileName = path;
+            std::ifstream file(fileName, std::ios::binary | std::ios::ate);
+#endif
+            if (!file)
+            {
+                if (errno == ENOENT)
+                    return MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, 2);
+                if (errno == EACCES)
+                    return MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, 5);
+                return E_FAIL;
+            }
+
+            std::streamoff length = file.tellg();
+            if (length <= 0)
+                return CLDB_E_FILE_CORRUPT;
+            if (static_cast<uint64_t>(length) > std::numeric_limits<ULONG>::max())
+                return CLDB_E_TOO_BIG;
+
+            malloc_ptr<uint8_t> image{ static_cast<uint8_t*>(::malloc(static_cast<size_t>(length))) };
+            if (image == nullptr)
+                return E_OUTOFMEMORY;
+            file.seekg(0);
+            if (!file.read(reinterpret_cast<char*>(image.get()), length))
+                return E_FAIL;
+
+            size_t offset = 0;
+            uint32_t metadataSize = static_cast<uint32_t>(length);
+            uint32_t signature;
+            if (!ReadPEValue(image.get(), static_cast<size_t>(length), 0, signature) ||
+                signature != 0x424a5342)
+            {
+                if (!FindPEMetadata(image.get(), static_cast<size_t>(length), offset, metadataSize))
+                    return COR_E_BADIMAGEFORMAT;
+            }
+
+            return OpenScopeOnMemory(image.get() + offset, metadataSize,
+                dwOpenFlags | ofCopyMemory, riid, ppIUnk);
         }
 
         STDMETHOD(OpenScopeOnMemory)(
@@ -186,6 +346,9 @@ namespace
             IUnknown** ppIUnk) override
         {
             if (ppIUnk == nullptr)
+                return E_INVALIDARG;
+            *ppIUnk = nullptr;
+            if (pData == nullptr || cbData == 0)
                 return E_INVALIDARG;
 
             minipal::cotaskmem_ptr<void> nowOwned;
