@@ -85,7 +85,7 @@ namespace System.Globalization
 
             // Each entry of the 'CategoryValues' table uses bits 5 - 6 to store the strong bidi information.
 
-            StrongBidiCategory bidiCategory = (StrongBidiCategory)(Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(CategoriesValues), offset) & 0b_0110_0000);
+            StrongBidiCategory bidiCategory = (StrongBidiCategory)(CategoriesValues[(int)offset] & 0b_0110_0000);
             Debug.Assert(bidiCategory == StrongBidiCategory.Other || bidiCategory == StrongBidiCategory.StrongLeftToRight || bidiCategory == StrongBidiCategory.StrongRightToLeft, "Unknown StrongBidiCategory value.");
 
             return bidiCategory;
@@ -148,7 +148,7 @@ namespace System.Globalization
         private static int GetDecimalDigitValueInternalNoBoundsCheck(uint codePoint)
         {
             nuint offset = GetNumericGraphemeTableOffsetNoBoundsChecks(codePoint);
-            uint rawValue = Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(DigitValues), offset);
+            uint rawValue = DigitValues[(int)offset];
             return (int)(rawValue >> 4) - 1; // return the high nibble of the result, minus 1 so that "not a decimal digit value" gets normalized to -1
         }
 
@@ -182,7 +182,7 @@ namespace System.Globalization
         private static int GetDigitValueInternalNoBoundsCheck(uint codePoint)
         {
             nuint offset = GetNumericGraphemeTableOffsetNoBoundsChecks(codePoint);
-            int rawValue = Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(DigitValues), offset);
+            int rawValue = DigitValues[(int)offset];
             return (rawValue & 0xF) - 1; // return the low nibble of the result, minus 1 so that "not a digit value" gets normalized to -1
         }
 
@@ -196,7 +196,7 @@ namespace System.Globalization
         internal static GraphemeClusterBreakType GetGraphemeClusterBreakType(Rune rune)
         {
             nuint offset = GetNumericGraphemeTableOffsetNoBoundsChecks((uint)rune.Value);
-            return (GraphemeClusterBreakType)Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(GraphemeSegmentationValues), offset);
+            return (GraphemeClusterBreakType)GraphemeSegmentationValues[(int)offset];
         }
 
         /*
@@ -214,7 +214,7 @@ namespace System.Globalization
 
             // High bit of each value in the 'CategoriesValues' array denotes whether this code point is white space.
 
-            return (sbyte)Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(CategoriesValues), offset) < 0;
+            return (sbyte)CategoriesValues[(int)offset] < 0;
         }
 
         /*
@@ -260,20 +260,7 @@ namespace System.Globalization
         private static double GetNumericValueNoBoundsCheck(uint codePoint)
         {
             nuint offset = GetNumericGraphemeTableOffsetNoBoundsChecks(codePoint);
-            ref byte refToValue = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(NumericValues), offset * 8 /* sizeof(double) */);
-
-            // 'refToValue' points to a little-endian 64-bit double.
-
-            if (BitConverter.IsLittleEndian)
-            {
-                return Unsafe.ReadUnaligned<double>(ref refToValue);
-            }
-            else
-            {
-                ulong temp = Unsafe.ReadUnaligned<ulong>(ref refToValue);
-                temp = BinaryPrimitives.ReverseEndianness(temp);
-                return BitConverter.UInt64BitsToDouble(temp);
-            }
+            return BinaryPrimitives.ReadDoubleLittleEndian(NumericValues.Slice((int)offset * sizeof(double)));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -281,12 +268,7 @@ namespace System.Globalization
         {
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks((uint)codePoint);
 
-            // The offset is specified in shorts:
-            // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
-
-            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
-            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            int delta = BinaryPrimitives.ReadInt16LittleEndian(UppercaseValues.Slice((int)offset * sizeof(short)));
             return (char)(delta + codePoint);
         }
 
@@ -303,9 +285,7 @@ namespace System.Globalization
             // The mapped casing for the codePoint usually exists in the same plane as codePoint.
             // This is why we use 16-bit offsets to calculate the delta value from the codePoint.
 
-            ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(UppercaseValues));
-            ref ushort rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            int delta = BinaryPrimitives.ReadUInt16LittleEndian(UppercaseValues.Slice((int)offset * sizeof(ushort)));
 
             // We use the mask 0xFFFF0000u as we are sure the casing is in the same plane as codePoint.
             return (codePoint & 0xFFFF0000u) | (ushort)((uint)delta + codePoint);
@@ -316,12 +296,7 @@ namespace System.Globalization
         {
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks((uint)codePoint);
 
-            // The offset is specified in shorts:
-            // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
-
-            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
-            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            int delta = BinaryPrimitives.ReadInt16LittleEndian(LowercaseValues.Slice((int)offset * sizeof(short)));
             return (char)(delta + codePoint);
         }
 
@@ -338,9 +313,7 @@ namespace System.Globalization
             // The mapped casing for the codePoint usually exists in the same plane as codePoint.
             // This is why we use 16-bit offsets to calculate the delta value from the codePoint.
 
-            ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(LowercaseValues));
-            ref ushort rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            int delta = BinaryPrimitives.ReadUInt16LittleEndian(LowercaseValues.Slice((int)offset * sizeof(ushort)));
 
             // We use the mask 0xFFFF0000u as we are sure the casing is in the same plane as codePoint.
             return (codePoint & 0xFFFF0000u) | (ushort)((uint)delta + codePoint);
@@ -418,7 +391,7 @@ namespace System.Globalization
 
             // Each entry of the 'CategoriesValues' table uses the low 5 bits to store the UnicodeCategory information.
 
-            return (UnicodeCategory)(Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(CategoriesValues), offset) & 0x1F);
+            return (UnicodeCategory)(CategoriesValues[(int)offset] & 0x1F);
         }
 
         /*

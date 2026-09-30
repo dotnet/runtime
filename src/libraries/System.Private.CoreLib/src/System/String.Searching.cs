@@ -188,7 +188,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.anyOf);
             }
 
-            return new ReadOnlySpan<char>(ref _firstChar, Length).IndexOfAny(anyOf);
+            return this.AsSpan().IndexOfAny(anyOf);
         }
 
         public int IndexOfAny(char[] anyOf, int startIndex)
@@ -213,7 +213,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
             }
 
-            int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
+            int result = this.AsSpan(startIndex, count).IndexOfAny(anyOf);
 
             return result < 0 ? result : result + startIndex;
         }
@@ -592,7 +592,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.anyOf);
             }
 
-            return new ReadOnlySpan<char>(ref _firstChar, Length).LastIndexOfAny(anyOf);
+            return this.AsSpan().LastIndexOfAny(anyOf);
         }
 
         public int LastIndexOfAny(char[] anyOf, int startIndex)
@@ -623,7 +623,7 @@ namespace System
             }
 
             int startSearchAt = startIndex + 1 - count;
-            int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startSearchAt), count).LastIndexOfAny(anyOf);
+            int result = this.AsSpan(startSearchAt, count).LastIndexOfAny(anyOf);
 
             return result < 0 ? result : result + startSearchAt;
         }

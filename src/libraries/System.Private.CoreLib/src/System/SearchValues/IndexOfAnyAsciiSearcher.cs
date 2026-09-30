@@ -34,24 +34,22 @@ namespace System.Buffers
         internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void SetBitmapBit(byte* bitmap, int value)
+        private static void SetBitmapBit(ref Vector128<byte> bitmap, int value)
         {
             Debug.Assert((uint)value <= 127);
 
             int highNibble = value >> 4;
             int lowNibble = value & 0xF;
-            bitmap[(uint)lowNibble] |= (byte)(1 << highNibble);
+            bitmap = bitmap.WithElement(lowNibble, (byte)(bitmap.GetElement(lowNibble) | (1 << highNibble)));
         }
 
-        internal static unsafe void ComputeAnyByteState(ReadOnlySpan<byte> values, out AnyByteState state)
+        internal static void ComputeAnyByteState(ReadOnlySpan<byte> values, out AnyByteState state)
         {
             // The exact format of these bitmaps differs from the other ComputeBitmap overloads as it's meant for the full [0, 255] range algorithm.
             // See http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
 
             Vector128<byte> bitmapSpace0 = default;
             Vector128<byte> bitmapSpace1 = default;
-            byte* bitmapLocal0 = (byte*)&bitmapSpace0;
-            byte* bitmapLocal1 = (byte*)&bitmapSpace1;
             BitVector256 lookupLocal = default;
 
             foreach (byte b in values)
@@ -60,24 +58,23 @@ namespace System.Buffers
 
                 if (b < 128)
                 {
-                    SetBitmapBit(bitmapLocal0, b);
+                    SetBitmapBit(ref bitmapSpace0, b);
                 }
                 else
                 {
-                    SetBitmapBit(bitmapLocal1, b - 128);
+                    SetBitmapBit(ref bitmapSpace1, b - 128);
                 }
             }
 
             state = new AnyByteState(bitmapSpace0, bitmapSpace1, lookupLocal);
         }
 
-        internal static unsafe void ComputeAsciiState<T>(ReadOnlySpan<T> values, out AsciiState state)
+        internal static void ComputeAsciiState<T>(ReadOnlySpan<T> values, out AsciiState state)
             where T : struct, IUnsignedNumber<T>
         {
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(char));
 
             Vector128<byte> bitmapSpace = default;
-            byte* bitmapLocal = (byte*)&bitmapSpace;
             BitVector256 lookupLocal = default;
 
             foreach (T tValue in values)
@@ -90,7 +87,7 @@ namespace System.Buffers
                 }
 
                 lookupLocal.Set(value);
-                SetBitmapBit(bitmapLocal, value);
+                SetBitmapBit(ref bitmapSpace, value);
             }
 
             state = new AsciiState(bitmapSpace, lookupLocal);
@@ -150,7 +147,7 @@ namespace System.Buffers
             {
                 byte value = byte.CreateTruncating(tValue);
                 lookup.Set(value);
-                valuesByLowNibble.SetElementUnsafe(value & 0xF, value);
+                valuesByLowNibble = valuesByLowNibble.WithElement(value & 0xF, value);
             }
 
             // Elements of 'valuesByLowNibble' where no value had that low nibble will be left uninitialized at 0.
@@ -163,16 +160,16 @@ namespace System.Buffers
             // it will be mapped to a different element in 'valuesByLowNibble' given its non-zero low nibble.
             if (valuesByLowNibble.GetElement(0) == 0 && !lookup.Contains(0))
             {
-                valuesByLowNibble.SetElementUnsafe(0, (byte)1);
+                valuesByLowNibble = valuesByLowNibble.WithElement(0, (byte)1);
             }
 
             state = new AsciiState(valuesByLowNibble, lookup);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool TryComputeBitmap(ReadOnlySpan<char> values, byte* bitmap, out bool needleContainsZero)
+        private static bool TryComputeBitmap(ReadOnlySpan<char> values, out Vector128<byte> bitmap, out bool needleContainsZero)
         {
-            byte* bitmapLocal = bitmap; // https://github.com/dotnet/runtime/issues/9040
+            bitmap = default;
 
             foreach (char c in values)
             {
@@ -182,10 +179,10 @@ namespace System.Buffers
                     return false;
                 }
 
-                SetBitmapBit(bitmapLocal, c);
+                SetBitmapBit(ref bitmap, c);
             }
 
-            needleContainsZero = (bitmap[0] & 1) != 0;
+            needleContainsZero = (bitmap.GetElement(0) & 1) != 0;
             return true;
         }
 
@@ -206,20 +203,18 @@ namespace System.Buffers
             TryLastIndexOfAny<Negate>(ref Unsafe.As<char, short>(ref searchSpace), searchSpaceLength, asciiValues, out index);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool TryIndexOfAny<TNegator>(ref short searchSpace, int searchSpaceLength, ReadOnlySpan<char> asciiValues, out int index)
+        private static bool TryIndexOfAny<TNegator>(ref short searchSpace, int searchSpaceLength, ReadOnlySpan<char> asciiValues, out int index)
             where TNegator : struct, INegator
         {
             Debug.Assert(searchSpaceLength >= Vector128<short>.Count);
 
             if (IsVectorizationSupported)
             {
-                AsciiState state = default;
-
-                if (TryComputeBitmap(asciiValues, (byte*)&state.Bitmap._lower, out bool needleContainsZero))
+                if (TryComputeBitmap(asciiValues, out Vector128<byte> bitmap, out bool needleContainsZero))
                 {
                     // Only initializing the bitmap here is okay as we can only get here if the search space is long enough
                     // and we support vectorization, so the IndexOfAnyVectorized implementation will never touch state.Lookup.
-                    state.Bitmap = Vector256.Create(state.Bitmap.GetLower());
+                    AsciiState state = new AsciiState(bitmap, default);
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
                         ? IndexOfAny<TNegator, Ssse3AndWasmHandleZeroInNeedle, SearchValues.FalseConst>(ref searchSpace, searchSpaceLength, ref state)
@@ -233,20 +228,18 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool TryLastIndexOfAny<TNegator>(ref short searchSpace, int searchSpaceLength, ReadOnlySpan<char> asciiValues, out int index)
+        private static bool TryLastIndexOfAny<TNegator>(ref short searchSpace, int searchSpaceLength, ReadOnlySpan<char> asciiValues, out int index)
             where TNegator : struct, INegator
         {
             Debug.Assert(searchSpaceLength >= Vector128<short>.Count);
 
             if (IsVectorizationSupported)
             {
-                AsciiState state = default;
-
-                if (TryComputeBitmap(asciiValues, (byte*)&state.Bitmap._lower, out bool needleContainsZero))
+                if (TryComputeBitmap(asciiValues, out Vector128<byte> bitmap, out bool needleContainsZero))
                 {
                     // Only initializing the bitmap here is okay as we can only get here if the search space is long enough
                     // and we support vectorization, so the LastIndexOfAnyVectorized implementation will never touch state.Lookup.
-                    state.Bitmap = Vector256.Create(state.Bitmap.GetLower());
+                    AsciiState state = new AsciiState(bitmap, default);
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
                         ? LastIndexOfAny<TNegator, Ssse3AndWasmHandleZeroInNeedle, SearchValues.FalseConst>(ref searchSpace, searchSpaceLength, ref state)

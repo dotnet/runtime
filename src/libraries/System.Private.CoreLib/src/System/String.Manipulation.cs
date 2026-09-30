@@ -2686,13 +2686,13 @@ namespace System
         }
 
         // Removes a set of characters from the beginning and end of this string.
-        public unsafe string Trim(char trimChar)
+        public string Trim(char trimChar)
         {
             if (Length == 0 || (_firstChar != trimChar && this[^1] != trimChar))
             {
                 return this;
             }
-            return TrimHelper(&trimChar, 1, TrimType.Both);
+            return TrimHelper(new ReadOnlySpan<char>(in trimChar), TrimType.Both);
         }
 
         /// <summary>
@@ -2730,16 +2730,13 @@ namespace System
         }
 
         // Removes a set of characters from the beginning and end of this string.
-        public unsafe string Trim(params char[]? trimChars)
+        public string Trim(params char[]? trimChars)
         {
             if (trimChars == null || trimChars.Length == 0)
             {
                 return TrimWhiteSpaceHelper(TrimType.Both);
             }
-            fixed (char* pTrimChars = &trimChars[0])
-            {
-                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Both);
-            }
+            return TrimHelper(trimChars, TrimType.Both);
         }
 
         /// <summary>
@@ -2751,24 +2748,21 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public unsafe string Trim(params ReadOnlySpan<char> trimChars)
+        public string Trim(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
             {
                 return TrimWhiteSpaceHelper(TrimType.Both);
             }
 
-            fixed (char* pTrimChars = &MemoryMarshal.GetReference(trimChars))
-            {
-                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Both);
-            }
+            return TrimHelper(trimChars, TrimType.Both);
         }
 
         // Removes a set of characters from the beginning of this string.
         public string TrimStart() => TrimWhiteSpaceHelper(TrimType.Head);
 
         // Removes a set of characters from the beginning of this string.
-        public unsafe string TrimStart(char trimChar) => TrimHelper(&trimChar, 1, TrimType.Head);
+        public string TrimStart(char trimChar) => TrimHelper(new ReadOnlySpan<char>(in trimChar), TrimType.Head);
 
         /// <summary>
         /// Removes all leading instances of a rune from the current string.
@@ -2797,16 +2791,13 @@ namespace System
         }
 
         // Removes a set of characters from the beginning of this string.
-        public unsafe string TrimStart(params char[]? trimChars)
+        public string TrimStart(params char[]? trimChars)
         {
             if (trimChars == null || trimChars.Length == 0)
             {
                 return TrimWhiteSpaceHelper(TrimType.Head);
             }
-            fixed (char* pTrimChars = &trimChars[0])
-            {
-                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Head);
-            }
+            return TrimHelper(trimChars, TrimType.Head);
         }
 
         /// <summary>
@@ -2818,24 +2809,21 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public unsafe string TrimStart(params ReadOnlySpan<char> trimChars)
+        public string TrimStart(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
             {
                 return TrimWhiteSpaceHelper(TrimType.Head);
             }
 
-            fixed (char* pTrimChars = &MemoryMarshal.GetReference(trimChars))
-            {
-                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Head);
-            }
+            return TrimHelper(trimChars, TrimType.Head);
         }
 
         // Removes a set of characters from the end of this string.
         public string TrimEnd() => TrimWhiteSpaceHelper(TrimType.Tail);
 
         // Removes a set of characters from the end of this string.
-        public unsafe string TrimEnd(char trimChar) => TrimHelper(&trimChar, 1, TrimType.Tail);
+        public string TrimEnd(char trimChar) => TrimHelper(new ReadOnlySpan<char>(in trimChar), TrimType.Tail);
 
         /// <summary>
         /// Removes all trailing instances of a rune from the current string.
@@ -2864,16 +2852,13 @@ namespace System
         }
 
         // Removes a set of characters from the end of this string.
-        public unsafe string TrimEnd(params char[]? trimChars)
+        public string TrimEnd(params char[]? trimChars)
         {
             if (trimChars == null || trimChars.Length == 0)
             {
                 return TrimWhiteSpaceHelper(TrimType.Tail);
             }
-            fixed (char* pTrimChars = &trimChars[0])
-            {
-                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Tail);
-            }
+            return TrimHelper(trimChars, TrimType.Tail);
         }
 
         /// <summary>
@@ -2885,17 +2870,14 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public unsafe string TrimEnd(params ReadOnlySpan<char> trimChars)
+        public string TrimEnd(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
             {
                 return TrimWhiteSpaceHelper(TrimType.Tail);
             }
 
-            fixed (char* pTrimChars = &trimChars[0])
-            {
-                return TrimHelper(pTrimChars, trimChars.Length, TrimType.Tail);
-            }
+            return TrimHelper(trimChars, TrimType.Tail);
         }
 
         private string TrimWhiteSpaceHelper(TrimType trimType)
@@ -2931,10 +2913,10 @@ namespace System
             return CreateTrimmedString(start, end);
         }
 
-        private unsafe string TrimHelper(char* trimChars, int trimCharsLength, TrimType trimType)
+        private string TrimHelper(ReadOnlySpan<char> trimChars, TrimType trimType)
         {
-            Debug.Assert(trimChars != null);
-            Debug.Assert(trimCharsLength > 0);
+            Debug.Assert(!trimChars.IsEmpty);
+            int trimCharsLength = trimChars.Length;
 
             // end will point to the first non-trimmed character on the right.
             // start will point to the first non-trimmed character on the left.

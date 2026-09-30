@@ -52,23 +52,16 @@ namespace System.Text
                 }
             }
 
-            private unsafe byte[] GetBytesForSmallInput(string s)
+            private byte[] GetBytesForSmallInput(string s)
             {
                 Debug.Assert(s != null);
                 Debug.Assert(s.Length <= MaxSmallInputElementCount);
 
-                byte* pDestination = stackalloc byte[MaxSmallInputElementCount * MaxUtf8BytesPerChar];
+                Span<byte> destination = stackalloc byte[MaxSmallInputElementCount * MaxUtf8BytesPerChar];
+                int bytesWritten = GetBytes(s.AsSpan(), destination);
+                Debug.Assert(0 <= bytesWritten && bytesWritten <= s.Length * MaxUtf8BytesPerChar);
 
-                int sourceLength = s.Length; // hoist this to avoid having the JIT auto-insert null checks
-                int bytesWritten;
-
-                fixed (char* pSource = s)
-                {
-                    bytesWritten = GetBytesCommon(pSource, sourceLength, pDestination, MaxSmallInputElementCount * MaxUtf8BytesPerChar);
-                    Debug.Assert(0 <= bytesWritten && bytesWritten <= s.Length * MaxUtf8BytesPerChar);
-                }
-
-                return new Span<byte>(ref *pDestination, bytesWritten).ToArray(); // this overload of Span ctor doesn't validate length
+                return destination.Slice(0, bytesWritten).ToArray();
             }
 
             public override int GetMaxByteCount(int charCount)
@@ -130,23 +123,16 @@ namespace System.Text
                 }
             }
 
-            private unsafe string GetStringForSmallInput(byte[] bytes)
+            private string GetStringForSmallInput(byte[] bytes)
             {
                 Debug.Assert(bytes != null);
                 Debug.Assert(bytes.Length <= MaxSmallInputElementCount);
 
-                char* pDestination = stackalloc char[MaxSmallInputElementCount]; // each byte produces at most one char
+                Span<char> destination = stackalloc char[MaxSmallInputElementCount]; // each byte produces at most one char
+                int charsWritten = GetChars(bytes, destination);
+                Debug.Assert(0 <= charsWritten && charsWritten <= bytes.Length); // should never have more output chars than input bytes
 
-                int sourceLength = bytes.Length; // hoist this to avoid having the JIT auto-insert null checks
-                int charsWritten;
-
-                fixed (byte* pSource = bytes)
-                {
-                    charsWritten = GetCharsCommon(pSource, sourceLength, pDestination, MaxSmallInputElementCount);
-                    Debug.Assert(0 <= charsWritten && charsWritten <= sourceLength); // should never have more output chars than input bytes
-                }
-
-                return new string(new ReadOnlySpan<char>(ref *pDestination, charsWritten)); // this overload of ROS ctor doesn't validate length
+                return new string(destination.Slice(0, charsWritten));
             }
 
             /// <inheritdoc/>

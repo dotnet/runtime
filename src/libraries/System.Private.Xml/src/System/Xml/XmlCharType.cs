@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Xml
 {
@@ -183,7 +182,7 @@ namespace System.Xml
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint GetCharProperties(char ch) => Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch);
+        private static uint GetCharProperties(char ch) => CharProperties[ch];
 
         private static ReadOnlySpan<byte> CharProperties =>
         [

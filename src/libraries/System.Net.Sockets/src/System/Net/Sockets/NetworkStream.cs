@@ -270,12 +270,12 @@ namespace System.Net.Sockets
             }
         }
 
-        public override unsafe int ReadByte()
+        public override int ReadByte()
         {
             if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
-            byte b;
-            return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) == 0 ? -1 : b;
         }
 
         // Write - provide core Write functionality.
@@ -343,8 +343,8 @@ namespace System.Net.Sockets
             }
         }
 
-        public override unsafe void WriteByte(byte value) =>
-            Write(new ReadOnlySpan<byte>(&value, 1));
+        public override void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(in value));
 
         private int _closeTimeout = Socket.DefaultCloseTimeout; // -1 = respect linger options
 

@@ -413,7 +413,7 @@ namespace System.Buffers
                         _millisecondsTimestamp = 0;
                     }
 
-                    Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(arrays), count) = array; // arrays[count] = array, but avoiding stelemref
+                    arrays[count] = array;
                     _count = count + 1;
                     enqueued = true;
                 }
