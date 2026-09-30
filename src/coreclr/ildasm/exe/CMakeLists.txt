@@ -58,6 +58,10 @@ add_executable_clr(ildasm
     ${ILDASM_RESOURCES}
 )
 
+if(CLR_CMAKE_TARGET_OSX)
+    set_macos_bundle_identifier(ildasm com.microsoft.dotnet.ildasm)
+endif()
+
 set(ILDASM_LINK_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
