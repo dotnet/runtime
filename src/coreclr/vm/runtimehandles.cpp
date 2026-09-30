@@ -1335,7 +1335,6 @@ extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(
     {
         GCX_PREEMP();
         pMethod->EnsureActive();
-        pMethod->PrepareForUseAsAFunctionPointer();
         MethodDesc* pTargetMethod = pMethod->IsVtableMethod()
             ? pMethod->GetMethodDescOfVirtualizedCode(&receiver, pReceiverMT, declaringType.AsTypeHandle())
             : pMethod;
