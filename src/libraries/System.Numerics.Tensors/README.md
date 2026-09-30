@@ -21,6 +21,11 @@ Some shape and storage behavior intentionally differs from NumPy:
   same storage and could not hold distinct values. Zero strides in singleton dimensions
   and empty destinations do not have this conflict.
 
+When strides are omitted, a shape containing a zero-length dimension has zero strides
+in every dimension. Its element count and storage requirement are zero regardless of
+the other dimension lengths. Negative lengths remain invalid, and explicitly supplied
+strides must still satisfy the normal layout validation.
+
 Overlapping sources and destinations are supported for equal-length dense copies, which
 use the same overlap-safe behavior as `Span<T>.CopyTo`, and for elementwise operations on identical
 non-broadcast views. An in-place reversal of a dense tensor also needs no temporary

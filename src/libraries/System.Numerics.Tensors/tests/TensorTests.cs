@@ -3867,23 +3867,39 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
-        [InlineData(3, false)]
-        [InlineData(3, true)]
-        [InlineData(6, false)]
-        [InlineData(6, true)]
-        public static void TensorEmptyReshapeIgnoresProductOverflow(int rank, bool zeroBeforeOverflow)
+        [InlineData(3, 0)]
+        [InlineData(3, 1)]
+        [InlineData(3, 2)]
+        [InlineData(6, 0)]
+        [InlineData(6, 1)]
+        [InlineData(6, 2)]
+        [InlineData(6, 3)]
+        [InlineData(6, 4)]
+        [InlineData(6, 5)]
+        public static void TensorEmptyReshapeIgnoresProductOverflow(int rank, int zeroDimension)
         {
             nint[] lengths = new nint[rank];
             Array.Fill(lengths, (nint)1);
-            lengths[0] = nint.MaxValue;
-            lengths[1] = zeroBeforeOverflow ? 0 : 2;
-            lengths[^1] = zeroBeforeOverflow ? 2 : 0;
+            int largeDimension = zeroDimension == 0 ? 1 : 0;
+            int otherDimension = zeroDimension <= 1 ? 2 : 1;
+            lengths[largeDimension] = nint.MaxValue;
+            lengths[otherDimension] = 2;
+            lengths[zeroDimension] = 0;
             Tensor<int> empty = Tensor.CreateFromShape<int>([0]);
             Tensor<int> expected = Tensor.CreateFromShape<int>(lengths);
+            Tensor<int> uninitialized = Tensor.CreateFromShapeUninitialized<int>(lengths);
+            Tensor<int> fromArray = Tensor.Create(Array.Empty<int>(), lengths);
+            TensorSpan<int> constructedSpan = new TensorSpan<int>(Array.Empty<int>(), lengths);
+            ReadOnlyTensorSpan<int> constructedReadOnlySpan = new ReadOnlyTensorSpan<int>(Array.Empty<int>(), lengths);
 
             Tensor<int> reshaped = empty.Reshape(lengths);
             TensorSpan<int> span = empty.AsTensorSpan().Reshape(lengths);
             ReadOnlyTensorSpan<int> readOnlySpan = empty.AsReadOnlyTensorSpan().Reshape(lengths);
+            Assert.Equal(new nint[rank], expected.Strides);
+            Assert.Equal(expected.Strides, uninitialized.Strides);
+            Assert.Equal(expected.Strides, fromArray.Strides);
+            Assert.Equal(expected.Strides, constructedSpan.Strides);
+            Assert.Equal(expected.Strides, constructedReadOnlySpan.Strides);
             Assert.Equal(lengths, reshaped.Lengths);
             Assert.Equal(lengths, span.Lengths);
             Assert.Equal(lengths, readOnlySpan.Lengths);
@@ -3894,14 +3910,19 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, span.FlattenedLength);
             Assert.Equal(0, readOnlySpan.FlattenedLength);
 
-            lengths[0] = -1;
+            lengths[largeDimension] = -1;
             Assert.Throws<ArgumentException>(() => empty.Reshape(lengths));
             Assert.Throws<ArgumentException>(() => empty.AsTensorSpan().Reshape(lengths));
             Assert.Throws<ArgumentException>(() => empty.AsReadOnlyTensorSpan().Reshape(lengths));
-            lengths[0] = -2;
+            lengths[largeDimension] = -2;
             Assert.Throws<ArgumentException>(() => empty.Reshape(lengths));
             Assert.Throws<ArgumentException>(() => empty.AsTensorSpan().Reshape(lengths));
             Assert.Throws<ArgumentException>(() => empty.AsReadOnlyTensorSpan().Reshape(lengths));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.CreateFromShape<int>(lengths));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.CreateFromShapeUninitialized<int>(lengths));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.Create(Array.Empty<int>(), lengths));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<int>(Array.Empty<int>(), lengths));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlyTensorSpan<int>(Array.Empty<int>(), lengths));
         }
 
         [Theory]

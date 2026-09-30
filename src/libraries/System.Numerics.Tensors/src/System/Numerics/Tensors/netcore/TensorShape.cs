@@ -102,6 +102,10 @@ namespace System.Numerics.Tensors
 
             if (strides.Length == 0)
             {
+                // Empty shapes have no reachable offsets, so zero strides avoid
+                // overflowing products before the zero-length dimension is visited.
+                flattenedLength = lengths.Contains(0) ? 0 : 1;
+
                 // When no strides are specified, we need to computing them simply
                 // by calculating the product of the lengths at each iteration.
 
