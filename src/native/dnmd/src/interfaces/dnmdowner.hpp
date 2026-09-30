@@ -13,12 +13,21 @@
 
 EXTERN_GUID(IID_IDNMDOwner, 0x250ebc02, 0x1a92, 0x4638, 0xaa, 0x6c, 0x3d, 0x0f, 0x98, 0xb3, 0xa6, 0xfb);
 
+inline HRESULT ValidateDNMDUpdateMode(uint32_t mode)
+{
+    if (mode == MDUpdateENC)
+        return E_NOTIMPL;
+    return mode == MDUpdateFull || mode == MDUpdateExtension ? S_OK : E_INVALIDARG;
+}
+
 // This interface is an IUnknown interface for the purposes of easy discovery.
 struct IDNMDOwner : IUnknown
 {
     virtual mdhandle_t MetaData() = 0;
     virtual bool IsReadWrite() = 0;
     virtual uint32_t DuplicateChecks() = 0;
+    virtual uint32_t UpdateMode() = 0;
+    virtual HRESULT SetUpdateMode(uint32_t mode) = 0;
 };
 
 class DNMDOwner;
@@ -49,6 +58,8 @@ public:
     mdhandle_t get() const;
     bool IsReadWrite() const;
     uint32_t DuplicateChecks() const;
+    uint32_t UpdateMode() const;
+    HRESULT SetUpdateMode(uint32_t mode) const;
 
     bool operator==(std::nullptr_t) const
     {
@@ -77,6 +88,7 @@ private:
     malloc_ptr<void> _malloc_to_free;
     minipal::cotaskmem_ptr<void> _cotaskmem_to_free;
     uint32_t _duplicateChecks;
+    uint32_t _updateMode;
     bool _readWrite;
 
 protected:
@@ -92,22 +104,24 @@ protected:
     }
 
 public:
-    DNMDOwner(IUnknown* controllingUnknown, mdhandle_ptr md_ptr, uint32_t duplicateChecks, bool readWrite)
+    DNMDOwner(IUnknown* controllingUnknown, mdhandle_ptr md_ptr, uint32_t duplicateChecks, uint32_t updateMode, bool readWrite)
         : TearOffBase(controllingUnknown)
         , _handle{ std::move(md_ptr) }
         , _malloc_to_free{ nullptr }
         , _cotaskmem_to_free{ nullptr }
         , _duplicateChecks{ duplicateChecks }
+        , _updateMode{ updateMode }
         , _readWrite{ readWrite }
     { }
 
     DNMDOwner(IUnknown* controllingUnknown, mdhandle_ptr md_ptr, malloc_ptr<void> mallocMem,
-              minipal::cotaskmem_ptr<void> cotaskmemMem, uint32_t duplicateChecks, bool readWrite)
+              minipal::cotaskmem_ptr<void> cotaskmemMem, uint32_t duplicateChecks, uint32_t updateMode, bool readWrite)
         : TearOffBase(controllingUnknown)
         , _handle{ std::move(md_ptr) }
         , _malloc_to_free{ std::move(mallocMem) }
         , _cotaskmem_to_free{ std::move(cotaskmemMem) }
         , _duplicateChecks{ duplicateChecks }
+        , _updateMode{ updateMode }
         , _readWrite{ readWrite }
     { }
 
@@ -128,6 +142,20 @@ public: // IDNMDOwner
     {
         return _duplicateChecks;
     }
+
+    uint32_t UpdateMode() override
+    {
+        return _updateMode;
+    }
+
+    HRESULT SetUpdateMode(uint32_t mode) override
+    {
+        HRESULT hr = ValidateDNMDUpdateMode(mode);
+        if (FAILED(hr))
+            return hr;
+        _updateMode = mode;
+        return S_OK;
+    }
 };
 
 inline mdhandle_t mdhandle_view::get() const
@@ -143,6 +171,16 @@ inline bool mdhandle_view::IsReadWrite() const
 inline uint32_t mdhandle_view::DuplicateChecks() const
 {
     return _owner->DuplicateChecks();
+}
+
+inline uint32_t mdhandle_view::UpdateMode() const
+{
+    return _owner->UpdateMode();
+}
+
+inline HRESULT mdhandle_view::SetUpdateMode(uint32_t mode) const
+{
+    return _owner->SetUpdateMode(mode);
 }
 
 #endif // !_SRC_INTERFACES_DNMDOWNER_HPP_

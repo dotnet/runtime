@@ -9,11 +9,12 @@
 #include <cor.h>
 #include <corhdr.h>
 #include <metadataemithelper.h>
+#include <mdinternalemit.h>
 
 #include <cstdint>
 #include <atomic>
 
-class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyEmit, IMetaDataEmitHelper>
+class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyEmit, IMetaDataEmitHelper, IMDInternalEmit>
 {
     mdhandle_view _md_ptr;
     uint32_t _duplicateChecks;
@@ -47,6 +48,11 @@ protected:
         else if (riid == IID_IMetaDataEmitHelper)
         {
             *ppvObject = static_cast<IMetaDataEmitHelper*>(this);
+            return true;
+        }
+        else if (riid == IID_IMDInternalEmit)
+        {
+            *ppvObject = static_cast<IMDInternalEmit*>(this);
             return true;
         }
         return false;
@@ -498,6 +504,10 @@ public: // IMetaDataEmitHelper
     STDMETHOD(SetManifestResourceOffsetHelper)(mdManifestResource mr, ULONG ulOffset) override;
     STDMETHOD(SetTypeParent)(mdTypeDef td, mdToken tkExtends) override;
     STDMETHOD(AddInterfaceImpl)(mdTypeDef td, mdToken tkInterface) override;
+
+public: // IMDInternalEmit
+    STDMETHOD(ChangeMvid)(REFGUID newMvid) override;
+    STDMETHOD(SetMDUpdateMode)(ULONG updateMode, ULONG* previousUpdateMode) override;
 };
 
 #endif

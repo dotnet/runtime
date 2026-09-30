@@ -11,6 +11,7 @@
 #include <cor.h>
 #include <corhdr.h>
 #include <metadataemithelper.h>
+#include <mdinternalemit.h>
 
 #include <cstdint>
 #include <mutex>
@@ -53,10 +54,20 @@ public:
     {
         return _inner.DuplicateChecks();
     }
+
+    uint32_t UpdateMode() override
+    {
+        return _inner.UpdateMode();
+    }
+
+    HRESULT SetUpdateMode(uint32_t mode) override
+    {
+        return _inner.SetUpdateMode(mode);
+    }
 };
 
 template<typename TImport, typename TEmit>
-class ThreadSafeImportEmit : public TearOffBase<IMetaDataImport2, IMetaDataEmit2, IMetaDataAssemblyImport, IMetaDataAssemblyEmit, IMetaDataEmitHelper>
+class ThreadSafeImportEmit : public TearOffBase<IMetaDataImport2, IMetaDataEmit2, IMetaDataAssemblyImport, IMetaDataAssemblyEmit, IMetaDataEmitHelper, IMDInternalEmit>
 {
     pal::ReadWriteLock _lock;
     // owning reference to the thread-unsafe object that provides the underlying implementation.
@@ -92,6 +103,11 @@ protected:
         if (riid == IID_IMetaDataEmitHelper)
         {
             *ppvObject = static_cast<IMetaDataEmitHelper*>(this);
+            return true;
+        }
+        if (riid == IID_IMDInternalEmit)
+        {
+            *ppvObject = static_cast<IMDInternalEmit*>(this);
             return true;
         }
         return false;
@@ -1772,6 +1788,19 @@ public: // IMetaDataEmitHelper
     {
         std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
         return _emit->AddInterfaceImpl(td, tkInterface);
+    }
+
+public: // IMDInternalEmit
+    STDMETHOD(ChangeMvid)(REFGUID newMvid) override
+    {
+        std::lock_guard<pal::WriteLock> lock{ this->_lock.GetWriteLock() };
+        return _emit->ChangeMvid(newMvid);
+    }
+
+    STDMETHOD(SetMDUpdateMode)(ULONG updateMode, ULONG* previousUpdateMode) override
+    {
+        std::lock_guard<pal::WriteLock> lock{ this->_lock.GetWriteLock() };
+        return _emit->SetMDUpdateMode(updateMode, previousUpdateMode);
     }
 };
 

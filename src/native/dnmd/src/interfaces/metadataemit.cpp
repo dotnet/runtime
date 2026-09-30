@@ -3619,3 +3619,27 @@ HRESULT MetadataEmit::AddInterfaceImpl(mdTypeDef td, mdToken tkInterface)
 
     return S_OK;
 }
+
+HRESULT MetadataEmit::ChangeMvid(REFGUID newMvid)
+{
+    mdcursor_t module;
+    if (!md_token_to_cursor(MetaData(), TokenFromRid(1, mdtModule), &module))
+        return CLDB_E_FILE_CORRUPT;
+
+    mdguid_t mvid;
+    static_assert(sizeof(mvid) == sizeof(newMvid));
+    std::memcpy(&mvid, &newMvid, sizeof(mvid));
+    return md_set_column_value_as_guid(module, mdtModule_Mvid, mvid) ? S_OK : E_FAIL;
+}
+
+HRESULT MetadataEmit::SetMDUpdateMode(ULONG updateMode, ULONG* previousUpdateMode)
+{
+    ULONG originalMode = _md_ptr.UpdateMode();
+    HRESULT hr = _md_ptr.SetUpdateMode(updateMode);
+    if (FAILED(hr))
+        return hr;
+
+    if (previousUpdateMode != nullptr)
+        *previousUpdateMode = originalMode;
+    return S_OK;
+}

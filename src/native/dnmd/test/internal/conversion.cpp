@@ -5,6 +5,7 @@
 #include <cor.h>
 #include <metadata.h>
 #include <dnmd_interfaces.hpp>
+#include <mdinternalemit.h>
 #include <minipal/rwlock.h>
 #include "dnmdowner.hpp"
 
@@ -363,6 +364,31 @@ TEST(InternalConversion, SeparateConversionsHaveIndependentMetadata)
     EXPECT_EQ(added, found);
     EXPECT_EQ(CLDB_E_RECORD_NOTFOUND, second->FindTypeDef("", "OnlyFirst", mdTokenNil, &found));
     EXPECT_EQ(CLDB_E_RECORD_NOTFOUND, original->FindTypeDef("", "OnlyFirst", mdTokenNil, &found));
+}
+
+TEST(InternalConversion, ReadOnlyConversionPreservesInitialUpdateMode)
+{
+    std::vector<uint8_t> image;
+    ASSERT_NO_FATAL_FAILURE(CreateImage(image));
+
+    minipal::com_ptr<IMetaDataDispenserEx> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenserEx, (void**)&dispenser));
+    VARIANT option{};
+    V_VT(&option) = VT_UI4;
+    V_UI4(&option) = MDUpdateExtension;
+    ASSERT_EQ(S_OK, dispenser->SetOption(MetaDataSetUpdate, &option));
+
+    minipal::com_ptr<IMDInternalImport> readOnly;
+    ASSERT_NO_FATAL_FAILURE(OpenReadOnly(dispenser.p, image, readOnly));
+    IMDInternalImport* converted = nullptr;
+    ASSERT_EQ(S_OK, ConvertDNMDInternalImport(readOnly.p, &converted));
+    minipal::com_ptr<IMDInternalImport> writable;
+    writable.Attach(converted);
+    minipal::com_ptr<IMDInternalEmit> emitter;
+    ASSERT_EQ(S_OK, writable->QueryInterface(IID_IMDInternalEmit, (void**)&emitter));
+    ULONG previous = UINT32_MAX;
+    ASSERT_EQ(S_OK, emitter->SetMDUpdateMode(MDUpdateFull, &previous));
+    EXPECT_EQ(MDUpdateExtension, previous);
 }
 
 TEST(InternalConversion, ThreadSafeScopeSerializesInternalReadsWithWrites)

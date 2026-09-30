@@ -1041,20 +1041,7 @@ public:
 
 }; // IMDInternalImportENC
 
-// {F102C526-38CB-49ed-9B5F-498816AE36E0}
-EXTERN_GUID(IID_IMDInternalEmit, 0xf102c526, 0x38cb, 0x49ed, 0x9b, 0x5f, 0x49, 0x88, 0x16, 0xae, 0x36, 0xe0);
-
-#undef  INTERFACE
-#define INTERFACE IMDInternalEmit
-DECLARE_INTERFACE_(IMDInternalEmit, IUnknown)
-{
-    STDMETHOD(ChangeMvid)(                  // S_OK or error.
-        REFGUID newMvid) PURE;              // GUID to use as the MVID
-
-    STDMETHOD(SetMDUpdateMode)(
-        ULONG updateMode, ULONG *pPreviousUpdateMode) PURE;
-
-}; // IMDInternalEmit
+#include "mdinternalemit.h"
 
 enum MetaDataReorderingOptions {
     NoReordering=0x0,

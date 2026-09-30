@@ -93,6 +93,7 @@ namespace
     {
         bool _threadSafe = false;
         uint32_t _duplicateChecks = MDDupDefault;
+        uint32_t _updateMode = MDUpdateFull;
         CorMetaDataInitialSize _initialSize = MDInitialSizeDefault;
     protected:
         virtual bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
@@ -152,7 +153,7 @@ namespace
 
             try
             {
-                DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr), _duplicateChecks, true);
+                DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr), _duplicateChecks, _updateMode, true);
                 return CreateExposedObject(std::move(obj), owner, _threadSafe, _duplicateChecks)
                     ->QueryInterface(riid, (void**)ppIUnk);
             }
@@ -219,7 +220,7 @@ namespace
                     HasCompressedTablesStream(pData, cbData);
                 bool readWrite = (dwOpenFlags & ofReadOnly) == 0 && !internalReadOnly;
                 DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(
-                    std::move(md_ptr), std::move(copiedMem), std::move(nowOwned), _duplicateChecks, readWrite);
+                    std::move(md_ptr), std::move(copiedMem), std::move(nowOwned), _duplicateChecks, _updateMode, readWrite);
                 mdhandle_view handle_view{ owner };
 
                 if (!readWrite)
@@ -269,6 +270,18 @@ namespace
                     return S_OK;
                 }
 
+                if (optionid == MetaDataSetUpdate)
+                {
+                    if (V_VT(value) != VT_UI4)
+                        return E_INVALIDARG;
+
+                    HRESULT hr = ValidateDNMDUpdateMode(V_UI4(value));
+                    if (FAILED(hr))
+                        return hr;
+                    _updateMode = V_UI4(value);
+                    return S_OK;
+                }
+
                 if (optionid == MetaDataThreadSafetyOptions)
             {
                 _threadSafe = V_UI4(value) == CorThreadSafetyOptions::MDThreadSafetyOn;
@@ -295,6 +308,13 @@ namespace
             {
                 V_VT(pvalue) = VT_UI4;
                 V_UI4(pvalue) = _initialSize;
+                return S_OK;
+            }
+
+            if (optionid == MetaDataSetUpdate)
+            {
+                V_VT(pvalue) = VT_UI4;
+                V_UI4(pvalue) = _updateMode;
                 return S_OK;
             }
 
@@ -417,7 +437,7 @@ HRESULT ConvertDNMDInternalImport(IMDInternalImport* source, IMDInternalImport**
         object.Attach(new ControllingIUnknown());
         DNMDOwner* owner = object->CreateAndAddTearOff<DNMDOwner>(
             std::move(newHandle), std::move(image), minipal::cotaskmem_ptr<void>{},
-            sourceOwner->DuplicateChecks(), true);
+            sourceOwner->DuplicateChecks(), sourceOwner->UpdateMode(), true);
         auto exposed = CreateExposedObject(std::move(object), owner, true, owner->DuplicateChecks());
         return exposed->QueryInterface(IID_IMDInternalImport, (void**)converted);
     }
