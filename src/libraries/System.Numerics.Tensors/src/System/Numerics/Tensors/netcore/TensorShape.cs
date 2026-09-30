@@ -119,7 +119,7 @@ namespace System.Numerics.Tensors
 
                     if (length > 1)
                     {
-                        maximumLinearIndex = checked(maximumLinearIndex + ((length - 1) * stride));
+                        maximumLinearIndex = CheckedShapeAdd(maximumLinearIndex, CheckedShapeMultiply(length - 1, stride));
                     }
                     else
                     {
@@ -128,7 +128,7 @@ namespace System.Numerics.Tensors
                     }
 
                     destinationStrides[i] = stride;
-                    flattenedLength = checked(flattenedLength * length);
+                    flattenedLength = CheckedShapeMultiply(flattenedLength, length);
                 }
 
                 // When the strides are automatically computed, then we must be dense
@@ -156,7 +156,7 @@ namespace System.Numerics.Tensors
                 int maxStrideIndex = rank - 1;
                 nint minimumNonZeroStride = 1;
 
-                int[]? stridesOrderArray;
+                int[]? stridesOrderArray = null;
                 InlineBuffer<int> stridesOrderBuffer;
                 scoped Span<int> stridesOrder;
 
@@ -225,8 +225,8 @@ namespace System.Numerics.Tensors
                             ThrowHelper.ThrowArgument_InvalidTensorShape();
                         }
 
-                        minimumNonZeroStride = checked(length * sortedStride);
-                        maximumLinearIndex = checked(maximumLinearIndex + (minimumNonZeroStride - sortedStride));
+                        minimumNonZeroStride = CheckedShapeMultiply(length, sortedStride);
+                        maximumLinearIndex = CheckedShapeAdd(maximumLinearIndex, minimumNonZeroStride - sortedStride);
                     }
                     else
                     {
@@ -239,7 +239,7 @@ namespace System.Numerics.Tensors
                         }
                     }
 
-                    flattenedLength = checked(flattenedLength * length);
+                    flattenedLength = CheckedShapeMultiply(flattenedLength, length);
                 }
                 strides.CopyTo(destinationStrides);
 
@@ -250,6 +250,11 @@ namespace System.Numerics.Tensors
                 else if (CalculateHasAnyDenseDimensions(lengths, strides))
                 {
                     flags |= TensorFlags.HasAnyDenseDimensions;
+                }
+
+                if (stridesOrderArray is not null)
+                {
+                    ArrayPool<int>.Shared.Return(stridesOrderArray);
                 }
             }
 
@@ -272,8 +277,47 @@ namespace System.Numerics.Tensors
 
             _rank = rank;
             _flags = flags;
-
             ValidateState();
+        }
+
+        private static nint CheckedShapeMultiply(nint left, nint right)
+        {
+            try
+            {
+                return checked(left * right);
+            }
+            catch (OverflowException)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        internal static nint GetProduct(ReadOnlySpan<nint> lengths)
+        {
+            if (lengths.Contains(0))
+            {
+                return 0;
+            }
+
+            nint product = 1;
+            foreach (nint length in lengths)
+            {
+                product = CheckedShapeMultiply(product, length);
+            }
+
+            return product;
+        }
+
+        private static nint CheckedShapeAdd(nint left, nint right)
+        {
+            try
+            {
+                return checked(left + right);
+            }
+            catch (OverflowException)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
         }
 
         private TensorShape(nint flattenedLength, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, TensorFlags flags)
@@ -315,6 +359,29 @@ namespace System.Numerics.Tensors
 
         public bool HasAnyDenseDimensions => (_flags & TensorFlags.HasAnyDenseDimensions) != 0;
 
+        internal bool IsSelfOverlapping
+        {
+            get
+            {
+                if (IsEmpty || IsDense)
+                {
+                    return false;
+                }
+
+                ReadOnlySpan<nint> lengths = Lengths;
+                ReadOnlySpan<nint> strides = Strides;
+                for (int i = 0; i < lengths.Length; i++)
+                {
+                    if (lengths[i] > 1 && strides[i] == 0)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         public bool IsBroadcast => (_flags & TensorFlags.IsBroadcast) != 0;
 
         public bool IsDense => (_flags & TensorFlags.IsDense) != 0;
@@ -324,6 +391,22 @@ namespace System.Numerics.Tensors
         public bool IsPinned => (_flags & TensorFlags.IsPinned) != 0;
 
         public nint LinearLength => _linearLength;
+
+        internal bool Overlaps<TSource, TDestination>(ref readonly TSource source, ref TDestination destination, nint destinationLength)
+        {
+            if ((LinearLength == 0) || (destinationLength == 0))
+            {
+                return false;
+            }
+
+            nint byteOffset = Unsafe.ByteOffset(ref Unsafe.AsRef(in source), ref Unsafe.As<TDestination, TSource>(ref destination));
+            nuint sourceBytes = checked((nuint)LinearLength * (nuint)Unsafe.SizeOf<TSource>());
+            nuint destinationBytes = checked((nuint)destinationLength * (nuint)Unsafe.SizeOf<TDestination>());
+
+            return byteOffset >= 0
+                ? (nuint)byteOffset < sourceBytes
+                : unchecked((nuint)(0 - (nuint)byteOffset)) < destinationBytes;
+        }
 
         [UnscopedRef]
         public ReadOnlySpan<nint> Lengths
@@ -576,15 +659,9 @@ namespace System.Numerics.Tensors
                 Debug.Assert(rankDelta > 0);
             }
 
-            // We need both to be empty if either is empty
-
-            if (shape1.IsEmpty)
+            if ((shape1.Rank == 0) || (shape2.Rank == 0))
             {
-                return shape2.IsEmpty;
-            }
-            else if (shape2.IsEmpty)
-            {
-                return false;
+                return shape1.IsEmpty && shape2.IsEmpty;
             }
 
             // We need the lengths to be equal, length2 to be 1, or
@@ -614,7 +691,7 @@ namespace System.Numerics.Tensors
                 return false;
             }
 
-            if (!allowBidirectional)
+            if (!allowBidirectional && !shape1.IsEmpty)
             {
                 // When we aren't bidirectionally compatible, then we
                 // need to ensure that if stride1 is 0, then stride2
@@ -647,13 +724,11 @@ namespace System.Numerics.Tensors
                 return false;
             }
 
-            // We need both to be empty if either is empty
-
             if (shape1Lengths.IsEmpty)
             {
                 return shape2.IsEmpty;
             }
-            else if (shape2.IsEmpty)
+            if (shape2.Rank == 0)
             {
                 return false;
             }
@@ -874,11 +949,11 @@ namespace System.Numerics.Tensors
             return default;
         }
 
-        public static TensorShape Create<T>(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+        public static TensorShape Create<T>(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
             if (array is not null)
             {
-                return new TensorShape(array.Length, lengths, strides, TensorFlags.None);
+                return new TensorShape(array.Length, lengths, strides, pinned ? TensorFlags.IsPinned : TensorFlags.None);
             }
 
             if ((lengths.Length != 0) || (strides.Length != 0))
@@ -888,7 +963,7 @@ namespace System.Numerics.Tensors
             return default;
         }
 
-        public static TensorShape Create<T>(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+        public static TensorShape Create<T>(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
             if (array is not null)
             {
@@ -900,7 +975,7 @@ namespace System.Numerics.Tensors
                 }
 
                 linearLength -= start;
-                return new TensorShape(linearLength, lengths, strides, TensorFlags.None);
+                return new TensorShape(linearLength, lengths, strides, pinned ? TensorFlags.IsPinned : TensorFlags.None);
             }
             else if (start != 0)
             {
@@ -916,6 +991,8 @@ namespace System.Numerics.Tensors
 
         public static TensorShape Create<T>(ref readonly T reference, nint linearLength, bool pinned)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(linearLength);
+
             if (!Unsafe.IsNullRef(in reference))
             {
                 nint stride = 1;
@@ -946,6 +1023,8 @@ namespace System.Numerics.Tensors
 
         public static TensorShape Create<T>(ref readonly T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(linearLength);
+
             if (!Unsafe.IsNullRef(in reference))
             {
                 TensorFlags flags = pinned ? TensorFlags.IsPinned : TensorFlags.None;
@@ -1007,6 +1086,10 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
             }
+            if (IsEmpty)
+            {
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            }
 
             nint linearOffset = 0;
 
@@ -1027,6 +1110,10 @@ namespace System.Numerics.Tensors
             if ((uint)dimension > (uint)lengths.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            if (dimension == 0 || lengths[..dimension].Contains(0))
+            {
+                ThrowHelper.ThrowIndexOutOfRangeException();
             }
 
             nint linearOffset = 0;
@@ -1056,6 +1143,11 @@ namespace System.Numerics.Tensors
                 (state.Length != strides.Length))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            if (rank == 0)
+            {
+                linearOffset = 0;
+                return 0;
             }
 
             nint maximumLinearIndex = 0;
@@ -1091,7 +1183,10 @@ namespace System.Numerics.Tensors
                     // We are no longer dense since we have a broadcast to more than 1 element
                     longestContiguousLength = maximumLinearIndex + 1;
                 }
-                minimumNonZeroStride = adjustedStride * length;
+                if (length > 1)
+                {
+                    minimumNonZeroStride = adjustedStride * length;
+                }
 
                 computedOffset += (offset * stride);
             }
@@ -1108,6 +1203,16 @@ namespace System.Numerics.Tensors
             where TGetOffsetAndLength : IGetOffsetAndLength<T>
         {
             int rank = Rank;
+
+            if (rank == 0)
+            {
+                if (!state.IsEmpty)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                }
+                linearOffset = 0;
+                return this;
+            }
 
             nint[]? intermediateLengthsArray = null;
             InlineBuffer<nint> intermediateLengthsBuffer;
@@ -1192,7 +1297,10 @@ namespace System.Numerics.Tensors
                 intermediateLengths[i] = length;
                 intermediateStrides[i] = stride;
 
-                minimumNonZeroStride = stride * length;
+                if (length > 1)
+                {
+                    minimumNonZeroStride = stride * length;
+                }
 
                 computedOffset += (offset * previousStride);
                 flattenedLength *= length;
@@ -1231,7 +1339,10 @@ namespace System.Numerics.Tensors
                 ArrayPool<nint>.Shared.Return(intermediateStridesArray);
             }
 
-            Debug.Assert(computedOffset == GetLinearOffset<TGetOffsetAndLength, T>(state));
+            if (!IsEmpty)
+            {
+                Debug.Assert(computedOffset == GetLinearOffset<TGetOffsetAndLength, T>(state));
+            }
             linearOffset = computedOffset;
 
             return result;
@@ -1297,6 +1408,24 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowIndexOutOfRangeException();
                 }
                 return offset;
+            }
+
+            public static (nint Offset, nint Length) GetOffsetAndLength(nint index, nint length)
+            {
+                nint offset = GetOffset(index, length);
+                return (offset, length - offset);
+            }
+        }
+
+        public readonly struct GetOffsetAndLengthForSlice : IGetOffsetAndLength<nint>
+        {
+            public static nint GetOffset(nint index, nint length)
+            {
+                if ((index < 0) || (index >= length))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                }
+                return index;
             }
 
             public static (nint Offset, nint Length) GetOffsetAndLength(nint index, nint length)

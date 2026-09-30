@@ -27,9 +27,25 @@ namespace System
         public static void ThrowArgument_InputAndDestinationSpanMustNotOverlap() =>
             throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
 
-        public static void ThrowIfArrayTypeMismatch<T>(Array? array)
+        [DoesNotReturn]
+        public static void ThrowArgument_OverlappingTensorLayoutsNotSupported() =>
+            throw new ArgumentException(SR.Argument_OverlappingTensorLayoutsNotSupported, "destination");
+
+        public static void ThrowIfArrayTypeMismatch<T>(Array? array, bool isReadOnly)
         {
-            if ((array is not null) && (array.GetType().GetElementType() != typeof(T)))
+            if (array is null)
+            {
+                return;
+            }
+
+            Type arrayType = array.GetType();
+            if (arrayType.GetElementType() == typeof(T))
+            {
+                return;
+            }
+
+            if ((array is not T[] && !typeof(T).MakeArrayType(array.Rank).IsInstanceOfType(array)) ||
+                (!isReadOnly && !typeof(T).IsValueType))
             {
                 ThrowArrayTypeMismatchException();
             }
@@ -69,6 +85,12 @@ namespace System
         internal static void ThrowIndexOutOfRangeException()
         {
             throw new IndexOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_EnumerationNotPositioned()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_EnumerationNotPositioned);
         }
 
         [DoesNotReturn]
@@ -138,6 +160,12 @@ namespace System
         public static void ThrowArgument_DimensionsNotSame(string? paramNames)
         {
             throw new ArgumentException(SR.ThrowArgument_DimensionsNotSame, paramNames);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_DestinationHasOverlappingElements(string paramName)
+        {
+            throw new ArgumentException(SR.ThrowArgument_DestinationHasOverlappingElements, paramName);
         }
 
         [DoesNotReturn]
