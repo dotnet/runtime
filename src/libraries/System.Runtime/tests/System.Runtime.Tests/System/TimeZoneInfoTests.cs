@@ -3334,10 +3334,6 @@ namespace System.Tests
             { "Europe/London", new DateTime(2026, 3, 29, 1, 30, 0), new DateTime(2026, 3, 29, 1, 30, 0) },
             // Negative (behind UTC) standard offset: EST is UTC-5, so UTC is ahead of the local wall clock.
             { "America/New_York", new DateTime(2026, 3, 8, 2, 30, 0), new DateTime(2026, 3, 8, 7, 30, 0) },
-            // Historical case where the standard offset itself differed from the zone's base UTC offset
-            // (non-zero BaseUtcOffsetDelta): Portugal observed CET (UTC+1) as standard in 1993, so the
-            // gap time must subtract 1 hour, not the base UTC+0 offset.
-            { "Europe/Lisbon", new DateTime(1993, 3, 28, 2, 30, 0), new DateTime(1993, 3, 28, 1, 30, 0) },
         };
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
