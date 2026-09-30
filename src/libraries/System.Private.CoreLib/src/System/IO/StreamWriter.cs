@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -424,7 +425,7 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteSpan(ReadOnlySpan<char> buffer, bool appendNewLine)
+        private unsafe void WriteSpan(ReadOnlySpan<char> buffer, bool appendNewLine)
         {
             CheckAsyncTaskInProgress();
 
@@ -441,25 +442,38 @@ namespace System.IO
             else
             {
                 // For larger buffers or when we may run out of room in the internal char buffer, copy in chunks.
+                // Use unsafe code until https://github.com/dotnet/runtime/issues/8890 is addressed, as spans are
+                // resulting in significant overhead (even when the if branch above is taken rather than this
+                // else) due to temporaries that need to be cleared.  Given the use of unsafe code, we also
+                // make local copies of instance state to protect against potential concurrent misuse.
 
                 ThrowIfDisposed();
                 char[] charBuffer = _charBuffer;
 
-                int dstPos = _charPos; // use a local copy of _charPos for safety
-                while (!buffer.IsEmpty)
+                fixed (char* bufferPtr = &MemoryMarshal.GetReference(buffer))
+                fixed (char* dstPtr = &charBuffer[0])
                 {
-                    if (dstPos == charBuffer.Length)
+                    char* srcPtr = bufferPtr;
+                    int count = buffer.Length;
+                    int dstPos = _charPos; // use a local copy of _charPos for safety
+                    while (count > 0)
                     {
-                        Flush(false, false);
-                        dstPos = 0;
+                        if (dstPos == charBuffer.Length)
+                        {
+                            Flush(false, false);
+                            dstPos = 0;
+                        }
+
+                        int n = Math.Min(charBuffer.Length - dstPos, count);
+                        int bytesToCopy = n * sizeof(char);
+
+                        Buffer.MemoryCopy(srcPtr, dstPtr + dstPos, bytesToCopy, bytesToCopy);
+
+                        _charPos += n;
+                        dstPos += n;
+                        srcPtr += n;
+                        count -= n;
                     }
-
-                    int n = Math.Min(charBuffer.Length - dstPos, buffer.Length);
-                    buffer.Slice(0, n).CopyTo(charBuffer.AsSpan(dstPos));
-
-                    _charPos += n;
-                    dstPos += n;
-                    buffer = buffer.Slice(n);
                 }
             }
 
