@@ -93,8 +93,7 @@ void fx_resolver_t::display_summary_of_frameworks(
 void fx_resolver_t::display_missing_framework_error(
     const pal::string_t& fx_name,
     const pal::string_t& fx_version,
-    const pal::string_t& dotnet_root,
-    bool disable_multilevel_lookup)
+    const pal::string_t& dotnet_root)
 {
 
     // Display the error message about missing FX.
@@ -110,7 +109,7 @@ void fx_resolver_t::display_missing_framework_error(
     trace::error(_X(".NET location: %s\n"), dotnet_root.c_str());
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_root, fx_name.c_str(), disable_multilevel_lookup, /*include_disabled_versions*/ true, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_root, fx_name.c_str(), /*include_disabled_versions*/ true, &framework_infos);
     if (framework_infos.size())
     {
         trace::error(_X("The following frameworks were found:"));
@@ -133,7 +132,7 @@ void fx_resolver_t::display_missing_framework_error(
         [&](pal::architecture arch, const pal::string_t& install_location, bool is_registered)
         {
             std::vector<framework_info> other_arch_infos;
-            framework_info::get_all_framework_infos(install_location, fx_name.c_str(), disable_multilevel_lookup, /*include_disabled_versions*/ true, &other_arch_infos);
+            framework_info::get_all_framework_infos(install_location, fx_name.c_str(), /*include_disabled_versions*/ true, &other_arch_infos);
             if (!other_arch_infos.empty())
             {
                 other_arch_framework_infos.push_back(std::make_pair(arch, std::move(other_arch_infos)));

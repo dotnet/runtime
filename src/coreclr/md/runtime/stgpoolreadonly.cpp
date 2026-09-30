@@ -42,7 +42,6 @@ HRESULT StgPoolReadOnly::InitOnMemReadOnly(// Return code.
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
 
@@ -66,7 +65,7 @@ HRESULT StgPoolReadOnly::InitOnMemReadOnly(// Return code.
 //*****************************************************************************
 // Prepare to shut down or reinitialize.
 //*****************************************************************************
-void StgPoolReadOnly::Uninit()
+void StgPoolReadOnly::Uninit() noexcept
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -84,8 +83,6 @@ HRESULT StgPoolReadOnly::GetStringW(        // Return code.
     int         cchBuffer)                  // Size of output buffer.
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FAULT;
-
     HRESULT hr;
     LPCSTR  pString;                // The string in UTF8.
     int     iChars;
@@ -107,7 +104,6 @@ StgPoolReadOnly::GetBlob(
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr;
     UINT32  cbBlobContentSize;
@@ -159,7 +155,6 @@ StgBlobPoolReadOnly::GetBlob(
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr;
     UINT32  cbBlobContentSize;

@@ -1273,13 +1273,11 @@ namespace LibraryImportGenerator.UnitTests
                  partial class Test
                  {
                      [LibraryImport("DoesNotExist")]
-                     public static {|CS9388:safe|} partial void {|CS8795:Method|}();
+                     public static safe partial void {|CS8795:Method|}();
                  }
 
                 """;
 
-            // The fixer test does not run the generator, so the `extern` implementing part that makes `safe`
-            // legal on this declaration is missing, the same way the implementation itself is (CS8795).
             await VerifyCodeFixAsync(source, fixedSource, updatedMemorySafetyRules: true);
         }
 

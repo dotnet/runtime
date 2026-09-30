@@ -41,6 +41,8 @@ public:
 
     static void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args);
 
+    static bool IsClientBridgeProcessingActive();
+
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
     static void SyncBlockCacheDemote(int max_gen);

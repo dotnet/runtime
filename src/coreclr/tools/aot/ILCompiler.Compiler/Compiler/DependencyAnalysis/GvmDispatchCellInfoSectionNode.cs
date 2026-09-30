@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
                     nextCell++;
 
                 uint owningTypeIndex = _externalReferences.GetIndex(factory.MaximallyConstructableType(targetMethod.OwningType));
-                uint instantiationIndex = _externalReferences.GetIndex(factory.ConstructedGenericComposition(targetMethod.Instantiation));
+                uint instantiationIndex = _externalReferences.GetIndex(factory.MetadataEnabledGenericComposition(targetMethod.Instantiation));
 
                 int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, GetMethodForMetadata(targetMethod, out bool isAsyncVariant));
 
@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis
             factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref result, factory, GetMethodForMetadata(targetMethod, out _));
 
             result.Add(factory.MaximallyConstructableType(targetMethod.OwningType), "Owning type of GVM decl");
-            result.Add(factory.ConstructedGenericComposition(targetMethod.Instantiation), "GVM instantiation info");
+            result.Add(factory.MetadataEnabledGenericComposition(targetMethod.Instantiation), "GVM instantiation info");
 
             return result;
         }

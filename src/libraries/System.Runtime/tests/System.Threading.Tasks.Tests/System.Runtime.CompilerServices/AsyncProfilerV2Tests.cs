@@ -2662,7 +2662,8 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(true)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async Task RuntimeAsync_ResumeDispatchStack_ContainsExpectedBoundaryFrames(StrongBox<List<string>> capture)
+        private static async Task RuntimeAsync_ResumeDispatchStack_ContainsExpectedBoundaryFrames(
+            StrongBox<(List<string> Boundaries, List<string> DiagnosticFrames)> capture)
         {
             await Task.Yield();
             capture.Value = CaptureAsyncBoundarySequence();
@@ -2671,7 +2672,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_ResumeDispatchStack()
         {
-            var capture = new StrongBox<List<string>>();
+            var capture = new StrongBox<(List<string> Boundaries, List<string> DiagnosticFrames)>();
 
             var events = CollectEvents(AllRuntimeAsyncKeywords, () =>
             {
@@ -2680,10 +2681,12 @@ namespace System.Threading.Tasks.Tests
 
             // DumpAllEvents(events);
 
-            Assert.True(capture.Value is not null,
+            Assert.True(capture.Value.Boundaries is not null,
                 "The runtime-async continuation did not run (no boundary sequence was captured).");
 
-            AssertBoundarySubsequence(capture.Value!,
+            AssertBoundarySubsequence(
+                capture.Value.Boundaries,
+                capture.Value.DiagnosticFrames,
                 "Wrapper",
                 "V2.InstrumentedDispatchContinuations",
                 "V2.DispatchContinuations");

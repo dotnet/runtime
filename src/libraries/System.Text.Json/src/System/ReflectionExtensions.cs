@@ -160,54 +160,6 @@ namespace System.Text.Json.Reflection
 #endif
         }
 
-        public static ParameterInfo GetGenericParameterDefinition(this ParameterInfo parameter)
-        {
-            if (parameter.Member is { DeclaringType.IsConstructedGenericType: true }
-                                 or MethodInfo { IsGenericMethod: true, IsGenericMethodDefinition: false })
-            {
-                var genericMethod = (MethodBase)parameter.Member.GetGenericMemberDefinition()!;
-                return genericMethod.GetParameters()[parameter.Position];
-            }
-
-            return parameter;
-        }
-
-        [UnconditionalSuppressMessage("Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.",
-            Justification = "Looking up the generic member definition of the provided member.")]
-        public static MemberInfo GetGenericMemberDefinition(this MemberInfo member)
-        {
-            if (member is Type type)
-            {
-                return type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : type;
-            }
-
-            if (member.DeclaringType!.IsConstructedGenericType)
-            {
-                const BindingFlags AllMemberFlags =
-                    BindingFlags.Static | BindingFlags.Instance |
-                    BindingFlags.Public | BindingFlags.NonPublic;
-
-                Type genericTypeDef = member.DeclaringType.GetGenericTypeDefinition();
-                foreach (MemberInfo genericMember in genericTypeDef.GetMember(member.Name, AllMemberFlags))
-                {
-                    if (genericMember.MetadataToken == member.MetadataToken)
-                    {
-                        return genericMember;
-                    }
-                }
-
-                Debug.Fail("Unreachable code");
-                throw new Exception();
-            }
-
-            if (member is MethodInfo { IsGenericMethod: true, IsGenericMethodDefinition: false } method)
-            {
-                return method.GetGenericMethodDefinition();
-            }
-
-            return member;
-        }
-
         /// <summary>
         /// Enumerates every ancestor of <paramref name="type"/> whose generic type definition
         /// matches <paramref name="baseTypeDefinition"/>. For interface bases this yields every

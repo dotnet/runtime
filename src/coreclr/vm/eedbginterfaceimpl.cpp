@@ -189,15 +189,15 @@ OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
     {
         oh = pAppDomain->CreateStrongHandle(ObjectToOBJECTREF((Object *)obj));
 
-        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref 0x%x,"
-            "created strong handle 0x%x!\n", obj, oh));
+        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref %p,"
+            "created strong handle %p!\n", obj, oh));
     }
     else
     {
         oh = pAppDomain->CreateLongWeakHandle( ObjectToOBJECTREF((Object *)obj));
 
-        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref 0x%x,"
-            "created long weak handle 0x%x!\n", obj, oh));
+        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref %p,"
+            "created long weak handle %p!\n", obj, oh));
     }
 
     return oh;
@@ -213,7 +213,7 @@ void EEDbgInterfaceImpl::DbgDestroyHandle(OBJECTHANDLE oh,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Destroyed given handle 0x%x,"
+    LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Destroyed given handle %p,"
         "fStrong: 0x%x!\n", oh, fStrongNewRef));
 
     if (fStrongNewRef)
@@ -282,7 +282,7 @@ bool EEDbgInterfaceImpl::StartSuspendForDebug(AppDomain *pAppDomain,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB,LL_INFO1000, "EEDbgII:SSFD: start suspend on AD:0x%x\n",
+    LOG((LF_CORDB,LL_INFO1000, "EEDbgII:SSFD: start suspend on AD:%p\n",
         pAppDomain));
 
     bool result = Thread::SysStartSuspendForDebug(pAppDomain);
@@ -386,6 +386,12 @@ BOOL EEDbgInterfaceImpl::IsManagedNativeCode(const BYTE *address)
 {
     WRAPPER_NO_CONTRACT;
     return ExecutionManager::IsManagedCode((PCODE)address);
+}
+
+BOOL EEDbgInterfaceImpl::IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
+{
+    WRAPPER_NO_CONTRACT;
+    return ::IsIPInModule(pModuleBaseAddress, ip);
 }
 
 PCODE EEDbgInterfaceImpl::GetNativeCodeStartAddress(PCODE address)
@@ -805,11 +811,6 @@ TypeHandle EEDbgInterfaceImpl::FindLoadedInstantiation(Module *pModule,
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-
-    // scan violation:  asserts that this can be suppressed since there is currently
-    // work on dac-izing all this code and as a result the issue will become moot.
-    CONTRACT_VIOLATION(FaultViolation);
-
     return ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(inst, ntypars),
                                                         ClassLoader::DontLoadTypes);
 }
@@ -1165,7 +1166,6 @@ bool EEDbgInterfaceImpl::TraceFrame(Thread *thread,
     if (fResult)
     {
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        FAULT_NOT_FATAL();
         SString buffer;
         StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
@@ -1211,7 +1211,6 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
     if (fResult)
     {
         // Should never be on helper thread
-        FAULT_NOT_FATAL();
         SString buffer;
         StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
@@ -1334,7 +1333,7 @@ void EEDbgInterfaceImpl::SetDebugState(Thread *pThread,
 
     _ASSERTE(state == THREAD_SUSPEND || state == THREAD_RUN);
 
-    LOG((LF_CORDB,LL_INFO10000,"EEDbg:Setting thread 0x%x (ID:0x%x) to 0x%x\n", pThread, pThread->GetThreadId(), state));
+    LOG((LF_CORDB,LL_INFO10000,"EEDbg:Setting thread %p (ID:0x%x) to 0x%x\n", pThread, pThread->GetThreadId(), state));
 
     if (state == THREAD_SUSPEND)
     {
@@ -1405,7 +1404,7 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
         ret |= (unsigned)USER_WAIT_SLEEP_JOIN;
     }
 
-    LOG((LF_CORDB,LL_INFO1000, "EEDbgII::GUS: thread 0x%x (id:0x%x)"
+    LOG((LF_CORDB,LL_INFO1000, "EEDbgII::GUS: thread %p (id:0x%x)"
         " userThreadState is 0x%x\n", pThread, pThread->GetThreadId(), ret));
 
     return (CorDebugUserState)ret;

@@ -445,7 +445,6 @@ void *EEMarshalingData::operator new(size_t size, LoaderHeap *pHeap)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pHeap));
     }
     CONTRACTL_END;
@@ -468,7 +467,6 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pAssembly));
     }
     CONTRACTL_END;
@@ -536,7 +534,6 @@ CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1758,6 +1755,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 m_type = MARSHAL_TYPE_HANDLEREF;
             }
+#ifdef FEATURE_VARARGS
             else if (sig.IsClassThrowing(pModule, "System.ArgIterator", pTypeContext))
             {
                 if (m_ms == MARSHAL_SCENARIO_FIELD)
@@ -1770,6 +1768,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 m_type = MARSHAL_TYPE_ARGITERATOR;
             }
+#endif // FEATURE_VARARGS
 #ifdef FEATURE_COMINTEROP
             else if (sig.IsClassThrowing(pModule, g_ColorClassName, pTypeContext))
             {
@@ -2084,6 +2083,14 @@ VOID MarshalInfo::EmitOrThrowInteropParamException(PInvokeStubLinker* psl, BOOL 
     }
 #endif // FEATURE_COMINTEROP
 
+    // An unmanaged CALLI stub is created while the calli's caller is being jitted, so its failures
+    // have to be reported when the stub is called rather than failing that compilation.
+    if (SF_IsCALLIStub(psl->GetStubFlags()))
+    {
+        psl->SetInteropParamExceptionInfo(resID, paramIdx);
+        return;
+    }
+
     ThrowInteropParamException(resID, paramIdx);
 }
 
@@ -2107,7 +2114,6 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pParamInfo));
     }
     CONTRACTL_END;
@@ -2832,7 +2838,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
         IMDInternalImport *pInternalImport = pModule->GetMDImport();
 
         logbuf.AppendASCII("------------------------------------------------------------\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
+        LOG((LF_MARSHALER, LL_INFO10, "%s", logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("Managed type: ");
@@ -2850,7 +2856,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
         }
 
         logbuf.AppendASCII("\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
+        LOG((LF_MARSHALER, LL_INFO10, "%s", logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("NativeType  : ");
@@ -3005,7 +3011,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
             }
         }
         logbuf.AppendASCII("\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
+        LOG((LF_MARSHALER, LL_INFO10, "%s", logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("MarshalType : ");
@@ -3065,7 +3071,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 
         logbuf.AppendASCII("\n");
 
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
+        LOG((LF_MARSHALER, LL_INFO10, "%s", logbuf.GetUTF8()));
         logbuf.Clear();
     }
 } // MarshalInfo::DumpMarshalInfo
@@ -3079,7 +3085,6 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3288,7 +3293,6 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thElement.IsNull());
     }
     CONTRACTL_END;
@@ -3585,7 +3589,7 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 #include "stubhelpers.h"
 
-extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

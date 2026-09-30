@@ -81,6 +81,17 @@ inline void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesAr
     }
 }
 
+inline bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    assert(g_theGCToCLR != nullptr);
+    if (g_runtimeSupportedVersion.MajorVersion >= 5)
+    {
+        return g_theGCToCLR->IsClientBridgeProcessingActive();
+    }
+
+    return false;
+}
+
 inline void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
 {
     assert(g_theGCToCLR != nullptr);

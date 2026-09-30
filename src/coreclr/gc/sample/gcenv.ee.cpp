@@ -26,22 +26,6 @@ bool CLREventStatic::CreateAutoEventNoThrow(bool bInitialState)
     return IsValid();
 }
 
-bool CLREventStatic::CreateOSManualEventNoThrow(bool bInitialState)
-{
-    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL);
-    m_fInitialized = true;
-
-    return IsValid();
-}
-
-bool CLREventStatic::CreateOSAutoEventNoThrow(bool bInitialState)
-{
-    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL);
-    m_fInitialized = true;
-
-    return IsValid();
-}
-
 void CLREventStatic::CloseEvent()
 {
     if (m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE)
@@ -166,6 +150,11 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 
 void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
 {
+}
+
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    return false;
 }
 
 bool GCToEEInterface::IsPreemptiveGCDisabled()

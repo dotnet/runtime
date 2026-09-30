@@ -1,0 +1,21 @@
+<Project>
+  <Target Name="CheckCrossgen2PackRequest" BeforeTargets="ProcessFrameworkReferences">
+    <Error Condition="'$(RequiresCrossgen2Pack)' != 'true'"
+           Text="Expected RequiresCrossgen2Pack=true before restore." />
+  </Target>
+  <Target Name="CheckSdkCrossgen2" AfterTargets="_CoreCLRGenerateManagedToNative">
+    <Error Condition="'$(_WasmBuildTestExpectNestedPublish)' != 'true' and '$(_WasmBuildTestExpectNestedPublish)' != 'false'"
+           Text="Expected the test to set _WasmBuildTestExpectNestedPublish to true or false." />
+    <Error Condition="'$(_WasmBuildTestExpectNestedPublish)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+           Text="Expected helper generation during nested publish." />
+    <Error Condition="'$(PublishReadyToRun)' == 'true'"
+           Text="Expected PublishReadyToRun=false." />
+    <Error Condition="'$(Crossgen2InBuildDir)' != '' or '$(Crossgen2ToolPath)' != ''"
+           Text="Expected SDK resolution without crossgen2 path overrides." />
+    <Error Condition="'@(Crossgen2Tool)' == '' or '$(Crossgen2Path)' != '@(Crossgen2Tool)'"
+           Text="Expected the generator path to match the SDK Crossgen2Tool item." />
+    <Error Condition="!Exists('$(_WasmPInvokeTablePath)') or !Exists('$(_WasmReversePInvokeTablePath)') or !Exists('$(_WasmInterpToNativeTablePath)')"
+           Text="A generated call-helper table is missing." />
+    <Error Text="Stopping after validating SDK crossgen2" />
+  </Target>
+</Project>

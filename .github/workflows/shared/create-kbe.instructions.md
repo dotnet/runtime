@@ -40,8 +40,25 @@ responsible for:
 ## Search for an existing KBE
 
 Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
-these variations in order, scanning the first ~10 results of each. GitHub
-best-match ranking can place noisier hits above the correct one.
+these variations in order and inspect every returned candidate. Narrow overly
+broad queries instead of truncating results. GitHub best-match ranking can
+place noisier hits above the correct one.
+
+Use the lookup tools required by the caller; this shared file does not change
+its tool policy. For GitHub MCP lookups, use `search_issues` for issues and
+`search_pull_requests` for PRs. When supplying a `fields` filter, include
+`user` and `labels` alongside `number`, `title`, and `state`; otherwise retain
+the full response. The integrity gateway uses `user.login` to recognize
+trusted bots before filtering results.
+
+Preserve the complete lookup response before extracting candidate numbers or
+titles. Never pipe it through `grep`, `head`, or a projection that discards
+filtered markers, errors, author metadata, or result counts. A failed,
+malformed, incomplete, or unreadable lookup is not an empty result. Report the
+retrieval failure to the caller and do not create a KBE for that signature
+while the lookup remains inconclusive.
+These rules also apply to candidate body and comments reads. Do not switch
+retrieval paths to work around an integrity-filtered or denied read.
 
 1. Full `[FAIL]` line.
 2. Assertion text.
@@ -52,39 +69,69 @@ best-match ranking can place noisier hits above the correct one.
    `SocketBlockingModeTransitionTests label:area-System.Net.Sockets`.
 6. Stripped test-family stem. Strip platform/arch suffixes (`_linux_arm`,
    `_osx_arm64`) and type-width suffixes (`_byte_short`, `_long_ulong`,
-   `_8bit`, `_16bit`, `_32bit`); search the stem in `in:title` and `in:body`.
-   Catches sibling KBEs at different bit widths or instantiations.
+   `_8bit`, `_16bit`, `_32bit`). For coreclr slash-delimited runtime-test
+   paths, also strip trailing script-runner suffixes (`.cmd`, `.dll`, `.sh`,
+   `.exe`) and exit-code/signal descriptors (`exit 134`, `exit 101`,
+   `SIGABRT`); search the bare stem in `in:title` and `in:body`. For example,
+   search `GC/API/Refresh/Refresh/Refresh` for both
+   `GC/API/Refresh/Refresh/Refresh` and `GC/API/Refresh/Refresh/Refresh.cmd`
+   failures with `exit 101`, and search
+   `JIT/Methodical/Arrays/misc/arrres_il_r/arrres_il_r` for the same test with
+   or without `.cmd` and `exit 134`. Catches sibling KBEs at different bit
+   widths, instantiations, script runners, or exit/signal descriptors.
 7. Bare signature, open issues, no label filter:
    `is:issue is:open in:title "<test-name>"` and
    `is:issue is:open "<assertion-text>" in:body`. Catches a pre-existing
    human-filed report (`Test failure: ...`) that lacks both the
    `Known Build Error` and area labels, so the label-scoped variations above
    skip over it.
+8. Build-break invariant plus leg root. For a build break with no test or method
+   identifier, derive two bounded, verbatim fragments:
+   - an invariant error phrase from `ErrorMessage` / `ErrorPattern`, removing
+     only volatile paths, line numbers, hashes, GUIDs, timestamps, and exit
+     codes; keep a distinctive 1-8 word literal fragment and reject generic
+     tool-failure text such as `dotnet build failed`;
+   - a leg root from `Build error leg or test failing`, taking the leg portion
+     before the last hyphen (whether rendered as ` - ` or `-`),
+     then removing platform, architecture, configuration, retry, and
+     parenthesized run-specific details; keep at most 4 distinctive words and
+     80 characters.
+
+   Search the pair together in the same issue:
+   `is:issue is:open label:"Known Build Error" in:body "<invariant-error-phrase>" "<leg-root>"`.
+   For an `ErrorMessage` array, try each stable element separately. Treat a
+   result as a candidate only when both fragments match and the full candidate
+   verification below succeeds. If more than one candidate remains plausible,
+   do not guess: record `skipped: ambiguous dup #<a>/#<b>, needs human review`.
+   If either fragment cannot be bounded, skip variation 8 without broadening
+   the search and continue the normal flow. Reserve `skipped: weak signature`
+   for failures whose error signature itself does not meet the specificity bar.
 
 When a failure includes a complete test method identifier, search that
 identifier verbatim before deriving any shorter stem. Do not truncate
-underscore-delimited identifiers;
-GitHub search does not reliably prefix-match them. Only strip the specific
-platform, architecture, and type-width suffixes described in variation 6.
+underscore-delimited identifiers; GitHub search does not reliably prefix-match
+them. Only strip the specific platform, architecture, type-width,
+script-runner, and exit-code/signal suffixes described in variation 6.
 
 Variations 4 and 5 catch sibling failures filed for the same test class on a
 different platform or runtime variant, plus pre-existing area-team trackers
 that lack the `Known Build Error` label. Variation 6 catches siblings at
-different bit widths or instantiations. Variation 7 catches an open human
-report with no label at all.
+different bit widths, instantiations, script runners, or exit/signal
+descriptors. Variation 7 catches an open human report with no label at all.
+Variation 8 catches build-break duplicates whose invariant error text and leg
+root remain stable while title prose drifts.
 
 If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
 `skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
-If a KBE-labeled search returns a `[Filtered]` marker, treat it as a likely
-existing-KBE hit and record
+If any lookup returns a `[Filtered]` or `[DIFC-FILTERED]` marker, treat it as
+a possible existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
-If variation 5 returns a `[Filtered]` marker, record
-`linked-tracker: integrity-filtered, needs human review` for cross-linking, but
-do not treat it as a KBE substitute.
+This includes variation 5 and searches without a KBE label filter. A hidden
+result does not establish whether the issue is an unlabeled tracker or a KBE.
 
 On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
@@ -113,8 +160,31 @@ candidates:
   across runs and survives cases where the predecessor was integrity-filtered or
   cross-linked rather than directly readable.
 
-On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
-it from the build metadata, not the queue time) against the issue's `closed_at`:
+For a build break with no test or method identifier, when the open variation 8
+search misses, also search recently closed KBEs with the same pair:
+
+- `is:issue is:closed label:"Known Build Error" in:body "<invariant-error-phrase>" "<leg-root>" closed:>=<30-days-ago>`
+
+Apply the closed-candidate timing and full candidate-verification rules below
+to any pair match.
+
+Read each candidate's body and comments before applying the recurrence rules.
+If a candidate is identified as a duplicate, follow only explicit duplicate
+links and read each linked issue's body and comments through
+the same permitted tools until reaching an original that is not itself a
+duplicate. Track visited issues. If a link is missing or ambiguous, the chain
+is cyclic, or any read is inconclusive, report the incomplete lookup and do
+not file.
+
+Apply the full candidate verification to the original. Use only its issue
+number, state, and `closed_at` for the timing and recurring-signature rules
+below, counting each original once. Reuse a matching open KBE rather than
+filing a recurrence against its closed duplicate. A duplicate closure does
+not establish that the failure was fixed.
+
+On a verified closed-original hit, compare the failing AzDO build's `finishTime`
+(read it from the build metadata, not the queue time) against that original's
+`closed_at`:
 
 - Closed **after** the failing build finished, or closed within the last 7 days:
   the failure is already handled or under active triage. Record
@@ -132,8 +202,12 @@ lets a recurring signature surface at all. If that widened scan returns **two or
 more** closed `[ci-scan]` predecessors sharing the stem, treat it as a recurring
 signature, not a fresh regression: do **not** file — record `existing-kbe #<n>`
 against the most recently closed predecessor, even if the current build finished
-after that predecessor's `closed_at`. Fewer than two hits is not a recurring
-signature; fall back to the post-close recurrence rule above.
+after that predecessor's `closed_at`. For a build break with no test or method
+identifier, use the invariant-error-phrase + leg-root pair instead of a
+test-name stem and widen the pair search to `closed:>=<90-days-ago>`; two or
+more closed `[ci-scan]` predecessors matching both fragments have the same
+recurring-signature outcome. Fewer than two hits is not a recurring signature;
+fall back to the post-close recurrence rule above.
 
 <a id="search-area-team-tracker"></a>
 
@@ -143,6 +217,14 @@ Search for a plain tracker with:
 
 - `is:issue is:open in:title "<test-name>"`
 - `in:body "<test-file-path>"`
+
+For a build break with no test or method identifier, also search the pair from
+variation 8 without a label filter:
+
+- `is:issue is:open in:body "<invariant-error-phrase>" "<leg-root>"`
+
+Treat a matching unlabeled issue as `linked-tracker #<n>` and apply the same
+two-fragment verification and ambiguity rules before recording it.
 
 On hit, record `linked-tracker #<n>`.
 
@@ -200,10 +282,10 @@ hit, record `existing-PR #<n>`.
 
 ### Integrity-filtered PR candidate
 
-If any PR search above returns a `[Filtered]` marker for a candidate whose
-title, source symbol, or assertion slice overlaps the failing signature, do
-**not** assume no fix exists and file a fresh KBE. The filter hides a real PR
-you are not permitted to read, and it may already handle this failure. Record
+If any PR search above returns a `[Filtered]` or `[DIFC-FILTERED]` marker, do
+**not** assume no fix exists and file a fresh KBE. Do not require visible
+title, source-symbol, or assertion overlap before stopping, since filtering
+may hide those fields. The hidden PR may already handle this failure. Record
 `skipped: integrity-filtered candidate, needs human review` and stop for this
 signature. A human can confirm whether the hidden PR fixes the failure; filing a
 duplicate KBE that is immediately closed as "fixed by" the hidden PR is a
@@ -285,6 +367,13 @@ single literal line is specific enough.
 
 ### KBE issue body - literal substring match
 
+Paste the full stack trace or exception output in `Error Details` so readers can
+understand the failure at a glance. That section is for humans; Build Analysis
+only parses `Error Message`. The JSON block is parsed by Build Analysis for
+automatic matching: `ErrorMessage` is a case-sensitive ordinal
+`String.Contains` substring. Set `BuildRetry` to `true` only for clear infra
+flakes; `ExcludeConsoleLog` skips Helix log scanning.
+
 Title:
 
 - `[ci-scan] Test failure: <fully.qualified.TestName>` for test failures
@@ -303,20 +392,23 @@ Build: <link to the relevant dev.azure.com build>
 Build error leg or test failing: <AzDO leg name>-<assembly or test name>
 Pull request: <link to the PR if this is a PR build, otherwise omit this line>
 
-## Error Details
+<details>
+<summary>KBE authoring guidance (ci-failure-scan)</summary>
 
-<!-- Paste the full stack trace or exception output below so readers can understand the failure at a glance.
-     This section is for humans — Build Analysis only parses the ## Error Message section. -->
+- `Error Details` is for readers. Paste the full exception, stack trace, or build error excerpt so the failure is understandable without opening the raw log.
+- Build Analysis parses only the single JSON block under `Error Message`.
+- `ErrorMessage` is a case-sensitive ordinal `String.Contains` substring copied verbatim from the failing log.
+- Set `BuildRetry` to `true` only for a clear infrastructure retry case. `ExcludeConsoleLog` disables Helix console-log scanning.
+
+</details>
+
+## Error Details
 
 ```
 <full exception / stack trace excerpt; sanitize as needed>
 ```
 
 ## Error Message
-
-<!-- The JSON blob below is parsed by Build Analysis for automatic matching.
-     ErrorMessage is a literal String.Contains substring (case-sensitive, ordinal).
-     Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 ```json
 {
@@ -326,6 +418,15 @@ Pull request: <link to the PR if this is a PR build, otherwise omit this line>
   "ExcludeConsoleLog": false
 }
 ```
+
+<details>
+<summary>Agentic workflow metadata (ci-failure-scan)</summary>
+
+Workflow artifact: ci-failure-scan
+Artifact kind: kbe-verification
+Verified match count: <N> hits in failure.log
+
+</details>
 ````
 
 <a id="regex-kbe-template"></a>
@@ -334,6 +435,11 @@ Pull request: <link to the PR if this is a PR build, otherwise omit this line>
 
 Pick only when no single literal line is specific enough. Keep the regex
 anchored, prefer `[^\n]*` over `.*`, and avoid catastrophic backtracking.
+Include the same human-readable `Error Details` guidance as the literal
+template. The JSON block is parsed by Build Analysis using .NET options
+`Singleline | IgnoreCase | NonBacktracking` with a 50ms-per-line timeout. Set
+`BuildRetry` to `true` only for clear infra flakes; `ExcludeConsoleLog` skips
+Helix log scanning.
 
 ````markdown
 ## Build Information
@@ -341,19 +447,24 @@ Build: <link>
 Build error leg or test failing: <AzDO leg name>-<assembly or test name>
 Pull request: <link, omit if not a PR build>
 
-## Error Details
+<details>
+<summary>KBE authoring guidance (ci-failure-scan)</summary>
 
-<!-- Same human-readable guidance as the literal template. -->
+- `Error Details` is for readers. Paste the full exception, stack trace, or build error excerpt so the failure is understandable without opening the raw log.
+- Build Analysis parses only the single JSON block under `Error Message`.
+- `ErrorPattern` uses .NET `Singleline | IgnoreCase | NonBacktracking` matching with a 50ms-per-line timeout.
+- Keep the regex anchored, prefer `[^\n]*` over `.*`, and avoid catastrophic backtracking.
+- Set `BuildRetry` to `true` only for a clear infrastructure retry case. `ExcludeConsoleLog` disables Helix console-log scanning.
+
+</details>
+
+## Error Details
 
 ```
 <full exception / stack trace excerpt>
 ```
 
 ## Error Message
-
-<!-- The JSON blob below is parsed by Build Analysis for automatic matching.
-     ErrorPattern is a regex with .NET options Singleline | IgnoreCase | NonBacktracking and a 50ms-per-line timeout.
-     Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 ```json
 {
@@ -363,6 +474,15 @@ Pull request: <link, omit if not a PR build>
   "ExcludeConsoleLog": false
 }
 ```
+
+<details>
+<summary>Agentic workflow metadata (ci-failure-scan)</summary>
+
+Workflow artifact: ci-failure-scan
+Artifact kind: kbe-verification
+Verified match count: <N> hits in failure.log
+
+</details>
 ````
 
 <a id="kbe-array-form"></a>
@@ -371,7 +491,9 @@ Pull request: <link, omit if not a PR build>
 
 Use array form when the failure is best described by multiple ordered log lines.
 Each element matches one line, in order, with arbitrary lines allowed between
-matched elements.
+matched elements. Use the literal-substring KBE body shell above, including its
+collapsed authoring-guidance and workflow-metadata blocks, and replace only its
+`Error Message` JSON with this array form:
 
 ```json
 {
@@ -425,16 +547,22 @@ Walk all nine checks before creating a new KBE:
    For array form, repeat the positive `grep -Fc` for every element. Swap
    `-F` for `-E` when verifying `ErrorPattern`.
 
-   The KBE body MUST embed
-   `<!-- ci-scan-match-count: <N> hits in failure.log -->` where `<N>` is the
-   positive count of the most-specific element. If you cannot produce this
-   marker — positive count is 0 for any element, OR the failure log is
-   unavailable (no log saved, log too large, redaction), OR the log you have
-   is a test-runner xunit log but the actual error is a JIT, runtime, or
-   build-level assert that does not appear there — do **not** emit the KBE.
-   Record `skipped: signature did not match failure.log (N=<count>)` and stop.
-   A KBE without a verified positive count is guaranteed Build Analysis
-   noise.
+   Immediately after the `Error Message` fenced JSON block, the KBE body MUST
+   include the collapsed `Agentic workflow metadata (ci-failure-scan)` block
+   from the template. It identifies the workflow and artifact kind and contains
+   `Verified match count: <N> hits in failure.log`, where `<N>` is the positive
+   count of the most-specific element.
+
+   If you cannot produce a positive count — the count is 0 for any element,
+   OR the failure log is unavailable (no log saved, log too large, redaction),
+   OR the log you have is a test-runner xunit log but the actual error is a
+   JIT, runtime, or build-level assert that does not appear there — do **not**
+   emit the KBE. Record
+   `skipped: signature did not match failure.log (N=<count>)` and stop. A KBE
+   without a verified positive count is guaranteed Build Analysis noise.
+   Keep this as plain text inside the collapsed block rather than
+   `safe-outputs.data`: Build Analysis requires the KBE body to contain exactly
+   one fenced JSON block.
 
    JIT, runtime, and build-level asserts: the per-workitem xunit log Build
    Analysis indexes typically does NOT contain native assert output from
@@ -469,6 +597,10 @@ Reject signatures consisting only of:
 - A bare `[FAIL]` line with only the test class name
 - A bare fully-qualified test name
 - A truncated test-name prefix ending in `_`, `.`, or `*`
+- An array whose only failure-identifying anchors are a per-test or
+  per-invocation announcement and a generic suite-harness error from a shared
+  multi-test Helix console log; those lines can coexist when an unrelated
+  sibling test fails, creating a catch-all KBE
 - Common infra strings like `Connection reset`, `Operation timed out`, or
   `No space left on device`
 
@@ -479,6 +611,12 @@ Prefer signatures built from, in order:
    array form)
 3. A unique native stack frame or symbol
 4. A specific JIT method-being-compiled marker plus the stress mode
+
+For a shared multi-test Helix console log, use an exact assertion, exception, or
+error line from the failing test's own output. If no such line can be isolated,
+set `ExcludeConsoleLog` to `true` and use a signature from a per-test or
+leg-level log source; otherwise do not emit the KBE and record
+`skipped: weak signature` for human review.
 
 If you cannot produce a signature meeting this bar, do not create a KBE from
 the shared flow. Return the failure as unhandled or human-review-needed instead.
@@ -496,6 +634,7 @@ the shared flow. Return the failure as unhandled or human-review-needed instead.
 | `"BadImageFormatException"` | bare exception type | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
 | `"Operation timed out"` | matches transient network failures everywhere | array: `["xharness exec android test", "Operation timed out after 3600s"]` with `BuildRetry: false` |
 | `"ComInterfaceGenerator.Tests.ilc.rsp exited with code 134"` | paraphrased; not in the log | copy the actual MSBuild line verbatim: `"Microsoft.NETCore.Native.targets(313,5): error MSB3073: ... exited with code 134."` |
+| array: `["Running test: profiler/gc/nongcheap/nongcheap.cmd", "Profiler tests are expected to contain the text 'PROFILER TEST PASSES'"]` | announcement plus suite-harness error from a shared console log; matches unrelated profiler tests | use the failing test's exact assertion/error line from per-test output, or set `ExcludeConsoleLog: true` and use a signature from a per-test or leg-level (non-console) log source |
 
 <a id="sanitization"></a>
 

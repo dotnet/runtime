@@ -29,7 +29,7 @@ internal static partial class Interop
         // Special value of 0 means unlimited, -1 means the implementation (OpenSSL) default, which is currently 20 * 1024.
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
-        private const int DefaultTlsCacheSizeClient = 500; // since we keep only one TLS Session per hostname, 500 should be enough to cover most scenarios
+        private const int DefaultTlsCacheSizeClient = 500; // bounds the total number of pooled client sessions across all hostnames
         private const int DefaultTlsCacheSizeServer = -1; // use implementation default
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
         private static readonly Lazy<string[]> s_defaultSigAlgs = new(GetDefaultSignatureAlgorithms);
@@ -1299,7 +1299,11 @@ internal static partial class Interop
 
                 if (ctxHandle != null)
                 {
-                    if (ctxHandle.TryAddSession(name, session))
+                    // TLS 1.3 tickets are single-use, TLS 1.2 sessions are not, and the two
+                    // need opposite caching policies.
+                    ReadOnlySpan<byte> version = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(Ssl.SslGetVersion(ssl));
+
+                    if (ctxHandle.TryAddSession(name, session, version.SequenceEqual("TLSv1.3"u8)))
                     {
                         // offered session was stored in our cache.
                         return 1;

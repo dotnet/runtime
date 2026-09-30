@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -40,7 +41,17 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         public override string FormatErrorMessage(string name) =>
-            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, ExtensionsFormatted);
+            FormatMessage(ErrorMessageString, name);
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" /> and <c>{1}</c> is replaced with the normalized,
+        /// dot-prefixed list of extensions specified by <see cref="Extensions" />.
+        /// </remarks>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            return string.Format(CultureInfo.CurrentCulture, format, name, ExtensionsFormatted);
+        }
 
         public override bool IsValid(object? value) =>
             value == null || value is string valueAsString && ValidateExtension(valueAsString);

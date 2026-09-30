@@ -105,6 +105,10 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Gets or sets the message text for the logging method.
         /// </summary>
+        /// <remarks>
+        /// When omitted or empty, no message is formatted and the logging method's parameters are
+        /// captured as structured state only.
+        /// </remarks>
         public string Message { get; set; } = "";
 
         /// <summary>

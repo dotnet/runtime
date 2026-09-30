@@ -1886,7 +1886,7 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
     }
     else if (regNum < 22)
     {
-        return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.A0 + (regNum - 4));//A0=4.
+        return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.A0 + (regNum - 4)); // A0=4.
     }
 
     return (OBJECTREF*)*(DWORD64**)(&pRD->pCurrentContextPointers->S0 + (regNum-23));
@@ -1900,7 +1900,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratc
     return (regNum <= 21 && ((regNum >= 4) || (regNum == 1)));
 }
 
-template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRegisterToGC(
+template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRegisterToGC( // LOONGARCH64
                                 int             regNum,
                                 unsigned        gcFlags,
                                 PREGDISPLAY     pRD,

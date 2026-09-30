@@ -171,7 +171,7 @@ internal class LoongArch64Unwinder(Target target)
         uint scopeSize;
         if (offsetInFunction < 4 * unwindWords)
         {
-            scopeSize = ComputeScopeSize(unwindCodePtr, unwindCodesEndPtr);
+            scopeSize = ComputeScopeSize(unwindCodePtr, unwindCodesEndPtr, isEpilog: false);
 
             if (offsetInFunction < scopeSize)
             {
@@ -203,7 +203,7 @@ internal class LoongArch64Unwinder(Target target)
         {
             if (offsetInFunction + (4 * unwindWords - unwindIndex) >= functionLength)
             {
-                scopeSize = ComputeScopeSize(unwindCodePtr + unwindIndex, unwindCodesEndPtr);
+                scopeSize = ComputeScopeSize(unwindCodePtr + unwindIndex, unwindCodesEndPtr, isEpilog: true);
                 uint scopeStart = functionLength - scopeSize;
 
                 //
@@ -242,7 +242,7 @@ internal class LoongArch64Unwinder(Target target)
                 unwindIndex = headerWord >> 22;
                 if (offsetInFunction < scopeStart + (4 * unwindWords - unwindIndex))
                 {
-                    scopeSize = ComputeScopeSize(unwindCodePtr + unwindIndex, unwindCodesEndPtr);
+                    scopeSize = ComputeScopeSize(unwindCodePtr + unwindIndex, unwindCodesEndPtr, isEpilog: true);
 
                     if (offsetInFunction < scopeStart + scopeSize)
                     {
@@ -304,7 +304,7 @@ internal class LoongArch64Unwinder(Target target)
         return true;
     }
 
-    private uint ComputeScopeSize(TargetPointer unwindCodePtr, TargetPointer unwindCodesEndPtr)
+    private uint ComputeScopeSize(TargetPointer unwindCodePtr, TargetPointer unwindCodesEndPtr, bool isEpilog)
     {
         //
         // Iterate through the unwind codes until we hit an end marker.
@@ -323,6 +323,9 @@ internal class LoongArch64Unwinder(Target target)
             unwindCodePtr += UnwindCodeSizeTable[opcode];
             scopeSize++;
         }
+
+        if (isEpilog)
+            scopeSize++;
 
         return scopeSize;
     }

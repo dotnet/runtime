@@ -13,6 +13,7 @@
     <Compile Include="ConsoleKeyInfoTests.cs" />
     <Compile Include="ConsoleHandles.cs" />
     <Compile Include="ConsoleStream.cs" />
+    <Compile Include="GB18030\ConsoleTests.cs" />
     <Compile Include="SetError.cs" />
     <Compile Include="SetIn.cs" />
     <Compile Include="Color.cs" />
@@ -81,4 +82,5 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 </Project>

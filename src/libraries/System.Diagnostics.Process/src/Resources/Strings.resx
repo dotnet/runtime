@@ -318,6 +318,9 @@
   <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
     <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
   </data>
+  <data name="Argument_NullCharInEnvVar" xml:space="preserve">
+    <value>Environment variable cannot contain a null character.</value>
+  </data>
   <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
     <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
   </data>
@@ -386,5 +389,11 @@
   </data>
   <data name="Argument_InvalidProcessId" xml:space="preserve">
     <value>The callback must return a positive process ID for the newly created process.</value>
+  </data>
+  <data name="UseShellExecuteVerbNotSupported" xml:space="preserve">
+    <value>The verb '{0}' is not supported for UseShellExecute on this platform. Only the default verb (an empty string or "open") is supported.</value>
+  </data>
+  <data name="UseShellExecuteNoOpenProgram" xml:space="preserve">
+    <value>No program was found to handle opening files or URLs with UseShellExecute on this platform. Ensure one such as 'xdg-open' or 'open' is installed and available on the PATH.</value>
   </data>
 </root>

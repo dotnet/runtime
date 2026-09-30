@@ -445,6 +445,7 @@ HRESULT ParseEncodedType(
     {
         PRECONDITION(CheckPointer(pCaType));
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -487,6 +488,7 @@ HRESULT ParseKnownCaValue(
         PRECONDITION(CheckPointer(pCaParam));
         PRECONDITION(pCaParam->tag != SERIALIZATION_TYPE_TAGGED_OBJECT && pCaParam->tag != SERIALIZATION_TYPE_SZARRAY);
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 

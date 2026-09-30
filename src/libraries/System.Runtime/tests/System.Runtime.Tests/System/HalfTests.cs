@@ -1307,6 +1307,26 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0.00031415927f, "F4", "0.0003")]
+        [InlineData(0.00031415927f, "F5", "0.00031")]
+        [InlineData(0.00031415927f, "F6", "0.000314")]
+        [InlineData(-0.00031415927f, "F5", "-0.00031")]
+        [InlineData(0.00031415927f, "C5", "\u00A40.00031")]
+        [InlineData(0.00031415927f, "N5", "0.00031")]
+        [InlineData(0.00031415927f, "P3", "0.031 %")]
+        [InlineData(0.00031415927f, "P5", "0.03142 %")]
+        [InlineData(5.9604645E-08f, "F5", "0.00000")]
+        [InlineData(-5.9604645E-08f, "F5", "-0.00000")]
+        [InlineData(0.0f, "F5", "0.00000")]
+        [InlineData(-0.0f, "F5", "-0.00000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            Half h = (Half)value;
+            Assert.Equal(expected, h.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(h, format, NumberFormatInfo.InvariantInfo, expected);
+        }
+
+        [Theory]
         [InlineData(1.0f, "x", "0x1p+0")]
         [InlineData(1.5f, "x", "0x1.8p+0")]
         [InlineData(2.0f, "x", "0x1p+1")]
@@ -2596,6 +2616,33 @@ namespace System.Tests
         {
             AssertExtensions.Equal(-expectedResult, Half.RadiansToDegrees(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, Half.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones the bulk data cannot reach: zero, the subnormal range
+        // on either side of the conversion, and an overflow.
+        [Theory]
+        [InlineData(0x0000, 0x0000, 0x0000)] // 0
+        [InlineData(0x0001, 0x0000, 0x0039)] // Epsilon
+        [InlineData(0x0200, 0x0009, 0x1729)] // 0x1p-15
+        [InlineData(0x0400, 0x0012, 0x1B29)] // MinNormal
+        [InlineData(0x3C00, 0x2478, 0x5329)] // One
+        [InlineData(0x7BFF, 0x6477, 0x7C00)] // MaxValue, overflows for RadiansToDegrees
+        [InlineData(0x7C00, 0x7C00, 0x7C00)] // PositiveInfinity
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ushort valueBits, ushort degreesToRadiansBits, ushort radiansToDegreesBits)
+        {
+            const ushort SignMask = 0x8000;
+
+            Half value = BitConverter.UInt16BitsToHalf(valueBits);
+
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf(degreesToRadiansBits), Half.DegreesToRadians(value));
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf(radiansToDegreesBits), Half.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            Half negativeValue = BitConverter.UInt16BitsToHalf((ushort)(valueBits ^ SignMask));
+
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf((ushort)(degreesToRadiansBits ^ SignMask)), Half.DegreesToRadians(negativeValue));
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf((ushort)(radiansToDegreesBits ^ SignMask)), Half.RadiansToDegrees(negativeValue));
         }
 
         [Theory]

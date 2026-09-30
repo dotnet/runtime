@@ -117,6 +117,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AsyncValidationUnsupportedIOptions" xml:space="preserve">
+    <value>Asynchronous startup validation for the default options instance of type '{0}' requires the built-in IOptions&lt;TOptions&gt; implementation, but '{1}' was registered.</value>
+  </data>
+  <data name="AsyncValidatorSyncValidationUnsupported" xml:space="preserve">
+    <value>Options instance of type '{0}' is validated by an asynchronous validator that cannot run during synchronous validation. Synchronous creation paths cannot execute or await ValidateAsync. With the built-in options factory and accessors, use ValidateOnStart and complete startup before synchronously accessing IOptions&lt;TOptions&gt; or IOptionsMonitor&lt;TOptions&gt; so their initial values can be validated and seeded. IOptionsSnapshot&lt;TOptions&gt; remains synchronously validated per scope and is not populated by startup validation. IOptionsMonitor&lt;TOptions&gt; recreation after a change also remains synchronous; ValidateOnStart does not provide asynchronous reload validation or an asynchronous last-known-good value.</value>
+  </data>
   <data name="Error_CannotActivateAbstractOrInterface" xml:space="preserve">
     <value>Cannot create instance of type '{0}' because it is either abstract or an interface.</value>
   </data>

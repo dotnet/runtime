@@ -6,10 +6,23 @@ using System.Threading.Tasks;
 
 public static class AsyncMultipleSuspensionPoints
 {
+    private class VirtualTarget
+    {
+        public virtual int Transform(int value) => value;
+    }
+
+    private sealed class DerivedVirtualTarget : VirtualTarget
+    {
+        public override int Transform(int value) => value + 1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallVirtual(VirtualTarget target, int value) => target.Transform(value);
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static async Task<int> MultipleAwaits()
     {
-        int x = 1;
+        int x = CallVirtual(new DerivedVirtualTarget(), 0);
         await Task.Yield();
         x++;
         await Task.Yield();

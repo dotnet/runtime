@@ -140,7 +140,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
 
    Both the closed and open state buckets are in scope (closed items often carry the most informative feedback about why the artifact was rejected). For each result, read the body and comments via the `github` tool. When listing comments, request only the most recent 100 (one page at the MCP default size) — the 30-day `updated:>=...` window is the primary filter, and threads with >100 comments are vanishingly rare for these artifacts. If a result has >100 comments, fetch the latest page only; do NOT paginate further (older comments are out-of-scope by construction). Record `integrity-filtered: N` for any `[Filtered]` results and continue.
 
-   `[ci-fix]` loop-in comments live on `[ci-scan]` KBE issues (marker `<!-- ci-fix:handoff -->`); when you read a KBE, also read the replies to any loop-in comment — a maintainer reply that the @-mentioned owner was wrong, or that the analysis was off, is a primary feedback signal. Help-wanted `[ci-fix]` PRs (`Artifact kind: help`) carry the same signal in their review threads: a maintainer reply that the attempt was on the wrong track, or that a comment would have sufficed, feeds the fixer's confidence calibration.
+   `[ci-fix]` loop-in comments live on `[ci-scan]` KBE issues. Identify a new comment by its `Structured data:` JSON (`workflow_artifact: "ci-fix"`, `artifact_kind: "handoff"`, and `linked_kbe` equal to the KBE number). For comments created before structured data was available, accept the legacy visible block only when the same comment contains `Workflow artifact: ci-fix`, `Artifact kind: handoff`, and the matching `Linked KBE: #<n>`. When you read a KBE, also read the replies to any loop-in comment — a maintainer reply that the @-mentioned owner was wrong, or that the analysis was off, is a primary feedback signal. Help-wanted `[ci-fix]` PRs (`Artifact kind: help`) carry the same signal in their review threads: a maintainer reply that the attempt was on the wrong track, or that a comment would have sufficed, feeds the fixer's confidence calibration.
 
 4. Score each artifact against the rubric.
 
@@ -155,7 +155,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
 
    **Fixer artifacts (`[ci-fix]` confident PRs, help-wanted PRs, and loop-in comments):**
 
-   - Carries the artifact marker block (`Workflow artifact: ci-fix`, `Artifact kind: fix|help|handoff`, `Linked KBE: #<n>`). Flag any missing marker.
+   - Carries the visible artifact block (`Workflow artifact: ci-fix`, `Artifact kind: fix|help|handoff`, `Linked KBE: #<n>`). For new artifacts, also require matching `Structured data:` JSON; accept the visible block alone only for legacy artifacts. Flag missing or inconsistent identity.
    - Confident fix PR (`kind: fix`): diff is small (<= 20 lines, single file), is a genuine fix (NOT a test-disable / `[ActiveIssue]` / `Skip` / `<*Incompatible>` — flag any muting as a hard violation), and the body states an explicit validation command + result.
    - Help-wanted PR (`kind: help`): carries a real best-effort diff that is NOT a mute (flag any muting as a hard violation), an explicit "what is unverified / where I need help" section, and a loop-in of at most one likely author + 1–2 individual owners. A help-wanted PR closed without merge is NOT a quality miss by itself (it explicitly asked for help) — only flag it when a maintainer reply says the attempt was wrong-headed, a mute, or that no PR should have been opened. Flag a `kind: help` PR whose diff is actually validated and in bounds (it should have been `kind: fix`), and flag a loop-in comment that could clearly have been a help-wanted PR.
    - PR linkage: `Linked KBE: #<n>` present and the KBE is real and open.
@@ -194,7 +194,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
      --json number,url | tee /tmp/gh-aw/agent/tracker.json
    ```
 
-   Compute the window. The window starts at the timestamp of the FIRST recorded run of `ci-failure-scan.lock.yml` (NOT the workflow file's creation time, which can predate any run by days when the file is added but its lock isn't yet checked in). On the first tick, derive it from the runs list and persist the resulting ISO-8601 timestamp inside the tracker body as `<!-- ci-scan-feedback:window-start=<ts> -->`. On every subsequent tick, prefer the cached value parsed from the existing tracker body (read via the `github` MCP `issue_read get` tool) over re-deriving — this keeps the window stable even if old runs are deleted.
+   Compute the window. The window starts at the timestamp of the FIRST recorded run of `ci-failure-scan.lock.yml` (NOT the workflow file's creation time, which can predate any run by days when the file is added but its lock isn't yet checked in). For an existing tracker, first read the date from the `Window start (first recorded scanner run): **<date>**` field inside its collapsed workflow-metadata block in the raw body. For the current legacy tracker, which predates that field, recover the date from the latest tracker sentence `since <date>` and persist it in the next body replacement. Only when no persisted or visible value exists, derive the first-run timestamp from the runs list. This keeps the window stable even if old runs are deleted.
 
    ```bash
    gh api --paginate "/repos/dotnet/runtime/actions/workflows/ci-failure-scan.lock.yml/runs?per_page=100" \
@@ -202,7 +202,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
      | tee /tmp/gh-aw/agent/window_start_first_run.txt
    ```
 
-   The `/runs` endpoint does NOT accept `order=asc`; you MUST paginate and pick `min(created_at)`. Fall back to the workflow's `.created_at` only if no runs exist yet (first-ever invocation). Once the tracker exists, the cached marker is authoritative.
+   The `/runs` endpoint does NOT accept `order=asc`; you MUST paginate and pick `min(created_at)`. Fall back to the workflow's `.created_at` only if no runs exist yet (first-ever invocation). Once the visible window-start field exists, it is authoritative.
 
    Collect the full universe of `[ci-scan]` and `[ci-fix]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. This produces a list of issue/PR numbers and metadata; do NOT read bodies with `gh`. Cache the list to `/tmp/gh-aw/agent/artifacts.json` so later sections do not re-query. Tag each cached row with its workflow: title starting `[ci-scan]` -> scanner; title starting `[ci-fix]` -> fixer.
 
@@ -210,7 +210,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
 
    For metrics that need MEMBER/OWNER comment content (rejection-keyword detection, re-file outage signal, hand-off engagement), fetch through the `github` MCP `issue_read get`, `pull_request_read get`, and the corresponding comments tools, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
 
-   Loop-in comments are `[ci-fix]` comments on `[ci-scan]` KBE issues carrying the marker `<!-- ci-fix:handoff -->`. Count them by reading KBE comments via the `github` MCP. A loop-in has "maintainer engagement" when a MEMBER/OWNER replied after it.
+   Loop-in comments are `[ci-fix]` comments on `[ci-scan]` KBE issues carrying either the structured identity or legacy visible block defined in Step 3. Count them by reading KBE comments via the `github` MCP. A loop-in has "maintainer engagement" when a MEMBER/OWNER replied after it.
 
    Compute these KPIs. The shape below is deliberately small: raw counts, two quality ratios (scanner and fixer, kept separate), a fixed set of outage signals. Do not re-introduce Wilson scoring, time-to-KBE, coverage ratios, or tally-extraction; they were dropped because they came back `n/a` most ticks and added noise.
 
@@ -219,8 +219,8 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    Count, per artifact stream:
 
    - Scanner `[ci-scan]` KBE issues: `opened`, `closed_good` (closed `completed`), `closed_wrong` (closed `not_planned`/`duplicate`).
-   - Fixer `[ci-fix]` PRs: `opened`, `merged`, `closed_unmerged`. Sub-split by marker `Artifact kind`: `confident` (`kind: fix`) vs `help_wanted` (`kind: help`).
-   - Fixer loop-in comments: `posted` (count of new `<!-- ci-fix:handoff -->` comments), `engaged` (subset with a MEMBER/OWNER reply).
+   - Fixer `[ci-fix]` PRs: `opened`, `merged`, `closed_unmerged`. Sub-split by the visible and structured `Artifact kind`: `confident` (`kind: fix`) vs `help_wanted` (`kind: help`).
+   - Fixer loop-in comments: `posted` (count of new comments matching the structured or legacy handoff identity), `engaged` (subset with a MEMBER/OWNER reply).
 
    ### B) Scanner quality (closure cohort, last 30d)
 
@@ -263,8 +263,15 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    Emit a body with this exact shape (regenerate every tick):
 
    ````markdown
-   <!-- ci-scan-feedback:kpi-tracker -->
-   <!-- ci-scan-feedback:window-start=<window_start> -->
+   <details>
+   <summary>Agentic workflow metadata (ci-failure-scan-feedback)</summary>
+
+   Workflow artifact: ci-scan-feedback
+   Artifact kind: kpi-tracker
+   Window start (first recorded scanner run): **<window_start>**
+
+   </details>
+
    Tracking quality of `[ci-scan]` (detection) and `[ci-fix]` (mitigation) issues, PRs, and loop-in comments since <window_start>. Updated every tick of [ci-failure-scan-feedback.lock.yml](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.lock.yml). To raise a concern, comment here or on any `[ci-scan]`/`[ci-fix]` issue/PR; the next tick reads in-scope feedback and either opens a `[ci-scan-feedback]` PR with prompt edits or pushes to the existing one.
 
    ## Snapshot — <UTC timestamp>
@@ -330,7 +337,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    - Do NOT emit charts (mermaid or otherwise).
    - Do NOT emit historical weekly buckets. The body is a current snapshot.
 
-   If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point). Emit this tracker output BEFORE the Step 6 PR safe-outputs (see the Step 6 "Emission order" note) so a PR-push failure cannot cancel the snapshot.
+   If the tracker exists -> emit one `update_issue` with `operation: "replace"` and the new body as a full replacement, never an append. Omitting `operation` is forbidden because gh-aw defaults `update_issue` to append. If the tracker does not exist -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Preserve the collapsed workflow-metadata block and its three visible identity and window-start fields exactly on every rewrite; `update_issue` does not support `safe-outputs.data`, so these fields are the persisted state. This step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point). Emit this tracker output BEFORE the Step 6 PR safe-outputs (see the Step 6 "Emission order" note) so a PR-push failure cannot cancel the snapshot.
 
 ## Output to agent log
 
@@ -343,7 +350,7 @@ Print the rubric scorecards to the agent log so the next tick can grep them. Sca
 Fixer artifacts:
 
 ```
-| run-id | artifact | kind | marker-present | small-validated-fix | no-muting | kbe-linked | mention-discipline | maintainer-feedback |
+| run-id | artifact | kind | identity-present | small-validated-fix | no-muting | kbe-linked | mention-discipline | maintainer-feedback |
 ```
 
 One row per artifact scored. Skip rows where every column is `pass`. Append a final line `[Filtered] count: <n>` so out-of-integrity items are visible without being followed.

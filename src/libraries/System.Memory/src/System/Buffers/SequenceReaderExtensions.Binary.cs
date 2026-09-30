@@ -169,5 +169,137 @@ namespace System.Buffers
 
             return false;
         }
+
+        /// <summary>
+        /// Tries to peek at an <see cref="short"/> as little endian without advancing the reader.
+        /// </summary>
+        /// <param name="reader">The byte sequence reader instance from which the value is to be peeked.</param>
+        /// <param name="value">When the method returns, the value peeked out of the byte sequence reader, as little endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the peek operation is successful; <see langword="false" /> if there isn't enough data for an <see cref="short"/>.
+        /// </returns>
+        public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out short value)
+        {
+            if (!BinaryPrimitives.TryReadInt16LittleEndian(reader.UnreadSpan, out value))
+            {
+                Span<byte> tmpSpan = [0, 0];
+                if (!reader.TryCopyTo(tmpSpan))
+                {
+                    return false;
+                }
+                value = BinaryPrimitives.ReadInt16LittleEndian(tmpSpan);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Tries to peek at an <see cref="short"/> as big endian without advancing the reader.
+        /// </summary>
+        /// <param name="reader">The byte sequence reader instance from which the value is to be peeked.</param>
+        /// <param name="value">When the method returns, the value peeked out of the byte sequence reader, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the peek operation is successful; <see langword="false" /> if there isn't enough data for an <see cref="short"/>.
+        /// </returns>
+        public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out short value)
+        {
+            if (!BinaryPrimitives.TryReadInt16BigEndian(reader.UnreadSpan, out value))
+            {
+                Span<byte> tmpSpan = [0, 0];
+                if (!reader.TryCopyTo(tmpSpan))
+                {
+                    return false;
+                }
+                value = BinaryPrimitives.ReadInt16BigEndian(tmpSpan);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Tries to peek at an <see cref="int"/> as little endian without advancing the reader.
+        /// </summary>
+        /// <param name="reader">The byte sequence reader instance from which the value is to be peeked.</param>
+        /// <param name="value">When the method returns, the value peeked out of the byte sequence reader, as little endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the peek operation is successful; <see langword="false" /> if there isn't enough data for an <see cref="int"/>.
+        /// </returns>
+        public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out int value)
+        {
+            if (!BinaryPrimitives.TryReadInt32LittleEndian(reader.UnreadSpan, out value))
+            {
+                Span<byte> tmpSpan = [0, 0, 0, 0];
+                if (!reader.TryCopyTo(tmpSpan))
+                {
+                    return false;
+                }
+                value = BinaryPrimitives.ReadInt32LittleEndian(tmpSpan);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Tries to peek at an <see cref="int"/> as big endian without advancing the reader.
+        /// </summary>
+        /// <param name="reader">The byte sequence reader instance from which the value is to be peeked.</param>
+        /// <param name="value">When the method returns, the value peeked out of the byte sequence reader, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the peek operation is successful; <see langword="false" /> if there isn't enough data for an <see cref="int"/>.
+        /// </returns>
+        public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out int value)
+        {
+            if (!BinaryPrimitives.TryReadInt32BigEndian(reader.UnreadSpan, out value))
+            {
+                Span<byte> tmpSpan = [0, 0, 0, 0];
+                if (!reader.TryCopyTo(tmpSpan))
+                {
+                    return false;
+                }
+                value = BinaryPrimitives.ReadInt32BigEndian(tmpSpan);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Tries to peek at an <see cref="long"/> as little endian without advancing the reader.
+        /// </summary>
+        /// <param name="reader">The byte sequence reader instance from which the value is to be peeked.</param>
+        /// <param name="value">When the method returns, the value peeked out of the byte sequence reader, as little endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the peek operation is successful; <see langword="false" /> if there isn't enough data for an <see cref="long"/>.
+        /// </returns>
+        public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out long value)
+        {
+            if (!BinaryPrimitives.TryReadInt64LittleEndian(reader.UnreadSpan, out value))
+            {
+                Span<byte> tmpSpan = [0, 0, 0, 0, 0, 0, 0, 0];
+                if (!reader.TryCopyTo(tmpSpan))
+                {
+                    return false;
+                }
+                value = BinaryPrimitives.ReadInt64LittleEndian(tmpSpan);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Tries to peek at an <see cref="long"/> as big endian without advancing the reader.
+        /// </summary>
+        /// <param name="reader">The byte sequence reader instance from which the value is to be peeked.</param>
+        /// <param name="value">When the method returns, the value peeked out of the byte sequence reader, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the peek operation is successful; <see langword="false" /> if there isn't enough data for an <see cref="long"/>.
+        /// </returns>
+        public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out long value)
+        {
+            if (!BinaryPrimitives.TryReadInt64BigEndian(reader.UnreadSpan, out value))
+            {
+                Span<byte> tmpSpan = [0, 0, 0, 0, 0, 0, 0, 0];
+                if (!reader.TryCopyTo(tmpSpan))
+                {
+                    return false;
+                }
+                value = BinaryPrimitives.ReadInt64BigEndian(tmpSpan);
+            }
+            return true;
+        }
     }
 }

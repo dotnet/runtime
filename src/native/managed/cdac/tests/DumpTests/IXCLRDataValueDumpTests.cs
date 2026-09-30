@@ -697,7 +697,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
             if (md == TargetPointer.Null)
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null, new());
             IXCLRDataFrame xclrFrame = frame;
 
             uint numArgs;
@@ -900,7 +900,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
             string? name = DumpTestHelpers.GetMethodName(Target, md);
             if (name == methodName)
             {
-                ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null);
+                ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null, new());
 
                 return (frame, dataFrame);
             }

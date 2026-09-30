@@ -141,6 +141,17 @@ namespace System.Net.Mail
                     return false;
                 }
 
+                if (MailBnfHelper.HasCROrLF(displayName))
+                {
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.MailAddressInvalidFormat);
+                    }
+
+                    parsedData = default;
+                    return false;
+                }
+
                 if (displayName.Length >= 2 && displayName.StartsWith('\"') && displayName.EndsWith('\"'))
                 {
                     // Peel bounding quotes, they'll get re-added later.
