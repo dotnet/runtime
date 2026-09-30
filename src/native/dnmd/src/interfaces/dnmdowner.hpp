@@ -31,6 +31,9 @@ struct IDNMDOwner : IUnknown
     virtual uint32_t UpdateMode() = 0;
     virtual HRESULT SetUpdateMode(uint32_t mode) = 0;
     virtual HRESULT ReplaceMetaData(mdhandle_ptr replacement, malloc_ptr<void> backing) = 0;
+    virtual HRESULT GetPEKind(DWORD* kind, DWORD* machine) = 0;
+    virtual void SetPEKind(DWORD kind, DWORD machine) = 0;
+    virtual void ClearPEKind() = 0;
 };
 
 class DNMDOwner;
@@ -62,6 +65,9 @@ public:
     uint32_t UpdateMode() const;
     HRESULT SetUpdateMode(uint32_t mode) const;
     HRESULT ReplaceMetaData(mdhandle_ptr replacement, malloc_ptr<void> backing) const;
+    HRESULT GetPEKind(DWORD* kind, DWORD* machine) const;
+    void SetPEKind(DWORD kind, DWORD machine) const;
+    void ClearPEKind() const;
 
     bool operator==(std::nullptr_t) const
     {
@@ -100,6 +106,9 @@ private:
     mdhandle_ptr _handle;
     std::atomic<mdhandle_t> _currentHandle;
     std::unique_ptr<PreviousVersion> _previous;
+    std::atomic<bool> _hasPEKind{ false };
+    DWORD _peKind = 0;
+    DWORD _machine = 0;
     uint32_t _duplicateChecks;
     uint32_t _updateMode;
     bool _readWrite;
@@ -191,6 +200,28 @@ public: // IDNMDOwner
         _currentHandle.store(_handle.get(), std::memory_order_release);
         return S_OK;
     }
+
+    HRESULT GetPEKind(DWORD* kind, DWORD* machine) override
+    {
+        bool found = _hasPEKind.load(std::memory_order_acquire);
+        if (kind != nullptr)
+            *kind = found ? _peKind : 0;
+        if (machine != nullptr)
+            *machine = found ? _machine : 0;
+        return found ? S_OK : S_FALSE;
+    }
+
+    void SetPEKind(DWORD kind, DWORD machine) override
+    {
+        _peKind = kind;
+        _machine = machine;
+        _hasPEKind.store(true, std::memory_order_release);
+    }
+
+    void ClearPEKind() override
+    {
+        _hasPEKind.store(false, std::memory_order_release);
+    }
 };
 
 inline mdhandle_t mdhandle_view::get() const
@@ -221,6 +252,21 @@ inline HRESULT mdhandle_view::SetUpdateMode(uint32_t mode) const
 inline HRESULT mdhandle_view::ReplaceMetaData(mdhandle_ptr replacement, malloc_ptr<void> backing) const
 {
     return _owner->ReplaceMetaData(std::move(replacement), std::move(backing));
+}
+
+inline HRESULT mdhandle_view::GetPEKind(DWORD* kind, DWORD* machine) const
+{
+    return _owner->GetPEKind(kind, machine);
+}
+
+inline void mdhandle_view::SetPEKind(DWORD kind, DWORD machine) const
+{
+    _owner->SetPEKind(kind, machine);
+}
+
+inline void mdhandle_view::ClearPEKind() const
+{
+    _owner->ClearPEKind();
 }
 
 #endif // !_SRC_INTERFACES_DNMDOWNER_HPP_

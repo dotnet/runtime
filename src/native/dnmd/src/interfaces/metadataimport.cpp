@@ -3346,13 +3346,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPEKind(
     DWORD* pdwPEKind,
     DWORD* pdwMAchine)
 {
-    UNREFERENCED_PARAMETER(pdwPEKind);
-    UNREFERENCED_PARAMETER(pdwMAchine);
-
-    // Requires PE data to be available.
-    // This implementation only has the metadata tables.
-    // It does not have any information about the PE envelope.
-    return E_NOTIMPL;
+    return _md_ptr.GetPEKind(pdwPEKind, pdwMAchine);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetVersionString(

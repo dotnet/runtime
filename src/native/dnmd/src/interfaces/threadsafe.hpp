@@ -69,6 +69,21 @@ public:
     {
         return _inner.ReplaceMetaData(std::move(replacement), std::move(backing));
     }
+
+    HRESULT GetPEKind(DWORD* kind, DWORD* machine) override
+    {
+        return _inner.GetPEKind(kind, machine);
+    }
+
+    void SetPEKind(DWORD kind, DWORD machine) override
+    {
+        _inner.SetPEKind(kind, machine);
+    }
+
+    void ClearPEKind() override
+    {
+        _inner.ClearPEKind();
+    }
 };
 
 template<typename TImport, typename TEmit>

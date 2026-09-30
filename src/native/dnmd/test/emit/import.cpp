@@ -42,12 +42,15 @@ namespace
         }
     };
 
-    std::vector<uint8_t> WrapMetadataInPE(std::vector<uint8_t> const& metadata, bool pe64)
+    std::vector<uint8_t> WrapMetadataInPE(std::vector<uint8_t> const& metadata, bool pe64,
+                                          DWORD corFlags = COMIMAGE_FLAGS_ILONLY,
+                                          bool platformNeutralReadyToRun = false)
     {
         constexpr size_t ntOffset = 0x80;
         constexpr size_t sectionOffset = 0x200;
         constexpr size_t metadataOffset = 0x300;
-        std::vector<uint8_t> image(metadataOffset + metadata.size());
+        std::vector<uint8_t> image(metadataOffset + metadata.size() +
+            (platformNeutralReadyToRun ? 16 : 0));
 
         IMAGE_DOS_HEADER dos{};
         dos.e_magic = IMAGE_DOS_SIGNATURE;
@@ -95,8 +98,20 @@ namespace
 
         IMAGE_COR20_HEADER cor{};
         cor.cb = sizeof(cor);
+        cor.Flags = corFlags;
         cor.MetaData.VirtualAddress = 0x2100;
         cor.MetaData.Size = static_cast<DWORD>(metadata.size());
+        if (platformNeutralReadyToRun)
+        {
+            cor.ManagedNativeHeader.VirtualAddress = static_cast<DWORD>(0x2100 + metadata.size());
+            cor.ManagedNativeHeader.Size = 16;
+            constexpr uint32_t readyToRunSignature = 0x00525452;
+            constexpr uint32_t platformNeutralSource = 1;
+            std::memcpy(image.data() + metadataOffset + metadata.size(),
+                &readyToRunSignature, sizeof(readyToRunSignature));
+            std::memcpy(image.data() + metadataOffset + metadata.size() + 8,
+                &platformNeutralSource, sizeof(platformNeutralSource));
+        }
         std::memcpy(image.data() + sectionOffset, &cor, sizeof(cor));
         std::memcpy(image.data() + metadataOffset, metadata.data(), metadata.size());
         return image;
@@ -337,4 +352,74 @@ TEST(Import, OpenScopeReadsMetadataAndManagedPEFiles)
     EXPECT_EQ(E_INVALIDARG, dispenser->OpenScope(path.c_str(), ofTakeOwnership,
         IID_IMetaDataImport, &invalid));
     EXPECT_EQ(nullptr, invalid);
+}
+
+TEST(Import, PEKindUsesTheOpenedImage)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+    std::vector<uint8_t> metadata;
+    ASSERT_NO_FATAL_FAILURE(SaveScopeImage(emit.p, metadata));
+    minipal::com_ptr<IMetaDataImport2> metadataOnly;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport2, (void**)&metadataOnly));
+
+    DWORD kind = UINT32_MAX, machine = UINT32_MAX;
+    EXPECT_EQ(S_FALSE, metadataOnly->GetPEKind(&kind, &machine));
+    EXPECT_EQ(peNot, kind);
+    EXPECT_EQ(0u, machine);
+    EXPECT_EQ(S_FALSE, metadataOnly->GetPEKind(nullptr, nullptr));
+
+    GUID identifier;
+    ASSERT_TRUE(minipal_guid_v4_create(&identifier));
+    TempMetadataFile file{ std::filesystem::temp_directory_path() /
+        ("dnmd-pekind-" + std::to_string(identifier.Data1) + ".dll") };
+#ifdef BUILD_WINDOWS
+    WSTR_string path = file.path.wstring();
+#else
+    std::u16string utf16Path = file.path.u16string();
+    WSTR_string path(utf16Path.begin(), utf16Path.end());
+#endif
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+
+    struct PECase
+    {
+        bool pe64;
+        DWORD flags;
+        DWORD expectedKind;
+        DWORD expectedMachine;
+        bool platformNeutralReadyToRun;
+    };
+    constexpr PECase cases[] =
+    {
+        { false, COMIMAGE_FLAGS_ILONLY, peILonly, IMAGE_FILE_MACHINE_I386, false },
+        { false, COMIMAGE_FLAGS_ILONLY | COMIMAGE_FLAGS_32BITREQUIRED,
+            peILonly | pe32BitRequired, IMAGE_FILE_MACHINE_I386, false },
+        { false, COMIMAGE_FLAGS_ILONLY | COMIMAGE_FLAGS_32BITREQUIRED | COMIMAGE_FLAGS_32BITPREFERRED,
+            peILonly | pe32BitPreferred, IMAGE_FILE_MACHINE_I386, false },
+        { true, COMIMAGE_FLAGS_ILONLY, peILonly | pe32Plus, IMAGE_FILE_MACHINE_AMD64, false },
+        { false, 0, pe32BitRequired, IMAGE_FILE_MACHINE_I386, false },
+        { true, COMIMAGE_FLAGS_ILONLY, peILonly, IMAGE_FILE_MACHINE_I386, true },
+    };
+
+    for (PECase const& test : cases)
+    {
+        ASSERT_TRUE(file.Write(WrapMetadataInPE(metadata, test.pe64, test.flags,
+            test.platformNeutralReadyToRun)));
+        minipal::com_ptr<IMetaDataImport2> import;
+        ASSERT_EQ(S_OK, dispenser->OpenScope(path.c_str(), ofRead,
+            IID_IMetaDataImport2, (IUnknown**)&import));
+        kind = machine = UINT32_MAX;
+        ASSERT_EQ(S_OK, import->GetPEKind(&kind, &machine));
+        EXPECT_EQ(test.expectedKind, kind);
+        EXPECT_EQ(test.expectedMachine, machine);
+        EXPECT_EQ(S_OK, import->GetPEKind(nullptr, nullptr));
+
+        ASSERT_EQ(S_OK, ReOpenDNMDMetaDataWithMemory(import.p, metadata.data(),
+            (ULONG)metadata.size(), 0));
+        kind = machine = UINT32_MAX;
+        EXPECT_EQ(S_FALSE, import->GetPEKind(&kind, &machine));
+        EXPECT_EQ(peNot, kind);
+        EXPECT_EQ(0u, machine);
+    }
 }

@@ -34,6 +34,17 @@ namespace
     constexpr uint16_t PE32Magic = 0x10b;
     constexpr uint16_t PE32PlusMagic = 0x20b;
     constexpr uint32_t PESignature = 0x00004550;
+    constexpr uint32_t ReadyToRunSignature = 0x00525452;
+
+    struct ReadyToRunHeaderPrefix
+    {
+        uint32_t signature;
+        uint16_t majorVersion;
+        uint16_t minorVersion;
+        uint32_t flags;
+        uint32_t sectionCount;
+    };
+    static_assert(sizeof(ReadyToRunHeaderPrefix) == 16);
 
     template<typename T>
     bool ReadPEValue(uint8_t const* image, size_t size, size_t offset, T& value)
@@ -72,7 +83,8 @@ namespace
         return false;
     }
 
-    bool FindPEMetadata(uint8_t const* image, size_t size, size_t& metadataOffset, uint32_t& metadataSize)
+    bool FindPEMetadata(uint8_t const* image, size_t size, size_t& metadataOffset, uint32_t& metadataSize,
+                        DWORD& peKind, DWORD& machine)
     {
         IMAGE_DOS_HEADER dos;
         if (!ReadPEValue(image, size, 0, dos) || dos.e_magic != IMAGE_DOS_SIGNATURE || dos.e_lfanew < 0)
@@ -134,6 +146,61 @@ namespace
         if (!ReadPEValue(image, size, corOffset, corHeader) ||
             corHeader.cb < sizeof(corHeader) || corHeader.MetaData.Size == 0)
             return false;
+
+        machine = fileHeader.Machine;
+        peKind = magic == PE32PlusMagic ? pe32Plus : peNot;
+        if ((corHeader.Flags & COMIMAGE_FLAGS_ILONLY) != 0)
+        {
+            peKind |= peILonly;
+            if (magic == PE32PlusMagic && machine == IMAGE_FILE_MACHINE_I386)
+                peKind &= ~static_cast<DWORD>(pe32Plus);
+        }
+        if (COR_IS_32BIT_REQUIRED(corHeader.Flags))
+            peKind |= pe32BitRequired;
+        else if (COR_IS_32BIT_PREFERRED(corHeader.Flags))
+            peKind |= pe32BitPreferred;
+        if (peKind == peNot)
+            peKind = pe32BitRequired;
+
+        if (corHeader.ManagedNativeHeader.Size >= sizeof(ReadyToRunHeaderPrefix))
+        {
+            size_t nativeOffset;
+            ReadyToRunHeaderPrefix nativeHeader;
+            if (MapRva(image, size, sectionsOffset, fileHeader.NumberOfSections, sizeOfHeaders,
+                    corHeader.ManagedNativeHeader.VirtualAddress,
+                    corHeader.ManagedNativeHeader.Size, nativeOffset) &&
+                ReadPEValue(image, size, nativeOffset, nativeHeader) &&
+                nativeHeader.signature == ReadyToRunSignature)
+            {
+                DWORD nativeMachine = 0;
+#if defined(TARGET_X86)
+                nativeMachine = IMAGE_FILE_MACHINE_I386;
+#elif defined(TARGET_AMD64)
+                nativeMachine = IMAGE_FILE_MACHINE_AMD64;
+#elif defined(TARGET_ARM64)
+                nativeMachine = IMAGE_FILE_MACHINE_ARM64;
+#endif
+                DWORD osMask = 0;
+#if defined(TARGET_LINUX)
+                osMask = IMAGE_FILE_MACHINE_OS_MASK_LINUX;
+#elif defined(TARGET_OSX) || defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+                osMask = IMAGE_FILE_MACHINE_OS_MASK_APPLE;
+#elif defined(TARGET_FREEBSD)
+                osMask = IMAGE_FILE_MACHINE_OS_MASK_FREEBSD;
+#elif defined(TARGET_NETBSD)
+                osMask = IMAGE_FILE_MACHINE_OS_MASK_NETBSD;
+#elif defined(TARGET_SUNOS)
+                osMask = IMAGE_FILE_MACHINE_OS_MASK_SUN;
+#endif
+                if (nativeMachine != 0 && machine == (nativeMachine ^ osMask))
+                    machine = nativeMachine;
+                if ((nativeHeader.flags & 1) != 0)
+                {
+                    peKind = peILonly;
+                    machine = IMAGE_FILE_MACHINE_I386;
+                }
+            }
+        }
 
         metadataSize = corHeader.MetaData.Size;
         return MapRva(image, size, sectionsOffset, fileHeader.NumberOfSections, sizeOfHeaders,
@@ -326,16 +393,32 @@ namespace
 
             size_t offset = 0;
             uint32_t metadataSize = static_cast<uint32_t>(length);
+            DWORD peKind = peNot, machine = 0;
             uint32_t signature;
-            if (!ReadPEValue(image.get(), static_cast<size_t>(length), 0, signature) ||
-                signature != 0x424a5342)
+            bool isPE = !ReadPEValue(image.get(), static_cast<size_t>(length), 0, signature) ||
+                signature != 0x424a5342;
+            if (isPE)
             {
-                if (!FindPEMetadata(image.get(), static_cast<size_t>(length), offset, metadataSize))
+                if (!FindPEMetadata(image.get(), static_cast<size_t>(length),
+                    offset, metadataSize, peKind, machine))
                     return COR_E_BADIMAGEFORMAT;
             }
 
-            return OpenScopeOnMemory(image.get() + offset, metadataSize,
+            HRESULT hr = OpenScopeOnMemory(image.get() + offset, metadataSize,
                 dwOpenFlags | ofCopyMemory, riid, ppIUnk);
+            if (FAILED(hr) || !isPE)
+                return hr;
+
+            minipal::com_ptr<IDNMDOwner> owner;
+            hr = (*ppIUnk)->QueryInterface(IID_IDNMDOwner, (void**)&owner.p);
+            if (FAILED(hr))
+            {
+                (*ppIUnk)->Release();
+                *ppIUnk = nullptr;
+                return hr;
+            }
+            owner->SetPEKind(peKind, machine);
+            return S_OK;
         }
 
         STDMETHOD(OpenScopeOnMemory)(
@@ -671,6 +754,8 @@ HRESULT ReOpenDNMDMetaDataWithMemory(IUnknown* scope, void const* data, ULONG si
     hr = owner->ReplaceMetaData(std::move(replacement), std::move(backing));
     if (SUCCEEDED(hr) && (flags & ofTakeOwnership) != 0)
         CoTaskMemFree(const_cast<void*>(data));
+    if (SUCCEEDED(hr))
+        owner->ClearPEKind();
     return hr;
 }
 
