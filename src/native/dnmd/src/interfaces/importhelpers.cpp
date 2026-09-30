@@ -381,7 +381,7 @@ namespace
         mdcursor_t c;
         uint32_t count;
         if (!md_create_cursor(targetModule, mdtid_AssemblyRef, &c, &count))
-            return E_FAIL;
+            return S_FALSE;
 
         AssemblyVersionMatcher const& matcher = GetAssemblyVersionMatcher(name);
 
@@ -1208,16 +1208,15 @@ namespace
 
         HRESULT hr;
         std::stack<mdcursor_t> typesForTypeRefs;
-        typesForTypeRefs.push(sourceTypeRef);
 
         mdcursor_t scope = sourceTypeRef;
         while (GetTokenTypeFromCursor(scope) == mdtTypeRef)
         {
+            typesForTypeRefs.push(scope);
             mdcursor_t resolutionScope;
             if (!md_get_column_value_as_cursor(scope, mdtTypeRef_ResolutionScope, &resolutionScope))
                 return E_FAIL;
 
-            typesForTypeRefs.push(resolutionScope);
             scope = resolutionScope;
         }
 
@@ -1533,7 +1532,7 @@ namespace
                 // Make an AssemblyRef to the source assembly from the target assembly.
                 RETURN_IF_FAILED(ImportReferenceToAssembly(sourceAssembly, sourceAssemblyHash, targetModule, targetAssembly, onRowAdded, &targetOutermostScope));
             }
-            else
+            else if (TypeFromToken(scopeToken) != mdtModule && !IsNilToken(scopeToken))
             {
                 return E_FAIL;
             }

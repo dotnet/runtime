@@ -10,7 +10,9 @@
 #include "signatures.hpp"
 #include "../hcorenum.hpp"
 
+#include <quickbytes.h>
 #include <cassert>
+#include <limits>
 
 // C++ lifetime wrapper for HCORENUMImpl memory
 struct HCORENUMImplInPlaceDeleter
@@ -2924,19 +2926,54 @@ STDMETHODIMP InternalMetadataImportRO::TranslateSigWithScope(
     CQuickBytes *pqkSigEmit,
     ULONG       *pcbSig)
 {
-    LOCK_INTERNAL_READ();
-    UNREFERENCED_PARAMETER(pAssemImport);
-    UNREFERENCED_PARAMETER(pbHashValue);
-    UNREFERENCED_PARAMETER(cbHashValue);
-    UNREFERENCED_PARAMETER(pbSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pAssemEmit);
-    UNREFERENCED_PARAMETER(emit);
-    UNREFERENCED_PARAMETER(pqkSigEmit);
-    UNREFERENCED_PARAMETER(pcbSig);
+    if (emit == nullptr || pqkSigEmit == nullptr || pcbSig == nullptr ||
+        pbSigBlob == nullptr || cbSigBlob == 0 ||
+        (pbHashValue == nullptr && cbHashValue != 0))
+        return E_INVALIDARG;
 
-    // Requires Emit support
-    return E_NOTIMPL;
+    HRESULT hr;
+    minipal::com_ptr<IMetaDataImport> publicImport;
+    RETURN_IF_FAILED(QueryInterface(IID_IMetaDataImport, (void**)&publicImport));
+
+    minipal::com_ptr<IMetaDataAssemblyImport> publicAssemblyImport;
+    if (pAssemImport != nullptr)
+        RETURN_IF_FAILED(pAssemImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&publicAssemblyImport));
+
+    minipal::com_ptr<IUnknown> sourceIdentity, destinationIdentity;
+    RETURN_IF_FAILED(QueryInterface(IID_IUnknown, (void**)&sourceIdentity));
+    RETURN_IF_FAILED(emit->QueryInterface(IID_IUnknown, (void**)&destinationIdentity));
+
+    // The destination's public wrapper holds its write lock. A read lock on the
+    // same scope would deadlock when signature translation creates references.
+    InternalMetadataReadScope readScope{ sourceIdentity.p == destinationIdentity.p ? nullptr : Lock() };
+
+    // Each translated token occupies at most four bytes in place of a token
+    // occupying at least one byte and preceded by an element-type byte.
+    if (cbSigBlob > std::numeric_limits<ULONG>::max() / 3)
+        return CLDB_E_TOO_BIG;
+
+    ULONG requiredCapacity = cbSigBlob * 3;
+    if (pqkSigEmit->MaxSize() < requiredCapacity &&
+        pqkSigEmit->AllocNoThrow(requiredCapacity) == nullptr)
+        return E_OUTOFMEMORY;
+
+    size_t capacity = pqkSigEmit->MaxSize();
+    if (capacity > std::numeric_limits<ULONG>::max())
+        capacity = std::numeric_limits<ULONG>::max();
+
+    *pcbSig = 0;
+    ULONG translatedSize = 0;
+    hr = emit->TranslateSigWithScope(publicAssemblyImport.p, pbHashValue, cbHashValue,
+        publicImport.p, pbSigBlob, cbSigBlob, pAssemEmit, emit,
+        static_cast<PCOR_SIGNATURE>(pqkSigEmit->Ptr()), (ULONG)capacity, &translatedSize);
+    if (hr == CLDB_S_TRUNCATION)
+        return CLDB_E_TOO_BIG;
+    if (FAILED(hr))
+        return hr;
+
+    pqkSigEmit->Shrink(translatedSize);
+    *pcbSig = translatedSize;
+    return hr;
 }
 STDMETHODIMP_(IMetaModelCommon*) InternalMetadataImportRO::GetMetaModelCommon()
 {
