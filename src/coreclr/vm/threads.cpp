@@ -611,6 +611,12 @@ Thread* SetupThread()
     if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
 
+#ifndef TARGET_APPLE
+    // Disable the check on Apple platforms
+    // See https://github.com/dotnet/runtime/issues/134571
+    CheckThreadStateNotDestroyed();
+#endif
+
     // For interop debugging, we must mark that we're in a can't-stop region
     // b.c we may take Crsts here that may block the helper thread.
     // We're especially fragile here b/c we don't have a Thread object yet
@@ -1523,7 +1529,6 @@ Thread::Thread()
     m_HijackHasAsyncRet = false;
 #endif
 
-    m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
@@ -3998,7 +4003,7 @@ DEBUG_NOINLINE void ThreadStore::Enter()
     m_Crst.Enter();
 }
 
-DEBUG_NOINLINE void ThreadStore::Leave()
+DEBUG_NOINLINE void ThreadStore::Leave() noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -4019,7 +4024,7 @@ void ThreadStore::LockThreadStore()
     ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 }
 
-void ThreadStore::UnlockThreadStore()
+void ThreadStore::UnlockThreadStore() noexcept
 {
     WRAPPER_NO_CONTRACT;
 
@@ -6256,7 +6261,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
 // frame's ExceptionUnwind method.  It will return the first
 // Frame that is above pvLimitSP.
 //
-Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP)
+Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP) noexcept
 {
     CONTRACTL
     {
@@ -6362,6 +6367,7 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
     return total;
 }
 
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 DeadlockAwareLock::DeadlockAwareLock(const char *description)
   : m_pHoldingThread(NULL)
 #ifdef _DEBUG
@@ -6564,7 +6570,7 @@ void DeadlockAwareLock::LeaveLock()
 
     m_pHoldingThread = NULL;
 }
-
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #ifdef _DEBUG
 

@@ -426,6 +426,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
     callDescrData.nArgsSize = nStackBytes;
     callDescrData.hasThis = argit.HasThis();
+    callDescrData.pTransitionBlock = (TransitionBlock*)pTransitionBlock;
 
     TypeHandle thValueType;
     CorElementType type = argit.GetReturnType(&thValueType);

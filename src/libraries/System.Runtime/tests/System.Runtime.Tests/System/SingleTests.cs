@@ -755,6 +755,10 @@ namespace System.Tests
         [InlineData( float.PositiveInfinity,  3,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  4,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  5,  float.PositiveInfinity, 0.0f)]
+        [InlineData(-1.0f,                    -16777217,   -1.0f,                   0.0f)]
+        [InlineData(-1.0f,                     16777217,   -1.0f,                   0.0f)]
+        [InlineData(-0.0f,                    -16777217,    float.NegativeInfinity, 0.0f)]
+        [InlineData(-0.0f,                     16777217,   -0.0f,                   0.0f)]
         public static void RootN(float x, int n, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, float.RootN(x, n), allowedVariance);
@@ -854,6 +858,25 @@ namespace System.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        [Theory]
+        [InlineData(3.1415927E-07f, "F8", "0.00000031")]
+        [InlineData(3.1415927E-07f, "F9", "0.000000314")]
+        [InlineData(3.1415927E-07f, "F10", "0.0000003142")]
+        [InlineData(-3.1415927E-07f, "F9", "-0.000000314")]
+        [InlineData(3.1415927E-07f, "C9", "\u00A40.000000314")]
+        [InlineData(3.1415927E-07f, "N9", "0.000000314")]
+        [InlineData(3.1415927E-07f, "P7", "0.0000314 %")]
+        [InlineData(3.1415927E-07f, "P9", "0.000031416 %")]
+        [InlineData(float.Epsilon, "F9", "0.000000000")]
+        [InlineData(-float.Epsilon, "F9", "-0.000000000")]
+        [InlineData(0.0f, "F9", "0.000000000")]
+        [InlineData(-0.0f, "F9", "-0.000000000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            Assert.Equal(expected, value.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, NumberFormatInfo.InvariantInfo, expected);
         }
 
         [Theory]

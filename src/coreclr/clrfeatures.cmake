@@ -13,6 +13,10 @@ if (FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_PGO 1)
 endif()
 
+if (NOT DEFINED FEATURE_PGO AND CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_PGO 1)
+endif()
+
 # On desktop, if dynamic code compiled is false, we still enable static linking so we don't have to add platform manifest entries
 # for interpreter library, which is required for the packs build
 if (CLR_CMAKE_TARGET_ARCH_WASM OR CLR_CMAKE_TARGET_APPLE_MOBILE OR NOT FEATURE_DYNAMIC_CODE_COMPILED)

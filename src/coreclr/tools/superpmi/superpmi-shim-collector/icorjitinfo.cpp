@@ -44,11 +44,11 @@ bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
-bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool preserveNegativeDependency)
 {
     mc->cr->AddCall("notifyInstructionSetUsage");
-    bool result = original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
-    mc->recNotifyInstructionSetUsage(instructionSet, supported, result);
+    bool result = original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported, preserveNegativeDependency);
+    mc->recNotifyInstructionSetUsage(instructionSet, supported, preserveNegativeDependency, result);
     return result;
 }
 
