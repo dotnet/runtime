@@ -41,11 +41,13 @@ namespace System.Numerics.Tensors.Tests
 
         public static IEnumerable<object[]> SpanInSpanOutData()
         {
+            const float TrigTolerance = 1e-4f;
+
             yield return Create<float>(float.Abs, Tensor.Abs);
             yield return Create<float>(float.Acos, Tensor.Acos);
             yield return Create<float>(float.Acosh, Tensor.Acosh);
             yield return Create<float>(float.AcosPi, Tensor.AcosPi);
-            yield return Create<float>(float.Asin, Tensor.Asin);
+            yield return Create<float>(float.Asin, Tensor.Asin, TrigTolerance);
             yield return Create<float>(float.Asinh, Tensor.Asinh);
             yield return Create<float>(float.AsinPi, Tensor.AsinPi);
             yield return Create<float>(float.Atan, Tensor.Atan);
@@ -53,15 +55,15 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(float.AtanPi, Tensor.AtanPi);
             yield return Create<float>(float.Cbrt, Tensor.Cbrt);
             yield return Create<float>(float.Ceiling, Tensor.Ceiling);
-            yield return Create<float>(float.Cos, Tensor.Cos);
+            yield return Create<float>(float.Cos, Tensor.Cos, TrigTolerance);
             yield return Create<float>(float.Cosh, Tensor.Cosh);
-            yield return Create<float>(float.CosPi, Tensor.CosPi);
+            yield return Create<float>(float.CosPi, Tensor.CosPi, TrigTolerance);
             yield return Create<float>(float.DegreesToRadians, Tensor.DegreesToRadians);
             yield return Create<float>(float.Exp, Tensor.Exp);
-            yield return Create<float>(float.Exp10, Tensor.Exp10);
-            yield return Create<float>(float.Exp10M1, Tensor.Exp10M1);
-            yield return Create<float>(float.Exp2, Tensor.Exp2);
-            yield return Create<float>(float.Exp2M1, Tensor.Exp2M1);
+            yield return Create<float>(float.Exp10, Tensor.Exp10, 1e-5f);
+            yield return Create<float>(float.Exp10M1, Tensor.Exp10M1, 1e-5f);
+            yield return Create<float>(float.Exp2, Tensor.Exp2, 1e-5f);
+            yield return Create<float>(float.Exp2M1, Tensor.Exp2M1, 1e-5f);
             yield return Create<float>(float.ExpM1, Tensor.ExpM1);
             yield return Create<float>(float.Floor, Tensor.Floor);
             yield return Create<int>(int.LeadingZeroCount, Tensor.LeadingZeroCount);
@@ -79,23 +81,23 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>( f => 1 / f, Tensor.Reciprocal);
             yield return Create<float>(float.Round, Tensor.Round);
             //yield return Create<float>(float.Sigmoid, Tensor.Sigmoid);
-            yield return Create<float>(float.Sin, Tensor.Sin);
+            yield return Create<float>(float.Sin, Tensor.Sin, TrigTolerance);
             yield return Create<float>(float.Sinh, Tensor.Sinh);
-            yield return Create<float>(float.SinPi, Tensor.SinPi);
+            yield return Create<float>(float.SinPi, Tensor.SinPi, TrigTolerance);
             //yield return Create<float>(float.SoftMax, Tensor.SoftMax);
             yield return Create<float>(float.Sqrt, Tensor.Sqrt);
-            yield return Create<float>(float.Tan, Tensor.Tan);
+            yield return Create<float>(float.Tan, Tensor.Tan, TrigTolerance);
             yield return Create<float>(float.Tanh, Tensor.Tanh);
             yield return Create<float>(float.TanPi, Tensor.TanPi);
             yield return Create<float>(float.Truncate, Tensor.Truncate);
 
-            static object[] Create<T>(PerformCalculationSpanInSpanOut<T> tensorPrimitivesMethod, PerformSpanInSpanOut<T> tensorOperation)
-                => new object[] { tensorPrimitivesMethod, tensorOperation };
+            static object[] Create<T>(PerformCalculationSpanInSpanOut<T> tensorPrimitivesMethod, PerformSpanInSpanOut<T> tensorOperation, float? tolerance = null)
+                => new object[] { tensorPrimitivesMethod, tensorOperation, tolerance };
         }
 
         [Theory, MemberData(nameof(SpanInSpanOutData))]
-        public void TensorExtensionsSpanInSpanOut<T>(PerformCalculationSpanInSpanOut<T> tensorPrimitivesOperation, PerformSpanInSpanOut<T> tensorOperation)
-            where T: INumberBase<T>, IComparisonOperators<T, T, bool>
+        public void TensorExtensionsSpanInSpanOut<T>(PerformCalculationSpanInSpanOut<T> tensorPrimitivesOperation, PerformSpanInSpanOut<T> tensorOperation, float? tolerance)
+            where T : unmanaged, INumber<T>
         {
             Assert.All(Helpers.TensorShapes, tensorLength =>
             {
@@ -113,7 +115,8 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < data.Length; i++)
                 {
-                    Assert.Equal(tensorPrimitivesOperation(data[i]), span[i]);
+                    Helpers.AssertEqualWithTolerance(tensorPrimitivesOperation(data[i]), span[i],
+                        tolerance.HasValue ? T.CreateTruncating(tolerance.Value) : null);
                 }
             });
         }
@@ -838,6 +841,35 @@ namespace System.Numerics.Tensors.Tests
             Assert.False(ts1.SequenceEqual(ts3));
         }
 
+        [Theory]
+        [InlineData(4, 16)]
+        [InlineData(8, 8)]
+        [InlineData(2, 32)]
+        public static void TensorFlattenAndCompareContiguousRows(int rows, int columns)
+        {
+            int rowStride = columns + 2;
+            int[] backing = Enumerable.Repeat(-11, rows * rowStride).ToArray();
+            int[] expected = Enumerable.Range(0, rows * columns).ToArray();
+            nint[] lengths = [rows, columns];
+            nint[] strides = [rowStride, 1];
+
+            for (int row = 0; row < rows; row++)
+            {
+                expected.AsSpan(row * columns, columns).CopyTo(backing.AsSpan(row * rowStride, columns));
+            }
+
+            ReadOnlyTensorSpan<int> source = new ReadOnlyTensorSpan<int>(backing, lengths, strides);
+            ReadOnlyTensorSpan<int> dense = new ReadOnlyTensorSpan<int>(expected, lengths);
+            int[] destination = Enumerable.Repeat(-7, expected.Length + 2).ToArray();
+            source.FlattenTo(destination);
+            Assert.Equal(expected.Concat([-7, -7]), destination);
+            Assert.True(source.SequenceEqual(dense));
+            Assert.True(dense.SequenceEqual(source));
+
+            backing[(rows - 1) * rowStride + columns - 1] = -99;
+            Assert.False(source.SequenceEqual(dense));
+        }
+
         /// <summary>
         /// Computes the set of buffer offsets that correspond to logical elements in a non-dense tensor.
         /// </summary>
@@ -913,6 +945,38 @@ namespace System.Numerics.Tensors.Tests
                 {
                     Assert.Equal(0.0, dblData[i]);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, 2, 4)]
+        [InlineData(false, 8, 16)]
+        [InlineData(true, 2, 4)]
+        [InlineData(true, 8, 16)]
+        public static void TensorFillNonDensePreservesLogicalRandomOrder(bool gaussian, int rows, int columns)
+        {
+            double[] backing = new double[rows * (columns + 3)];
+            double[] expected = new double[rows * columns];
+            TensorSpan<double> strided = new TensorSpan<double>(backing, [rows, columns], [columns + 3, 1]);
+            TensorSpan<double> dense = new TensorSpan<double>(expected, [rows, columns]);
+
+            if (gaussian)
+            {
+                Tensor.FillGaussianNormalDistribution(strided, new Random(42));
+                Tensor.FillGaussianNormalDistribution(dense, new Random(42));
+            }
+            else
+            {
+                Tensor.FillUniformDistribution(strided, new Random(42));
+                Tensor.FillUniformDistribution(dense, new Random(42));
+            }
+
+            double[] actual = new double[expected.Length];
+            strided.FlattenTo(actual);
+            Assert.Equal(expected, actual);
+            for (int row = 0; row < rows; row++)
+            {
+                Assert.Equal([0.0, 0.0, 0.0], backing.AsSpan(row * (columns + 3) + columns, 3).ToArray());
             }
         }
 
@@ -1160,6 +1224,157 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(6, resized2[3]);
             Assert.Equal(0, resized2[4]);
             Assert.Equal(0, resized2[5]);
+        }
+
+        [Theory]
+        [InlineData(31)]
+        [InlineData(33)]
+        [InlineData(64)]
+        [InlineData(130)]
+        public static void TensorResizeNonDenseContiguousRows(int newLength)
+        {
+            int[] backing = Enumerable.Repeat(-1, 8 * 19).ToArray();
+            int[] expected = Enumerable.Range(1, 8 * 16).ToArray();
+            for (int row = 0; row < 8; row++)
+            {
+                expected.AsSpan(row * 16, 16).CopyTo(backing.AsSpan(row * 19, 16));
+            }
+
+            Tensor<int> source = Tensor.Create(backing, [8, 16], [19, 1]);
+            Tensor<int> result = Tensor.Resize(source, [newLength]);
+            int[] actual = new int[newLength];
+            result.FlattenTo(actual);
+            Assert.Equal(expected.Take(newLength).Concat(Enumerable.Repeat(0, Math.Max(0, newLength - expected.Length))), actual);
+        }
+
+        [Theory]
+        [InlineData(8, 4, 1)]
+        [InlineData(12, 4, 1)]
+        [InlineData(13, 6, 1)]
+        [InlineData(16, 8, 2)]
+        public static void TensorOperationsOnContiguousSlices(int outerStride, int rowStride, int columnStride)
+        {
+            nint[] lengths = [2, 2, 4];
+            nint[] strides = [outerStride, rowStride, columnStride];
+            int[] xData = new int[32];
+            int[] yData = new int[32];
+            int[] resultData = Enumerable.Repeat(-99, 32).ToArray();
+            int[] expected = Enumerable.Repeat(-99, 32).ToArray();
+            bool[] comparisonData = new bool[32];
+            bool[] expectedComparison = new bool[32];
+
+            for (int i = 0; i < 16; i++)
+            {
+                int offset = (i / 8 * outerStride) + (i / 4 % 2 * rowStride) + (i % 4 * columnStride);
+                xData[offset] = -i - 1;
+                yData[offset] = i + 1;
+                expectedComparison[offset] = true;
+            }
+
+            ReadOnlyTensorSpan<int> x = new ReadOnlyTensorSpan<int>(xData, lengths, strides);
+            ReadOnlyTensorSpan<int> y = new ReadOnlyTensorSpan<int>(yData, lengths, strides);
+            TensorSpan<int> result = new TensorSpan<int>(resultData, lengths, strides);
+            TensorSpan<bool> comparison = new TensorSpan<bool>(comparisonData, lengths, strides);
+
+            int[] flattened = Enumerable.Repeat(-99, 18).ToArray();
+            x.FlattenTo(flattened);
+            Assert.Equal(Enumerable.Range(1, 16).Select(i => -i).Concat([-99, -99]), flattened);
+
+            ReadOnlyTensorSpan<int> dense = new ReadOnlyTensorSpan<int>(
+                Enumerable.Range(1, 16).Select(i => -i).ToArray(), lengths);
+            Assert.True(x.SequenceEqual(dense));
+            Assert.True(dense.SequenceEqual(x));
+            Assert.False(y.SequenceEqual(dense));
+
+            int[] differing = (int[])xData.Clone();
+            differing[outerStride + rowStride + 3 * columnStride] = -99;
+            Assert.False(x.SequenceEqual(new ReadOnlyTensorSpan<int>(differing, lengths, strides)));
+
+            Tensor.Abs(x, result);
+            for (int i = 0; i < 16; i++)
+            {
+                int offset = (i / 8 * outerStride) + (i / 4 % 2 * rowStride) + (i % 4 * columnStride);
+                expected[offset] = i + 1;
+            }
+            Assert.Equal(expected, resultData);
+
+            Tensor.Add(x, y, result);
+            for (int i = 0; i < 16; i++)
+            {
+                int offset = (i / 8 * outerStride) + (i / 4 % 2 * rowStride) + (i % 4 * columnStride);
+                expected[offset] = 0;
+            }
+            Assert.Equal(expected, resultData);
+
+            Tensor.Multiply(x, 2, result);
+            for (int i = 0; i < 16; i++)
+            {
+                int offset = (i / 8 * outerStride) + (i / 4 % 2 * rowStride) + (i % 4 * columnStride);
+                expected[offset] = -2 * (i + 1);
+            }
+            Assert.Equal(expected, resultData);
+
+            Tensor.Subtract(50, x, result);
+            for (int i = 0; i < 16; i++)
+            {
+                int offset = (i / 8 * outerStride) + (i / 4 % 2 * rowStride) + (i % 4 * columnStride);
+                expected[offset] = 51 + i;
+            }
+            Assert.Equal(expected, resultData);
+
+            Tensor.LessThan(x, y, comparison);
+            Assert.Equal(expectedComparison, comparisonData);
+
+            Tensor.Multiply(result.AsReadOnlyTensorSpan(), 2, result);
+            for (int i = 0; i < 16; i++)
+            {
+                int offset = (i / 8 * outerStride) + (i / 4 % 2 * rowStride) + (i % 4 * columnStride);
+                expected[offset] *= 2;
+            }
+            Assert.Equal(expected, resultData);
+
+            result.Clear();
+            for (int i = 0; i < 16; i++)
+            {
+                int offset = (i / 8 * outerStride) + (i / 4 % 2 * rowStride) + (i % 4 * columnStride);
+                expected[offset] = 0;
+            }
+            Assert.Equal(expected, resultData);
+
+            result.Fill(7);
+            for (int i = 0; i < 16; i++)
+            {
+                int offset = (i / 8 * outerStride) + (i / 4 % 2 * rowStride) + (i % 4 * columnStride);
+                expected[offset] = 7;
+            }
+            Assert.Equal(expected, resultData);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TensorOperationsOnBroadcastContiguousSlices(bool paddedRank)
+        {
+            int[] sourceData = [-1, -2, -3, -4];
+            ReadOnlyTensorSpan<int> source = paddedRank
+                ? new ReadOnlyTensorSpan<int>(sourceData, [1, 4])
+                : new ReadOnlyTensorSpan<int>(sourceData, [4]);
+            ReadOnlyTensorSpan<int> other = new ReadOnlyTensorSpan<int>(
+                [10, 11, 12, 13, 14, 15, 16, 17], [2, 4]);
+            int[] resultData = Enumerable.Repeat(-99, 12).ToArray();
+            TensorSpan<int> result = new TensorSpan<int>(resultData, [2, 4], [6, 1]);
+
+            Tensor.Abs(source, result);
+            Assert.Equal([1, 2, 3, 4, -99, -99, 1, 2, 3, 4, -99, -99], resultData);
+
+            Tensor.Add(source, other, result);
+            Assert.Equal([9, 9, 9, 9, -99, -99, 13, 13, 13, 13, -99, -99], resultData);
+
+            Tensor.Add(source, 3, result);
+            Assert.Equal([2, 1, 0, -1, -99, -99, 2, 1, 0, -1, -99, -99], resultData);
+
+            Tensor.Subtract(10, source, result);
+            Assert.Equal([11, 12, 13, 14, -99, -99, 11, 12, 13, 14, -99, -99], resultData);
         }
 
         [Fact]

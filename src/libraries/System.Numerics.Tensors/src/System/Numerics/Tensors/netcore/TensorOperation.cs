@@ -11,6 +11,9 @@ namespace System.Numerics.Tensors
 {
     internal static class TensorOperation
     {
+        // Constructing slices costs more than indexed iteration for tiny tensors.
+        internal const int MinSlicedOperationLength = 32;
+
         private static bool ValidateSourceOverlap<TSource, TDestination>(
             in ReadOnlyTensorSpan<TSource> source, in TensorSpan<TDestination> destination, bool isCopy = false)
         {
@@ -45,9 +48,96 @@ namespace System.Numerics.Tensors
             throw new ArgumentException(SR.Argument_OverlappingTensorLayoutsNotSupported, nameof(destination));
         }
 
+        private static ReadOnlySpan<T> AsDenseSpan<T>(in ReadOnlyTensorSpan<T> source)
+            => MemoryMarshal.CreateReadOnlySpan(in source._reference, checked((int)source.FlattenedLength));
+
+        private static Span<T> AsDenseSpan<T>(in TensorSpan<T> destination)
+            => MemoryMarshal.CreateSpan(ref destination._reference, checked((int)destination.FlattenedLength));
+
+        private static ReadOnlyTensorSpan<T> BroadcastSource<T>(in ReadOnlyTensorSpan<T> source, in TensorShape destination)
+        {
+            if (source.Rank > destination.Rank || destination.FlattenedLength == 0)
+            {
+                return source;
+            }
+
+            ReadOnlySpan<nint> sourceLengths = source.Lengths;
+            ReadOnlySpan<nint> sourceStrides = source.Strides;
+            scoped Span<nint> strides = RentedBuffer.CreateUninitialized(destination.Rank, out RentedBuffer<nint> rentedBuffer);
+            int rankDifference = destination.Rank - source.Rank;
+
+            for (int i = 0; i < destination.Rank; i++)
+            {
+                int sourceIndex = i - rankDifference;
+                strides[i] = sourceIndex < 0 || sourceLengths[sourceIndex] == 1 ? 0 : sourceStrides[sourceIndex];
+            }
+
+            TensorShape shape = TensorShape.Create(in source._reference, source._shape.LinearLength, destination.Lengths, strides, source.IsPinned);
+            rentedBuffer.Dispose();
+            return new ReadOnlyTensorSpan<T>(in source._reference, in shape);
+        }
+
+        internal static int GetDenseSliceDimension(in TensorShape source, in TensorShape destination, in TensorShape other = default)
+        {
+            ReadOnlySpan<nint> lengths = destination.Lengths;
+            if (!source.Lengths.SequenceEqual(lengths) ||
+                (other.Rank != 0 && !other.Lengths.SequenceEqual(lengths)) ||
+                destination.FlattenedLength == 0)
+            {
+                return -1;
+            }
+
+            ReadOnlySpan<nint> sourceStrides = source.Strides;
+            ReadOnlySpan<nint> destinationStrides = destination.Strides;
+            ReadOnlySpan<nint> otherStrides = other.Strides;
+            nint contiguousLength = 1;
+            int dimension = -1;
+
+            for (int i = lengths.Length - 1; i > 0; i--)
+            {
+                nint length = lengths[i];
+                if (length > 1 &&
+                    (sourceStrides[i] != contiguousLength ||
+                     destinationStrides[i] != contiguousLength ||
+                     (other.Rank != 0 && otherStrides[i] != contiguousLength)))
+                {
+                    break;
+                }
+                if (length > int.MaxValue / contiguousLength)
+                {
+                    break;
+                }
+
+                contiguousLength *= length;
+                if (contiguousLength > 1)
+                {
+                    dimension = i - 1;
+                }
+            }
+
+            return dimension;
+        }
+
         public static void Invoke<TOperation, T>(in TensorSpan<T> x)
             where TOperation : IOperation<T>
         {
+            if (x.IsDense && x.FlattenedLength <= int.MaxValue)
+            {
+                TOperation.Invoke(AsDenseSpan(x));
+                return;
+            }
+
+            if (GetDenseSliceDimension(x._shape, x._shape) is int dimension && dimension >= 0)
+            {
+                TensorDimensionSpan<T> slices = x.GetDimensionSpan(dimension);
+                for (nint i = 0; i < slices.Length; i++)
+                {
+                    TensorSpan<T> slice = slices[i];
+                    TOperation.Invoke(AsDenseSpan(slice));
+                }
+                return;
+            }
+
             scoped Span<nint> indexes = RentedBuffer.Create(x.Rank, x.Strides, out nint linearOffset, out RentedBuffer<nint> rentedBuffer);
 
             for (nint i = 0; i < x.FlattenedLength; i++)
@@ -147,6 +237,23 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in TensorSpan<TResult> destination, TArg scalar)
             where TOperation : IUnaryOperation_Scalar<TArg, TResult>
         {
+            if (destination.IsDense && destination.FlattenedLength <= int.MaxValue)
+            {
+                TOperation.Invoke(AsDenseSpan(destination), scalar);
+                return;
+            }
+
+            if (GetDenseSliceDimension(destination._shape, destination._shape) is int dimension && dimension >= 0)
+            {
+                TensorDimensionSpan<TResult> slices = destination.GetDimensionSpan(dimension);
+                for (nint i = 0; i < slices.Length; i++)
+                {
+                    TensorSpan<TResult> slice = slices[i];
+                    TOperation.Invoke(AsDenseSpan(slice), scalar);
+                }
+                return;
+            }
+
             scoped Span<nint> indexes = RentedBuffer.Create(destination.Rank, destination.Strides, out nint linearOffset, out RentedBuffer<nint> rentedBuffer);
 
             for (nint i = 0; i < destination.FlattenedLength; i++)
@@ -179,6 +286,29 @@ namespace System.Numerics.Tensors
             if (ValidateSourceOverlap(x, destination, isCopy))
             {
                 return;
+            }
+            ReadOnlyTensorSpan<TArg> optimizedSource = x.Lengths.SequenceEqual(destination.Lengths) ? x : BroadcastSource(x, destination._shape);
+            if (destination.FlattenedLength != 0 && optimizedSource.Lengths.SequenceEqual(destination.Lengths))
+            {
+                if (optimizedSource.IsDense && destination.IsDense && destination.FlattenedLength <= int.MaxValue)
+                {
+                    TOperation.Invoke(AsDenseSpan(optimizedSource), AsDenseSpan(destination));
+                    return;
+                }
+
+                int dimension = GetDenseSliceDimension(optimizedSource._shape, destination._shape);
+                if (dimension >= 0)
+                {
+                    ReadOnlyTensorDimensionSpan<TArg> sourceSlices = optimizedSource.GetDimensionSpan(dimension);
+                    TensorDimensionSpan<TResult> destinationSlices = destination.GetDimensionSpan(dimension);
+                    for (nint i = 0; i < destinationSlices.Length; i++)
+                    {
+                        ReadOnlyTensorSpan<TArg> sourceSlice = sourceSlices[i];
+                        TensorSpan<TResult> destinationSlice = destinationSlices[i];
+                        TOperation.Invoke(AsDenseSpan(sourceSlice), AsDenseSpan(destinationSlice));
+                    }
+                    return;
+                }
             }
             {
                 ReadOnlyTensorSpan<TArg> source = x;
@@ -246,6 +376,24 @@ namespace System.Numerics.Tensors
                 {
                     ThrowHelper.ThrowArgument_OverlappingTensorLayoutsNotSupported();
                 }
+
+                int dimension = x.FlattenedLength >= MinSlicedOperationLength
+                    ? GetDenseSliceDimension(x._shape, x._shape)
+                    : -1;
+                if (dimension >= 0)
+                {
+                    ReadOnlyTensorDimensionSpan<TArg> slices = x.GetDimensionSpan(dimension);
+                    int destinationOffset = 0;
+
+                    for (nint i = 0; i < slices.Length; i++)
+                    {
+                        ReadOnlyTensorSpan<TArg> slice = slices[i];
+                        ReadOnlySpan<TArg> sourceSpan = AsDenseSpan(slice);
+                        TOperation.Invoke(sourceSpan, result.Slice(destinationOffset, sourceSpan.Length));
+                        destinationOffset += sourceSpan.Length;
+                    }
+                    return;
+                }
             }
 
             scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, x.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
@@ -288,6 +436,34 @@ namespace System.Numerics.Tensors
         {
             ValidateSourceOverlap(x, destination);
             ValidateSourceOverlap(y, destination);
+            ReadOnlyTensorSpan<TArg1> optimizedX = x.Lengths.SequenceEqual(destination.Lengths) ? x : BroadcastSource(x, destination._shape);
+            ReadOnlyTensorSpan<TArg2> optimizedY = y.Lengths.SequenceEqual(destination.Lengths) ? y : BroadcastSource(y, destination._shape);
+            if (destination.FlattenedLength != 0 &&
+                optimizedX.Lengths.SequenceEqual(destination.Lengths) &&
+                optimizedY.Lengths.SequenceEqual(destination.Lengths))
+            {
+                if (optimizedX.IsDense && optimizedY.IsDense && destination.IsDense && destination.FlattenedLength <= int.MaxValue)
+                {
+                    TOperation.Invoke(AsDenseSpan(optimizedX), AsDenseSpan(optimizedY), AsDenseSpan(destination));
+                    return;
+                }
+
+                int dimension = GetDenseSliceDimension(optimizedX._shape, destination._shape, optimizedY._shape);
+                if (dimension >= 0)
+                {
+                    ReadOnlyTensorDimensionSpan<TArg1> xSlices = optimizedX.GetDimensionSpan(dimension);
+                    ReadOnlyTensorDimensionSpan<TArg2> ySlices = optimizedY.GetDimensionSpan(dimension);
+                    TensorDimensionSpan<TResult> destinationSlices = destination.GetDimensionSpan(dimension);
+                    for (nint i = 0; i < destinationSlices.Length; i++)
+                    {
+                        ReadOnlyTensorSpan<TArg1> xSlice = xSlices[i];
+                        ReadOnlyTensorSpan<TArg2> ySlice = ySlices[i];
+                        TensorSpan<TResult> destinationSlice = destinationSlices[i];
+                        TOperation.Invoke(AsDenseSpan(xSlice), AsDenseSpan(ySlice), AsDenseSpan(destinationSlice));
+                    }
+                    return;
+                }
+            }
             {
                 ReadOnlyTensorSpan<TArg1> left = x;
                 ReadOnlyTensorSpan<TArg2> right = y;
@@ -352,6 +528,29 @@ namespace System.Numerics.Tensors
             where TOperation : IBinaryOperation_Tensor_Scalar<TArg1, TArg2, TResult>
         {
             ValidateSourceOverlap(x, destination);
+            ReadOnlyTensorSpan<TArg1> optimizedSource = x.Lengths.SequenceEqual(destination.Lengths) ? x : BroadcastSource(x, destination._shape);
+            if (destination.FlattenedLength != 0 && optimizedSource.Lengths.SequenceEqual(destination.Lengths))
+            {
+                if (optimizedSource.IsDense && destination.IsDense && destination.FlattenedLength <= int.MaxValue)
+                {
+                    TOperation.Invoke(AsDenseSpan(optimizedSource), y, AsDenseSpan(destination));
+                    return;
+                }
+
+                int dimension = GetDenseSliceDimension(optimizedSource._shape, destination._shape);
+                if (dimension >= 0)
+                {
+                    ReadOnlyTensorDimensionSpan<TArg1> sourceSlices = optimizedSource.GetDimensionSpan(dimension);
+                    TensorDimensionSpan<TResult> destinationSlices = destination.GetDimensionSpan(dimension);
+                    for (nint i = 0; i < destinationSlices.Length; i++)
+                    {
+                        ReadOnlyTensorSpan<TArg1> sourceSlice = sourceSlices[i];
+                        TensorSpan<TResult> destinationSlice = destinationSlices[i];
+                        TOperation.Invoke(AsDenseSpan(sourceSlice), y, AsDenseSpan(destinationSlice));
+                    }
+                    return;
+                }
+            }
             {
                 ReadOnlyTensorSpan<TArg1> source = x;
                 scoped Span<nint> xIndexes = RentedBuffer.Create(destination.Rank, source.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
@@ -376,6 +575,29 @@ namespace System.Numerics.Tensors
             where TOperation : IBinaryOperation_Scalar_Tensor<TArg, TArg, TResult>
         {
             ValidateSourceOverlap(y, destination);
+            ReadOnlyTensorSpan<TArg> optimizedSource = y.Lengths.SequenceEqual(destination.Lengths) ? y : BroadcastSource(y, destination._shape);
+            if (destination.FlattenedLength != 0 && optimizedSource.Lengths.SequenceEqual(destination.Lengths))
+            {
+                if (optimizedSource.IsDense && destination.IsDense && destination.FlattenedLength <= int.MaxValue)
+                {
+                    TOperation.Invoke(x, AsDenseSpan(optimizedSource), AsDenseSpan(destination));
+                    return;
+                }
+
+                int dimension = GetDenseSliceDimension(optimizedSource._shape, destination._shape);
+                if (dimension >= 0)
+                {
+                    ReadOnlyTensorDimensionSpan<TArg> sourceSlices = optimizedSource.GetDimensionSpan(dimension);
+                    TensorDimensionSpan<TResult> destinationSlices = destination.GetDimensionSpan(dimension);
+                    for (nint i = 0; i < destinationSlices.Length; i++)
+                    {
+                        ReadOnlyTensorSpan<TArg> sourceSlice = sourceSlices[i];
+                        TensorSpan<TResult> destinationSlice = destinationSlices[i];
+                        TOperation.Invoke(x, AsDenseSpan(sourceSlice), AsDenseSpan(destinationSlice));
+                    }
+                    return;
+                }
+            }
             {
                 ReadOnlyTensorSpan<TArg> source = y;
                 scoped Span<nint> xIndexes = RentedBuffer.Create(destination.Rank, source.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);

@@ -427,13 +427,33 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                TensorSpan<T>.Enumerator enumerator = destination.GetEnumerator();
-
-                while (enumerator.MoveNext())
+                int dimension = destination.FlattenedLength >= TensorOperation.MinSlicedOperationLength
+                    ? TensorOperation.GetDenseSliceDimension(destination._shape, destination._shape)
+                    : -1;
+                if (dimension >= 0)
                 {
-                    double u1 = 1.0 - random.NextDouble();
-                    double u2 = 1.0 - random.NextDouble();
-                    enumerator.Current = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                    TensorDimensionSpan<T> slices = destination.GetDimensionSpan(dimension);
+                    for (nint i = 0; i < slices.Length; i++)
+                    {
+                        TensorSpan<T> slice = slices[i];
+                        Span<T> span = MemoryMarshal.CreateSpan(ref slice._reference, (int)slice.FlattenedLength);
+                        for (int j = 0; j < span.Length; j++)
+                        {
+                            double u1 = 1.0 - random.NextDouble();
+                            double u2 = 1.0 - random.NextDouble();
+                            span[j] = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                        }
+                    }
+                }
+                else
+                {
+                    TensorSpan<T>.Enumerator enumerator = destination.GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        double u1 = 1.0 - random.NextDouble();
+                        double u2 = 1.0 - random.NextDouble();
+                        enumerator.Current = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                    }
                 }
             }
 
@@ -462,11 +482,29 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                TensorSpan<T>.Enumerator enumerator = destination.GetEnumerator();
-
-                while (enumerator.MoveNext())
+                int dimension = destination.FlattenedLength >= TensorOperation.MinSlicedOperationLength
+                    ? TensorOperation.GetDenseSliceDimension(destination._shape, destination._shape)
+                    : -1;
+                if (dimension >= 0)
                 {
-                    enumerator.Current = T.CreateChecked(random.NextDouble());
+                    TensorDimensionSpan<T> slices = destination.GetDimensionSpan(dimension);
+                    for (nint i = 0; i < slices.Length; i++)
+                    {
+                        TensorSpan<T> slice = slices[i];
+                        Span<T> span = MemoryMarshal.CreateSpan(ref slice._reference, (int)slice.FlattenedLength);
+                        for (int j = 0; j < span.Length; j++)
+                        {
+                            span[j] = T.CreateChecked(random.NextDouble());
+                        }
+                    }
+                }
+                else
+                {
+                    TensorSpan<T>.Enumerator enumerator = destination.GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        enumerator.Current = T.CreateChecked(random.NextDouble());
+                    }
                 }
             }
 
@@ -1632,14 +1670,32 @@ namespace System.Numerics.Tensors
             else
             {
                 nint copyLength = Math.Min(tensor.FlattenedLength, newSize);
-                ReadOnlyTensorSpan<T>.Enumerator enumerator = tensor.AsReadOnlyTensorSpan().GetEnumerator();
                 Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
-
-                for (nint i = 0; i < copyLength; i++)
+                ReadOnlyTensorSpan<T> source = tensor.AsReadOnlyTensorSpan();
+                int dimension = copyLength >= TensorOperation.MinSlicedOperationLength
+                    ? TensorOperation.GetDenseSliceDimension(source._shape, source._shape)
+                    : -1;
+                if (dimension >= 0)
                 {
-                    bool moved = enumerator.MoveNext();
-                    Debug.Assert(moved);
-                    ospan[(int)i] = enumerator.Current;
+                    ReadOnlyTensorDimensionSpan<T> slices = source.GetDimensionSpan(dimension);
+                    int copied = 0;
+                    for (nint i = 0; copied < copyLength; i++)
+                    {
+                        ReadOnlyTensorSpan<T> slice = slices[i];
+                        int count = (int)Math.Min(slice.FlattenedLength, copyLength - copied);
+                        MemoryMarshal.CreateReadOnlySpan(in slice._reference, count).CopyTo(ospan.Slice(copied, count));
+                        copied += count;
+                    }
+                }
+                else
+                {
+                    ReadOnlyTensorSpan<T>.Enumerator enumerator = source.GetEnumerator();
+                    for (nint i = 0; i < copyLength; i++)
+                    {
+                        bool moved = enumerator.MoveNext();
+                        Debug.Assert(moved);
+                        ospan[(int)i] = enumerator.Current;
+                    }
                 }
             }
 
@@ -1896,6 +1952,27 @@ namespace System.Numerics.Tensors
             if (tensor.IsDense && other.IsDense)
             {
                 return MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor.FlattenedLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other.FlattenedLength));
+            }
+
+            int dimension = tensor.FlattenedLength >= TensorOperation.MinSlicedOperationLength
+                ? TensorOperation.GetDenseSliceDimension(tensor._shape, other._shape)
+                : -1;
+            if (dimension >= 0)
+            {
+                ReadOnlyTensorDimensionSpan<T> tensorSlices = tensor.GetDimensionSpan(dimension);
+                ReadOnlyTensorDimensionSpan<T> otherSlices = other.GetDimensionSpan(dimension);
+
+                for (nint i = 0; i < tensorSlices.Length; i++)
+                {
+                    ReadOnlyTensorSpan<T> tensorSlice = tensorSlices[i];
+                    ReadOnlyTensorSpan<T> otherSlice = otherSlices[i];
+                    if (!MemoryMarshal.CreateReadOnlySpan(in tensorSlice._reference, (int)tensorSlice.FlattenedLength)
+                        .SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in otherSlice._reference, (int)otherSlice.FlattenedLength)))
+                    {
+                        return false;
+                    }
+                }
+                return true;
             }
 
             ReadOnlyTensorSpan<T>.Enumerator enumerator1 = tensor.GetEnumerator();

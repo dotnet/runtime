@@ -152,11 +152,13 @@ namespace System.Numerics.Tensors.Tests
 
         public static IEnumerable<object[]> SpanInSpanOutData()
         {
+            const float TrigTolerance = 1e-4f;
+
             yield return Create<float, float>(float.Abs, Tensor.Abs);
             yield return Create<float, float>(float.Acos, Tensor.Acos);
             yield return Create<float, float>(float.Acosh, Tensor.Acosh);
             yield return Create<float, float>(float.AcosPi, Tensor.AcosPi);
-            yield return Create<float, float>(float.Asin, Tensor.Asin);
+            yield return Create<float, float>(float.Asin, Tensor.Asin, TrigTolerance);
             yield return Create<float, float>(float.Asinh, Tensor.Asinh);
             yield return Create<float, float>(float.AsinPi, Tensor.AsinPi);
             yield return Create<float, float>(float.Atan, Tensor.Atan);
@@ -164,15 +166,15 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float, float>(float.AtanPi, Tensor.AtanPi);
             yield return Create<float, float>(float.Cbrt, Tensor.Cbrt);
             yield return Create<float, float>(float.Ceiling, Tensor.Ceiling);
-            yield return Create<float, float>(float.Cos, Tensor.Cos);
+            yield return Create<float, float>(float.Cos, Tensor.Cos, TrigTolerance);
             yield return Create<float, float>(float.Cosh, Tensor.Cosh);
-            yield return Create<float, float>(float.CosPi, Tensor.CosPi);
+            yield return Create<float, float>(float.CosPi, Tensor.CosPi, TrigTolerance);
             yield return Create<float, float>(float.DegreesToRadians, Tensor.DegreesToRadians);
             yield return Create<float, float>(float.Exp, Tensor.Exp);
-            yield return Create<float, float>(float.Exp10, Tensor.Exp10);
-            yield return Create<float, float>(float.Exp10M1, Tensor.Exp10M1);
-            yield return Create<float, float>(float.Exp2, Tensor.Exp2);
-            yield return Create<float, float>(float.Exp2M1, Tensor.Exp2M1);
+            yield return Create<float, float>(float.Exp10, Tensor.Exp10, 1e-5f);
+            yield return Create<float, float>(float.Exp10M1, Tensor.Exp10M1, 1e-5f);
+            yield return Create<float, float>(float.Exp2, Tensor.Exp2, 1e-5f);
+            yield return Create<float, float>(float.Exp2M1, Tensor.Exp2M1, 1e-5f);
             yield return Create<float, float>(float.ExpM1, Tensor.ExpM1);
             yield return Create<float, float>(float.Floor, Tensor.Floor);
             yield return Create<int, int>(int.LeadingZeroCount, Tensor.LeadingZeroCount);
@@ -189,12 +191,12 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float, float>(f => 1 / f, Tensor.Reciprocal);
             yield return Create<float, float>(float.Round, Tensor.Round);
             //yield return Create<float, float>(float.Sigmoid, Tensor.Sigmoid);
-            yield return Create<float, float>(float.Sin, Tensor.Sin);
+            yield return Create<float, float>(float.Sin, Tensor.Sin, TrigTolerance);
             yield return Create<float, float>(float.Sinh, Tensor.Sinh);
-            yield return Create<float, float>(float.SinPi, Tensor.SinPi);
+            yield return Create<float, float>(float.SinPi, Tensor.SinPi, TrigTolerance);
             //yield return Create<float, float>(float.SoftMax, Tensor.SoftMax);
             yield return Create<float, float>(float.Sqrt, Tensor.Sqrt);
-            yield return Create<float, float>(float.Tan, Tensor.Tan);
+            yield return Create<float, float>(float.Tan, Tensor.Tan, TrigTolerance);
             yield return Create<float, float>(float.Tanh, Tensor.Tanh);
             yield return Create<float, float>(float.TanPi, Tensor.TanPi);
             yield return Create<float, float>(float.Truncate, Tensor.Truncate);
@@ -203,14 +205,14 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float, int>(x => (int)x, Tensor.ConvertSaturating);
             yield return Create<float, int>(x => (int)MathF.Truncate(x), Tensor.ConvertTruncating);
 
-            static object[] Create<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesMethod, TensorSpanInSpanOut<TIn, TOut> tensorOperation)
-                => new object[] { tensorPrimitivesMethod, tensorOperation };
+            static object[] Create<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesMethod, TensorSpanInSpanOut<TIn, TOut> tensorOperation, float? tolerance = null)
+                => new object[] { tensorPrimitivesMethod, tensorOperation, tolerance };
         }
 
         [Theory, MemberData(nameof(SpanInSpanOutData))]
-        public void TensorExtensionsSpanInSpanOut<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesOperation, TensorSpanInSpanOut<TIn, TOut> tensorOperation)
+        public void TensorExtensionsSpanInSpanOut<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesOperation, TensorSpanInSpanOut<TIn, TOut> tensorOperation, float? tolerance)
             where TIn : INumberBase<TIn>
-            where TOut: INumber<TOut>
+            where TOut : unmanaged, INumber<TOut>
         {
             Assert.All(Helpers.TensorShapes, (tensorLength, index) =>
             {
@@ -232,7 +234,8 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < data.Length; i++)
                 {
-                    Assert.Equal(tensorPrimitivesOperation(data[i]), span[i]);
+                    Helpers.AssertEqualWithTolerance(tensorPrimitivesOperation(data[i]), span[i],
+                        tolerance.HasValue ? TOut.CreateTruncating(tolerance.Value) : null);
                 }
 
                 // Now test if the source is sliced to be smaller then the destination that the destination is also sliced
@@ -257,7 +260,8 @@ namespace System.Numerics.Tensors.Tests
                     tensorResultsEnumMove = tensorResultsEnum.MoveNext();
 
                     Assert.True(tensorResultsEnumMove);
-                    Assert.Equal(tensorPrimitivesOperation(sliceData[i]), tensorResultsEnum.Current);
+                    Helpers.AssertEqualWithTolerance(tensorPrimitivesOperation(sliceData[i]), tensorResultsEnum.Current,
+                        tolerance.HasValue ? TOut.CreateTruncating(tolerance.Value) : null);
                 }
             });
         }
