@@ -367,9 +367,9 @@ namespace Internal.Runtime.TypeLoader
             elementGCDesc -= 2;
 
 #if TARGET_64BIT
-            int* ptr = (int*)(gcDesc - 2) - 1;
+            uint* ptr = (uint*)(gcDesc - 2) - 1;
 #else
-            short* ptr = (short*)(gcDesc - 2) - 1;
+            ushort* ptr = (ushort*)(gcDesc - 2) - 1;
 #endif
             for (int i = 0; i < series; i++)
             {
@@ -380,8 +380,8 @@ namespace Internal.Runtime.TypeLoader
                     ? (int)*elementGCDesc
                     : firstOffset + elementBaseSize - 2 * IntPtr.Size;
                 Debug.Assert(length > 0 && nextOffset >= offset + length);
-                *ptr-- = (short)(nextOffset - offset - length);
-                *ptr-- = (short)(length / IntPtr.Size);
+                *ptr-- = (ushort)(nextOffset - offset - length);
+                *ptr-- = (ushort)(length / IntPtr.Size);
             }
         }
 
