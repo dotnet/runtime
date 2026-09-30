@@ -27,6 +27,12 @@
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/132855: crossgen2 emits wasm function types over
+       the 1000 parameter limit for ClassWithManyConstructorParameters, which fails the ReadyToRun composite. -->
+  <PropertyGroup Condition="'$(TestWasmReadyToRun)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">
+    <DefineConstants>$(DefineConstants);WASM_READYTORUN</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
     <XunitShowProgress>true</XunitShowProgress>
