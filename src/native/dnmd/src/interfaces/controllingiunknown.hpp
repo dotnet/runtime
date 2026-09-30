@@ -4,14 +4,41 @@
 #include "tearoffbase.hpp"
 #include <minipal_com.h>
 #include <atomic>
+#include <limits>
 #include <vector>
 #include <new>
 #include <utility>
 
+class ControllingIUnknown;
+
+class MetadataScopeRegistry
+{
+public:
+    static void RegisterScope(ControllingIUnknown* scope);
+    static void UnregisterScope(ControllingIUnknown* scope) noexcept;
+    static std::vector<minipal::com_ptr<IUnknown>> AcquireScopes();
+};
+
 class ControllingIUnknown final : public IUnknown
 {
+    friend class MetadataScopeRegistry;
+
     std::atomic<int32_t> _refCount{ 1 };
+    std::atomic<bool> _registeredScope{ false };
     std::vector<std::unique_ptr<TearOffUnknown>> _tearOffs;
+
+    // Called only under the registry lock, before a final Release can remove and delete this scope.
+    bool TryAddRef() noexcept
+    {
+        int32_t count = _refCount.load(std::memory_order_relaxed);
+        while (count > 0 && count < std::numeric_limits<int32_t>::max())
+        {
+            if (_refCount.compare_exchange_weak(count, count + 1, std::memory_order_acquire, std::memory_order_relaxed))
+                return true;
+        }
+        return false;
+    }
+
 public:
     ControllingIUnknown() = default;
 
@@ -62,6 +89,8 @@ public: // IUnknown
         uint32_t c = --_refCount;
         if (c == 0)
         {
+            if (_registeredScope.load(std::memory_order_acquire))
+                MetadataScopeRegistry::UnregisterScope(this);
             delete this;
         }
         return c;

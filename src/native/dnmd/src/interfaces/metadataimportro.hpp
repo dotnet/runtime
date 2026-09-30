@@ -11,6 +11,11 @@
 
 #include <cstdint>
 
+namespace pal
+{
+    class ReadWriteLock;
+}
+
 class MetadataImportRO final : public TearOffBase<IMetaDataImport2, IMetaDataAssemblyImport>
 {
     mdhandle_view _md_ptr;
@@ -92,6 +97,9 @@ public: // IMetaDataImport
         ULONG       *pchName) override;
 
     STDMETHOD(ResolveTypeRef)(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd) override;
+
+    HRESULT ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** ppIScope, mdTypeDef* ptd,
+                           pal::ReadWriteLock* sourceLock, IUnknown* sourceScope);
 
     STDMETHOD(EnumMembers)(
         HCORENUM    *phEnum,

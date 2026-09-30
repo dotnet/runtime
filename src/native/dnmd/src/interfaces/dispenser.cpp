@@ -23,11 +23,69 @@
 #include <fstream>
 #include <limits>
 #include <memory>
+#include <mutex>
+#include <vector>
 
 #if !defined(_MSC_VER) && !defined(DNMD_USE_CORECLR_GUIDS)
 extern "C" const GUID MetaDataCheckDuplicatesFor =
     { 0x30fe7be8, 0xd7d9, 0x11d2, { 0x9f, 0x80, 0x00, 0xc0, 0x4f, 0x79, 0xa0, 0xa3 } };
 #endif
+
+namespace
+{
+    struct RegisteredMetadataScopes
+    {
+        std::mutex mutex;
+        std::vector<ControllingIUnknown*> scopes;
+    };
+
+    RegisteredMetadataScopes& GetRegisteredMetadataScopes()
+    {
+        static RegisteredMetadataScopes registry;
+        return registry;
+    }
+}
+
+void MetadataScopeRegistry::RegisterScope(ControllingIUnknown* scope)
+{
+    RegisteredMetadataScopes& registry = GetRegisteredMetadataScopes();
+    std::lock_guard<std::mutex> lock{ registry.mutex };
+    registry.scopes.push_back(scope);
+    scope->_registeredScope.store(true, std::memory_order_release);
+}
+
+void MetadataScopeRegistry::UnregisterScope(ControllingIUnknown* scope) noexcept
+{
+    RegisteredMetadataScopes& registry = GetRegisteredMetadataScopes();
+    std::lock_guard<std::mutex> lock{ registry.mutex };
+    for (std::vector<ControllingIUnknown*>::iterator it = registry.scopes.begin(); it != registry.scopes.end(); ++it)
+    {
+        if (*it == scope)
+        {
+            registry.scopes.erase(it);
+            return;
+        }
+    }
+    assert(false);
+}
+
+std::vector<minipal::com_ptr<IUnknown>> MetadataScopeRegistry::AcquireScopes()
+{
+    // The references must outlive the lock if allocation fails and the snapshot unwinds.
+    std::vector<minipal::com_ptr<IUnknown>> snapshot;
+    RegisteredMetadataScopes& registry = GetRegisteredMetadataScopes();
+    std::lock_guard<std::mutex> lock{ registry.mutex };
+    snapshot.reserve(registry.scopes.size());
+    for (ControllingIUnknown* scope : registry.scopes)
+    {
+        snapshot.emplace_back();
+        if (scope->TryAddRef())
+            snapshot.back().Attach(scope);
+        else
+            snapshot.pop_back();
+    }
+    return snapshot;
+}
 
 namespace
 {
@@ -44,7 +102,7 @@ namespace
         uint32_t flags;
         uint32_t sectionCount;
     };
-    static_assert(sizeof(ReadyToRunHeaderPrefix) == 16);
+    static_assert(sizeof(ReadyToRunHeaderPrefix) == 16, "ReadyToRun header prefix must be 16 bytes");
 
     template<typename T>
     bool ReadPEValue(uint8_t const* image, size_t size, size_t offset, T& value)
@@ -270,6 +328,23 @@ namespace
         return threadSafeUnknown;
     }
 
+    template<typename T>
+    HRESULT PublishScope(minipal::com_ptr<ControllingIUnknown> scope, REFIID riid, T** output)
+    {
+        if (output == nullptr)
+            return E_POINTER;
+        *output = nullptr;
+
+        minipal::com_ptr<T> requestedInterface;
+        HRESULT hr = scope->QueryInterface(riid, (void**)&requestedInterface);
+        if (FAILED(hr))
+            return hr;
+
+        MetadataScopeRegistry::RegisterScope(scope.p);
+        *output = requestedInterface.Detach();
+        return hr;
+    }
+
     class MDDispenser final : public TearOffBase<IMetaDataDispenserEx>
     {
         bool _threadSafe = false;
@@ -335,8 +410,7 @@ namespace
             try
             {
                 DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr), _duplicateChecks, _updateMode, true);
-                return CreateExposedObject(std::move(obj), owner, _threadSafe, _duplicateChecks)
-                    ->QueryInterface(riid, (void**)ppIUnk);
+                return PublishScope(CreateExposedObject(std::move(obj), owner, _threadSafe, _duplicateChecks), riid, ppIUnk);
             }
             catch(std::bad_alloc const&)
             {
@@ -476,13 +550,12 @@ namespace
                     // If we're read-only, then we don't need to deal with thread safety.
                     (void)obj->CreateAndAddTearOff<MetadataImportRO>(handle_view);
                     (void)obj->CreateAndAddTearOff<InternalMetadataImportRO>(handle_view);
-                    return obj->QueryInterface(riid, (void**)ppIUnk);
+                    return PublishScope(std::move(obj), riid, ppIUnk);
                 }
 
                 // If we're read-write, go through our helper to create an object that respects all of the options
                 // (as the various options affect writing operations only).
-                return CreateExposedObject(std::move(obj), owner, _threadSafe, _duplicateChecks)
-                    ->QueryInterface(riid, (void**)ppIUnk);
+                return PublishScope(CreateExposedObject(std::move(obj), owner, _threadSafe, _duplicateChecks), riid, ppIUnk);
             }
             catch(std::bad_alloc const&)
             {
@@ -687,7 +760,7 @@ HRESULT ConvertDNMDInternalImport(IMDInternalImport* source, IMDInternalImport**
             std::move(newHandle), std::move(image), minipal::cotaskmem_ptr<void>{},
             sourceOwner->DuplicateChecks(), sourceOwner->UpdateMode(), true);
         auto exposed = CreateExposedObject(std::move(object), owner, true, owner->DuplicateChecks());
-        return exposed->QueryInterface(IID_IMDInternalImport, (void**)converted);
+        return PublishScope(std::move(exposed), IID_IMDInternalImport, converted);
     }
     catch (std::bad_alloc const&)
     {

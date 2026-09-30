@@ -4,7 +4,13 @@
 #include "metadataimportro.hpp"
 #include "hcorenum.hpp"
 #include "signatures.hpp"
+#include <corerror.h>
+#include <metadata.h>
 #include <cstring>
+#include <mutex>
+#include <new>
+#include <string>
+#include <vector>
 
 #define MD_MODULE_TOKEN TokenFromRid(1, mdtModule)
 #define MD_GLOBAL_PARENT_TOKEN TokenFromRid(1, mdtTypeDef)
@@ -691,13 +697,110 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeRefProps(
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** ppIScope, mdTypeDef* ptd)
 {
-    UNREFERENCED_PARAMETER(tr);
-    UNREFERENCED_PARAMETER(riid);
-    UNREFERENCED_PARAMETER(ppIScope);
-    UNREFERENCED_PARAMETER(ptd);
+    return ResolveTypeRef(tr, riid, ppIScope, ptd, nullptr, static_cast<IMetaDataImport2*>(this));
+}
 
-    // Requires VM knowledge
-    return E_NOTIMPL;
+HRESULT MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** ppIScope, mdTypeDef* ptd,
+                                         pal::ReadWriteLock* sourceLock, IUnknown* sourceScope)
+{
+    if (ppIScope != nullptr)
+        *ppIScope = nullptr;
+    if (ptd != nullptr)
+        *ptd = mdTypeDefNil;
+    if (ppIScope == nullptr || ptd == nullptr)
+        return E_POINTER;
+    if (IsNilToken(tr) || (TypeFromToken(tr) != mdtTypeRef && TypeFromToken(tr) != mdtTypeDef))
+        return E_INVALIDARG;
+
+    if (TypeFromToken(tr) == mdtTypeDef)
+    {
+        HRESULT hr = sourceScope->QueryInterface(riid, (void**)ppIScope);
+        if (SUCCEEDED(hr))
+            *ptd = tr;
+        return hr;
+    }
+
+    struct TypeRefName
+    {
+        std::string Namespace;
+        std::string Name;
+    };
+
+    try
+    {
+        std::vector<TypeRefName> nesting;
+        {
+            std::unique_lock<pal::ReadLock> readLock;
+            if (sourceLock != nullptr)
+                readLock = std::unique_lock<pal::ReadLock>{ sourceLock->GetReadLock() };
+
+            mdhandle_t handle = _md_ptr.get();
+            mdcursor_t first;
+            uint32_t count;
+            if (!md_create_cursor(handle, mdtid_TypeRef, &first, &count))
+                return CLDB_E_RECORD_NOTFOUND;
+
+            for (mdTypeRef current = tr; TypeFromToken(current) == mdtTypeRef && !IsNilToken(current); )
+            {
+                // A TypeRef chain cannot be longer than its table unless it is cyclic.
+                if (nesting.size() >= count)
+                    return CLDB_E_FILE_CORRUPT;
+
+                mdcursor_t row;
+                if (!md_token_to_cursor(handle, current, &row))
+                    return CLDB_E_RECORD_NOTFOUND;
+
+                char const* typeNamespace;
+                char const* typeName;
+                mdToken resolutionScope;
+                if (!md_get_column_value_as_utf8(row, mdtTypeRef_TypeNamespace, &typeNamespace) ||
+                    !md_get_column_value_as_utf8(row, mdtTypeRef_TypeName, &typeName) ||
+                    !md_get_column_value_as_token(row, mdtTypeRef_ResolutionScope, &resolutionScope))
+                    return CLDB_E_FILE_CORRUPT;
+
+                nesting.push_back({ typeNamespace, typeName });
+                current = resolutionScope;
+            }
+        }
+
+        // ResolutionScope identifies nesting, not an assembly binding for this global search.
+        std::vector<minipal::com_ptr<IUnknown>> scopes = MetadataScopeRegistry::AcquireScopes();
+        for (minipal::com_ptr<IUnknown>& scope : scopes)
+        {
+            minipal::com_ptr<IMDInternalImport> importer;
+            HRESULT hr = scope->QueryInterface(IID_IMDInternalImport, (void**)&importer);
+            if (FAILED(hr))
+                return hr;
+
+            mdTypeDef enclosing = mdTypeDefNil;
+            for (size_t i = nesting.size(); i != 0; --i)
+            {
+                mdTypeDef found = mdTypeDefNil;
+                hr = importer->FindTypeDef(nesting[i - 1].Namespace.c_str(),
+                    nesting[i - 1].Name.c_str(), enclosing, &found);
+                if (hr != S_OK)
+                    break;
+                enclosing = found;
+            }
+            if (hr == CLDB_E_RECORD_NOTFOUND)
+                continue;
+            if (hr != S_OK)
+                return hr;
+
+            minipal::com_ptr<IUnknown> result;
+            hr = scope->QueryInterface(riid, (void**)&result);
+            if (FAILED(hr))
+                return hr;
+            *ppIScope = result.Detach();
+            *ptd = enclosing;
+            return hr;
+        }
+        return META_E_CANNOTRESOLVETYPEREF;
+    }
+    catch (std::bad_alloc const&)
+    {
+        return E_OUTOFMEMORY;
+    }
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(

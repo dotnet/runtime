@@ -257,8 +257,7 @@ public: // IMetaDataImport
 
     STDMETHOD(ResolveTypeRef)(mdTypeRef tr, REFIID riid, IUnknown **ppIScope, mdTypeDef *ptd) override
     {
-        std::lock_guard<pal::ReadLock> lock { this->_lock.GetReadLock() };
-        return _import->ResolveTypeRef(tr, riid, ppIScope, ptd);
+        return _import->ResolveTypeRef(tr, riid, ppIScope, ptd, &_lock, static_cast<IMetaDataImport2*>(this));
     }
 
     STDMETHOD(EnumMembers)(
