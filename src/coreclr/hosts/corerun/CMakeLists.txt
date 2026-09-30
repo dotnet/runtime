@@ -107,6 +107,7 @@ else()
                     list(APPEND CORERUN_BROWSER_LINK_OPTIONS --preload-file ${WASM_PRELOAD_DIR}@/)
                 endif()
             else()
+                target_sources(corerun PRIVATE ./wasm/wasmfs_root_override.cpp)
                 # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
                 list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sWASM_BIGINT=0)
 
