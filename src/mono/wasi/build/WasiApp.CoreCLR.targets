@@ -79,6 +79,9 @@
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">true</WasiEnableCompositeR2R>
+    <!-- Run wasm-opt over the composed module. Off by default so codegen problems surface in crossgen2's
+         output instead of being optimized away. -->
+    <WasiR2ROptimizeComposite Condition="'$(WasiR2ROptimizeComposite)' == ''">false</WasiR2ROptimizeComposite>
   </PropertyGroup>
 
   <Target Name="_WasiCoreCLRValidateReadyToRun"
@@ -506,7 +509,8 @@
                            WasmMergePath="$(BinaryenCacheDir)bin/wasm-merge$(_ExeExt)"
                            WasmOptPath="$(BinaryenCacheDir)bin/wasm-opt$(_ExeExt)"
                            ComponentStubs="@(_WasiR2RComponentStub)"
-                           StubOutputDirectory="$(_WasiR2RStubDir)">
+                           StubOutputDirectory="$(_WasiR2RStubDir)"
+                           Optimize="$(WasiR2ROptimizeComposite)">
       <Output TaskParameter="FileWrites" ItemName="_WasiR2RCompositionWrites" />
     </ComposeWasiReadyToRun>
     <ItemGroup>
