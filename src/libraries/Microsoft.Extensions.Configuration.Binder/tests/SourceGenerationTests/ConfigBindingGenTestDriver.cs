@@ -19,6 +19,7 @@ using Xunit;
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [SkipOnPlatform(TestPlatforms.Wasi, "Roslyn workspaces block on SemaphoreSlim, which single-threaded WASI does not support.")]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         internal sealed class ConfigBindingGenTestDriver

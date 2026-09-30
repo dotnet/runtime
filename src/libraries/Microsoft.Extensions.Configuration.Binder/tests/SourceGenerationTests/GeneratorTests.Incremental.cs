@@ -13,6 +13,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Roslyn workspaces block on SemaphoreSlim, which single-threaded WASI does not support.")]
         public sealed class IncrementalTests
         {
             [Fact]

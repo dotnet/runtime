@@ -25,6 +25,7 @@ using Xunit;
 
 namespace Microsoft.Gen.OptionsValidation.Unit.Test;
 
+[SkipOnPlatform(TestPlatforms.Wasi, "Roslyn workspaces block on SemaphoreSlim, which single-threaded WASI does not support.")]
 public class EmitterTests
 {
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
