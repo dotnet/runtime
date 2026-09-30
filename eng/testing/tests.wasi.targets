@@ -101,6 +101,11 @@
     <WasmEnvironmentVariable Include="TEST_READY_TO_RUN_MODE" Value="1" />
   </ItemGroup>
 
+  <!-- The guest does not see the Helix environment; SkipOnCI looks for DOTNET_CI. -->
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true'">
+    <WasmEnvironmentVariable Include="DOTNET_CI" Value="true" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
