@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             factory.MetadataManager.GetDependenciesDueToLdToken(sink, factory, _targetField);
         }

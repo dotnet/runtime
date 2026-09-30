@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             // VTable slots of implemented interfaces are consulted during emission
             foreach (TypeDesc runtimeInterface in _type.RuntimeInterfaces)

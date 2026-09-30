@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => $"Embedded pointer to {Target.GetMangledName(factory.NameMangler)}";
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(Target, "reloc");
         }

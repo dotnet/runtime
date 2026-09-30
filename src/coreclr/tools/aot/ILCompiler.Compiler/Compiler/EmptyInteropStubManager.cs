@@ -5,6 +5,8 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 using Internal.IL;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -20,15 +22,15 @@ namespace ILCompiler
             return null;
         }
 
-        public override void AddDependenciesDueToMethodCodePresence(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddDependenciesDueToMethodCodePresence(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
         }
 
-        public override void AddInterestingInteropConstructedTypeDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
+        public override void AddInterestingInteropConstructedTypeDependencies(DependencySink dependencies, NodeFactory factory, TypeDesc type)
         {
         }
 
-        public override void AddMarshalAPIsGenericDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddMarshalAPIsGenericDependencies(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
         }
     }

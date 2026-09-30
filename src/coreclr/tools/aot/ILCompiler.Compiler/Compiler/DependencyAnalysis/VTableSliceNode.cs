@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_type.HasBaseType)
             {
@@ -91,8 +91,8 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
@@ -217,7 +217,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
             // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.

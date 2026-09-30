@@ -38,12 +38,12 @@ namespace ILCompiler.DependencyAnalysis
             return "Reflectable delegate type: " + _delegateType?.ToString() ?? "All delegates";
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

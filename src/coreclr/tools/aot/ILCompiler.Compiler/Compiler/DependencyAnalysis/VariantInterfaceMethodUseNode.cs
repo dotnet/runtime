@@ -147,8 +147,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

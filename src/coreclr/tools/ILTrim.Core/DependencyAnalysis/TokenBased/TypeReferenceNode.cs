@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(new DependencyListEntry(GetResolutionScopeNode(factory), "Resolution Scope of a type reference"));
 

@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ModuleDesc Module => _module;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             // Global module type always generates metadata because it's really convenient to
             // have something in an assembly that always generates metadata.
@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, (EcmaAssembly)_module);
         }
@@ -64,6 +64,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

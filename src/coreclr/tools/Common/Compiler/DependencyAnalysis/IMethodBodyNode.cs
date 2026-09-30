@@ -4,6 +4,7 @@
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -16,12 +17,12 @@ namespace ILCompiler.DependencyAnalysis
         /// Specializes this canonical body's runtime-determined dependencies for <paramref name="concreteMethod"/>
         /// and streams the resulting static dependencies to <paramref name="sink"/>.
         /// </summary>
-        void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod);
+        void AddRuntimeDeterminedStaticDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod);
 
         /// <summary>
         /// Specializes this canonical body's runtime-determined conditional dependencies for <paramref name="concreteMethod"/>
         /// and streams them to <paramref name="sink"/>, preserving their conditions.
         /// </summary>
-        void AddRuntimeDeterminedConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod);
+        void AddRuntimeDeterminedConditionalDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod);
     }
 }

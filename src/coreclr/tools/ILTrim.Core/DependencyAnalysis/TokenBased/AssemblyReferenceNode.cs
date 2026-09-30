@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
             _reference = reference;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
         }
 

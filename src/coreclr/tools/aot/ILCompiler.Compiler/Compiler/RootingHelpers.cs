@@ -10,6 +10,8 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
@@ -133,7 +135,7 @@ namespace ILCompiler
         }
 
         public static bool TryAddDependenciesForReflectedMethod(
-            IDependencySink<NodeFactory> dependencies,
+            IDependencySink dependencies,
             NodeFactory factory,
             MethodDesc method,
             string reason)
@@ -148,7 +150,7 @@ namespace ILCompiler
         }
 
         public static bool TryAddDependenciesForReflectedMethod(
-            DependencySink<NodeFactory> dependencies,
+            DependencySink dependencies,
             NodeFactory factory,
             MethodDesc method,
             string reason,
@@ -164,8 +166,8 @@ namespace ILCompiler
         }
 
         private static bool TryAddDependenciesForReflectedMethod(
-            IDependencySink<NodeFactory> dependencies,
-            DependencySink<NodeFactory>? conditionalDependencies,
+            IDependencySink dependencies,
+            DependencySink? conditionalDependencies,
             NodeFactory factory,
             MethodDesc method,
             string reason,
@@ -236,7 +238,7 @@ namespace ILCompiler
             return true;
         }
 
-        public static bool TryAddDependenciesForReflectedField(IDependencySink<NodeFactory> dependencies, NodeFactory factory, FieldDesc field, string reason)
+        public static bool TryAddDependenciesForReflectedField(IDependencySink dependencies, NodeFactory factory, FieldDesc field, string reason)
         {
             FieldDesc typicalField = field.GetTypicalFieldDefinition();
             if (factory.MetadataManager.IsReflectionBlocked(typicalField))
@@ -287,7 +289,7 @@ namespace ILCompiler
         }
 
         public static bool TryAddDependenciesForReflectedType(
-            IDependencySink<NodeFactory> dependencies,
+            IDependencySink dependencies,
             NodeFactory factory,
             TypeDesc type,
             string reason)
@@ -302,7 +304,7 @@ namespace ILCompiler
         }
 
         public static bool TryAddDependenciesForReflectedType(
-            DependencySink<NodeFactory> dependencies,
+            DependencySink dependencies,
             NodeFactory factory,
             TypeDesc type,
             string reason,
@@ -318,8 +320,8 @@ namespace ILCompiler
         }
 
         private static bool TryAddDependenciesForReflectedType(
-            IDependencySink<NodeFactory> dependencies,
-            DependencySink<NodeFactory>? conditionalDependencies,
+            IDependencySink dependencies,
+            DependencySink? conditionalDependencies,
             NodeFactory factory,
             TypeDesc type,
             string reason,
@@ -368,8 +370,8 @@ namespace ILCompiler
         }
 
         private static void AddDependency(
-            IDependencySink<NodeFactory> dependencies,
-            DependencySink<NodeFactory>? conditionalDependencies,
+            IDependencySink dependencies,
+            DependencySink? conditionalDependencies,
             DependencyNodeCore<NodeFactory> dependency,
             string reason,
             DependencyNodeCore<NodeFactory>? otherReasonNode)

@@ -32,15 +32,15 @@ namespace ILCompiler.DependencyAnalysis
             return section.Place(tuple);
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (TypeDesc targetType in entries.Values)
             {
                 sink.Add(context.MetadataTypeSymbol(targetType), "Analyzed external type map entry target type");
             }
         }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Analyzed External Type Map: {TypeMapGroup}";
         public IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
 

@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => _data.HasConditionalDependencies;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             _data.AddConditionalDependencies(sink, factory);
         }

@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _useInstantiatingStub = useInstantiatingStub;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             base.AddStaticDependencies(sink, factory);
             if (_useInstantiatingStub)

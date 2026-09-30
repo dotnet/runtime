@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(dataBuilder.CountBytes == sizeBefore + ContentSize);
         }
 
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             var builder = new ObjectDataBuilder(factory, relocsOnly: true);
             EncodeData(ref builder, factory, relocsOnly: true);

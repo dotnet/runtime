@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
 
             public override bool StaticDependenciesAreComputed => _dependencies != null;
 
-            public override void AddStaticDependencies(DependencySink<TestGraph> sink, TestGraph context)
+            public override void AddStaticDependencies(DependencySink sink, TestGraph context)
             {
                 foreach (DependencyListEntry dependency in _dependencies)
                 {
@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 }
             }
 
-            public override void AddConditionalDependencies(DependencySink<TestGraph> sink, TestGraph context)
+            public override void AddConditionalDependencies(DependencySink sink, TestGraph context)
             {
                 if (_conditionalDependencies != null)
                 {
@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
             public override void SearchDynamicDependencies(
                 List<DependencyNodeCore<TestGraph>> markedNodes,
                 int firstNode,
-                DependencySink<TestGraph> sink,
+                DependencySink sink,
                 TestGraph context)
             {
                 if (context._dynamicDependencyComputer == null)

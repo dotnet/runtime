@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             Debug.Assert(_dependencies != null);
             foreach (DependencyListEntry dependency in _dependencies)
@@ -85,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             foreach (CombinedDependencyListEntry dependency in _conditionalDependencies)
             {
@@ -95,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis
 
 #nullable enable
 
-        public void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
         {
             foreach (DependencyListEntry dependency in _dependencies)
             {
@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void AddRuntimeDeterminedConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
         {
             foreach (CombinedDependencyListEntry dependency in _conditionalDependencies)
             {
@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private static void AddRuntimeDeterminedDependency(
-            DependencySink<NodeFactory> sink,
+            DependencySink sink,
             NodeFactory factory,
             MethodDesc concreteMethod,
             DependencyNodeCore<NodeFactory> dependency,
@@ -135,7 +135,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
         public override bool InterestingForDynamicDependencyAnalysis => _method.HasInstantiation || _method.OwningType.HasInstantiation;
         public override bool HasDynamicDependencies => false;
 

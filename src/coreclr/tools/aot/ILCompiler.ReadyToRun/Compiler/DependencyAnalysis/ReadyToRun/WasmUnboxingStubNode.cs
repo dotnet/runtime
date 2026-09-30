@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return result != 0 ? result : _hasReturnBuffer.CompareTo(otherNode._hasReturnBuffer);
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             base.ComputeNonRelocationBasedDependencies(sink, factory);
             sink.Add(_targetType, "Wasm unboxing stub requires target type node");
@@ -244,9 +244,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             sink.Add(_stub, "Wasm unboxing stub for target method");
             sink.Add(context.CompiledMethodNode(_targetMethod), "Target method for Wasm unboxing stub");
@@ -257,7 +257,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void SearchDynamicDependencies(
             List<DependencyNodeCore<NodeFactory>> markedNodes,
             int firstNode,
-            DependencySink<NodeFactory> sink,
+            DependencySink sink,
             NodeFactory context) { }
 
         protected override string GetName(NodeFactory factory) => $"Wasm unboxing stub target for {_targetMethod}";

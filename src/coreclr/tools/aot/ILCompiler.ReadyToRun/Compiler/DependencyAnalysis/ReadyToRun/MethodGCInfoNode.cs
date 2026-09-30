@@ -313,7 +313,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

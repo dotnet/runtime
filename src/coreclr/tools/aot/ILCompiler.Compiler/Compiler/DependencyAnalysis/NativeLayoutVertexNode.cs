@@ -39,11 +39,11 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(Marked);
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context)
         {
         }
 
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context)
         {
         }
 
@@ -125,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) != 0)
             {
@@ -262,7 +262,7 @@ namespace ILCompiler.DependencyAnalysis
                 _parametersSig[i] = factory.NativeLayout.TypeSignatureVertex(signature[i]);
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             sink.Add(new DependencyListEntry(_returnTypeSig, "NativeLayoutMethodSignatureVertexNode return type signature"));
             foreach (var arg in _parametersSig)
@@ -343,7 +343,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _parameterTypeSig = factory.NativeLayout.TypeSignatureVertex(((ParameterizedType)type).ParameterType);
             }
-            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
             {
                 sink.Add(_parameterTypeSig, "NativeLayoutParameterizedTypeSignatureVertexNode parameter type signature");
             }
@@ -387,7 +387,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _sig = factory.NativeLayout.MethodSignatureVertex(((FunctionPointerType)type).Signature);
             }
-            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
             {
                 sink.Add(_sig, "Method signature");
             }
@@ -404,7 +404,7 @@ namespace ILCompiler.DependencyAnalysis
             public NativeLayoutGenericVarSignatureVertexNode(TypeDesc type) : base(type)
             {
             }
-            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
             {
             }
             public override Vertex WriteVertex(NodeFactory factory)
@@ -440,7 +440,7 @@ namespace ILCompiler.DependencyAnalysis
                     _instantiationArgs[i] = factory.NativeLayout.TypeSignatureVertex(type.Instantiation[i]);
 
             }
-            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
             {
                 sink.Add(new DependencyListEntry(_genericTypeDefSig, "NativeLayoutInstantiatedTypeSignatureVertexNode generic definition signature"));
                 foreach (var arg in _instantiationArgs)
@@ -467,7 +467,7 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(!type.IsRuntimeDeterminedSubtype);
                 Debug.Assert(!type.HasInstantiation || type.IsGenericDefinition);
             }
-            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
             {
                 // TODO-SIZE: this might be overly generous because we don't track what this type is used for.
                 //            A necessary EEType might be enough for some cases.
@@ -499,7 +499,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => "NativeLayoutISymbolNodeReferenceVertexNode " + _symbol.GetMangledName(factory.NameMangler);
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             sink.Add(_symbol, "NativeLayoutISymbolNodeReferenceVertexNode containing symbol");
         }
@@ -523,7 +523,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _signatureToBePlaced = signatureToBePlaced;
         }
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             sink.Add(_signatureToBePlaced, "NativeLayoutPlacedSignatureVertexNode placed signature");
         }
@@ -552,7 +552,7 @@ namespace ILCompiler.DependencyAnalysis
             _uints = uints;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             // There are no interesting dependencies
         }
@@ -587,7 +587,7 @@ namespace ILCompiler.DependencyAnalysis
             _vertices = vertices;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             for (int i = 0; i < _vertices.Count; i++)
             {
@@ -655,7 +655,7 @@ namespace ILCompiler.DependencyAnalysis
             return methodEntryPointNode;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             base.AddStaticDependencies(sink, context);
 
@@ -718,7 +718,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             if ((ContextKind(context) & GenericContextKind.HasDeclaringType) != 0)
             {
@@ -784,7 +784,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method, "Assert that the canonical method passed in is in standard canonical form");
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
@@ -897,7 +897,7 @@ namespace ILCompiler.DependencyAnalysis
             return symbol;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             ISymbolNode typeNode = context.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
 
@@ -967,7 +967,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override bool HasConditionalStaticDependencies => false;
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
 
         private static int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
         {
@@ -1057,7 +1057,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public abstract class NativeLayoutGenericDictionarySlotNode : NativeLayoutVertexNode
     {
-        public abstract override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context);
+        public abstract override void AddStaticDependencies(DependencySink sink, NodeFactory context);
         protected abstract Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory);
         protected abstract FixupSignatureKind SignatureKind { get; }
 
@@ -1084,7 +1084,7 @@ namespace ILCompiler.DependencyAnalysis
         protected abstract string NodeTypeName { get; }
         protected sealed override string GetName(NodeFactory factory) => NodeTypeName + factory.NameMangler.GetMangledTypeName(_type);
 
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(_signature, "TypeSignature");
 
@@ -1172,7 +1172,7 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override string GetName(NodeFactory factory) => NodeTypeName + factory.NameMangler.GetMangledTypeName(_type);
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.StaticData;
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(_signature, "TypeSignature");
 
@@ -1220,7 +1220,7 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override string GetName(NodeFactory factory) => "NativeLayoutInterfaceDispatchGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.InterfaceCall;
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(_signature, "TypeSignature");
 
@@ -1265,7 +1265,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.GvmDispatchCell;
 
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
@@ -1303,7 +1303,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override string GetName(NodeFactory factory) => "NativeLayoutMethodDictionaryGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.MethodDictionary;
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
@@ -1342,7 +1342,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.FieldLdToken;
 
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(factory.NativeLayout.TypeSignatureVertex(_field.OwningType), "Owning type of field");
 
@@ -1379,7 +1379,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.MethodLdToken;
 
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
@@ -1444,7 +1444,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             DependencyNodeCore<NodeFactory> constrainedMethodDescriptorNode;
             if (_constrainedMethod.HasInstantiation)
@@ -1538,7 +1538,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override string GetName(NodeFactory factory) => "NativeLayoutMethodEntrypointGenericDictionarySlotNode_" + (_wrappedNode._unboxingStub ? "Unboxing_" : "") + factory.NameMangler.GetMangledMethodName(_method);
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.Method;
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
@@ -1565,7 +1565,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NativeLayoutNotSupportedDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
         protected override FixupSignatureKind SignatureKind => FixupSignatureKind.NotYetSupported;
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
         }
 

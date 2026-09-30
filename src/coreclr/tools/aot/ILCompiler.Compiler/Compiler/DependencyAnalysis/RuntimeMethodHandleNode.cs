@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             if (!_targetMethod.IsMethodDefinition && !_targetMethod.OwningType.IsGenericDefinition
                 && _targetMethod.HasInstantiation && _targetMethod.IsVirtual)

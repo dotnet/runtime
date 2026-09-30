@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public static void AddDependenciesDueToReflectability(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddDependenciesDueToReflectability(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             Debug.Assert(factory.MetadataManager.IsReflectionInvokable(method));
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
             ReflectionVirtualInvokeMapNode.AddVirtualInvokeMapDependencies(dependencies, factory, method);
         }
 
-        internal static void AddSignatureDependency(IDependencySink<NodeFactory> dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
+        internal static void AddSignatureDependency(IDependencySink dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
         {
             if (type.IsByRef)
             {

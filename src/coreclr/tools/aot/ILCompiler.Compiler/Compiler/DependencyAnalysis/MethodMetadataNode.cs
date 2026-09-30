@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method => _method;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             var owningType = (MetadataType)_method.OwningType;
             sink.Add(factory.TypeMetadata(owningType), "Owning type metadata");
@@ -121,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, _method);
         }
@@ -141,6 +141,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => !_isMinimal;
         public override bool StaticDependenciesAreComputed => true;
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

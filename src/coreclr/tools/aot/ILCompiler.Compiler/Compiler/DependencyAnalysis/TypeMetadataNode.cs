@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataType Type => _type;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             MetadataType containingType = _type.ContainingType;
             if (containingType != null)
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, ((EcmaType)_type));
         }
@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Decomposes a constructed type into individual <see cref="TypeMetadataNode"/> units that will be needed to
         /// express the constructed type in metadata.
         /// </summary>
-        public static void AddMetadataDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory nodeFactory, TypeDesc type, string reason)
+        public static void AddMetadataDependencies(IDependencySink dependencies, NodeFactory nodeFactory, TypeDesc type, string reason)
         {
             MetadataManager mdManager = nodeFactory.MetadataManager;
 
@@ -189,6 +189,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

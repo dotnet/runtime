@@ -13,6 +13,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -2236,7 +2237,7 @@ namespace ILCompiler
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
             bool HasConditionalDependencies { get; }
-            void AddConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory);
+            void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory);
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
         }
@@ -3242,7 +3243,7 @@ namespace ILCompiler
 
             public virtual bool HasConditionalDependencies => false;
 
-            public virtual void AddConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory)
+            public virtual void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory)
             {
             }
         }
@@ -3269,7 +3270,7 @@ namespace ILCompiler
 
             public override bool HasConditionalDependencies => true;
 
-            public override void AddConditionalDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory)
+            public override void AddConditionalDependencies(DependencySink dependencies, NodeFactory factory)
             {
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);

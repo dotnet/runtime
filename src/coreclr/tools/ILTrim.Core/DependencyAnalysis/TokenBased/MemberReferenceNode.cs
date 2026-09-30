@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private MemberReferenceHandle Handle => (MemberReferenceHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             var methodOrFieldDef = _module.GetObject(Handle);
             MemberReference memberRef = _module.MetadataReader.GetMemberReference(Handle);

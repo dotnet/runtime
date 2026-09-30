@@ -7,15 +7,16 @@ using Internal.IL;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
+using IConditionalDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IConditionalDependencySink;
 using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
-using ILCompiler.DependencyAnalysisFramework;
 
 
 namespace ILCompiler.DependencyAnalysis
 {
     public static class CodeBasedDependencyAlgorithm
     {
-        public static void AddDependenciesDueToMethodCodePresence(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
+        public static void AddDependenciesDueToMethodCodePresence(IDependencySink dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
         {
             factory.MetadataManager.GetDependenciesDueToMethodCodePresence(dependencies, factory, method, methodIL);
 
@@ -72,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             return method.HasInstantiation || method.OwningType.HasInstantiation;
         }
 
-        public static void AddConditionalDependenciesDueToMethodCodePresence(IConditionalDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddConditionalDependenciesDueToMethodCodePresence(IConditionalDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             factory.MetadataManager.GetConditionalDependenciesDueToMethodCodePresence(dependencies, factory, method);
         }

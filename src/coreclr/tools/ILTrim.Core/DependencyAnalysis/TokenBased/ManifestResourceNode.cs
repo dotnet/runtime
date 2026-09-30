@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         public ManifestResourceNode(EcmaModule module, ManifestResourceHandle handle)
             : base(module, handle) { }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             ManifestResource resource = _module.MetadataReader.GetManifestResource(Handle);
 

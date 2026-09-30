@@ -5,6 +5,7 @@
 
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
         /// not null, the dependencies are considered conditional.
         /// </summary>
         void AddDependencies(
-            DependencySink<NodeFactory> sink,
+            DependencySink sink,
             NodeFactory factory,
             Instantiation typeInstantiation,
             Instantiation methodInstantiation,

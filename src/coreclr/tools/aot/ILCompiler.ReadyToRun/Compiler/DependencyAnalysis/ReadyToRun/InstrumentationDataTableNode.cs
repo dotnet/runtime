@@ -187,7 +187,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         // Register some MDs that had synthesized PGO data created to be physically embedded by this node, and add
         // the appropriate dependencies of the embedding to a dependency list.
-        public void EmbedSynthesizedPgoDataForMethods(IDependencySink<NodeFactory> dependencies, IEnumerable<MethodDesc> mds)
+        public void EmbedSynthesizedPgoDataForMethods(IDependencySink dependencies, IEnumerable<MethodDesc> mds)
         {
             PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
             foreach (MethodDesc md in mds)
@@ -209,7 +209,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
             foreach (EcmaModule inputModule in _factory.CompilationModuleGroup.CompilationModuleSet)

@@ -13,8 +13,8 @@ using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
-using ILCompiler.DependencyAnalysisFramework;
 
 #nullable enable
 
@@ -23,7 +23,7 @@ namespace ILCompiler.Dataflow
     internal static class GenericArgumentDataFlow
     {
         public static void ProcessGenericArgumentDataFlow(
-            IDependencySink<NodeFactory> dependencies,
+            IDependencySink dependencies,
             NodeFactory factory,
             in MessageOrigin origin,
             TypeDesc type,
@@ -42,13 +42,13 @@ namespace ILCompiler.Dataflow
                 suppressAotAnalysisWarnings);
         }
 
-        public static void ProcessGenericArgumentDataFlow(IDependencySink<NodeFactory> dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, MethodDesc contextMethod)
+        public static void ProcessGenericArgumentDataFlow(IDependencySink dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, MethodDesc contextMethod)
         {
             ProcessGenericArgumentDataFlow(dependencies, factory, origin, type, contextMethod.OwningType.Instantiation, contextMethod.Instantiation);
         }
 
         public static void ProcessGenericArgumentDataFlow(
-            IDependencySink<NodeFactory> dependencies,
+            IDependencySink dependencies,
             NodeFactory factory,
             in MessageOrigin origin,
             TypeDesc type,

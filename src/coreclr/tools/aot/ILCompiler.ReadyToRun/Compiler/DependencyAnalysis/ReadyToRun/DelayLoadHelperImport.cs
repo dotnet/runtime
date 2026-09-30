@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_delayLoadHelper is not null)
             {

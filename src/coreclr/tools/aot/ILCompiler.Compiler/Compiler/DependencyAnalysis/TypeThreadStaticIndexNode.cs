@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => true;
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             ISymbolDefinitionNode node = _inlinedThreadStatics ?? factory.TypeThreadStaticsSymbol(_type);
 

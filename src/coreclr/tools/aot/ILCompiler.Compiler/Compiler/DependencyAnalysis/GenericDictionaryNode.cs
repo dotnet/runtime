@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => GetDictionaryLayout(factory).IsEmpty;
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             // Include the layout as a dependency if the canonical type isn't imported
             TypeDesc canonicalOwningType = _owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -143,7 +143,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
 #nullable enable
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             // The generic dictionary layout is shared between all the canonically equivalent
             // instantiations. We need to track the dependencies of all canonical method bodies
@@ -198,12 +198,12 @@ namespace ILCompiler.DependencyAnalysis
         public MethodDesc OwningMethod => _owningMethod;
         public override bool HasConditionalStaticDependencies => true;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             factory.MetadataManager.AddConditionalDependenciesDueToGenericDictionary(sink, factory, _owningMethod);
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             MethodDesc canonicalTarget = _owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (factory.CompilationModuleGroup.ContainsMethodBody(canonicalTarget, false))

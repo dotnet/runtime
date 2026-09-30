@@ -67,12 +67,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => CodeBasedDependencyAlgorithm.HasConditionalDependenciesDueToMethodCodePresence(_method);
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(sink, factory, _method);
         }
 
-        public void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
         {
             if (_nonRelocationDependencies is not null)
             {
@@ -91,11 +91,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void AddRuntimeDeterminedConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
         {
         }
 
-        private static void AddRuntimeDeterminedDependency(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod, object dependency)
+        private static void AddRuntimeDeterminedDependency(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod, object dependency)
         {
             if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
             {
@@ -109,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_nonRelocationDependencies is not null)
             {

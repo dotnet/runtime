@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private CustomAttributeHandle Handle => (CustomAttributeHandle)_handle;
 
-        public static void AddDependenciesDueToCustomAttributes(DependencySink<NodeFactory> dependencies, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection handles)
+        public static void AddDependenciesDueToCustomAttributes(DependencySink dependencies, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection handles)
         {
             foreach (CustomAttributeHandle customAttribute in handles)
             {
@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             CustomAttribute customAttribute = _module.MetadataReader.GetCustomAttribute(Handle);
 
@@ -110,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void AddGenericArgumentDataFlowDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, EntityHandle attributeTarget, TypeDesc attributeType)
+        private void AddGenericArgumentDataFlowDependencies(DependencySink dependencies, NodeFactory factory, EntityHandle attributeTarget, TypeDesc attributeType)
         {
             if (!GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(factory.FlowAnnotations, attributeType))
                 return;
@@ -175,7 +175,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static void GetDependenciesFromCustomAttributeArgument(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type, object value)
+        private static void GetDependenciesFromCustomAttributeArgument(DependencySink dependencies, NodeFactory factory, TypeDesc type, object value)
         {
             // Report the type itself (e.g. enum types that need to be kept for boxing)
             dependencies.Add(factory.ReflectedType(type), "Custom attribute blob");
@@ -203,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static void GetDependenciesFromPropertySetter(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
+        private static void GetDependenciesFromPropertySetter(DependencySink dependencies, NodeFactory factory, TypeDesc attributeType, string propertyName)
         {
             if (attributeType.GetTypeDefinition() is not EcmaType ecmaType)
                 return;
@@ -232,7 +232,7 @@ namespace ILCompiler.DependencyAnalysis
                 GetDependenciesFromPropertySetter(dependencies, factory, baseType, propertyName);
         }
 
-        private static void GetDependenciesFromField(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
+        private static void GetDependenciesFromField(DependencySink dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
         {
             FieldDesc field = attributeType.GetField(Encoding.UTF8.GetBytes(fieldName));
             if (field is not null)

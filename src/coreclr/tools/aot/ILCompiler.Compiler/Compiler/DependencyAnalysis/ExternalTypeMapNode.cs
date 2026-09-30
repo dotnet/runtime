@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeDesc TypeMapGroup { get; }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var entry in _mapEntries)
             {
@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var entry in _mapEntries)
             {
@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"External type map: {TypeMapGroup}";
 
         public override int ClassCode => -785190502;

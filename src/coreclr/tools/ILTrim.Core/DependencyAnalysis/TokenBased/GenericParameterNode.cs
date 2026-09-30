@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
         private int _ownerCodedIndex = -1;
         private int _index = -1;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             GenericParameter genericParam = _module.MetadataReader.GetGenericParameter(Handle);
 

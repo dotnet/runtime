@@ -23,13 +23,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             sink.Add(context.MethodEntrypoint(ThrowingMethodStub), "Throwing method stub for invalid type map");
         }
 
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Invalid proxy type map: {TypeMapGroup}";
 
         public override int ClassCode => 36910224;

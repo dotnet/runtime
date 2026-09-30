@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return builder.ToObjectData();
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(_targetMethod, "Delegate target method");
         }

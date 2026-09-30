@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool NeedsInstantiationArg => _method.ConstrainedType?.IsCanonicalSubtype(CanonicalFormKind.Any) ?? false;
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             base.ComputeNonRelocationBasedDependencies(sink, factory);
             MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);

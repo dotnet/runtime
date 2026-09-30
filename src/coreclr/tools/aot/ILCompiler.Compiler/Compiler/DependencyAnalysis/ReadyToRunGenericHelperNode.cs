@@ -128,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis
 
 #nullable enable
         public void AddDependencies(
-            DependencySink<NodeFactory> sink,
+            DependencySink sink,
             NodeFactory factory,
             Instantiation typeInstantiation,
             Instantiation methodInstantiation,
@@ -196,7 +196,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private static void AddDependency(
-            DependencySink<NodeFactory> sink,
+            DependencySink sink,
             object dependency,
             string reason,
             DependencyNodeCore<NodeFactory>? otherReasonNode)
@@ -229,7 +229,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_dictionaryOwner is TypeDesc type)
             {
@@ -254,7 +254,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override bool HasConditionalStaticDependencies => true;
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             NativeLayoutSavedVertexNode templateLayout;
             if (_dictionaryOwner is MethodDesc)

@@ -101,7 +101,7 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetExactMethodInstantiationDependenciesForMethod(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public static void GetExactMethodInstantiationDependenciesForMethod(DependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
 
             // Method entry point dependency

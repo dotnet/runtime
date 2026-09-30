@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => "__GVMImplNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(sink, factory, _method);
 
@@ -64,10 +64,10 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
 
         public override bool HasDynamicDependencies => false;
 
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

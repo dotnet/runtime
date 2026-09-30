@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private StandaloneSignatureHandle Handle => (StandaloneSignatureHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
 

@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => "__GVMDependenciesNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             if (!_method.IsAbstract)
             {
@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
 
         public override bool HasDynamicDependencies
         {
@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory)
         {
             TypeDesc methodOwningType = _method.OwningType;
             bool methodIsShared = _method.IsSharedByGenericInstantiations;

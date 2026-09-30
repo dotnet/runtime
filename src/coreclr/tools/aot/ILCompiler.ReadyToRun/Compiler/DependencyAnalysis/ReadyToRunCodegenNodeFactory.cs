@@ -23,6 +23,7 @@ using ILCompiler.ReadyToRun.TypeSystem;
 using ILCompiler.ReadyToRun;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -224,7 +225,7 @@ namespace ILCompiler.DependencyAnalysis
             return _arrayInterfaceMethods.GetOrAdd((ArrayType)arrayType.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        public void AddVirtualMethodDiscoveryDependencies(DependencySink<NodeFactory> dependencies, TypeDesc type)
+        public void AddVirtualMethodDiscoveryDependencies(DependencySink dependencies, TypeDesc type)
         {
             if (CompilationCurrentPhase != 0)
                 return;

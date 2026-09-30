@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
             _typeDefinition = typeDefinition;
         }
 
-        public static void AddDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
+        public static void AddDependencies(DependencySink dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
         {
             bool needsDataflowAnalysis = false;
 
@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_typeDefinition is MetadataType metadataType)
             {
@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
     }
 }

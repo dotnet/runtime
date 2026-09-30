@@ -14,6 +14,7 @@ using Internal.TypeSystem;
 using Internal.IL;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
@@ -819,7 +820,7 @@ namespace ILLink.Shared.TrimAnalysis
             public MakeGenericMethodSite(MethodDesc method) => _method = method;
 
             public void AddDependencies(
-                DependencySink<NodeFactory> sink,
+                DependencySink sink,
                 NodeFactory factory,
                 Instantiation typeInstantiation,
                 Instantiation methodInstantiation,
@@ -848,7 +849,7 @@ namespace ILLink.Shared.TrimAnalysis
             public MakeGenericTypeSite(TypeDesc type) => _type = type;
 
             public void AddDependencies(
-                DependencySink<NodeFactory> sink,
+                DependencySink sink,
                 NodeFactory factory,
                 Instantiation typeInstantiation,
                 Instantiation methodInstantiation,

@@ -107,7 +107,7 @@ namespace ILCompiler
                 }
             }
 
-            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
             {
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
@@ -125,7 +125,7 @@ namespace ILCompiler
                 }
             }
 
-            public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+            public override void AddConditionalDependencies(DependencySink sink, NodeFactory context)
             {
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
@@ -146,9 +146,9 @@ namespace ILCompiler
 
             }
 
-            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
 
-            private void AddMethodStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context, EcmaMethod method, string reason, Utf8String exportName)
+            private void AddMethodStaticDependencies(DependencySink sink, NodeFactory context, EcmaMethod method, string reason, Utf8String exportName)
             {
                 IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, exportName);
 

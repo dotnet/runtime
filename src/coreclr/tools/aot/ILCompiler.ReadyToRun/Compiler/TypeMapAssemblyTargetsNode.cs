@@ -34,7 +34,7 @@ namespace ILCompiler.ReadyToRun
 
         public int Offset => 0;
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             foreach (var map in _assemblyTypeMaps.Maps)
             {

@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_module.MetadataReader.IsAssembly)
                 sink.Add(factory.AssemblyDefinition(_module), "Assembly definition of the module");

@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             });
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             base.ComputeNonRelocationBasedDependencies(sink, factory);
             sink.Add(_typeNode, "Wasm virtual dispatch thunk requires type node");

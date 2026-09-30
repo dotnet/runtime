@@ -143,7 +143,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             sink.Add(_imports, "Import section fixup data");
             sink.Add(_signatures, "Import section signatures");

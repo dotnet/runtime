@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
             return helper == null ? RealBody: factory.MethodEntrypoint(helper);
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             // Convert methods on Array<T> into T[]
             TypeDesc owningType = Method.OwningType;

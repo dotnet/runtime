@@ -7,15 +7,18 @@ using System;
 
 namespace ILCompiler.DependencyAnalysisFramework;
 
-public interface IDependencySink<DependencyContextType>
+public abstract partial class DependencyNodeCore<DependencyContextType>
 {
-    void Add(DependencyNodeCore<DependencyContextType> node, string reason);
-    void Add(object node, string reason);
-    void Add(DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency);
-    void AddRange(params ReadOnlySpan<DependencyNodeCore<DependencyContextType>.DependencyListEntry> dependencies);
-}
+    public interface IDependencySink
+    {
+        void Add(DependencyNodeCore<DependencyContextType> node, string reason);
+        void Add(object node, string reason);
+        void Add(DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency);
+        void AddRange(params ReadOnlySpan<DependencyNodeCore<DependencyContextType>.DependencyListEntry> dependencies);
+    }
 
-public interface IConditionalDependencySink<DependencyContextType>
-{
-    void Add(DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency);
+    public interface IConditionalDependencySink
+    {
+        void Add(DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency);
+    }
 }

@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ConstantHandle Handle => (ConstantHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
         {

@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private MethodImplementationHandle Handle => (MethodImplementationHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             var methodImpl = _module.MetadataReader.GetMethodImplementation(Handle);
             sink.Add(new DependencyListEntry(factory.GetNodeForMethodToken(_module, methodImpl.MethodBody), "MethodImpl body"));

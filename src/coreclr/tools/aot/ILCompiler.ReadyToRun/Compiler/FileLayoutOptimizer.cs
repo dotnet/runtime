@@ -19,6 +19,8 @@ using System.Text;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.PettisHansenSort;
 
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
+
 #if !READYTORUN
 using MethodWithGCInfo = ILCompiler.DependencyAnalysis.MethodCodeNode;
 #endif
@@ -106,7 +108,7 @@ namespace ILCompiler
             if (_fileLayoutAlgorithm == FileLayoutAlgorithm.MethodOrder)
             {
                 const int MaxDependencyDepth = 5;
-                var dependencySinks = new DependencySink<NodeFactory>[MaxDependencyDepth + 1];
+                var dependencySinks = new DependencySink[MaxDependencyDepth + 1];
                 var visitedNonSortableNodeDepths = new Dictionary<DependencyNodeCore<NodeFactory>, int>();
 
                 // Sort the dependencies of methods by the method order
@@ -138,7 +140,7 @@ namespace ILCompiler
                     var dependencySink = dependencySinks[depth];
                     if (dependencySink is null)
                     {
-                        dependencySink = new DependencySink<NodeFactory>();
+                        dependencySink = new DependencySink();
                         dependencySinks[depth] = dependencySink;
                     }
 

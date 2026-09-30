@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         // At minimum, Target needs to be reported as a static dependency by inheritors.
-        public abstract override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory);
+        public abstract override void AddStaticDependencies(DependencySink sink, NodeFactory factory);
 
         int ISymbolNode.Offset => 0;
 

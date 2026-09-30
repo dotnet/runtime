@@ -207,7 +207,7 @@ namespace ILCompiler.DependencyAnalysis
             _conditionalDependencies = result ?? (IReadOnlyCollection<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             System.Diagnostics.Debug.Assert(_conditionalDependencies != null);
             foreach (CombinedDependencyListEntry dependency in _conditionalDependencies)
@@ -216,7 +216,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             // Call GetTypeDefinition in case the base is an instantiated generic type.
             TypeDesc baseType = _type.BaseType?.GetTypeDefinition();
@@ -234,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool StaticDependenciesAreComputed => _conditionalDependencies != null;
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
 
         private static MethodImplementationHandle TryGetMethodImplementationHandle(EcmaType implementingType, EcmaMethod declMethod)
         {

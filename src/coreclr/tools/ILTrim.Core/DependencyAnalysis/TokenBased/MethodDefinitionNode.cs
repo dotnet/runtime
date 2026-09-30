@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
             MethodDefinition methodDef = reader.GetMethodDefinition(Handle);
@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
                         AddInteropAllocatedType(factory, sink, ecmaByRefParam);
                 }
 
-                static void AddInteropAllocatedType(NodeFactory factory, DependencySink<NodeFactory> dependencies, EcmaType type)
+                static void AddInteropAllocatedType(NodeFactory factory, DependencySink dependencies, EcmaType type)
                 {
                     dependencies.Add(factory.ConstructedType(type), "Interop-allocated instance");
                     if (type.GetParameterlessConstructor() is EcmaMethod ctorMethod && factory.IsModuleTrimmed(ctorMethod.Module))
@@ -148,7 +148,7 @@ namespace ILCompiler.DependencyAnalysis
         // Instance methods on reference types conditionally depend on their bodies.
         public override bool HasConditionalStaticDependencies => IsInstanceMethodOnReferenceType;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();

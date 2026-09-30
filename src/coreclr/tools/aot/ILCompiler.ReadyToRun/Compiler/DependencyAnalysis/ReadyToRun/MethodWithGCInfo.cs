@@ -263,7 +263,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return writer.ToArray();
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(GCInfoNode, "Unwind & GC info");
 
@@ -293,7 +293,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
-        public void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
         {
             if (_nonRelocationDependencies is not null)
             {
@@ -312,11 +312,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void AddRuntimeDeterminedConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod)
         {
         }
 
-        private static void AddRuntimeDeterminedDependency(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod, object dependency)
+        private static void AddRuntimeDeterminedDependency(DependencySink sink, NodeFactory factory, MethodDesc concreteMethod, object dependency)
         {
             if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
             {

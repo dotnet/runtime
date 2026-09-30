@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
 
 #if !READYTORUN
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             MethodDesc canonDecl = _decl.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (canonDecl != _decl)
@@ -76,10 +76,10 @@ namespace ILCompiler.DependencyAnalysis
                 sink.Add(factory.VariantInterfaceMethodUse(_decl.GetTypicalMethodDefinition()), "Variant interface call");
         }
 #else
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory) { }
 #endif
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

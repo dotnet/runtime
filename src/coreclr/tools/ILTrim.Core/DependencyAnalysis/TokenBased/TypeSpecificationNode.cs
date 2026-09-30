@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private TypeSpecificationHandle Handle => (TypeSpecificationHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             TypeSpecification typeSpec = _module.MetadataReader.GetTypeSpecification(Handle);
 

@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
-        public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             ComputeNonRelocationBasedDependencies(sink, factory);
             Relocation[] relocs = GetData(factory, true).Relocs;
@@ -73,11 +73,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected virtual void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected virtual void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }

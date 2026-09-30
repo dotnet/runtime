@@ -5,6 +5,8 @@ using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 using ILCompiler.DependencyAnalysisFramework;
 
 #nullable enable
@@ -16,7 +18,7 @@ namespace ILCompiler
     public static class RootingHelpers
     {
         public static bool TryAddDependenciesForReflectedType(
-            IDependencySink<NodeFactory> dependencies,
+            IDependencySink dependencies,
             NodeFactory factory,
             TypeDesc type,
             string reason)
@@ -26,7 +28,7 @@ namespace ILCompiler
         }
 
         public static bool TryAddDependenciesForReflectedType(
-            DependencySink<NodeFactory> dependencies,
+            DependencySink dependencies,
             NodeFactory factory,
             TypeDesc type,
             string reason,
@@ -37,7 +39,7 @@ namespace ILCompiler
         }
 
         public static bool TryAddDependenciesForReflectedMethod(
-            IDependencySink<NodeFactory> dependencies,
+            IDependencySink dependencies,
             NodeFactory factory,
             MethodDesc method,
             string reason)
@@ -47,7 +49,7 @@ namespace ILCompiler
         }
 
         public static bool TryAddDependenciesForReflectedMethod(
-            DependencySink<NodeFactory> dependencies,
+            DependencySink dependencies,
             NodeFactory factory,
             MethodDesc method,
             string reason,
@@ -58,7 +60,7 @@ namespace ILCompiler
         }
 
         public static bool TryAddDependenciesForReflectedField(
-            IDependencySink<NodeFactory> dependencies, NodeFactory factory, FieldDesc field, string reason)
+            IDependencySink dependencies, NodeFactory factory, FieldDesc field, string reason)
         {
             dependencies.Add(factory.ReflectedField(field), reason);
             return true;

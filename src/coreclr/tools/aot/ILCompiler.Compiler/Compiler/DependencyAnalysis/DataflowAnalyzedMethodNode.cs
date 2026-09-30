@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
             _methodIL = methodIL;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             try
@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory)
         {
             // Look for any generic specialization of this method or its compiler-generated callees (local methods, lambdas).
             // If any are found, specialize the dataflow dependencies that originated from that method.
@@ -85,6 +85,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => _runtimeDependencies.Count > 0;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
     }
 }

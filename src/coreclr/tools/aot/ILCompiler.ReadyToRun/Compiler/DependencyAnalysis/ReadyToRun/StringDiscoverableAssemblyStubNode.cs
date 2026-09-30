@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public abstract string LookupString { get; }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(factory.InjectStringThunksImport, "StringDiscoverableAssemblyStubNode requires InjectStringThunks fixup");
         }

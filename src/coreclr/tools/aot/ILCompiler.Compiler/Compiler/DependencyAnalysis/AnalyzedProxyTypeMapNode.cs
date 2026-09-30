@@ -32,8 +32,8 @@ namespace ILCompiler.DependencyAnalysis
             return section.Place(tuple);
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var (sourceType, proxyType) in entries)
             {
@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
                 sink.Add(context.MetadataTypeSymbol(proxyType), "Analyzed proxy type map entry proxy type");
             }
         }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Analyzed Proxy Type Map: {typeMapGroup}";
         public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => this;
         public override bool InterestingForDynamicDependencyAnalysis => false;

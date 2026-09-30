@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _wasmSignature.CompareTo(otherNode._wasmSignature);
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             base.ComputeNonRelocationBasedDependencies(sink, factory);
             sink.Add(_targetTypeNode, "Wasm interpreter-to-R2R thunk requires target type node");

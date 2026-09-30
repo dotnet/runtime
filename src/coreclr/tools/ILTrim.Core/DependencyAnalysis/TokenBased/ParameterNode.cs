@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ParameterHandle Handle => (ParameterHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             Parameter parameter = _module.MetadataReader.GetParameter(Handle);
             CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, context, _module, parameter.GetCustomAttributes());

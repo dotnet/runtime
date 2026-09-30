@@ -313,7 +313,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             if (IsReflectionVisible)
             {
@@ -586,7 +586,7 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_type.IsInterface)
                 sink.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");

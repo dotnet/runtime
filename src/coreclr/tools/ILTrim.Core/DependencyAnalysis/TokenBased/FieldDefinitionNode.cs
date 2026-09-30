@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private FieldDefinitionHandle Handle => (FieldDefinitionHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             FieldDefinition fieldDef = _module.MetadataReader.GetFieldDefinition(Handle);
             TypeDefinitionHandle declaringType = fieldDef.GetDeclaringType();

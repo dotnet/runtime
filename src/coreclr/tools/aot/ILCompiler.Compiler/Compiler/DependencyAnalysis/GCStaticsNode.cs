@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
             return factory.GCStaticEEType(map, requiresAlign8);
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             // If we have a type loader template for this type, we need to keep track of the generated
             // bases in the type info hashtable. The type symbol node does such accounting.

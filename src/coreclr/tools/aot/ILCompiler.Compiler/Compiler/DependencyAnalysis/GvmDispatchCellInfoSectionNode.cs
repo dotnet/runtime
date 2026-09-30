@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public static void AddCellDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc targetMethod)
+        public static void AddCellDependencies(DependencySink dependencies, NodeFactory factory, MethodDesc targetMethod)
         {
             MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
             dependencies.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");

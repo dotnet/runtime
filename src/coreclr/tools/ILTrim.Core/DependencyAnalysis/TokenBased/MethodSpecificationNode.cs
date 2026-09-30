@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private MethodSpecificationHandle Handle => (MethodSpecificationHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             MethodSpecification methodSpec = _module.MetadataReader.GetMethodSpecification(Handle);
 

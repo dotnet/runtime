@@ -202,7 +202,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_typeDesc, otherNode._typeDesc);
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_typeDesc.HasInstantiation &&
                 !_typeDesc.IsGenericDefinition &&
@@ -220,7 +220,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public static void AddDependenciesForAsyncStateMachineBox(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
+        public static void AddDependenciesForAsyncStateMachineBox(DependencySink dependencies, NodeFactory factory, TypeDesc type)
         {
             ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)type.Context;
             // If adding a typehandle to the AsyncStateMachineBox, pre-compile the most commonly used methods.

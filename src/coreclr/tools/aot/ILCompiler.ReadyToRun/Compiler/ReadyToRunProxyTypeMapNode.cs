@@ -89,8 +89,8 @@ namespace ILCompiler.ReadyToRun
             return section.Place(tuple);
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             sink.Add(importProvider.GetImportToType(TypeMapGroup, TriggeringModule), $"Type map '{TypeMapGroup}' key type");
 
@@ -109,7 +109,7 @@ namespace ILCompiler.ReadyToRun
                 }
             }
         }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"ProxyTypeMap {TypeMapGroup} entries in assembly {TriggeringModule.GetDisplayName()}";
     }
 }

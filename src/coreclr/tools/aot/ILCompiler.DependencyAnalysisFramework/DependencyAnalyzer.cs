@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         private List<DependencyNodeCore<DependencyContextType>> _dynamicDependencyInterestingList = new List<DependencyNodeCore<DependencyContextType>>();
         private List<DynamicDependencyNode> _markedNodesWithDynamicDependencies = new List<DynamicDependencyNode>();
         private bool _newDynamicDependenciesMayHaveAppeared;
-        private readonly DependencySink<DependencyContextType> _dependencySink = new DependencySink<DependencyContextType>();
+        private readonly DependencyNodeCore<DependencyContextType>.DependencySink _dependencySink = new DependencyNodeCore<DependencyContextType>.DependencySink();
 
         private Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>> _conditional_dependency_store = new Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>>();
         private bool _markingCompleted;
@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             public void MarkNewDynamicDependencies(DependencyAnalyzer<MarkStrategy, DependencyContextType> analyzer)
             {
-                DependencySink<DependencyContextType> sink = analyzer._dependencySink;
+                DependencyNodeCore<DependencyContextType>.DependencySink sink = analyzer._dependencySink;
                 _node.SearchDynamicDependencies(analyzer._dynamicDependencyInterestingList, _next, sink, analyzer._dependencyContext);
                 analyzer.CommitDependencies(sink, _node);
                 _next = analyzer._dynamicDependencyInterestingList.Count;
@@ -178,7 +178,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         // Internal details
         private void AddStaticDependencies(DependencyNodeCore<DependencyContextType> node)
         {
-            DependencySink<DependencyContextType> sink = _dependencySink;
+            DependencyNodeCore<DependencyContextType>.DependencySink sink = _dependencySink;
             node.AddStaticDependencies(sink, _dependencyContext);
 
             if (node.HasConditionalStaticDependencies)
@@ -190,10 +190,10 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
 
         private void CommitDependencies(
-            DependencySink<DependencyContextType> sink,
+            DependencyNodeCore<DependencyContextType>.DependencySink sink,
             DependencyNodeCore<DependencyContextType> source)
         {
-            using DependencySink<DependencyContextType>.DrainEnumerator dependencies = sink.Drain();
+            using DependencyNodeCore<DependencyContextType>.DependencySink.DrainEnumerator dependencies = sink.Drain();
             while (dependencies.MoveNext())
             {
                 var otherReasonNode = dependencies.OtherReasonNode;

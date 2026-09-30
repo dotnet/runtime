@@ -7,6 +7,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler
 {
@@ -55,7 +56,7 @@ namespace ILCompiler
         }
 
         public static void AddTypeLoaderDependencies(
-            DependencySink<NodeFactory> dependencies,
+            DependencySink dependencies,
             NodeFactory factory,
             IEETypeNode dependencyType,
             string reason)

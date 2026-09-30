@@ -92,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
                 _parentNode.AddEmbeddedObject(this);
             }
 
-            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
             {
                 sink.AddRange(
                     new DependencyListEntry(Target, "reloc"),

@@ -37,10 +37,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             MetadataType szArrayHelper = factory.TypeSystemContext.SystemModule.GetType("System"u8, "SZArrayHelper"u8, throwIfNotFound: false);
             if (szArrayHelper == null)

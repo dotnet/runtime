@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private TypeDefinitionHandle Handle => (TypeDefinitionHandle)_handle;
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(factory.ModuleDefinition(_module), "Owning module");
 
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             MetadataReader reader = _module.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(Handle);

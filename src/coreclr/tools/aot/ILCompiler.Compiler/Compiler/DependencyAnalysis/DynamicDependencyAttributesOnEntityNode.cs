@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
             _entity = entity;
         }
 
-        public static void AddDependenciesDueToDynamicDependencyAttribute(IDependencySink<NodeFactory> dependencies, NodeFactory factory, EcmaMethod method)
+        public static void AddDependenciesDueToDynamicDependencyAttribute(IDependencySink dependencies, NodeFactory factory, EcmaMethod method)
         {
             if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static void AddDependenciesDueToDynamicDependencyAttribute(IDependencySink<NodeFactory> dependencies, NodeFactory factory, EcmaField field)
+        public static void AddDependenciesDueToDynamicDependencyAttribute(IDependencySink dependencies, NodeFactory factory, EcmaField field)
         {
             if (field.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             try
             {
@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private static void AddDependenciesDueToDynamicDependencyAttribute(
-            IDependencySink<NodeFactory> dependencies,
+            IDependencySink dependencies,
             NodeFactory factory,
             TypeSystemEntity entity,
             TypeDesc owningType,
@@ -242,7 +242,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
     }
 }

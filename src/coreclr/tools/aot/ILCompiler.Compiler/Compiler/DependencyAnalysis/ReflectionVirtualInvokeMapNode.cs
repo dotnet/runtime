@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
             return declaringMethodForSlot;
         }
 
-        public static void AddVirtualInvokeMapDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddVirtualInvokeMapDependencies(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             if (NeedsVirtualInvokeInfo(factory, method))
             {

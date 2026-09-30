@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_arrayType, otherNode._arrayType);
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             base.ComputeNonRelocationBasedDependencies(sink, factory);
             factory.AddVirtualMethodDiscoveryDependencies(sink, _arrayType);

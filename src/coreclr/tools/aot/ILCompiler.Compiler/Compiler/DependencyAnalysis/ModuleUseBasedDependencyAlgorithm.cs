@@ -3,13 +3,13 @@
 
 using Internal.TypeSystem;
 
-using ILCompiler.DependencyAnalysisFramework;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 
 namespace ILCompiler.DependencyAnalysis
 {
     internal static class ModuleUseBasedDependencyAlgorithm
     {
-        internal static void AddDependenciesDueToModuleUse(IDependencySink<NodeFactory> dependencyList, NodeFactory factory, ModuleDesc module)
+        internal static void AddDependenciesDueToModuleUse(IDependencySink dependencyList, NodeFactory factory, ModuleDesc module)
         {
             if (module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
             {

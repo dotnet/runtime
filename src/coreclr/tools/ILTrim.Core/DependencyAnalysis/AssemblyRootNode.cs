@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public AssemblyRootNode(string assemblyName, AssemblyRootMode mode)
             => (_assemblyName, _mode) = (assemblyName, mode);
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             // TODO: what is the failure mode of illink here?
             var module = (EcmaModule)factory.TypeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(_assemblyName));
@@ -50,8 +50,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
         protected override string GetName(NodeFactory context) => $"Assembly root: {_assemblyName} ({_mode})";
     }
 }

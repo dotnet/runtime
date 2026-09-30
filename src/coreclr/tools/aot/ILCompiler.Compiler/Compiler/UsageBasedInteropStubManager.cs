@@ -10,6 +10,8 @@ using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
@@ -27,7 +29,7 @@ namespace ILCompiler
             _logger = logger;
         }
 
-        public override void AddDependenciesDueToMethodCodePresence(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddDependenciesDueToMethodCodePresence(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             if (method.HasInstantiation)
             {
@@ -35,7 +37,7 @@ namespace ILCompiler
             }
         }
 
-        public override void AddInterestingInteropConstructedTypeDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
+        public override void AddInterestingInteropConstructedTypeDependencies(DependencySink dependencies, NodeFactory factory, TypeDesc type)
         {
             if (type.IsDelegate)
             {
@@ -51,7 +53,7 @@ namespace ILCompiler
         /// For Marshal generic APIs(eg. Marshal.StructureToPtr<T>, GetFunctionPointerForDelegate) we add
         /// the generic parameter as dependencies so that we can generate runtime data for them
         /// </summary>
-        public override void AddMarshalAPIsGenericDependencies(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddMarshalAPIsGenericDependencies(IDependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
             Debug.Assert(method.HasInstantiation);
 

@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
         /// </summary>
-        public static void AddGenericVirtualMethodImplementationDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc callingMethod, MethodDesc implementationMethod)
+        public static void AddGenericVirtualMethodImplementationDependencies(DependencySink dependencies, NodeFactory factory, MethodDesc callingMethod, MethodDesc implementationMethod)
         {
             Debug.Assert(!callingMethod.OwningType.IsInterface);
 

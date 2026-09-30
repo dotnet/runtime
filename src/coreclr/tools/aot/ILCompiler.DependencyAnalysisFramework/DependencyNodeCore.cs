@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode, IDependencyNode<DependencyContextType>
+    public abstract partial class DependencyNodeCore<DependencyContextType> : DependencyNode, IDependencyNode<DependencyContextType>
     {
         public readonly struct DependencyListEntry(
             DependencyNodeCore<DependencyContextType> node,
@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             public readonly string Reason = reason;
         }
 
-        public class DependencyList : List<DependencyListEntry>, IDependencySink<DependencyContextType>
+        public class DependencyList : List<DependencyListEntry>, IDependencySink
         {
             public DependencyList() { }
 
@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
         }
 
-        public class CombinedDependencyList : List<CombinedDependencyListEntry>, IConditionalDependencySink<DependencyContextType>
+        public class CombinedDependencyList : List<CombinedDependencyListEntry>, IConditionalDependencySink
         {
             public new virtual void Add(CombinedDependencyListEntry dependency)
             {
@@ -134,13 +134,13 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         public virtual int DependencyPhaseForDeferredStaticComputation { get; }
 
-        public abstract void AddStaticDependencies(DependencySink<DependencyContextType> sink, DependencyContextType context);
+        public abstract void AddStaticDependencies(DependencySink sink, DependencyContextType context);
 
-        public virtual void AddConditionalDependencies(DependencySink<DependencyContextType> sink, DependencyContextType context)
+        public virtual void AddConditionalDependencies(DependencySink sink, DependencyContextType context)
         {
         }
 
-        public virtual void SearchDynamicDependencies(List<DependencyNodeCore<DependencyContextType>> markedNodes, int firstNode, DependencySink<DependencyContextType> sink, DependencyContextType context)
+        public virtual void SearchDynamicDependencies(List<DependencyNodeCore<DependencyContextType>> markedNodes, int firstNode, DependencySink sink, DependencyContextType context)
         {
         }
 

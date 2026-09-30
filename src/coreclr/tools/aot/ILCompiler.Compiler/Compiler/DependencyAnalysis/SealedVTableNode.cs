@@ -245,7 +245,7 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             BuildSealedVTableSlots(factory, relocsOnly: true);
 

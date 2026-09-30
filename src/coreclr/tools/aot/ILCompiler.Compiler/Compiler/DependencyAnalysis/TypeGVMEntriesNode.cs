@@ -55,10 +55,10 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => "__TypeGVMEntriesNode_" + factory.NameMangler.GetMangledTypeName(_associatedType);
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory context)
         {
             foreach (var entry in ScanForGenericVirtualMethodEntries())
                 GenericVirtualMethodTableNode.AddGenericVirtualMethodImplementationDependencies(sink, context, entry.CallingMethod, entry.ImplementationMethod);

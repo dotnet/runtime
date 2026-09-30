@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
             return factory.GCStaticEEType(map, requiresAlign8);
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             sink.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic MethodTable"));
 
@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
                 _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type:
                 false;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             Debug.Assert(_type != null);
 

@@ -94,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
-        public static void GetGenericMethodsHashtableDependenciesForMethod(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
+        public static void GetGenericMethodsHashtableDependenciesForMethod(DependencySink dependencies, NodeFactory factory, MethodDesc method)
         {
 
             Debug.Assert(method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any));

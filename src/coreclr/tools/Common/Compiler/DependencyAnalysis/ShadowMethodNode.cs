@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
             return CanonicalMethodNode;
         }
 
-        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             // Make sure the canonical body gets generated
             sink.Add(new DependencyListEntry(CanonicalMethodNode, "Canonical body"));
@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis
             CanonicalMethodNode.AddRuntimeDeterminedStaticDependencies(sink, factory, Method);
         }
 
-        public sealed override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public sealed override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             CanonicalMethodNode.AddRuntimeDeterminedConditionalDependencies(sink, factory, Method);
         }
@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
         public sealed override bool HasDynamicDependencies => false;
         public sealed override bool InterestingForDynamicDependencyAnalysis => false;
 
-        public sealed override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public sealed override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
 
         int ISortableNode.ClassCode => ClassCode;
 

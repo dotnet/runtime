@@ -17,6 +17,7 @@ using ILLink.Shared.TypeSystemProxy;
 using Internal.IL;
 using Internal.TypeSystem;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 using InteropTypes = Internal.TypeSystem.Interop.InteropTypes;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 using NodeFactory = ILCompiler.DependencyAnalysis.NodeFactory;
@@ -138,7 +139,7 @@ namespace ILCompiler.Dataflow
             return scanner._reflectionMarker.Dependencies;
         }
 
-        public static void AddTypeGetTypeDataflowDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, Logger logger, MetadataType type)
+        public static void AddTypeGetTypeDataflowDependencies(DependencySink dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, Logger logger, MetadataType type)
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);

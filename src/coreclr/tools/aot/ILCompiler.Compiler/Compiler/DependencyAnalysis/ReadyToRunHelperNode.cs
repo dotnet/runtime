@@ -120,7 +120,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => true;
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
             {
@@ -165,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => _id == ReadyToRunHelperId.DelegateCtor;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             var info = (DelegateCreationInfo)_target;
             factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(sink, factory, info.DelegateType, info.PossiblyUnresolvedTargetMethod);

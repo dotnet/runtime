@@ -26,7 +26,7 @@ namespace ILCompiler
 
             public override bool StaticDependenciesAreComputed => true;
 
-            public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
+            public override void AddConditionalDependencies(DependencySink sink, NodeFactory context)
             {
                 foreach ((TypeDesc typeMapGroup, TypeMapMetadata.Map typeMap) in typeMapState.Maps)
                 {
@@ -35,8 +35,8 @@ namespace ILCompiler
                 }
             }
 
-            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
-            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
+            public override void AddStaticDependencies(DependencySink sink, NodeFactory context) { }
+            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory context) { }
             protected override string GetName(NodeFactory context) => $"Type maps root node: {typeMapState.DiagnosticName}";
 
             private static IExternalTypeMapNode GetExternalTypeMapNode(TypeDesc typeMapGroup, IExternalTypeMap map)

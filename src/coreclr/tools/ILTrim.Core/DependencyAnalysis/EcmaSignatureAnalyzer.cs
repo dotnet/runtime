@@ -9,6 +9,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysisFramework;
+using DependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencySink;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -17,9 +18,9 @@ namespace ILCompiler.DependencyAnalysis
         private readonly EcmaModule _module;
         private BlobReader _blobReader;
         private readonly NodeFactory _factory;
-        private readonly DependencySink<NodeFactory> _dependencies;
+        private readonly DependencySink _dependencies;
 
-        private EcmaSignatureAnalyzer(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink<NodeFactory> dependencies)
+        private EcmaSignatureAnalyzer(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink dependencies)
         {
             _module = module;
             _blobReader = blobReader;
@@ -98,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static void AnalyzeStandaloneSignatureBlob(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink<NodeFactory> dependencies)
+        public static void AnalyzeStandaloneSignatureBlob(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink dependencies)
         {
             EcmaSignatureAnalyzer analyzer = new(module, blobReader, factory, dependencies);
             analyzer.AnalyzeStandaloneSignatureBlob();
@@ -146,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
-        public static void AnalyzeMethodSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink<NodeFactory> dependencies)
+        public static void AnalyzeMethodSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink dependencies)
         {
             EcmaSignatureAnalyzer analyzer = new(module, blobReader, factory, dependencies);
             analyzer.AnalyzeMethodSignature();
@@ -173,7 +174,7 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
-        public static void AnalyzeFieldSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink<NodeFactory> dependencies)
+        public static void AnalyzeFieldSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink dependencies)
         {
             EcmaSignatureAnalyzer analyzer = new(module, blobReader, factory, dependencies);
             analyzer.AnalyzeFieldSignature();
@@ -192,7 +193,7 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
-        public static void AnalyzeMemberReferenceSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink<NodeFactory> dependencies)
+        public static void AnalyzeMemberReferenceSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink dependencies)
         {
             EcmaSignatureAnalyzer analyzer = new(module, blobReader, factory, dependencies);
             analyzer.AnalyzeMemberReferenceSignature();
@@ -212,7 +213,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static void AnalyzeTypeSpecSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink<NodeFactory> dependencies)
+        public static void AnalyzeTypeSpecSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink dependencies)
         {
             EcmaSignatureAnalyzer analyzer = new(module, blobReader, factory, dependencies);
             analyzer.AnalyzeTypeSpecSignature();
@@ -223,7 +224,7 @@ namespace ILCompiler.DependencyAnalysis
             AnalyzeType();
         }
 
-        public static void AnalyzeMethodSpecSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink<NodeFactory> dependencies)
+        public static void AnalyzeMethodSpecSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink dependencies)
         {
             EcmaSignatureAnalyzer analyzer = new(module, blobReader, factory, dependencies);
             analyzer.AnalyzeMethodSpecSignature();
@@ -249,7 +250,7 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
-        public static void AnalyzePropertySignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink<NodeFactory> dependencies)
+        public static void AnalyzePropertySignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencySink dependencies)
         {
             EcmaSignatureAnalyzer analyzer = new(module, blobReader, factory, dependencies);
             analyzer.AnalyzePropertySignature();

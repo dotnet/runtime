@@ -14,7 +14,7 @@ using ILLink.Shared.TrimAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
-using ILCompiler.DependencyAnalysisFramework;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.IDependencySink;
 
 #nullable enable
 #pragma warning disable IDE0060
@@ -23,7 +23,7 @@ namespace ILCompiler.Dataflow
 {
     public class ReflectionMarker
     {
-        private readonly IDependencySink<NodeFactory> _dependencies;
+        private readonly IDependencySink _dependencies;
         private readonly DependencyList? _dependencyList;
         private readonly Logger _logger;
         private readonly MetadataType? _typeHierarchyDataFlowOrigin;
@@ -58,7 +58,7 @@ namespace ILCompiler.Dataflow
             bool enabled,
             bool suppressTrimAnalysisWarnings = false,
             bool suppressAotAnalysisWarnings = false,
-            IDependencySink<NodeFactory>? dependencySink = null)
+            IDependencySink? dependencySink = null)
         {
             _logger = logger;
             Factory = factory;

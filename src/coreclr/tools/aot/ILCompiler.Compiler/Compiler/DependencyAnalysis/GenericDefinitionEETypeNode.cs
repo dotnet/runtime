@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => false;
 
-        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory) { }
 
         public override ISymbolNode NodeForLinkage(NodeFactory factory)
         {
@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             return factory.MetadataTypeSymbol(_type).Marked;
         }
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
         }
 
@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " reflection visible";
 
-        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
             if (_type.IsInterface)
                 sink.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
