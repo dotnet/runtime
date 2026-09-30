@@ -18,6 +18,9 @@
     <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm' and '$(FeatureMono)' == 'true'">true</SupportsWasmIntrinsics>
     <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm' and '$(FeatureCoreCLR)' == 'true'">true</SupportsWasmIntrinsics>
     <SupportsWasmIntrinsics Condition="'$(SupportsWasmIntrinsics)' == ''">false</SupportsWasmIntrinsics>
+    <!-- Mono does not implement RelaxedSimd, so it uses the PlatformNotSupported implementation. -->
+    <SupportsWasmRelaxedSimdIntrinsics Condition="'$(SupportsWasmIntrinsics)' == 'true' and '$(FeatureCoreCLR)' == 'true'">true</SupportsWasmRelaxedSimdIntrinsics>
+    <SupportsWasmRelaxedSimdIntrinsics Condition="'$(SupportsWasmRelaxedSimdIntrinsics)' == ''">false</SupportsWasmRelaxedSimdIntrinsics>
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'x86'">true</SupportsX86Intrinsics>
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x86' and '$(FeatureMono)' == 'true'">false</SupportsX86Intrinsics>
     <NotSupportedOnMono Condition="'$(FeatureMono)' == 'true'">.PlatformNotSupported</NotSupportedOnMono>
@@ -2931,6 +2934,12 @@
   <ItemGroup Condition="'$(SupportsWasmIntrinsics)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\WasmBase.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\PackedSimd.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SupportsWasmRelaxedSimdIntrinsics)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\RelaxedSimd.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SupportsWasmRelaxedSimdIntrinsics)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\RelaxedSimd.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CompleteWaitThreadPoolWorkItem.cs" />

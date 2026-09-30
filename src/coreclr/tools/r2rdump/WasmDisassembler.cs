@@ -915,6 +915,28 @@ namespace R2RDump
                 case 254: return "f32x4.demote_f64x2_zero";
                 case 255: return "f64x2.promote_low_f32x4";
 
+                // Relaxed SIMD instructions
+                case 0x100: return "i8x16.relaxed_swizzle";
+                case 0x101: return "i32x4.relaxed_trunc_f32x4_s";
+                case 0x102: return "i32x4.relaxed_trunc_f32x4_u";
+                case 0x103: return "i32x4.relaxed_trunc_f64x2_s_zero";
+                case 0x104: return "i32x4.relaxed_trunc_f64x2_u_zero";
+                case 0x105: return "f32x4.relaxed_madd";
+                case 0x106: return "f32x4.relaxed_nmadd";
+                case 0x107: return "f64x2.relaxed_madd";
+                case 0x108: return "f64x2.relaxed_nmadd";
+                case 0x109: return "i8x16.relaxed_laneselect";
+                case 0x10A: return "i16x8.relaxed_laneselect";
+                case 0x10B: return "i32x4.relaxed_laneselect";
+                case 0x10C: return "i64x2.relaxed_laneselect";
+                case 0x10D: return "f32x4.relaxed_min";
+                case 0x10E: return "f32x4.relaxed_max";
+                case 0x10F: return "f64x2.relaxed_min";
+                case 0x110: return "f64x2.relaxed_max";
+                case 0x111: return "i16x8.relaxed_q15mulr_s";
+                case 0x112: return "i16x8.relaxed_dot_i8x16_i7x16_s";
+                case 0x113: return "i32x4.relaxed_dot_i8x16_i7x16_add_s";
+
                 default:
                     return $"<unknown 0xFD sub-opcode {subOpcode}>";
             }

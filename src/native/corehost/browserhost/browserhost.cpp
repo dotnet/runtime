@@ -44,6 +44,8 @@ extern "C"
     pal::hresult_t coreclr_set_error_writer(
         coreclr_error_writer_callback_fn error_writer);
 
+    void coreclr_wasm_set_relaxed_simd_supported();
+
 #if !GEN_PINVOKE
     const void* SystemResolveDllImport(const char* name);
     const void* SystemJSResolveDllImport(const char* name);
@@ -110,6 +112,16 @@ extern "C" void* BrowserHost_CreateHostContract(void)
 
 extern "C" int BrowserHost_InitializeDotnet(int propertiesCount, const char** propertyKeys, const char** propertyValues)
 {
+    for (int i = 0; i < propertiesCount; i++)
+    {
+        if ((strcmp(propertyKeys[i], "System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported") == 0) &&
+            (strcmp(propertyValues[i], "true") == 0))
+        {
+            coreclr_wasm_set_relaxed_simd_supported();
+            break;
+        }
+    }
+
     coreclr_set_error_writer(log_error_info);
 
     int retval = coreclr_initialize("/managed", "corehost", propertiesCount, propertyKeys, propertyValues, &CurrentClrInstance, &CurrentAppDomainId);
