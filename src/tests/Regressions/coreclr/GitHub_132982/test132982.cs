@@ -124,9 +124,14 @@ public static class Dispatcher
 
 public class Test132982
 {
-    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.HasAssemblyFiles))]
+    [Fact]
     public static void UnloadingCollectibleContextDoesNotViolateLockOrder()
     {
+        if (typeof(Test132982).Assembly.Location.Length == 0)
+        {
+            return;
+        }
+
         WeakReference contextRef = LoadRunAndUnload();
 
         // A generous bound rather than the measured minimum: on a workstation-GC checked build the

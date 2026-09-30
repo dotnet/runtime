@@ -23,11 +23,17 @@ public struct S1 : I0
 public class Runtime_115667
 {
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(Utilities), nameof(Utilities.IsNativeAot))]
-    [ConditionalFact(typeof(Utilities), nameof(Utilities.HasAssemblyFiles))]
+    [Fact]
     public static void TestEntryPoint()
     {
+        string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return;
+        }
+
         System.Runtime.Loader.AssemblyLoadContext alc = new CollectibleALC();
-        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(assemblyPath);
         System.Reflection.MethodInfo mi = asm.GetType(typeof(Runtime_115667).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
         mi.Invoke(null, new object[] { System.Activator.CreateInstance(runtimeTy) });

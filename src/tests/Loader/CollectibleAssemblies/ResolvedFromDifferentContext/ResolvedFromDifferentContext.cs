@@ -47,9 +47,6 @@ public class Test
     static AssemblyLoadContext alc1 = null;
     static WeakReference interfaceAssemblyRef = null;
 
-    public static bool CanLoadTestAssembliesFromDisk =>
-        PlatformDetection.IsCollectibleAssembliesSupported && !string.IsNullOrEmpty(typeof(Test).Assembly.Location);
-
     public static string GetTestAssemblyPath(string subPath)
     {
         return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), subPath);
@@ -211,10 +208,15 @@ public class Test
         return 100;
     }
 
-    [ConditionalFact(typeof(Test), nameof(CanLoadTestAssembliesFromDisk))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
     [SkipOnCoreClr("Test polls a fixed number of times for collectible ALCs to be unloaded, which is unreliable under GC stress", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()
     {
+        if (Assembly.GetExecutingAssembly().Location.Length == 0)
+        {
+            return 100;
+        }
+
         int status = 100;
         foreach (TestCase testCase in Enum.GetValues(typeof(TestCase)))
         {
