@@ -11,6 +11,7 @@ namespace System.Net.Sockets.Tests
     public class SocketTaskExtensionsTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134948", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public async Task EnsureMethodsAreCallable()
         {
             // The purpose of this test is just to ensure that the now-hidden extension methods in SocketTaskExtensions are
