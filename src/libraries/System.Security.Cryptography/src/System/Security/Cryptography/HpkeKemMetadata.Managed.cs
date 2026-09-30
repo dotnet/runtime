@@ -75,7 +75,10 @@ namespace System.Security.Cryptography
                     case HpkeKem.DHKEM_P256_HKDF_SHA256:
                     case HpkeKem.DHKEM_P384_HKDF_SHA384:
                     case HpkeKem.DHKEM_P521_HKDF_SHA512:
-                        return !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+                        // Browser and WASI do not support crypto at all.
+                        // Android does support ECDiffieHellman, but it lacks the ability to import a private scalar d
+                        // without the public Q.
+                        return !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsAndroid();
                     case HpkeKem.DHKEM_X25519_HKDF_SHA256:
                         return X25519DiffieHellman.IsSupported;
                     case HpkeKem.MLKEM_512:

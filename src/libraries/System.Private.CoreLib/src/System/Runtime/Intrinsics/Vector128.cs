@@ -2156,11 +2156,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsEvenIntegerSingle<Vector128<float>, Vector128<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsEvenInteger<Vector128<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsEvenIntegerDouble<Vector128<double>, Vector128<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsEvenInteger<Vector128<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return IsZero(vector & Vector128<T>.One);
         }
@@ -2200,7 +2200,7 @@ namespace System.Runtime.Intrinsics
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                return IsFinite(vector) & Equals(vector, Truncate(vector));
+                return IsZero(vector - Truncate(vector));
             }
             return Vector128<T>.AllBitsSet;
         }
@@ -2279,11 +2279,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsOddIntegerSingle<Vector128<float>, Vector128<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsOddInteger<Vector128<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsOddIntegerDouble<Vector128<double>, Vector128<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsOddInteger<Vector128<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return ~IsZero(vector & Vector128<T>.One);
         }
@@ -2705,6 +2705,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MaxNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MaxNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(GreaterThan(left, right), left, right);
             }
             else
@@ -2795,6 +2805,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MinNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MinNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(LessThan(left, right), left, right);
             }
             else

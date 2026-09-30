@@ -936,6 +936,7 @@ public class Mutate
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134770", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     [SkipOnCoreClr("This test takes too long and internally times out under GCStress/heap verify. It is not fundamentally incompatible if stress testing is fast enough.", RuntimeTestModes.AnyGCStress | RuntimeTestModes.HeapVerify)]
     public static int TestEntryPoint()
     {

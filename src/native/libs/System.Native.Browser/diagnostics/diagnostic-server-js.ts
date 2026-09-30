@@ -8,6 +8,7 @@ import { dotnetLoaderExports, dotnetLogger, dotnetNativeBrowserExports } from ".
 import { collectGcDump } from "./dotnet-gcdump";
 import { collectMetrics } from "./dotnet-counters";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
+import { collectPgoTrace } from "./dotnet-pgo-trace";
 
 //let diagClient:IDiagClient|undefined = undefined as any;
 //let server:DiagServer = undefined as any;
@@ -173,6 +174,9 @@ export function createDiagConnectionJs(socketHandle: number, scenarioName: strin
         }
         if (scenarioName.startsWith("js://cpu-samples")) {
             collectCpuSamples({}, true);
+        }
+        if (scenarioName.startsWith("js://pgo")) {
+            collectPgoTrace({}, true);
         }
         const dotnetDiagnosticClient: FnClientProvider = (globalThis as any).dotnetDiagnosticClient;
         if (typeof dotnetDiagnosticClient === "function") {

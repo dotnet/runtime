@@ -1224,16 +1224,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             sink.Add(_signature, "TypeSignature");
 
-            MethodDesc method = _method;
-            if (method.IsRuntimeDeterminedExactMethod)
-                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-            if (!factory.VTable(method.OwningType).HasKnownVirtualMethodUse)
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (!factory.VTable(canonMethod.OwningType).HasKnownVirtualMethodUse)
             {
-                sink.Add(factory.VirtualMethodUse(method), "Slot number");
+                sink.Add(factory.VirtualMethodUse(canonMethod), "Slot number");
             }
 
-            foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(method.OwningType))
+            foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
                 sink.Add(dependency, "template construction dependency");
             }

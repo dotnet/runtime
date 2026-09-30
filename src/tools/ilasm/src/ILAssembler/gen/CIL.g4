@@ -41,7 +41,7 @@ VOID: 'void';
 ENUM: 'enum';
 CUSTOM: 'custom';
 FIXED: 'fixed';
-SYSSTRING: 'systring';
+SYSSTRING: 'sysstring';
 ARRAY: 'array';
 VARIANT: 'variant';
 CURRENCY: 'currency';
@@ -122,6 +122,7 @@ MRESOURCE: '.mresource';
 // For example, "ldc.r8" must be recognized as INSTR_R token, not as DOTTEDNAME
 INSTR_NONE:
 	'nop'
+	| 'unused'
 	| 'break'
 	| 'ldarg.0'
 	| 'ldarg.1'
@@ -404,11 +405,10 @@ id:
 	| 'aggressiveoptimization'
 	| 'async'
 	| 'extended'
-	| VALUE
 	| INSTANCE
 	| SQSTRING;
-dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart);
-dottedNamePart: ID | VALUE | INSTANCE | SQSTRING;
+dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
+dottedNamePart: ID | INSTANCE | SQSTRING | DOTTEDNAME | 'volatile';
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -466,7 +466,7 @@ languageDecl:
 	| '.language' languageString ',' languageString
 	| '.language' languageString ',' languageString ',' languageString;
 
-languageString: SQSTRING | QSTRING;
+languageString: SQSTRING;
 
 typelist: '.typelist' '{' (className)* '}';
 
@@ -619,11 +619,7 @@ extSourceSpec:
 	| esHead int32 ',' int32 ':' int32
 	| esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING
 	| esHead int32 ',' int32 ':' int32 ',' int32
-	| esHead int32 QSTRING
-	| esHead int32 ':' int32 QSTRING
-	| esHead int32 ':' int32 ',' int32 QSTRING
-	| esHead int32 ',' int32 ':' int32 QSTRING
-	| esHead int32 ',' int32 ':' int32 ',' int32 QSTRING;
+	| esHead int32 QSTRING;
 
 /*  Manifest declarations  */
 fileDecl:
@@ -695,6 +691,7 @@ instr:
 	| instr_string 'bytearray' '(' bytes ')'
 	| instr_sig callConv type sigArgs
 	| instr_tok ownerType /* ownerType ::= memberRef | typeSpec */
+	| instr_tok int32
 	| instr_switch '(' labels ')'
 	| instr_switch '()';
 
@@ -787,6 +784,10 @@ nativeTypeElement:
 	| marshalType=SAFEARRAY variantType ',' compQstring
 	| marshalType=INT
 	| marshalType=UINT
+	| 'unsigned' unsignedMarshalType=INT8
+	| 'unsigned' unsignedMarshalType=INT16
+	| 'unsigned' unsignedMarshalType=INT32_
+	| 'unsigned' unsignedMarshalType=INT64_
 	| 'nested' marshalType=STRUCT
 	| marshalType=BYVALSTR
 	| ANSI marshalType=BSTR
@@ -915,6 +916,7 @@ secDecl:
 	| PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'
 	| PERMISSION secAction typeSpec
 	| PERMISSIONSET secAction '=' 'bytearray'? '(' bytes ')'
+	| PERMISSIONSET secAction 'bytearray' '(' bytes ')'
 	| PERMISSIONSET secAction compQstring
 	| PERMISSIONSET secAction '=' '{' secAttrSetBlob '}';
 
@@ -1379,7 +1381,7 @@ customAttrDecl:
 
 /* Assembly References */
 asmOrRefDecl:
-	'.publicKey' '=' '(' bytes ')'
+	'.publickey' '=' '(' bytes ')'
 	| '.ver' intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard
 	| '.locale' compQstring
 	| '.locale' '=' '(' bytes ')'
