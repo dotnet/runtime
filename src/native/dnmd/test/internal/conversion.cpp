@@ -253,7 +253,7 @@ TEST(InternalConversion, ReadOnlyConversionClonesDataAndBridgesIdentity)
     IMDInternalImport* alreadyWritable = nullptr;
     EXPECT_EQ(S_FALSE, ConvertDNMDInternalImport(writable.p, &alreadyWritable));
     EXPECT_EQ(writable.p, alreadyWritable);
-    EXPECT_EQ(E_NOTIMPL, writable->ApplyEditAndContinue(nullptr, 0, nullptr));
+    EXPECT_EQ(E_INVALIDARG, writable->ApplyEditAndContinue(nullptr, 0, nullptr));
 }
 
 TEST(InternalConversion, CompressedInternalReadDefaultsToReadOnly)

@@ -64,6 +64,11 @@ public:
     {
         return _inner.SetUpdateMode(mode);
     }
+
+    HRESULT ReplaceMetaData(mdhandle_ptr replacement, malloc_ptr<void> backing) override
+    {
+        return _inner.ReplaceMetaData(std::move(replacement), std::move(backing));
+    }
 };
 
 template<typename TImport, typename TEmit>

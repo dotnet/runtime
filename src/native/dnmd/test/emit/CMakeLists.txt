@@ -21,7 +21,11 @@ set(SOURCES
 set(HEADERS emit.hpp)
 
 add_executable(emit ${SOURCES} ${HEADERS})
+target_include_directories(emit PRIVATE "${CLR_SRC_NATIVE_DIR}/../coreclr/minipal")
 target_link_libraries(emit PRIVATE dnmd::interfaces_static gtest_main gmock)
+if (WIN32)
+    target_compile_definitions(emit PRIVATE COM_NO_WINDOWS_H NOMINMAX _CRT_SECURE_NO_WARNINGS)
+endif()
 
 if (DNMD_ENABLE_SANITIZERS)
     set(SANITIZER_SUPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../sanitizers")

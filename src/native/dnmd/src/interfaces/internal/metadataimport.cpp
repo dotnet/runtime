@@ -19,6 +19,8 @@ struct HCORENUMImplInPlaceDeleter
     void operator()(HCORENUMImpl* mem)
     {
         HCORENUMImpl::DestroyInAllocatedMemory(mem);
+        // VM enum holders call EnumClose even when initialization fails.
+        HCORENUMImpl::CreateDynamicEnumInAllocatedMemory(mem);
     }
 };
 
@@ -3165,8 +3167,90 @@ STDMETHODIMP InternalMetadataImportRO::ApplyEditAndContinue(
     UNREFERENCED_PARAMETER(pDeltaMD);
     UNREFERENCED_PARAMETER(cbDeltaMD);
     UNREFERENCED_PARAMETER(ppv);
-    // Requires Emit support
     return E_NOTIMPL;
+}
+
+STDMETHODIMP InternalMetadataImportRO::ApplyEditAndContinue(MDInternalRW* pDeltaMD)
+{
+    UNREFERENCED_PARAMETER(pDeltaMD);
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP InternalMetadataImportRO::EnumDeltaTokensInit(HENUMInternal* phEnum)
+{
+    UNREFERENCED_PARAMETER(phEnum);
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP InternalMetadataImportRW::ApplyEditAndContinue(
+    void* pDeltaMD,
+    ULONG cbDeltaMD,
+    IMDInternalImport** ppv)
+{
+    if (ppv == nullptr)
+        return E_INVALIDARG;
+    *ppv = nullptr;
+    if (pDeltaMD == nullptr || cbDeltaMD == 0)
+        return E_INVALIDARG;
+
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    HRESULT hr = GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser);
+    if (FAILED(hr))
+        return hr;
+
+    minipal::com_ptr<IMetaDataImport2> delta;
+    hr = dispenser->OpenScopeOnMemory(pDeltaMD, cbDeltaMD, ofReadOnly | ofCopyMemory,
+        IID_IMetaDataImport2, (IUnknown**)&delta);
+    if (FAILED(hr))
+        return hr;
+
+    minipal::com_ptr<IMetaDataEmit2> emitter;
+    hr = QueryInterface(IID_IMetaDataEmit2, (void**)&emitter);
+    if (FAILED(hr))
+        return hr;
+    hr = emitter->ApplyEditAndContinue(delta.p);
+    if (FAILED(hr))
+        return hr;
+
+    // As in the legacy importer, the result is the same non-owning interface.
+    *ppv = this;
+    return S_OK;
+}
+
+STDMETHODIMP InternalMetadataImportRW::EnumDeltaTokensInit(HENUMInternal* phEnum)
+{
+    if (phEnum == nullptr)
+        return E_INVALIDARG;
+
+    LOCK_INTERNAL_READ();
+    HCORENUMImpl* impl = ToHCORENUMImpl(phEnum);
+    HCORENUMImpl::CreateDynamicEnumInAllocatedMemory(impl);
+    HCORENUMImplInPlace_ptr cleanup{ impl };
+
+    mdcursor_t log;
+    uint32_t count;
+    if (md_create_cursor(MetaData(), mdtid_ENCLog, &log, &count))
+    {
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            uint32_t token, operation;
+            if (!md_get_column_value_as_constant(log, mdtENCLog_Token, &token)
+                || !md_get_column_value_as_constant(log, mdtENCLog_Op, &operation))
+                return CLDB_E_FILE_CORRUPT;
+
+            if ((token & 0x80000000u) == 0 && operation == 0)
+            {
+                HRESULT hr = HCORENUMImpl::AddToDynamicEnum(*impl, token);
+                if (FAILED(hr))
+                    return hr;
+            }
+            if (i + 1 < count && !md_cursor_next(&log))
+                return CLDB_E_FILE_CORRUPT;
+        }
+    }
+
+    cleanup.release();
+    return S_OK;
 }
 
 STDMETHODIMP InternalMetadataImportRW::SetUserContextData(IUnknown* context)

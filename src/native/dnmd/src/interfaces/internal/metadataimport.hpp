@@ -15,7 +15,7 @@ class IMetaModelCommon;
 #include "dnmdowner.hpp"
 #include "pal.hpp"
 
-class InternalMetadataImportRO : public TearOffBase<IMDInternalImport>
+class InternalMetadataImportRO : public TearOffBase<IMDInternalImportENC>
 {
     mdhandle_view m_handle;
     pal::ReadWriteLock* m_lock;
@@ -715,6 +715,9 @@ public: // IMDInternalImport
         ULONG       cbDeltaMD,              // [IN] length of pData
         IMDInternalImport **ppv) override;      // [OUT] the resulting metadata interface
 
+    STDMETHOD(ApplyEditAndContinue)(MDInternalRW* pDeltaMD) override;
+    STDMETHOD(EnumDeltaTokensInit)(HENUMInternal* phEnum) override;
+
     //**********************************
     // Generics APIs
     //**********************************
@@ -766,8 +769,28 @@ class InternalMetadataImportRW final : public InternalMetadataImportRO
 {
     minipal::com_ptr<IUnknown> _userContext;
     std::mutex _contextMutex;
+protected:
+    bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
+    {
+        if (InternalMetadataImportRO::TryGetInterfaceOnThis(riid, ppvObject))
+            return true;
+        if (riid == IID_IMDInternalImportENC)
+        {
+            *ppvObject = static_cast<IMDInternalImportENC*>(this);
+            return true;
+        }
+        return false;
+    }
+
 public:
     using InternalMetadataImportRO::InternalMetadataImportRO;
+
+    STDMETHOD(ApplyEditAndContinue)(
+        void* pDeltaMD,
+        ULONG cbDeltaMD,
+        IMDInternalImport** ppv) override;
+
+    STDMETHOD(EnumDeltaTokensInit)(HENUMInternal* phEnum) override;
 
     STDMETHOD(SetUserContextData)(IUnknown* context) override;
 };

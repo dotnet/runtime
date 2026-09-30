@@ -1717,6 +1717,7 @@ HRESULT ImportReferenceToTypeDefOrRefOrSpec(
             if (!md_set_column_value_as_blob(typeSpec, mdtTypeSpec_Signature, importedSignature.data(), (uint32_t)importedSignature.size()))
                 return E_FAIL;
 
+            onRowAdded(typeSpec);
             if (!md_cursor_to_token(typeSpec, importedToken))
                 return E_FAIL;
 

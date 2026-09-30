@@ -32,6 +32,11 @@ class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyE
         mdTypeDef tdEncloser,
         mdTypeDef *ptd);
 
+    HRESULT LogToken(mdToken token, uint32_t operation = 0);
+    HRESULT LogRow(mdcursor_t row, uint32_t operation = 0);
+    HRESULT AddMethodSemantic(mdcursor_t parent, CorMethodSemanticsAttr semantic, mdMethodDef method);
+    HRESULT RemoveSemantics(mdToken parent, CorMethodSemanticsAttr semantic);
+
 protected:
     bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
     {
