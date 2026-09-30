@@ -1028,7 +1028,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     if (varTypeIsSmall(varDsc) && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))
     {
         // 32 bit targets can require a cast on trees that look like cheap address
-        // trees, since TYP_INT  is used both for address expressions and upcasts
+        // trees, since TYP_INT is used both for address expressions and upcasts
         // from small types. Bail here instead of passing a CAST node to fgForwardSubMultiUse
         if (multiUse)
         {
