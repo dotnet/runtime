@@ -89,6 +89,10 @@ static bool set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, 
         {
             if (!update_referenced_type_system_table_row_count(acxt.table->cxt, table_id, table_row))
                 return false;
+
+            // Increasing the referenced row count can resize the current table.
+            if (!create_access_context(&c, col_idx, true, &acxt))
+                return false;
         }
     }
 #endif
@@ -313,6 +317,10 @@ bool md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, char const* 
     if (heap_offset == 0 && str[0] != '\0')
         return false;
 
+    // Growing the heap can widen its index columns and relocate this row.
+    if (!create_access_context(&c, col_idx, true, &acxt))
+        return false;
+
     if (!write_column_data(&acxt, heap_offset))
         return false;
 
@@ -337,6 +345,9 @@ bool md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint8_t cons
     uint32_t heap_offset = add_to_blob_heap(acxt.table->cxt, blob, blob_len);
 
     if (heap_offset == 0 && blob_len > 0)
+        return false;
+
+    if (!create_access_context(&c, col_idx, true, &acxt))
         return false;
 
     if (!write_column_data(&acxt, heap_offset))
@@ -384,6 +395,9 @@ bool md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, char16
     uint32_t index = add_to_user_string_heap(CursorTable(&c)->cxt, userstring);
 
     if (index == 0 && userstring[0] != 0)
+        return false;
+
+    if (!create_access_context(&c, col_idx, true, &acxt))
         return false;
 
     if (!write_column_data(&acxt, index))

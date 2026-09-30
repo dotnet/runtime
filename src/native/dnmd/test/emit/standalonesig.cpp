@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "emit.hpp"
 #include <array>
 #include <chrono>
@@ -60,6 +63,38 @@ TEST(StandaloneSig, Define)
     ULONG sigBlobLength;
     ASSERT_EQ(S_OK, import->GetSigFromToken(sig, &sigBlob, &sigBlobLength));
     EXPECT_THAT(std::vector<uint8_t>(sigBlob, sigBlob + sigBlobLength), testing::ContainerEq(std::vector<uint8_t>(signature.begin(), signature.end())));
+}
+
+TEST(StandaloneSig, BlobHeapGrowsToFourByteIndices)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+
+    std::array<uint8_t, 2> firstSignature = { IMAGE_CEE_CS_CALLCONV_FIELD, ELEMENT_TYPE_I4 };
+    std::vector<uint8_t> largeSignature(65500, ELEMENT_TYPE_I4);
+    largeSignature[0] = IMAGE_CEE_CS_CALLCONV_LOCAL_SIG;
+    std::array<uint8_t, 48> lastSignature{};
+    lastSignature[0] = IMAGE_CEE_CS_CALLCONV_LOCAL_SIG;
+    lastSignature[1] = 46;
+
+    mdSignature first, large, last;
+    ASSERT_EQ(S_OK, emit->GetTokenFromSig(firstSignature.data(), (ULONG)firstSignature.size(), &first));
+    ASSERT_EQ(S_OK, emit->GetTokenFromSig(largeSignature.data(), (ULONG)largeSignature.size(), &large));
+    ASSERT_EQ(S_OK, emit->GetTokenFromSig(lastSignature.data(), (ULONG)lastSignature.size(), &last));
+
+    minipal::com_ptr<IMetaDataImport> import;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
+    PCCOR_SIGNATURE actual;
+    ULONG length;
+    ASSERT_EQ(S_OK, import->GetSigFromToken(first, &actual, &length));
+    ASSERT_EQ(firstSignature.size(), length);
+    EXPECT_THAT(std::vector<uint8_t>(actual, actual + length), testing::ElementsAreArray(firstSignature));
+    ASSERT_EQ(S_OK, import->GetSigFromToken(large, &actual, &length));
+    ASSERT_EQ(largeSignature.size(), length);
+    EXPECT_THAT(std::vector<uint8_t>(actual, actual + length), testing::ElementsAreArray(largeSignature));
+    ASSERT_EQ(S_OK, import->GetSigFromToken(last, &actual, &length));
+    ASSERT_EQ(lastSignature.size(), length);
+    EXPECT_THAT(std::vector<uint8_t>(actual, actual + length), testing::ElementsAreArray(lastSignature));
 }
 
 TEST(StandaloneSig, TranslateAcrossThreadSafeScopes)
