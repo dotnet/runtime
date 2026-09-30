@@ -1955,13 +1955,37 @@ int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint
 #endif // __sun
 }
 
+static ssize_t PRead(int fd, void* buffer, size_t count, off_t offset)
+{
+#if defined(TARGET_WASI)
+    // wasi-libc's wasip2 pread in wasi-sdk 33 and older consumes the result of descriptor.read
+    // before checking whether it failed. On failure it memcpy's from and frees an uninitialized
+    // pointer and length, which corrupts linear memory or traps (WebAssembly/wasi-libc#861, fixed
+    // in wasi-sdk 34). Reject descriptors that weren't opened for reading up front, reporting the
+    // same EBADF that pread would.
+    // TODO-WASI: Remove once the build uses wasi-sdk 34 or newer (https://github.com/dotnet/runtime/issues/134957).
+    int flags = fcntl(fd, F_GETFL);
+    if (flags != -1)
+    {
+        int accessMode = flags & O_ACCMODE;
+        if (accessMode != O_RDONLY && accessMode != O_RDWR)
+        {
+            errno = EBADF;
+            return -1;
+        }
+    }
+#endif // TARGET_WASI
+
+    return pread(fd, buffer, count, offset);
+}
+
 int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset)
 {
     assert(buffer != NULL);
     assert(bufferSize >= 0);
 
     ssize_t count;
-    while ((count = pread(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
+    while ((count = PRead(ToFileDescriptor(fd), buffer, (uint32_t)bufferSize, (off_t)fileOffset)) < 0 && errno == EINTR);
 
     assert(count >= -1 && count <= bufferSize);
     return (int32_t)count;
@@ -2078,7 +2102,7 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
     for (int i = 0; i < vectorCount; i++)
     {
         IOVector vector = vectors[i];
-        while ((current = pread(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
+        while ((current = PRead(fileDescriptor, vector.Base, vector.Count, (off_t)(fileOffset + count))) < 0 && errno == EINTR);
 
         if (current < 0)
         {
