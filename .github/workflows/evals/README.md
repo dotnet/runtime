@@ -43,14 +43,16 @@ exist and scores workflow output against them, is deferred.
 
 - **`ci-failure-scan`** has the agent query the anonymous dnceng-public AzDO REST
   API for a currently-failing outer-loop build on `main`, extract a real error
-  signature, check for an existing KBE, and emit the create-issue safe-output at
-  `out/kbe.md`. Graders check the static Known Build Error format, meaning the
-  title, exactly `Known Build Error` plus one blocking label, the three sections,
-  collapsed authoring guidance, a single json signature, the collapsed
-  workflow-owned positive match-count metadata, and no test-muting. They also check
-  `tool-calls` evidence that it actually fetched a real build, searched existing
-  KBEs through the wrapper, and inspected returned candidates through
-  `issue_read`.
+  signature, check for an existing KBE, and either emit the create-issue
+  safe-output at `out/kbe.md` or write the exact no-op result
+  `Result: No new Known Build Error` when the live scan has nothing actionable
+  to file. Graders check the static Known Build Error format when a KBE is
+  emitted: the title, exactly `Known Build Error` plus one blocking label, the
+  three sections, collapsed authoring guidance, a single json signature, the
+  collapsed workflow-owned positive match-count metadata, and no test-muting.
+  They also check `tool-calls` evidence that it actually fetched a real build,
+  searched existing KBEs through the wrapper, and inspected returned candidates
+  through `issue_read`.
 
 - **`ci-failure-fix`** runs the workflow's deterministic scanner-author filter
   in trusted eval setup before the agent starts. The agent then reads a

@@ -1,5 +1,5 @@
 name: ci-failure-scan-eval
-description: Dynamic gate for the CI failure scanner's safe-output, run with the maintainer /ci-scan eval command. It runs the scanner against a live outer-loop failure it discovers itself, then checks the emitted Known Build Error against the static KBE format and that it actually grounded the KBE in a real failing build.
+description: Dynamic gate for the CI failure scanner's safe-output, run with the maintainer /ci-scan eval command. It runs the scanner against a live outer-loop failure it discovers itself, then checks either the emitted Known Build Error or an explicit no-new-KBE result, and verifies that it actually grounded the decision in a real failing build.
 
 defaults:
   judge_model: claude-opus-4.8
@@ -50,7 +50,9 @@ stimuli:
       2. Open that build's timeline at `/_apis/build/builds/{id}/timeline?api-version=7.1`, pick a failed leg, and read its log at `/_apis/build/builds/{id}/logs/{logId}?api-version=7.1` to extract a concrete error or assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count.
       3. Before filing, check whether an equivalent KBE already exists so you would not duplicate it. The eval runner does not launch workflow-frontmatter MCP servers, so invoke the trusted CLI harness exposed through `KBE_SEARCH_HELPER` with `node "$KBE_SEARCH_HELPER" '<query>'` for `in:title "[ci-scan]"` and for your signature text. For every candidate returned by either query, call the GitHub `issue_read` tool with `owner: dotnet`, `repo: runtime`, and `method: get` before deciding whether it matches. Do not use any other shell issue search or the built-in `search_issues` tool. Assume you would file only if every readable candidate is unrelated; fail closed if a candidate cannot be read.
 
-      Then **emit the create-issue safe-output you would file, as a single markdown document at `./out/kbe.md`**, in exactly this shape.
+      If every actionable failure is already represented by an existing KBE, or no actionable failure can be identified, write exactly `Result: No new Known Build Error` to `./out/kbe.md` and do not emit a create-issue request.
+
+      Otherwise, **emit the create-issue safe-output you would file, as a single markdown document at `./out/kbe.md`**, in exactly this shape.
 
       - First line is `Title: [ci-scan] <one stable failure shape>`, an assertion string or test family with no build numbers, dates, queue or machine names, or run IDs.
       - Second line is `Labels: Known Build Error, <blocking-clean-ci|blocking-clean-ci-optional>`. Pick exactly one blocking label. The JIT, GC, and PGO stress pipelines are `optional-ci` and use `blocking-clean-ci-optional`, and the required gate uses `blocking-clean-ci`.
@@ -61,7 +63,7 @@ stimuli:
 
     rubric:
       - |
-       The emitted `./out/kbe.md` conforms to the static Known Build Error format. It has a `[ci-scan] ` title naming exactly one failure shape with no run-specific IDs, the `Known Build Error` label plus exactly one of `blocking-clean-ci` or `blocking-clean-ci-optional`, the three body sections, a collapsed `KBE authoring guidance (ci-failure-scan)` block, and exactly one fenced json block with all four keys where exactly one of ErrorMessage or ErrorPattern is a non-empty specific substring rather than a bare identifier and the other is `""`. The Build Information section cites a concrete real build id. After the JSON, it has a collapsed `Agentic workflow metadata (ci-failure-scan)` block identifying the `kbe-verification` artifact and a positive verified match count.
+       The emitted `./out/kbe.md` is either exactly `Result: No new Known Build Error` when the live scan has no actionable new KBE, or it conforms to the static Known Build Error format. A KBE has a `[ci-scan] ` title naming exactly one failure shape with no run-specific IDs, the `Known Build Error` label plus exactly one of `blocking-clean-ci` or `blocking-clean-ci-optional`, the three body sections, a collapsed `KBE authoring guidance (ci-failure-scan)` block, and exactly one fenced json block with all four keys where exactly one of ErrorMessage or ErrorPattern is a non-empty specific substring rather than a bare identifier and the other is `""`. The Build Information section cites a concrete real build id. After the JSON, it has a collapsed `Agentic workflow metadata (ci-failure-scan)` block identifying the `kbe-verification` artifact and a positive verified match count.
       - |
        The trajectory invokes only the `search-kbe-issues` CLI harness for issue searches, parses every candidate returned by both required queries, and successfully calls `issue_read` for every returned issue number before deciding that no candidate matches. If any candidate cannot be read, the run fails closed instead of emitting `./out/kbe.md`.
 
@@ -69,32 +71,32 @@ stimuli:
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?im)^Title:\s*\[ci-scan\]\s+\S'
+          pattern: '(?ims)^(?:\s*Result:\s*No new Known Build Error\s*$|Title:\s*\[ci-scan\]\s+\S)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?im)^Labels:\s*Known Build Error,\s*blocking-clean-ci(-optional)?\s*$'
+          pattern: '(?ims)^(?:\s*Result:\s*No new Known Build Error\s*$|Labels:\s*Known Build Error,\s*blocking-clean-ci(-optional)?\s*$)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?s)##\s+Build Information.*##\s+Error Details.*##\s+Error Message'
+          pattern: '(?ims)(?:^\s*Result:\s*No new Known Build Error\s*$|##\s+Build Information.*##\s+Error Details.*##\s+Error Message)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?s)```json\s*\{.*"ErrorMessage".*"ErrorPattern".*"BuildRetry".*"ExcludeConsoleLog".*\}\s*```'
+          pattern: '(?ims)(?:^\s*Result:\s*No new Known Build Error\s*$|```json\s*\{.*"ErrorMessage".*"ErrorPattern".*"BuildRetry".*"ExcludeConsoleLog".*\}\s*```)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?s)<details>\s*<summary>KBE authoring guidance \(ci-failure-scan\)</summary>.*?</details>'
+          pattern: '(?ims)(?:^\s*Result:\s*No new Known Build Error\s*$|<details>\s*<summary>KBE authoring guidance \(ci-failure-scan\)</summary>.*?</details>)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?s)<details>\s*<summary>Agentic workflow metadata \(ci-failure-scan\)</summary>\s*Workflow artifact:\s*ci-failure-scan\s*Artifact kind:\s*kbe-verification\s*Verified match count:\s*[1-9]\d*\s+hits in failure\.log\s*</details>'
+          pattern: '(?ims)(?:^\s*Result:\s*No new Known Build Error\s*$|<details>\s*<summary>Agentic workflow metadata \(ci-failure-scan\)</summary>\s*Workflow artifact:\s*ci-failure-scan\s*Artifact kind:\s*kbe-verification\s*Verified match count:\s*[1-9]\d*\s+hits in failure\.log\s*</details>)'
 
       - type: file-not-matches
         config:
