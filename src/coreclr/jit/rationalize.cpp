@@ -2375,7 +2375,7 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
 {
     GenTree* node;
 
-    // The below is a loop, because rewriting an intrinsic or HW intrinsic as a user call 
+    // The below is a loop, because rewriting an intrinsic or HW intrinsic as a user call
     // may replace the node with another node which also needs the same pre-order processing.
     // Continue until no replacement is made.
     do
@@ -2401,7 +2401,6 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
     } while (*use != node);
 
 #ifdef TARGET_ARM64
-    node = *use;
     if (node->OperIs(GT_SUB))
     {
         m_rationalizer.RewriteSubLshDiv(use);
