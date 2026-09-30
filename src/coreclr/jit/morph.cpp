@@ -13308,6 +13308,20 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             bool       foundVal            = false;
             bool       profileInconsistent = false;
 
+            if (block->hasProfileWeight())
+            {
+                // Use unique successor edges, as duplicate jump table entries share an edge.
+                for (FlowEdge* const succEdge : block->SuccEdges())
+                {
+                    BasicBlock* const targetBlock = succEdge->getDestinationBlock();
+                    if (targetBlock->hasProfileWeight())
+                    {
+                        targetBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+                        profileInconsistent |= (targetBlock->NumSucc() > 0);
+                    }
+                }
+            }
+
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
                 FlowEdge* curEdge = *jumpTab;
@@ -13315,11 +13329,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
 
                 BasicBlock* const targetBlock = curEdge->getDestinationBlock();
-                if (block->hasProfileWeight() && targetBlock->hasProfileWeight())
-                {
-                    targetBlock->decreaseBBProfileWeight(curEdge->getLikelyWeight());
-                    profileInconsistent |= (targetBlock->NumSucc() > 0);
-                }
 
                 // If val matches switchVal or we are at the last entry and
                 // we never found the switch value then set the new jump dest
