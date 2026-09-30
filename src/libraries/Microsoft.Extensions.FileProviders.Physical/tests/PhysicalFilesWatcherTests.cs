@@ -737,7 +737,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Theory]
         [MemberData(nameof(WatcherModeData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task WildcardToken_DoesNotThrow_WhenRootIsMissing(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -768,7 +767,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Theory]
         [MemberData(nameof(WatcherModeData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task WildcardToken_FiresWhenFileCreatedInMissingPrefixDirectory(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());

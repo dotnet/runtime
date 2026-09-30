@@ -37,7 +37,6 @@ namespace System.Text.Json.Serialization.Tests
         };
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_DistinguishesObjectProperties()
         {
             PetUnion? dog = await Serializer.DeserializeWrapper<PetUnion>("""{"Name":"Rex","Breed":"Labrador"}""", _options);
@@ -59,7 +58,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("true", typeof(bool))]
         [InlineData("[1,2,3]", typeof(List<int>))]
         [InlineData("""{"Name":"Rex","Breed":"Labrador"}""", typeof(Dog))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_DistinguishesJsonValueTypes(string json, Type expectedType)
         {
             UniqueShapeUnion? result = await Serializer.DeserializeWrapper<UniqueShapeUnion>(json, _options);
@@ -112,7 +110,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_UsesJsonTypeInfoPropertyNames()
         {
             RenamedPropertyUnion? result = await Serializer.DeserializeWrapper<RenamedPropertyUnion>("""{"kind":"special"}""", _options);
@@ -122,7 +119,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_UsesCaseInsensitivePropertyNames()
         {
             PetUnion? dog = await Serializer.DeserializeWrapper<PetUnion>("""{"\u006eAME":"Rex","breed":"Labrador"}""", _caseInsensitiveOptions);
@@ -137,7 +133,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public void StructuralClassifier_SegmentedEscapedPropertyNameIsClassified()
         {
             byte[] json = System.Text.Encoding.UTF8.GetBytes(
@@ -163,7 +158,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_LongEscapedPropertyNameIsClassified()
         {
             string escapedPropertyName = "\\u0061" + LongPropertyName.Substring(1);
@@ -327,7 +321,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_ExtensionDataOverridesGlobalDisallowUnmappedMembers()
         {
             ExtensionDataUnion? result = await Serializer.DeserializeWrapper<ExtensionDataUnion>(
@@ -351,7 +344,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"Name":"Shared"}""")]
         [InlineData("{}")]
         [InlineData("true")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_AmbiguousOrUnsupportedPayloadThrows(string json)
         {
             await Assert.ThrowsAsync<JsonException>(
@@ -362,7 +354,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("{\"Breed\":")]
         [InlineData("{\"Breed\":[")]
         [InlineData("{\"Breed\":\"Labrador\"")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_IncompletePayloadThrowsJsonException(string json)
         {
             await Assert.ThrowsAsync<JsonException>(
@@ -373,7 +364,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("{\"Breed\":")]
         [InlineData("{\"Breed\":[")]
         [InlineData("{\"Breed\":\"Labrador\"")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public void StructuralClassifier_NonFinalPayloadThrowsJsonException(string json)
         {
             JsonTypeInfo<PetUnion> typeInfo = Serializer.GetTypeInfo<PetUnion>(_options);
@@ -456,7 +446,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"Sku":"A123","Customer":"Contoso","Quantity":2}""", typeof(Order))]
         [InlineData("""{"Quantity":2}""", typeof(Quote))]
         [InlineData("{}", typeof(Quote))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_RequiredPropertiesDisqualifyCandidate(string json, Type expectedType)
         {
             RequiredPropertyUnion? result = await Serializer.DeserializeWrapper<RequiredPropertyUnion>(json, _options);
@@ -468,7 +457,6 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData("""{"Sku":"A123","Quantity":2}""")]
         [InlineData("""{"Sku":"A123","Sku":"B456","Quantity":2}""")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_RequiredPropertyEvidenceCannotFallBackToAnotherCase(string json)
         {
             await Assert.ThrowsAsync<JsonException>(
@@ -478,7 +466,6 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData("""{"Name":"Misty"}""", typeof(IdenticalDog))]
         [InlineData("""{"Age":5}""", typeof(IdenticalCat))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_RequiredPropertiesDistinguishIdenticalNameSets(string json, Type expectedType)
         {
             IdenticalPetUnion? result = await Serializer.DeserializeWrapper<IdenticalPetUnion>(json, _options);
@@ -488,7 +475,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_IdenticalNameSetsRemainAmbiguousWhenAllRequiredPropertiesArePresent()
         {
             await Assert.ThrowsAsync<JsonException>(
@@ -498,7 +484,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_UnmappedMemberHandlingDisallowDisqualifiesCandidate()
         {
             UnmappedMemberUnion? loose = await Serializer.DeserializeWrapper<UnmappedMemberUnion>("""{"Id":1,"Extra":"x"}""", _options);
@@ -520,7 +505,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"Common":0,"GroupOne":1,"BetaOnly":2}""", typeof(SubtractionBeta))]
         [InlineData("""{"Common":0,"GroupTwo":1,"GammaOnly":2}""", typeof(SubtractionGamma))]
         [InlineData("""{"Common":0,"GroupTwo":1,"DeltaOnly":2}""", typeof(SubtractionDelta))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_SubtractsCandidatesAcrossMultipleProperties(
             string json,
             Type expectedType)
@@ -537,7 +521,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"GroupOne":1,"Unknown":0}""", typeof(SubtractionAlpha))]
         [InlineData("""{"Unknown":0,"GroupTwo":1}""", typeof(SubtractionGamma))]
         [InlineData("""{"GroupTwo":1,"Unknown":0}""", typeof(SubtractionGamma))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_UnknownPropertiesSubtractStrictCandidates(
             string json,
             Type expectedType)
@@ -555,7 +538,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"GroupOne":1}""")]
         [InlineData("""{"GroupTwo":1}""")]
         [InlineData("""{"AlphaOnly":1,"GammaOnly":2}""")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_SubtractionCanProduceNoUniqueCandidate(string json)
         {
             await Assert.ThrowsAsync<JsonException>(
@@ -565,7 +547,6 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData("""{"Name":"Misty","Age":5}""", typeof(RequiredOverlapA))]
         [InlineData("""{"Name":"Misty","Breed":"Siamese"}""", typeof(RequiredOverlapB))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_OverlappingRequiredPropertySetsRemainReachable(
             string json,
             Type expectedType)
@@ -581,7 +562,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"AOnly":1,"B1":4,"B2":5}""")]
         [InlineData("""{"B1":4,"B2":5,"AOnly":1}""")]
         [InlineData("""{"AOnly":1,"AOnly":2,"AOnly":3,"B1":4,"B2":5}""")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_ConflictingPropertyEvidenceThrows(string json)
         {
             await Assert.ThrowsAsync<JsonException>(
@@ -589,7 +569,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_TracksMoreThan64PropertyNames()
         {
             LargePropertyUnion? result = await Serializer.DeserializeWrapper<LargePropertyUnion>(
@@ -606,7 +585,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_SupportsMoreThanEightObjectCases()
         {
             ManyObjectCasesUnion? result = await Serializer.DeserializeWrapper<ManyObjectCasesUnion>(
@@ -618,7 +596,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_SupportsMoreThan64ObjectCases()
         {
             LargeObjectCaseUnion? result =
@@ -636,7 +613,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task StructuralClassifier_SupportsSelfReferentialCaseTypes()
         {
             TreeUnion? tree = await Serializer.DeserializeWrapper<TreeUnion>("""{"Value":1,"Left":{"Value":2,"Left":null,"Right":null},"Right":null}""", _options);

@@ -29,7 +29,6 @@ namespace Tests.System.Security
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public void GetNormalizedStrongNameHash()
         {
             // Validating that we match the exact hash the .NET Framework IsolatedStorage implementation would create.
@@ -38,7 +37,6 @@ namespace Tests.System.Security
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public void GetNormalizedUrlHash()
         {
             // Validating that we match the exact hash the .NET Framework IsolatedStorage implementation would create.

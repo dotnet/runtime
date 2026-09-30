@@ -299,7 +299,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public void DserializeJsonElementWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
         {
             AssertDuplicateProperty<JsonElement>(jsonPayload, isValidJson);
@@ -307,7 +306,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public void DserializeJsonElementArrayWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
         {
             jsonPayload = $"[{jsonPayload}]";
@@ -316,7 +314,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void DserializeJsonElementDeeplyNestedWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
         {
             jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
@@ -325,7 +322,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public void DserializeJsonElementClassWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
         {
             jsonPayload = $$"""{"Object":{{jsonPayload}}}""";

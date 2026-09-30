@@ -1546,7 +1546,6 @@ namespace Microsoft.Extensions.FileProviders
 
         [Theory]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public Task UsePollingFileWatcher_UseActivePolling_HasChanged_Wildcard(bool useWildcard) => UsePollingFileWatcher_UseActivePolling_HasChangedCore(useWildcard);
 
         private async Task UsePollingFileWatcher_UseActivePolling_HasChangedCore(bool useWildcard)
@@ -1581,7 +1580,6 @@ namespace Microsoft.Extensions.FileProviders
 
         [Theory]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted_Wildcard(bool useWildcard) => UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeletedCore(useWildcard);
 
         private async Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeletedCore(bool useWildcard)

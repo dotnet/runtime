@@ -56,7 +56,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void SomeNonAsciiInput()
         {
             using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(256);

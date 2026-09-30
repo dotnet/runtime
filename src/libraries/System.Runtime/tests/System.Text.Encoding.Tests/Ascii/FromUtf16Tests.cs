@@ -54,7 +54,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void SomeNonAsciiInput()
         {
             using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(256);
