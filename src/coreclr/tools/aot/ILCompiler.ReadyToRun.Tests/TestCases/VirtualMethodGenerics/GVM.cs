@@ -125,7 +125,7 @@ interface ITest8
 
 struct Test8 : ITest8
 {
-    public int Test8Method<T>() => 42;
+    public int Test8Method<T>() => typeof(T) == typeof(int) ? 42 : 0;
 }
 
 class GVMTests

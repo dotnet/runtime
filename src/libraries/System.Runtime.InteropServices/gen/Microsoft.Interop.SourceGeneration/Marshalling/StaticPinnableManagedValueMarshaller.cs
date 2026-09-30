@@ -1,16 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-
 namespace Microsoft.Interop
 {
-    public sealed class StaticPinnableManagedValueMarshaller(IBoundMarshallingGenerator innerMarshallingGenerator, TypeSyntax getPinnableReferenceType) : IBoundMarshallingGenerator
+    public sealed class StaticPinnableManagedValueMarshaller(IBoundMarshallingGenerator innerMarshallingGenerator, string getPinnableReferenceType) : IBoundMarshallingGenerator
     {
         public TypePositionInfo TypeInfo => innerMarshallingGenerator.TypeInfo;
 
@@ -26,9 +19,7 @@ namespace Microsoft.Interop
             {
                 if (IsPinningPathSupported(CodeContext))
                 {
-                    if (NativeType.Syntax is PointerTypeSyntax pointerType
-                        && pointerType.ElementType is PredefinedTypeSyntax predefinedType
-                        && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword))
+                    if (NativeType is PointerTypeInfo { IsFunctionPointer: false, FullTypeName: "void*" })
                     {
                         return Interop.ValueBoundaryBehavior.NativeIdentifier;
                     }
@@ -41,14 +32,15 @@ namespace Microsoft.Interop
             }
         }
 
-        public IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
+        public void Generate(IndentedTextWriter writer, StubIdentifierContext context)
         {
             if (IsPinningPathSupported(CodeContext))
             {
-                return GeneratePinningPath(context);
+                GeneratePinningPath(writer, context);
+                return;
             }
 
-            return innerMarshallingGenerator.Generate(context);
+            innerMarshallingGenerator.Generate(writer, context);
         }
 
         public bool UsesNativeIdentifier
@@ -69,30 +61,13 @@ namespace Microsoft.Interop
             return context.SingleFrameSpansNativeContext && !TypeInfo.IsByRef && !context.IsInStubReturnPosition(TypeInfo);
         }
 
-        private IEnumerable<StatementSyntax> GeneratePinningPath(StubIdentifierContext context)
+        private void GeneratePinningPath(IndentedTextWriter writer, StubIdentifierContext context)
         {
             if (context.CurrentStage == StubIdentifierContext.Stage.Pin)
             {
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(innerMarshallingGenerator.TypeInfo);
 
-                // fixed (void* <nativeIdentifier> = &<getPinnableReferenceType>.GetPinnableReference(<managedIdentifier>))
-                yield return FixedStatement(
-                    VariableDeclaration(
-                        PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
-                        SingletonSeparatedList(
-                            VariableDeclarator(Identifier(nativeIdentifier))
-                                .WithInitializer(EqualsValueClause(
-                                    PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                    InvocationExpression(
-                                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                            getPinnableReferenceType,
-                                            IdentifierName(ShapeMemberNames.GetPinnableReference)),
-                                        ArgumentList(SingletonSeparatedList(
-                                            Argument(IdentifierName(managedIdentifier))))))
-                                ))
-                        )
-                    ),
-                    EmptyStatement());
+                writer.WriteLine($"fixed (void* {nativeIdentifier} = &{getPinnableReferenceType}.{ShapeMemberNames.GetPinnableReference}({managedIdentifier}))");
             }
         }
 

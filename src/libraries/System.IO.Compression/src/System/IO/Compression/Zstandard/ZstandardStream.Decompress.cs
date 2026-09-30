@@ -436,7 +436,7 @@ namespace System.IO.Compression
             {
                 // Rewind the stream to the exact end of the compressed data
                 stream.Seek(-unconsumedBytes, SeekOrigin.Current);
-                _buffer.Discard(unconsumedBytes);
+                _buffer.DiscardAll();
             }
         }
 

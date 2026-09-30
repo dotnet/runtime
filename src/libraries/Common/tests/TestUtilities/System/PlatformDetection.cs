@@ -86,6 +86,10 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
+        // Test expectation for floating-point operations, not a platform-wide guarantee.
+        // Bitcasts and other explicitly bit-preserving operations should still be tested exactly.
+        public static bool IsNaNPayloadPreservationExpected => !IsRiscV64Process && !IsWasm;
+
         private static volatile int s_isPrivilegedProcess = -1;
         public static bool IsPrivilegedProcess
         {
@@ -276,6 +280,7 @@ namespace System
         public static bool IsSingleFile => !HasAssemblyFiles;
 
         public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+        public static bool IsWasmReadyToRun => IsWasm && IsReadyToRunCompiled;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported

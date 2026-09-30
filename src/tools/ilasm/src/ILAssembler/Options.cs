@@ -61,9 +61,14 @@ namespace ILAssembler
         public CorFlags? CorFlags { get; set; }
 
         /// <summary>
-        /// Target machine type (x64, arm, arm64).
+        /// Target machine type (x64, arm64).
         /// </summary>
         public Machine? Machine { get; set; }
+
+        /// <summary>
+        /// Produce a DLL image instead of an executable.
+        /// </summary>
+        public bool Dll { get; set; }
 
         /// <summary>
         /// Create an AppContainer exe or dll.
@@ -124,14 +129,19 @@ namespace ILAssembler
         /// <summary>
         /// Optimize long instructions to short.
         /// </summary>
-        /// <remarks>TODO: Not yet implemented - accepted for CLI compatibility.</remarks>
+        /// <remarks>Not yet implemented; accepted for CLI compatibility with native ilasm.</remarks>
         public bool Optimize { get; set; }
 
         /// <summary>
         /// Fold identical method bodies into one.
         /// </summary>
-        /// <remarks>TODO: Not yet implemented - accepted for CLI compatibility.</remarks>
+        /// <remarks>Not yet implemented; accepted for CLI compatibility with native ilasm.</remarks>
         public bool Fold { get; set; }
+
+        /// <summary>
+        /// Output file name (filename only, no directory). Used as default module name when no .module directive is present.
+        /// </summary>
+        public string? OutputFileName { get; set; }
 
         /// <summary>
         /// Try to create output file despite errors (results may be invalid).

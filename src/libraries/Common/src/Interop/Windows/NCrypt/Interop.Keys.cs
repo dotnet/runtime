@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -72,12 +73,22 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct PBE_PARAMS
+        internal struct PBE_PARAMS
         {
             internal const int RgbSaltSize = 8;
 
             internal CRYPT_PKCS12_PBE_PARAMS Params;
-            internal fixed byte rgbSalt[RgbSaltSize];
+#if NET
+            internal SaltBuffer rgbSalt;
+
+            [InlineArray(RgbSaltSize)]
+            internal struct SaltBuffer
+            {
+                private byte _element0;
+            }
+#else
+            internal unsafe fixed byte rgbSalt[RgbSaltSize];
+#endif
         }
     }
 }

@@ -126,6 +126,35 @@ public unsafe class IXCLRDataProcessTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void ModuleGetVersionId(MockTarget.Architecture arch)
+    {
+        System.Guid expected = new("0f389ec2-bdb0-4487-b3e1-b9a749fa7bdd");
+        byte[] metadataBytes = BuildMethodDefinitionMetadata(expected);
+        fixed (byte* metadata = metadataBytes)
+        {
+            MetadataReader reader = new(metadata, metadataBytes.Length);
+            ModuleHandle moduleHandle = new(new TargetPointer(0x2000));
+
+            Mock<ILoader> loader = new(MockBehavior.Strict);
+            loader.Setup(l => l.GetModuleHandleFromModulePtr(moduleHandle.Address)).Returns(moduleHandle);
+
+            Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
+            ecmaMetadata.Setup(e => e.GetMetadata(moduleHandle)).Returns(reader);
+
+            TestPlaceholderTarget.Builder builder = new(arch);
+            builder.AddMockContract(loader.Object);
+            builder.AddMockContract(ecmaMetadata.Object);
+            IXCLRDataModule module = new ClrDataModule(moduleHandle.Address, builder.Build(), legacyImpl: null, new());
+
+            System.Guid actual;
+            Assert.Equal(HResults.S_OK, module.GetVersionId(&actual));
+            Assert.Equal(expected, actual);
+            Assert.Equal(HResults.E_POINTER, module.GetVersionId(null));
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetTaskByUniqueID(MockTarget.Architecture arch)
     {
         TargetPointer threadAddress = new(0x5000);
@@ -483,13 +512,13 @@ public unsafe class IXCLRDataProcessTests
         Assert.Equal(expectedStart, address);
     }
 
-    private static byte[] BuildMethodDefinitionMetadata()
+    private static byte[] BuildMethodDefinitionMetadata(System.Guid? mvid = null)
     {
         MetadataBuilder builder = new();
         builder.AddModule(
             0,
             builder.GetOrAddString("TestModule"),
-            builder.GetOrAddGuid(System.Guid.Empty),
+            builder.GetOrAddGuid(mvid ?? System.Guid.Empty),
             default,
             default);
 

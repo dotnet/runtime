@@ -152,7 +152,7 @@ namespace System.Text.Json.Tests
             public override unsafe int FindFirstCharacterToEncode(char* text, int textLength)
             {
                 // Access the text pointer even though it might be null and text length is 0.
-                return *text;
+                return unsafe(*text);
             }
 
             public override unsafe bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
