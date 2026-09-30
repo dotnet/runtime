@@ -2772,7 +2772,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
-        assert(!lvaIsUnknownSizeLocal(varNum));
+        assert(!lvaLocalIsOnUnknownSizeFrame(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
