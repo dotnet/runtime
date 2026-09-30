@@ -178,5 +178,16 @@
       <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="$(EnvVarCommand) PREPEND_PATH=$(WasmtimeDir)" />
       <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="$(EnvVarCommand) RuntimeIdentifier=wasi-wasm" />
     </ItemGroup>
+
+    <!-- wasmtime has no equivalent of the browser's environment configuration, so pass
+         WasmEnvironmentVariable items to the guest as engine arguments, ahead of the separator between
+         the xharness arguments and the app's arguments. -->
+    <ItemGroup>
+      <_WasiEngineEnvironmentArg Include="@(WasmEnvironmentVariable->'--engine-arg=--env --engine-arg=%(Identity)=%(Value)')" />
+    </ItemGroup>
+    <PropertyGroup Condition="'@(_WasiEngineEnvironmentArg)' != ''">
+      <_WasiEngineEnvironmentArgs>@(_WasiEngineEnvironmentArg, ' ')</_WasiEngineEnvironmentArgs>
+      <RunScriptCommand>$(RunScriptCommand.Replace(' -- ', ' $(_WasiEngineEnvironmentArgs) -- '))</RunScriptCommand>
+    </PropertyGroup>
   </Target>
 </Project>
