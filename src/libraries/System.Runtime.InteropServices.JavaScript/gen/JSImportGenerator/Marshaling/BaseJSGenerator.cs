@@ -15,13 +15,9 @@ namespace Microsoft.Interop.JavaScript
 
         public ManagedTypeInfo NativeType => s_jsMarshalerArgument;
 
-        public SignatureBehavior NativeSignatureBehavior => TypeInfo.IsByRef
-            ? (CodeContext.Direction == MarshalDirection.UnmanagedToManaged ? SignatureBehavior.RefToNativeType : SignatureBehavior.PointerToNativeType)
-            : SignatureBehavior.NativeType;
+        public SignatureBehavior NativeSignatureBehavior => TypeInfo.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
 
-        public ValueBoundaryBehavior ValueBoundaryBehavior => TypeInfo.IsByRef
-            ? (CodeContext.Direction == MarshalDirection.UnmanagedToManaged ? ValueBoundaryBehavior.RefNativeIdentifier : ValueBoundaryBehavior.AddressOfNativeIdentifier)
-            : ValueBoundaryBehavior.NativeIdentifier;
+        public ValueBoundaryBehavior ValueBoundaryBehavior => TypeInfo.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
 
         public virtual bool UsesNativeIdentifier => true;
 
@@ -39,7 +35,7 @@ namespace Microsoft.Interop.JavaScript
                 && !TypeInfo.IsManagedReturnPosition)
             {
                 var (_, js) = context.GetIdentifiers(TypeInfo);
-                writer.WriteLine($"{js} = default;");
+                writer.WriteLine($"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_CompilerServices_Unsafe}.SkipInit(out {js});");
             }
         }
 

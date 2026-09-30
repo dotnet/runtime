@@ -29,14 +29,10 @@ namespace Microsoft.Interop.JavaScript
             GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            (RequiresAllowUnsafeBlocksDescriptor is null
-                ? s_sharedDescriptors
-                    .Add(InvalidSignatureDescriptor)
-                    .Add(ContainingTypeMissingModifiersDescriptor)
-                : s_sharedDescriptors
-                    .Add(InvalidSignatureDescriptor)
-                    .Add(ContainingTypeMissingModifiersDescriptor)
-                    .Add(RequiresAllowUnsafeBlocksDescriptor))
+            s_sharedDescriptors
+                .Add(InvalidSignatureDescriptor)
+                .Add(ContainingTypeMissingModifiersDescriptor)
+                .Add(RequiresAllowUnsafeBlocksDescriptor)
                 .AddRange(AdditionalDescriptors);
 
         /// <summary>Descriptors reported by a specific derived analyzer.</summary>
@@ -51,8 +47,8 @@ namespace Microsoft.Interop.JavaScript
         /// <summary>Descriptor when the containing type is missing partial modifiers.</summary>
         protected abstract DiagnosticDescriptor ContainingTypeMissingModifiersDescriptor { get; }
 
-        /// <summary>Descriptor reported when AllowUnsafeBlocks is not enabled, or <see langword="null"/> when the generated code does not require it.</summary>
-        protected abstract DiagnosticDescriptor? RequiresAllowUnsafeBlocksDescriptor { get; }
+        /// <summary>Descriptor reported when AllowUnsafeBlocks is not enabled.</summary>
+        protected abstract DiagnosticDescriptor RequiresAllowUnsafeBlocksDescriptor { get; }
 
         /// <summary>
         /// When <see langword="true"/>, the method must have a body and must not be partial.
@@ -85,8 +81,6 @@ namespace Microsoft.Interop.JavaScript
                     context.Compilation.GetEnvironmentFlags());
 
                 bool unsafeEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
-                DiagnosticDescriptor? requiresAllowUnsafeBlocks = RequiresAllowUnsafeBlocksDescriptor;
-
                 int foundMethod = 0;
 
                 context.RegisterSymbolAction(symbolContext =>
@@ -105,13 +99,13 @@ namespace Microsoft.Interop.JavaScript
                     }
                 }, SymbolKind.Method);
 
-                if (!unsafeEnabled && requiresAllowUnsafeBlocks is not null)
+                if (!unsafeEnabled)
                 {
                     context.RegisterCompilationEndAction(endContext =>
                     {
                         if (Volatile.Read(ref foundMethod) != 0)
                         {
-                            endContext.ReportDiagnostic(DiagnosticInfo.Create(requiresAllowUnsafeBlocks, null).ToDiagnostic());
+                            endContext.ReportDiagnostic(DiagnosticInfo.Create(RequiresAllowUnsafeBlocksDescriptor, null).ToDiagnostic());
                         }
                     });
                 }

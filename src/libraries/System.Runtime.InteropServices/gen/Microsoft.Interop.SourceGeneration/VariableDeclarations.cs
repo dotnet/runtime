@@ -97,7 +97,7 @@ namespace Microsoft.Interop
                 {
                     ValueBoundaryBehavior boundaryBehavior = marshaller.ValueBoundaryBehavior;
                     if (marshaller.UsesNativeIdentifier
-                        && boundaryBehavior is not (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier or ValueBoundaryBehavior.RefNativeIdentifier))
+                        && boundaryBehavior is not (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
                         string localType = marshaller.NativeType.FullTypeName;
                         if (boundaryBehavior != ValueBoundaryBehavior.AddressOfNativeIdentifier)

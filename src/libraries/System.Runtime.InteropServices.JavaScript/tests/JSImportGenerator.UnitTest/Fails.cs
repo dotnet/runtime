@@ -79,7 +79,7 @@ namespace JSImportGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task DoesNotRequireAllowUnsafeBlocks()
+        public async Task ValidateRequireAllowUnsafeBlocksDiagnostic()
         {
             string source = CodeSnippets.TrivialClassDeclarations;
             Compilation comp = TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
@@ -87,8 +87,9 @@ namespace JSImportGenerator.Unit.Tests
 
             ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
 
-            // Neither generated stub uses pointers any more.
-            Assert.Empty(analyzerDiags.Where(d => d.Id is "SYSLIB1074" or "SYSLIB1075"));
+            // The errors should indicate the AllowUnsafeBlocks is required.
+            Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1074") != null);
+            Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1075") != null);
         }
 
         [Fact]
@@ -105,6 +106,42 @@ namespace JSImportGenerator.Unit.Tests
                     }
                 }
                 """;
+            Compilation comp = TestUtils.CreateCompilation(new[] { source });
+            ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
+
+            Assert.NotEmpty(analyzerDiags.Where(d => d.Id == "SYSLIB1076"));
+        }
+
+        public static IEnumerable<object[]> NonReferenceableExportSources()
+        {
+            yield return
+            [
+                """
+                using System.Runtime.InteropServices.JavaScript;
+                partial class Outer<T>
+                {
+                    [JSExport]
+                    internal static void Export() { }
+                }
+                """,
+            ];
+            yield return
+            [
+                """
+                using System.Runtime.InteropServices.JavaScript;
+                file partial class FileLocal
+                {
+                    [JSExport]
+                    internal static void Export() { }
+                }
+                """,
+            ];
+        }
+
+        [Theory]
+        [MemberData(nameof(NonReferenceableExportSources))]
+        public async Task JSExportInNonReferenceableTypeWarns(string source)
+        {
             Compilation comp = TestUtils.CreateCompilation(new[] { source });
             ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
 

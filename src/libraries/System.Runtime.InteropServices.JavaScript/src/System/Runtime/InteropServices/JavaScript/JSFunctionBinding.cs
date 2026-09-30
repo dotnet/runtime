@@ -10,15 +10,6 @@ using System.Threading;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Represents the generated wrapper that marshals arguments and invokes a managed [JSExport] method.
-    /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
-    /// </summary>
-    /// <param name="arguments">The JavaScript arguments buffer: the exception slot, the result slot, and one slot per argument.</param>
-    [CLSCompliant(false)]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public delegate void JSExportCallback(Span<JSMarshalerArgument> arguments);
-
-    /// <summary>
     /// Represents a bound imported or exported JavaScript function and contains information necessary to invoke it.
     /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
     /// </summary>
@@ -219,7 +210,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="callback">The generated wrapper that marshals the arguments and invokes the exported method.</param>
         /// <returns>The method metadata.</returns>
         /// <exception cref="PlatformNotSupportedException">The method is executed on architecture other than WebAssembly.</exception>
-        public static JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, JSExportCallback callback)
+        public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, delegate*<JSMarshalerArgument*, void> callback)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
                 throw new PlatformNotSupportedException();

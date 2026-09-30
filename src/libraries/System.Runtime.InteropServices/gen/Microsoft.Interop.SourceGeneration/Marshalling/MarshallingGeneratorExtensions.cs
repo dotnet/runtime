@@ -20,7 +20,6 @@ namespace Microsoft.Interop
                 SignatureBehavior.ManagedTypeAndAttributes => generator.TypeInfo.ManagedType.FullTypeName,
                 SignatureBehavior.NativeType => generator.NativeType.FullTypeName,
                 SignatureBehavior.PointerToNativeType => $"{generator.NativeType.FullTypeName}*",
-                SignatureBehavior.RefToNativeType => $"ref {generator.NativeType.FullTypeName}",
                 _ => throw new InvalidOperationException()
             };
         }
@@ -71,7 +70,7 @@ namespace Microsoft.Interop
                 identifierName = generator.ValueBoundaryBehavior switch
                 {
                     ValueBoundaryBehavior.ManagedIdentifier => generator.TypeInfo.IsByRef ? param : managed,
-                    ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier or ValueBoundaryBehavior.RefNativeIdentifier => native,
+                    ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier => native,
                     ValueBoundaryBehavior.AddressOfNativeIdentifier => param,
                     _ => throw new UnreachableException()
                 };
@@ -79,11 +78,6 @@ namespace Microsoft.Interop
             else
             {
                 throw new ArgumentException("Context direction must be ManagedToUnmanaged or UnmanagedToManaged");
-            }
-
-            if (behavior == SignatureBehavior.RefToNativeType)
-            {
-                return new GeneratedParameter(generator.NativeType.FullTypeName, identifierName, "ref");
             }
 
             string type = behavior switch
@@ -131,7 +125,6 @@ namespace Microsoft.Interop
                 ValueBoundaryBehavior.ManagedIdentifier when !info.IsByRef => managedIdentifier,
                 ValueBoundaryBehavior.ManagedIdentifier => $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(info)} {managedIdentifier}",
                 ValueBoundaryBehavior.NativeIdentifier => nativeIdentifier,
-                ValueBoundaryBehavior.RefNativeIdentifier => $"ref {nativeIdentifier}",
                 ValueBoundaryBehavior.AddressOfNativeIdentifier => $"&{nativeIdentifier}",
                 ValueBoundaryBehavior.CastNativeIdentifier => $"({generator.AsParameter(context).Type}){nativeIdentifier}",
                 _ => throw new InvalidOperationException()

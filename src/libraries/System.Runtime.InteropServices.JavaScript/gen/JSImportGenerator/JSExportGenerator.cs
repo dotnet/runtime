@@ -30,7 +30,9 @@ namespace Microsoft.Interop.JavaScript
         {
             for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType)
             {
-                if (current.DeclaredAccessibility is not (Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal))
+                if (current.Arity != 0
+                    || current.IsFileLocal
+                    || current.DeclaredAccessibility is not (Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal))
                 {
                     return false;
                 }
@@ -139,8 +141,7 @@ namespace Microsoft.Interop.JavaScript
                 {
                     writer.WriteLine($"[{Constants.ThreadStaticGlobal}]");
                     writer.WriteLine("static bool initialized;");
-                    // Preserve the registration entry point even when the application is trimmed.
-                    writer.WriteLine($"[{Constants.ModuleInitializerAttributeGlobal}, {Constants.DynamicDependencyAttributeGlobal}({Constants.DynamicallyAccessedMemberTypesGlobal}.PublicMethods | {Constants.DynamicallyAccessedMemberTypesGlobal}.NonPublicMethods, {CodeWriterHelpers.StringLiteral(GeneratedNamespace + "." + InitializerClass)}, {CodeWriterHelpers.StringLiteral(assemblyName)})]");
+                    writer.WriteLine($"[{Constants.ModuleInitializerAttributeGlobal}]");
                     writer.WriteLine("static internal void __TrimmingPreserve_()");
                     using (writer.WriteBlock())
                     {
@@ -163,9 +164,13 @@ namespace Microsoft.Interop.JavaScript
                         writer.WriteLine("return;");
                         writer.Indent--;
                         writer.WriteLine("initialized = true;");
-                        foreach (var method in methods)
+                        writer.WriteLine("unsafe");
+                        using (writer.WriteBlock())
                         {
-                            writer.WriteLine(method.Registration);
+                            foreach (var method in methods)
+                            {
+                                writer.WriteLine(method.Registration);
+                            }
                         }
                     }
                 }
@@ -222,7 +227,7 @@ namespace Microsoft.Interop.JavaScript
 
             if (incrementalContext.IsReflectionFree)
             {
-                string wrapperReference = $"{signature.StubTypeQualifiedName}.{signature.WrapperName}";
+                string wrapperReference = $"&{signature.StubTypeQualifiedName}.{signature.WrapperName}";
                 string fastRegistration = $"{Constants.JSFunctionSignatureGlobal}.{Constants.BindCSFunctionMethod}({CodeWriterHelpers.StringLiteral(signature.QualifiedMethodName)}, {signature.TypesHash.ToString(CultureInfo.InvariantCulture)}, {signatures}, {wrapperReference});";
                 return (writer.ToString(), fastRegistration, null);
             }
@@ -241,27 +246,13 @@ namespace Microsoft.Interop.JavaScript
             UnmanagedToManagedStubGenerator stubGenerator)
         {
             const string InnerWrapperName = "__Stub";
-            // Pointer types in the signature still need an unsafe context.
-            bool needsUnsafe = context.SignatureContext.SignatureContext.ElementTypeInformation.Any(static element => element.ManagedType is PointerTypeInfo);
             writer.WriteLine($"[{Constants.DebuggerNonUserCodeAttribute}]");
-
-            if (context.IsReflectionFree)
-            {
-                writer.WriteLine($"internal static {(needsUnsafe ? "unsafe " : "")}void {context.SignatureContext.WrapperName}({Constants.SpanGlobal}<{Constants.JSMarshalerArgumentGlobal}> {Constants.ArgumentsSpan})");
-                using (writer.WriteBlock())
-                {
-                    WriteWrapperBody(writer, context, stubGenerator, InnerWrapperName);
-                }
-                return;
-            }
-
             writer.WriteLine($"internal static unsafe void {context.SignatureContext.WrapperName}({Constants.JSMarshalerArgumentGlobal}* {Constants.ArgumentsBuffer})");
             using (writer.WriteBlock())
             {
                 writer.WriteLine("unsafe");
                 using (writer.WriteBlock())
                 {
-                    writer.WriteLine($"{Constants.SpanGlobal}<{Constants.JSMarshalerArgumentGlobal}> {Constants.ArgumentsSpan} = new {Constants.SpanGlobal}<{Constants.JSMarshalerArgumentGlobal}>({Constants.ArgumentsBuffer}, {context.SignatureContext.SignatureContext.ElementTypeInformation.Count(static element => element.NativeIndex != TypePositionInfo.UnsetIndex && !element.IsNativeReturnPosition) + 2});");
                     WriteWrapperBody(writer, context, stubGenerator, InnerWrapperName);
                 }
             }
@@ -294,12 +285,12 @@ namespace Microsoft.Interop.JavaScript
                     hasReturn = nativeArgument.ManagedType != SpecialTypeInfo.Void;
                     continue;
                 }
-                writer.Write($"{Constants.ArgumentsSpan}[{nativeArgument.NativeIndex + 2}], ");
+                writer.Write($"{Constants.ArgumentsBuffer}[{nativeArgument.NativeIndex + 2}], ");
             }
-            writer.Write($"ref {Constants.ArgumentsSpan}[0]");
+            writer.Write(Constants.ArgumentsBuffer);
             if (hasReturn)
             {
-                writer.Write($", ref {Constants.ArgumentsSpan}[1]");
+                writer.Write($", {Constants.ArgumentsBuffer} + 1");
             }
             writer.WriteLine(");");
         }

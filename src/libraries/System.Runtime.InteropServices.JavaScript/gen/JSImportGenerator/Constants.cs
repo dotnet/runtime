@@ -31,7 +31,6 @@ namespace Microsoft.Interop.JavaScript
         public const string OSArchitectureGlobal = "global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture";
         public const string ArchitectureWasmGlobal = "global::System.Runtime.InteropServices.Architecture.Wasm";
         public const string ArgumentsBuffer = "__arguments_buffer";
-        public const string ArgumentsSpan = "__arguments";
         public const string ArgumentException = "__arg_exception";
         public const string ArgumentReturn = "__arg_return";
         public const string ToJSMethod = "ToJS";

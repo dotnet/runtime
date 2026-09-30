@@ -18,8 +18,7 @@ namespace Microsoft.Interop.JavaScript
         protected override string AttributeMetadataName => Constants.JSExportAttribute;
         protected override DiagnosticDescriptor InvalidSignatureDescriptor => GeneratorDiagnostics.InvalidExportAttributedMethodSignature;
         protected override DiagnosticDescriptor ContainingTypeMissingModifiersDescriptor => GeneratorDiagnostics.InvalidExportAttributedMethodContainingTypeMissingModifiers;
-        // The generated JSExport wrapper no longer uses pointers, so it does not require AllowUnsafeBlocks.
-        protected override DiagnosticDescriptor? RequiresAllowUnsafeBlocksDescriptor => null;
+        protected override DiagnosticDescriptor RequiresAllowUnsafeBlocksDescriptor => GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks;
         protected override bool RequiresImplementation => true;
 
         protected override ImmutableArray<DiagnosticDescriptor> AdditionalDescriptors =>

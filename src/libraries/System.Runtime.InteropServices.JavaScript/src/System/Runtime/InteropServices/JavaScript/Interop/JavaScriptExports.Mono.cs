@@ -375,7 +375,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 argException.ToJS(new InvalidOperationException("Unable to resolve JSExport by handle"));
                 return;
             }
-            jsExport.Callback(new Span<JSMarshalerArgument>(argumentsBuffer, jsExport.ArgumentCount));
+            jsExport.Callback(argumentsBuffer);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // profiler needs to find it executed under this name

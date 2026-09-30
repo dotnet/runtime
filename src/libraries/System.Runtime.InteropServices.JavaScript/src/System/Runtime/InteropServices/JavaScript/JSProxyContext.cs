@@ -29,8 +29,10 @@ namespace System.Runtime.InteropServices.JavaScript
         private readonly Dictionary<int, JSExportEntry> JSExportByHandle = new Dictionary<int, JSExportEntry>();
         private int NextJSExportHandle = 1;
 
-        // ArgumentCount is the frame size the JavaScript caller allocated for this signature.
-        internal readonly record struct JSExportEntry(JSExportCallback Callback, int ArgumentCount);
+        internal unsafe readonly struct JSExportEntry(delegate*<JSMarshalerArgument*, void> callback)
+        {
+            internal readonly delegate*<JSMarshalerArgument*, void> Callback = callback;
+        }
 
         public int PromiseHolderCount
         {
