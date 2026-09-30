@@ -2882,7 +2882,7 @@ HRESULT MetadataEmit::DefineAssembly(
     }
     else
     {
-        char const* locale = nullptr;
+        char const* locale = "";
         if (!md_set_column_value_as_utf8(c, mdtAssembly_Culture, locale))
             return E_FAIL;
     }

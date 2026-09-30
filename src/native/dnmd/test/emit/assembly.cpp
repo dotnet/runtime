@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "emit.hpp"
 
 TEST(Assembly, DefineNoPublicKey)
@@ -44,4 +47,30 @@ TEST(Assembly, DefineNoPublicKey)
     WSTR_string locale{ metadata.szLocale };
     EXPECT_EQ(W("en-us"), locale);
     EXPECT_EQ(locale.length() + 1, metadata.cbLocale);
+}
+
+TEST(Assembly, DefineWithDefaultCulture)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateThreadSafeEmit(emit));
+    minipal::com_ptr<IMetaDataAssemblyEmit> assemblyEmit;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataAssemblyEmit, (void**)&assemblyEmit));
+
+    ASSEMBLYMETADATA metadata{};
+    mdAssembly assembly;
+    ASSERT_EQ(S_OK, assemblyEmit->DefineAssembly(nullptr, 0, 0, W("Dynamic"), &metadata, 0, &assembly));
+
+    minipal::com_ptr<IMetaDataAssemblyImport> assemblyImport;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&assemblyImport));
+    WCHAR culture[8]{ static_cast<WCHAR>('!') };
+    ASSEMBLYMETADATA read{};
+    read.szLocale = culture;
+    read.cbLocale = 8;
+    WCHAR name[16];
+    ULONG nameLength;
+    ASSERT_EQ(S_OK, assemblyImport->GetAssemblyProps(assembly, nullptr, nullptr, nullptr,
+        name, 16, &nameLength, &read, nullptr));
+    EXPECT_EQ(W("Dynamic"), WSTR_string(name));
+    EXPECT_EQ(0u, read.cbLocale);
+    EXPECT_EQ(static_cast<WCHAR>(0), culture[0]);
 }
