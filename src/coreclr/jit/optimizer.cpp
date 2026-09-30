@@ -1669,7 +1669,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
         GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
         assert(testCopyExpr->OperIs(GT_JTRUE));
         GenTree* sideEffList = nullptr;
-        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_OBS_EFFECT);
         if (sideEffList == nullptr)
         {
             fgRemoveStmt(prevTestBlock, testCopyStmt);
@@ -3372,9 +3372,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         if (srcSize == 8)
                         {
                             assert(tree->TypeIs(TYP_INT));
-                            GenTree* castOp = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
-                            castOp->SetMorphed(this);
-                            *otherOpPtr = castOp;
+                            *otherOpPtr = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
                         }
                     }
                     return true;

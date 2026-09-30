@@ -1052,6 +1052,10 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         }
     }
 
+    // Compaction can run before liveness establishes the first tracked-local epoch.
+    // Even for uninitialized live-out sets, the assignment below needs a defined size.
+    assert((GetCurLVEpoch() != 0) || (lvaTrackedCount == 0));
+    assert((GetCurLVEpoch() != 0) || (lvaTrackedCountInSizeTUnits == 0));
     VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, target->bbLiveOut);
 
     // Update the beginning and ending IL offsets (bbCodeOffs and bbCodeOffsEnd).

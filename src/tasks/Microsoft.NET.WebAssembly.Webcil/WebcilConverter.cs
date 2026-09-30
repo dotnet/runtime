@@ -85,7 +85,7 @@ public class WebcilConverter
             using var memoryStream = new MemoryStream(checked((int)inputStream.Length));
             WriteConversionTo(memoryStream, inputStream, peInfo, wcInfo);
             memoryStream.Flush();
-            var wrapper = new WebcilWasmWrapper(memoryStream);
+            var wrapper = new WebcilWasmWrapper(memoryStream, selfInstalling: _webcilVersion >= 1);
             memoryStream.Seek(0, SeekOrigin.Begin);
             wrapper.WriteWasmWrappedWebcil(outputStream);
         }

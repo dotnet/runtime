@@ -3657,6 +3657,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
 
+            // This allows folding "obj.GetType() == typeof(...)"
+            case NI_System_Object_GetType:
+
             // This allows folding "typeof(...).GetGenericTypeDefinition() == typeof(...)"
             case NI_System_Type_GetGenericTypeDefinition:
 
@@ -5858,13 +5861,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     }
                     else
                     {
+                        // impCloneExpr can emit a spill statement, so clone in evaluation order.
+                        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for Math.Min/Max"));
                         if (!isNumber)
                         {
                             op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
                                                nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
                         }
-                        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL,
-                                           nullptr DEBUGARG("Clone op1 for Math.Min/Max"));
                     }
 
                     static const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
@@ -5878,8 +5882,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     if (!isNative)
                     {
-                        // Make sure we return the NaN argument verbatim (if both are NaN, the first one), which is an
-                        // additional requirement for .NET Min/Max APIs on top of IEEE 754.
+                        // Select an input NaN where needed; the native instruction selects a number or canonicalizes
+                        // NaN. Prefer the first operand when both are NaN, matching the managed implementation.
 
                         if (isNumber)
                         {
