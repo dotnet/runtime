@@ -14,6 +14,9 @@ namespace System.IO.Compression
     /// </summary>
     internal sealed class Deflater : IDisposable
     {
+        // Reuses native zlib states via deflateReset() instead of allocating/freeing one per Deflater,
+        // avoiding the page-fault/heap-contention regression from zlib-ng's larger single allocation
+        // per deflate state (see https://github.com/dotnet/runtime/issues/134700).
         // Sixteen maximum-sized states cap idle native memory at roughly 5.2 MiB.
         private const int MaxPooledDeflateStates = 16;
         private static readonly object s_poolLock = new();
@@ -291,6 +294,13 @@ namespace System.IO.Compression
         public static Deflater CreateDeflater(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
+
+            // zlib-ng treats DefaultCompression (-1) as an alias for level 6 internally. Normalize it here so the
+            // pool doesn't split equivalent configurations across two slots and needlessly reduce the hit rate.
+            if (compressionLevel == ZLibNative.CompressionLevel.DefaultCompression)
+            {
+                compressionLevel = (ZLibNative.CompressionLevel)6;
+            }
 
             DeflaterState? pooledState = RentDeflateState(compressionLevel, strategy, windowBits, memLevel);
             if (pooledState is DeflaterState state)
