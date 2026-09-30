@@ -12,12 +12,11 @@
 //* constructor for RefClassWriter
 //*
 //******************************************************
-HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR szName)
+HRESULT RefClassWriter::Init(IUnknown *pUnk, LPCWSTR szName)
 {
     CONTRACTL {
         STANDARD_VM_CHECK;
 
-        PRECONDITION(CheckPointer(pCeeGen));
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
@@ -27,9 +26,6 @@ HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR s
     m_importer = NULL;
     m_internalimport = NULL;
     m_ulResourceSize = 0;
-
-    m_pCeeGen = pCeeGen;
-    pCeeGen->AddRef();
 
     // Get the interfaces
     HRESULT hr = pUnk->QueryInterface(IID_IMetaDataEmit2, (void**)&m_emitter);
@@ -91,10 +87,5 @@ RefClassWriter::~RefClassWriter()
 
     if (m_internalimport) {
         m_internalimport->Release();
-    }
-
-    if (m_pCeeGen) {
-        m_pCeeGen->Release();
-        m_pCeeGen = NULL;
     }
 }

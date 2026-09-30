@@ -7,7 +7,6 @@
 #include "comdynamic.h"
 #include "reflectclasswriter.h"
 #include "class.h"
-#include "ceesectionstring.h"
 #include <cor.h>
 #include "typeparse.h"
 #include "typekey.h"
@@ -481,28 +480,13 @@ extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle p
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    ICeeGenInternal * pGen = pRCW->GetCeeGen();
-
     ReflectionModule * pReflectionModule = pModule->GetReflectionModule();
 
-    // Create the .sdata section if not created
-    if (pReflectionModule->m_sdataSection == 0)
-        IfFailThrow( pGen->GetSectionCreate (".sdata", sdReadWrite, &pReflectionModule->m_sdataSection) );
-
-    // Define the alignment that the rva will be set to. Since the CoreCLR runtime only has hard alignment requirements
-    // up to 8 bytes, the highest alignment we may need is 8 byte alignment. This hard alignment requirement is only needed
-    // by Runtime.Helpers.CreateSpan<T>. Since the previous alignment was 4 bytes before CreateSpan was implemented, if the
-    // data isn't itself of size divisible by 8, just align to 4 to the memory cost of excess alignment.
+    // CreateSpan<T> requires natural alignment up to 8 bytes. Data whose size is not divisible
+    // by 8 only needs 4-byte alignment.
     DWORD alignment = (length % 8 == 0) ? 8 : 4;
 
-    // Get the size of current .sdata section. This will be the RVA for this field within the section
-    DWORD dwRVA = 0;
-    IfFailThrow( pGen->GetSectionDataLen(pReflectionModule->m_sdataSection, &dwRVA) );
-    dwRVA = (dwRVA + alignment-1) & ~(alignment-1);
-
-    // allocate the space in .sdata section
-    void * pvBlob;
-    IfFailThrow( pGen->GetSectionBlock(pReflectionModule->m_sdataSection, length, alignment, (void**) &pvBlob) );
+    void * pvBlob = pReflectionModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(length, alignment);
 
     // copy over the initialized data if specified
     if (pContent != NULL)
@@ -514,8 +498,10 @@ extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle p
         LoaderAllocator::AssociateMemoryWithLoaderAllocator((BYTE*)pvBlob, ((BYTE*)pvBlob) + length, pReflectionModule->GetLoaderAllocator());
     }
 
-    // set FieldRVA into metadata. Note that this is not final RVA in the image if save to disk. We will do another round of fix up upon save.
-    IfFailThrow( pRCW->GetEmitter()->SetFieldRVA(tkField, dwRVA) );
+    pReflectionModule->SetDynamicRvaField(tkField, reinterpret_cast<TADDR>(pvBlob));
+
+    // Dynamic RVA fields are resolved by token, not by an image offset.
+    IfFailThrow( pRCW->GetEmitter()->SetFieldRVA(tkField, 0) );
 
     END_QCALL;
 }

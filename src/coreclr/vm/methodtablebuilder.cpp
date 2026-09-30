@@ -4622,16 +4622,12 @@ IS_VALUETYPE:
                 // The PE should be loaded by now.
                 _ASSERT(GetModule()->GetPEAssembly()->IsLoaded());
 
-#ifdef FEATURE_METADATA_UPDATER
-                // This is a special case for EnC. The RVA field is not actually in the image, but
-                // is instead registered in a dynamic map. We need to set the RVA to a special
-                // value so when the address is looked up, it will be found in the dynamic map.
+                // Dynamically allocated field data is resolved by token rather than an image RVA.
                 if (GetModule()->GetDynamicRvaField(pFD->GetMemberDef()) != (TADDR)NULL)
                 {
                     pFD->SetDynamicRVA();
                 }
                 else
-#endif // FEATURE_METADATA_UPDATER
                 {
                     // Set the field offset
                     DWORD rva;

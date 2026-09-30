@@ -1178,8 +1178,7 @@ FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
 
     if (pFieldDesc->IsRVA())
     {
-        Module* pModule = pFieldDesc->GetModule();
-        return pModule->GetRvaField(pFieldDesc->GetOffset());
+        return pFieldDesc->GetStaticAddressHandle(nullptr);
     }
     else
     {

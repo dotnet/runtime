@@ -616,9 +616,10 @@ internal partial class MockDescriptors
         internal MockTypeVarTypeDesc AddTypeVarTypeDesc()
             => Add(TypeVarTypeDescLayout, "TypeVarTypeDesc");
 
-        // Value of the native FieldDesc::m_dwOffset sentinel FIELD_OFFSET_BIG_RVA (FIELD_OFFSET_MAX - 5,
-        // where FIELD_OFFSET_MAX == (1 << 27) - 1). See src/coreclr/vm/field.h.
+        // Native FieldDesc::m_dwOffset sentinels relative to FIELD_OFFSET_MAX == (1 << 27) - 1.
+        // See src/coreclr/vm/field.h.
         internal const uint FieldOffsetBigRVAValue = ((1u << 27) - 1) - 5;
+        internal const uint FieldOffsetDynamicRVAValue = ((1u << 27) - 1) - 6;
 
         // Allocates a FieldDesc whose packed DWord2 stores the given 5-bit field type and 27-bit offset.
         internal MockFieldDesc AddFieldDesc(ulong mtOfEnclosingClass, CorElementType type, uint offset, uint memberDef = 0)
