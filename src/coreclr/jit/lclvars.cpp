@@ -2492,11 +2492,12 @@ bool Compiler::lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
 // lvaIsImplicitByRefLocal: Is the local an "implicit byref" parameter?
 //
 // We term structs passed via pointers to shadow copies "implicit byrefs".
-// They are used on Windows x64, ARM64, LoongArch64 and RISC-V; see
+// They are used on Windows x64, ARM64, LoongArch64, RISC-V and WebAssembly; see
 // "By-value value types passed by reference" in clr-abi.md for the exact rules.
 //
 // The shadow copies must be outside the GC heap, so stores into them do not
-// require write barriers. The caller is responsible for GC reporting their contents.
+// require write barriers and the pointers need not be GC reported (see
+// lvaGetImplicitByRefParamType). The caller is responsible for GC reporting their contents.
 //
 // Arguments:
 //    lclNum - The local in question
@@ -2512,11 +2513,25 @@ bool Compiler::lvaIsImplicitByRefLocal(unsigned lclNum) const
     {
         assert(varDsc->lvIsParam);
 
-        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_BYREF));
+        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_I_IMPL, TYP_BYREF));
         return true;
     }
 #endif // FEATURE_IMPLICIT_BYREFS
     return false;
+}
+
+//------------------------------------------------------------------------
+// lvaGetImplicitByRefParamType: Get the type implicit byref parameters are
+//    retyped to by fgRetypeImplicitByRefArgs.
+//
+// Return Value:
+//    TYP_I_IMPL since the storage is never on the GC heap. Async methods use
+//    TYP_BYREF so that derived addresses are not kept live across suspension
+//    points, as the storage is different after resumption.
+//
+var_types Compiler::lvaGetImplicitByRefParamType()
+{
+    return impInlineRoot()->compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
 }
 
 //------------------------------------------------------------------------
