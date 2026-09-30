@@ -876,6 +876,12 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
 
     assert(layout1->GetSlotCount() == layout2->GetSlotCount());
 
+    // Custom layouts are not part of the DSU, but may be compatible with class-based layouts.
+    if ((clsHnd1 == NO_CLASS_HANDLE) || (clsHnd2 == NO_CLASS_HANDLE))
+    {
+        return AreCompatibleSlow(layout1, layout2);
+    }
+
     // Both layouts are class-based layouts with GC pointers, so they participate in the
     // DSU structure maintained by ClassLayoutTable: compatible layouts share the same
     // representative, making the check below O(1) instead of a slot-by-slot comparison.
