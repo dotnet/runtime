@@ -591,7 +591,7 @@ namespace Internal.JitInterface
             return GetSignature(method.Signature, GetLoweringFlags(method));
         }
 
-        public static WasmSignature GetSignature(INodeWithTypeSignature node)
+        public static WasmSignature GetSignature(IHasTypeSignature node)
         {
             return GetSignature(node.Signature, GetLoweringFlags(node));
         }
@@ -619,7 +619,7 @@ namespace Internal.JitInterface
             return flags;
         }
 
-        public static LoweringFlags GetLoweringFlags(INodeWithTypeSignature node)
+        public static LoweringFlags GetLoweringFlags(IHasTypeSignature node)
         {
             LoweringFlags flags = 0;
             if (node.HasGenericContextArg)

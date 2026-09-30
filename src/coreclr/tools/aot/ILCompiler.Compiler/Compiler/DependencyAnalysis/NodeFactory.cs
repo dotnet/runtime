@@ -1002,13 +1002,16 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Gets the node for an extern function. Nodes are keyed by name alone, so every reference to the
         /// same symbol (e.g. a JIT helper and a direct P/Invoke to the same native function) shares one node,
-        /// and all references must agree on its signature.
+        /// and on Wasm all references must agree on its lowered function type.
         /// </summary>
         private ExternFunctionSymbolNode ExternFunctionSymbol(Utf8String name, ExternalTypeSignature? typeSignature)
         {
             ExternFunctionSymbolNode node = _externFunctionSymbols.GetOrAdd(new ExternFunctionKey(name, typeSignature));
-            // The cache keys on the name only, so validate that the existing node's signature matches.
-            Debug.Assert(node.TypeSignature == typeSignature, $"Conflicting signatures for extern function '{name}'");
+            // Distinct managed types can describe the same native ABI. In the a case like shared pinvoke source with
+            // different managed enum types, fall back to checking the lowered ABI is at least the same.
+            Debug.Assert(!Target.IsWasm || node.TypeSignature == typeSignature ||
+                Nullable.Equals(WasmLowering.GetSignature(node), WasmLowering.GetSignature(typeSignature)),
+                $"Conflicting signatures for extern function '{name}'");
             return node;
         }
 
