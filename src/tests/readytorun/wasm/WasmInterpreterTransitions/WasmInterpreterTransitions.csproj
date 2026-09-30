@@ -14,5 +14,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="OpenInstanceDelegateHelper.ilproj" />
+    <NativeFileReference Include="echo.c" />
   </ItemGroup>
 </Project>

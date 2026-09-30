@@ -183,7 +183,7 @@ struct MDReleaseHolderTraits final
 {
     using Type = TYPE*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type value)
+    static void Free(Type value) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 
@@ -483,7 +483,7 @@ ULONG MDInternalRW::AddRef()
     return InterlockedIncrement(&m_cRefs);
 } // MDInternalRW::AddRef
 
-ULONG MDInternalRW::Release()
+ULONG MDInternalRW::Release() noexcept
 {
     ULONG cRef;
 

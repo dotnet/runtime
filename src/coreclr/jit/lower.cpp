@@ -6502,7 +6502,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // [originalThis + firstTgtOffs]
 
     unsigned targetOffs = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
-    GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
+    GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_BYREF, base, nullptr, 0, targetOffs);
     GenTree* callTarget = Ind(result);
 
     // don't need to sequence and insert this tree, caller will do it

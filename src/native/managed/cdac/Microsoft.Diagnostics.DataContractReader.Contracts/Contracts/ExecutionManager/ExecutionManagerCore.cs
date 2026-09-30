@@ -24,6 +24,13 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly InterpreterJitManager _interpreterJitManager;
     private readonly CachedValue<TargetPointer> _thePreStub;
     private readonly TargetPointer _virtualIPRangeListAddress;
+    private WasmFunctionTableIndexLookup? _wasmFunctionTableIndexLookup;
+
+    // Mirrors PortableEntryPoint::kPrefersInterpreterEntryPoint in src/coreclr/vm/precode_portable.hpp.
+    private const int PortableEntryPointPrefersInterpreterEntryPoint = 0x4;
+
+    // Mirrors INTERPRETER_CODE_POISON in src/coreclr/vm/method.hpp.
+    private const ulong InterpreterCodePoison = 1;
 
     public ExecutionManagerCore(Target target, TargetPointer topRangeSectionMapAddress)
     {
@@ -416,6 +423,64 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             }
         }
         return TargetPointer.Null;
+    }
+
+    TargetCodePointer IExecutionManager.GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint)
+    {
+        if (entryPoint == TargetCodePointer.Null)
+            return entryPoint;
+
+        if (!_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
+            return _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(entryPoint);
+
+        try
+        {
+            return GetDiagnosticCodeStartFromPortableEntryPoint(entryPoint);
+        }
+        catch (VirtualReadException)
+        {
+            return entryPoint;
+        }
+    }
+
+    // Mirrors the FEATURE_PORTABLE_ENTRYPOINTS paths of GetInterpreterCodeFromEntryPointIfPresent and
+    // GetDiagnosticCodeStartFromEntryPoint in src/coreclr/vm/precode.cpp.
+    private TargetCodePointer GetDiagnosticCodeStartFromPortableEntryPoint(TargetCodePointer entryPoint)
+    {
+        // An address in a code range (including a Wasm R2R virtual IP) is already a code start.
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, entryPoint);
+        if (range.Data != null)
+            return entryPoint;
+
+        Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entryPoint.AsTargetPointer);
+        if (portableEntryPoint.MethodDesc == TargetPointer.Null)
+            return entryPoint;
+
+        Data.MethodDesc methodDesc = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(portableEntryPoint.MethodDesc);
+        if (methodDesc.InterpreterCode is TargetPointer interpreterCode
+            && interpreterCode != TargetPointer.Null
+            && interpreterCode.Value != InterpreterCodePoison)
+        {
+            return new TargetCodePointer(interpreterCode);
+        }
+
+        // Native R2R portable entry points store a Wasm function-table index rather than an address
+        // registered with the ExecutionManager. Map it to the corresponding synthetic virtual IP. As in
+        // native code, this applies only to the method's own portable entry point, which is currently
+        // its temporary entry point.
+        if (portableEntryPoint.ActualCode == TargetPointer.Null
+            || (portableEntryPoint.Flags & PortableEntryPointPrefersInterpreterEntryPoint) != 0
+            || methodDesc.CodeData == TargetPointer.Null
+            || _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(methodDesc.CodeData).TemporaryEntryPoint != entryPoint)
+        {
+            return entryPoint;
+        }
+
+        _wasmFunctionTableIndexLookup ??= new WasmFunctionTableIndexLookup(_target);
+        uint functionTableIndex = (uint)portableEntryPoint.ActualCode.Value;
+        return _wasmFunctionTableIndexLookup.TryGetVirtualIPBase(functionTableIndex, out ulong virtualIP)
+            ? new TargetCodePointer(virtualIP)
+            : entryPoint;
     }
 
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
