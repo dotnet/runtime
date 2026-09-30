@@ -1,9 +1,9 @@
 ---
-name: performance-benchmark
-description: Generate and run ad hoc performance benchmarks to validate code changes. Use this when asked to benchmark, profile, or validate the performance impact of a code change in dotnet/runtime.
+name: microbenchmark
+description: Generate and run ad hoc BenchmarkDotNet microbenchmarks to validate the performance impact of a code change. Use this when asked to benchmark, profile, or validate the performance impact of a code change in dotnet/runtime at the method/API level. For end-to-end ASP.NET Core / HTTP server load testing, use the aspnet-benchmark skill instead.
 ---
 
-# Ad Hoc Performance Benchmarking Locally (or with @EgorBot)
+# Ad Hoc Microbenchmarking Locally (or with @EgorBot)
 
 When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and compare local baseline and changed builds.
 
