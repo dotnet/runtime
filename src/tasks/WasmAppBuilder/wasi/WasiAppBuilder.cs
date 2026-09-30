@@ -109,7 +109,8 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
                 string src = item.ItemSpec;
                 string dst;
 
-                string tgtPath = item.GetMetadata("TargetPath");
+                // TargetPath often comes from a Windows-style Link (e.g. "TestFiles\data.xml").
+                string tgtPath = item.GetMetadata("TargetPath").Replace('\\', Path.DirectorySeparatorChar);
                 if (!string.IsNullOrEmpty(tgtPath))
                 {
                     dst = Path.Combine(AppDir!, tgtPath);
