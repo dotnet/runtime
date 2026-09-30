@@ -91,14 +91,17 @@ target_link_libraries(createdump_static PRIVATE minipal)
 
     add_executable_clr(createdump
         main.cpp
+        createdumppal.cpp
+        createdumpremoteunwindshim.cpp
     )
+
+    target_include_directories(createdump PRIVATE ${CLR_DIR}/pal/src/include)
 
     target_link_libraries(createdump
         PRIVATE
         createdump_static
         corguids
         coreclrpal_dac
-        coreclrpal
         dbgutil
         ${CMAKE_DL_LIBS}
     )
