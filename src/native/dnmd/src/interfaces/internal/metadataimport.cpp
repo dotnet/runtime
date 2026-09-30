@@ -792,18 +792,21 @@ STDMETHODIMP InternalMetadataImportRO::GetIfaceTypeOfTypeDef(
     ULONG       *pIface)
 {
     LOCK_INTERNAL_READ();
-    HRESULT hr;
-    const void* blob;
-    ULONG size;
-    RETURN_IF_FAILED(GetCustomAttributeByName(classdef, INTEROP_INTERFACETYPE_TYPE, &blob, &size));
-    if (size < 5)
+    *pIface = DEFAULT_COM_INTERFACE_TYPE;
+    const void* blob = nullptr;
+    ULONG size = 0;
+    HRESULT hr = GetCustomAttributeByName(classdef, INTEROP_INTERFACETYPE_TYPE, &blob, &size);
+    if (hr != S_OK)
+        return hr;
+    if (size < 3)
         return CLDB_E_FILE_CORRUPT;
-    if (*(uint32_t*)blob != 0x1)
+    uint8_t const* bytes = static_cast<uint8_t const*>(blob);
+    if (bytes[0] != 1 || bytes[1] != 0)
         return META_E_CA_INVALID_BLOB;
 
-    *pIface = ((uint8_t*)blob + 4)[0];
-    if (*pIface > ifLast)
-        *pIface = ifDual;
+    *pIface = bytes[2];
+    if (*pIface >= ifLast)
+        *pIface = DEFAULT_COM_INTERFACE_TYPE;
     return S_OK;
 }
 

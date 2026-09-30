@@ -497,9 +497,45 @@ TEST(InternalConversion, ThreadSafeScopeSerializesInternalReadsWithWrites)
     ASSERT_EQ(S_OK, internal->FindTypeDef("", "Nested", type, &found));
     EXPECT_EQ(nested, found);
     ULONG isDual = 0;
-    EXPECT_EQ(CLDB_E_RECORD_NOTFOUND, internal->GetIsDualOfTypeDef(type, &isDual));
+    EXPECT_EQ(S_FALSE, internal->GetIsDualOfTypeDef(type, &isDual));
     EXPECT_EQ(1u, isDual);
+    ULONG ifaceType = UINT32_MAX;
+    EXPECT_EQ(S_FALSE, internal->GetIfaceTypeOfTypeDef(type, &ifaceType));
+    EXPECT_EQ(ifDual, ifaceType);
     ExpectInternalReadWaitsForPublicWrite(internal.p, type);
+}
+
+TEST(InternalConversion, InterfaceTypeAttributeDeterminesCOMInterfaceKind)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0,
+        IID_IMetaDataEmit, (IUnknown**)&emit));
+    mdTypeDef type;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("InteropInterface"),
+        tdPublic | tdInterface | tdAbstract, mdTypeDefNil, nullptr, &type));
+
+    mdTypeRef attributeType;
+    ASSERT_EQ(S_OK, emit->DefineTypeRefByName(mdTokenNil,
+        W("System.Runtime.InteropServices.InterfaceTypeAttribute"), &attributeType));
+    BYTE signature[] = { IMAGE_CEE_CS_CALLCONV_DEFAULT | IMAGE_CEE_CS_CALLCONV_HASTHIS,
+        1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_U2 };
+    mdMemberRef constructor;
+    ASSERT_EQ(S_OK, emit->DefineMemberRef(attributeType, W(".ctor"), signature,
+        sizeof(signature), &constructor));
+    BYTE attribute[] = { 1, 0, static_cast<BYTE>(ifDispatch), 0, 0, 0 };
+    mdCustomAttribute token;
+    ASSERT_EQ(S_OK, emit->DefineCustomAttribute(type, constructor, attribute,
+        sizeof(attribute), &token));
+
+    minipal::com_ptr<IMDInternalImport> internal;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMDInternalImport, (void**)&internal));
+    ULONG ifaceType = UINT32_MAX, isDual = UINT32_MAX;
+    ASSERT_EQ(S_OK, internal->GetIfaceTypeOfTypeDef(type, &ifaceType));
+    EXPECT_EQ(ifDispatch, ifaceType);
+    ASSERT_EQ(S_OK, internal->GetIsDualOfTypeDef(type, &isDual));
+    EXPECT_EQ(0u, isDual);
 }
 
 TEST(InternalConversion, ThreadSafeInternalReadersObserveConcurrentEmission)
