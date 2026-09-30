@@ -10,11 +10,9 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class DelegateHelpers
     {
-        private static object[] s_emptyObjectArray = Array.Empty<object>();
-
         internal static object[] GetEmptyObjectArray()
         {
-            return s_emptyObjectArray;
+            return Array.Empty<object>();
         }
     }
 }

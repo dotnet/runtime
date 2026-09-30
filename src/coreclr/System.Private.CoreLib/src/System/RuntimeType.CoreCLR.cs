@@ -2329,10 +2329,10 @@ namespace System
         private IntPtr m_cache;
         internal IntPtr m_handle;
 
-        internal static readonly RuntimeType ValueType = (RuntimeType)typeof(ValueType);
+        internal static RuntimeType ValueType => (RuntimeType)typeof(ValueType);
 
-        private static readonly RuntimeType ObjectType = (RuntimeType)typeof(object);
-        private static readonly RuntimeType StringType = (RuntimeType)typeof(string);
+        private static RuntimeType ObjectType => (RuntimeType)typeof(object);
+        private static RuntimeType StringType => (RuntimeType)typeof(string);
         #endregion
 
         #region Constructor
