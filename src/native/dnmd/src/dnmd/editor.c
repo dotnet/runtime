@@ -158,7 +158,7 @@ uint8_t* get_writable_table_data(mdtable_t* table, bool make_writable)
 }
 
 // Copy a row from one table to another.
-// The rows must have an identical number of columns and the columns must have the same definition other than column width.
+// The rows must have an identical number of columns and the columns must have the same definition other than width and offset.
 // This function does not ensure that the destination table is still sorted after the copy, so this should only be used in cases
 // where a table will keep the same sort order after the copy (such as resizing a table).
 static bool copy_row(uint8_t** dest, size_t* dest_len, mdtcol_t const* dest_cols, uint8_t const** src, size_t* src_len, mdtcol_t const* src_cols, uint8_t num_cols)
@@ -166,7 +166,8 @@ static bool copy_row(uint8_t** dest, size_t* dest_len, mdtcol_t const* dest_cols
     for (uint8_t col_index = 0; col_index < num_cols; col_index++)
     {
         // The source and destination column details can only differ by storage width.
-        assert((src_cols[col_index] & ~mdtc_widthmask) == (dest_cols[col_index] & ~mdtc_widthmask));
+        assert((src_cols[col_index] & ~(mdtc_widthmask | mdtc_comask)) ==
+               (dest_cols[col_index] & ~(mdtc_widthmask | mdtc_comask)));
 
         uint32_t data = 0;
 
@@ -275,7 +276,9 @@ static bool set_column_size_for_max_row_count(mdeditor_t* editor, mdtable_t* tab
             // They are not affected by the table's row count.
             bool is_table_or_coded_index = ((col_details & mdtc_idx_table) == mdtc_idx_table)
                                         || ((col_details & mdtc_idx_coded) == mdtc_idx_coded);
-            if (!is_minimal_delta || !is_table_or_coded_index)
+            // Growing one table cannot make a coded index narrower while another target stays large.
+            if ((updated_table == mdtid_Unused || new_max_row_count < initial_row_count)
+                && (!is_minimal_delta || !is_table_or_coded_index))
             {
                 new_column_details[col_index] = (col_details & ~mdtc_b4) | mdtc_b2;
             }
@@ -289,6 +292,7 @@ static bool set_column_size_for_max_row_count(mdeditor_t* editor, mdtable_t* tab
     uint8_t new_row_size = 0;
     for (uint8_t col_index = 0; col_index < table->column_count; col_index++)
     {
+        new_column_details[col_index] = (new_column_details[col_index] & ~mdtc_comask) | InsertOffset(new_row_size);
         new_row_size += (new_column_details[col_index] & mdtc_b2) == mdtc_b2 ? 2 : 4;
     }
 
@@ -340,6 +344,8 @@ static bool update_table_references_for_shifted_rows(mdeditor_t* editor, mdtable
     assert(updated_table != mdtid_Unused);
     // Make sure we aren't shifting into negative row ids or shifting above the max row id. That isn't legal.
     assert(changed_row_start + shift > 0 && changed_row_start + shift < 0x00ffffff);
+    uint32_t new_row_count = (uint32_t)(editor->cxt->tables[updated_table].row_count + shift);
+    bool is_append = changed_row_start > editor->cxt->tables[updated_table].row_count;
     for (mdtable_id_t table_id = mdtid_First; table_id < mdtid_End; table_id++)
     {
         mdtable_t* table = &editor->cxt->tables[table_id];
@@ -348,18 +354,23 @@ static bool update_table_references_for_shifted_rows(mdeditor_t* editor, mdtable
 
         // Update all columns in the table that can refer to the updated table
         // to be the correct width for the updated table's new size.
-        if (!set_column_size_for_max_row_count(editor, table, updated_table, mdtc_none, (uint32_t)(table->row_count + shift)))
+        if (!set_column_size_for_max_row_count(editor, table, updated_table, mdtc_none, new_row_count))
             return false;
 
         for (uint8_t i = 0; i < table->column_count; i++)
         {
+            // Appending does not shift existing tokens; only one-past-end list indices move.
+            if (is_append && !col_points_to_list(table_id, index_to_col(i, table_id)))
+                continue;
+
             mdtcol_t col_details = table->column_details[i];
             if (((col_details & mdtc_idx_table) == mdtc_idx_table && ExtractTable(col_details) == updated_table)
                 || ((col_details & mdtc_idx_coded) == mdtc_idx_coded && is_coded_index_target(col_details, updated_table)))
             {
                 // We've found a column that will need updating.
                 mdcursor_t c = create_cursor(table, 1);
-                update_shifted_row_references(&c, table->row_count, i, updated_table, changed_row_start, (uint32_t)(changed_row_start + shift));
+                if (update_shifted_row_references(&c, table->row_count, i, updated_table, changed_row_start, (uint32_t)(changed_row_start + shift)) < 0)
+                    return false;
             }
         }
     }

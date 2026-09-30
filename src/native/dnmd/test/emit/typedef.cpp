@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "emit.hpp"
 #include <atomic>
 #include <thread>
@@ -305,4 +308,33 @@ TEST(TypeDef, SetProps)
     ASSERT_EQ(S_OK, import->GetInterfaceImplProps(interfaceImpls[0], &classType, &interfaceType));
     EXPECT_EQ(typeDef, classType);
     EXPECT_EQ(implements[0], interfaceType);
+}
+
+TEST(TypeDef, AppendingMethodPreservesEmptyTypeList)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+    mdTypeDef first, empty;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("First"), tdPublic, mdTypeDefNil, nullptr, &first));
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("Empty"), tdPublic, mdTypeDefNil, nullptr, &empty));
+
+    std::array<uint8_t, 3> signature = { IMAGE_CEE_CS_CALLCONV_DEFAULT, 0, ELEMENT_TYPE_VOID };
+    mdMethodDef method;
+    ASSERT_EQ(S_OK, emit->DefineMethod(first, W("Method"), mdPublic, signature.data(),
+        (ULONG)signature.size(), 0, 0, &method));
+
+    minipal::com_ptr<IMetaDataImport> import;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
+    HCORENUM hEnum = nullptr;
+    mdMethodDef result;
+    ULONG count = UINT32_MAX;
+    EXPECT_EQ(S_FALSE, import->EnumMethods(&hEnum, empty, &result, 1, &count));
+    EXPECT_EQ(0u, count);
+    import->CloseEnum(hEnum);
+
+    hEnum = nullptr;
+    ASSERT_EQ(S_OK, import->EnumMethods(&hEnum, first, &result, 1, &count));
+    EXPECT_EQ(1u, count);
+    EXPECT_EQ(method, result);
+    import->CloseEnum(hEnum);
 }

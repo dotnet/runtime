@@ -98,3 +98,67 @@ TEST(TypeRef, StringHeapGrowsToFourByteIndices)
         (ULONG)name.size(), &nameLength));
     EXPECT_EQ(W("AfterGrowth"), name.substr(0, nameLength - 1));
 }
+
+TEST(TypeRef, ForwardResolutionScopeSurvivesAppend)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+
+    mdTypeRef nested, enclosing;
+    ASSERT_EQ(S_OK, emit->DefineTypeRefByName(TokenFromRid(2, mdtTypeRef), W("Nested"), &nested));
+    ASSERT_EQ(S_OK, emit->DefineTypeRefByName(TokenFromRid(1, mdtModule), W("Enclosing"), &enclosing));
+
+    minipal::com_ptr<IMetaDataImport> import;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
+    mdToken resolutionScope;
+    WCHAR name[16];
+    ULONG nameLength;
+    ASSERT_EQ(S_OK, import->GetTypeRefProps(nested, &resolutionScope, name, 16, &nameLength));
+    EXPECT_EQ(enclosing, resolutionScope);
+}
+
+TEST(TypeRef, WidenReferencedCodedIndices)
+{
+    minipal::com_ptr<IMetaDataDispenserEx> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenserEx, (void**)&dispenser));
+    VARIANT option{};
+    V_VT(&option) = VT_UI4;
+    V_UI4(&option) = MDNoDupChecks;
+    ASSERT_EQ(S_OK, dispenser->SetOption(MetaDataCheckDuplicatesFor, &option));
+
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0,
+        IID_IMetaDataEmit, (IUnknown**)&emit));
+    mdToken module = TokenFromRid(1, mdtModule);
+    mdTypeRef original;
+    ASSERT_EQ(S_OK, emit->DefineTypeRefByName(module, W("Original"), &original));
+    mdTypeDef type;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("Derived"), tdPublic, original, nullptr, &type));
+
+    mdTypeRef last = original;
+    for (int i = 1; i < 16'384; ++i)
+        ASSERT_EQ(S_OK, emit->DefineTypeRefByName(module, W("Filler"), &last));
+    ASSERT_EQ(16'384u, RidFromToken(last));
+
+    minipal::com_ptr<IMetaDataImport> import;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
+    WCHAR name[16];
+    ULONG nameLength;
+    DWORD flags;
+    mdToken extends;
+    ASSERT_EQ(S_OK, import->GetTypeDefProps(type, name, 16, &nameLength, &flags, &extends));
+    EXPECT_EQ(original, extends);
+    ASSERT_EQ(S_OK, emit->SetTypeDefProps(type, UINT32_MAX, last, nullptr));
+    ASSERT_EQ(S_OK, import->GetTypeDefProps(type, name, 16, &nameLength, &flags, &extends));
+    EXPECT_EQ(last, extends);
+
+    DWORD size;
+    ASSERT_EQ(S_OK, emit->GetSaveSize(cssAccurate, &size));
+    std::vector<uint8_t> data(size);
+    ASSERT_EQ(S_OK, emit->SaveToMemory(data.data(), size));
+    minipal::com_ptr<IMetaDataImport> reopened;
+    ASSERT_EQ(S_OK, dispenser->OpenScopeOnMemory(data.data(), size, ofReadOnly | ofCopyMemory,
+        IID_IMetaDataImport, (IUnknown**)&reopened));
+    ASSERT_EQ(S_OK, reopened->GetTypeDefProps(type, name, 16, &nameLength, &flags, &extends));
+    EXPECT_EQ(last, extends);
+}

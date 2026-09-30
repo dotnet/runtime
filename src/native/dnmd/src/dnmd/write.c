@@ -439,11 +439,9 @@ int32_t update_shifted_row_references(mdcursor_t* c, uint32_t count, uint8_t col
     return count;
 }
 
-static bool col_points_to_list(mdcursor_t* c, col_index_t col_index)
+bool col_points_to_list(mdtable_id_t table_id, col_index_t col_index)
 {
-    assert(c != NULL);
-
-    switch (CursorTable(c)->table_id)
+    switch (table_id)
     {
     case mdtid_TypeDef:
         return col_index == mdtTypeDef_FieldList || col_index == mdtTypeDef_MethodList;
@@ -457,6 +455,8 @@ static bool col_points_to_list(mdcursor_t* c, col_index_t col_index)
     case mdtid_LocalScope:
         return col_index == mdtLocalScope_VariableList || col_index == mdtLocalScope_ConstantList;
 #endif // DNMD_PORTABLE_PDB
+    default:
+        break;
     }
     return false;
 }
@@ -589,7 +589,7 @@ static bool insert_row_cursor_relative(mdcursor_t row, int32_t offset, mdcursor_
     for (uint8_t i = 0; i < table->column_count; i++)
     {
         col_index_t col = index_to_col(i, table->table_id);
-        if (col_points_to_list(&next_row, col))
+        if (col_points_to_list(CursorTable(&next_row)->table_id, col))
         {
             if (!copy_cursor_column(*new_row, next_row, col))
                 return false;
@@ -652,7 +652,7 @@ bool md_append_row(mdhandle_t handle, mdtable_id_t table_id, mdcursor_t* new_row
 
 static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdcursor_t row_to_insert_before, mdcursor_t* new_row)
 {
-    assert(col_points_to_list(&list_owner, list_col));
+    assert(col_points_to_list(CursorTable(&list_owner)->table_id, list_col));
     // Get the range of rows already in the parent's child list.
     // If we have an indirection table already, we will get back a range in the indirection table here.
     mdcursor_t range;
@@ -765,7 +765,7 @@ static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdc
 
 bool md_add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdcursor_t* new_row)
 {
-    if (!col_points_to_list(&list_owner, list_col))
+    if (!col_points_to_list(CursorTable(&list_owner)->table_id, list_col))
        return false;
 
     // Get the range of rows already in the parent's child list.
@@ -796,7 +796,7 @@ bool md_add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdcurso
 
 bool md_add_new_row_to_sorted_list(mdcursor_t list_owner, col_index_t list_col, col_index_t sort_order_col, uint32_t sort_col_value, mdcursor_t* new_row)
 {
-    if (!col_points_to_list(&list_owner, list_col))
+    if (!col_points_to_list(CursorTable(&list_owner)->table_id, list_col))
        return false;
 
     // Get the range of rows already in the parent's child list.
@@ -887,7 +887,7 @@ bool copy_cursor(mdcursor_t dest, mdcursor_t src)
         // We don't want to copy over columns that point to lists in other tables.
         // These columns have very particular behavior and are handled separately by
         // direct manipulation in the other operations.
-        if (col_points_to_list(&src, col))
+        if (col_points_to_list(CursorTable(&src)->table_id, col))
             continue;
 
         if (!copy_cursor_column(dest, src, col))
