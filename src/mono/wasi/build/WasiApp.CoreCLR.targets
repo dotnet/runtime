@@ -93,8 +93,6 @@
     <PropertyGroup>
       <WasiCoreCLRHostNativeDir Condition="'$(WasiCoreCLRHostNativeDir)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)</WasiCoreCLRHostNativeDir>
       <WasiCoreCLRNativeRuntimeDir Condition="'$(WasiCoreCLRNativeRuntimeDir)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)</WasiCoreCLRNativeRuntimeDir>
-      <WasiCoreCLRSystemPrivateCoreLibPath Condition="'$(WasiCoreCLRSystemPrivateCoreLibPath)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)System.Private.CoreLib.dll')">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)System.Private.CoreLib.dll</WasiCoreCLRSystemPrivateCoreLibPath>
-      <WasiCoreCLRSystemPrivateCoreLibPath Condition="'$(WasiCoreCLRSystemPrivateCoreLibPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</WasiCoreCLRSystemPrivateCoreLibPath>
     </PropertyGroup>
   </Target>
 
@@ -103,29 +101,6 @@
           DependsOnTargets="_InitializeCommonProperties"
           Condition="'$(PublishReadyToRun)' != 'true'">
     <RemoveDir Directories="$([MSBuild]::NormalizeDirectory('$(WasmAppDir)', 'managed', 'comp'))" />
-  </Target>
-
-  <!-- The SDK does not resolve a CoreCLR wasi-wasm runtime pack, so its normal R2R input list
-       contains only the app closure and crossgen2 cannot resolve System.Private.CoreLib. Add the
-       implementation framework that _WasiCopyFrameworkToManaged deploys later, and compile the
-       whole closure into the composite. -->
-  <Target Name="_WasiCoreCLRFeedReadyToRunCompileList"
-          BeforeTargets="_PrepareForReadyToRunCompilation"
-          DependsOnTargets="_WasiCoreCLRSetRuntimePaths"
-          Condition="'$(PublishReadyToRun)' == 'true'">
-    <ItemGroup>
-      <_WasiReadyToRunFrameworkInput Include="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
-      <_WasiReadyToRunFrameworkInput Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll"
-                                     Exclude="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
-      <!-- Applications can carry package implementations with the same simple name as
-           framework assemblies. Keep the app-selected copy authoritative for crossgen2. -->
-      <_WasiReadyToRunFrameworkInput Remove="@(ResolvedFileToPublish)"
-                                     MatchOnMetadata="Filename;Extension" />
-      <ResolvedFileToPublish Include="@(_WasiReadyToRunFrameworkInput)"
-                             PostprocessAssembly="true"
-                             RelativePath="%(_WasiReadyToRunFrameworkInput.FileName)%(_WasiReadyToRunFrameworkInput.Extension)"
-                             CopyToPublishDirectory="PreserveNewest" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_WasiCoreCLRInspectReadyToRunComposite"
@@ -184,35 +159,20 @@
        isn't in the pack; no-op _ReadWasmProps so the build doesn't fail looking for it. -->
   <Target Name="_ReadWasmProps" />
 
-  <!-- The SDK doesn't resolve a CoreCLR runtime pack for wasi-wasm, so the self-contained
-       publish only lands the app's own closure. Copy the framework (pack lib dir) +
-       System.Private.CoreLib.dll (pack native dir) into managed/, next to the wasihost host
-       (linked below), which finds them via CORE_ROOT. See https://github.com/dotnet/runtime/issues/130129. -->
-  <Target Name="_WasiCopyFrameworkToManaged"
+  <!-- The framework, including System.Private.CoreLib.dll, comes from the resolved runtime pack
+       through the publish list, so trimming and ReadyToRun see the whole closure. Place
+       icudt.dat next to the managed assemblies (CORE_ROOT) so the wasihost corehost, which
+       preloads it before managed globalization initializes, can find it. -->
+  <Target Name="_WasiCoreCLRPrepareManagedDir"
           AfterTargets="_WasiGenerateAppBundle"
           DependsOnTargets="_WasiCoreCLRSetRuntimePaths"
           Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
-    <Error Condition="!Exists('$(WasiCoreCLRSystemPrivateCoreLibPath)')"
-           Text="CoreCLR System.Private.CoreLib.dll not found at: $(WasiCoreCLRSystemPrivateCoreLibPath)" />
     <ItemGroup>
-      <_WasiCoreCLRCoreLib Include="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
-      <!-- Framework assemblies from the runtime pack (implementation, not ref). Filter out
-           any the app already published (its version is authoritative) into a separate list
-           so a single Copy runs on the remainder - avoids per-file Copy task batching. -->
-      <_WasiCoreCLRFrameworkFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)\*.dll"
-                                  Exclude="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
-      <_WasiCoreCLRFrameworkToCopy Include="@(_WasiCoreCLRFrameworkFiles)"
-                                   Condition="!Exists('$(WasmAppDir)managed\%(_WasiCoreCLRFrameworkFiles.FileName)%(_WasiCoreCLRFrameworkFiles.Extension)')" />
+      <_WasiCoreCLRBundledCoreLib Include="@(_WasmAssembliesInternal)"
+                                  Condition="'%(Filename)%(Extension)' == 'System.Private.CoreLib.dll'" />
     </ItemGroup>
-    <Copy SourceFiles="@(_WasiCoreCLRCoreLib)"
-          DestinationFolder="$(WasmAppDir)managed"
-          SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(_WasiCoreCLRFrameworkToCopy)"
-          DestinationFolder="$(WasmAppDir)managed"
-          SkipUnchangedFiles="true" />
-    <!-- Non-invariant: place icudt.dat next to the managed assemblies (CORE_ROOT) so the
-         wasihost corehost, which preloads it before managed globalization initializes, can
-         find it. -->
+    <Error Condition="'@(_WasiCoreCLRBundledCoreLib)' == ''"
+           Text="System.Private.CoreLib.dll is not part of the bundled assemblies. Ensure the Microsoft.NETCore.App wasi-wasm runtime pack is resolved." />
     <Copy Condition="'$(InvariantGlobalization)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat')"
           SourceFiles="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
           DestinationFolder="$(WasmAppDir)managed"
@@ -238,7 +198,7 @@
   </Target>
 
   <Target Name="_WasiCoreCLRRelinkCoreRun"
-          AfterTargets="_WasiCopyFrameworkToManaged"
+          AfterTargets="_WasiCoreCLRPrepareManagedDir"
           DependsOnTargets="_WasiCoreCLRSetRuntimePaths;_SetupWasiSdk;_WasiCoreCLRInspectReadyToRunComposite"
           Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
 
