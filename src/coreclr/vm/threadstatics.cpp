@@ -32,6 +32,16 @@ static uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_N
 static uint32_t g_directThreadLocalTLSBytesAvailable = EXTENDED_DIRECT_THREAD_LOCAL_SIZE;
 
 static CrstStatic g_TLSCrst;
+static Volatile<bool> g_hasRetiredTLSIndices = false;
+
+// Collectible TLS indices are quarantined before they can be reused. Loader allocator
+// cleanup removes the MethodTable from the active map and marks its index retired, so
+// new types cannot claim the index while any thread can still contain state from the
+// old owner. At the next EE synchronization point, CleanupRetiredTLSIndices clears each
+// thread's loader handle for the old owner. Only after that pass is complete is the marker
+// changed to reusable and FindClearedIndex can return it.
+static constexpr uint8_t ReusableTLSIndexMarker = 0;
+static constexpr uint8_t RetiredTLSIndexMarker = 1;
 #endif
 
 // This can be used for out of thread access to TLS data.
@@ -289,13 +299,28 @@ bool TLSIndexToMethodTableMap::FindClearedIndex(TLSIndex* pIndex)
 
     for (const auto& entry : *this)
     {
-        if (entry.IsClearedValue)
+        if (entry.IsClearedValue && entry.ClearedMarker == ReusableTLSIndexMarker)
         {
             *pIndex = entry.TlsIndex;
             return true;
         }
     }
     return false;
+}
+
+void TLSIndexToMethodTableMap::SetClearedMarker(TLSIndex index, uint8_t marker)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(index.GetIndexOffset() < m_maxIndex);
+    _ASSERTE(IsClearedValue(pMap[index.GetIndexOffset()]));
+    VolatileStore(&pMap[index.GetIndexOffset()], (TADDR)((marker << 2) | 0x3));
 }
 
 void InitializeThreadStaticData()
@@ -803,9 +828,62 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
     while (current != end)
     {
-        g_pThreadStaticCollectibleTypeIndices->Clear(tlsIndicesToCleanup[current], 0);
+        g_pThreadStaticCollectibleTypeIndices->Clear(tlsIndicesToCleanup[current], RetiredTLSIndexMarker);
         ++current;
     }
+
+    g_hasRetiredTLSIndices.Store(true);
+}
+
+void CleanupRetiredTLSIndices()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    if (!g_hasRetiredTLSIndices.Load())
+    {
+        return;
+    }
+
+    _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
+
+    CrstHolder ch(&g_TLSCrst);
+
+    if (!g_hasRetiredTLSIndices.Load())
+    {
+        return;
+    }
+
+    for (const TLSIndexToMethodTableMap::entry& entry : *g_pThreadStaticCollectibleTypeIndices)
+    {
+        if (!entry.IsClearedValue || entry.ClearedMarker != RetiredTLSIndexMarker)
+        {
+            continue;
+        }
+
+        int32_t indexOffset = entry.TlsIndex.GetIndexOffset();
+        Thread* pThread = nullptr;
+        while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != nullptr)
+        {
+            if (indexOffset >= pThread->cLoaderHandles)
+            {
+                continue;
+            }
+
+            SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+            pThread->pLoaderHandles[indexOffset] = (LOADERHANDLE)nullptr;
+        }
+
+        g_pThreadStaticCollectibleTypeIndices->SetClearedMarker(entry.TlsIndex, ReusableTLSIndexMarker);
+    }
+
+    g_hasRetiredTLSIndices.Store(false);
 }
 
 static void* GetTlsIndexObjectAddress();

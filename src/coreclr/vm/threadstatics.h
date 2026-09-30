@@ -148,6 +148,10 @@ public:
         if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
         {
             TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
+            if (IsClearedValue(rawValue))
+            {
+                return NULL;
+            }
             return (PTR_MethodTable)UnwrapValue(rawValue);
         }
         return NULL;
@@ -326,6 +330,7 @@ public:
     void Set(TLSIndex index, PTR_MethodTable pMT, bool isGCStatic);
     bool FindClearedIndex(TLSIndex* pIndex);
     void Clear(TLSIndex index, uint8_t whenCleared);
+    void SetClearedMarker(TLSIndex index, uint8_t marker);
 #endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -353,6 +358,7 @@ void FreeThreadStaticData(Thread* pThread);
 void AssertThreadStaticDataFreed();
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
+void CleanupRetiredTLSIndices();
 void* GetThreadLocalStaticBase(TLSIndex index);
 void GetThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 bool CanJITOptimizeTLSAccess();
