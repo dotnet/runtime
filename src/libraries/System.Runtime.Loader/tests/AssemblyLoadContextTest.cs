@@ -18,6 +18,7 @@ namespace System.Runtime.Loader.Tests
         private const string TestAssembly2 = "System.Runtime.Loader.Test.Assembly2";
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134952", TestPlatforms.Wasi)]
         public static void GetAssemblyNameTest_ValidAssembly()
         {
             var expectedName = typeof(AssemblyLoadContextTest).Assembly.GetName();
