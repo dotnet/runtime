@@ -4128,9 +4128,6 @@ void CodeGen::genCallFinally(BasicBlock* block)
 
     assert((funcletIndex >= 1) && (funcletIndex < m_compiler->compFuncCount()));
 
-    // The finally can throw or trigger GC, so the calling frame must be walkable
-    // even if this is its only call.
-    //
     ensureCurrentFuncIsUnwindable();
 
     EmitCallParams params;
