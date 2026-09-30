@@ -251,17 +251,30 @@ In live mode:
 
 1. First prepare the complete batch of proposed issues.
 2. Write all draft files as described above.
-3. Process the proposed issues one by one. For each KBE:
-   - Ask the user whether to create this specific issue.
+3. Follow the repository's
+   [GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization).
+   In an interactive session, explicit advance permission to compose and
+   publish KBEs for the specified PR may cover the whole batch. Do not ask
+   again or require separate approval of the generated text for issues within
+   that scope. Invoking this skill or asking to analyze CI alone is not
+   permission to publish.
+4. Process the proposed issues one by one. For each KBE:
+   - If explicit advance permission covers this issue in an interactive
+     session, create it without asking again.
+   - Otherwise, ask the user whether to create this specific issue.
    - The question must include:
      - the proposed issue title,
+     - the proposed labels and full body,
+     - the destination repository,
      - a short description of what the KBE is about,
      - the list of failures it covers, or a shortened summary if the list is
        long,
      - a clickable draft-file link when possible plus the plain absolute path,
      - a clear statement that the GitHub issue will be created on behalf of the
        currently authenticated user.
-   - Only create that issue if the user explicitly confirms.
+   - Without advance permission, only create that issue if the user explicitly
+     confirms. If approval cannot be obtained, leave it as a draft and report
+     the pending decision.
    - If the user declines, skip that issue and continue to the next proposed
      KBE.
 
@@ -272,8 +285,7 @@ the issue is being filed under a developer account. A concise note is enough,
 for example:
 
 > [!NOTE]
-> This issue draft was prepared with GitHub Copilot assistance and reviewed by
-> the submitting developer.
+> This issue was prepared with GitHub Copilot assistance.
 
 ## Step 6: Final output format
 

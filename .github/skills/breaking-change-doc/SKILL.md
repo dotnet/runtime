@@ -29,7 +29,10 @@ migration guidance. This skill automates that process:
 ### Trigger modes
 
 - **Interactive**: Ask Copilot (e.g. "Document the breaking change
-  in PR #114929"). The skill presents a draft for review before publishing.
+  in PR #114929"). The skill prepares a docs issue draft and posts the
+  documentation comment on the source PR without another approval step,
+  unless the user requests draft-only, dry-run, or review before publication.
+  Creating the docs issue is a separate publication decision.
 - **Automated**: The [GitHub Agentic Workflow](https://github.github.com/gh-aw/)
   at `.github/workflows/breaking-change-doc.md` triggers when a PR labeled
   `needs-breaking-change-doc-created` is merged (or the label is added to an
@@ -309,15 +312,25 @@ The script:
 
 ### Post the comment
 
-When running interactively (not in dry-run mode), post the contents of
-`artifacts/docs/breakingChanges/pr-comment.md` as a comment on the original
-dotnet/runtime PR using GitHub tools.
+Follow the repository's [GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization).
+A user-requested execution of this documentation workflow authorizes posting
+the contents of `artifacts/docs/breakingChanges/pr-comment.md` on the specified
+source dotnet/runtime PR without another approval step. This authorizes only
+the generated documentation comment, not creating the docs issue or posting
+unrelated comments.
 
-When running in automated (gh-aw) mode, use the add_comment safe-output tool to post the comment.
+Invoking this skill incidentally during another coding task does not grant
+that permission. In that case, use the general publication authorization
+rules: proceed with explicit advance permission in an interactive session,
+or present the proposed comment and obtain approval before posting.
 
-When in dry-run mode or when the user has not explicitly asked to comment,
-skip posting — the two files under `artifacts/docs/breakingChanges/` are the
-outputs for review.
+When actually executing a repository-configured gh-aw workflow that authorizes
+this comment, use its add_comment safe-output tool within the configured scope.
+Running unattended or invoking this skill alone does not grant that permission.
+
+If the user requests draft-only, dry-run, or review before publication, or
+publication is otherwise unauthorized, skip posting — the two files under
+`artifacts/docs/breakingChanges/` are the outputs for review.
 
 ### AI-generated content disclosure
 
@@ -334,9 +347,12 @@ about any aspect of the documentation:
 
 1. Present the full issue content in chat for review.
 2. Ask the user to confirm before creating the issue.
-3. Only publish after explicit confirmation.
+3. Only create the issue after explicit confirmation.
 
-When the user has not explicitly asked to create the issue, default to draft mode.
+When the user has not explicitly asked to create the docs issue, keep that
+issue as a draft. This alone does not suppress an authorized source-PR
+documentation comment. A draft-only, dry-run, or review-before-publication
+request suppresses the comment as well.
 
 ---
 
@@ -347,7 +363,10 @@ If the user provides a GitHub search query or asks to process multiple PRs:
 1. Search for matching PRs using the query.
 2. For each PR, run Steps 1-5.
 3. Present a summary table of all PRs with their status (already documented vs needs docs).
-4. For PRs needing docs, present drafts and ask for confirmation before creating issues.
+4. For PRs needing docs, prepare drafts and apply the publication authorization
+   rules above. In an interactive session, advance permission may cover the
+   whole specified batch; otherwise, present each draft and obtain approval
+   before creating that issue.
 
 ---
 
