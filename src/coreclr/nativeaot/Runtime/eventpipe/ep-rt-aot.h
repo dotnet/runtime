@@ -11,7 +11,6 @@
 #endif
 
 #include <minipal/utf8.h>
-#include <minipal/thread.h>
 #include <minipal/time.h>
 
 #include <eventpipe/ep-rt-config.h>
@@ -1640,7 +1639,7 @@ ep_rt_thread_set_activity_id (
 #define EP_YIELD_WHILE(condition) do { \
     uint32_t switch_count = 0; \
     while (condition) { \
-        minipal_switch_to_thread (0, ++switch_count); \
+        minipal_switch_to_thread (++switch_count); \
     } \
 } while (0)
 

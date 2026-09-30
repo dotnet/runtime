@@ -4,28 +4,15 @@
 #ifndef HAVE_MINIPAL_THREAD_H
 #define HAVE_MINIPAL_THREAD_H
 
-#include <stdbool.h>
-#include <stdint.h>
-
 #ifndef HOST_WINDOWS
+
 #include <stddef.h>
 #include <pthread.h>
 #include <minipal/utils.h>
-#endif // !HOST_WINDOWS
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * Yield to another thread, periodically sleeping after repeated yields.
- * A nonzero sleepMilliseconds sleeps explicitly instead of yielding.
- *
- * @return Whether the OS yield succeeded, or true for an explicit sleep.
- */
-bool minipal_switch_to_thread(uint32_t sleepMilliseconds, uint32_t switchCount);
-
-#ifndef HOST_WINDOWS
 
 /**
  * Get the current thread ID without caching in a TLS variable.
@@ -67,10 +54,10 @@ inline size_t minipal_get_current_thread_id(void)
  */
 int minipal_set_thread_name(pthread_t thread, const char* name);
 
-#endif // !HOST_WINDOWS
-
 #ifdef __cplusplus
 }
 #endif // extern "C"
+
+#endif // !HOST_WINDOWS
 
 #endif // HAVE_MINIPAL_THREAD_H

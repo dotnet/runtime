@@ -16,7 +16,6 @@ set(SOURCES
     rwlock.c
     debugger.c
     strings.c
-    thread.c
     time.c
     unicodedata.c
     utf8.c
@@ -28,6 +27,7 @@ if(CLR_CMAKE_HOST_UNIX)
     list(APPEND SOURCES
         cpucount.c
         cpuid.c
+        thread.c
     )
 endif()
 

@@ -12,13 +12,7 @@
 
 #include "thread.h"
 
-#include <minipal/time.h>
 #include <stdint.h>
-
-#if HOST_WINDOWS
-#include <Windows.h>
-#else
-#include <sched.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -36,9 +30,6 @@
 #include <kernel/OS.h>
 #endif
 
-#endif // HOST_WINDOWS
-
-#ifndef HOST_WINDOWS
 #ifdef PTHREAD_MAX_NAMELEN_NP
 #define MINIPAL_MAX_THREAD_NAME_LENGTH (PTHREAD_MAX_NAMELEN_NP - 1)
 #elif defined(__APPLE__)
@@ -119,36 +110,5 @@ int minipal_set_thread_name(pthread_t thread, const char* name)
 #else
     return pthread_setname_np(thread, threadName);
 #endif
-#endif
-}
-#endif // !HOST_WINDOWS
-
-bool minipal_switch_to_thread(uint32_t sleepMilliseconds, uint32_t switchCount)
-{
-    if (sleepMilliseconds > 0)
-    {
-        minipal_sleep(sleepMilliseconds);
-        return true;
-    }
-
-    // Short yield loops avoid sleeps; prolonged contention must eventually
-    // sleep so that a lower-priority thread can make progress. These thresholds
-    // correspond to roughly the same spinning time on ARM and other CPUs.
-#if defined(HOST_ARM)
-    const uint32_t sleepStartThreshold = 5 * 1024;
-#else
-    const uint32_t sleepStartThreshold = 32 * 1024;
-#endif
-    if (switchCount >= sleepStartThreshold)
-    {
-        minipal_sleep(1);
-    }
-
-#if HOST_WINDOWS
-    return SwitchToThread() != 0;
-#elif defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
-    return false;
-#else
-    return sched_yield() == 0;
 #endif
 }

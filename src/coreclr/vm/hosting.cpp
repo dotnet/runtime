@@ -3,7 +3,6 @@
 //
 
 #include "common.h"
-#include <minipal/thread.h>
 #include <minipal/time.h>
 
 #include "mscoree.h"
@@ -226,8 +225,14 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
     }
     CONTRACTL_END;
 
+    if (dwSleepMSec > 0)
+    {
+        minipal_sleep(dwSleepMSec);
+        return TRUE;
+    }
+
     _ASSERTE(CALLER_LIMITS_SPINNING == 0);
-    return minipal_switch_to_thread(dwSleepMSec, dwSwitchCount);
+    return minipal_switch_to_thread(dwSwitchCount);
 }
 
 // Locking routines supplied by the EE to the other DLLs of the CLR.  In a _DEBUG
