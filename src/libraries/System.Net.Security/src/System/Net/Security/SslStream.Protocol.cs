@@ -1157,7 +1157,9 @@ namespace System.Net.Security
                     ref alertToken,
                     ref sslPolicyErrors,
                     out chainStatus,
-                    out certificateValidationSkippedOnResume);
+                    out certificateValidationSkippedOnResume,
+                    peerCertificateChain: null,
+                    cloneCertificateChainPolicy: false);
             }
             finally
             {
@@ -1214,7 +1216,9 @@ namespace System.Net.Security
                 ref alertToken,
                 ref sslPolicyErrors,
                 out chainStatus,
-                out _);
+                out _,
+                peerCertificateChain: null,
+                cloneCertificateChainPolicy: false);
         }
 
         internal static bool VerifyRemoteCertificateCore(
@@ -1234,7 +1238,9 @@ namespace System.Net.Security
             ref ProtocolToken alertToken,
             ref SslPolicyErrors sslPolicyErrors,
             out X509ChainStatusFlags chainStatus,
-            out bool certificateValidationSkippedOnResume)
+            out bool certificateValidationSkippedOnResume,
+            X509Certificate2Collection? peerCertificateChain,
+            bool cloneCertificateChainPolicy)
         {
             chainStatus = X509ChainStatusFlags.NoError;
             certificateValidationSkippedOnResume = false;
@@ -1299,7 +1305,9 @@ namespace System.Net.Security
 
                 if (sslAuthenticationOptions.CertificateChainPolicy != null)
                 {
-                    chain.ChainPolicy = sslAuthenticationOptions.CertificateChainPolicy;
+                    chain.ChainPolicy = cloneCertificateChainPolicy
+                        ? sslAuthenticationOptions.CertificateChainPolicy.Clone()
+                        : sslAuthenticationOptions.CertificateChainPolicy;
                 }
                 else
                 {
@@ -1323,6 +1331,11 @@ namespace System.Net.Security
                             chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
                         }
                     }
+                }
+
+                if (peerCertificateChain is { Count: > 0 })
+                {
+                    chain.ChainPolicy.ExtraStore.AddRange(peerCertificateChain);
                 }
 
                 // set ApplicationPolicy unless already provided.
