@@ -15,8 +15,7 @@ using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
 namespace System.Text.RegularExpressions.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-    [SkipOnPlatform(TestPlatforms.Wasi, "Roslyn workspaces block on SemaphoreSlim, which single-threaded WASI does not support.")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsMultithreadingSupported))] // Roslyn workspaces block on SemaphoreSlim
     public class UpgradeToGeneratedRegexAnalyzerTests
     {
         private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1045";
