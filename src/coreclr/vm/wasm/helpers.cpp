@@ -543,13 +543,13 @@ EXTERN_C void JIT_WasmProfSamplepointImpl(uintptr_t callersStackPointer)
 }
 
 // Naked shim modeled on JIT_PollGC: publish the caller's shadow SP to the __stack_pointer global
-// before any native code runs, then restore it. The pep parameter is unused scratch (as in JIT_PollGC).
-EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, PCODE portableEntryPointContext);
-EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+// before any native code runs, then restore it. The second parameter provides a scratch local.
+EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, uintptr_t scratch);
+EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, uintptr_t scratch)
 {
     asm(
         "global.get __stack_pointer\n"
-        "local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
+        "local.set 1\n"                 /* save previous __stack_pointer into the scratch local */
         "local.get 0\n"                 /* callersStackPointer */
         "global.set __stack_pointer\n"
         "local.get 0\n"                 /* sp argument for the impl */

@@ -3518,8 +3518,8 @@ PhaseStatus Compiler::fgWasmProfInstrument()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Insert a samplepoint at the beginning of a block. Placed after any Virtual IP
-    // store that fgWasmVirtualIP will later insert at the block's beginning.
+    // Insert a samplepoint at the beginning of a block. Because fgWasmVirtualIP runs
+    // later and also inserts at the beginning, its Virtual IP store will precede the samplepoint.
     auto insertSamplepoint = [this](BasicBlock* block) {
         GenTree* const samplepoint = new (this, GT_WASM_PROF_SAMPLEPOINT) GenTree(GT_WASM_PROF_SAMPLEPOINT, TYP_VOID);
         LIR::AsRange(block).InsertAtBeginning(samplepoint);

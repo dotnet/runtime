@@ -103,7 +103,7 @@ EXTERN_C FCDECL0(void, JIT_PollGC);
 
 #ifdef TARGET_WASM
 // WASM EventPipe CPU-sampling samplepoint helper (defined in vm/wasm/helpers.cpp).
-EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, PCODE portableEntryPointContext);
+EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, uintptr_t scratch);
 #endif // TARGET_WASM
 
 #ifndef JIT_GetGCStaticBaseNoCtor
