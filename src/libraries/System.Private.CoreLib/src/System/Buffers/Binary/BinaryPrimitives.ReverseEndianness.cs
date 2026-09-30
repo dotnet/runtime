@@ -291,8 +291,12 @@ namespace System.Buffers.Binary
                 ThrowDestinationTooSmall();
             }
 
-            if (!source.Overlaps(destination, out int elementOffset) ||
-                elementOffset <= 0)
+            ref T sourceRef = ref MemoryMarshal.GetReference(source);
+            ref T destRef = ref MemoryMarshal.GetReference(destination);
+
+            if (Unsafe.AreSame(ref sourceRef, ref destRef) ||
+                !source.Overlaps(destination, out int elementOffset) ||
+                elementOffset < 0)
             {
                 // Either there's no overlap between the source and the destination, or there's overlap but the
                 // destination starts at or before the source.  That means we can safely iterate from beginning
@@ -305,7 +309,7 @@ namespace System.Buffers.Binary
                 {
                     while (i <= source.Length - Vector256<T>.Count)
                     {
-                        TReverser.Reverse(Vector256.Create(source.Slice(i))).CopyTo(destination.Slice(i));
+                        Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
                         i += Vector256<T>.Count;
                     }
                 }
@@ -314,14 +318,14 @@ namespace System.Buffers.Binary
                 {
                     while (i <= source.Length - Vector128<T>.Count)
                     {
-                        TReverser.Reverse(Vector128.Create(source.Slice(i))).CopyTo(destination.Slice(i));
+                        Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
                         i += Vector128<T>.Count;
                     }
                 }
 
                 while (i < source.Length)
                 {
-                    destination[i] = TReverser.Reverse(source[i]);
+                    Unsafe.Add(ref destRef, i) = TReverser.Reverse(Unsafe.Add(ref sourceRef, i));
                     i++;
                 }
             }
@@ -338,7 +342,7 @@ namespace System.Buffers.Binary
                     while (i >= Vector256<T>.Count)
                     {
                         i -= Vector256<T>.Count;
-                        TReverser.Reverse(Vector256.Create(source.Slice(i))).CopyTo(destination.Slice(i));
+                        Vector256.StoreUnsafe(TReverser.Reverse(Vector256.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
                     }
                 }
 
@@ -347,14 +351,14 @@ namespace System.Buffers.Binary
                     while (i >= Vector128<T>.Count)
                     {
                         i -= Vector128<T>.Count;
-                        TReverser.Reverse(Vector128.Create(source.Slice(i))).CopyTo(destination.Slice(i));
+                        Vector128.StoreUnsafe(TReverser.Reverse(Vector128.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
                     }
                 }
 
                 while (i > 0)
                 {
                     i--;
-                    destination[i] = TReverser.Reverse(source[i]);
+                    Unsafe.Add(ref destRef, i) = TReverser.Reverse(Unsafe.Add(ref sourceRef, i));
                 }
             }
         }

@@ -143,21 +143,19 @@ namespace System.Buffers
 
                 if (value.Length <= 16)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(value.AsSpan());
-
                     if (value.Length > 8)
                     {
                         SecondReadByteOffset = (value.Length - 8) * sizeof(char);
                         Value256 = Vector256.Create(
-                            Vector128.Create(bytes).AsUInt16(),
-                            Vector128.Create(bytes.Slice((int)SecondReadByteOffset)).AsUInt16());
+                            Vector128.LoadUnsafe(ref value.GetRawStringDataAsUInt16()),
+                            Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref value.GetRawStringDataAsUInt16(), SecondReadByteOffset)));
                     }
                     else if (value.Length >= 4)
                     {
                         SecondReadByteOffset = (value.Length - 4) * sizeof(char);
                         Value256 = Vector256.Create(Vector128.Create(
-                            BitConverter.ToUInt64(bytes),
-                            BitConverter.ToUInt64(bytes.Slice((int)SecondReadByteOffset))
+                            Unsafe.ReadUnaligned<ulong>(ref value.GetRawStringDataAsUInt8()),
+                            Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref value.GetRawStringDataAsUInt8(), SecondReadByteOffset))
                             )).AsUInt16();
                     }
                     else
@@ -166,8 +164,8 @@ namespace System.Buffers
 
                         SecondReadByteOffset = (value.Length - 2) * sizeof(char);
                         Value256 = Vector256.Create(Vector128.Create(Vector64.Create(
-                            BitConverter.ToUInt32(bytes),
-                            BitConverter.ToUInt32(bytes.Slice((int)SecondReadByteOffset))
+                            Unsafe.ReadUnaligned<uint>(ref value.GetRawStringDataAsUInt8()),
+                            Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref value.GetRawStringDataAsUInt8(), SecondReadByteOffset))
                             ))).AsUInt16();
                     }
 

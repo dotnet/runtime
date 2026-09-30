@@ -270,12 +270,12 @@ namespace System.Net.Sockets
             }
         }
 
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
             if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
-            byte b = 0;
-            return Read(new Span<byte>(ref b)) == 0 ? -1 : b;
+            byte b;
+            return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
         }
 
         // Write - provide core Write functionality.
