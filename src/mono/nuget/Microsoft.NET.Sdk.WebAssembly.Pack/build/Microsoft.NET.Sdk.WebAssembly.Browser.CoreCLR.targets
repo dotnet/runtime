@@ -62,6 +62,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
       <_WasmBuildPrebuiltR2RDirectory Condition="'$(_WasmCoreClrUnderPublish)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
     </PropertyGroup>
+    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(_WasmCoreClrUnderPublish)' != 'true'"
+           Text="Only published applications are supported for CPU profiling with WasmPerformanceInstrumentation." />
   </Target>
 
   <!-- Fail comprehensibly instead of emitting composite/PE images the runtime cannot load. The config checks

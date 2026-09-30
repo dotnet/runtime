@@ -67,13 +67,13 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         UpdateCounterPage(useCpuSamplingTarget: true);
 
-        if (readyToRun)
-            BlazorPublish(info, config, new PublishOptions(
-                UseCache: false,
-                AssertAppBundle: false,
-                ExtraMSBuildArgs: $"{GetR2RBuildArgs(config)} -p:UsingBrowserRuntimeWorkload=false"));
-        else
-            BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+        string extraBuildArgs = readyToRun
+            ? $"{GetR2RBuildArgs(config)} -p:UsingBrowserRuntimeWorkload=false"
+            : string.Empty;
+        BlazorPublish(info, config, new PublishOptions(
+            UseCache: false,
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: extraBuildArgs));
 
         async Task CollectCpuSamplesTest(IPage page)
         {
@@ -87,10 +87,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             TimeoutSeconds: 60,
             CheckCounter: false);
 
-        if (readyToRun)
-            await RunForPublishWithWebServer(runOptions);
-        else
-            await RunForBuildWithDotnetRun(runOptions);
+        await RunForPublishWithWebServer(runOptions);
 
         bool sampledMethodFound = false;
         bool readyToRunMethodFound = false;

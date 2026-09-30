@@ -110,6 +110,30 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void PerformanceInstrumentationIsRejectedForBuild(bool readyToRun)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.BlazorBasicTestApp,
+                $"profiling_build_r2r_{readyToRun}",
+                extraProperties: $"""
+                    <EnableDiagnostics>true</EnableDiagnostics>
+                    <PublishReadyToRun>{readyToRun}</PublishReadyToRun>
+                    <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
+                    """);
+
+            (string _, string output) = BlazorBuild(
+                info,
+                Configuration.Debug,
+                new BuildOptions(ExpectSuccess: false, AssertAppBundle: false));
+
+            Assert.Contains("Only published applications are supported for CPU profiling", output);
+        }
+
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content
         // at each step. DetectRuntimeFailures (default) fails the run on any unhandled managed/JS exception.
         private static async Task InteractAllPagesAsync(IPage page)
