@@ -1146,7 +1146,7 @@ public:
     ClassLayout* GetLayout() const
     {
 #if FEATURE_IMPLICIT_BYREFS
-        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_BYREF)));
+        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_I_IMPL, TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
 #endif
@@ -4337,8 +4337,8 @@ public:
     ABIPassingInformation* lvaParameterPassingInfo = nullptr;
     unsigned lvaParameterStackSize = 0;
 
-    unsigned lvaTrackedCount;             // actual # of locals being tracked
-    unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
+    unsigned lvaTrackedCount             = 0; // actual # of locals being tracked
+    unsigned lvaTrackedCountInSizeTUnits = 0; // min # of size_t's sufficient to hold a bit for all the locals being tracked
 
 #ifdef DEBUG
     VARSET_TP lvaTrackedVars; // set of tracked variables
@@ -4905,7 +4905,8 @@ public:
 
     bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum);
 
-    bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
+    bool      lvaIsImplicitByRefLocal(unsigned lclNum) const;
+    var_types lvaGetImplicitByRefParamType();
     bool lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const;
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
@@ -6244,10 +6245,6 @@ public:
     void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
 
-#ifdef DEBUG
-    void fgPostGlobalMorphChecks();
-#endif
-
     void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg), bool allowFGChange = true, bool invalidateDFSTreeOnFGChange = true);
@@ -7074,7 +7071,7 @@ public:
 
     void fgDebugCheckType(GenTree* node);
     void fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block);
-    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
+    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks::CHECK_NONE);
@@ -7430,6 +7427,7 @@ public:
     void fgAsyncLiveness();
     void fgPostLowerLiveness();
     PhaseStatus fgEarlyLiveness();
+    PhaseStatus fgLateLiveness();
 
     void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 

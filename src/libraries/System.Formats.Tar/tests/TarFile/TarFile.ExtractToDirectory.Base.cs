@@ -12,7 +12,11 @@ namespace System.Formats.Tar.Tests;
 
 public abstract class TarFile_ExtractToDirectory_Tests : TarTestsBase
 {
-    protected abstract Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, CancellationToken cancellationToken = default);
+    protected abstract Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, bool async, CancellationToken cancellationToken = default);
+
+    public static IEnumerable<object[]> DestinationDirectory_OptionsAndBooleanData() => GetDataAndBooleanData(GetTwoBooleansData());
+
+    public static IEnumerable<object[]> DestinationDirectory_TestDataAndBooleanData() => GetDataAndBooleanData(DestinationDirectory_TestData());
 
     public static IEnumerable<object[]> DestinationDirectory_TestData()
     {
@@ -32,8 +36,8 @@ public abstract class TarFile_ExtractToDirectory_Tests : TarTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(DestinationDirectory_TestData))]
-    public async Task DestinationDirectory_CreatedAsNeeded(bool overwriteFiles, bool useOptions, int missingDirectoryCount, string entryName)
+    [MemberData(nameof(DestinationDirectory_TestDataAndBooleanData))]
+    public async Task DestinationDirectory_CreatedAsNeeded(bool overwriteFiles, bool useOptions, int missingDirectoryCount, string entryName, bool async)
     {
         using TempDirectory root = new TempDirectory();
         string destination = root.Path;
@@ -43,7 +47,7 @@ public abstract class TarFile_ExtractToDirectory_Tests : TarTestsBase
         }
 
         using MemoryStream archive = CreateArchive(entryName);
-        await ExtractArchive(archive, destination, overwriteFiles, useOptions);
+        await ExtractArchive(archive, destination, overwriteFiles, useOptions, async);
 
         Assert.True(archive.CanRead);
         if (string.IsNullOrEmpty(entryName))
@@ -62,11 +66,8 @@ public abstract class TarFile_ExtractToDirectory_Tests : TarTestsBase
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task DestinationDirectory_FileCollision(bool overwriteFiles, bool useOptions)
+    [MemberData(nameof(DestinationDirectory_OptionsAndBooleanData))]
+    public async Task DestinationDirectory_FileCollision(bool overwriteFiles, bool useOptions, bool async)
     {
         using TempDirectory root = new TempDirectory();
         string filePath = Path.Join(root.Path, "file.txt");
@@ -75,12 +76,12 @@ public abstract class TarFile_ExtractToDirectory_Tests : TarTestsBase
 
         if (overwriteFiles)
         {
-            await ExtractArchive(archive, root.Path, overwriteFiles, useOptions);
+            await ExtractArchive(archive, root.Path, overwriteFiles, useOptions, async);
             Assert.Equal("archive contents", File.ReadAllText(filePath));
         }
         else
         {
-            await Assert.ThrowsAsync<IOException>(() => ExtractArchive(archive, root.Path, overwriteFiles, useOptions));
+            await Assert.ThrowsAsync<IOException>(() => ExtractArchive(archive, root.Path, overwriteFiles, useOptions, async));
             Assert.Equal("original contents", File.ReadAllText(filePath));
         }
 
@@ -88,11 +89,8 @@ public abstract class TarFile_ExtractToDirectory_Tests : TarTestsBase
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task DestinationDirectory_FileInRequiredPath_Throws(bool overwriteFiles, bool useOptions)
+    [MemberData(nameof(DestinationDirectory_OptionsAndBooleanData))]
+    public async Task DestinationDirectory_FileInRequiredPath_Throws(bool overwriteFiles, bool useOptions, bool async)
     {
         using TempDirectory root = new TempDirectory();
         string filePath = Path.Join(root.Path, "file");
@@ -101,18 +99,15 @@ public abstract class TarFile_ExtractToDirectory_Tests : TarTestsBase
         foreach (string destination in new[] { filePath, Path.Join(filePath, "missing") })
         {
             using MemoryStream archive = CreateArchive("file.txt");
-            await Assert.ThrowsAnyAsync<IOException>(() => ExtractArchive(archive, destination, overwriteFiles, useOptions));
+            await Assert.ThrowsAnyAsync<IOException>(() => ExtractArchive(archive, destination, overwriteFiles, useOptions, async));
             Assert.True(archive.CanRead);
             Assert.Equal("original contents", File.ReadAllText(filePath));
         }
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task DestinationDirectory_Traversal_Throws(bool overwriteFiles, bool useOptions)
+    [MemberData(nameof(DestinationDirectory_OptionsAndBooleanData))]
+    public async Task DestinationDirectory_Traversal_Throws(bool overwriteFiles, bool useOptions, bool async)
     {
         using TempDirectory root = new TempDirectory();
         string destination = Path.Join(root.Path, "missing");
@@ -131,20 +126,33 @@ public abstract class TarFile_ExtractToDirectory_Tests : TarTestsBase
             }
             archive.Position = 0;
 
-            await Assert.ThrowsAsync<IOException>(() => ExtractArchive(archive, destination, overwriteFiles, useOptions));
+            await Assert.ThrowsAsync<IOException>(() => ExtractArchive(archive, destination, overwriteFiles, useOptions, async));
             Assert.True(archive.CanRead);
             Assert.Empty(Directory.GetFileSystemEntries(root.Path));
         }
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task DestinationDirectory_InvalidPath_Throws(bool useOptions)
+    [MemberData(nameof(GetTwoBooleansData))]
+    public async Task DestinationDirectory_InvalidPath_Throws(bool useOptions, bool async)
     {
         using MemoryStream archive = CreateArchive(entryName: null);
-        await Assert.ThrowsAsync<ArgumentException>(() => ExtractArchive(archive, "\0", overwriteFiles: false, useOptions));
+        await Assert.ThrowsAsync<ArgumentException>(() => ExtractArchive(archive, "\0", overwriteFiles: false, useOptions, async));
         Assert.True(archive.CanRead);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetBooleanData))]
+    public async Task ExtractToDirectoryAsync_Cancel(bool useOptions)
+    {
+        using TempDirectory root = new TempDirectory();
+        using CancellationTokenSource cs = new CancellationTokenSource();
+        cs.Cancel();
+        using MemoryStream archive = new MemoryStream();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ExtractArchive(archive, Path.Join(root.Path, "missing", "directory"), overwriteFiles: true, useOptions, async: true, cs.Token));
+        Assert.True(archive.CanRead);
+        Assert.Equal(0, archive.Position);
+        Assert.Empty(Directory.GetFileSystemEntries(root.Path));
     }
 
     private static MemoryStream CreateArchive(string entryName)

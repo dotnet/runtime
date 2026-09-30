@@ -113,6 +113,10 @@ namespace System.Security.Cryptography.Tests
 
         protected abstract CngExportPolicies ExportPolicy { get; }
 
+        // A caller-supplied CngKey has already been imported by the provider. The original public key may have been
+        // rejected or transformed, so exporting it does not reliably preserve whether it reduced to zero.
+        protected override bool CanRoundTripReducedZeroPublicKeys => false;
+
         public override X25519DiffieHellman GenerateKey()
         {
             using CngKey key = GenerateCngKey(exportPolicy: ExportPolicy);
