@@ -100,13 +100,16 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
+      <!-- Wasm App Builder builds as part of tasks, using the corresponding TasksConfiguration -->
       <RunTimeDependencyCopyLocal
-        Include="$(ArtifactsBinDir)WasmAppBuilder\$(HostConfiguration)\net\*"
+        Include="$(WasmAppBuilderDir)*"
         TargetDir="wasi-r2r/" />
       <RunTimeDependencyCopyLocal
         Include="$(MSBuildThisFileDirectory)WasiR2RComposer.proj"
         TargetDir="wasi-r2r/" />
     </ItemGroup>
+    <Error Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr' and !Exists('$(WasmAppBuilderTasksAssemblyPath)')"
+           Text="WasmAppBuilder was not found at '$(WasmAppBuilderTasksAssemblyPath)'. It is required to compose WASI ReadyToRun tests." />
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
