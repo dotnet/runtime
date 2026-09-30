@@ -2,8 +2,6 @@
   <PropertyGroup>
     <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/90427  -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134976: crossgen2 aborts compiling this assembly for wasm, which stops the merged runner's R2R compilation. -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

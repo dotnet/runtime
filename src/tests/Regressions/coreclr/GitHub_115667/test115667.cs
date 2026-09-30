@@ -23,7 +23,7 @@ public struct S1 : I0
 public class Runtime_115667
 {
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(Utilities), nameof(Utilities.IsNativeAot))]
-    [Fact]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.HasAssemblyFiles))]
     public static void TestEntryPoint()
     {
         System.Runtime.Loader.AssemblyLoadContext alc = new CollectibleALC();

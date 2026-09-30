@@ -124,7 +124,7 @@ public static class Dispatcher
 
 public class Test132982
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.HasAssemblyFiles))]
     public static void UnloadingCollectibleContextDoesNotViolateLockOrder()
     {
         WeakReference contextRef = LoadRunAndUnload();
