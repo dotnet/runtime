@@ -55,7 +55,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject);
 
 //--------------------------------------------------------------------------------
  // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk);
+ULONG SafeRelease(IUnknown* pUnk) noexcept;
 
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if

@@ -7,7 +7,6 @@ using System.Text;
 using Xunit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using TestLibrary;
 
 unsafe class CdeclMemberFunctionNative
 {
@@ -68,7 +67,6 @@ public unsafe class CdeclMemberFunctionTest
 {
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/50440", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/131811", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static int TestEntryPoint()
     {
         try

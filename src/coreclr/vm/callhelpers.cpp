@@ -188,6 +188,7 @@ void* DispatchCallSimple(
     static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
     callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
     callDescrData.hasRetBuff = false;
+    callDescrData.pTransitionBlock = NULL;
     LPVOID pOrigSrc = callDescrData.pSrc;
     callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
     for (int i = 0; i < numStackSlotsToCopy; i++)
@@ -504,6 +505,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #ifdef TARGET_WASM
     callDescrData.nArgsSize = nStackBytes;
     callDescrData.hasRetBuff = false;
+    callDescrData.pTransitionBlock = (TransitionBlock*)pTransitionBlock;
     _ASSERTE(!m_argIt.HasRetBuffArg());
 #endif // TARGET_WASM
 
