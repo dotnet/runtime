@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CrossGen2TestExtraArguments Condition="'$(TargetArchitecture)' == 'wasm'">$(CrossGen2TestExtraArguments) --strip-il-bodies --directpinvoke:libSystem.Native</CrossGen2TestExtraArguments>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnresolvedPInvokeTests.cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

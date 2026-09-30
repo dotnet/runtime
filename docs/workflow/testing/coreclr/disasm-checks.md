@@ -10,7 +10,7 @@ output of some tool (e.g. **llc**) contains the expected information (for exampl
 whatever is interesting). This is similar to using **grep**, but it is optimized for matching multiple
 different inputs in one file in a specific order.
 # Converting an existing test to use disassembly checking
-We will use the existing test `JIT\Regression\JitBlue\Runtime_33972` as an example. The test's intent is to verify that on ARM64, the method `AdvSimd.CompareEqual` behaves correctly when a zero vector is passed as the second argument. Below are snippets of its use:
+We will use the existing test `JIT\Regression_2\Runtime_33972` as an example. The test's intent is to verify that on ARM64, the method `AdvSimd.CompareEqual` behaves correctly when a zero vector is passed as the second argument. Below are snippets of its use:
 ```csharp
     static Vector64<byte> AdvSimd_CompareEqual_Vector64_Byte_Zero(Vector64<byte> left)
     {

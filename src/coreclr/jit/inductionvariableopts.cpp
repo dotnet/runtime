@@ -2153,6 +2153,12 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIVByScaling(ScevAddRec* 
         return nullptr;
     }
 
+    // Avoid the edge case of computing MinValue / -1.
+    if (((T)iv1Step == std::numeric_limits<T>::min()) || ((T)iv2Step == std::numeric_limits<T>::min()))
+    {
+        return nullptr;
+    }
+
     T gcd = Gcd((T)iv1Step, (T)iv2Step);
 
     if ((!allowRephrasingByScalingIV1 && (gcd != (T)iv1Step)) || (!allowRephrasingByScalingIV2 && (gcd != (T)iv2Step)))

@@ -149,10 +149,6 @@ EXTERN_C FCDECL0(void, JIT_FailFast);
 
 EXTERN_C void ReversePInvokeBadTransition();
 
-#if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
-// Extra argument for the classification of the checked barriers.
-extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, CheckedWriteBarrierKinds kind);
-#else
 // Regular checked write barrier.
 extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
@@ -164,8 +160,6 @@ extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
 #elif defined (TARGET_RISCV64)
 #define RhpAssignRef RhpAssignRefRiscV64
 #endif // TARGET_*
-
-#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 
 extern "C" FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
 extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
@@ -326,11 +320,12 @@ public:
                                       TypeHandle typeHnd = TypeHandle() /* optional in */,
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
-    CEEInfo(MethodDesc * fd = NULL)
+    CEEInfo(MethodDesc * fd, PrepareCodeConfig *config)
         : m_pJitHandles(nullptr)
         , m_pMethodBeingCompiled(fd)
         , m_transientDetails(NULL)
         , m_pThread(GetThreadNULLOk())
+        , m_pPrepareCodeConfig(config)
         , m_hMethodForSecurity_Key(NULL)
         , m_pMethodForSecurity_Value(NULL)
 #if defined(FEATURE_GDBJIT)
@@ -404,6 +399,7 @@ protected:
     MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
     SArray<TransientMethodDetails, FALSE>* m_transientDetails;   // Transient details for dynamic codegen scenarios.
     Thread *                m_pThread;              // Cached current thread for faster JIT-EE transitions
+    PrepareCodeConfig*      m_pPrepareCodeConfig;
     CORJIT_FLAGS            m_jitFlags;
 
     CORINFO_METHOD_HANDLE getMethodBeingCompiled()
@@ -458,6 +454,19 @@ public:
 
         if (m_pNativeVarInfo != NULL)
             freeArrayInternal(m_pNativeVarInfo);
+
+#ifdef FEATURE_PGO
+        if (m_foundPgoData != NULL)
+        {
+            ComputedPgoData* current = m_foundPgoData;
+            while (current != NULL)
+            {
+                ComputedPgoData* next = current->m_next;
+                delete current;
+                current = next;
+            }
+        }
+#endif
     }
 
     virtual void ResetForJitRetry()
@@ -554,6 +563,22 @@ public:
     CORINFO_METHOD_INFO* getMethodInfoInternal();
     CORJIT_FLAGS* getJitFlagsInternal();
 
+    HRESULT allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            uint32_t countSchemaItems, /* IN */
+            uint8_t** pInstrumentationData /* OUT */
+            ) override;
+
+    HRESULT getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema** pSchema, /* OUT */
+            uint32_t* pCountSchemaItems, /* OUT */
+            uint8_t**pInstrumentationData, /* OUT */
+            PgoSource *pPgoSource, /* OUT */
+            bool* pDynamicPgo /* OUT */
+            ) override;
+
 protected:
 
     template <typename TCodeHeader>
@@ -585,6 +610,24 @@ protected:
     HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER*   m_ILHeader;     // the code header to use. This may have been generated due to dynamic IL generation.
     CORINFO_METHOD_INFO     m_MethodInfo;
+
+#ifdef FEATURE_PGO
+    // PGO data
+    struct ComputedPgoData
+    {
+        ComputedPgoData(MethodDesc* pMD) : m_pMD(pMD) {}
+
+        ComputedPgoData* m_next = nullptr;
+        MethodDesc *m_pMD;
+        NewArrayHolder<BYTE> m_allocatedData;
+        PgoInstrumentationSchema* m_schema = nullptr;
+        UINT32 m_cSchemaElems;
+        BYTE *m_pInstrumentationData = nullptr;
+        HRESULT m_hr = E_NOTIMPL;
+        PgoSource m_pgoSource = PgoSource::Unknown;
+    };
+    ComputedPgoData*        m_foundPgoData = nullptr;
+#endif
 
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
@@ -654,22 +697,6 @@ public:
             uint32_t  unwindSize,            /* IN */
             uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
-            ) override;
-
-    HRESULT allocPgoInstrumentationBySchema(
-            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
-            PgoInstrumentationSchema* pSchema, /* IN/OUT */
-            uint32_t countSchemaItems, /* IN */
-            uint8_t** pInstrumentationData /* OUT */
-            ) override;
-
-    HRESULT getPgoInstrumentationResults(
-            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
-            PgoInstrumentationSchema** pSchema, /* OUT */
-            uint32_t* pCountSchemaItems, /* OUT */
-            uint8_t**pInstrumentationData, /* OUT */
-            PgoSource *pPgoSource, /* OUT */
-            bool* pDynamicPgo /* OUT */
             ) override;
 
     void recordCallSite(
@@ -832,18 +859,6 @@ public:
         if (m_pPatchpointInfoFromJit != NULL)
             freeArrayInternal(m_pPatchpointInfoFromJit);
 #endif
-#ifdef FEATURE_PGO
-        if (m_foundPgoData != NULL)
-        {
-            ComputedPgoData* current = m_foundPgoData;
-            while (current != NULL)
-            {
-                ComputedPgoData* next = current->m_next;
-                delete current;
-                current = next;
-            }
-        }
-#endif
     }
 
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
@@ -863,24 +878,6 @@ public:
     virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 
 protected :
-
-#ifdef FEATURE_PGO
-    // PGO data
-    struct ComputedPgoData
-    {
-        ComputedPgoData(MethodDesc* pMD) : m_pMD(pMD) {}
-
-        ComputedPgoData* m_next = nullptr;
-        MethodDesc *m_pMD;
-        NewArrayHolder<BYTE> m_allocatedData;
-        PgoInstrumentationSchema* m_schema = nullptr;
-        UINT32 m_cSchemaElems;
-        BYTE *m_pInstrumentationData = nullptr;
-        HRESULT m_hr = E_NOTIMPL;
-        PgoSource m_pgoSource = PgoSource::Unknown;
-    };
-    ComputedPgoData*        m_foundPgoData = nullptr;
-#endif
 
     TADDR                   m_moduleBase;       // Base for unwind Infos
     ULONG                   m_totalUnwindSize;  // Total reserved unwind space

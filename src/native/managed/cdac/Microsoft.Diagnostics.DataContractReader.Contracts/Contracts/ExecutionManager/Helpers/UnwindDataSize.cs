@@ -98,9 +98,28 @@ internal static class UnwindDataSize
                 size += 4; // exception handler RVA
                 return size;
             }
+            case RuntimeInfoArchitecture.Wasm:
+            {
+                uint size = GetULEB128Size(target, unwindInfo);
+                size += GetULEB128Size(target, unwindInfo + size);
+                return size;
+            }
             default:
                 throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}");
         }
+    }
+
+    private static uint GetULEB128Size(Target target, TargetPointer address)
+    {
+        const int MaxBytes = 5;
+
+        for (uint offset = 0; offset < MaxBytes; offset++)
+        {
+            if ((target.Read<byte>(address + offset) & 0x80) == 0)
+                return offset + 1;
+        }
+
+        throw new InvalidOperationException("Malformed ULEB128 value in WASM unwind data.");
     }
 
     private static uint AlignUp(int offset, int align)

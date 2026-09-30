@@ -177,9 +177,7 @@ if ((NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI) OR CLR_CROSS_CO
 endif ()
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-  if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    add_subdirectory(nativeaot)
-  endif()
+  add_subdirectory(nativeaot)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 # Above projects do not build with these compile options

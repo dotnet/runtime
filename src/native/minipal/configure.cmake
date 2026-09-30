@@ -1,6 +1,7 @@
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
+include(CheckCSourceCompiles)
 include(CheckSymbolExists)
 
 check_include_files("windows.h;bcrypt.h" HAVE_BCRYPT_H)
@@ -19,7 +20,6 @@ check_symbol_exists(getentropy "unistd.h" HAVE_GETENTROPY)
 check_symbol_exists(O_CLOEXEC fcntl.h HAVE_O_CLOEXEC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE time.h HAVE_CLOCK_MONOTONIC_COARSE)
 check_symbol_exists(clock_gettime_nsec_np time.h HAVE_CLOCK_GETTIME_NSEC_NP)
-
 if(CLR_CMAKE_HOST_UNIX)
     check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
     check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
@@ -29,6 +29,26 @@ if(CLR_CMAKE_HOST_UNIX)
         set(PTHREAD_LIBRARY c)
     endif()
     if(PTHREAD_LIBRARY)
+        set(PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+        list(APPEND CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
+        check_c_source_compiles("
+            #if defined(__linux__) && !defined(_GNU_SOURCE)
+            #define _GNU_SOURCE
+            #endif
+            #include <pthread.h>
+            int main(void)
+            {
+                pthread_rwlockattr_t attributes;
+                if (pthread_rwlockattr_init(&attributes) != 0)
+                    return 1;
+
+                int result = pthread_rwlockattr_setkind_np(&attributes, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+                pthread_rwlockattr_destroy(&attributes);
+                return result;
+            }"
+            HAVE_PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP)
+        set(CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
+
         check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
     endif()
 endif()

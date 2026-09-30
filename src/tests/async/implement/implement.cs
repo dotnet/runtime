@@ -57,18 +57,19 @@ public class Async2Implement
     }
 
     [Fact]
-    public static void TestEntryPoint()
+    [RuntimeAsyncMethodGeneration(false)] // Select the Task-returning interface implementations rather than runtime-async dispatch.
+    public static async Task TestEntryPoint()
     {
         IBase1 b1 = new Derived1();
-        Assert.Equal(2, b1.M1().Result);
+        Assert.Equal(2, await b1.M1());
 
         b1 = new Derived1a();
-        Assert.Equal(3, b1.M1().Result);
+        Assert.Equal(3, await b1.M1());
 
         IBase2 b2 = new Derived2();
-        Assert.Equal(12, b2.M1().Result);
+        Assert.Equal(12, await b2.M1());
 
         b2 = new Derived2a();
-        Assert.Equal(22, b2.M1().Result);
+        Assert.Equal(22, await b2.M1());
     }
 }

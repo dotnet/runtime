@@ -1,13 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -47,7 +42,7 @@ namespace Microsoft.Interop
             return ValueBoundaryBehavior.NativeIdentifier;
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+        public void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
             MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, codeContext);
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
@@ -59,16 +54,7 @@ namespace Microsoft.Interop
                     // <nativeIdentifier> = (<nativeType>)(<managedIdentifier> ? _trueValue : _falseValue);
                     if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                     {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(nativeIdentifier),
-                                CastExpression(
-                                    AsNativeType(info).Syntax,
-                                    ParenthesizedExpression(
-                                        ConditionalExpression(IdentifierName(managedIdentifier),
-                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_trueValue)),
-                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_falseValue)))))));
+                        writer.WriteLine($"{nativeIdentifier} = ({AsNativeType(info).FullTypeName})({managedIdentifier} ? {_trueValue} : {_falseValue});");
                     }
 
                     break;
@@ -78,16 +64,8 @@ namespace Microsoft.Interop
                         // <managedIdentifier> = <nativeIdentifier> == _trueValue;
                         //   or
                         // <managedIdentifier> = <nativeIdentifier> != _falseValue;
-                        (SyntaxKind binaryOp, int comparand) = _compareToTrue ? (SyntaxKind.EqualsExpression, _trueValue) : (SyntaxKind.NotEqualsExpression, _falseValue);
-
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(managedIdentifier),
-                                BinaryExpression(
-                                    binaryOp,
-                                    IdentifierName(nativeIdentifier),
-                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(comparand)))));
+                        (string binaryOperator, int comparand) = _compareToTrue ? ("==", _trueValue) : ("!=", _falseValue);
+                        writer.WriteLine($"{managedIdentifier} = {nativeIdentifier} {binaryOperator} {comparand};");
                     }
                     break;
                 default:

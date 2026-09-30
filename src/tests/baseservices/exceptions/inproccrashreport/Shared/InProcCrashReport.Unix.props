@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <!-- The native reporter retains its settings and fatal-report guard for process lifetime. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <TieringTestIncompatible>true</TieringTestIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsUnix)' != 'true' or '$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Program.cs" Link="Program.cs" />
+    <!-- CI copies the prebuilt native-test artifact beside each managed test through this reference. -->
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)CMakeLists.txt" />
+  </ItemGroup>
+</Project>

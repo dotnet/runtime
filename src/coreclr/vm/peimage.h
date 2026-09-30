@@ -110,7 +110,7 @@ public:
     BOOL Equals(PEImage* pImage);
 
     ULONG AddRef();
-    ULONG Release();
+    ULONG Release() noexcept;
 
 #ifndef DACCESS_COMPILE
     static PTR_PEImage CreateFromByteArray(const BYTE* array, COUNT_T size);
@@ -336,7 +336,7 @@ struct PEImageHolderTraits final
 {
     using Type = PEImage*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type i)
+    static void Free(Type i) noexcept
     {
         WRAPPER_NO_CONTRACT;
         if (i != NULL)

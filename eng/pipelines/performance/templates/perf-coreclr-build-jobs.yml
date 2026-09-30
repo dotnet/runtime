@@ -4,11 +4,12 @@ parameters:
     windows_x64: false
     windows_x86: false
     windows_arm64: false
+    osx_arm64: false
     android_arm64: false
     coreclr_r2r_interpreter: false
 
 jobs:
-  - ${{ if or(eq(parameters.linux_x64, true), eq(parameters.windows_x64, true), eq(parameters.windows_x86, true), eq(parameters.linux_arm64, true), eq(parameters.windows_arm64, true)) }}:
+  - ${{ if or(eq(parameters.linux_x64, true), eq(parameters.windows_x64, true), eq(parameters.windows_x86, true), eq(parameters.linux_arm64, true), eq(parameters.windows_arm64, true), eq(parameters.osx_arm64, true)) }}:
     # build coreclr and libraries
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -25,6 +26,8 @@ jobs:
           - linux_arm64
         - ${{ if eq(parameters.windows_arm64, true) }}:
           - windows_arm64
+        - ${{ if eq(parameters.osx_arm64, true) }}:
+          - osx_arm64
         jobParameters:
           nameSuffix: coreclr
           buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)

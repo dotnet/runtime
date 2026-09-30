@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Quic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Linq;
 using System.Threading.Tasks;
@@ -124,6 +126,48 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
 
         return (bool)msQuicApiType.GetProperty("UsesSChannelBackend", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
+    }
+
+    [DynamicDependency("_handle", typeof(QuicConnection))]
+    internal static QUIC_SETTINGS DisableConnectionKeepAlive(QuicConnection connection)
+    {
+        FieldInfo? field = typeof(QuicConnection).GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(field);
+        SafeHandle handle = Assert.IsAssignableFrom<SafeHandle>(field.GetValue(connection));
+        QUIC_API_TABLE* apiTable = GetApiTable();
+        bool addedReference = false;
+        try
+        {
+            handle.DangerousAddRef(ref addedReference);
+            QUIC_HANDLE* nativeHandle = (QUIC_HANDLE*)handle.DangerousGetHandle();
+            Assert.NotEqual(0u, ReadSettings().KeepAliveIntervalMs);
+
+            QUIC_SETTINGS settings = default;
+            settings.IsSet.KeepAliveIntervalMs = 1;
+            settings.KeepAliveIntervalMs = 0;
+            int status = apiTable->SetParam(nativeHandle, QUIC_PARAM_CONN_SETTINGS, (uint)sizeof(QUIC_SETTINGS), &settings);
+            Assert.False(StatusFailed(status), $"Disabling connection keep-alive failed: 0x{status:X8}");
+
+            return ReadSettings();
+
+            QUIC_SETTINGS ReadSettings()
+            {
+                QUIC_SETTINGS currentSettings = default;
+                uint length = (uint)sizeof(QUIC_SETTINGS);
+                int status = apiTable->GetParam(nativeHandle, QUIC_PARAM_CONN_SETTINGS, &length, &currentSettings);
+                Assert.False(StatusFailed(status), $"Reading connection settings failed: 0x{status:X8}");
+                Assert.True(length >= (uint)Marshal.OffsetOf<QUIC_SETTINGS>(nameof(QUIC_SETTINGS.KeepAliveIntervalMs)) + sizeof(uint));
+                return currentSettings;
+            }
+        }
+        finally
+        {
+            if (addedReference)
+            {
+                handle.DangerousRelease();
+            }
+            GC.KeepAlive(connection);
+        }
     }
 
     private static QUIC_API_TABLE* GetApiTable()

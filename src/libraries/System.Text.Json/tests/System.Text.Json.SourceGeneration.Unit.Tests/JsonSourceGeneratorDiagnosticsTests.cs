@@ -712,6 +712,113 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
 
+        [Theory]
+        [InlineData("", null, false)]
+        [InlineData("", "JsonNumberHandling.AllowReadingFromString", true)]
+        [InlineData("NumberHandling = JsonNumberHandling.Strict", null, false)]
+        [InlineData("NumberHandling = JsonNumberHandling.AllowReadingFromString", null, true)]
+        [InlineData("JsonSerializerDefaults.General", null, false)]
+        [InlineData("JsonSerializerDefaults.Strict", null, false)]
+        [InlineData("JsonSerializerDefaults.Web", null, true)]
+        [InlineData("JsonSerializerDefaults.Web", "JsonNumberHandling.Strict", false)]
+        [InlineData("JsonSerializerDefaults.General", "JsonNumberHandling.AllowReadingFromString", true)]
+        [InlineData("JsonSerializerDefaults.Web", "JsonNumberHandling.WriteAsString", false)]
+        [InlineData("JsonSerializerDefaults.Web, NumberHandling = JsonNumberHandling.Strict", null, false)]
+        [InlineData("JsonSerializerDefaults.Web, NumberHandling = JsonNumberHandling.Strict", "JsonNumberHandling.AllowReadingFromString", true)]
+        [InlineData("JsonSerializerDefaults.General, NumberHandling = JsonNumberHandling.AllowReadingFromString", null, true)]
+        [InlineData("JsonSerializerDefaults.General, NumberHandling = JsonNumberHandling.AllowReadingFromString", "JsonNumberHandling.Strict", false)]
+        [InlineData("JsonSerializerDefaults.Web, NumberHandling = JsonNumberHandling.WriteAsString", null, false)]
+        [InlineData("JsonSerializerDefaults.General, NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString", null, true)]
+        public void UnionNumberHandling_ReportsExpectedAmbiguityDiagnostics(string contextOptions, string? unionNumberHandling, bool expectWarning)
+        {
+            string numberHandlingAttribute = unionNumberHandling is null ? "" : $"[JsonNumberHandling({unionNumberHandling})]";
+            string source = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    [JsonSourceGenerationOptions({{contextOptions}})]
+                    [JsonSerializable(typeof(IntOrStringUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    {{numberHandlingAttribute}}
+                    public readonly struct IntOrStringUnion : IUnion
+                    {
+                        public IntOrStringUnion(int value) { Value = value; }
+                        public IntOrStringUnion(string value) { Value = value; }
+                        public object Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            if (expectWarning)
+            {
+                Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+                Assert.Equal("SYSLIB1227", diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+                Assert.Contains("case types 'int', 'string' all serialize as JSON value type 'String'", diagnostic.GetMessage());
+            }
+            else
+            {
+                Assert.Empty(result.Diagnostics);
+            }
+#if NET
+            // These compiler versions do not support the generated union patterns.
+            Assert.Equal(new[] { "CS0037", "CS8121", "CS8121" }, result.NewCompilation.GetDiagnostics()
+                .Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Warning or DiagnosticSeverity.Error)
+                .Select(diagnostic => diagnostic.Id)
+                .OrderBy(id => id, StringComparer.Ordinal));
+#endif
+        }
+
+        [Fact]
+        public void UnionNumberHandling_ContextDefaultsDoNotLeak()
+        {
+            foreach (bool webContextFirst in new[] { true, false })
+            {
+                const string WebOptions = "[JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]";
+                string source = $$"""
+                    using System.Runtime.CompilerServices;
+                    using System.Text.Json;
+                    using System.Text.Json.Serialization;
+
+                    namespace TestApp
+                    {
+                        {{(webContextFirst ? WebOptions : "")}}
+                        [JsonSerializable(typeof(IntOrStringUnion))]
+                        internal partial class FirstContext : JsonSerializerContext { }
+
+                        {{(webContextFirst ? "" : WebOptions)}}
+                        [JsonSerializable(typeof(IntOrStringUnion))]
+                        internal partial class SecondContext : JsonSerializerContext { }
+
+                        [Union]
+                        public readonly struct IntOrStringUnion : IUnion
+                        {
+                            public IntOrStringUnion(int value) { Value = value; }
+                            public IntOrStringUnion(string value) { Value = value; }
+                            public object Value { get; }
+                        }
+                    }
+                    """;
+
+                Compilation compilation = CompilationHelper.CreateCompilation(source);
+                JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+                Assert.Contains(result.NewCompilation.SyntaxTrees, tree => Path.GetFileName(tree.FilePath) == "FirstContext.g.cs");
+                Assert.Contains(result.NewCompilation.SyntaxTrees, tree => Path.GetFileName(tree.FilePath) == "SecondContext.g.cs");
+                Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+                Assert.Equal("SYSLIB1227", diagnostic.Id);
+                Assert.Contains("case types 'int', 'string' all serialize as JSON value type 'String'", diagnostic.GetMessage());
+            }
+        }
+
         [Fact]
         public void UnionWithCustomConverter_CompilesWithoutWarning()
         {

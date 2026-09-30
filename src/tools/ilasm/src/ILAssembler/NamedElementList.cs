@@ -41,7 +41,10 @@ namespace ILAssembler
         public void Add(T item)
         {
             _elements.Add(item);
-            _elementsByName.Add(item.Name, item);
+            // Use TryAdd to keep the first element for name lookup when duplicate names exist.
+            // This matches native ilasm behavior where duplicate generic parameter names are allowed
+            // and the first definition wins for name-based lookup.
+            _elementsByName.TryAdd(item.Name, item);
         }
 
         public void Clear()
@@ -60,7 +63,8 @@ namespace ILAssembler
         public void Insert(int index, T item)
         {
             _elements.Insert(index, item);
-            _elementsByName.Add(item.Name, item);
+            // Use TryAdd: first-wins for name lookup on duplicate names.
+            _elementsByName.TryAdd(item.Name, item);
         }
 
         public bool Remove(T item)

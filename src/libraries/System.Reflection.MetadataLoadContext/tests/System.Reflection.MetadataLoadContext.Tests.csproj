@@ -104,4 +104,13 @@
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134263 -->
+  <Target Name="_PreserveMetadataLoadContextTestAssemblyFromTrimming"
+          AfterTargets="ConfigureTrimming"
+          Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false'">
+    <ItemGroup>
+      <ResolvedFileToPublish TrimMode="copy" Condition="'%(FileName)%(Extension)' == 'System.Reflection.MetadataLoadContext.Tests.dll'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

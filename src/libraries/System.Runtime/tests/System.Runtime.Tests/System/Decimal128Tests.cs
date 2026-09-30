@@ -12,6 +12,289 @@ namespace System.Tests
 {
     public class Decimal128Tests
     {
+        [Theory]
+        [InlineData("0", "0", "1", "0")]
+        [InlineData("0.5", "1", "0", "Infinity")]
+        [InlineData("1", "0", "-1", "-0")]
+        [InlineData("1.5", "-1", "0", "-Infinity")]
+        [InlineData("2", "0", "1", "0")]
+        [InlineData("2.5", "1", "0", "Infinity")]
+        [InlineData("1000", "0", "1", "0")]
+        [InlineData("1000.5", "1", "0", "Infinity")]
+        [InlineData("1001", "0", "-1", "-0")]
+        [InlineData("1001.5", "-1", "0", "-Infinity")]
+        public static void PiExactCohortTest(string input, string expectedSin, string expectedCos, string expectedTan)
+        {
+            Test<Decimal32>(7, input, expectedSin, expectedCos, expectedTan);
+            Test<Decimal64>(16, input, expectedSin, expectedCos, expectedTan);
+            Test<Decimal128>(34, input, expectedSin, expectedCos, expectedTan);
+
+            static void Test<T>(int precision, string input, string expectedSin, string expectedCos, string expectedTan)
+                where T : IFloatingPointIeee754<T>
+            {
+                T sin = T.Parse(expectedSin, CultureInfo.InvariantCulture);
+                T cos = T.Parse(expectedCos, CultureInfo.InvariantCulture);
+                T tan = T.Parse(expectedTan, CultureInfo.InvariantCulture);
+                int digits = input.Replace(".", "").TrimStart('0').Length;
+
+                for (int padding = 0; padding <= precision - digits; padding++)
+                {
+                    string padded = input + ((padding > 0 && !input.Contains('.')) ? "." : "") + new string('0', padding);
+                    T x = T.Parse(padded, CultureInfo.InvariantCulture);
+                    Check(x, sin, cos, tan);
+                    Check(-x, -sin, cos, -tan);
+                }
+
+                static void Check(T x, T sin, T cos, T tan)
+                {
+                    AssertResult(sin, T.SinPi(x));
+                    AssertResult(cos, T.CosPi(x));
+                    AssertResult(tan, T.TanPi(x));
+                    (T actualSin, T actualCos) = T.SinCosPi(x);
+                    AssertResult(sin, actualSin);
+                    AssertResult(cos, actualCos);
+                }
+
+                static void AssertResult(T expected, T actual)
+                {
+                    Assert.Equal(expected, actual);
+                    Assert.Equal(T.IsNegative(expected), T.IsNegative(actual));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(32, 7)]
+        [InlineData(64, 16)]
+        [InlineData(128, 34)]
+        public static void TranscendentalUnitCohortTest(int width, int precision)
+        {
+            switch (width)
+            {
+                case 32:
+                    Test<Decimal32>(precision);
+                    break;
+                case 64:
+                    Test<Decimal64>(precision);
+                    break;
+                case 128:
+                    Test<Decimal128>(precision);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected width '{width}'.");
+            }
+
+            static void Test<T>(int precision) where T : IFloatingPointIeee754<T>
+            {
+                T half = T.CreateChecked(0.5);
+                for (int padding = 0; padding < precision; padding++)
+                {
+                    T one = T.Parse("1." + new string('0', padding), CultureInfo.InvariantCulture);
+                    Assert.Equal(T.Zero, T.Acosh(one));
+                    Assert.Equal(T.Zero, T.Acos(one));
+                    Assert.Equal(T.Zero, T.AcosPi(one));
+                    Assert.Equal(T.One, T.AcosPi(-one));
+                    Assert.Equal(half, T.AsinPi(one));
+                    Assert.Equal(-half, T.AsinPi(-one));
+                    Assert.Equal(T.PositiveInfinity, T.Atanh(one));
+                    Assert.Equal(T.NegativeInfinity, T.Atanh(-one));
+                    Assert.Equal(T.Zero, T.Log(one));
+                    Assert.Equal(T.Zero, T.Log2(one));
+                    Assert.Equal(T.Zero, T.Log10(one));
+                    Assert.Equal(T.NegativeInfinity, T.LogP1(-one));
+                    Assert.Equal(T.NegativeInfinity, T.Log2P1(-one));
+                    Assert.Equal(T.NegativeInfinity, T.Log10P1(-one));
+                    Assert.Equal(T.One, T.Pow(one, T.CreateChecked(1000)));
+                    Assert.Equal(T.One, T.RootN(one, 3));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(nameof(Decimal128.Acos), "0.5", "1.047197551196597746154214461093167628065723133125")]
+        [InlineData(nameof(Decimal128.Acos), "0.75", "0.72273424781341561117837735264133336202521848642444")]
+        [InlineData(nameof(Decimal128.Asin), "0.75", "0.84806207898148100805294433899841808007336621326311")]
+        [InlineData(nameof(Decimal128.Atanh), "0.75", "0.97295507452765665255267637172158986481854236479093")]
+        [InlineData(nameof(Decimal128.Log), "0.75", "-0.28768207245178092743921900599382743150350971089776")]
+        [InlineData(nameof(Decimal128.Log2), "0.75", "-0.41503749927884381854626105605218349124018559230752")]
+        [InlineData(nameof(Decimal128.Log10), "0.75", "-0.12493873660829995313244988619387074433625089873352")]
+        [InlineData(nameof(Decimal128.LogP1), "0.75", "-1.3862943611198906188344642429163531361510002687205")]
+        [InlineData(nameof(Decimal128.Log2P1), "0.75", "-2")]
+        [InlineData(nameof(Decimal128.Log10P1), "0.75", "-0.60205999132796239042747778944898605353637976292422")]
+        [InlineData(nameof(Decimal128.Pow), "0.75", "0.69795364432657469920591406023742556581340316925824")]
+        [InlineData(nameof(Decimal128.Acosh), "1.25", "0.69314718055994530941723212145817656807550013436026")]
+        [InlineData(nameof(Decimal128.Log), "1.25", "0.22314355131420975576629509030983450337460108554801")]
+        [InlineData(nameof(Decimal128.Acos), "0.7", "0.79539883018414355549096833892476432854279596104639")]
+        [InlineData(nameof(Decimal128.Asin), "0.7", "0.77539749661075306374035335271498711355578873864116")]
+        [InlineData(nameof(Decimal128.Atanh), "0.7", "0.8673005276940531944271446904753004154703562273815")]
+        [InlineData(nameof(Decimal128.Log), "0.7", "-0.35667494393873237891263871124118447796401675904691")]
+        [InlineData(nameof(Decimal128.Log2), "0.7", "-0.51457317282975824042835011225755936722380476705844")]
+        [InlineData(nameof(Decimal128.Log10), "0.7", "-0.15490195998574316928778374140736380651642760367603")]
+        [InlineData(nameof(Decimal128.LogP1), "0.7", "-1.203972804325935992622746217761838502953610930806")]
+        [InlineData(nameof(Decimal128.Log2P1), "0.7", "-1.7369655941662061664165804855415736671050169853321")]
+        [InlineData(nameof(Decimal128.Log10P1), "0.7", "-0.5228787452803375627049720967448846907998711358093")]
+        [InlineData(nameof(Decimal128.Pow), "0.7", "0.64028385346008610598026830743665121678041972366247")]
+        [InlineData(nameof(Decimal128.Acosh), "1.3", "0.75643291085695958624207680696874177560093336091494")]
+        [InlineData(nameof(Decimal128.Log), "1.3", "0.26236426446749105203549598688095439720416645613143")]
+        public static void TranscendentalCohortAccuracyTest(string operation, string input, string oracle)
+        {
+            Test<Decimal32>(7, operation, input, oracle);
+            Test<Decimal64>(16, operation, input, oracle);
+            Test<Decimal128>(34, operation, input, oracle);
+
+            static void Test<T>(int precision, string operation, string input, string oracle)
+                where T : IFloatingPointIeee754<T>
+            {
+                T expected = T.Parse(oracle, CultureInfo.InvariantCulture);
+                T ulp = T.Max(T.Abs(T.BitIncrement(expected) - expected), T.Abs(expected - T.BitDecrement(expected)));
+                int digits = input.Replace(".", "").TrimStart('0').Length;
+
+                for (int padding = 0; padding <= precision - digits; padding++)
+                {
+                    T x = T.Parse(input + new string('0', padding), CultureInfo.InvariantCulture);
+                    T actual = operation switch
+                    {
+                        nameof(Decimal128.Acos) => T.Acos(x),
+                        nameof(Decimal128.Asin) => T.Asin(x),
+                        nameof(Decimal128.Acosh) => T.Acosh(x),
+                        nameof(Decimal128.Atanh) => T.Atanh(x),
+                        nameof(Decimal128.Log) => T.Log(x),
+                        nameof(Decimal128.Log2) => T.Log2(x),
+                        nameof(Decimal128.Log10) => T.Log10(x),
+                        nameof(Decimal128.LogP1) => T.LogP1(-x),
+                        nameof(Decimal128.Log2P1) => T.Log2P1(-x),
+                        nameof(Decimal128.Log10P1) => T.Log10P1(-x),
+                        nameof(Decimal128.Pow) => T.Pow(x, T.CreateChecked(1.25)),
+                        _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+                    };
+                    Assert.True(T.Abs(actual - expected) <= ulp,
+                        $"{typeof(T).Name}.{operation}({x}): expected {expected}, actual {actual}, padding {padding}");
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(nameof(Decimal128.Asin), "0.9999999999999999999999999999999999", "1.5707963267948966050891860679088009540817")]
+        [InlineData(nameof(Decimal128.Acos), "0.9999999999999999999999999999999999", "1.41421356237309504880168872420969809035478e-17")]
+        [InlineData(nameof(Decimal128.Acos), "-0.9999999999999999999999999999999999", "3.14159265358979322432050775954855239618028")]
+        [InlineData(nameof(Decimal128.Acosh), "1.000000000000000000000000000000001", "4.47213595499957939281834733746255209820324e-17")]
+        [InlineData(nameof(Decimal128.Atanh), "0.9999999999999999999999999999999999", "39.4905201711787492830144707903632797882565")]
+        [InlineData(nameof(Decimal128.Log), "0.9999999999999999999999999999999999", "-1.00000000000000000000000000000000005e-34")]
+        [InlineData(nameof(Decimal128.Log), "1.000000000000000000000000000000001", "9.999999999999999999999999999999995e-34")]
+        [InlineData(nameof(Decimal128.Log2), "0.9999999999999999999999999999999999", "-1.4426950408889634073599246810018922095614e-34")]
+        [InlineData(nameof(Decimal128.Log10), "0.9999999999999999999999999999999999", "-4.34294481903251827651128918916605104009121e-35")]
+        [InlineData(nameof(Decimal128.LogP1), "-0.9999999999999999999999999999999999", "-78.2878931617975532566117094592683830584375")]
+        [InlineData(nameof(Decimal128.Log2P1), "-0.9999999999999999999999999999999999", "-112.945555226170319827590860602639265979404")]
+        [InlineData(nameof(Decimal128.Log10P1), "-0.9999999999999999999999999999999999", "-34.00000000000000000000000000000000")]
+        [InlineData(nameof(Decimal128.AsinPi), "0.9999999999999999999999999999999999", "0.499999999999999995498418419214469652224004")]
+        [InlineData(nameof(Decimal128.AcosPi), "0.9999999999999999999999999999999999", "4.50158158078553034777599595503370295083605e-18")]
+        [InlineData(nameof(Decimal128.SinPi), "0.9999999999999999999999999999999999", "3.14159265358979323846264338327950288419717e-34")]
+        [InlineData(nameof(Decimal128.SinPi), "1.000000000000000000000000000000001", "-3.14159265358979323846264338327950288419717e-33")]
+        [InlineData(nameof(Decimal128.SinPi), "10000000000000000000000000.00000001", "3.14159265358979272169136537828252546123232e-8")]
+        [InlineData(nameof(Decimal128.CosPi), "0.4999999999999999999999999999999999", "3.14159265358979323846264338327950288419717e-34")]
+        [InlineData(nameof(Decimal128.CosPi), "0.5000000000000000000000000000000001", "-3.14159265358979323846264338327950288419717e-34")]
+        [InlineData(nameof(Decimal128.TanPi), "0.4999999999999999999999999999999999", "3183098861837906715377675267450287.24068919")]
+        [InlineData(nameof(Decimal128.Exp2), "20413.2481430828416276631128942123", "9.99999999999999999999999999998176545067148e6144")]
+        [InlineData(nameof(Decimal128.Exp2M1), "20413.2481430828416276631128942123", "9.99999999999999999999999999998176545067148e6144")]
+        public static void TranscendentalBoundaryAccuracyTest(string operation, string input, string oracle)
+        {
+            Decimal128 x = Decimal128.Parse(input, CultureInfo.InvariantCulture);
+            Decimal128 expected = Decimal128.Parse(oracle, CultureInfo.InvariantCulture);
+            Decimal128 actual = operation switch
+            {
+                nameof(Decimal128.Asin) => Decimal128.Asin(x),
+                nameof(Decimal128.Acos) => Decimal128.Acos(x),
+                nameof(Decimal128.Acosh) => Decimal128.Acosh(x),
+                nameof(Decimal128.Atanh) => Decimal128.Atanh(x),
+                nameof(Decimal128.Log) => Decimal128.Log(x),
+                nameof(Decimal128.Log2) => Decimal128.Log2(x),
+                nameof(Decimal128.Log10) => Decimal128.Log10(x),
+                nameof(Decimal128.LogP1) => Decimal128.LogP1(x),
+                nameof(Decimal128.Log2P1) => Decimal128.Log2P1(x),
+                nameof(Decimal128.Log10P1) => Decimal128.Log10P1(x),
+                nameof(Decimal128.AsinPi) => Decimal128.AsinPi(x),
+                nameof(Decimal128.AcosPi) => Decimal128.AcosPi(x),
+                nameof(Decimal128.SinPi) => Decimal128.SinPi(x),
+                nameof(Decimal128.CosPi) => Decimal128.CosPi(x),
+                nameof(Decimal128.TanPi) => Decimal128.TanPi(x),
+                nameof(Decimal128.Exp2) => Decimal128.Exp2(x),
+                nameof(Decimal128.Exp2M1) => Decimal128.Exp2M1(x),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal128, UInt128>(actual),
+                Unsafe.BitCast<Decimal128, UInt128>(expected), recordedUlp: 0, limit: 1);
+
+            if (operation == nameof(Decimal128.SinPi))
+            {
+                Assert.Equal(actual, Decimal128.SinCosPi(x).SinPi);
+                Assert.Equal(-actual, Decimal128.SinPi(-x));
+            }
+            else if (operation == nameof(Decimal128.CosPi))
+            {
+                Assert.Equal(actual, Decimal128.SinCosPi(x).CosPi);
+                Assert.Equal(actual, Decimal128.CosPi(-x));
+            }
+        }
+
+        [Theory]
+        [InlineData("-1", "0.5", "-0.5")]
+        [InlineData("1", "2", "1")]
+        [InlineData("10", "1024", "1023")]
+        public static void Exp2IntegerAccuracyTest(string input, string expected, string expectedM1)
+        {
+            Decimal128 x = Decimal128.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(Decimal128.Parse(expected, CultureInfo.InvariantCulture), Decimal128.Exp2(x));
+            Assert.Equal(Decimal128.Parse(expectedM1, CultureInfo.InvariantCulture), Decimal128.Exp2M1(x));
+        }
+
+        [Theory]
+        [InlineData("-14145.68261823660227840883486429809", "4.05598317787840255697517496726153e-6144")]
+        public static void ExpSubnormalRoundingTest(string input, string expected)
+        {
+            Assert.Equal(Decimal128.Parse(expected, CultureInfo.InvariantCulture),
+                Decimal128.Exp(Decimal128.Parse(input, CultureInfo.InvariantCulture)));
+        }
+
+        [Theory]
+        [InlineData(-6177, 0)]
+        [InlineData(-6176, 1)]
+        [InlineData(-6175, 10)]
+        public static void Exp10SubnormalAccuracyTest(int input, int expectedUnits)
+        {
+            Assert.Equal(Decimal128.Epsilon * expectedUnits, Decimal128.Exp10(input));
+        }
+
+        [Theory]
+        [InlineData("0.999999999999999999999999999999999", "1e33", "0.367879441171442321595523770161460683506091")]
+        [InlineData("1.000000000000000000000000000000001", "1e33", "2.71828182845904523536028747135266113861633")]
+        public static void PowNearOneAccuracyTest(string input, string exponent, string oracle)
+        {
+            Decimal128 actual = Decimal128.Pow(Decimal128.Parse(input, CultureInfo.InvariantCulture),
+                Decimal128.Parse(exponent, CultureInfo.InvariantCulture));
+            Decimal128 expected = Decimal128.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal128, UInt128>(actual),
+                Unsafe.BitCast<Decimal128, UInt128>(expected), recordedUlp: 0, limit: 1);
+        }
+
+        [Theory]
+        [InlineData("0.9999999999999999999999999999999999", 7, "0.999999999999999999999999999999999985714285714285714")]
+        [InlineData("1.000000000000000000000000000000001", -7, "0.999999999999999999999999999999999857142857142857143")]
+        [InlineData("0.7500000000000000000000000000000001", 7, "0.959735609788702600120982840125601770360737133179383")]
+        [InlineData("1.300000000000000000000000000000001", -7, "0.963213095002933238402631258970973215179971809330741")]
+        public static void RootNDecimalAccuracyTest(string input, int n, string oracle)
+        {
+            Decimal128 x = Decimal128.Parse(input, CultureInfo.InvariantCulture);
+            Decimal128 expected = Decimal128.Parse(oracle, CultureInfo.InvariantCulture);
+            Decimal128 actual = Decimal128.RootN(x, n);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal128, UInt128>(actual),
+                Unsafe.BitCast<Decimal128, UInt128>(expected), recordedUlp: 0, limit: 1);
+            Assert.Equal(-actual, Decimal128.RootN(-x, n));
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Number;
@@ -1999,6 +2282,7 @@ namespace System.Tests
         [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // log(NaN, 2) = NaN
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // log(2, NaN) = NaN
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000001UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // log(2, 1) = NaN (base 1)
+        [InlineData(0x303A000000000000UL, 0x00000000000003E8UL, 0x303E000000000000UL, 0x0000000000000005UL, 0xB040000000000000UL, 0x0000000000000000UL)] // log(1.000, 0.5) = -0
         public static void LogNewBaseTest(ulong valueUpper, ulong valueLower, ulong baseUpper, ulong baseLower, ulong expectedUpper, ulong expectedLower)
         {
             Decimal128 result = Decimal128.Log(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(baseUpper, baseLower)));
@@ -2006,14 +2290,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(8.0, 2.0)]
-        [InlineData(100.0, 10.0)]
-        [InlineData(2.5, 3.0)]
-        public static void LogNewBaseAccuracyTest(double input, double newBase)
+        [InlineData("8", "2", "3.000000000000000000000000000000000")]
+        [InlineData("100", "10", "2.000000000000000000000000000000000")]
+        [InlineData("2.5", "3", "0.8340437671464697300975132933358795420083467265341692611822354509568071")]
+        [InlineData("1.000000000000000000000000000000001", "0.9999999999999999999999999999999999", "-9.999999999999999999999999999999994500000000000000000000000000000003575")]
+        public static void LogNewBaseAccuracyTest(string input, string newBase, string oracle)
         {
-            double expected = double.Log(input, newBase);
-            double actual = (double)Decimal128.Log((Decimal128)input, (Decimal128)newBase);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}, {newBase}): expected {expected}, got {actual}");
+            Decimal128 actual = Decimal128.Log(Decimal128.Parse(input, CultureInfo.InvariantCulture),
+                Decimal128.Parse(newBase, CultureInfo.InvariantCulture));
+            Decimal128 expected = Decimal128.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal128, UInt128>(actual),
+                Unsafe.BitCast<Decimal128, UInt128>(expected), recordedUlp: 0, limit: 1);
         }
 
         [Theory]
@@ -2310,6 +2598,9 @@ namespace System.Tests
         [InlineData(0x3040000000000000UL, 0x0000000000000000UL, -5, 0x7800000000000000UL, 0x0000000000000000UL)] // rootn(+0, n < 0) = +Infinity
         [InlineData(0xB040000000000000UL, 0x0000000000000000UL, -5, 0xF800000000000000UL, 0x0000000000000000UL)] // rootn(-0, odd < 0) = -Infinity
         [InlineData(0xB040000000000000UL, 0x0000000000000004UL, 2, 0x7C00000000000000UL, 0x0000000000000000UL)] // rootn(-4, even) = NaN
+        [InlineData(0x3038000000000000UL, 0x0000000000001B58UL, 1, 0x2FFD59206BDFDF06UL, 0x8D497D4600000000UL)] // rootn(0.7000, 1) uses the full-precision cohort
+        [InlineData(0xB038000000000000UL, 0x0000000000001B58UL, 1, 0xAFFD59206BDFDF06UL, 0x8D497D4600000000UL)] // rootn(-0.7000, 1) uses the full-precision cohort
+        [InlineData(0x0040000000000000UL, 0x0000000000000001UL, 1, 0x000004EE2D6D415BUL, 0x85ACEF8100000000UL)] // subnormal padding stops at the minimum quantum
         public static void RootNTest(ulong valueUpper, ulong valueLower, int n, ulong expectedUpper, ulong expectedLower)
         {
             Decimal128 result = Decimal128.RootN(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)), n);
@@ -2715,7 +3006,7 @@ namespace System.Tests
         {
             // The engine evaluates in software binary128 (as Intel does), so the result is compared to a
             // high-precision oracle -- the true value rounded to Decimal128 by the independently tested parser --
-            // in decimal ULPs. Exact identities use a 0 ULP limit; near-singular arguments a documented wider one.
+            // in decimal ULPs. Exact identities use a 0 ULP limit.
             Decimal128 actual = Decimal128.SinPi(Decimal128.Parse(input, CultureInfo.InvariantCulture));
             Decimal128 expected = Decimal128.Parse(oracle, CultureInfo.InvariantCulture);
             DecimalIeee754IntelTestData.AssertResultWithinUlp(
@@ -2761,7 +3052,7 @@ namespace System.Tests
         [InlineData("2.25", "0.707106781186547524400844362104849039284835938", 2.0)]
         [InlineData("0.1", "0.951056516295153572116439333379382143405698634", 2.0)]
         [InlineData("1234.567", "-0.208935890402411702274907259384464393664923236", 2.0)]
-        [InlineData("0.4999999", "0.000000314159265358974156133484288383422682765979151", 32.0)] // near a zero -> cancellation
+        [InlineData("0.4999999", "0.000000314159265358974156133484288383422682765979151", 1.0)]
         [InlineData("1", "-1.00000000000000000000000000000000000000000000", 0.0)] // cosPi(odd integer) = -1 exactly
         [InlineData("2", "1.00000000000000000000000000000000000000000000", 0.0)] // cosPi(even integer) = 1 exactly
         [InlineData("0.5", "0.0", 0.0)] // cosPi(half-integer) is an exact zero
@@ -2944,7 +3235,7 @@ namespace System.Tests
         [InlineData("0.25", "0.419569376744833756229049806671515744415935569", 2.0)]
         [InlineData("-0.5", "0.666666666666666666666666666666666666666666667", 2.0)]
         [InlineData("0.999", "0.0142364374062396550708063524160105321570871313", 2.0)]
-        [InlineData("0.9999999", "0.000142352509869706344081743805264037099381195810", 32.0)] // near 1 -> cancellation
+        [InlineData("0.9999999", "0.000142352509869706344081743805264037099381195810", 1.0)]
         [InlineData("0.5", "0.333333333333333333333333333333333333333333333", 2.0)]
         [InlineData("0", "0.500000000000000000000000000000000000000000000", 0.0)] // acosPi(0) = 1/2
         [InlineData("1", "0.0", 0.0)] // acosPi(1) = 0

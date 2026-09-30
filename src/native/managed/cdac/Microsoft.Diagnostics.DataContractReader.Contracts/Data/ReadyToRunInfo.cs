@@ -11,8 +11,10 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
     [Field] public partial TargetPointer CompositeInfo { get; }
     [Field] public partial TargetPointer ReadyToRunHeader { get; }
     [Field] public partial uint NumRuntimeFunctions { get; }
-    [Field] public partial uint NumHotColdMap { get; }
-    [Field] public partial TargetPointer DelayLoadMethodCallThunks { get; }
+    // Absent when the runtime is built without FEATURE_COLD_R2R_CODE.
+    [Field] public partial uint? NumHotColdMap { get; }
+    // Absent on WASM.
+    [Field] public partial TargetPointer? DelayLoadMethodCallThunks { get; }
     [Field] public partial TargetPointer DebugInfoSection { get; }
     [Field] public partial TargetPointer ExceptionInfoSection { get; }
     [Field] public partial TargetPointer LoadedImageBase { get; }
@@ -41,8 +43,9 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
     private partial TargetPointer InitHotColdMap(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
-        Debug.Assert(NumHotColdMap % 2 == 0, "Hot/cold map should have an even number of entries (pairs of hot/cold runtime function indexes)");
-        return NumHotColdMap > 0
+        uint count = NumHotColdMap ?? 0;
+        Debug.Assert(count % 2 == 0, "Hot/cold map should have an even number of entries (pairs of hot/cold runtime function indexes)");
+        return count > 0
             ? target.ReadPointerField(address, type, nameof(HotColdMap))
             : TargetPointer.Null;
     }

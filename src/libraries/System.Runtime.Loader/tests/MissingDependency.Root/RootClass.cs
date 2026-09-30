@@ -9,6 +9,12 @@ namespace MissingDependency.Root
     public class RootClass
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string GetMiddleTypeName()
+        {
+            return typeof(MidClass).FullName;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static string UseMiddle()
         {
             return MidClass.UseLeaf();

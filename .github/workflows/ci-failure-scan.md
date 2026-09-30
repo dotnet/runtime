@@ -301,7 +301,8 @@ search the most distinctive single substring even when you intend to file the
 array form. If any of these variant-form searches surfaces a candidate, treat it
 as `existing-kbe` rather than filing a duplicate.
 
-Record the same outcomes described there:
+Record the same lookup outcomes described there, retaining any
+`linked-tracker` result as cross-link context rather than a terminal outcome:
 
 - `existing-kbe #<n>`
 - `linked-tracker #<n>`
@@ -338,9 +339,19 @@ Stable means >= 2 occurrences across >= 2 distinct builds in the ~10-build windo
 
 **Match-count gate.** Reject the emit unless the KBE body contains the collapsed, workflow-identified verification block defined by check #7 of the shared instructions, with `N >= 1`. Treat an absent block or field as `N=0` and record the same skip reason check #7 uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
 
-If the shared KBE lookup flow recorded `linked-tracker #<tracker>`, cross-link it as `Tracking: dotnet/runtime#<tracker>` in the KBE body.
+If the shared KBE lookup flow recorded `linked-tracker #<tracker>`, retain it as
+cross-link context and continue through Branch A. An unlabeled tracker is not a
+KBE substitute and must not suppress creation of the labeled KBE that Build
+Analysis requires. When Branch A emits a KBE, cross-link it as
+`Tracking: dotnet/runtime#<tracker>` in the body.
 
-**Existing KBE / PR — record, emit nothing.** If Step 4.2–4.7 found a matching open KBE (`existing-kbe #<n>`), linked tracker (`linked-tracker #<n>`), or a PR already handling the failure (`existing-PR #<n>`), record that outcome and stop for this signature. `ci-failure-fix` will pick up the open KBE and decide on a fix or owner hand-off; this scan does not emit a follow-up.
+**Existing KBE / PR — record, emit nothing.** If Step 4.2–4.7 found a
+matching open KBE (`existing-kbe #<n>`) or a PR already handling the failure
+(`existing-PR #<n>`), record that outcome and stop for this signature. A
+`linked-tracker` alone is nonterminal cross-link context; if no KBE, PR, or
+independent skip condition applies, continue to Branch A and create the KBE.
+`ci-failure-fix` will pick up the open KBE and decide on a fix or owner
+hand-off; this scan does not emit a follow-up for an existing KBE or PR.
 
 After emitting, record the outcome per signature (Step 6).
 

@@ -4,6 +4,11 @@
   Sets IsMergedTestRunnerAssembly.
   Expects MergedWrapperProjectReference. Will set Aliases metadata and add into
     ProjectReference.
+
+  Keep referenced out-of-process test projects in the runner's directory or its
+  descendants. Parent-relative project globs can build locally but omit those tests
+  from Helix payloads, which discover them below the runner's parent output directory.
+  This restriction does not apply to Compile items shared between runner configurations.
 -->
 
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">

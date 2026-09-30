@@ -20,6 +20,7 @@
 //Global Variable Declaration
 LONG g_Total = 0;
 LONG Lock=0;
+LONG g_CompletedThreads = 0;
 
 
 void ModifyGlobalResource(void);
@@ -73,16 +74,10 @@ PALTEST(miscellaneous_InterlockedCompareExchange_test2_paltest_interlockedcompar
 	}
 
 
-	//Wait for all threads to finish
+	WaitForThreadCompletion(&g_CompletedThreads, MAX_THREADS);
 	for (i=0;i<MAX_THREADS;i++)
 	{
-
-		 if (WAIT_OBJECT_0 != WaitForSingleObject (hThread[i], INFINITE))
- 		{
-	 		Fail ("Main: Wait for Single Object failed.  Failing test.\n"
-		       "GetLastError returned %d\n", GetLastError());
- 		}
-
+		CloseHandle(hThread[i]);
 	}
 
 
@@ -125,7 +120,7 @@ void ModifyGlobalResource(void)
 
 			*/
 			g_Total++;
-			Sleep(100);
+			minipal_sleep(100);
 			g_Total--;
 			if (0!=g_Total)
 				{
@@ -139,6 +134,8 @@ void ModifyGlobalResource(void)
 
 			ReleaseLock(&Lock);
 		}
+
+	InterlockedIncrement(&g_CompletedThreads);
 
 
 }
@@ -165,4 +162,3 @@ void ReleaseLock(PLONG pLock)
 	MemoryBarrier();
 	*pLock = 0;
 }
-

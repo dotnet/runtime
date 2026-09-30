@@ -22,6 +22,13 @@ namespace Microsoft.Interop
             {
                 flags |= EnvironmentFlags.DisableRuntimeMarshalling;
             }
+            // Roslyn does not expose the memory safety rules version through a public API yet
+            // (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself
+            // reads is used. Parse options are per-project, so any tree answers for the whole compilation.
+            if (compilation.SyntaxTrees.FirstOrDefault()?.Options.Features.ContainsKey("updated-memory-safety-rules") == true)
+            {
+                flags |= EnvironmentFlags.UpdatedMemorySafetyRules;
+            }
             return flags;
         }
     }

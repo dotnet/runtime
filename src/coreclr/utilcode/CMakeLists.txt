@@ -16,7 +16,6 @@ set(UTILCODE_COMMON_SOURCES
   collections.cpp
   posterror.cpp
   clrhelpers.cpp
-  utsem.cpp
   check.cpp
   log.cpp
   arraylist.cpp

@@ -36,8 +36,9 @@ public:
     inline const std::string& Name() const { return m_name; }
 
     bool ReadHeader();
-    bool TryLookupSymbol(const char* symbolName, uint64_t* symbolValue);
-    bool TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolValue);
+    // Returns the relocated virtual address of the symbol in the target process.
+    bool TryLookupSymbol(const char* symbolName, uint64_t* symbolAddress);
+    bool TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolAddress);
     bool EnumerateSegments();
 
 private:

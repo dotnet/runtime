@@ -1310,7 +1310,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="algorithm" /> is <see langword="null" />
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occured generating the ML-DSA key.
+        ///   An error occurred generating the ML-DSA key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-DSA. Callers can use the <see cref="IsSupported" /> property

@@ -6595,7 +6595,7 @@ InteropMethodTableData *MethodTable::GetComInteropData()
 #endif // FEATURE_COMINTEROP
 
 //==========================================================================================
-ULONG MethodTable::MethodData::Release()
+ULONG MethodTable::MethodData::Release() noexcept
 {
     LIMITED_METHOD_CONTRACT;
     //@TODO: Must adjust this to use an alternate allocator so that we don't

@@ -1013,13 +1013,17 @@ namespace System.Net.Sockets
 
                     if (socketError == SocketError.Success)
                     {
-                        _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
+                        // macOS can return accept() success with an empty remote sockaddr when the peer reset before accept.
+                        EndPoint? remoteEndPoint = remoteSocketAddress.Size > 0
+                            ? _currentSocket._rightEndPoint!.Create(remoteSocketAddress)
+                            : null;
+                        _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, remoteEndPoint);
 
                         if (NetEventSource.Log.IsEnabled())
                         {
                             try
                             {
-                                NetEventSource.Accepted(_acceptSocket, _acceptSocket.RemoteEndPoint, _acceptSocket.LocalEndPoint);
+                                NetEventSource.Accepted(_acceptSocket, remoteEndPoint, _acceptSocket.LocalEndPoint);
                             }
                             catch (ObjectDisposedException) { }
                         }

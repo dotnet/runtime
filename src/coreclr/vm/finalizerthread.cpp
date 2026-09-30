@@ -3,6 +3,7 @@
 // ===========================================================================
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "finalizerthread.h"
 #include "threadsuspend.h"
@@ -323,7 +324,7 @@ Again:
         //       regular not re-arming finalizables.
         GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
         GetFinalizerThread()->EnablePreemptiveGC();
-        ClrSleepEx(1, false);
+        minipal_sleep(1);
         GetFinalizerThread()->DisablePreemptiveGC();
         GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
     }
@@ -403,7 +404,7 @@ void FinalizerThread::RaiseShutdownEvents()
     {
         // This wait must be alertable to handle cases where the current
         // thread's context is needed (i.e. RCW cleanup)
-        hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
+        hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE, false);
     }
 #else // TARGET_WASM
     // No dedicated finalizer thread on WASM. Like every other CoreCLR
@@ -420,7 +421,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     //     all events together (infinite wait)
 
     //give a chance to the finalizer event (2s)
-    switch (event->Wait(2000, FALSE))
+    switch (event->Wait(2000, FALSE, false))
     {
     case (WAIT_OBJECT_0):
         return;
@@ -460,20 +461,26 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             cEventsForWait--;
         }
 
-        switch (WaitForMultipleObjectsEx(
-            cEventsForWait,                           // # objects to wait on
-            &(MHandles[uiEventIndexOffsetForWait]),   // array of objects to wait on
-            FALSE,          // bWaitAll == FALSE, so wait for first signal
-#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-            LINUX_HEAP_DUMP_TIME_OUT,
+        DWORD waitResult;
+#ifdef TARGET_WINDOWS
+        waitResult = WaitForMultipleObjectsEx(
+            cEventsForWait,
+            &(MHandles[uiEventIndexOffsetForWait]),
+            FALSE,
+            INFINITE,
+            FALSE);
 #else
-            INFINITE,       // timeout
+        _ASSERTE(cEventsForWait == 1);
+        waitResult = event->Wait(
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+            LINUX_HEAP_DUMP_TIME_OUT
+#else
+            INFINITE
 #endif
-            FALSE)          // alertable
+            );
+#endif
 
-            // Adjust the returned array index for the offset we used, so the return
-            // value is relative to entire MHandles array
-            + uiEventIndexOffsetForWait)
+        switch (waitResult + uiEventIndexOffsetForWait)
         {
         case (WAIT_OBJECT_0 + kLowMemoryNotification):
             //short on memory GC immediately
@@ -481,7 +488,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             GCHeapUtilities::GetGCHeap()->GarbageCollect(0, true);
             GetFinalizerThread()->EnablePreemptiveGC();
             //wait only on the event for 2s
-            switch (event->Wait(2000, FALSE))
+            switch (event->Wait(2000, FALSE, false))
             {
             case (WAIT_OBJECT_0):
                 return;
@@ -809,7 +816,7 @@ void FinalizerThread::WaitForFinalizerThreadStart()
     // this should be only called during EE startup
     _ASSERTE(!g_fEEStarted);
 
-    hEventFinalizerDone->Wait(INFINITE,FALSE);
+    hEventFinalizerDone->Wait(INFINITE, FALSE, false);
     hEventFinalizerDone->Reset();
 }
 
@@ -855,7 +862,7 @@ void FinalizerThread::FinalizerThreadWait()
         //----------------------------------------------------
 
         DWORD status;
-        status = hEventFinalizerDone->Wait(INFINITE,TRUE);
+        status = hEventFinalizerDone->Wait(INFINITE, TRUE, false);
 
         // we use unsigned math here as the collection counts, which are size_t internally,
         // can in theory overflow an int and wrap around.

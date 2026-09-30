@@ -55,7 +55,7 @@ namespace Microsoft.Interop.JavaScript
             return new JSMarshallingInfo(NoMarshallingInfo.Instance, JSTypeInfo.CreateJSTypeInfoForTypeSymbol(type))
             {
                 JSType = jsType,
-                JSTypeArguments = jsTypeArguments.ToArray(),
+                JSTypeArguments = jsTypeArguments.ToSequenceEqualImmutableArray(),
             };
         }
 

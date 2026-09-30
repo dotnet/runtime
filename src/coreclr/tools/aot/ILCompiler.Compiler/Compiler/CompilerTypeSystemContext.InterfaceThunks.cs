@@ -170,6 +170,7 @@ namespace ILCompiler
             private readonly int _interfaceIndex;
             private readonly bool _useContextFromRuntime;
             private readonly byte[] _prefix;
+            private MethodSignature _signature;
 
             public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
@@ -193,7 +194,23 @@ namespace ILCompiler
 
             public bool UseContextFromRuntime => _useContextFromRuntime;
 
-            public override MethodSignature Signature => _targetMethod.Signature;
+            public override MethodSignature Signature
+            {
+                get
+                {
+                    if (_signature == null)
+                    {
+                        MethodSignature signature = _targetMethod.Signature;
+                        if (_useContextFromRuntime)
+                        {
+                            signature = CreateSignatureWithSecretStubArgument(signature, signature.Flags);
+                        }
+                        _signature = signature;
+                    }
+
+                    return _signature;
+                }
+            }
 
             public MethodDesc TargetMethod => _targetMethod;
 
@@ -227,7 +244,6 @@ namespace ILCompiler
 
                 FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
                 MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetOrdinalInterface"u8);
-                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetCurrentSharedThunkContext"u8);
 
                 // Load "this"
                 codeStream.EmitLdArg(0);
@@ -235,7 +251,7 @@ namespace ILCompiler
                 // Load the instantiating argument.
                 if (_useContextFromRuntime)
                 {
-                    codeStream.Emit(ILOpcode.call, emit.NewToken(getCurrentContext));
+                    codeStream.EmitLdArg(Signature.Length);
                 }
                 else
                 {

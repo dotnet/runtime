@@ -36,7 +36,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _targetType = targetType;
             _kind = kind;
             _hasReturnBuffer = hasReturnBuffer;
-            _lookupString = GetLookupString(kind, signature.FuncType, hasReturnBuffer);
+            string prefix = kind switch
+            {
+                UnboxingStubKind.Normal => "U",
+                UnboxingStubKind.MethodTable => "UG",
+                UnboxingStubKind.MethodDesc => "UM",
+                _ => throw new UnreachableException(),
+            };
+            _lookupString = GetLookupString(prefix, signature.FuncType, hasReturnBuffer);
         }
 
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_signature, _context);
@@ -167,61 +174,53 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(ControlFlow.CallIndirect(_targetType, 0));
         }
 
-        private static string GetLookupString(UnboxingStubKind kind, WasmFuncType funcType, bool hasReturnBuffer)
-        {
-            Utf8StringBuilder sb = new Utf8StringBuilder();
-            sb.Append(kind switch
-            {
-                UnboxingStubKind.Normal => "U",
-                UnboxingStubKind.MethodTable => "UG",
-                UnboxingStubKind.MethodDesc => "UM",
-                _ => throw new UnreachableException(),
-            });
-
-            if (funcType.Returns.Types.Length == 0)
-            {
-                sb.Append('v');
-            }
-            else
-            {
-                foreach (WasmValueType type in funcType.Returns.Types)
-                {
-                    AppendTypeCode(sb, type);
-                }
-            }
-
-            if (hasReturnBuffer)
-            {
-                sb.Append('r');
-            }
-
-            foreach (WasmValueType type in funcType.Params.Types)
-            {
-                AppendTypeCode(sb, type);
-            }
-
-            return sb.ToString();
-        }
-
-        private static void AppendTypeCode(Utf8StringBuilder sb, WasmValueType type)
-        {
-            sb.Append(type switch
-            {
-                WasmValueType.I32 => 'i',
-                WasmValueType.I64 => 'l',
-                WasmValueType.F32 => 'f',
-                WasmValueType.F64 => 'd',
-                WasmValueType.V128 => 'V',
-                _ => throw new UnreachableException(),
-            });
-        }
-
         protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
         protected override void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
         protected override void EmitCode(NodeFactory factory, ref ARM.ARMEmitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
         protected override void EmitCode(NodeFactory factory, ref ARM64.ARM64Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
         protected override void EmitCode(NodeFactory factory, ref LoongArch64.LoongArch64Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
         protected override void EmitCode(NodeFactory factory, ref RiscV64.RiscV64Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();
+    }
+
+    public sealed class WasmUnboxingStubTargetNode : DependencyNodeCore<NodeFactory>
+    {
+        private readonly MethodDesc _targetMethod;
+        private readonly WasmSignature _signature;
+        private readonly WasmUnboxingStubNode _stub;
+
+        public WasmUnboxingStubTargetNode(MethodDesc targetMethod, WasmSignature signature, WasmUnboxingStubNode stub)
+        {
+            _targetMethod = targetMethod;
+            _signature = signature;
+            _stub = stub;
+        }
+
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+
+        public override bool HasDynamicDependencies => false;
+
+        public override bool HasConditionalStaticDependencies => false;
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            DependencyList dependencies = new DependencyList();
+            dependencies.Add(_stub, "Wasm unboxing stub for target method");
+            dependencies.Add(context.CompiledMethodNode(_targetMethod), "Target method for Wasm unboxing stub");
+            dependencies.Add(context.WasmR2RToInterpreterThunk(WasmLowering.GetSignature(_targetMethod)), "Interpreter fallback for Wasm unboxing target");
+            dependencies.Add(context.WasmInterpreterToR2RThunk(_signature), "Interpreter-to-R2R thunk for Wasm unboxing stub target");
+            return dependencies;
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(
+            List<DependencyNodeCore<NodeFactory>> markedNodes,
+            int firstNode,
+            NodeFactory context) => null;
+
+        protected override string GetName(NodeFactory factory) => $"Wasm unboxing stub target for {_targetMethod}";
     }
 
     public enum UnboxingStubKind

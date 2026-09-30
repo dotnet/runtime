@@ -633,9 +633,10 @@ bool FoldNeverNegativeRangeTest(
         return false;
     }
 
-    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if ((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
     {
-        // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
+        // The fold makes NN evaluate unconditionally, so it must be safe to speculate.
+        // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
         return false;
     }
 
@@ -1000,8 +1001,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     }
 
     // Ensure there are no additional side effects.
-    if ((cond1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
-        (cond2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    if ((cond1->gtFlags & GTF_OBS_EFFECT) != 0 || (cond2->gtFlags & GTF_OBS_EFFECT) != 0)
     {
         return false;
     }

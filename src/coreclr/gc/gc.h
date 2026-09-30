@@ -17,8 +17,6 @@ Module Name:
 #include "env/gcenv.os.h"
 #include <minipal/types.h>
 
-#include "gchandletableimpl.h"
-
 #ifdef BUILD_AS_STANDALONE
 #include "gcenv.ee.standalone.inl"
 

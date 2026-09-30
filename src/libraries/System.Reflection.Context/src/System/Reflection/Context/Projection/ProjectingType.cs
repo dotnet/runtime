@@ -66,6 +66,13 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectType(base.GetEnumUnderlyingType());
         }
 
+#if NET11_0_OR_GREATER
+        public override Type? GetNullableUnderlyingType()
+        {
+            return _projector.ProjectType(base.GetNullableUnderlyingType());
+        }
+#endif
+
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             attributeType = Projector.Unproject(attributeType);
@@ -82,6 +89,23 @@ namespace System.Reflection.Context.Projection
         {
             return _projector.Project(base.GetEvents(), _projector.ProjectEvent);
         }
+
+#if NET
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            return _projector.Project(base.GetFunctionPointerCallingConventions(), _projector.ProjectType);
+        }
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            return _projector.Project(base.GetFunctionPointerParameterTypes(), _projector.ProjectType);
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            return _projector.ProjectType(base.GetFunctionPointerReturnType());
+        }
+#endif
 
         public override Type[] GetGenericArguments()
         {
@@ -306,6 +330,15 @@ namespace System.Reflection.Context.Projection
         {
             return _projector.ProjectType(base.MakePointerType());
         }
+
+#if NET11_0_OR_GREATER
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            parameterTypes = Projector.Unproject(parameterTypes);
+
+            return _projector.ProjectType(base.MakeFunctionPointerType(parameterTypes, isUnmanaged));
+        }
+#endif
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)

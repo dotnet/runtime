@@ -34,6 +34,25 @@ namespace System.Text.Json.SourceGeneration
         public required TypeRef TypeRef { get; init; }
 
         /// <summary>
+        /// When the type is generic, contains the FQN of the declaring type using open type parameters
+        /// (e.g., "global::TestApp.MyGenericType&lt;T&gt;").
+        /// </summary>
+        public string? OpenDeclaringTypeFQN { get; init; }
+
+        /// <summary>
+        /// The type parameter names of the generic declaring type (e.g., ["T"]).
+        /// Null when the declaring type is not generic.
+        /// </summary>
+        public ImmutableEquatableArray<string>? DeclaringTypeParameterNames { get; init; }
+
+        /// <summary>
+        /// The combined type parameter constraint clauses of the generic declaring type
+        /// (e.g., "where T : notnull, global::MyNamespace.MyBase where U : struct").
+        /// Null when the declaring type is not generic or has no constraints.
+        /// </summary>
+        public string? DeclaringTypeParameterConstraintClauses { get; init; }
+
+        /// <summary>
         /// The name of the public <c>JsonTypeInfo&lt;T&gt;</c> property for this type on the generated context class.
         /// For example, if the context class is named MyJsonContext, and the value of this property is JsonMessage;
         /// then users will call MyJsonContext.JsonMessage to access generated metadata for the type.

@@ -53,6 +53,7 @@
   <PropertyGroup>
     <RuntimeFlavor Condition="'$(Nested_RuntimeFlavor)' != ''">$(Nested_RuntimeFlavor)</RuntimeFlavor>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(Nested_PublishReadyToRun)' != ''">$(Nested_PublishReadyToRun)</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">false</PublishReadyToRun>
   </PropertyGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->

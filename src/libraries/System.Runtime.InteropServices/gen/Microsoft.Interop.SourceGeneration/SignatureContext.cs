@@ -11,9 +11,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -32,9 +29,9 @@ namespace Microsoft.Interop
 
         public IEnumerable<TypePositionInfo> ManagedParameters => ElementTypeInformation.Where(tpi => !TypePositionInfo.IsSpecialIndex(tpi.ManagedIndex));
 
-        public TypeSyntax StubReturnType { get; init; }
+        public string StubReturnType { get; init; }
 
-        public IEnumerable<ParameterSyntax> StubParameters
+        public IEnumerable<GeneratedParameter> StubParameters
         {
             get
             {
@@ -42,15 +39,16 @@ namespace Microsoft.Interop
                 {
                     if (!TypePositionInfo.IsSpecialIndex(typeInfo.ManagedIndex))
                     {
-                        yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
-                            .WithType(typeInfo.ManagedType.Syntax)
-                            .WithModifiers(MarshallerHelpers.GetManagedParameterModifiers(typeInfo));
+                        yield return new GeneratedParameter(
+                            typeInfo.ManagedType.FullTypeName,
+                            typeInfo.InstanceIdentifier,
+                            MarshallerHelpers.GetManagedParameterModifiers(typeInfo));
                     }
                 }
             }
         }
 
-        public ImmutableArray<AttributeListSyntax> AdditionalAttributes { get; init; }
+        public ImmutableArray<string> AdditionalAttributes { get; init; }
 
         public static SignatureContext Create(
             IMethodSymbol method,
@@ -72,38 +70,21 @@ namespace Microsoft.Interop
         {
             ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env, errorHandlingInfo);
 
-            ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
+            ImmutableArray<string>.Builder additionalAttrs = ImmutableArray.CreateBuilder<string>();
 
             string generatorName = generatorInfoAssembly.GetName().Name;
             string generatorVersion = generatorInfoAssembly.GetName().Version.ToString();
             // Define additional attributes for the stub definition.
-            additionalAttrs.Add(
-                AttributeList(
-                    SingletonSeparatedList(
-                        Attribute(
-                            NameSyntaxes.System_CodeDom_Compiler_GeneratedCodeAttribute,
-                            AttributeArgumentList(
-                                SeparatedList(
-                                    new[]
-                                    {
-                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatorName))),
-                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatorVersion)))
-                                    }))))));
+            additionalAttrs.Add($"{TypeNames.GlobalAlias}{TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute}({CodeWriterHelpers.StringLiteral(generatorName)}, {CodeWriterHelpers.StringLiteral(generatorVersion)})");
 
             if (options.SkipInit && !MethodIsSkipLocalsInit(env, method))
             {
-                additionalAttrs.Add(
-                    AttributeList(
-                        SingletonSeparatedList(
-                            // Adding the skip locals init indiscriminately since the source generator is
-                            // targeted at non-blittable method signatures which typically will contain locals
-                            // in the generated code.
-                            Attribute(NameSyntaxes.System_Runtime_CompilerServices_SkipLocalsInitAttribute))));
+                additionalAttrs.Add(TypeNames.GlobalAlias + TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute);
             }
 
             return new SignatureContext()
             {
-                StubReturnType = method.ReturnType.AsTypeSyntax(),
+                StubReturnType = method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 ElementTypeInformation = typeInfos,
                 AdditionalAttributes = additionalAttrs.ToImmutable(),
             };
@@ -323,8 +304,8 @@ namespace Microsoft.Interop
             // the generator factory is deterministically created based on the ElementTypeInformation and Options.
             return other is not null
                 && ElementTypeInformation.SequenceEqual(other.ElementTypeInformation)
-                && StubReturnType.IsEquivalentTo(other.StubReturnType)
-                && AdditionalAttributes.SequenceEqual(other.AdditionalAttributes, (IEqualityComparer<AttributeListSyntax>)SyntaxEquivalentComparer.Instance);
+                && StubReturnType == other.StubReturnType
+                && AdditionalAttributes.SequenceEqual(other.AdditionalAttributes);
         }
 
         public override int GetHashCode()

@@ -263,17 +263,17 @@ unsigned PromotionLiveness::GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarC
         assert((data.parent != nullptr) && data.parent->IsCall());
 
         unsigned defSize = UINT_MAX;
-        auto     findDef = [&](const LocalDef& def) {
-            if (def.Def == lcl)
+        auto     findDef = [&](const auto& def) {
+            if (def.GetDefNode() == lcl)
             {
-                defSize = def.Size.GetExact();
+                defSize = def.GetStoreSize(m_compiler).GetExact();
                 return GenTree::VisitResult::Abort;
             }
 
             return GenTree::VisitResult::Continue;
         };
 
-        GenTree::VisitResult result = data.parent->VisitLocalDefs(m_compiler, findDef);
+        GenTree::VisitResult result = data.parent->VisitLogicalLocalDefs(m_compiler, findDef);
         assert(result == GenTree::VisitResult::Abort);
         return defSize;
     }
@@ -644,6 +644,42 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
             }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// IsReplacementUsed:
+//   Check if a replacement field is used before being defined in a block.
+//
+// Parameters:
+//   bb               - The block
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the upward-exposed use set.
+//
+bool PromotionLiveness::IsReplacementUsed(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    unsigned index = m_structLclToTrackedIndex[structLcl] + 1 + replacementIndex;
+    return BitVecOps::IsMember(m_bvTraits, m_bbInfo[bb->bbNum].VarUse, index);
+}
+
+//------------------------------------------------------------------------
+// IsReplacementDefined:
+//   Check if a replacement field is fully defined in a block.
+//
+// Parameters:
+//   bb               - The block
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the definition set.
+//
+bool PromotionLiveness::IsReplacementDefined(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    unsigned index = m_structLclToTrackedIndex[structLcl] + 1 + replacementIndex;
+    return BitVecOps::IsMember(m_bvTraits, m_bbInfo[bb->bbNum].VarDef, index);
 }
 
 //------------------------------------------------------------------------

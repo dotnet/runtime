@@ -20,11 +20,13 @@
 #include <palsuite.h>
 
 DWORD dwThreadIdTF;
+LONG completedThreadCount_GetCurrentThreadId_test1 = 0;
 
 DWORD PALAPI ThreadFunction ( LPVOID lpParam )
 {
     Trace ("thread code executed\n");
     dwThreadIdTF = GetCurrentThreadId();
+    InterlockedIncrement(&completedThreadCount_GetCurrentThreadId_test1);
     return 0;
 }
 
@@ -34,7 +36,6 @@ PALTEST(threading_GetCurrentThreadId_test1_paltest_getcurrentthreadid_test1, "th
     DWORD dwThreadIdCT;
     HANDLE hThread; 
     DWORD dwThreadParam = 1;
-    DWORD dwThreadWait;
     
     if(0 != (PAL_Initialize(argc, argv)))
     {
@@ -55,15 +56,14 @@ PALTEST(threading_GetCurrentThreadId_test1_paltest_getcurrentthreadid_test1, "th
     }
     else 
     {
-	dwThreadWait = WaitForSingleObject( hThread, INFINITE );   
-    
-        Trace ("dwThreadWait returned %d\n", dwThreadWait );
+        WaitForThreadCompletion(&completedThreadCount_GetCurrentThreadId_test1, 1);
     
 	if ( dwThreadIdCT == dwThreadIdTF )
 	{
             Trace ( "ThreadId numbers match - GetCurrentThreadId"
 		     " works.  dwThreadIdCT == dwThreadIdTF == %d\n",
 		     dwThreadIdTF );
+            CloseHandle(hThread);
 	    PAL_Terminate();
             return ( PASS );
 	}

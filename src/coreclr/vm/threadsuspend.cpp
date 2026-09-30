@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "threadsuspend.h"
 
@@ -1582,7 +1583,7 @@ LPrepareRetry:
         }
         else
         {
-            ClrSleepEx(ABORT_POLL_TIMEOUT, FALSE);
+            minipal_sleep(ABORT_POLL_TIMEOUT);
         }
 
 
@@ -1618,7 +1619,7 @@ LPrepareRetry:
             }
             else
             {
-                ClrSleepEx(100, FALSE);
+                minipal_sleep(100);
             }
         }
 
@@ -1859,7 +1860,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 #endif
 }
 
-void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSPEND_REASON reason)
+void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSPEND_REASON reason) noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -2049,7 +2050,7 @@ extern void WaitForEndOfShutdown();
 // currently in progress.  This is the situation when returning back into
 // the EE from outside.  See the comments in DisablePreemptiveGC() to understand
 // why we Enable GC here!
-void Thread::RareDisablePreemptiveGC()
+void Thread::RareDisablePreemptiveGC() noexcept
 {
     PreserveLastErrorHolder preserveLastError;
 
@@ -2449,7 +2450,7 @@ bool ThreadStore::IsTrappingThreadsForSuspension()
 
 #ifdef FEATURE_HIJACK
 
-void RedirectedThreadFrame::ExceptionUnwind_Impl()
+void RedirectedThreadFrame::ExceptionUnwind_Impl() noexcept
 {
     CONTRACTL
     {
@@ -4396,7 +4397,7 @@ BOOL Thread::WaitForDebugSuspendHelper(void)
                 ThreadState newState = (ThreadState)(oldState | TS_DebugSyncSuspended);
                 if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
                 {
-                    result = m_DebugSuspendEvent.Wait(INFINITE,FALSE);
+                    result = m_DebugSuspendEvent.Wait(INFINITE, FALSE, false);
 #if _DEBUG
                     newState = m_State;
                     _ASSERTE(!(newState & TS_DebugSyncSuspended));

@@ -528,6 +528,7 @@ namespace Internal.JitInterface
         WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                // e.g. in R2R scenarios, encoding an offset from $imageBase
         WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
+        WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
     }
 
     public enum CorInfoGCType
@@ -1546,7 +1547,6 @@ namespace Internal.JitInterface
         CORJIT_FLAG_BBINSTR_IF_LOOPS        = 19, // JIT must instrument current method if it has loops
         CORJIT_FLAG_BBOPT                   = 20, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED                  = 21, // All methods have an EBP frame
-        CORJIT_FLAG_PUBLISH_SECRET_PARAM    = 22, // JIT must place stub secret param into local 0.  (used by IL stubs)
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 23, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE         = 24, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
         CORJIT_FLAG_TRACK_TRANSITIONS       = 25, // The JIT should insert the helper variants that track transitions.
@@ -1559,6 +1559,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 
         CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
+        CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32, // The JIT should emit the diagnostic helpers that verify GC mode transitions are legal
     }
 
     public struct CORJIT_FLAGS

@@ -291,18 +291,18 @@ namespace System
         /// </exception>
         public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds, int microseconds)
         {
-            long totalMicroseconds = (days * MicrosecondsPerDay)
-                                   + (hours * MicrosecondsPerHour)
-                                   + (minutes * MicrosecondsPerMinute)
-                                   + (seconds * MicrosecondsPerSecond)
-                                   + (milliseconds * MicrosecondsPerMillisecond)
-                                   + microseconds;
+            Int128 totalMicroseconds = Math.BigMul(days, MicrosecondsPerDay)
+                                     + Math.BigMul(hours, MicrosecondsPerHour)
+                                     + Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
 
             if ((totalMicroseconds > MaxMicroseconds) || (totalMicroseconds < MinMicroseconds))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             }
-            _ticks = totalMicroseconds * TicksPerMicrosecond;
+            _ticks = (long)totalMicroseconds * TicksPerMicrosecond;
         }
 
         public long Ticks => _ticks;

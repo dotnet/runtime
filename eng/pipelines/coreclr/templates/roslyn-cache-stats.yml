@@ -1,0 +1,24 @@
+steps:
+  - script: |
+      set -euo pipefail
+
+      dotnet="$(Build.SourcesDirectory)/.dotnet/dotnet"
+      if [[ -z "${ROSLYN_CACHE_PATH:-}" ||
+            -z "${ROSLYN_CACHE_BUILD_START:-}" ||
+            ! -x "$dotnet" ]]; then
+          echo "Roslyn compiler cache statistics are unavailable."
+          exit 0
+      fi
+
+      sdkVersion="$("$dotnet" --version)"
+      compilerServer="$(Build.SourcesDirectory)/.dotnet/sdk/$sdkVersion/Roslyn/bincore/VBCSCompiler.dll"
+      if [[ ! -f "$compilerServer" ]]; then
+          echo "Roslyn compiler server not found at $compilerServer."
+          exit 0
+      fi
+
+      "$dotnet" "$compilerServer" \
+        "-cachestats:${ROSLYN_CACHE_BUILD_START}" \
+        "-cachepath:${ROSLYN_CACHE_PATH}" || true
+    displayName: Roslyn compiler cache stats
+    condition: always()

@@ -71,10 +71,7 @@ CObjectType CorUnix::otFile(
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
-                CFileProcessLocalDataCleanupRoutine,
-                CObjectType::UnwaitableObject,
-                CObjectType::SignalingNotApplicable,
-                CObjectType::ThreadReleaseNotApplicable
+                CFileProcessLocalDataCleanupRoutine
                 );
 
 CAllowedObjectTypes CorUnix::aotFile(otiFile);

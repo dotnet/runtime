@@ -13,6 +13,7 @@ set(SOURCES
     ospagesize.c
     guid.c
     random.c
+    rwlock.c
     debugger.c
     strings.c
     time.c

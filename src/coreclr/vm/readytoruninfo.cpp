@@ -803,7 +803,9 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
+#ifdef FEATURE_INLINE_TRACKING
     m_pPersistentInlineTrackingMap(NULL),
+#endif // FEATURE_INLINE_TRACKING
     m_pNextR2RForUnrelatedCode(NULL)
 {
     STANDARD_VM_CONTRACT;
@@ -964,44 +966,37 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_availableTypesHashtable = NativeHashtable(parser);
     }
 
-    // For format version 5.2 and later, there is an optional table of instrumentation data
 #ifdef FEATURE_PGO
-    if (IsImageVersionAtLeast(5, 2))
+    IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
+    if (pPgoInstrumentationDataDir)
     {
-        IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
-        if (pPgoInstrumentationDataDir)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
-            m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
-        }
-
-        // Force the Pgo manager infrastructure to be initialized
-        pLoaderAllocator->GetOrCreatePgoManager();
+        NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
+        m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
     }
+
+    // Force the Pgo manager infrastructure to be initialized
+    pLoaderAllocator->GetOrCreatePgoManager();
 #endif
 
-    if (IsImageVersionAtLeast(18, 3))
+    IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
+    if (pExternalTypeMapsDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
-        if (pExternalTypeMapsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress);
-            m_externalTypeMaps = NativeHashtable(parser);
-        }
+        NativeParser parser = NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress);
+        m_externalTypeMaps = NativeHashtable(parser);
+    }
 
-        IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
-        if (pProxyTypeMapsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress);
-            m_proxyTypeMaps = NativeHashtable(parser);
-        }
+    IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
+    if (pProxyTypeMapsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress);
+        m_proxyTypeMaps = NativeHashtable(parser);
+    }
 
-        IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
-        if (pTypeMapAssemblyTargetsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress);
-            m_typeMapAssemblyTargets = NativeHashtable(parser);
-        }
+    IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
+    if (pTypeMapAssemblyTargetsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress);
+        m_typeMapAssemblyTargets = NativeHashtable(parser);
     }
 
     if (!m_isComponentAssembly)
@@ -1013,40 +1008,23 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-    if (IsImageVersionAtLeast(6, 3))
+#ifdef FEATURE_INLINE_TRACKING
+    IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
+    if (pCrossModuleInlineTrackingInfoDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
-        if (pCrossModuleInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
-            CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
-                pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
-        }
+        const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
+        CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
+            pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
     }
 
-    // For format version 4.1 and later, there is an optional inlining table
-    if (IsImageVersionAtLeast(4, 1))
+    IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
+    if (pInlineTrackingInfoDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
-        if (pInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-            PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-                pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
-        }
+        const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
+        PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
+            pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
     }
-
-    // For format version 2.1 and later, there is an optional inlining table
-    if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
-    {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo);
-        if (pInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-            PersistentInlineTrackingMapR2R::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-                                                    pamTracker, &m_pPersistentInlineTrackingMap);
-        }
-    }
+#endif // FEATURE_INLINE_TRACKING
 
     // For format version 3.1 and later, there is an optional attributes section
     IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);
@@ -2880,6 +2858,95 @@ UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData)
     return result;
 }
 
+static bool TryDecodeULEB128AsU32(PTR_BYTE* ppData, PTR_BYTE pEnd, UINT32* pValue)
+{
+    UINT32 result = 0;
+
+    for (int shift = 0; shift < 32; shift += 7)
+    {
+        if (*ppData >= pEnd)
+            return false;
+
+        BYTE b = *(*ppData)++;
+        if ((shift == 28) && ((b & 0xF0) != 0))
+            return false;
+
+        result |= (UINT32)(b & 0x7F) << shift;
+        if ((b & 0x80) == 0)
+        {
+            *pValue = result;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void ProcessWasmAsyncResumeInfoFixups(
+    TADDR imageBase,
+    SIZE_T imageSize,
+    IMAGE_DATA_DIRECTORY* pFixupSection,
+    DWORD virtualIPBase,
+    bool applyFixups)
+{
+    SIZE_T sectionRva = pFixupSection->VirtualAddress;
+    SIZE_T sectionSize = pFixupSection->Size;
+    if ((sectionRva > imageSize) || (sectionSize > imageSize - sectionRva))
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    PTR_BYTE pFixupData = dac_cast<PTR_BYTE>(imageBase + sectionRva);
+    PTR_BYTE pFixupEnd = pFixupData + sectionSize;
+    UINT32 chunkCount;
+    if (!TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &chunkCount))
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    SIZE_T currentFixupRva = 0;
+    for (UINT32 chunkIndex = 0; chunkIndex < chunkCount; chunkIndex++)
+    {
+        UINT32 delta;
+        UINT32 fixupCount;
+        UINT32 fixupStride;
+        if (!TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &delta) ||
+            !TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &fixupCount) ||
+            !TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &fixupStride))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        if ((delta > imageSize - currentFixupRva) ||
+            (fixupCount == 0) ||
+            (fixupStride != sizeof(CORINFO_AsyncResumeInfo)))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        currentFixupRva += delta;
+        if ((currentFixupRva > imageSize) ||
+            (sizeof(DWORD) > imageSize - currentFixupRva))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        SIZE_T maximumFixupCount =
+            1 + (imageSize - currentFixupRva - sizeof(DWORD)) / fixupStride;
+        if (fixupCount > maximumFixupCount)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        for (UINT32 fixupIndex = 0; fixupIndex < fixupCount; fixupIndex++)
+        {
+            SIZE_T diagnosticIPRva = currentFixupRva + (SIZE_T)fixupIndex * fixupStride;
+            PTR_DWORD pDiagnosticIP = dac_cast<PTR_DWORD>(imageBase + diagnosticIPRva);
+            if (*pDiagnosticIP > UINT32_MAX - virtualIPBase)
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+            if (applyFixups)
+                *pDiagnosticIP += virtualIPBase;
+        }
+
+        currentFixupRva += (SIZE_T)(fixupCount - 1) * fixupStride + sizeof(DWORD);
+    }
+}
+
 void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
 {
     CONTRACTL {
@@ -2912,6 +2979,18 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
             totalVirtualIPs,
             ExecutionManager::GetReadyToRunJitManager(),
             pModule));
+
+        IMAGE_DATA_DIRECTORY* pAsyncResumeInfoFixups =
+            m_pComposite->FindSection(ReadyToRunSectionType::WasmAsyncResumeInfo);
+        if (pAsyncResumeInfoFixups != nullptr)
+        {
+            DWORD virtualIPBase = static_cast<DWORD>(m_pComposite->GetMinVirtualIP());
+            SIZE_T imageSize = m_pComposite->GetLayout()->GetVirtualSize();
+            ProcessWasmAsyncResumeInfoFixups(
+                imageBase, imageSize, pAsyncResumeInfoFixups, virtualIPBase, false);
+            ProcessWasmAsyncResumeInfoFixups(
+                imageBase, imageSize, pAsyncResumeInfoFixups, virtualIPBase, true);
+        }
 
         ExecutionManager::AddFunctionTableIndexRange(
             m_minFunctionTableIndex,

@@ -21,7 +21,9 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         {
             _hashMap = PtrHashMapLookup.Create(target);
             _hotCold = HotColdLookup.Create(target);
-            _runtimeFunctions = RuntimeFunctionLookup.Create(target);
+            _runtimeFunctions = RuntimeFunctionLookup.Create(
+                target,
+                target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm);
         }
 
         private enum ReadyToRunSectionType
@@ -35,34 +37,36 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             info = default;
 
             Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
-            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer codeBase, out uint index))
                 return false;
 
             index = AdjustRuntimeFunctionIndexForHotCold(r2rInfo, index);
-            index = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out TargetPointer methodDesc);
+            if (!TryAdjustRuntimeFunctionToMethodStart(r2rInfo, codeBase, index, out index, out TargetPointer methodDesc))
+                return false;
 
             Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
+            uint functionBeginAddress = _runtimeFunctions.GetBeginAddress(function);
 
             TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
             // The R2R RUNTIME_FUNCTION.BeginAddress encodes thumb code with the thumb bit set on
             // ARM32. Native RUNTIME_FUNCTION__BeginAddress uses ThumbCodeToDataPointer to strip it
             // (clrnt.h, ARM32 branch). Mirror that so we store a raw TADDR-style start address.
             TargetPointer startAddress = CodePointerUtils.AddressFromCodePointer(
-                new TargetCodePointer(imageBase.Value + function.BeginAddress), Target);
+                new TargetCodePointer(codeBase.Value + functionBeginAddress), Target);
             TargetNUInt relativeOffset = new TargetNUInt(addr - startAddress);
 
             // Take hot/cold splitting into account for the relative offset
-            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, out uint coldFunctionIndex))
+            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap ?? 0, r2rInfo.HotColdMap, index, out uint coldFunctionIndex))
             {
                 Debug.Assert(coldFunctionIndex < r2rInfo.NumRuntimeFunctions);
                 Data.RuntimeFunction coldFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldFunctionIndex);
                 TargetPointer coldStart = CodePointerUtils.AddressFromCodePointer(
-                    new TargetCodePointer(imageBase.Value + coldFunction.BeginAddress), Target);
+                    new TargetCodePointer(codeBase.Value + _runtimeFunctions.GetBeginAddress(coldFunction)), Target);
                 if (addr >= coldStart)
                 {
                     // If the address is in the cold part, the relative offset is the size of the
                     // hot part plus the offset from the address to the start of the cold part
-                    uint hotSize = _runtimeFunctions.GetFunctionLength(imageBase, function);
+                    uint hotSize = _runtimeFunctions.GetFunctionLength(GetLoadedImageBase(rangeSection, r2rInfo), function);
                     relativeOffset = new TargetNUInt(hotSize + addr - coldStart);
                 }
             }
@@ -87,17 +91,18 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             hotSize = gcInfo.GetCodeLength(gcInfoHandle);
 
             Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
-            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer codeBase, out uint index))
                 return;
 
-            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, r2rInfo.NumRuntimeFunctions, out uint coldStartIdx, out uint coldEndIdx))
+            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap ?? 0, r2rInfo.HotColdMap, index, r2rInfo.NumRuntimeFunctions, out uint coldStartIdx, out uint coldEndIdx))
             {
                 Data.RuntimeFunction coldStartFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldStartIdx);
                 Data.RuntimeFunction coldEndFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldEndIdx);
-                uint coldBeginOffset = coldStartFunc.BeginAddress;
-                uint coldEndOffset = coldEndFunc.BeginAddress + _runtimeFunctions.GetFunctionLength(imageBase, coldEndFunc);
+                uint coldBeginOffset = _runtimeFunctions.GetBeginAddress(coldStartFunc);
+                uint coldEndOffset = _runtimeFunctions.GetBeginAddress(coldEndFunc)
+                    + _runtimeFunctions.GetFunctionLength(GetLoadedImageBase(rangeSection, r2rInfo), coldEndFunc);
                 coldSize = coldEndOffset - coldBeginOffset;
-                coldStart = imageBase + coldBeginOffset;
+                coldStart = codeBase + coldBeginOffset;
 
                 hotSize -= coldSize;
             }
@@ -120,16 +125,18 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             // ReadyToRunJitManager::GetDebugInfo
             Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
-            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer codeBase, out uint index))
                 return TargetPointer.Null;
 
             index = AdjustRuntimeFunctionIndexForHotCold(r2rInfo, index);
-            index = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out _);
+            if (!TryAdjustRuntimeFunctionToMethodStart(r2rInfo, codeBase, index, out index, out _))
+                return TargetPointer.Null;
 
             Data.ImageDataDirectory debugInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DebugInfoSection);
+            TargetPointer loadedImageBase = GetLoadedImageBase(rangeSection, r2rInfo);
 
             ILCompiler.Reflection.ReadyToRun.NativeReader imageReader = new(
-                new TargetStream(Target, imageBase, debugInfoData.VirtualAddress + debugInfoData.Size),
+                new TargetStream(Target, loadedImageBase, debugInfoData.VirtualAddress + debugInfoData.Size),
                 Target.IsLittleEndian
             );
             ILCompiler.Reflection.ReadyToRun.NativeArray debugInfoArray = new(imageReader, debugInfoData.VirtualAddress);
@@ -144,14 +151,14 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (lookBack != 0)
                 debugInfoOffset = (uint)offset - lookBack;
 
-            return imageBase + debugInfoOffset;
+            return loadedImageBase + debugInfoOffset;
         }
 
         public override CodeKind GetCodeKind(RangeSection rangeSection, TargetCodePointer codeAddress)
         {
             if (rangeSection.Data == null)
                 return CodeKind.Unknown;
-            return IsStubCodeBlockThunk(rangeSection.Data, GetReadyToRunInfo(rangeSection), codeAddress) ? CodeKind.MethodCallThunk : CodeKind.ReadyToRun;
+            return IsStubCodeBlockThunk(rangeSection, GetReadyToRunInfo(rangeSection), codeAddress) ? CodeKind.MethodCallThunk : CodeKind.ReadyToRun;
         }
 
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
@@ -161,15 +168,16 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             // ReadyToRunJitManager::GetGCInfoToken
             Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
-            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer codeBase, out uint index))
                 return;
 
             index = AdjustRuntimeFunctionIndexForHotCold(r2rInfo, index);
-            index = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out _);
+            if (!TryAdjustRuntimeFunctionToMethodStart(r2rInfo, codeBase, index, out index, out _))
+                return;
 
             Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
-            TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
+            TargetPointer unwindInfo = runtimeFunction.UnwindData + GetLoadedImageBase(rangeSection, r2rInfo);
             uint unwindDataSize = UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, Target.Contracts.RuntimeInfo.GetTargetArchitecture());
             gcInfo = unwindInfo + unwindDataSize;
             gcVersion = GetR2RGCInfoVersion(r2rInfo);
@@ -210,23 +218,26 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             RangeSection rangeSection,
             Data.ReadyToRunInfo r2rInfo,
             TargetCodePointer jittedCodeAddress,
-            out TargetPointer imageBase,
+            out TargetPointer codeBase,
             out uint runtimeFunctionIndex)
         {
-            imageBase = TargetPointer.Null;
+            codeBase = TargetPointer.Null;
             runtimeFunctionIndex = 0;
 
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
 
             // Check if address is in a thunk
-            if (IsStubCodeBlockThunk(rangeSection.Data, r2rInfo, jittedCodeAddress))
+            if (IsStubCodeBlockThunk(rangeSection, r2rInfo, jittedCodeAddress))
                 return false;
 
             // Find the relative address that we are looking for
             TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
-            imageBase = rangeSection.Data.RangeBegin;
-            TargetPointer relativeAddr = addr - imageBase;
+            codeBase = GetCodeBase(rangeSection, r2rInfo);
+            if (codeBase == TargetPointer.Null)
+                return false;
+
+            TargetPointer relativeAddr = addr - codeBase;
 
             return _runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(r2rInfo.RuntimeFunctions, r2rInfo.NumRuntimeFunctions, relativeAddr, out runtimeFunctionIndex);
         }
@@ -234,44 +245,56 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         private uint AdjustRuntimeFunctionIndexForHotCold(Data.ReadyToRunInfo r2rInfo, uint index)
         {
             // Look up index in hot/cold map - if the function is in the cold part, get the index of the hot part.
-            index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index);
+            index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap ?? 0, r2rInfo.HotColdMap, index);
             Debug.Assert(index < r2rInfo.NumRuntimeFunctions);
             return index;
         }
 
-        private uint AdjustRuntimeFunctionToMethodStart(Data.ReadyToRunInfo r2rInfo, TargetPointer imageBase, uint index, out TargetPointer methodDesc)
+        private bool TryAdjustRuntimeFunctionToMethodStart(
+            Data.ReadyToRunInfo r2rInfo,
+            TargetPointer codeBase,
+            uint index,
+            out uint methodIndex,
+            out TargetPointer methodDesc)
         {
-            methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
+            methodIndex = index;
+            methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, codeBase, methodIndex);
             while (methodDesc == TargetPointer.Null)
             {
+                if (methodIndex == 0)
+                    return false;
+
                 // Funclets won't have a direct entry in the map of runtime function entry point to method desc.
                 // The funclet's address (and index) will be greater than that of the corresponding function, so
                 // we decrement the index to find the actual function / method desc for the funclet.
-                index--;
-                methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
+                methodIndex--;
+                methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, codeBase, methodIndex);
             }
 
             Debug.Assert(methodDesc != TargetPointer.Null);
-            return index;
+            return true;
         }
 
-        private bool IsStubCodeBlockThunk(Data.RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)
+        private bool IsStubCodeBlockThunk(RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)
         {
-            if (r2rInfo.DelayLoadMethodCallThunks == TargetPointer.Null)
+            if (rangeSection.IsVirtualIP)
+                return false;
+
+            if (r2rInfo.DelayLoadMethodCallThunks is not { } thunks || thunks == TargetPointer.Null)
                 return false;
 
             // Check if the address is in the region containing thunks for READYTORUN_HELPER_DelayLoad_MethodCall
-            Data.ImageDataDirectory thunksData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DelayLoadMethodCallThunks);
-            ulong rva = jittedCodeAddress - rangeSection.RangeBegin;
+            Data.ImageDataDirectory thunksData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(thunks);
+            ulong rva = jittedCodeAddress - GetLoadedImageBase(rangeSection, r2rInfo);
             return thunksData.VirtualAddress <= rva && rva < thunksData.VirtualAddress + thunksData.Size;
         }
 
-        private TargetPointer GetMethodDescForRuntimeFunction(Data.ReadyToRunInfo r2rInfo, TargetPointer imageBase, uint runtimeFunctionIndex)
+        private TargetPointer GetMethodDescForRuntimeFunction(Data.ReadyToRunInfo r2rInfo, TargetPointer codeBase, uint runtimeFunctionIndex)
         {
             Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, runtimeFunctionIndex);
 
             // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
-            TargetCodePointer startAddress = imageBase + function.BeginAddress;
+            TargetCodePointer startAddress = codeBase + _runtimeFunctions.GetBeginAddress(function);
             TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
 
             TargetPointer methodDesc = _hashMap.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
@@ -280,6 +303,12 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             return methodDesc;
         }
+
+        private static TargetPointer GetCodeBase(RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo)
+            => rangeSection.IsVirtualIP ? r2rInfo.MinVirtualIP ?? TargetPointer.Null : rangeSection.Data!.RangeBegin;
+
+        private static TargetPointer GetLoadedImageBase(RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo)
+            => rangeSection.IsVirtualIP ? r2rInfo.LoadedImageBase : rangeSection.Data!.RangeBegin;
         #endregion
 
         private void GetExceptionClauses(TargetPointer exceptionLookupTableAddr, uint count, TargetPointer rangeStart, uint methodRVA, out TargetPointer startExInfoRVA, out TargetPointer endExInfoRVA)
@@ -320,12 +349,12 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             }
 
             uint count = section.Size / Data.ExceptionLookupTableEntry.GetSize(Target);
-            ulong exceptionLookupTableAddr = section.VirtualAddress + r2rInfo.LoadedImageBase;
+            TargetPointer loadedImageBase = GetLoadedImageBase(range, r2rInfo);
+            ulong exceptionLookupTableAddr = section.VirtualAddress + loadedImageBase;
 
-            GetMethodRVAAndRangeStart(cbh, out TargetPointer methodStart, out TargetPointer rangeStart);
-            uint methodRVA = (uint)(methodStart - rangeStart);
+            GetMethodRVAAndImageBase(range, r2rInfo, cbh, out uint methodRVA, out TargetPointer imageBase);
 
-            GetExceptionClauses(exceptionLookupTableAddr, count, rangeStart, methodRVA, out startAddr, out endAddr);
+            GetExceptionClauses(exceptionLookupTableAddr, count, imageBase, methodRVA, out startAddr, out endAddr);
         }
 
         private ImageDataDirectory? FindSection(Data.ReadyToRunInfo r2rInfo, uint sectionType)
@@ -339,11 +368,18 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return null;
         }
 
-        private void GetMethodRVAAndRangeStart(CodeBlockHandle cbh, out TargetPointer methodStart, out TargetPointer rangeStart)
+        private void GetMethodRVAAndImageBase(
+            RangeSection range,
+            Data.ReadyToRunInfo r2rInfo,
+            CodeBlockHandle cbh,
+            out uint methodRVA,
+            out TargetPointer imageBase)
         {
             IExecutionManager executionManager = Target.Contracts.ExecutionManager;
-            methodStart = executionManager.GetStartAddress(cbh);
-            rangeStart = executionManager.GetUnwindInfoBaseAddress(cbh);
+            TargetPointer methodStart = executionManager.GetStartAddress(cbh);
+            TargetPointer codeBase = GetCodeBase(range, r2rInfo);
+            methodRVA = checked((uint)(methodStart - codeBase));
+            imageBase = GetLoadedImageBase(range, r2rInfo);
         }
 
     }

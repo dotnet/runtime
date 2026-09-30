@@ -47,7 +47,7 @@ PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1,
         ULONG64 FirstCount, SecondCount;
         LONG64 Init;
         
-        Sleep(1);
+        minipal_sleep(1);
 
         /* Grab a FirstCount, then loop for a bit to make the clock increase */
         if (!QueryThreadCycleTime(cThread, (PULONG64)&FirstCount))

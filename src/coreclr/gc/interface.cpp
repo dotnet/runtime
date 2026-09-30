@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "gcinternal.h"
+#include "gcbridge.h"
 
 #ifdef SERVER_GC
 namespace SVR
@@ -2734,6 +2735,17 @@ void GCHeap::NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHan
     Ref_NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
 #else
     assert(false);
+#endif
+}
+
+uintptr_t* GCHeap::GetPendingBridgeHandles(size_t* count)
+{
+#ifdef FEATURE_JAVAMARSHAL
+    return ::GetPendingBridgeHandles(count);
+#else
+    assert(false);
+    *count = 0;
+    return nullptr;
 #endif
 }
 

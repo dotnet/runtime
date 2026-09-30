@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>An <see cref="IConfigurationRoot"/> with keys and values from the registered providers.</returns>
         public IConfigurationRoot Build()
         {
-            var providers = new List<IConfigurationProvider>();
+            var providers = new List<IConfigurationProvider>(_sources.Count);
             foreach (IConfigurationSource source in _sources)
             {
                 IConfigurationProvider provider = source.Build(this);

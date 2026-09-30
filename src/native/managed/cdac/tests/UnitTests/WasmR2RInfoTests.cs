@@ -33,7 +33,7 @@ public class WasmR2RInfoTests
 
         int hashMapStride = MockHashMap.CreateLayout(WasmArch).Size;
         var moduleLayout = MockLoaderModule.CreateLayout(WasmArch);
-        var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(WasmArch, hashMapStride);
+        var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(WasmArch, hashMapStride, isWasm: true);
         var runtimeFunctionLayout = helpers.LayoutFields([
             new("BeginAddress", DataType.uint32),
             new("UnwindData", DataType.uint32),
@@ -146,7 +146,7 @@ public class WasmR2RInfoTests
 
         int hashMapStride = MockHashMap.CreateLayout(WasmArch).Size;
         var moduleLayout = MockLoaderModule.CreateLayout(WasmArch);
-        var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(WasmArch, hashMapStride);
+        var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(WasmArch, hashMapStride, isWasm: true);
         var runtimeFunctionLayout = helpers.LayoutFields([
             new("BeginAddress", DataType.uint32),
             new("UnwindData", DataType.uint32),

@@ -703,7 +703,6 @@ public class DebuggerTests
         Assert.Equal(0x90, debugger.ReadInstructionByte(InstructionAddress));
 
         target.Flush(FlushScope.ForwardExecution);
-        debugger.Flush(FlushScope.ForwardExecution);
 
         Assert.Equal(0xC3, debugger.ReadInstructionByte(InstructionAddress));
     }

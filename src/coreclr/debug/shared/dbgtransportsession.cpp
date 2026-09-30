@@ -3,6 +3,7 @@
 
 
 #include "dbgtransportsession.h"
+#include "CLREventBase.h"
 
 #ifdef RIGHT_SIDE_COMPILE
 #include <minipal/time.h>
@@ -1336,7 +1337,7 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "AllocateConnection() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            Sleep(1000);
+            minipal_sleep(1000);
             continue;
         }
 #else // RIGHT_SIDE_COMPILE
@@ -1370,7 +1371,7 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "Accept() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            Sleep(1000);
+            minipal_sleep(1000);
             continue;
         }
 
@@ -2427,6 +2428,10 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_DISPOSE_HANDLE:
         cbAdditionalSize = sizeof(pEvent->DisposeHandle);
+        break;
+
+    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER:
+        cbAdditionalSize = sizeof(pEvent->DisposeExternalMemoryOwner);
         break;
 
     case DB_IPCE_INTERCEPT_EXCEPTION:

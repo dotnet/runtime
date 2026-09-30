@@ -912,6 +912,51 @@ namespace System.Threading.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async Task NamedMutex_ConcurrentCreateOrOpen_CreatingThreadGetsInitialOwnership()
+        {
+            const int IterationCount = 10_000;
+            string mutexName = Guid.NewGuid().ToString("N");
+            using var barrier = new Barrier(2);
+            using var cancellationTokenSource = new CancellationTokenSource();
+
+            Task CreateOrOpenMutex()
+            {
+                return Task.Run(
+                    () =>
+                    {
+                        try
+                        {
+                            for (int i = 0; i < IterationCount; i++)
+                            {
+                                barrier.SignalAndWait(cancellationTokenSource.Token);
+                                using (var mutex = new Mutex(initiallyOwned: true, mutexName, out bool createdNew))
+                                {
+                                    if (createdNew)
+                                    {
+                                        barrier.SignalAndWait(cancellationTokenSource.Token);
+                                        mutex.ReleaseMutex();
+                                    }
+                                    else
+                                    {
+                                        Assert.False(mutex.WaitOne(0));
+                                        barrier.SignalAndWait(cancellationTokenSource.Token);
+                                    }
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            cancellationTokenSource.Cancel();
+                            throw;
+                        }
+                    });
+            }
+
+            await Task.WhenAll(CreateOrOpenMutex(), CreateOrOpenMutex());
+        }
+
         private static void IncrementValueInFileNTimes(Mutex mutex, string fileName, int n)
         {
             for (int i = 0; i < n; i++)

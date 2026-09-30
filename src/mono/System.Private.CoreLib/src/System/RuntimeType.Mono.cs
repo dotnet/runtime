@@ -1486,6 +1486,8 @@ namespace System
 
         #endregion
 
+        public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
+
         public static bool operator ==(RuntimeType? left, RuntimeType? right)
         {
             return ReferenceEquals(left, right);

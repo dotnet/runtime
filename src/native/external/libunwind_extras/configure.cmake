@@ -1,6 +1,7 @@
 include(CheckCSourceCompiles)
 include(CheckIncludeFiles)
-include(CheckFunctionExists)
+include(CheckSymbolExists)
+include(CMakePushCheckState)
 
 if(CLR_CMAKE_HOST_WIN32)
     # Our posix abstraction layer will provide these headers
@@ -36,7 +37,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 check_include_files(link.h HAVE_LINK_H)
 check_include_files(sys/link.h HAVE_SYS_LINK_H)
 
-check_function_exists(pipe2 HAVE_PIPE2)
+cmake_push_check_state()
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+check_symbol_exists(pipe2 unistd.h HAVE_PIPE2)
+cmake_pop_check_state()
 
 check_c_source_compiles("
 int main(int argc, char **argv)

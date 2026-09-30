@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <signal.h>
+#include "UnixSignals.h"
 
 extern bool PalCreateDumpInitialize();
 extern void PalCreateCrashDumpIfEnabled();

@@ -16,6 +16,7 @@ public static class CoreCLRContracts
     public static void Register(ContractRegistry registry)
     {
         registry.Register<IException>("c1", static t => new Exception_1(t));
+        registry.Register<IExternalMemoryHandles>("c1", static t => new ExternalMemoryHandles_1(t));
         registry.Register<ILoader>("c1", static t => new Loader_1(t));
         registry.Register<IEcmaMetadata>("c1", static t => new EcmaMetadata_1(t));
         registry.Register<IDacStreams>("c1", static t => new DacStreams_1(t));
@@ -133,6 +134,13 @@ public static class CoreCLRContracts
         Validate<ISyncBlock>(registry);
         Validate<IThread>(registry);
 
+        // ExternalMemoryHandles was introduced in .NET 12. Readers built from this source may still
+        // inspect .NET 11 targets, which do not advertise the contract.
+        if (GetRuntimeMajorVersion(target) >= 12)
+        {
+            Validate<IExternalMemoryHandles>(registry);
+        }
+
         // Transitive contract accesses from the implementations above.
         Validate<IConditionalWeakTable>(registry); // IComWrappers: ComWrappers_1.cs
         Validate<IDebugger>(registry);             // IStackWalk: StackWalk_1.cs
@@ -197,6 +205,19 @@ public static class CoreCLRContracts
                     contractVersion: null,
                     message: $"Contract '{TContract.Name}' validation failed but no reason was reported.");
             }
+        }
+
+        static int GetRuntimeMajorVersion(Target target)
+        {
+            if (!target.TryReadGlobalString(Constants.Globals.RuntimeProductVersionString, out string? productVersion))
+            {
+                // Preserve required-contract validation when the target version is unavailable.
+                return int.MaxValue;
+            }
+
+            int separator = productVersion.IndexOf('.');
+            string majorVersionText = separator >= 0 ? productVersion[..separator] : productVersion;
+            return int.TryParse(majorVersionText, out int majorVersion) ? majorVersion : int.MaxValue;
         }
     }
 }

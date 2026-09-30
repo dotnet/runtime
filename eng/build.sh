@@ -166,7 +166,7 @@ bootstrap=0
 bootstrapConfig='Debug'
 dynamiccodecompiled=""
 
-source $scriptroot/common/native/init-os-and-arch.sh
+source "$scriptroot"/common/native/init-os-and-arch.sh
 
 hostArch=$arch
 
@@ -644,7 +644,7 @@ if [[ "$bootstrap" == "1" ]]; then
   done
 
   # Set a different path for prebuilt usage tracking for the bootstrap build.
-  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile=$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile="$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml" -bl:"$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog"
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."

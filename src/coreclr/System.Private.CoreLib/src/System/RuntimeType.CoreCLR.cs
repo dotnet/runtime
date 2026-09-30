@@ -2341,6 +2341,22 @@ namespace System
 
         #endregion
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode()
+        {
+            // CLSID types share the __ComObject handle, so preserve their identity hashes.
+            if (IsGenericCOMObjectImpl())
+                return RuntimeHelpers.GetHashCode(this);
+
+            // Fibonacci hashing moves the entropy in aligned handles into the high bits.
+#if TARGET_64BIT
+            return (int)(((ulong)(nuint)m_handle * 0x9E3779B97F4A7C15UL) >> 32);
+#else
+            uint hash = (uint)(nuint)m_handle * 0x9E3779B9U;
+            return (int)(hash ^ (hash >> 16));
+#endif
+        }
+
         #region Private\Internal Members
 
         internal unsafe TypeHandle GetNativeTypeHandle()
@@ -3318,8 +3334,7 @@ namespace System
                 Guid result;
 #if FEATURE_COMINTEROP
                 Debug.Assert(OperatingSystem.IsWindows());
-                // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
-                if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
+                if (IsGenericCOMObjectImpl())
                 {
                     GetComObjectGuidWorker(this, &result);
                 }
@@ -4045,7 +4060,8 @@ namespace System
         protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.CanCastTo(this, (RuntimeType)typeof(__ComObject));
 
         // We need to check the type handle values - not the instances - to determine if the runtime type is a generic ComObject.
-        internal bool IsGenericCOMObjectImpl() => TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsGenericCOMObjectImpl() => m_handle == RuntimeTypeHandle.ToIntPtr(typeof(__ComObject).TypeHandle);
 #else
         protected override bool IsCOMObjectImpl() => false;
 

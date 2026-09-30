@@ -75,8 +75,7 @@ namespace Microsoft.Interop
                     return new NativeLinearCollectionMarshallingInfo(
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),
                         marshallers.Value,
-                        countInfo,
-                        ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller.TypeParameters.Last()));
+                        countInfo);
                 }
             }
 

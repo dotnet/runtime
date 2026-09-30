@@ -153,6 +153,27 @@ namespace System.Formats.Cbor
             return (int)length;
         }
 
+        // Peek definite length for an array or map data item. Unlike strings, the contents of
+        // collections are separate data items, so when the current data is not the final block
+        // the declared length may exceed the buffer: the contents can be supplied by later
+        // SlideData calls. The length must still be representable in a single buffer.
+        private int DecodeCollectionLength(CborInitialByte header, ReadOnlySpan<byte> data, out int bytesRead)
+        {
+            if (_isFinalBlock)
+            {
+                return DecodeDefiniteLength(header, data, out bytesRead);
+            }
+
+            ulong length = DecodeUnsignedInteger(header, data, out bytesRead);
+
+            if (length > int.MaxValue)
+            {
+                throw new CborContentException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
+            }
+
+            return (int)length;
+        }
+
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1
         private ulong DecodeUnsignedInteger(CborInitialByte header, ReadOnlySpan<byte> data, out int bytesRead)
         {

@@ -85,7 +85,7 @@ ULONG MDInternalRO::AddRef()
     return InterlockedIncrement(&m_cRefs);
 } // MDInternalRO::AddRef
 
-ULONG MDInternalRO::Release()
+ULONG MDInternalRO::Release() noexcept
 {
     ULONG cRef = InterlockedDecrement(&m_cRefs);
     if (cRef == 0)

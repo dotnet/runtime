@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Logging;
@@ -297,7 +297,7 @@ namespace ILCompiler.Dataflow
             if (!calledMethod.Signature.IsStatic)
             {
                 instanceValue = methodParams[0];
-                arguments = methodParams.Skip(1).ToImmutableArray();
+                arguments = CollectionsMarshal.AsSpan(methodParams).Slice(1).ToImmutableArray();
             }
             else
             {

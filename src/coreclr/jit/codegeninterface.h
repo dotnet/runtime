@@ -248,7 +248,7 @@ public:
     bool genWriteBarrierUsed;
 #endif
 
-    regMaskTP genGetGSCookieTempRegs(bool tailCall);
+    regMaskTP genGetGSCookieTempRegs(bool tailCall, GenTreeCall* tailCallNode = nullptr);
 
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.

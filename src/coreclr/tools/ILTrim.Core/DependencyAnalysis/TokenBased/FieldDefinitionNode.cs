@@ -36,6 +36,17 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(factory.TypeDefinition(_module, declaringType), "Field owning type");
 
+            if ((fieldDef.Attributes & FieldAttributes.Static) != 0 &&
+                (fieldDef.Attributes & FieldAttributes.Literal) == 0)
+            {
+                EcmaType declaringTypeDesc = (EcmaType)_module.GetObject(declaringType);
+                if (declaringTypeDesc.IsBeforeFieldInit &&
+                    declaringTypeDesc.GetStaticConstructor() is EcmaMethod cctor)
+                {
+                    dependencies.Add(factory.MethodDefinition(_module, cctor.Handle), "Static field initializer");
+                }
+            }
+
             if ((fieldDef.Attributes & FieldAttributes.Literal) == FieldAttributes.Literal)
             {
                 dependencies.Add(factory.Constant(_module, fieldDef.GetDefaultValue()), "Constant in field definition");

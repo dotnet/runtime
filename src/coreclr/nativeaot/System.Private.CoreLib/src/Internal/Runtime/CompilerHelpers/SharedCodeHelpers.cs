@@ -21,11 +21,6 @@ namespace Internal.Runtime.CompilerHelpers
             return pType->InterfaceMap[interfaceIndex];
         }
 
-        public static unsafe MethodTable* GetCurrentSharedThunkContext()
-        {
-            return (MethodTable*)RuntimeImports.GetCurrentInteropThunkContext();
-        }
-
         public static unsafe MethodTable* GetClassHandleFromMethodParam(IntPtr pDictionary)
         {
             bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetOwningTypeForMethodDictionary(pDictionary, out RuntimeTypeHandle th);

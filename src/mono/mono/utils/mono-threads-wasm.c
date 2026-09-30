@@ -198,7 +198,7 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_attr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
-	g_assert (*staddr != NULL);
+	// emscripten links with --stack-first at -O0, which puts the stack at the start of the linear memory, so staddr can legitimately be NULL
 	g_assert (*stsize != (size_t)-1);
 #elif defined(HOST_WASI) && !defined(DISABLE_THREADS)
 	// TODO: this will need changes for WASI multithreading as the stack will be allocated per thread at different addresses

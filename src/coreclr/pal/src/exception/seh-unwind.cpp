@@ -703,7 +703,7 @@ Parameters:
 --*/
 VOID
 PALAPI
-PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord)
+PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord) noexcept
 {
     // Both records are allocated at once and the allocated memory starts at the contextRecord
     ExceptionRecords* records = (ExceptionRecords*)contextRecord;

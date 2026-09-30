@@ -30,7 +30,11 @@
 
   <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
+    <!-- The wasm nested publish evaluates this project with different global properties, so MSBuild builds it a
+         second time and copies obj -> bin over the assembly the outer pass already loaded (MSB3027). The outer
+         pass has built it by then, so referencing it again from the nested pass is redundant as well as harmful. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
+                      Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
                       Private="false"

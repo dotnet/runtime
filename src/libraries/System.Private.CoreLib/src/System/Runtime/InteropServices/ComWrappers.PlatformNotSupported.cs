@@ -59,6 +59,11 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
+        public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags, in Guid interfaceId)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             throw new PlatformNotSupportedException();

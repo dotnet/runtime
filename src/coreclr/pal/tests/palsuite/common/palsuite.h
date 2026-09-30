@@ -26,6 +26,7 @@ typedef unsigned short char16_t;
 #include <minipal/utils.h>
 #include <minipal/types.h>
 #include <minipal/time.h>
+#include "CLREventBase.h"
 #include <errno.h>
 
 #define PALTEST(testfunc, testname) \
@@ -63,6 +64,21 @@ inline void Fail(const char *format, ...)
 
     // This will exit the test process
     PAL_TerminateEx(FAIL);
+}
+
+inline void WaitForThreadCompletion(LONG volatile* completedThreadCount, LONG expectedThreadCount)
+{
+    for (DWORD elapsed = 0; elapsed < 60000; elapsed++)
+    {
+        if (InterlockedCompareExchange(completedThreadCount, 0, 0) == expectedThreadCount)
+        {
+            return;
+        }
+
+        minipal_sleep(1);
+    }
+
+    Fail("Timed out waiting for %d threads to complete\n", expectedThreadCount);
 }
 
 typedef int __cdecl(*PALTestEntrypoint)(int argc, char*[]);

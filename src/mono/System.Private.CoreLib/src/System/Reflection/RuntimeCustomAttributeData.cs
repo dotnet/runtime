@@ -123,47 +123,47 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeType target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeFieldInfo target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeMethodInfo target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeConstructorInfo target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeEventInfo target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimePropertyInfo target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeModule target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeAssembly target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeParameterInfo target)
         {
-            return CustomAttribute.GetCustomAttributesData(target);
+            return RuntimeCustomAttribute.GetCustomAttributesData(target);
         }
 
         private static T[] UnboxValues<T>(object[] values)

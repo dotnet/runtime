@@ -866,4 +866,11 @@ extern InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
 
 TADDR GetInterpreterCodeFromEntryPointIfPresent(TADDR entryPoint);
 
+#ifndef DACCESS_COMPILE
+// Returns the code start address used to identify pMD's code in diagnostics (for example, EECodeInfo
+// lookups): interpreter bytecode for interpreted methods, and the synthetic virtual IP for Wasm R2R
+// methods whose portable entry point stores a function-table index.
+TADDR GetDiagnosticCodeStartFromEntryPoint(MethodDesc* pMD, TADDR entryPoint);
+#endif // !DACCESS_COMPILE
+
 #endif // __PRECODE_H__

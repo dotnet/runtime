@@ -162,7 +162,7 @@ public:
 //*****************************************************************************
 // Prepare to shut down or reinitialize.
 //*****************************************************************************
-    virtual    void Uninit();
+    virtual    void Uninit() noexcept;
 
 //*****************************************************************************
 // Return the size of the pool.
@@ -472,7 +472,7 @@ public:
 //*****************************************************************************
 // Clear out this pool.  Cannot use until you call InitNew.
 //*****************************************************************************
-    virtual void Uninit();
+    virtual void Uninit() noexcept;
 
 //*****************************************************************************
 // Called to copy the pool to writable memory, reset the r/o bit.
@@ -787,7 +787,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
@@ -943,7 +943,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // Add a segment to the chain of segments.
@@ -1096,7 +1096,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // The blob will be added to the pool.  The offset of the blob in the pool

@@ -1,0 +1,6 @@
+<Project>
+  <Import Project="Runtime_133746.csproj" />
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_EnableHWIntrinsic" Value="0" />
+  </ItemGroup>
+</Project>

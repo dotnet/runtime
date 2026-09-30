@@ -187,6 +187,14 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
+
+        // Ensure the resume IP is initialized to a non-resuming value.
+        if ((m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX) && (m_compiler->lvaWasmResumeIP != BAD_VAR_NUM))
+        {
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            GetEmitter()->emitIns_I(INS_I_const, EA_4BYTE, 0);
+            GetEmitter()->emitIns_S(ins_Store(TYP_INT), EA_4BYTE, m_compiler->lvaWasmResumeIP, 0);
+        }
     }
 }
 
@@ -255,12 +263,58 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 }
 
 //------------------------------------------------------------------------
+// WasmBitCastInstruction: Get the instruction for a wasm bitcast.
+//
+// Arguments:
+//    toType   - The target type
+//    fromType - The source type
+//
+static instruction WasmBitCastInstruction(var_types toType, var_types fromType)
+{
+    toType   = genActualType(toType);
+    fromType = genActualType(fromType);
+
+    if ((toType == TYP_REF) || (toType == TYP_BYREF))
+    {
+        toType = TYP_I_IMPL;
+    }
+    if ((fromType == TYP_REF) || (fromType == TYP_BYREF))
+    {
+        fromType = TYP_I_IMPL;
+    }
+
+    if (toType == fromType)
+    {
+        return INS_none;
+    }
+
+    if ((toType == TYP_INT) && (fromType == TYP_FLOAT))
+    {
+        return INS_i32_reinterpret_f32;
+    }
+    if ((toType == TYP_FLOAT) && (fromType == TYP_INT))
+    {
+        return INS_f32_reinterpret_i32;
+    }
+    if ((toType == TYP_LONG) && (fromType == TYP_DOUBLE))
+    {
+        return INS_i64_reinterpret_f64;
+    }
+    if ((toType == TYP_DOUBLE) && (fromType == TYP_LONG))
+    {
+        return INS_f64_reinterpret_i64;
+    }
+
+    unreached();
+}
+
+//------------------------------------------------------------------------
 // genHomeRegisterParams: place register arguments into their RA-assigned locations.
 //
-// For the WASM RA, we have a much simplified (compared to LSRA) contract of:
-// - If an argument is live on entry in a set of registers, then the RA will
-//   assign those registers to that argument on entry.
-// This means we never need to do any copying or cycle resolution here.
+// For the WASM RA, arguments whose local and ABI types agree remain in their
+// incoming registers. Arguments whose types differ are moved to registers of
+// their local types here. No cycle resolution is needed because those target
+// registers are newly declared wasm locals.
 //
 // The main motivation for this (along with the obvious CQ implications) is
 // obviating the need to adapt the general "RegGraph"-based algorithm to
@@ -277,7 +331,10 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
         assert(segment.IsPassedInRegister());
 
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+        LclVarDsc* varDsc      = m_compiler->lvaGetDesc(lclNum);
+        LclVarDsc* paramVarDsc = m_compiler->lvaGetDesc(paramLclNum);
+        var_types  sourceType  = genParamStackType(paramVarDsc, segment);
+
         // Skip homing parameters that are dead at method entry (not live into the first block).
         // Exception: on wasm all on-frame GC locals are reported to the GC stack walk as untracked
         // (i.e. live for the whole method), so a GC parameter's frame slot must still be homed
@@ -290,8 +347,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
         {
-            LclVarDsc* paramVarDsc = m_compiler->lvaGetDesc(paramLclNum);
-            var_types  storeType   = genParamStackType(paramVarDsc, segment);
+            var_types storeType = sourceType;
             if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
             {
                 // Can happen for struct fields due to padding.
@@ -306,7 +362,22 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         if (varDsc->lvIsInReg())
         {
-            assert(varDsc->GetRegNum() == segment.GetRegister());
+            regNumber sourceReg = segment.GetRegister();
+            regNumber targetReg = varDsc->GetRegNum();
+
+            if (targetReg != sourceReg)
+            {
+                var_types targetType = varDsc->GetRegisterType();
+                assert(WasmRegToType(sourceReg) == ActualTypeToWasmValueType(sourceType));
+                assert(WasmRegToType(targetReg) == ActualTypeToWasmValueType(targetType));
+                assert(((sourceType == TYP_FLOAT) && (targetType == TYP_INT)) ||
+                       ((sourceType == TYP_DOUBLE) && (targetType == TYP_LONG)));
+
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(sourceType), WasmRegToIndex(sourceReg));
+
+                GetEmitter()->emitIns(WasmBitCastInstruction(targetType, sourceType));
+                GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(targetType), WasmRegToIndex(targetReg));
+            }
         }
     };
 
@@ -403,7 +474,27 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         return;
     }
 
-    // TODO-WASM: shadow stack maintenance
+    // Restore __stack_pointer to the value it had on entry
+    if (m_compiler->opts.IsReversePInvoke())
+    {
+        assert(m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX);
+        regNumber fpReg = GetFramePointerReg(ROOT_FUNC_IDX);
+        regNumber spReg = GetStackPointerReg(ROOT_FUNC_IDX);
+        assert(spReg != REG_NA);
+
+        // The FP local is fixed after the prolog; the SP local is only moved by localloc, which
+        // requires a frame pointer.
+        regNumber frameBaseReg = (fpReg != REG_NA) ? fpReg : spReg;
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(frameBaseReg));
+        if (genTotalFrameSize() != 0)
+        {
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, genTotalFrameSize());
+            GetEmitter()->emitIns(INS_I_add);
+        }
+        GetEmitter()->emitIns_I(INS_global_set, EA_HANDLE_CNS_RELOC,
+                                (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->stackPointer);
+    }
+
     // TODO-WASM: we need to handle the end-of-function case if we reach the end of a codegen for a function
     // and do NOT have an epilog. In those cases we currently will not emit an end instruction.
     if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
@@ -1166,7 +1257,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 
     // br for false target, if not fallthrough
     //
-    if (falseTarget != block->Next())
+    if (!block->CanRemoveJumpToTarget(falseTarget, m_compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
     }
@@ -2229,32 +2320,7 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
     var_types fromType = genActualType(tree->gtGetOp1()->TypeGet());
     assert(toType == genActualType(tree));
 
-    instruction ins = INS_none;
-    switch (PackTypes(toType, fromType))
-    {
-        case PackTypes(TYP_INT, TYP_FLOAT):
-            ins = INS_i32_reinterpret_f32;
-            break;
-        case PackTypes(TYP_FLOAT, TYP_INT):
-            ins = INS_f32_reinterpret_i32;
-            break;
-        case PackTypes(TYP_LONG, TYP_DOUBLE):
-            ins = INS_i64_reinterpret_f64;
-            break;
-        case PackTypes(TYP_DOUBLE, TYP_LONG):
-            ins = INS_f64_reinterpret_i64;
-            break;
-
-        // Same-size bitcasts are no-ops on the wasm value stack. PackTypes normalizes
-        // TYP_REF/TYP_BYREF to TYP_I_IMPL, so this covers all INT/REF/BYREF combos on wasm32
-        // and LONG/REF/BYREF on wasm64.
-        case PackTypes(TYP_INT, TYP_INT):
-        case PackTypes(TYP_LONG, TYP_LONG):
-            break;
-
-        default:
-            unreached();
-    }
+    instruction ins = WasmBitCastInstruction(toType, fromType);
 
     if (ins != INS_none)
     {
@@ -2428,7 +2494,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     //
     if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
-        genEmitNullCheck(REG_NA);
+        genEmitNullCheck(REG_NA, tree->Addr()->TypeGet());
     }
     else
     {
@@ -2442,15 +2508,27 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 // Arguments:
 //    regNum - register to check, or REG_NA if value to check is on the stack
 //
-void CodeGen::genEmitNullCheck(regNumber reg)
+void CodeGen::genEmitNullCheck(regNumber reg, var_types refType)
 {
     if (reg != REG_NA)
     {
         genEmitLocalGet(reg, WasmValueType::I);
     }
 
-    GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
-    GetEmitter()->emitIns(INS_I_le_u);
+    if (refType == TYP_REF)
+    {
+        // Object references can be compared directly with null
+        GetEmitter()->emitIns(INS_I_eqz);
+    }
+    else
+    {
+        // Otherwise, we have a byref or integer-type address which needs to be compared to
+        // the max unchecked null offset
+        assert(refType == TYP_BYREF || varTypeIsIntOrI(refType));
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
+        GetEmitter()->emitIns(INS_I_le_u);
+    }
+
     genJumpToThrowHlpBlk(SCK_NULL_CHECK);
 }
 
@@ -3040,7 +3118,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     {
         // "Base" is the address itself unless it is a contained address mode, which is never materialized.
         //
-        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()));
+        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()), tree->Base()->TypeGet());
     }
 
     // TODO-WASM: Memory barriers
@@ -3094,13 +3172,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     {
         // "Base" is the address itself unless it is a contained address mode, which is never materialized.
         //
-        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()));
+        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()), tree->Base()->TypeGet());
     }
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -3134,13 +3212,14 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    regNumber thisReg = REG_NA;
+    regNumber thisReg  = REG_NA;
+    GenTree*  thisNode = nullptr;
 
     if (call->NeedsNullCheck())
     {
-        CallArg* thisArg  = call->gtArgs.GetThisArg();
-        GenTree* thisNode = thisArg->GetNode();
-        thisReg           = GetMultiUseOperandReg(thisNode);
+        CallArg* thisArg = call->gtArgs.GetThisArg();
+        thisNode         = thisArg->GetNode();
+        thisReg          = GetMultiUseOperandReg(thisNode);
     }
 
     for (CallArg& arg : call->gtArgs.EarlyArgs())
@@ -3155,7 +3234,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     if (call->NeedsNullCheck())
     {
-        genEmitNullCheck(thisReg);
+        genEmitNullCheck(thisReg, thisNode->TypeGet());
     }
 
     genCallInstruction(call);
@@ -3298,16 +3377,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // Generate a direct call to a non-virtual user defined or helper method
         assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
-        assert(call->gtEntryPoint.addr == NULL);
-
         if (call->IsHelperCall())
         {
             assert(!call->IsFastTailCall());
-            CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-            noway_assert(helperNum != CORINFO_HELP_UNDEF);
-            CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-            assert(helperLookup.accessType == IAT_VALUE);
-            params.addr = helperLookup.addr;
+
+            if (call->gtDirectCallAddress != nullptr)
+            {
+                params.addr = call->gtDirectCallAddress;
+            }
+            else
+            {
+                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
+                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
+                assert(helperLookup.accessType == IAT_VALUE);
+                params.addr = helperLookup.addr;
+            }
         }
         else
         {
@@ -3350,9 +3435,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     }
     else
     {
-        params.addr = nullptr;
         assert(helperFunction.accessType == IAT_PVALUE);
-
+        params.addr     = nullptr;
         params.callType = EC_INDIR_R;
     }
 
@@ -3363,6 +3447,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     CorInfoWasmType* types           = nullptr;
     size_t           typeCount       = 0;
     bool             helperIsManaged = false;
+    bool             helperUsesPep   = false;
 
     const bool MANAGED = true, UNMANAGED = false;
 #ifdef TARGET_64BIT
@@ -3378,6 +3463,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         types                                      = helper_id##_types;                                                \
         typeCount                                  = ArrLen(helper_id##_types);                                        \
         helperIsManaged                            = is_managed;                                                       \
+        helperUsesPep = helperIsManaged && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS); \
+        if (helperIsManaged /* `types` includes PEP */ && !helperUsesPep)                                              \
+            typeCount--;                                                                                               \
         break;                                                                                                         \
     }
 
@@ -3411,6 +3499,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        // RhBulkMoveWithWriteBarrier
+        HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER_SMALL, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
         default:
             JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
             unreached();
@@ -3420,7 +3511,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
-    if (helperIsManaged)
+    if (helperUsesPep)
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
         // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
@@ -3826,7 +3917,9 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     bool      nullCheckDest = (blkOp->gtFlags & GTF_IND_NONFAULTING) == 0;
     bool      nullCheckSrc  = false;
     GenTree*  dest          = blkOp->Addr();
+    var_types destType      = TYP_UNKNOWN;
     GenTree*  src           = blkOp->Data();
+    var_types srcType       = TYP_UNKNOWN;
     regNumber destReg       = REG_NA;
     regNumber srcReg        = REG_NA;
     unsigned  destOffset    = 0;
@@ -3848,7 +3941,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         // We need to match lowering and only fetch a register for src when we're expected to.
         if (!isNativeOp || nullCheckSrc)
         {
-            srcReg = GetMultiUseOperandReg(src);
+            srcReg  = GetMultiUseOperandReg(src);
+            srcType = src->TypeGet();
         }
         assert(!src->isContained());
     }
@@ -3867,7 +3961,9 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
         GenTreeLclVarCommon* lclVar = src->AsLclVarCommon();
         bool                 fpBased;
-        srcReg    = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
+        srcReg = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
+        // A frame-based address is a byref
+        srcType   = TYP_BYREF;
         srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
     }
@@ -3877,6 +3973,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         GenTreeLclVarCommon* lclVar = dest->AsLclVarCommon();
         bool                 fpBased;
         destReg    = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
+        destType   = TYP_BYREF;
         destOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
     }
@@ -3886,7 +3983,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
     else if (isCopyBlk || nullCheckDest)
     {
-        destReg = GetMultiUseOperandReg(dest);
+        destReg  = GetMultiUseOperandReg(dest);
+        destType = dest->TypeGet();
     }
     else
     {
@@ -3898,11 +3996,13 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     if (nullCheckDest)
     {
-        genEmitNullCheck(destReg);
+        assert(destType != TYP_UNKNOWN);
+        genEmitNullCheck(destReg, destType);
     }
     if (nullCheckSrc)
     {
-        genEmitNullCheck(srcReg);
+        assert(srcType != TYP_UNKNOWN);
+        genEmitNullCheck(srcReg, srcType);
     }
 
     emitter* emit = GetEmitter();
@@ -4062,13 +4162,13 @@ void CodeGen::genCallFinally(BasicBlock* block)
         return;
     }
 
-    // Branch to the continuation block if it's not the next block.
+    // Branch to the continuation block unless we can fall into it.
     assert(block->isBBCallFinallyPair());
     BasicBlock* const callFinallyRet = block->Next();
     assert(callFinallyRet->KindIs(BBJ_CALLFINALLYRET));
     BasicBlock* const continuation = callFinallyRet->GetTarget();
 
-    if (continuation != callFinallyRet->Next())
+    if (!callFinallyRet->CanRemoveJumpToTarget(continuation, m_compiler))
     {
         inst_JMP(EJ_jmp, continuation);
     }

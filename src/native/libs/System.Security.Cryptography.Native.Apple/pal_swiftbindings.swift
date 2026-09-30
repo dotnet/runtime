@@ -595,6 +595,49 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
     return 1
 }
 
+@_silgen_name("AppleCryptoNative_EccExportPublicKeyFromPrivateKey")
+public func AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
+    keySizeInBits: Int32,
+    privateKey: UnsafeBufferPointer<UInt8>,
+    destination: UnsafeMutableBufferPointer<UInt8>) -> Int32 {
+    guard !privateKey.isEmpty, !destination.isEmpty else {
+        return -1
+    }
+
+    // The purpose of this method is to take an EC private scalar D and compute the public value, Q. For this
+    // limited purpose it doesn't matter if we use KeyAgreement or Signing because the result will be the same.
+    // This implementation just uses KeyAgreement.
+    let publicKey: Data
+
+    switch keySizeInBits {
+        case 256:
+            guard let key = try? P256.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        case 384:
+            guard let key = try? P384.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        case 521:
+            guard let key = try? P521.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        default:
+            return -1
+    }
+
+    guard publicKey.count == destination.count else {
+        return -1
+    }
+
+    let copied = publicKey.copyBytes(to: destination) == publicKey.count
+
+    return copied ? 1 : -1
+}
+
 // Return values:
 //   1: success
 //   0: key agreement failed (e.g. peer is a low-order point and the shared

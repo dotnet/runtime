@@ -57,10 +57,42 @@
     <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
+    <!-- Referenced so dotnet-pgo is restored and built for _AddDotnetPgoToTestPayload. Private="false"
+         keeps its apphost and dependencies out of $(OutDir) so they don't collide with the dotnet-pgo/
+         subfolder that target creates there. -->
+    <ProjectReference Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
+                      Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false" />
+
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Deploy dotnet-pgo (and its managed dependencies) into a dotnet-pgo/ subfolder next to the test so
+       EventPipeDiagnosticsTests can invoke it. These are added as CopyToOutputDirectory None items (rather
+       than a post-Build copy into OutDir) so they flow into the Helix test payload, exactly like the
+       testassets/data items above; a plain copy into OutDir is not part of the browser test archive.
+       dotnet-pgo is built explicitly because ProjectReferences aren't resolved this early in the build. -->
+  <Target Name="_AddDotnetPgoToTestPayload" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" BeforeTargets="AssignTargetPaths">
+    <MSBuild Projects="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj" Targets="Build">
+      <Output TaskParameter="TargetOutputs" ItemName="_DotnetPgoBuiltAssembly" />
+    </MSBuild>
+    <PropertyGroup>
+      <_DotnetPgoDir>@(_DotnetPgoBuiltAssembly->'%(RootDir)%(Directory)')</_DotnetPgoDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <!-- Glob the tool's output dir via a separate item: a wildcard combined with item metadata in a
+           None Include does not expand reliably and silently drops dotnet-pgo.runtimeconfig.json/.deps.json.
+           Root files only (non-recursive) - the RID-specific native subdirs (amd64/arm64/x86/shims) are
+           Windows ETW/PDB helpers not needed to read a .nettrace. -->
+      <_DotnetPgoFile Include="$(_DotnetPgoDir)*" />
+      <None Include="@(_DotnetPgoFile)"
+            Link="dotnet-pgo\%(FileName)%(Extension)"
+            CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
     <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''" Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />

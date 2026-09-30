@@ -1,12 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-
 namespace Microsoft.Interop
 {
     internal sealed record ComInterfaceDispatchMarshallingInfo : MarshallingInfo
@@ -37,29 +31,16 @@ namespace Microsoft.Interop
                     $"{TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     $"{TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     IsFunctionPointer: false);
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+            public void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 if (context.CurrentStage != StubIdentifierContext.Stage.Unmarshal)
                 {
-                    yield break;
+                    return;
                 }
 
                 var (managed, native) = context.GetIdentifiers(info);
 
-                // <managed> = ComWrappers.ComInterfaceDispatch.GetInstance<<managedType>>(<native>);
-                yield return ExpressionStatement(
-                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(managed),
-                        InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch,
-                                GenericName(
-                                    Identifier("GetInstance"),
-                                    TypeArgumentList(SingletonSeparatedList(info.ManagedType.Syntax)))),
-                            ArgumentList(
-                                SingletonSeparatedList(
-                                    Argument(
-                                        IdentifierName(native)))))));
+                writer.WriteLine($"{managed} = {TypeNames.GlobalAlias}{TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}.GetInstance<{info.ManagedType.FullTypeName}>({native});");
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;

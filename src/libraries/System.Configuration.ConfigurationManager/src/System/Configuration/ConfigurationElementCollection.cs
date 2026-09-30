@@ -1145,7 +1145,7 @@ namespace System.Configuration
                 {
                     if (!IsElementName(elementName)) return false;
 
-                    // this section handle the collection like the allow deny senario which
+                    // this section handle the collection like the allow deny scenario which
                     if (BaseConfigurationRecord.IsReservedAttributeName(elementName))
                         throw new ArgumentException(SR.Format(SR.Basicmap_item_name_reserved, elementName));
 

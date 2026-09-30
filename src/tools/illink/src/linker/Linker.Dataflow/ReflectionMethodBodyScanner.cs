@@ -5,7 +5,7 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using System.Runtime.InteropServices;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
@@ -180,7 +180,7 @@ namespace Mono.Linker.Dataflow
             if (calledMethodDefinition.HasImplicitThis())
             {
                 instanceValue = methodParams[0];
-                arguments = methodParams.Skip(1).ToImmutableArray();
+                arguments = CollectionsMarshal.AsSpan(methodParams).Slice(1).ToImmutableArray();
             }
             else
             {

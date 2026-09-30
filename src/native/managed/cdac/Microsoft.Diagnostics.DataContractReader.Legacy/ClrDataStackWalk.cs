@@ -134,15 +134,15 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     {
         using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
 
         IXCLRDataFrame? legacyFrame = null;
         if (_legacyImpl is not null)
         {
             DacComNullableByRef<IXCLRDataFrame> legacyFrameOut = new(isNullRef: false);
-            int hrLocal = _legacyImpl.GetFrame(legacyFrameOut);
-            if (hrLocal < 0)
-                return hrLocal;
-            legacyFrame = legacyFrameOut.Interface;
+            hrLocal = _legacyImpl.GetFrame(legacyFrameOut);
+            if (hrLocal >= 0)
+                legacyFrame = legacyFrameOut.Interface;
         }
 
         try
@@ -156,6 +156,9 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         {
             hr = ex.HResult;
         }
+
+        if (_legacyImpl is not null)
+            Debug.ValidateHResult(hr, hrLocal);
 
         return hr;
     }

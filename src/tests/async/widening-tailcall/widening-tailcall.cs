@@ -9,9 +9,9 @@ using Xunit;
 public class Async2WideningTailcall
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
-        uint vr0 = (uint)M29().GetAwaiter().GetResult();
+        uint vr0 = (uint)(await M29());
         Assert.Equal(uint.MaxValue, vr0);
     }
 

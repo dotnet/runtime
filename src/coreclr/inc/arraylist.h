@@ -98,7 +98,7 @@ class ArrayListBase
     enum { NOT_FOUND = -1 };
     DWORD FindElement(DWORD start, PTR_VOID element) const;
 
-    void Clear();
+    void Clear() noexcept;
 
     void Init()
     {
@@ -109,7 +109,7 @@ class ArrayListBase
         m_firstBlock.m_blockSize = ARRAY_BLOCK_SIZE_START;
     }
 
-    void Destroy()
+    void Destroy() noexcept
     {
         WRAPPER_NO_CONTRACT;
         Clear();

@@ -29,6 +29,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private readonly Lock _apiLock;
     private readonly Target _target;
     private IDacDbiInterface? _legacy;
+    private ComObject? _legacyComObject;
     private ComObject? _dataTargetComObject;
     private ulong CorDBDefaultEnCFunctionVersion => _target.ReadGlobalPointer(Constants.Globals.CorDBDefaultEnCFunctionVersion).Value;
 
@@ -71,7 +72,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         _apiLock = apiLock;
         _target = target;
+#if DEBUG
         _legacy = legacyObj as IDacDbiInterface;
+#else
+        _legacy = null;
+#endif
+        _legacyComObject = legacyObj as ComObject;
         _dataTargetComObject = dataTargetComObject;
     }
 
@@ -79,7 +85,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         using Lock.Scope scope = _apiLock.EnterScope();
         _target.Flush(FlushScope.All);
-        return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
+
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.FlushCache();
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+        }
+
+        return HResults.S_OK;
     }
 
     public int Destroy()
@@ -87,10 +100,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         using Lock.Scope scope = _apiLock.EnterScope();
         try
         {
-            ComObject? legacyComObject = (object?)_legacy as ComObject;
             _dataTargetComObject?.FinalRelease();
             _dataTargetComObject = null;
-            legacyComObject?.FinalRelease();
+            _legacyComObject?.FinalRelease();
+            _legacyComObject = null;
             _legacy = null;
 
             return HResults.S_OK;
@@ -105,9 +118,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacy is not null
-            ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts)
-            : HResults.S_OK;
+        // Keep the legacy DBI's comparison state synchronized without allowing its result
+        // to control cDAC behavior.
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.DacSetTargetConsistencyChecks(fEnableAsserts);
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+        }
+
+        return HResults.S_OK;
     }
 
     public int IsLeftSideInitialized(Interop.BOOL* pResult)
@@ -1807,7 +1826,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
         // Mirror the create onto the legacy DBI
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback())
+        if (_legacy is not null)
         {
             uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
             nuint legacyHandle = 0;
@@ -1863,7 +1882,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        if (_legacy is not null && legacyHandle != 0)
         {
             int hrLocal = _legacy.DeleteStackWalk(legacyHandle);
             Debug.ValidateHResult(hr, hrLocal);
@@ -1952,8 +1971,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-        // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        // Mirror to the legacy DBI for validation so its walker tracks the cDAC walker.
+        if (_legacy is not null && legacyHandle != 0)
         {
             int hrLocal = _legacy.SetStackWalkCurrentContext(vmThread, legacyHandle, flag, pContext);
             Debug.ValidateHResult(hr, hrLocal);
@@ -1998,8 +2017,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-        // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        // Mirror to the legacy DBI for validation so its walker tracks the cDAC walker.
+        if (_legacy is not null && legacyHandle != 0)
         {
             Interop.BOOL localResult;
             int hrLocal = _legacy.UnwindStackWalkFrame(legacyHandle, &localResult);
@@ -2902,7 +2921,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer nativeCode = rts.GetNativeCode(methodDescHandle);
                 if (nativeCode != TargetCodePointer.Null)
                 {
-                    nativeCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+                    nativeCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode);
                     pCodeInfo->hotRegion.pAddress = nativeCode.ToAddress(_target).ToClrDataAddress(_target);
 
                     IExecutionManager executionManager = _target.Contracts.ExecutionManager;
@@ -2956,7 +2975,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer code = ((ClrDataAddress)codeAddress).ToTargetCodePointer(_target);
                 try
                 {
-                    code = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(code);
+                    code = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(code);
                 }
                 catch (VirtualReadException)
                 {
@@ -6464,6 +6483,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                 if (pCode != TargetCodePointer.Null)
                 {
+                    pCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(pCode);
                     IReadOnlyList<AsyncSuspensionInfo> suspensionPoints = _target.Contracts.DebugInfo.GetAsyncSuspensionPoints(pCode);
                     if (state < (uint)suspensionPoints.Count)
                     {

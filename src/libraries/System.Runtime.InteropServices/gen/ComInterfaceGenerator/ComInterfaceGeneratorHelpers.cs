@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using System.Text;
 
 namespace Microsoft.Interop
 {
@@ -36,17 +31,21 @@ namespace Microsoft.Interop
                 _ => throw new UnreachableException(),
             };
 
-        public static ExpressionSyntax CreateEmbeddedDataBlobCreationStatement(ReadOnlySpan<byte> bytes)
+        public static string CreateEmbeddedDataBlobExpression(ReadOnlySpan<byte> bytes)
         {
-            var literals = new CollectionElementSyntax[bytes.Length];
-
+            // Three digits and ", " per byte; the brackets replace one separator.
+            var builder = new StringBuilder(Math.Max(2, checked(bytes.Length * 5)));
+            builder.Append('[');
             for (int i = 0; i < bytes.Length; i++)
             {
-                literals[i] = ExpressionElement(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(bytes[i])));
+                if (i != 0)
+                {
+                    builder.Append(", ");
+                }
+                builder.Append(bytes[i]);
             }
-
-            // [ <byte literals> ]
-            return CollectionExpression(SeparatedList(literals));
+            builder.Append(']');
+            return builder.ToString();
         }
     }
 }

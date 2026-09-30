@@ -25,6 +25,11 @@ public class EnumIntrinsics
         TestGenericEnums();
         TestDifferentUnderlyingTypes();
         TestCornerCases();
+
+        TestNullableArgument(SimpleEnum.A, null, false);
+        TestNullableArgument(SimpleEnum.B, null, false);
+        TestNullableArgument(SimpleEnum.A, SimpleEnum.A, true);
+        TestNullableArgument(SimpleEnum.A, SimpleEnum.B, false);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -101,6 +106,14 @@ public class EnumIntrinsics
         object boxedB = SimpleEnum.A;
         Assert.True(boxedA.Equals(boxedB));
         Assert.True(SimpleEnum.A.Equals(boxedB));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestNullableArgument(SimpleEnum left, SimpleEnum? right, bool expected)
+    {
+        object boxedLeft = left;
+        object boxedRight = right;
+        Assert.Equal(expected, boxedLeft.Equals(boxedRight));
     }
 
     public class GenericEnumClass<T> where T : Enum { public T field; }

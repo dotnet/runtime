@@ -14,7 +14,7 @@ internal readonly struct Object_1 : IObject
     private readonly Target _target;
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
-    private readonly TargetPointer _stringMethodTable;
+    private readonly CachedValue<TargetPointer> _stringMethodTable;
     private readonly uint _syncBlockIsHashOrSyncBlockIndex;
     private readonly uint _syncBlockIsHashCode;
     private readonly uint _syncBlockHashCodeMask;
@@ -25,11 +25,16 @@ internal readonly struct Object_1 : IObject
         _target = target;
         _methodTableOffset = (ulong)Data.Object.GetMethodTableOffset(target);
         _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
-        _stringMethodTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+        _stringMethodTable = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable)));
         _syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
         _syncBlockIsHashCode = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode);
         _syncBlockHashCodeMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockHashCodeMask);
         _syncBlockIndexMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _stringMethodTable.Clear();
     }
 
     public TargetPointer GetMethodTableAddress(TargetPointer address)

@@ -156,26 +156,52 @@ private void SomeVectorizationHelper()
 }
 ```
 
-#### Non-Deterministic Intrinsics in System.Private.Corelib
+#### Non-Deterministic Intrinsics in System.Private.CoreLib
 
-Some APIs exposed in System.Private.Corelib are intentionally non-deterministic across hardware and instead only ensure determinism within the scope of a single process. To facilitate the support of such APIs, the JIT defines `Compiler::BlockNonDeterministicIntrinsics(bool mustExpand)` which should be used to help block such APIs from expanding in scenarios such as ReadyToRun. Additionally, such APIs should recursively call themselves so that indirect invocation (such as via a delegate, function pointer, reflection, etc) will compute the same result.
+Some APIs exposed in System.Private.CoreLib are intentionally non-deterministic across hardware and instead only ensure determinism within the scope of a single process. The instruction selected for such an API can affect its result, rather than only its performance. Examples include unspecified overflow conversions, estimate operations, native min/max operations, and native shuffles with out-of-range indices.
 
 An example of such a non-deterministic API is the `ConvertToIntegerNative` APIs exposed on `System.Single` and `System.Double`. These APIs convert from the source value to the target integer type using the fastest mechanism available for the underlying hardware. They exist due to the IEEE 754 specification leaving conversions undefined when the input cannot fit into the output (for example converting `float.MaxValue` to `int`) and thus different hardware having historically provided differing behaviors on these edge cases. They allow developers who do not need to be concerned with edge case handling but where the performance overhead of normalizing results for the default cast operator is too great.
 
 Another example is the various `*Estimate` APIs, such as `float.ReciprocalSqrtEstimate`. These APIs allow a user to likewise opt into a faster result at the cost of some inaccuracy, where the exact inaccuracy encountered depends on the input and the underlying hardware the instruction is executed against.
 
+##### Intrinsic expansion
+
+At a direct call site, intrinsic expansion is optional. If the importer cannot generate an implementation, it returns `nullptr` and leaves a managed call.
+
+When an intrinsic method calls itself, the non-virtual recursive call is marked `mustExpand` because leaving it as a call would cause infinite recursion. The JIT must always be able to expand a recursive intrinsic call; otherwise, it emits a throw-not-implemented path.
+
+Indirect invocation through reflection, a delegate, or a function pointer executes the intrinsic method body. That body must select the same result as direct call-site expansion in the same process.
+
+##### ReadyToRun ISA prerequisites
+
+Every ISA decision that can change the result of a non-deterministic intrinsic must be recorded on the ReadyToRun method body:
+
+- A positive prerequisite permits the body to run only when the ISA is supported.
+- A negative prerequisite permits the body to run only when the ISA is not supported.
+
+For example, an AVX2 implementation whose edge-case result differs from the AVX512 implementation must record AVX512 as a negative prerequisite. The runtime rejects that body on an AVX512 machine and recompiles the method using AVX512.
+
+CoreLib normally omits negative ISA prerequisites. Non-deterministic intrinsics must override this policy with `preserveNegativeDependency: true`. Use `compExactlyDependsOn(isa, true)` for an exact ISA decision, or `compOpportunisticallyDependsOn(isa, true)` for an optional ISA whose absence selects a different permitted result. ISA checks that affect only performance should use ordinary opportunistic dependencies.
+
+Adding a future ISA whose implementation produces a different permitted result requires ReadyToRun versioning so existing images are not reused without a prerequisite for that ISA.
+
+##### Interpreter execution
+
+The interpreter uses the same `mustExpand` rule for recursive intrinsics. Shipping configurations use the ReadyToRun implementations of CoreLib's non-deterministic intrinsics. Fully interpreted test configurations may use fallbacks whose edge-case results differ from the platform JIT.
+
 # Mechanisms in the JIT to generate correct code to handle varied instruction set support
 
-The JIT receives flags which instruct it on what instruction sets are valid to use, and has access to a new jit interface api `notifyInstructionSetUsage(isa, bool supportBehaviorRequired)`.
+The JIT receives flags which instruct it on what instruction sets are valid to use, and has access to the JIT interface API `notifyInstructionSetUsage(isa, supportEnabled, preserveNegativeDependency)`.
 
-The notifyInstructionSetUsage api is used to notify the AOT compiler infrastructure that the code may only execute if the runtime environment of the code is exactly the same as the boolean parameter indicates it should be. For instance, if `notifyInstructionSetUsage(Avx, false)` is used, then the code generated must not be used if the `Avx` instruction set is usable. Similarly `notifyInstructionSetUsage(Avx, true)` will indicate that the code may only be used if the `Avx` instruction set is available.
+`notifyInstructionSetUsage` informs the AOT compiler about the ISA assumptions made by a method. A supported ISA is recorded as a positive prerequisite. An unsupported ISA is recorded as a negative prerequisite when `preserveNegativeDependency` is true, or when the AOT compiler's normal policy requires it. In particular, CoreLib normally suppresses negative prerequisites unless the JIT explicitly requests preservation or the method is an ISA support query.
 
-While the above api exists, it is not expected that general purpose code within the JIT will use it. In general jitted code is expected to use a number of different apis to understand the available hardware instruction support available.
+General-purpose JIT code should not call the JIT interface directly. It should use the compiler helpers below, which query the configured ISA set and report the appropriate prerequisites.
 
-| Api | Description of use | Exact behavior
+| API | Description of use | Exact behavior
 | --- | --- | --- |
-|`compExactlyDependsOn(isa)`| Use when making a decision to use or not use an instruction set when the decision will affect the semantics of the generated code. Should never be used in an assert. | Return whether or not an instruction set is supported. Calls notifyInstructionSetUsage with the result of that computation.
-|`compOpportunisticallyDependsOn(isa)`| Use when making an opportunistic decision to use or not use an instruction set. Use when the instruction set usage is a "nice to have optimization opportunity", but do not use when a false result may change the semantics of the program. Should never be used in an assert. | Return whether or not an instruction set is supported. Calls notifyInstructionSetUsage if the instruction set is supported.
+|`compExactlyDependsOn(isa, preserveNegativeDependency = false)`| Use when making a decision to use or not use an instruction set when the decision can affect the semantics of the generated code. Pass `true` for non-deterministic CoreLib intrinsics. Should never be used in an assert. | Returns whether the instruction set is supported and reports the result. A preservation request is reported even if an ordinary query for the ISA was previously cached.
+|`compOpportunisticallyDependsOn(isa, preserveNegativeDependency = false)`| Use for an optional code-generation opportunity. Pass `true` when selecting the fallback can change the permitted result and its negative prerequisite must be retained. Should never be used in an assert. | Without preservation, reports only supported ISAs in the configured optimistic set. With preservation, also reports an unsupported ISA as a negative prerequisite.
+|`compHWIntrinsicDependsOn(isa, preserveNegativeDependency = false)`| Use when resolving an explicit hardware intrinsic against the configured ISA support. Pass `true` when the absence of the declaring ISA affects a non-deterministic CoreLib operation. | Reports intent to use the ISA and returns whether the ISA is enabled for hardware intrinsic expansion.
 |`compIsaSupportedDebugOnly(isa)` | Use to assert whether or not an instruction set is supported | Return whether or not an instruction set is supported. Does not report anything. Only available in debug builds.
 |`getVectorTByteLength()` | Use to get the size of a `Vector<T>` value. | Determine the size of the `Vector<T>` type. If on the architecture the size may vary depending on whatever rules. Use `compExactlyDependsOn` to perform the queries so that the size is consistent between compile time and runtime.
 |`getMaxVectorByteLength()`| Get the maximum number of bytes that might be used in a SIMD type during this compilation. | Query the set of instruction sets supported, and determine the largest simd type supported. Use `compOpportunisticallyDependsOn` to perform the queries so that the maximum size needed is the only one recorded.

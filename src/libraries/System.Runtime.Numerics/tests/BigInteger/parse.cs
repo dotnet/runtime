@@ -138,6 +138,20 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void Parse_WhitespaceAfterLeadingSign()
+        {
+            NumberStyles style = NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign;
+            CultureInfo inv = CultureInfo.InvariantCulture;
+
+            Assert.Equal(new BigInteger(-123), BigInteger.Parse("- 123", style, inv));
+            Assert.Equal(new BigInteger(123), BigInteger.Parse("+ 123", style, inv));
+            Assert.Equal(new BigInteger(-123), BigInteger.Parse("  -  123  ", style, inv));
+
+            // Without AllowLeadingWhite the interior whitespace must still be rejected.
+            Assert.Throws<FormatException>(() => BigInteger.Parse("- 123", NumberStyles.AllowLeadingSign, inv));
+        }
+
+        [Fact]
         public static void ParseUtf8_EmptySubspan_Fails()
         {
             BigInteger result;

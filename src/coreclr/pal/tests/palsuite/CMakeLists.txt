@@ -3,6 +3,7 @@ project(PALTESTSUITE)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(${PALTESTSUITE_SOURCE_DIR}/common)
+include_directories(${RUNTIME_DIR})
 
 # All test will link against these libraries:
 # pthread and m are part of the Android C library (bionic),
@@ -13,6 +14,7 @@ if(NOT CLR_CMAKE_TARGET_ANDROID)
 endif()
 
 list(APPEND COMMON_TEST_LIBRARIES coreclrpal)
+list(APPEND COMMON_TEST_LIBRARIES coreclrminipal)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
@@ -343,17 +345,11 @@ add_executable_clr(paltests
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test2_neg/reg_unreg_libraryw_neg.cpp
   samples/test1/test.cpp
   samples/test2/test.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test3/createsemaphore.cpp
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
   threading/DuplicateHandle/test1/test1.cpp
-  threading/DuplicateHandle/test10/test10.cpp
   threading/DuplicateHandle/test12/test12.cpp
-  threading/DuplicateHandle/test2/test2.cpp
-  threading/DuplicateHandle/test3/test3.cpp
   threading/DuplicateHandle/test7/test7.cpp
   threading/DuplicateHandle/test8/test8.cpp
 #  threading/DuplicateHandle/test9/test9.cpp
@@ -366,30 +362,14 @@ add_executable_clr(paltests
   threading/GetCurrentThread/test1/thread.cpp
   threading/GetCurrentThread/test2/test2.cpp
   threading/GetCurrentThreadId/test1/threadId.cpp
-  threading/OpenEventW/test1/test1.cpp
-  threading/OpenEventW/test2/test2.cpp
-  threading/OpenEventW/test5/test5.cpp
   threading/QueryThreadCycleTime/test1/test1.cpp
-  threading/releasesemaphore/test1/test.cpp
-  threading/ResetEvent/test1/test1.cpp
-  threading/ResetEvent/test2/test2.cpp
-  threading/ResetEvent/test3/test3.cpp
-  threading/ResetEvent/test4/test4.cpp
   threading/ResumeThread/test1/test1.cpp
-  threading/SetEvent/test1/test1.cpp
-  threading/SetEvent/test2/test2.cpp
-  threading/SetEvent/test3/test3.cpp
-  threading/SetEvent/test4/test4.cpp
+  threading/RuntimeEvent/test1/test1.cpp
   threading/Sleep/test1/Sleep.cpp
   threading/Sleep/test2/sleep.cpp
-  threading/SleepEx/test1/test1.cpp
   threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
-  threading/WaitForMultipleObjectsEx/test1/test1.cpp
-  threading/WaitForSingleObject/test1/test1.cpp
-  threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
-  threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp
 )
 

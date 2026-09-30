@@ -184,7 +184,7 @@ class Exception
 
  public:
     Exception() {LIMITED_METHOD_DAC_CONTRACT; m_innerException = NULL;}
-    virtual ~Exception() {LIMITED_METHOD_DAC_CONTRACT; if (m_innerException != NULL) Exception::Delete(m_innerException); }
+    virtual ~Exception() noexcept {LIMITED_METHOD_DAC_CONTRACT; if (m_innerException != NULL) Exception::Delete(m_innerException); }
 #ifdef DACCESS_COMPILE
     void * operator new(size_t size);
     void operator delete(void* ptr);
@@ -232,7 +232,7 @@ class Exception
 
         HandlerState();
 
-        void CleanupTry();
+        void CleanupTry() noexcept;
         void SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum);
         void SucceedCatch();
 
@@ -258,10 +258,10 @@ class Exception
     // Preallocated exceptions:  If there is a preallocated instance of some
     //  subclass of Exception, override this function and return a correct
     //  value.  The default implementation returns constant FALSE
-    virtual BOOL IsPreallocatedException();
+    virtual BOOL IsPreallocatedException() noexcept;
     BOOL IsPreallocatedOOMException();
 
-    static void Delete(Exception* pvMemory);
+    static void Delete(Exception* pvMemory) noexcept;
 
 protected:
 
@@ -285,7 +285,7 @@ struct ExceptionTraits final
 {
     using Type = Exception*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type value)
+    static void Free(Type value) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
         Exception::Delete(value);
@@ -523,7 +523,7 @@ class OutOfMemoryException : public Exception
 
     virtual Exception *Clone();
 
-    virtual BOOL IsPreallocatedException() { return bIsPreallocated; }
+    virtual BOOL IsPreallocatedException() noexcept { return bIsPreallocated; }
 };
 
 template <typename STATETYPE>
@@ -546,7 +546,7 @@ public:
 #endif
     }
 
-    DEBUG_NOINLINE ~CAutoTryCleanup()
+    DEBUG_NOINLINE ~CAutoTryCleanup() noexcept
     {
         WRAPPER_NO_CONTRACT;
 
@@ -1116,7 +1116,7 @@ inline Exception::HandlerState::HandlerState()
 #endif
 }
 
-inline void Exception::HandlerState::CleanupTry()
+inline void Exception::HandlerState::CleanupTry() noexcept
 {
     LIMITED_METHOD_DAC_CONTRACT;
 }

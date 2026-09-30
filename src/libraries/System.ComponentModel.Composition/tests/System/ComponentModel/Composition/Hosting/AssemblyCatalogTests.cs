@@ -174,7 +174,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor1_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -273,7 +273,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor2_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -371,7 +371,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor3_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -468,7 +468,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor4_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>

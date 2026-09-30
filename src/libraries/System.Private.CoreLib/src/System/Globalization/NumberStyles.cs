@@ -13,9 +13,9 @@ namespace System.Globalization
         None = 0x00000000,
 
         /// <summary>
-        /// Bit flag indicating that leading whitespace is allowed. Character values
-        /// 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, and 0x0020 are considered to be
-        /// whitespace.
+        /// Indicates that whitespace is allowed before the number, including after a permitted
+        /// leading sign or opening parenthesis. Character values 0x0009, 0x000A, 0x000B, 0x000C,
+        /// 0x000D, and 0x0020 are considered to be whitespace.
         /// </summary>
         AllowLeadingWhite = 0x00000001,
 

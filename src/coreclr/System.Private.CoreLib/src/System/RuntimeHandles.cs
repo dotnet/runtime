@@ -1321,12 +1321,14 @@ namespace System
         internal static extern RuntimeMethodHandleInternal GetMethodFromCanonical(RuntimeMethodHandleInternal method, RuntimeType declaringType);
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetNativeCode")]
-        private static partial IntPtr GetNativeCode(RuntimeMethodHandleInternal method);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetDiagnosticCodeStart")]
+        private static partial IntPtr GetDiagnosticCodeStart(RuntimeMethodHandleInternal method);
 
-        internal static IntPtr GetNativeCodeInternal(IRuntimeMethodInfo method)
+        // Returns the code start address that diagnostic tools use to identify the method.
+        // This value is only meaningful for diagnostic reporting; it is not guaranteed to be callable.
+        internal static IntPtr GetDiagnosticCodeStart(IRuntimeMethodInfo method)
         {
-            IntPtr value = GetNativeCode(IRuntimeMethodInfo.GetValue(method));
+            IntPtr value = GetDiagnosticCodeStart(IRuntimeMethodInfo.GetValue(method));
             GC.KeepAlive(method);
             return value;
         }

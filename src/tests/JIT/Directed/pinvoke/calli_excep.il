@@ -27,9 +27,13 @@
     }
     .method public hidebysig static int32 Main() cil managed
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [mscorlib]System.Type, string[]) = {
+          type([TestLibrary]TestLibrary.PlatformDetection)
+          string[1] ('IsExceptionInteropSupported')
+      }
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.PlatformSpecificAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+          int32 (1) // TestPlatforms.Windows
+      }
       .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
           string('https://github.com/dotnet/runtime/issues/118965')
           type([TestLibrary]TestLibrary.Utilities)

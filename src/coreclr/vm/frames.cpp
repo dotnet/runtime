@@ -68,7 +68,7 @@ unsigned Frame::GetFrameAttribs()
 }
 
 #ifndef DACCESS_COMPILE
-void Frame::ExceptionUnwind()
+void Frame::ExceptionUnwind() noexcept
 {
     switch (GetFrameIdentifier())
     {
@@ -583,7 +583,7 @@ VOID Frame::Push(Thread *pThread)
     pThread->SetFrame(this);
 }
 
-VOID Frame::Pop()
+VOID Frame::Pop() noexcept
 {
     CONTRACTL
     {
@@ -596,7 +596,7 @@ VOID Frame::Pop()
     Pop(GetThread());
 }
 
-VOID Frame::Pop(Thread *pThread)
+VOID Frame::Pop(Thread *pThread) noexcept
 {
     CONTRACTL
     {
@@ -621,7 +621,7 @@ VOID Frame::Pop(Thread *pThread)
 }
 
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
-void Frame::PopIfChained()
+void Frame::PopIfChained() noexcept
 {
     CONTRACTL
     {
@@ -1830,7 +1830,7 @@ void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 }
 
 #ifndef DACCESS_COMPILE
-void InterpreterFrame::ExceptionUnwind_Impl()
+void InterpreterFrame::ExceptionUnwind_Impl() noexcept
 {
     WRAPPER_NO_CONTRACT;
 

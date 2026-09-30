@@ -31,6 +31,7 @@ internal class Program
         TestCctorCycle.Run();
         TestReferenceTypeAllocation.Run();
         TestReferenceTypeWithGCPointerAllocation.Run();
+        TestBoxedValueTypes.Run();
         TestRelationalOperators.Run();
         TestTryFinally.Run();
         TestTryCatch.Run();
@@ -73,6 +74,11 @@ internal class Program
         TestArrayLoadBounds.Run();
         TestFloatNaNComparison.Run();
         TestDivisionOverflow.Run();
+        TestTypedStores.Run();
+        TestContainsReferences.Run();
+        TestDuplicateCallArguments.Run();
+        TestSpanAssignmentAliases.Run();
+        TestRvaSpanIdentity.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -457,6 +463,67 @@ class TestReferenceTypeWithGCPointerAllocation
     {
         Assert.IsLazyInitialized(typeof(TestReferenceTypeWithGCPointerAllocation));
         Assert.AreSame("hi", s_referenceType.StringValue);
+    }
+}
+
+class TestBoxedValueTypes
+{
+    struct WithReference
+    {
+        public object Value;
+    }
+
+    struct WithNestedReference
+    {
+        public WithReference Value;
+    }
+
+    struct WithoutReferences
+    {
+        public int Value;
+    }
+
+    class DirectReference
+    {
+        public static readonly object Value = default(WithReference);
+    }
+
+    class NestedReference
+    {
+        public static readonly object Value = default(WithNestedReference);
+    }
+
+    class NoReferences
+    {
+        public static readonly object Value = new WithoutReferences { Value = 42 };
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static WeakReference SetReference(ref object reference)
+    {
+        reference = new object();
+        return new WeakReference(reference);
+    }
+
+    public static void Run()
+    {
+        Assert.IsLazyInitialized(typeof(DirectReference));
+        Assert.IsLazyInitialized(typeof(NestedReference));
+        Assert.IsPreinitialized(typeof(NoReferences));
+
+        WeakReference direct = SetReference(ref Unsafe.Unbox<WithReference>(DirectReference.Value).Value);
+        WeakReference nested = SetReference(ref Unsafe.Unbox<WithNestedReference>(NestedReference.Value).Value.Value);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.True(direct.IsAlive);
+        Assert.True(nested.IsAlive);
+        Assert.AreSame(direct.Target, Unsafe.Unbox<WithReference>(DirectReference.Value).Value);
+        Assert.AreSame(nested.Target, Unsafe.Unbox<WithNestedReference>(NestedReference.Value).Value.Value);
+        Assert.AreEqual(42, Unsafe.Unbox<WithoutReferences>(NoReferences.Value).Value);
+        Unsafe.Unbox<WithoutReferences>(NoReferences.Value).Value = 100;
+        Assert.AreEqual(100, Unsafe.Unbox<WithoutReferences>(NoReferences.Value).Value);
     }
 }
 
@@ -2338,6 +2405,279 @@ class TestDivisionOverflow
         Assert.AreEqual(true, IntRemOverflow.s_caught);
         Assert.IsLazyInitialized(typeof(LongRemOverflow));
         Assert.AreEqual(true, LongRemOverflow.s_caught);
+    }
+}
+
+class TestTypedStores
+{
+    enum ByteEnum : byte { Value = 0x5A }
+    enum SByteEnum : sbyte { Value = -42 }
+    enum ShortEnum : short { Value = -1234 }
+    enum UShortEnum : ushort { Value = 0xABCD }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    struct Pair<T>
+    {
+        public T Value;
+        public int Sentinel;
+    }
+
+    static readonly Pair<float> s_floatWrite = Make(1.0f, copy: false);
+    static readonly Pair<float> s_floatCopy = Make(1.0f, copy: true);
+    static readonly Pair<ByteEnum> s_byteWrite = Make(ByteEnum.Value, copy: false);
+    static readonly Pair<ByteEnum> s_byteCopy = Make(ByteEnum.Value, copy: true);
+    static readonly Pair<SByteEnum> s_sbyteWrite = Make(SByteEnum.Value, copy: false);
+    static readonly Pair<SByteEnum> s_sbyteCopy = Make(SByteEnum.Value, copy: true);
+    static readonly Pair<ShortEnum> s_shortWrite = Make(ShortEnum.Value, copy: false);
+    static readonly Pair<ShortEnum> s_shortCopy = Make(ShortEnum.Value, copy: true);
+    static readonly Pair<UShortEnum> s_ushortWrite = Make(UShortEnum.Value, copy: false);
+    static readonly Pair<UShortEnum> s_ushortCopy = Make(UShortEnum.Value, copy: true);
+
+    static unsafe Pair<T> Make<T>(T value, bool copy)
+    {
+        Pair<T> result = default;
+        result.Sentinel = 0x12345678;
+        if (copy)
+            Unsafe.Copy(Unsafe.AsPointer(ref result.Value), ref value);
+        else
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref result.Value), value);
+
+        return result;
+    }
+
+    static void Check<T>(T expected, Pair<T> actual)
+    {
+        Assert.AreEqual(0x12345678, actual.Sentinel);
+        Assert.True(expected.Equals(actual.Value));
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestTypedStores));
+        Check(1.0f, s_floatWrite);
+        Check(1.0f, s_floatCopy);
+        Check(ByteEnum.Value, s_byteWrite);
+        Check(ByteEnum.Value, s_byteCopy);
+        Check(SByteEnum.Value, s_sbyteWrite);
+        Check(SByteEnum.Value, s_sbyteCopy);
+        Check(ShortEnum.Value, s_shortWrite);
+        Check(ShortEnum.Value, s_shortCopy);
+        Check(UShortEnum.Value, s_ushortWrite);
+        Check(UShortEnum.Value, s_ushortCopy);
+    }
+}
+
+class TestContainsReferences
+{
+    ref struct WithRef
+    {
+        public ref int Value;
+        public WithRef(ref int value) => Value = ref value;
+    }
+
+    ref struct WithNestedRef
+    {
+        public WithRef Value;
+        public WithNestedRef(ref int value) => Value = new WithRef(ref value);
+    }
+
+    ref struct WithoutReferences
+    {
+        public int Value;
+        public WithoutReferences(int value) => Value = value;
+    }
+
+    struct WithObject
+    {
+        public object Value;
+        public WithObject(object value) => Value = value;
+    }
+
+    static readonly bool s_span = RuntimeHelpers.IsReferenceOrContainsReferences<Span<char>>();
+    static readonly bool s_readOnlySpan = RuntimeHelpers.IsReferenceOrContainsReferences<ReadOnlySpan<char>>();
+    static readonly bool s_withRef = RuntimeHelpers.IsReferenceOrContainsReferences<WithRef>();
+    static readonly bool s_withNestedRef = RuntimeHelpers.IsReferenceOrContainsReferences<WithNestedRef>();
+    static readonly bool s_withoutReferences = RuntimeHelpers.IsReferenceOrContainsReferences<WithoutReferences>();
+    static readonly bool s_int = RuntimeHelpers.IsReferenceOrContainsReferences<int>();
+    static readonly bool s_guid = RuntimeHelpers.IsReferenceOrContainsReferences<Guid>();
+    static readonly bool s_string = RuntimeHelpers.IsReferenceOrContainsReferences<string>();
+    static readonly bool s_withObject = RuntimeHelpers.IsReferenceOrContainsReferences<WithObject>();
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestContainsReferences));
+        Assert.AreEqual(true, s_span);
+        Assert.AreEqual(true, s_readOnlySpan);
+        Assert.AreEqual(true, s_withRef);
+        Assert.AreEqual(true, s_withNestedRef);
+        Assert.AreEqual(false, s_withoutReferences);
+        Assert.AreEqual(false, s_int);
+        Assert.AreEqual(false, s_guid);
+        Assert.AreEqual(true, s_string);
+        Assert.AreEqual(true, s_withObject);
+    }
+}
+
+class TestDuplicateCallArguments
+{
+    struct Pair
+    {
+        public int First;
+        public int Second;
+    }
+
+    class Box
+    {
+        public int Value;
+        public Box(int value) => Value = value;
+    }
+
+    static int s_intObserved;
+    static long s_longObserved;
+    static double s_doubleObserved;
+    static int s_pairObserved;
+    static readonly int s_intResult = IntProperty = 42;
+    static readonly long s_longResult = LongProperty = 42;
+    static readonly double s_doubleResult = DoubleProperty = 42.5;
+    static readonly Pair s_pairResult = PairProperty = new Pair { First = 42, Second = 84 };
+    static readonly Box s_objectResult = ObjectProperty = new Box(42);
+    static readonly Box s_nullResult = ObjectProperty = null;
+    static int s_byRef = 42;
+    static readonly int s_byRefResult = Increment(ref s_byRef);
+
+    static int IntProperty
+    {
+        set
+        {
+            value++;
+            s_intObserved = value;
+        }
+    }
+
+    static long LongProperty
+    {
+        set
+        {
+            Overwrite(ref value);
+            s_longObserved = value;
+        }
+    }
+
+    static double DoubleProperty
+    {
+        set
+        {
+            value++;
+            s_doubleObserved = value;
+        }
+    }
+
+    static Pair PairProperty
+    {
+        set
+        {
+            value.First = 99;
+            s_pairObserved = ReadFirst(ref value);
+        }
+    }
+
+    static Box ObjectProperty
+    {
+        set
+        {
+            if (value is not null)
+                value.Value = 99;
+        }
+    }
+
+    static void Overwrite(ref long value) => value = 99;
+
+    static int ReadFirst(ref Pair value) => value.First;
+
+    static int Increment(ref int value) => ++value;
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestDuplicateCallArguments));
+        Assert.AreEqual(42, s_intResult);
+        Assert.AreEqual(43, s_intObserved);
+        Assert.AreEqual(42L, s_longResult);
+        Assert.AreEqual(99L, s_longObserved);
+        Assert.AreEqual(42.5, s_doubleResult);
+        Assert.AreEqual(43.5, s_doubleObserved);
+        Assert.AreEqual(42, s_pairResult.First);
+        Assert.AreEqual(84, s_pairResult.Second);
+        Assert.AreEqual(99, s_pairObserved);
+        Assert.AreEqual(99, s_objectResult.Value);
+        Assert.AreSame(null, s_nullResult);
+        Assert.AreEqual(43, s_byRef);
+        Assert.AreEqual(43, s_byRefResult);
+    }
+}
+
+class TestSpanAssignmentAliases
+{
+    static readonly int[] s_span = ReadSpan(new int[] { 1, 2 });
+    static readonly int[] s_readOnlySpan = ReadOnlySpan(new int[] { 1, 2 });
+
+    static int[] ReadSpan(Span<int> span)
+    {
+        Span<int> local = span;
+        ref Span<int> localAlias = ref local;
+        ref Span<int> argumentAlias = ref span;
+        span = new int[] { 3, 4, 5 };
+        local = new int[] { 6, 7, 8, 9 };
+        return new int[] { argumentAlias.Length, argumentAlias[0], localAlias.Length, localAlias[0] };
+    }
+
+    static int[] ReadOnlySpan(ReadOnlySpan<int> span)
+    {
+        ReadOnlySpan<int> local = span;
+        ref ReadOnlySpan<int> localAlias = ref local;
+        ref ReadOnlySpan<int> argumentAlias = ref span;
+        span = new int[] { 3, 4, 5 };
+        local = new int[] { 6, 7, 8, 9 };
+        return new int[] { argumentAlias.Length, argumentAlias[0], localAlias.Length, localAlias[0] };
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestSpanAssignmentAliases));
+        foreach (int[] result in new[] { s_span, s_readOnlySpan })
+        {
+            Assert.AreEqual(3, result[0]);
+            Assert.AreEqual(3, result[1]);
+            Assert.AreEqual(4, result[2]);
+            Assert.AreEqual(6, result[3]);
+        }
+    }
+}
+
+class TestRvaSpanIdentity
+{
+    static readonly bool s_same;
+    static readonly bool s_differentOffset;
+    static readonly bool s_array;
+
+    static ReadOnlySpan<int> Data => [1, 2, 3, 4, 5, 6];
+
+    static TestRvaSpanIdentity()
+    {
+        ReadOnlySpan<int> first = Data;
+        ReadOnlySpan<int> second = Data;
+        ref int firstElement = ref Unsafe.AsRef(in first[0]);
+        s_same = Unsafe.AreSame(ref firstElement, ref Unsafe.AsRef(in second[0]));
+        s_differentOffset = Unsafe.AreSame(ref firstElement, ref Unsafe.AsRef(in second[1]));
+        int[] array = [1, 2, 3, 4, 5, 6];
+        s_array = Unsafe.AreSame(ref firstElement, ref MemoryMarshal.GetArrayDataReference(array));
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestRvaSpanIdentity));
+        Assert.AreEqual(true, s_same);
+        Assert.AreEqual(false, s_differentOffset);
+        Assert.AreEqual(false, s_array);
     }
 }
 

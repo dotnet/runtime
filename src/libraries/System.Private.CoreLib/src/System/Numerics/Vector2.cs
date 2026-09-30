@@ -481,7 +481,11 @@ namespace System.Numerics
         /// <returns>The distance.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Distance(Vector2 value1, Vector2 value2) => Vector128.Distance(value1.AsVector128(), value2.AsVector128());
+        public static float Distance(Vector2 value1, Vector2 value2)
+        {
+            Vector128<float> difference = value1.AsVector128Unsafe() - value2.AsVector128Unsafe();
+            return float.Sqrt(Sum((difference * difference).AsVector2()));
+        }
 
         /// <summary>Returns the Euclidean distance squared between two specified points.</summary>
         /// <param name="value1">The first point.</param>
@@ -489,7 +493,11 @@ namespace System.Numerics
         /// <returns>The distance squared.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float DistanceSquared(Vector2 value1, Vector2 value2) => Vector128.DistanceSquared(value1.AsVector128(), value2.AsVector128());
+        public static float DistanceSquared(Vector2 value1, Vector2 value2)
+        {
+            Vector128<float> difference = value1.AsVector128Unsafe() - value2.AsVector128Unsafe();
+            return Sum((difference * difference).AsVector2());
+        }
 
         /// <summary>Divides the first vector by the second.</summary>
         /// <param name="left">The first vector.</param>
@@ -513,7 +521,7 @@ namespace System.Numerics
         /// <returns>The dot product.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Dot(Vector2 value1, Vector2 value2) => Vector128.Dot(value1.AsVector128(), value2.AsVector128());
+        public static float Dot(Vector2 value1, Vector2 value2) => Sum((value1.AsVector128Unsafe() * value2.AsVector128Unsafe()).AsVector2());
 
         /// <inheritdoc cref="Vector4.Exp(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -844,7 +852,11 @@ namespace System.Numerics
         /// <returns>The normalized vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Normalize(Vector2 value) => Vector128.Normalize(value.AsVector128()).AsVector2();
+        public static Vector2 Normalize(Vector2 value)
+        {
+            Vector128<float> vector = value.AsVector128Unsafe();
+            return (vector / Vector128.Sqrt(SumAndBroadcast(vector * vector).AsVector128Unsafe())).AsVector2();
+        }
 
         /// <inheritdoc cref="Vector4.OnesComplement(Vector4)" />
         [Intrinsic]
@@ -866,10 +878,10 @@ namespace System.Numerics
             // This implementation is based on the DirectX Math Library XMVector2Reflect method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
 
-            Vector128<float> vVector = vector.AsVector128();
-            Vector128<float> vNormal = normal.AsVector128();
+            Vector128<float> vVector = vector.AsVector128Unsafe();
+            Vector128<float> vNormal = normal.AsVector128Unsafe();
 
-            Vector128<float> tmp = Vector128.Create(Vector128.Dot(vVector, vNormal));
+            Vector128<float> tmp = SumAndBroadcast(vVector * vNormal).AsVector128Unsafe();
             return Vector128.MultiplyAddEstimate(-(tmp + tmp), vNormal, vVector).AsVector2();
         }
 
@@ -926,7 +938,14 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.Sum(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Sum(Vector2 value) => Vector128.Sum(value.AsVector128());
+        public static float Sum(Vector2 value) => SumAndBroadcast(value.AsVector128Unsafe()).ToScalar();
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector2 SumAndBroadcast(Vector128<float> value)
+        {
+            return (value + Vector128.Shuffle(value, Vector128.Create(1, 0, 3, 2))).AsVector2();
+        }
 
         /// <summary>Transforms a vector by a specified 3x2 matrix.</summary>
         /// <param name="position">The vector to transform.</param>
@@ -1104,7 +1123,11 @@ namespace System.Numerics
         /// <altmember cref="LengthSquared" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly float Length() => Vector128.Length(this.AsVector128());
+        public readonly float Length()
+        {
+            Vector128<float> vector = this.AsVector128Unsafe();
+            return float.Sqrt(Sum((vector * vector).AsVector2()));
+        }
 
         /// <summary>Returns the length of the vector squared.</summary>
         /// <returns>The vector's length squared.</returns>
@@ -1112,7 +1135,11 @@ namespace System.Numerics
         /// <altmember cref="Length" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly float LengthSquared() => Vector128.LengthSquared(this.AsVector128());
+        public readonly float LengthSquared()
+        {
+            Vector128<float> vector = this.AsVector128Unsafe();
+            return Sum((vector * vector).AsVector2());
+        }
 
         /// <summary>Returns the string representation of the current instance using default formatting.</summary>
         /// <returns>The string representation of the current instance.</returns>

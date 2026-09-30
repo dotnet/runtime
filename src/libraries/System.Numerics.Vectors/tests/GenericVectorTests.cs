@@ -4904,6 +4904,38 @@ namespace System.Numerics.Tests
             AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(+x)), Vector.Create(variance));
         }
 
+        private void IntegerClassification<T>(T value)
+            where T : IFloatingPointIeee754<T>
+        {
+            Vector<T> vector = Vector<T>.Zero;
+            Vector<T> integer = Vector<T>.Zero;
+            Vector<T> even = Vector<T>.Zero;
+            Vector<T> odd = Vector<T>.Zero;
+            T allBitsSet = Vector<T>.AllBitsSet.GetElement(0);
+            T two = T.CreateChecked(2);
+
+            for (int i = 0; i < Vector<T>.Count; i++)
+            {
+                T element = (i % 2 == 0) ? value : T.CreateChecked(i - 1);
+                vector = vector.WithElement(i, element);
+                integer = integer.WithElement(i, (element % T.One == T.Zero) ? allBitsSet : T.Zero);
+                even = even.WithElement(i, (element % two == T.Zero) ? allBitsSet : T.Zero);
+                odd = odd.WithElement(i, (T.Abs(element % two) == T.One) ? allBitsSet : T.Zero);
+            }
+
+            Assert.Equal(Vector.AsVectorByte(integer), Vector.AsVectorByte(Vector.IsInteger(vector)));
+            Assert.Equal(Vector.AsVectorByte(even), Vector.AsVectorByte(Vector.IsEvenInteger(vector)));
+            Assert.Equal(Vector.AsVectorByte(odd), Vector.AsVectorByte(Vector.IsOddInteger(vector)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationDoubleTest(double value) => IntegerClassification(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationSingleTest(float value) => IntegerClassification(value);
+
         private void IsEvenInteger<T>(T value)
             where T : INumber<T>
         {

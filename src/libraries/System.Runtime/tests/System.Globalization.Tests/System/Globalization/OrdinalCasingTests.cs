@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -336,7 +337,11 @@ namespace System.Globalization.Tests
             yield return new object[] { new Rune('5'), new Rune('5') };
             yield return new object[] { new Rune('\u03B1'), new Rune('\u0391') }; // greek
             yield return new object[] { new Rune('\u212A'), new Rune('\u212A') }; // KELVIN SIGN is not folded by ordinal upper
-            yield return new object[] { new Rune(0x10428), new Rune(0x10400) };    // DESERET small ee -> capital long i
+            yield return new object[]
+            {
+                new Rune(0x10428),
+                new Rune(PlatformDetection.IsNlsGlobalization ? 0x10428 : 0x10400)
+            };
         }
 
         public static IEnumerable<object[]> RuneLowerData()
@@ -345,7 +350,11 @@ namespace System.Globalization.Tests
             yield return new object[] { new Rune('5'), new Rune('5') };
             yield return new object[] { new Rune('\u0391'), new Rune('\u03B1') }; // greek
             yield return new object[] { new Rune('\u212A'), new Rune('\u212A') }; // KELVIN SIGN stays itself (not OIC equal to 'k')
-            yield return new object[] { new Rune(0x10400), new Rune(0x10428) };    // DESERET capital -> small
+            yield return new object[]
+            {
+                new Rune(0x10400),
+                new Rune(PlatformDetection.IsNlsGlobalization ? 0x10400 : 0x10428)
+            };
         }
 
         [Theory]
@@ -370,6 +379,60 @@ namespace System.Globalization.Tests
             {
                 Assert.Equal((char)expected.Value, char.ToLowerOrdinal((char)input.Value));
             }
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void OrdinalCasing_SupplementaryCharacters_AgreeWithOrdinalIgnoreCaseInNlsMode()
+        {
+            var startInfo = new ProcessStartInfo();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(startInfo.Environment);
+            startInfo.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_USENLS", "true");
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                const int DeseretCapitalStart = 0x10400;
+                const int DeseretSmallEnd = 0x1044F;
+                int count = DeseretSmallEnd - DeseretCapitalStart + 1;
+                var values = new string[count];
+                var upperValues = new string[count];
+                var lowerValues = new string[count];
+                Span<char> upperDestination = stackalloc char[2];
+                Span<char> lowerDestination = stackalloc char[2];
+
+                for (int i = 0; i < count; i++)
+                {
+                    Rune rune = new Rune(DeseretCapitalStart + i);
+                    string value = rune.ToString();
+                    values[i] = value;
+                    upperValues[i] = value.ToUpperOrdinal();
+                    lowerValues[i] = value.ToLowerOrdinal();
+
+                    Assert.Equal(value, upperValues[i]);
+                    Assert.Equal(value, lowerValues[i]);
+                    Assert.Equal(rune, Rune.ToUpperOrdinal(rune));
+                    Assert.Equal(rune, Rune.ToLowerOrdinal(rune));
+
+                    Assert.Equal(2, value.AsSpan().ToUpperOrdinal(upperDestination));
+                    Assert.Equal(2, value.AsSpan().ToLowerOrdinal(lowerDestination));
+                    Assert.True(value.AsSpan().SequenceEqual(upperDestination));
+                    Assert.True(value.AsSpan().SequenceEqual(lowerDestination));
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    for (int j = 0; j < count; j++)
+                    {
+                        bool ordinalIgnoreCaseEqual = string.Equals(values[i], values[j], StringComparison.OrdinalIgnoreCase);
+                        Assert.Equal(ordinalIgnoreCaseEqual, string.Equals(upperValues[i], upperValues[j], StringComparison.Ordinal));
+                        Assert.Equal(ordinalIgnoreCaseEqual, string.Equals(lowerValues[i], lowerValues[j], StringComparison.Ordinal));
+                    }
+                }
+
+                Assert.Equal("\U00010428X\U00010429", "\U00010428x\U00010429".ToUpperOrdinal());
+                Assert.Equal("\U00010400x\U00010401", "\U00010400X\U00010401".ToLowerOrdinal());
+                Assert.Equal("\uD800\U00010428", "\uD800\U00010428".ToUpperOrdinal());
+            }, new RemoteInvokeOptions { StartInfo = startInfo }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

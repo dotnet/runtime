@@ -8,6 +8,7 @@
          For offline builds we still set OfficialBuildId but we need to build all the packages for a single
          leg only, so we also take DotNetBuildSourceOnly into account. -->
     <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildSourceOnly)' != 'true'">true</BuildingAnOfficialBuildLeg>
+    <RunILLinkInBuild Condition="'$(RunILLinkInBuild)' == '' and '$(BuildingAnOfficialBuildLeg)' == 'true'">true</RunILLinkInBuild>
     <!-- When doing a source build, we want to build the various text-only manifests in
          all cases, rather than ordinarily where we build them during mobile or wasm
          build legs. This makes the manifests available on source-only builds. -->
@@ -15,6 +16,7 @@
     <!-- Propagate the configuration and platform to project references. When building in VS, this defaults to true.
          Explicitly setting it to false ensures projects are built in the corresponding configuration both in VS and on the command line. -->
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
+    <EnableSourceLink Condition="'$(ROSLYN_CACHE_PATH)' != ''">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- We don't have RepoRoot or RepositoryEngineeringDir available at this point -->
@@ -135,6 +137,7 @@
     <BrowserProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'browser'))</BrowserProjectRoot>
     <WasmProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm'))</WasmProjectRoot>
     <WasiProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasi'))</WasiProjectRoot>
+    <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'wasm', 'WasmPInvokeModules.props'))</WasmPInvokeModulesPropsPath>
 
     <CoreclrRuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</CoreclrRuntimeBinDir>
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(TasksConfiguration)', 'net'))</AppleAppBuilderDir>

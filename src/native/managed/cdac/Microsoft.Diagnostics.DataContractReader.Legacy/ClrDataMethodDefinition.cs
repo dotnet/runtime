@@ -160,9 +160,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         int hr = HResults.S_FALSE;
         *handle = 0;
 
-        // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
-        // EnumInstance passes the legacy method instance to ClrDataMethodInstance,
-        // which delegates some operations to it.
+        // Start the legacy enumeration to keep it in sync for validation.
         ulong legacyHandle = default;
         int hrLocal = default;
         if (_legacyImpl is not null)
@@ -226,8 +224,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         if (gcHandle.Target is not SOSDacImpl.EnumMethodInstances emi)
             return HResults.E_INVALIDARG;
 
-        // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
-        // The legacy method instance is passed to ClrDataMethodInstance for delegation.
+        // Advance the legacy enumeration to keep it in sync for validation.
         IXCLRDataMethodInstance? legacyMethod = null;
         int hrLocal = default;
         if (_legacyImpl is not null)
@@ -253,16 +250,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
         catch (System.Exception ex)
         {
-            // Fall back to the legacy DAC result when available, otherwise propagate the error.
-            if (_legacyImpl is not null)
-            {
-                hr = hrLocal;
-                instance.Interface = legacyMethod;
-            }
-            else
-            {
-                hr = ex.HResult;
-            }
+            hr = ex.HResult;
         }
 
 #if DEBUG
@@ -295,8 +283,9 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (_legacyImpl is not null && emi.LegacyHandle != 0)
             {
                 int hrLocal = _legacyImpl.EndEnumInstances(emi.LegacyHandle);
-                if (hrLocal < 0)
-                    hr = hrLocal;
+#if DEBUG
+                Debug.ValidateHResult(hr, hrLocal);
+#endif
             }
         }
         catch (System.Exception ex)
@@ -397,9 +386,8 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
                 {
                     DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
                     int hrLegacy = _legacyImpl.GetTokenAndScope(null, legacyModOut);
-                    if (hrLegacy < 0)
-                        return hrLegacy;
-                    legacyMod = legacyModOut.Interface;
+                    if (hrLegacy >= 0)
+                        legacyMod = legacyModOut.Interface;
                 }
 
                 mod.Interface = new ClrDataModule(_module, _target, legacyMod, _apiLock);
@@ -709,7 +697,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
 
 #if DEBUG
-        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        if (_legacyImpl is not null)
         {
             ClrDataAddress addrLocal = 0;
             int hrLocal = _legacyImpl.GetRepresentativeEntryAddress(addr is null ? null : &addrLocal);

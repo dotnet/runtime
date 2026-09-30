@@ -186,7 +186,7 @@ namespace BINDER_SPACE
         return InterlockedIncrement(&m_cRef);
     }
 
-    ULONG AssemblyName::Release()
+    ULONG AssemblyName::Release() noexcept
     {
         ULONG ulRef = InterlockedDecrement(&m_cRef);
         if (ulRef == 0)

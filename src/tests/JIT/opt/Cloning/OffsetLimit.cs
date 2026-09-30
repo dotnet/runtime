@@ -64,10 +64,66 @@ public class OffsetLimit
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UShortVarPlusK(int[] a, ushort src)
+    {
+        ushort n = src;
+        int sum = 0;
+        for (int i = 0; i < n + 1000; i++)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int DecGtArrayLengthMinusK(int[] a, int initVal)
     {
         int sum = 0;
         for (int i = initVal; i > a.Length - 5; i--)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int DecGtArrayLengthPlus1(int[] a, int[] limit)
+    {
+        int sum = 0;
+        for (int i = a.Length - 1; i > limit.Length + 1; i--)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int DecGtArrayLengthPlusMaxValue(int[] a, int[] limit)
+    {
+        int sum = 0;
+        for (int i = a.Length - 1; i > limit.Length + int.MaxValue; i--)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int DecGeArrayLengthPlusMaxValue(int[] a, int[] limit)
+    {
+        int sum = 0;
+        for (int i = a.Length - 1; i >= limit.Length + int.MaxValue; i--)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int DecNeArrayLengthPlusMaxValue(int[] a, int[] limit)
+    {
+        int sum = 0;
+        for (int i = a.Length - 1; i != limit.Length + int.MaxValue; i--)
         {
             sum += a[i];
         }
@@ -185,6 +241,20 @@ public class OffsetLimit
     }
 
     [Theory]
+    [InlineData((ushort)0, 1000)]
+    [InlineData((ushort)64535, 65535)]
+    [InlineData((ushort)64536, 65536)]
+    [InlineData((ushort)65000, 66000)]
+    [InlineData(ushort.MaxValue, 66535)]
+    public static void UShortVarPlusKTest(ushort src, int expected)
+    {
+        int[] a = new int[70000];
+        Array.Fill(a, 1);
+        Assert.Equal(expected, UShortVarPlusK(a, src));
+        Assert.Throws<IndexOutOfRangeException>(() => UShortVarPlusK(new int[expected - 1], src));
+    }
+
+    [Theory]
     [InlineData(99, 100)]
     [InlineData(50, 100)]
     [InlineData(5, 10)]
@@ -208,6 +278,38 @@ public class OffsetLimit
     {
         int[] a = MakeArray(len);
         Assert.Throws<IndexOutOfRangeException>(() => DecGtArrayLengthMinusK(a, initVal));
+    }
+
+    [Fact]
+    public static void DecGtArrayLengthPlus1Test()
+    {
+        int[] a = MakeArray(10);
+        int[] limit = MakeArray(2);
+        int got = DecGtArrayLengthPlus1(a, limit);
+        int want = ExpectedDecGt(a.Length - 1, limit.Length + 1, 1, a);
+        Assert.Equal(want, got);
+    }
+
+    [ActiveIssue(
+        "https://github.com/dotnet/runtime/issues/134014",
+        typeof(TestLibrary.PlatformDetection),
+        nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
+    [Theory]
+    [InlineData(nameof(DecGtArrayLengthPlusMaxValue))]
+    [InlineData(nameof(DecGeArrayLengthPlusMaxValue))]
+    [InlineData(nameof(DecNeArrayLengthPlusMaxValue))]
+    public static void DecArrayLengthPlusMaxValueOverflowTest(string methodName)
+    {
+        int[] a = MakeArray(4);
+        int[] limit = MakeArray(4);
+
+        Assert.Throws<IndexOutOfRangeException>(() => methodName switch
+        {
+            nameof(DecGtArrayLengthPlusMaxValue) => DecGtArrayLengthPlusMaxValue(a, limit),
+            nameof(DecGeArrayLengthPlusMaxValue) => DecGeArrayLengthPlusMaxValue(a, limit),
+            nameof(DecNeArrayLengthPlusMaxValue) => DecNeArrayLengthPlusMaxValue(a, limit),
+            _ => throw new ArgumentOutOfRangeException(nameof(methodName)),
+        });
     }
 
     [Theory]

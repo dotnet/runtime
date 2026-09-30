@@ -81,7 +81,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(isMem && addr != nullptr);
 
                 regNumber addrReg = GetMultiUseOperandReg(addr);
-                genEmitNullCheck(addrReg);
+                genEmitNullCheck(addrReg, addr->TypeGet());
 
                 if (info.needsJumpTableFallback())
                 {

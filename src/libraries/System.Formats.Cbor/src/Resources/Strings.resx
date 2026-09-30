@@ -153,6 +153,15 @@
   <data name="Cbor_Reader_DefiniteLengthExceedsBufferSize" xml:space="preserve">
     <value>Declared definite length of CBOR data item exceeds available buffer size.</value>
   </data>
+  <data name="Cbor_Reader_NotFinalBlockRequiresLaxConformance" xml:space="preserve">
+    <value>Reading CBOR data incrementally is only supported in the 'Lax' conformance mode.</value>
+  </data>
+  <data name="Cbor_Reader_CannotSlideDataOnFinalBlock" xml:space="preserve">
+    <value>Cannot slide new data after the reader's data has been supplied as the final block. Call Reset to read a new payload.</value>
+  </data>
+  <data name="Cbor_Reader_SlideDataBufferTooSmall" xml:space="preserve">
+    <value>The new buffer cannot be smaller than the unconsumed bytes of the current buffer.</value>
+  </data>
   <data name="Cbor_Reader_NoMoreDataItemsToRead" xml:space="preserve">
     <value>No more CBOR data items to read in the current context.</value>
   </data>

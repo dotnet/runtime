@@ -1,40 +1,43 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-using System.Collections.Generic;
+
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop.JavaScript
 {
     internal static class SignatureBindingHelpers
     {
-        public static ArgumentSyntax CreateSignaturesArgument(ImmutableArray<TypePositionInfo> elements, StubCodeContext context)
+        public static string CreateSignaturesArgument(ImmutableArray<TypePositionInfo> elements, StubCodeContext context)
         {
-            List<CollectionElementSyntax> arguments = [];
-
-            foreach (TypePositionInfo element in elements.Where(e => e.NativeIndex != TypePositionInfo.UnsetIndex).OrderBy(e => e.NativeIndex))
+            var writer = new IndentedTextWriter();
+            writer.Write('[');
+            bool first = true;
+            foreach (TypePositionInfo element in elements.Where(static element => element.NativeIndex != TypePositionInfo.UnsetIndex).OrderBy(static element => element.NativeIndex))
             {
+                if (!first)
+                {
+                    writer.Write(", ");
+                }
+                first = false;
+
                 var (baseType, subTypes) = JSGeneratorResolver.GetMarshallerTypeForBinding(element, context);
-                ExpressionSyntax bindSyntax = MarshalerTypeName(baseType);
+                writer.Write(MarshalerTypeName(baseType));
                 if (subTypes is not null)
                 {
-                    bindSyntax = InvocationExpression(bindSyntax,
-                        ArgumentList(SeparatedList(subTypes.Select(s => Argument(MarshalerTypeName(s))))));
+                    writer.Write('(');
+                    writer.Write(string.Join(", ", subTypes.Select(MarshalerTypeName)));
+                    writer.Write(')');
                 }
-                arguments.Add(ExpressionElement(bindSyntax));
             }
-
-            return Argument(CollectionExpression(SeparatedList(arguments)));
+            writer.Write(']');
+            return writer.ToString();
         }
 
-        private static IdentifierNameSyntax MarshalerTypeName(MarshalerType marshalerType)
+        private static string MarshalerTypeName(MarshalerType marshalerType)
         {
-            return IdentifierName(Constants.JSMarshalerTypeGlobalDot + marshalerType.ToString());
+            return Constants.JSMarshalerTypeGlobalDot + marshalerType;
         }
-
     }
 }

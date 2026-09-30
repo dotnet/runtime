@@ -107,10 +107,12 @@ public class MachObjectTests
         return arguments.ToArray();
     }
 
-    [Fact]
-    public void CanParseCodesignOutput()
+    [Theory]
+    [InlineData(4096)]
+    [InlineData(16384)]
+    public void CanParseCodesignOutput(int pageSize)
     {
-        var parsed = CodesignOutputInfo.ParseFromCodeSignOutput(CodesignOutputInfo.SampleCodesignOutput);
+        var parsed = CodesignOutputInfo.ParseFromCodeSignOutput(CodesignOutputInfo.GetSampleCodesignOutput(pageSize));
         Assert.NotNull(parsed);
         output.WriteLine(parsed.ToString());
         var expected = new CodesignOutputInfo

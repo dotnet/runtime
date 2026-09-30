@@ -1,13 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Diagnostics;
-using System.Formats.Asn1;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.Apple;
-using Internal.Cryptography;
-
 namespace System.Security.Cryptography
 {
     internal sealed partial class EccAppleCrypto
@@ -46,35 +39,6 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(keyBlob);
-            }
-        }
-
-        private static void ExtractPublicKeyFromPrivateKey(ref ECParameters ecParameters)
-        {
-            using (SafeSecKeyRefHandle secPrivateKey = ImportLegacyPrivateKey(ref ecParameters))
-            {
-                const string ExportPassword = "DotnetExportPassphrase";
-                byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(secPrivateKey, exportPrivate: true, password: ExportPassword);
-                EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, (ReadOnlySpan<char>)ExportPassword, out _, out ecParameters);
-                CryptographicOperations.ZeroMemory(keyBlob);
-            }
-        }
-
-        private static SafeSecKeyRefHandle ImportLegacyPrivateKey(ref ECParameters parameters)
-        {
-            AsnWriter keyWriter = EccKeyFormatHelper.WriteECPrivateKey(parameters);
-
-            try
-            {
-                return keyWriter.Encode(static encoded =>
-                {
-                    return Interop.AppleCrypto.ImportEphemeralKey(encoded, true);
-                });
-            }
-            finally
-            {
-                // Explicitly clear the inner buffer
-                keyWriter.Reset();
             }
         }
     }

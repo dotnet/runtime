@@ -186,7 +186,7 @@
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
 
-// IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
+// IL stub's SecretStubArgument parameter
 #define REG_SECRET_STUB_PARAM     REG_R12
 #define RBM_SECRET_STUB_PARAM     RBM_R12
 

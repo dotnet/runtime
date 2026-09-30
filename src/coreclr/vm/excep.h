@@ -104,7 +104,7 @@ void TerminateExceptionHandling();
 // Prototypes
 EXTERN_C VOID STDCALL ResetCurrentContext();
 
-void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP);
+void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP) noexcept;
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
 DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM, const METHODTOKEN& mdTok, SIZE_T offsNat);
 BOOL IsException(MethodTable *pMT);
@@ -608,9 +608,7 @@ bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
-                        T_CONTEXT*                      pContext,
-                        EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
-                        Thread*                         pThread);
+                        T_CONTEXT*                      pContext);
 
 void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, T_CONTEXT* pContext);
 

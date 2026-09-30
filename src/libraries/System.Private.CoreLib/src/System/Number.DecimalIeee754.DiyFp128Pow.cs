@@ -132,7 +132,7 @@ internal static partial class Number
     /// Computes <c>x^y</c> for a positive finite <paramref name="x"/> (Intel's <c>UX_POW</c>). The caller
     /// handles the IEEE special cases and the sign of a negative base raised to an integer power.
     /// </summary>
-    private static DiyFp128 DiyFp128Pow(DiyFp128 x, DiyFp128 y)
+    private static DiyFp128 DiyFp128Pow(DiyFp128 x, DiyFp128 y, DiyFp128 xMinusOne)
     {
         Span<DiyFp128> tmp = [default, default, default];
         DiyFp128 single = default;
@@ -150,7 +150,13 @@ internal static partial class Number
 
         // z = 2(g - 1) / ((g + 1) * ln2)
         DiyFp128 one = DiyFp128One;
-        DiyFp128AddSub(x, one, UxAddSub, pair); // pair[0] = g + 1, pair[1] = g - 1
+        bool hasResidual = (exponent == 0) && !DiyFp128IsZero(xMinusOne);
+        DiyFp128AddSub(x, one, hasResidual ? UxAdd : UxAddSub, pair);
+        if (hasResidual)
+        {
+            // A large y amplifies conversion error in x - 1; retain the decimal residual.
+            pair[1] = xMinusOne;
+        }
         tmp[0] = pair[0];
         tmp[1] = pair[1];
 

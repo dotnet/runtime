@@ -73,6 +73,7 @@ export function getCallerNativeTid(args: JSMarshalerArguments): PThreadPtr {
     return dotnetApi.getHeapI32(<any>args + JSMarshalerArgumentOffsets.CallerNativeTID) as any;
 }
 
+// TODO-MT: unused until threads are enabled, the cross-thread post paths set this in the Mono tree
 export function setReceiverShouldFree(args: JSMarshalerArguments): void {
     dotnetApi.setHeapB8(<any>args + JSMarshalerArgumentOffsets.ReceiverShouldFree, true);
 }

@@ -13,8 +13,13 @@ public class Program
     [Fact]
     public static void EntryPoint()
     {
-        string directoryPath = Path.Combine(Path.GetTempPath(), $"AssemblyOnDisk-{Guid.NewGuid():N}");
         string originalAssemblyPath = typeof(Program).Assembly.Location;
+        if (originalAssemblyPath.Length == 0)
+        {
+            return;
+        }
+
+        string directoryPath = Path.Combine(Path.GetTempPath(), $"AssemblyOnDisk-{Guid.NewGuid():N}");
         string newAssemblyPath = Path.Combine(directoryPath, Path.GetFileName(originalAssemblyPath));
 
         // If the directory already exists, delete it

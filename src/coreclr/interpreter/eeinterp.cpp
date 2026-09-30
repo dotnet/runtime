@@ -41,6 +41,11 @@ extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost)
 #endif // PERFTRACING_DISABLE_THREADS
     }
 
+    if (InterpConfig.InterpPGO() != 0)
+    {
+        InterpCompiler::s_interpPgoEnabled = true;
+    }
+
     g_interpInitialized = true;
 }
 /*****************************************************************************/

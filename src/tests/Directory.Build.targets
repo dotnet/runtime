@@ -442,6 +442,12 @@
       <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).XHarnessNoRunner" Condition="'$(EmitXHarnessNoRunnerMarkerFile)' == 'true'">
         <Type>XHarnessNoRunner</Type>
       </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).IlasmRoundTripIncompatible" Condition="'$(IlasmRoundTripIncompatible)' == 'true'">
+        <Type>IlasmRoundTripIncompatible</Type>
+      </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).ManagedIlasmRoundTripIncompatible" Condition="'$(ManagedIlasmRoundTripIncompatible)' == 'true'">
+        <Type>ManagedIlasmRoundTripIncompatible</Type>
+      </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
         <Type>NoMonoAot</Type>
       </MarkerFile>

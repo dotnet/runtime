@@ -9,10 +9,10 @@ using Xunit;
 public class CseArrayIndexByref
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
         int[] arr = new int[1];
-        AsyncTestEntryPoint(arr, 0).Wait();
+        await AsyncTestEntryPoint(arr, 0);
         Assert.Equal(199_990_000, arr[0]);
     }
 

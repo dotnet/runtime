@@ -35,11 +35,11 @@ void Lowering::SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 // IsCallTargetInRange: Can a call target address be encoded in-place?
 //
 // Return Value:
-//    Currently always false for Wasm, all managed calls are indirect through the PEP.
+//    False when PEP is enabled, true when it is not enabled.
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    return false;
+    return !m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS);
 }
 
 //---------------------------------------------------------------------------------------------
@@ -186,6 +186,11 @@ GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
     GenTreeAddrMode* const lea = addr->AsAddrMode();
 
     if (!lea->HasBase() || lea->HasIndex() || !varTypeIsGC(lea->Base()) || (lea->Offset() < 0))
+    {
+        return nullptr;
+    }
+
+    if (!IsInvariantInRange(lea->Base(), indirNode))
     {
         return nullptr;
     }

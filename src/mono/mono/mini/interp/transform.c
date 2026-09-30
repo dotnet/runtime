@@ -2450,6 +2450,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				gpointer systype = mono_type_get_object_checked (m_class_get_byval_arg (constrained_class), error);
 				return_val_if_nok (error, FALSE);
 
+				// GetType is still required to null check the managed pointer, even though we
+				// can resolve the result to a constant without dereferencing it.
+				interp_add_ins (td, MINT_CKNULL);
+				interp_ins_set_sreg (td->last_ins, td->sp [-1].var);
+				set_simple_type_and_var (td, td->sp - 1, td->sp [-1].type);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+
 				td->sp--;
 				interp_add_ins (td, MINT_LDPTR);
 				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);

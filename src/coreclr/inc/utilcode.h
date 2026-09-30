@@ -1046,7 +1046,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (m_iCount);
     }
-    void Clear();
+    void Clear() noexcept;
     void ClearCount()
     {
         LIMITED_METHOD_CONTRACT;

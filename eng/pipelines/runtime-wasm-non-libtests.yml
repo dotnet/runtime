@@ -31,4 +31,3 @@ extends:
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           excludeNonLibTests: false
           excludeLibTests: true
-          runR2RTests: true

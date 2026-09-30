@@ -2006,7 +2006,10 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pM
 }
 FCIMPLEND
 
-extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod, QCallExceptionStatus* qcallError)
+// Returns the code start address that diagnostic tools (e.g. profiler events) use to identify
+// the method. The result is only meaningful for diagnostic reporting and is not guaranteed to be
+// callable (e.g. on Wasm it may be interpreter bytecode or a synthetic virtual IP).
+extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetDiagnosticCodeStart(MethodDesc* pMethod, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -2026,7 +2029,11 @@ extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod
         pMethod = pWrapped;
     }
 
-    result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
+    PCODE entryPoint = pMethod->GetNativeCodeAnyVersion();
+    if (entryPoint != (PCODE)NULL)
+    {
+        result = GetDiagnosticCodeStartFromEntryPoint(pMethod, entryPoint);
+    }
 
     END_QCALL;
 

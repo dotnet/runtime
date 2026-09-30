@@ -154,7 +154,7 @@ StgPool::TakeOwnershipOfInitMem()
 //*****************************************************************************
 // Clear out this pool.  Cannot use until you call InitNew.
 //*****************************************************************************
-void StgPool::Uninit()
+void StgPool::Uninit() noexcept
 {
     CONTRACTL
     {
@@ -832,7 +832,7 @@ StgStringPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgStringPool::Uninit()
+void StgStringPool::Uninit() noexcept
 {
     CONTRACTL
     {
@@ -1190,7 +1190,7 @@ StgGuidPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgGuidPool::Uninit()
+void StgGuidPool::Uninit() noexcept
 {
     CONTRACTL
     {
@@ -1495,7 +1495,7 @@ StgBlobPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgBlobPool::Uninit()
+void StgBlobPool::Uninit() noexcept
 {
     CONTRACTL
     {

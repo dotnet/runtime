@@ -60,10 +60,10 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
     {
         return false;
     }
-    uint64_t symbolOffset;
-    if (module.TryLookupSymbol(symbolName, &symbolOffset))
+    uint64_t address;
+    if (module.TryLookupSymbol(symbolName, &address))
     {
-        *symbolAddress = symbolOffset;
+        *symbolAddress = address;
         return true;
     }
     *symbolAddress = 0;
@@ -113,9 +113,9 @@ MachOModule::ReadHeader()
 }
 
 bool
-MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
+MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolAddress)
 {
-    _ASSERTE(symbolValue != nullptr);
+    _ASSERTE(symbolAddress != nullptr);
 
     if (ReadSymbolTable())
     {
@@ -123,7 +123,7 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
         _ASSERTE(m_strtabAddress != 0);
 
         // First, search just the "external" export symbols
-        if (TryLookupSymbol(m_dysymtabCommand->iextdefsym, m_dysymtabCommand->nextdefsym, symbolName, symbolValue))
+        if (TryLookupSymbol(m_dysymtabCommand->iextdefsym, m_dysymtabCommand->nextdefsym, symbolName, symbolAddress))
         {
             m_reader.Trace("SYM: Found '%s' in external symbols\n", symbolName);
             return true;
@@ -131,19 +131,19 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
         m_reader.Trace("SYM: Missed '%s' in external symbols\n", symbolName);
 
         // If not found in external symbols, search all of them
-        if (TryLookupSymbol(0, m_symtabCommand->nsyms, symbolName, symbolValue))
+        if (TryLookupSymbol(0, m_symtabCommand->nsyms, symbolName, symbolAddress))
         {
             m_reader.Trace("SYM: Found '%s' in all symbols\n", symbolName);
             return true;
         }
         m_reader.Trace("SYM: Missed '%s' in all symbols\n", symbolName);
     }
-    *symbolValue = 0;
+    *symbolAddress = 0;
     return false;
 }
 
 bool
-MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolValue)
+MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolAddress)
 {
     for (int i = 0; i < nsyms; i++)
     {
@@ -155,11 +155,11 @@ MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint6
         // Does this symbol match?
         if (strcmp(currentName, symbolName) == 0)
         {
-            *symbolValue = m_loadBias + m_nlists[start + i].n_value;
+            *symbolAddress = m_loadBias + m_nlists[start + i].n_value;
             return true;
         }
     }
-    *symbolValue = 0;
+    *symbolAddress = 0;
     return false;
 }
 

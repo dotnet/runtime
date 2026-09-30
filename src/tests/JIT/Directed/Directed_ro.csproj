@@ -3,6 +3,8 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
+    <!-- Managed ilasm consumes excessive amount of memory -->
+    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="array-il\_Arrayscomplex3.ilproj" />
@@ -113,6 +115,7 @@
     <MergedWrapperProjectReference Include="throwbox\finally.ilproj" />
     <MergedWrapperProjectReference Include="throwbox\rethrow.ilproj" />
     <MergedWrapperProjectReference Include="tls\mutualrecurthd-tls.ilproj" />
+    <MergedWrapperProjectReference Include="tls\StaticTlsResolver.csproj" />
     <MergedWrapperProjectReference Include="tls\test-tls.ilproj" />
     <MergedWrapperProjectReference Include="tls\TestTLSWithLoadedDlls.csproj" />
     <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_ro.csproj" />
