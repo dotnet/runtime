@@ -58,6 +58,9 @@ echo pushd %EXECUTION_DIR%
 echo popd
 echo ===========================================================================================================
 pushd %EXECUTION_DIR%
+:: The guest's /tmp resolves to tmp\ under the bundle preopen. WasiAppBuilder creates it, but
+:: test archives drop empty directories, so recreate it before running.
+if not exist tmp mkdir tmp
 @echo on
 :: RunCommands defined in eng\testing\tests.wasi.targets
 [[RunCommands]]

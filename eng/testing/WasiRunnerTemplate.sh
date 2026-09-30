@@ -80,6 +80,10 @@ function _buildAOTFunc()
 
 pushd $EXECUTION_DIR
 
+# The guest's /tmp resolves to tmp/ under the bundle preopen. WasiAppBuilder creates it, but
+# test archives drop empty directories, so recreate it before running.
+mkdir -p tmp
+
 # ========================= BEGIN Test Execution ============================= 
 echo ----- start $(date) ===============  To repro directly: ===================================================== 
 echo pushd $EXECUTION_DIR
