@@ -2,6 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/132855: the R2R image fails to load in-process, before any test-level skip can run. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abovestacklimit.cs" />
