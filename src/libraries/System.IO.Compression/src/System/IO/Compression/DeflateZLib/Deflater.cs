@@ -18,9 +18,9 @@ namespace System.IO.Compression
         // avoiding the page-fault/heap-contention regression from zlib-ng's larger single allocation
         // per deflate state (see https://github.com/dotnet/runtime/issues/134700).
         // Sixteen maximum-sized states cap idle native memory at roughly 5.2 MiB.
-        private const int MaxPooledDeflateStates = 16;
+        private const int MaxPooledDeflaterStates = 16;
         private static readonly object s_poolLock = new();
-        private static readonly DeflaterState?[] s_pool = new DeflaterState?[MaxPooledDeflateStates];
+        private static readonly DeflaterState?[] s_pool = new DeflaterState?[MaxPooledDeflaterStates];
         private static int s_nextEvictionIndex;
         private DeflaterState _state;
         private MemoryHandle _inputBufferHandle;
@@ -69,6 +69,9 @@ namespace System.IO.Compression
 
             if (!disposing)
             {
+                // Finalization must never touch the pool: resurrecting an object mid-finalization is unsafe, and
+                // the SafeHandle wrapped by _state has its own critical finalizer that will release the native
+                // memory. We simply let that happen rather than trying to reuse the handle here.
                 try
                 {
                     // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of).
@@ -302,7 +305,7 @@ namespace System.IO.Compression
                 compressionLevel = (ZLibNative.CompressionLevel)6;
             }
 
-            DeflaterState? pooledState = RentDeflateState(compressionLevel, strategy, windowBits, memLevel);
+            DeflaterState? pooledState = RentDeflaterState(compressionLevel, strategy, windowBits, memLevel);
             if (pooledState is DeflaterState state)
             {
                 try
@@ -314,10 +317,14 @@ namespace System.IO.Compression
                 }
                 catch
                 {
+                    // deflateReset() threw unexpectedly: the native state can't be trusted for reuse or further
+                    // use, so dispose it here (it must not go back to the pool) and propagate the failure.
                     state.Dispose();
                     throw;
                 }
 
+                // deflateReset() returned a non-Ok status without throwing: treat the pooled state as unusable,
+                // dispose it, and fall back to creating a fresh native handle below.
                 state.Dispose();
             }
 
@@ -326,8 +333,11 @@ namespace System.IO.Compression
             return new Deflater(new DeflaterState(zlibStream, compressionLevel, strategy, windowBits, memLevel));
         }
 
-        private static DeflaterState? RentDeflateState(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
+        private static DeflaterState? RentDeflaterState(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
         {
+            // The 4 parameters below must match exactly: deflateReset() resets zlib's internal counters/buffers
+            // but cannot change the level/strategy/windowBits/memLevel a stream was originally initialized with,
+            // so a pooled state is only safe to reuse for another Deflater requesting the identical configuration.
             lock (s_poolLock)
             {
                 for (int i = 0; i < s_pool.Length; i++)
