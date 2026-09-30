@@ -4,7 +4,7 @@
 import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallback, DotnetModuleConfig } from "./types";
 
 import { Module, dotnetApi } from "./cross-module";
-import { loaderCallbacks } from "./callbacks";
+import { extractLegacyModuleCallbacks, loaderCallbacks } from "./callbacks";
 import { loaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
 import { createRuntime } from "./run";
 import { exit } from "./exit";
@@ -111,7 +111,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     // internal
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
-        Object.assign(Module, moduleConfig);
+        Object.assign(Module, extractLegacyModuleCallbacks(moduleConfig));
         return this;
     }
 

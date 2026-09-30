@@ -16,7 +16,7 @@ import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
-import { loaderCallbacks } from "./callbacks";
+import { extractLegacyModuleCallbacks, loaderCallbacks } from "./callbacks";
 
 
 export class HostBuilder implements DotnetHostBuilder {
@@ -25,7 +25,7 @@ export class HostBuilder implements DotnetHostBuilder {
     // internal
     withModuleConfig (moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
-            deep_merge_module(emscriptenModule, moduleConfig);
+            deep_merge_module(emscriptenModule, extractLegacyModuleCallbacks(moduleConfig));
             return this;
         } catch (err) {
             mono_exit(1, err);
