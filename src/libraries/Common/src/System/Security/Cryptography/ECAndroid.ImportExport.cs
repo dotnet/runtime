@@ -21,21 +21,36 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            if (parameters.D is not null && parameters.Q.X is null && TryRecoverPublicKey(key, out ECPoint publicKey))
+            if (parameters.D is not null && parameters.Q.X is null)
             {
-                ECParameters completeParameters = parameters;
-                completeParameters.Q = publicKey;
-                SafeEcKeyHandle completeKey = ImportParametersCore(completeParameters);
-
-                if (completeKey is not null && !completeKey.IsInvalid)
+                if (!TryRecoverPublicKey(key, out ECPoint publicKey))
                 {
                     key.Dispose();
-                    key = completeKey;
+                    throw new CryptographicException();
                 }
-                else
+
+                ECParameters completeParameters = parameters;
+                completeParameters.Q = publicKey;
+                SafeEcKeyHandle? completeKey = null;
+
+                try
+                {
+                    completeKey = ImportParametersCore(completeParameters);
+
+                    if (completeKey is null || completeKey.IsInvalid)
+                    {
+                        throw new CryptographicException();
+                    }
+                }
+                catch
                 {
                     completeKey?.Dispose();
+                    key.Dispose();
+                    throw;
                 }
+
+                key.Dispose();
+                key = completeKey;
             }
 
             FreeKey();
