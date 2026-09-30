@@ -19,10 +19,11 @@ GetTempPathA(
     OUT LPSTR lpBuffer)
 {
     DWORD dwPathLen = 0;
-    const char* tempDir = getenv("TMPDIR");
+    const char *tempDir = getenv("TMPDIR");
     if (tempDir == nullptr)
+    {
         tempDir = TEMP_DIRECTORY_PATH;
-
+    }
     size_t tempDirLen = strlen(tempDir);
     if (tempDirLen < nBufferLength)
     {
@@ -31,12 +32,16 @@ GetTempPathA(
     }
     else
     {
+        // Get the required length
         dwPathLen = tempDirLen + 1;
     }
     return dwPathLen;
 }
 
-// Used by the invalid parameter handler in pal/inc/rt/safecrt.h.
+//
+// Used in pal\inc\rt\safecrt.h's _invalid_parameter handler
+//
+
 VOID
 PALAPI
 RaiseException(
@@ -48,9 +53,11 @@ RaiseException(
     throw;
 }
 
-#ifdef _DEBUG
+//
+// Used by _ASSERTE
+//
 
-// Used by _ASSERTE in the PAL headers.
+#ifdef _DEBUG
 DWORD
 PALAPI
 GetCurrentProcessId()
@@ -58,7 +65,6 @@ GetCurrentProcessId()
     return getpid();
 }
 
-// Used by _ASSERTE in the PAL headers.
 VOID
 PALAPI
 DebugBreak()
@@ -66,7 +72,7 @@ DebugBreak()
     abort();
 }
 
-#endif // _DEBUG
+#endif // DEBUG
 
 // createdump_static registers this callback when embedded in a host that owns a PAL.
 // The standalone createdump executable calls createdump_main directly.
