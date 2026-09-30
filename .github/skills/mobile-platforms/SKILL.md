@@ -97,10 +97,12 @@ Classify every failure as **infrastructure** or **code** before acting.
 Follow the repository's [GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization)
 for all proposed issues, updates, and comments below. In an interactive
 session, explicit advance permission covering the proposed publication is
-sufficient; do not ask again. Otherwise, in interactive and coding sessions,
-present the complete draft and obtain explicit approval before publishing.
-Without authorization, leave the draft locally. Executing a
-repository-configured agentic workflow authorizes only its specified outputs,
+sufficient; do not ask again. An executing workflow's documented publication
+contract may also authorize the proposed publication within its currently
+authorized actions; follow any approval conditions it requires. Otherwise, in
+interactive and coding sessions, present the complete draft and obtain explicit
+approval before publishing. Without authorization, leave the draft locally.
+A workflow's authorization covers only its declared outputs and action limits,
 not every reporting action described in this skill.
 
 ### Infrastructure failures

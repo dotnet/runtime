@@ -1,6 +1,6 @@
 ---
 name: create-kbe
-description: Analyze a concrete CI failure and draft a Known Build Error issue or update in dotnet/runtime. Publish only with explicit user approval or scoped authorization from an executing repository-configured agentic workflow. Use when a failure is actionable, a Build Analysis result is not yet known, or a workflow needs a repo-specific KBE outcome for an outer-loop or PR-targeted failure.
+description: Analyze a concrete CI failure and draft a Known Build Error issue or update in dotnet/runtime. Publish only with explicit user authorization or scoped authorization from an executing workflow's documented publication contract. Use when a failure is actionable, a Build Analysis result is not yet known, or a workflow needs a repo-specific KBE outcome for an outer-loop or PR-targeted failure.
 ---
 
 # Create a Known Build Error for dotnet/runtime
@@ -19,8 +19,8 @@ This skill is the repo-specific entry point for KBE creation. It delegates to th
 
 Follow the repository's [GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization).
 
-- In interactive and coding sessions, including CCA and Agent Merge, prepare a
-  complete local draft for each proposed issue creation or update. Use the
+- In interactive and coding sessions without workflow authorization, prepare
+  a complete local draft for each proposed issue creation or update. Use the
   draft and publication authorization pattern in
   [PR Failure Scan Step 5](../pr-failure-scan/SKILL.md#step-5-write-draft-files-and-optionally-create-live-issues).
   In an interactive session, explicit advance permission covering the proposed
@@ -31,8 +31,12 @@ Follow the repository's [GitHub publication authorization rules](../../copilot-i
 - When actually executing a repository-configured agentic workflow, publish
   only the operations explicitly authorized by its purpose and configured
   outputs, through its configured output mechanism and within its limits.
-  Invoking this skill from a coding session does not grant that workflow's
-  authorization.
+- When executing a user-requested or enabled workflow, its documented
+  publication contract may authorize the proposed issue creation or update.
+  Publish only within its declared outputs and currently authorized actions,
+  without another approval step unless the contract requires one. Invoking
+  this skill as a helper or reading workflow instructions does not grant
+  that workflow's authorization.
 - Dry-run mode never publishes. Preserve any stricter caller approval rules.
 
 ## Required workflow

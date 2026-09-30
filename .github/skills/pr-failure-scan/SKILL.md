@@ -256,11 +256,14 @@ In live mode:
    In an interactive session, explicit advance permission to compose and
    publish KBEs for the specified PR may cover the whole batch. Do not ask
    again or require separate approval of the generated text for issues within
-   that scope. Invoking this skill or asking to analyze CI alone is not
-   permission to publish.
+   that scope. An executing workflow's documented publication contract may
+   also authorize issue creation for the specified PR within its currently
+   authorized actions and output limits. Invoking this skill or asking to
+   analyze CI alone is not permission to publish.
 4. Process the proposed issues one by one. For each KBE:
-   - If explicit advance permission covers this issue in an interactive
-     session, create it without asking again.
+   - If explicit advance permission in an interactive session or the caller
+     workflow's documented publication contract covers this issue, create it
+     without asking again unless the contract requires additional approval.
    - Otherwise, ask the user whether to create this specific issue.
    - The question must include:
      - the proposed issue title,
@@ -272,9 +275,9 @@ In live mode:
      - a clickable draft-file link when possible plus the plain absolute path,
      - a clear statement that the GitHub issue will be created on behalf of the
        currently authenticated user.
-   - Without advance permission, only create that issue if the user explicitly
-     confirms. If approval cannot be obtained, leave it as a draft and report
-     the pending decision.
+   - Without advance permission or applicable workflow authorization, only
+     create that issue if the user explicitly confirms. If approval cannot be
+     obtained, leave it as a draft and report the pending decision.
    - If the user declines, skip that issue and continue to the next proposed
      KBE.
 
