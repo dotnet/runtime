@@ -1479,7 +1479,7 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
         PCODE pConvertCode;
         {
             GCX_PREEMP();
-            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT)->GetMultiCallableAddrOfCode();
         }
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
@@ -1525,7 +1525,7 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
         PCODE pConvertCode;
         {
             GCX_PREEMP();
-            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT)->GetMultiCallableAddrOfCode();
         }
 
         MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pConvertCode);
@@ -1560,7 +1560,7 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
         PCODE pConvertCode;
         {
             GCX_PREEMP();
-            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT)->GetMultiCallableAddrOfCode();
         }
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
@@ -1832,7 +1832,7 @@ namespace
 {
     // Returns the managed IArrayMarshaler<T> MethodTable for a given VARTYPE.
     // This mirrors the logic in GetMarshalerAndElementTypes for SAFEARRAY-compatible types.
-    MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid)
+    MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bNativeDataValid)
     {
         STANDARD_VM_CONTRACT;
 
@@ -1938,10 +1938,9 @@ namespace
         {
             if (pElementMT == NULL || pElementMT == g_pObjectClass)
             {
-                if (bHeterogeneous)
-                {
-                    return CoreLibBinder::GetClass(CLASS__HETEROGENEOUS_INTERFACE_ARRAY_ELEMENT_MARSHALER);
-                }
+                // Marshal.GetIDispatchForObject/GetIUnknownForObject resolve the
+                // requested interface per-element from each object's own runtime
+                // type, so this also covers heterogeneous object[] arrays.
                 MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
                 MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
                 TypeHandle thDispatch(vt == VT_DISPATCH ? pEnabledMT : pDisabledMT);
@@ -2079,14 +2078,14 @@ namespace
     }
 }
 
-MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid)
+MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bNativeDataValid)
 {
     STANDARD_VM_CONTRACT;
 
     MethodDesc* pGenericMD = CoreLibBinder::GetMethod(methodId);
 
     TypeHandle thElementType = GetElementTypeForSafeArrayVarType(vt, pElementMT);
-    TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bHeterogeneous, bNativeDataValid));
+    TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bNativeDataValid));
 
     TypeHandle thArgs[2] = { thElementType, thMarshalerType };
 

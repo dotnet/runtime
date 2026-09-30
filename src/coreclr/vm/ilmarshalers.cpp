@@ -4707,12 +4707,12 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     BOOL bNativeDataValid = !!(fStatic & MngdSafeArrayMarshaler::SCSF_NativeDataValid);
     MethodDesc* pConvertToNativeMD = GetInstantiatedSafeArrayMethod(
         METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED,
-        mops.elementType, mops.methodTable, FALSE, bNativeDataValid);
+        mops.elementType, mops.methodTable, bNativeDataValid);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToNativeMD));
 
     MethodDesc* pConvertToManagedMD = GetInstantiatedSafeArrayMethod(
         METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED,
-        mops.elementType, mops.methodTable, FALSE);
+        mops.elementType, mops.methodTable);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToManagedMD));
 
     pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 6, 0);

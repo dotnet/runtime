@@ -544,6 +544,11 @@ namespace System.StubHelpers
 
         internal static void ConvertToNativeVariantArrayElement(object objSrc, IntPtr pDstVariant)
         {
+            // The destination must already hold a previously-marshaled VARIANT (this
+            // overload only replaces an existing array element in place); objSrc itself
+            // has no narrower type assumption than ConvertToNative since a VT_VARIANT
+            // array element can hold any VARIANT-compatible managed type.
+            Debug.Assert(pDstVariant != IntPtr.Zero);
             ConvertToNativeVariantArrayElement(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
         }
 
@@ -2123,49 +2128,6 @@ namespace System.StubHelpers
         }
 
         static unsafe nuint IArrayElementMarshaler<TArrayElement?, TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch>>.UnmanagedSize => (nuint)sizeof(IntPtr);
-    }
-
-    [SupportedOSPlatform("windows")]
-    internal sealed class HeterogeneousInterfaceArrayElementMarshaler : IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>
-    {
-        public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
-        {
-            if (managed is null)
-            {
-                *(IntPtr*)unmanaged = IntPtr.Zero;
-            }
-            else
-            {
-                // Resolve the default COM interface for each element based on its runtime type.
-                // This matches the heterogeneous path in MarshalInterfaceArrayComToOleHelper
-                // where GetDefaultInterfaceMTForClass is called per-element.
-                *(IntPtr*)unmanaged = Marshal.GetComInterfaceForObject(managed, managed.GetType());
-            }
-        }
-
-        public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)
-        {
-            IntPtr pUnk = *(IntPtr*)unmanaged;
-            if (pUnk == IntPtr.Zero)
-            {
-                managed = null;
-            }
-            else
-            {
-                managed = Marshal.GetObjectForIUnknown(pUnk);
-            }
-        }
-
-        public static unsafe void Free(byte* unmanaged)
-        {
-            IntPtr pUnk = *(IntPtr*)unmanaged;
-            if (pUnk != IntPtr.Zero)
-            {
-                Marshal.Release(pUnk);
-            }
-        }
-
-        static unsafe nuint IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
     internal sealed class VariantArrayElementMarshaler<TNativeDataValid> : IArrayElementMarshaler<object?, VariantArrayElementMarshaler<TNativeDataValid>>
