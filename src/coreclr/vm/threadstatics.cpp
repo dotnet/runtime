@@ -608,7 +608,10 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             if (pInFlightData->tlsIndex == index)
             {
                 gcBaseAddresses.pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(ObjectFromHandle(pInFlightData->hTLSData)));
-                if (pMT->IsClassInited())
+                // A reused collectible index can match an entry whose weak target has been collected.
+                // Remove empty entries even if the new class is still initializing. Allocation below
+                // must use a fresh node, not a deleted entry or one that is already linked.
+                if (pMT->IsClassInited() || gcBaseAddresses.pTLSBaseAddress == (TADDR)NULL)
                 {
                     {
                         SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
@@ -616,6 +619,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
                         *ppOldNextPtr = pInFlightData->pNext;
                     }
                     delete pInFlightData;
+                    pInFlightData = nullptr;
                 }
                 break;
             }
@@ -653,12 +657,11 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             }
 
             NewHolder<InFlightTLSData> pNewInFlightData = NULL;
-            if (!pMT->IsClassInited() && pInFlightData == NULL)
+            if (!pMT->IsClassInited())
             {
                 pNewInFlightData = new InFlightTLSData(index);
                 HandleType handleType = staticIsNonCollectible ? HNDTYPE_STRONG : HNDTYPE_WEAK_LONG;
                 pNewInFlightData->hTLSData = GetAppDomain()->CreateTypedHandle(gc.tlsEntry, handleType);
-                pInFlightData = pNewInFlightData;
             }
 
             if (isCollectible)
@@ -670,21 +673,21 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             }
 
             // After this, we cannot fail
-            pNewInFlightData.SuppressRelease();
 
             {
                 GCX_FORBID();
                 gcBaseAddresses.pTLSBaseAddress = (TADDR)OBJECTREFToObject(gc.tlsEntry);
-                if (pInFlightData == NULL)
+                if (pNewInFlightData == NULL)
                 {
                     SetTLSBaseValue(gcBaseAddresses.ppTLSBaseAddress, gcBaseAddresses.pTLSBaseAddress, staticIsNonCollectible);
                 }
                 else
                 {
                     SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-                    pInFlightData->pNext = t_ThreadStatics.pInFlightData;
-                    StoreObjectInHandle(pInFlightData->hTLSData, gc.tlsEntry);
-                    t_ThreadStatics.pInFlightData = pInFlightData;
+                    pNewInFlightData->pNext = t_ThreadStatics.pInFlightData;
+                    StoreObjectInHandle(pNewInFlightData->hTLSData, gc.tlsEntry);
+                    t_ThreadStatics.pInFlightData = pNewInFlightData;
+                    pNewInFlightData.SuppressRelease();
                 }
             }
             GCPROTECT_END();
