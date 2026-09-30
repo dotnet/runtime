@@ -6,6 +6,8 @@
 #include <cctype>
 #include <limits>
 #include <fstream>
+#include <functional>
+#include <new>
 #include <stack>
 #include <algorithm>
 #include <utility>
@@ -605,25 +607,67 @@ namespace
         }
     }
 
-    template<typename Match>
-    HRESULT FindExisting(mdhandle_t md, mdtable_id_t table, Match match, mdToken* token)
+    size_t DuplicateHash(void const* data, size_t length)
     {
-        mdcursor_t row;
-        uint32_t count;
-        if (!md_create_cursor(md, table, &row, &count))
-            return S_FALSE;
-
-        for (uint32_t i = 0; i < count; ++i)
+        size_t hash = sizeof(size_t) == 8 ? static_cast<size_t>(14695981039346656037ull) : 2166136261u;
+        size_t prime = sizeof(size_t) == 8 ? static_cast<size_t>(1099511628211ull) : 16777619u;
+        uint8_t const* bytes = static_cast<uint8_t const*>(data);
+        for (size_t i = 0; i < length; ++i)
         {
-            HRESULT hr = match(row);
-            if (FAILED(hr))
-                return hr;
-            if (hr == S_OK)
-                return md_cursor_to_token(row, token) ? S_OK : CLDB_E_FILE_CORRUPT;
-            if (i + 1 < count && !md_cursor_next(&row))
-                return CLDB_E_FILE_CORRUPT;
+            hash ^= bytes[i];
+            hash *= prime;
         }
-        return S_FALSE;
+        return hash;
+    }
+
+    size_t DuplicateNameHash(char const* name)
+    {
+        return DuplicateHash(name, std::strlen(name));
+    }
+
+    HRESULT DuplicateRowHash(mdcursor_t row, mdtable_id_t table, size_t* hash)
+    {
+        col_index_t column;
+        switch (table)
+        {
+        case mdtid_TypeDef: column = mdtTypeDef_TypeName; break;
+        case mdtid_TypeRef: column = mdtTypeRef_TypeName; break;
+        case mdtid_MemberRef: column = mdtMemberRef_Name; break;
+        case mdtid_ModuleRef: column = mdtModuleRef_Name; break;
+        case mdtid_AssemblyRef: column = mdtAssemblyRef_Name; break;
+        case mdtid_File: column = mdtFile_Name; break;
+        case mdtid_ExportedType: column = mdtExportedType_TypeName; break;
+        case mdtid_StandAloneSig: column = mdtStandAloneSig_Signature; break;
+        case mdtid_TypeSpec: column = mdtTypeSpec_Signature; break;
+        case mdtid_MethodSpec: column = mdtMethodSpec_Instantiation; break;
+        case mdtid_DeclSecurity:
+        {
+            mdToken parent;
+            if (!md_get_column_value_as_token(row, mdtDeclSecurity_Parent, &parent))
+                return CLDB_E_FILE_CORRUPT;
+            *hash = std::hash<mdToken>{}(parent);
+            return S_OK;
+        }
+        default:
+            return E_INVALIDARG;
+        }
+
+        if (table == mdtid_StandAloneSig || table == mdtid_TypeSpec || table == mdtid_MethodSpec)
+        {
+            uint8_t const* data;
+            uint32_t length;
+            if (!md_get_column_value_as_blob(row, column, &data, &length))
+                return CLDB_E_FILE_CORRUPT;
+            *hash = DuplicateHash(data, length);
+        }
+        else
+        {
+            char const* name;
+            if (!md_get_column_value_as_utf8(row, column, &name))
+                return CLDB_E_FILE_CORRUPT;
+            *hash = DuplicateNameHash(name);
+        }
+        return S_OK;
     }
 
     HRESULT MatchString(mdcursor_t row, col_index_t column, char const* expected)
@@ -734,6 +778,72 @@ namespace
             return hr;
         return length == token.size() && std::memcmp(key, token.data(), token.size()) == 0
             ? S_OK : S_FALSE;
+    }
+}
+
+template<typename Match>
+HRESULT MetadataEmit::FindExisting(mdtable_id_t table, size_t hash, Match match, mdToken* token)
+{
+    mdhandle_t metadata = MetaData();
+    mdcursor_t row;
+    uint32_t count;
+    if (!md_create_cursor(metadata, table, &row, &count))
+        return S_FALSE;
+
+    try
+    {
+        DuplicateIndex& index = _duplicateIndexes[table];
+        if (index.handle != metadata || index.indexedCount > count)
+        {
+            index.hashes.clear();
+            index.indexedCount = 0;
+            index.handle = metadata;
+        }
+
+        if (index.indexedCount != 0 && index.indexedCount < count &&
+            !md_cursor_move(&row, static_cast<int32_t>(index.indexedCount)))
+            return CLDB_E_FILE_CORRUPT;
+
+        for (uint32_t i = index.indexedCount; i < count; ++i)
+        {
+            size_t rowHash;
+            HRESULT hr = DuplicateRowHash(row, table, &rowHash);
+            if (FAILED(hr))
+                return hr;
+            mdToken rowToken;
+            if (!md_cursor_to_token(row, &rowToken))
+                return CLDB_E_FILE_CORRUPT;
+            index.hashes.emplace(rowHash, rowToken);
+            if (i + 1 < count && !md_cursor_next(&row))
+                return CLDB_E_FILE_CORRUPT;
+        }
+        index.indexedCount = count;
+
+        typedef std::unordered_multimap<size_t, mdToken> Hashes;
+        std::pair<Hashes::const_iterator, Hashes::const_iterator> matches = index.hashes.equal_range(hash);
+        mdToken first = mdTokenNil;
+        for (Hashes::const_iterator candidate = matches.first; candidate != matches.second; ++candidate)
+        {
+            mdcursor_t matchedRow;
+            if (!md_token_to_cursor(metadata, candidate->second, &matchedRow))
+                return CLDB_E_FILE_CORRUPT;
+            HRESULT hr = match(matchedRow);
+            if (FAILED(hr))
+                return hr;
+            if (hr == S_OK && (IsNilToken(first) || RidFromToken(candidate->second) < RidFromToken(first)))
+                first = candidate->second;
+        }
+        if (!IsNilToken(first))
+        {
+            *token = first;
+            return S_OK;
+        }
+        return S_FALSE;
+    }
+    catch (std::bad_alloc const&)
+    {
+        _duplicateIndexes.erase(table);
+        return E_OUTOFMEMORY;
     }
 }
 
@@ -910,7 +1020,7 @@ HRESULT MetadataEmit::DefineTypeDefCore(
 
     if (CheckDuplicates(MDDupTypeDef))
     {
-        hr = FindExisting(MetaData(), mdtid_TypeDef, [&](mdcursor_t row)
+        hr = FindExisting(mdtid_TypeDef, DuplicateNameHash(name), [&](mdcursor_t row)
         {
             HRESULT match = MatchString(row, mdtTypeDef_TypeNamespace, ns);
             if (match != S_OK)
@@ -1135,7 +1245,7 @@ HRESULT MetadataEmit::DefineTypeRefByName(
 
     if (CheckDuplicates(MDDupTypeRef))
     {
-        HRESULT hr = FindExisting(MetaData(), mdtid_TypeRef, [&](mdcursor_t row)
+        HRESULT hr = FindExisting(mdtid_TypeRef, DuplicateNameHash(name), [&](mdcursor_t row)
         {
             HRESULT match = MatchToken(row, mdtTypeRef_ResolutionScope, tkResolutionScope);
             if (match != S_OK)
@@ -1243,7 +1353,7 @@ HRESULT MetadataEmit::DefineMemberRef(
     {
         if (cbSigBlob != 0 && pvSigBlob == nullptr)
             return E_INVALIDARG;
-        HRESULT hr = FindExisting(MetaData(), mdtid_MemberRef, [&](mdcursor_t row)
+        HRESULT hr = FindExisting(mdtid_MemberRef, DuplicateNameHash(name), [&](mdcursor_t row)
         {
             HRESULT match = MatchToken(row, mdtMemberRef_Class, tkImport);
             if (match != S_OK)
@@ -1673,7 +1783,7 @@ HRESULT MetadataEmit::DefinePermissionSet(
     if (CheckDuplicates(MDDupPermission))
     {
         mdPermission existing;
-        HRESULT hr = FindExisting(MetaData(), mdtid_DeclSecurity, [&](mdcursor_t row)
+        HRESULT hr = FindExisting(mdtid_DeclSecurity, std::hash<mdToken>{}(tk), [&](mdcursor_t row)
         {
             HRESULT match = MatchToken(row, mdtDeclSecurity_Parent, tk);
             return match == S_OK ? MatchConstant(row, mdtDeclSecurity_Action, dwAction) : match;
@@ -1755,7 +1865,7 @@ HRESULT MetadataEmit::GetTokenFromSig(
     {
         if (cbSig != 0 && pvSig == nullptr)
             return E_INVALIDARG;
-        HRESULT hr = FindExisting(MetaData(), mdtid_StandAloneSig,
+        HRESULT hr = FindExisting(mdtid_StandAloneSig, DuplicateHash(pvSig, cbSig),
             [&](mdcursor_t row) { return MatchBlob(row, mdtStandAloneSig_Signature, pvSig, cbSig); }, pmsig);
         if (hr == S_OK)
             return META_S_DUPLICATE;
@@ -1788,7 +1898,7 @@ HRESULT MetadataEmit::DefineModuleRef(
 
     if (CheckDuplicates(MDDupModuleRef))
     {
-        HRESULT hr = FindExisting(MetaData(), mdtid_ModuleRef,
+        HRESULT hr = FindExisting(mdtid_ModuleRef, DuplicateNameHash(name),
             [&](mdcursor_t row) { return MatchString(row, mdtModuleRef_Name, name); }, pmur);
         if (hr == S_OK)
             return META_S_DUPLICATE;
@@ -1833,7 +1943,7 @@ HRESULT MetadataEmit::GetTokenFromTypeSpec(
     {
         if (cbSig != 0 && pvSig == nullptr)
             return E_INVALIDARG;
-        HRESULT hr = FindExisting(MetaData(), mdtid_TypeSpec,
+        HRESULT hr = FindExisting(mdtid_TypeSpec, DuplicateHash(pvSig, cbSig),
             [&](mdcursor_t row) { return MatchBlob(row, mdtTypeSpec_Signature, pvSig, cbSig); }, ptypespec);
         if (hr == S_OK)
             return S_OK;
@@ -1896,6 +2006,7 @@ HRESULT MetadataEmit::DeleteToken(
     {
         case mdtTypeDef:
         {
+            _duplicateIndexes.erase(mdtid_TypeDef);
             if (!md_set_column_value_as_utf8(c, mdtTypeDef_TypeName, deletedName))
                 return E_FAIL;
             HRESULT hr = AddFlag(MetaData(), tkObj, mdtTypeDef_Flags, tdSpecialName | tdRTSpecialName);
@@ -1931,6 +2042,7 @@ HRESULT MetadataEmit::DeleteToken(
         }
         case mdtExportedType:
         {
+            _duplicateIndexes.erase(mdtid_ExportedType);
             if (!md_set_column_value_as_utf8(c, mdtExportedType_TypeName, deletedName))
                 return E_FAIL;
             return LogToken(tkObj);
@@ -3272,7 +3384,7 @@ HRESULT MetadataEmit::DefineMethodSpec(
 
     if (CheckDuplicates(MDDupMethodSpec))
     {
-        HRESULT hr = FindExisting(MetaData(), mdtid_MethodSpec, [&](mdcursor_t row)
+        HRESULT hr = FindExisting(mdtid_MethodSpec, DuplicateHash(pvSigBlob, cbSigBlob), [&](mdcursor_t row)
         {
             HRESULT match = MatchToken(row, mdtMethodSpec_Method, tkParent);
             return match == S_OK ? MatchBlob(row, mdtMethodSpec_Instantiation, pvSigBlob, cbSigBlob) : match;
@@ -3648,7 +3760,7 @@ HRESULT MetadataEmit::DefineAssemblyRef(
         uint32_t keyLength = pbPublicKeyOrToken == nullptr ? 0 : cbPublicKeyOrToken;
         bool unifyVersion = EqualsIgnoreAsciiCase(name, "mscorlib") ||
             EqualsIgnoreAsciiCase(name, "microsoft.visualc");
-        HRESULT hr = FindExisting(MetaData(), mdtid_AssemblyRef, [&](mdcursor_t row)
+        HRESULT hr = FindExisting(mdtid_AssemblyRef, DuplicateNameHash(name), [&](mdcursor_t row)
         {
             HRESULT match = MatchString(row, mdtAssemblyRef_Name, name);
             if (match != S_OK)
@@ -3757,7 +3869,7 @@ HRESULT MetadataEmit::DefineFile(
     char const* name = cvt;
     if (CheckDuplicates(MDDupFile))
     {
-        HRESULT hr = FindExisting(MetaData(), mdtid_File,
+        HRESULT hr = FindExisting(mdtid_File, DuplicateNameHash(name),
             [&](mdcursor_t row) { return MatchString(row, mdtFile_Name, name); }, pmdf);
         if (hr == S_OK)
             return META_S_DUPLICATE;
@@ -3815,7 +3927,7 @@ HRESULT MetadataEmit::DefineExportedType(
     if (CheckDuplicates(MDDupExportedType))
     {
         bool nested = TypeFromToken(tkImplementation) == mdtExportedType && !IsNilToken(tkImplementation);
-        HRESULT hr = FindExisting(MetaData(), mdtid_ExportedType, [&](mdcursor_t row)
+        HRESULT hr = FindExisting(mdtid_ExportedType, DuplicateNameHash(name), [&](mdcursor_t row)
         {
             HRESULT match = MatchString(row, mdtExportedType_TypeNamespace, ns);
             if (match != S_OK)
@@ -4062,6 +4174,7 @@ HRESULT MetadataEmit::SetAssemblyRefProps(
 
     if (szName != nullptr)
     {
+        _duplicateIndexes.erase(mdtid_AssemblyRef);
         pal::StringConvert<WCHAR, char> cvt(szName);
         if (!cvt.Success())
             return E_INVALIDARG;

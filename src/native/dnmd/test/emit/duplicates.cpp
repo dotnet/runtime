@@ -1,4 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "emit.hpp"
+#include <metadataemithelper.h>
 
 #include <array>
 #include <vector>
@@ -454,4 +458,97 @@ TEST(CheckDuplicates, ScopesCaptureOptionsIncludingWritableMemoryScopes)
     ASSERT_EQ(S_OK, openedUnchecked->DefineTypeDef(W("Persisted"), tdPublic,
         mdTypeDefNil, nullptr, &second));
     EXPECT_EQ(TokenFromRid(3, mdtTypeDef), second);
+}
+
+TEST(CheckDuplicates, LookupIndexObservesChangedNamesAndScopes)
+{
+    minipal::com_ptr<IMetaDataDispenserEx> dispenser;
+    ASSERT_NO_FATAL_FAILURE(CreateDispenser(ReflectionEmitChecks, dispenser));
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(DefineScope(dispenser.p, emit));
+    minipal::com_ptr<IMetaDataEmitHelper> helper;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataEmitHelper, (void**)&helper));
+
+    mdModuleRef otherScope;
+    ASSERT_EQ(S_OK, emit->DefineModuleRef(W("Other"), &otherScope));
+    mdTypeRef oldRef, duplicate, newRef;
+    mdToken module = TokenFromRid(1, mdtModule);
+    ASSERT_EQ(S_OK, emit->DefineTypeRefByName(module, W("N.Referenced"), &oldRef));
+    ASSERT_EQ(META_S_DUPLICATE, emit->DefineTypeRefByName(module, W("N.Referenced"), &duplicate));
+    ASSERT_EQ(oldRef, duplicate);
+    ASSERT_EQ(S_OK, helper->SetResolutionScopeHelper(oldRef, otherScope));
+    ASSERT_EQ(S_OK, emit->DefineTypeRefByName(module, W("N.Referenced"), &newRef));
+    EXPECT_NE(oldRef, newRef);
+    ASSERT_EQ(META_S_DUPLICATE, emit->DefineTypeRefByName(otherScope, W("N.Referenced"), &duplicate));
+    EXPECT_EQ(oldRef, duplicate);
+
+    mdTypeDef oldType, typeDuplicate, newType;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("N.Type"), tdPublic, mdTypeDefNil, nullptr, &oldType));
+    ASSERT_EQ(META_S_DUPLICATE, emit->DefineTypeDef(W("N.Type"), tdPublic, mdTypeDefNil, nullptr, &typeDuplicate));
+    ASSERT_EQ(oldType, typeDuplicate);
+    ASSERT_EQ(S_OK, emit->DeleteToken(oldType));
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("N.Type"), tdPublic, mdTypeDefNil, nullptr, &newType));
+    EXPECT_NE(oldType, newType);
+
+    minipal::com_ptr<IMetaDataAssemblyEmit> assemblyEmit;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataAssemblyEmit, (void**)&assemblyEmit));
+    ASSEMBLYMETADATA version = AssemblyVersion();
+    mdAssemblyRef original, renamed, fresh;
+    ASSERT_EQ(S_OK, assemblyEmit->DefineAssemblyRef(nullptr, 0, W("Original"),
+        &version, nullptr, 0, 0, &original));
+    ASSERT_EQ(META_S_DUPLICATE, assemblyEmit->DefineAssemblyRef(nullptr, 0, W("Original"),
+        &version, nullptr, 0, 0, &renamed));
+    ASSERT_EQ(original, renamed);
+    ASSERT_EQ(S_OK, assemblyEmit->SetAssemblyRefProps(original, nullptr, 0,
+        W("Renamed"), &version, nullptr, 0, 0));
+    ASSERT_EQ(S_OK, assemblyEmit->DefineAssemblyRef(nullptr, 0, W("Original"),
+        &version, nullptr, 0, 0, &fresh));
+    EXPECT_NE(original, fresh);
+    ASSERT_EQ(META_S_DUPLICATE, assemblyEmit->DefineAssemblyRef(nullptr, 0, W("Renamed"),
+        &version, nullptr, 0, 0, &renamed));
+    EXPECT_EQ(original, renamed);
+
+    mdFile file;
+    ASSERT_EQ(S_OK, assemblyEmit->DefineFile(W("File"), nullptr, 0, 0, &file));
+    mdExportedType exported, repeated, recreated;
+    ASSERT_EQ(S_OK, assemblyEmit->DefineExportedType(W("N.Export"), file,
+        mdTypeDefNil, tdPublic, &exported));
+    ASSERT_EQ(META_S_DUPLICATE, assemblyEmit->DefineExportedType(W("N.Export"), file,
+        mdTypeDefNil, tdPublic, &repeated));
+    EXPECT_EQ(exported, repeated);
+    ASSERT_EQ(S_OK, emit->DeleteToken(exported));
+    ASSERT_EQ(S_OK, assemblyEmit->DefineExportedType(W("N.Export"), file,
+        mdTypeDefNil, tdPublic, &recreated));
+    EXPECT_NE(exported, recreated);
+}
+
+TEST(CheckDuplicates, LookupIndexLoadsPreexistingRowsInTokenOrder)
+{
+    minipal::com_ptr<IMetaDataDispenserEx> uncheckedDispenser;
+    ASSERT_NO_FATAL_FAILURE(CreateDispenser(MDNoDupChecks, uncheckedDispenser));
+    minipal::com_ptr<IMetaDataEmit> unchecked;
+    ASSERT_NO_FATAL_FAILURE(DefineScope(uncheckedDispenser.p, unchecked));
+
+    mdToken module = TokenFromRid(1, mdtModule);
+    mdTypeRef earliest, second;
+    ASSERT_EQ(S_OK, unchecked->DefineTypeRefByName(module, W("Repeated"), &earliest));
+    ASSERT_EQ(S_OK, unchecked->DefineTypeRefByName(module, W("Repeated"), &second));
+    EXPECT_NE(earliest, second);
+    DWORD size;
+    ASSERT_EQ(S_OK, unchecked->GetSaveSize(cssAccurate, &size));
+    std::vector<uint8_t> image(size);
+    ASSERT_EQ(S_OK, unchecked->SaveToMemory(image.data(), size));
+
+    minipal::com_ptr<IMetaDataDispenserEx> dispenser;
+    ASSERT_NO_FATAL_FAILURE(CreateDispenser(MDDupTypeRef, dispenser));
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_EQ(S_OK, dispenser->OpenScopeOnMemory(image.data(), size, ofCopyMemory,
+        IID_IMetaDataEmit, (IUnknown**)&emit));
+
+    mdTypeRef found, appended;
+    ASSERT_EQ(META_S_DUPLICATE, emit->DefineTypeRefByName(module, W("Repeated"), &found));
+    EXPECT_EQ(earliest, found);
+    ASSERT_EQ(S_OK, emit->DefineTypeRefByName(module, W("Added"), &appended));
+    ASSERT_EQ(META_S_DUPLICATE, emit->DefineTypeRefByName(module, W("Added"), &found));
+    EXPECT_EQ(appended, found);
 }

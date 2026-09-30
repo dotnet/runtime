@@ -12,17 +12,30 @@
 #include <mdinternalemit.h>
 
 #include <cstdint>
+#include <cstddef>
 #include <atomic>
+#include <unordered_map>
 
 class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyEmit, IMetaDataEmitHelper, IMDInternalEmit>
 {
+    struct DuplicateIndex
+    {
+        mdhandle_t handle = nullptr;
+        uint32_t indexedCount = 0;
+        std::unordered_multimap<size_t, mdToken> hashes;
+    };
+
     mdhandle_view _md_ptr;
     uint32_t _duplicateChecks;
+    std::unordered_map<mdtable_id_t, DuplicateIndex> _duplicateIndexes;
 
     bool CheckDuplicates(CorCheckDuplicatesFor flag) const
     {
         return (_duplicateChecks & flag) != 0;
     }
+
+    template<typename Match>
+    HRESULT FindExisting(mdtable_id_t table, size_t hash, Match match, mdToken* token);
 
     HRESULT DefineTypeDefCore(
         LPCWSTR szTypeDef,
