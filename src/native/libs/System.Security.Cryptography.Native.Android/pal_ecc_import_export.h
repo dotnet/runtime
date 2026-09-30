@@ -59,7 +59,7 @@ PALEXPORT int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
                                                     int32_t* cbSeed);
 
 /*
-Creates the new EC_KEY instance using the curve oid (friendly name or value) and public key parameters.
+Creates the new EC_KEY instance using the curve oid (friendly name or value) and key parameters.
 Returns 1 upon success, -1 if oid was not found, otherwise 0.
 */
 PALEXPORT int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
@@ -70,6 +70,15 @@ PALEXPORT int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                           int32_t qyLength,
                                                           uint8_t* d,
                                                           int32_t dLength);
+
+/*
+Exports the private key as PKCS#8.
+Returns 1 upon success, -1 if the destination is too small, otherwise 0.
+*/
+PALEXPORT int32_t AndroidCryptoNative_EcKeyExportPkcs8PrivateKey(const EC_KEY* key,
+                                                                 uint8_t* destination,
+                                                                 int32_t destinationLength,
+                                                                 int32_t* bytesWritten);
 
 /*
 Returns the new EC_KEY instance using the explicit parameters.

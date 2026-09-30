@@ -370,8 +370,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             using (ECDsa ecdsa = ECDsaFactory.Create())
             {
                 ecdsa.ImportParameters(limitedPrivateParameters);
+                ECParameters exportedPublicParameters = ecdsa.ExportParameters(false);
                 ECParameters exportedParameters = ecdsa.ExportParameters(true);
 
+                Assert.Equal(expectedX, exportedPublicParameters.Q.X);
+                Assert.Equal(expectedY, exportedPublicParameters.Q.Y);
+                Assert.Null(exportedPublicParameters.D);
                 Assert.Equal(expectedX, exportedParameters.Q.X);
                 Assert.Equal(expectedY, exportedParameters.Q.Y);
                 Assert.Equal(limitedPrivateParameters.D, exportedParameters.D);

@@ -35,6 +35,40 @@ internal static partial class Interop
             return key;
         }
 
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyExportPkcs8PrivateKey")]
+        private static partial int EcKeyExportPkcs8PrivateKey(
+            SafeEcKeyHandle key,
+            Span<byte> destination,
+            int destinationLength,
+            out int bytesWritten);
+
+        internal static bool TryExportEcKeyPkcs8PrivateKey(SafeEcKeyHandle key, out byte[]? pkcs8)
+        {
+            const int Success = 1;
+            const int InsufficientBuffer = -1;
+
+            int result = EcKeyExportPkcs8PrivateKey(key, Span<byte>.Empty, 0, out int requiredSize);
+
+            if (result != InsufficientBuffer || requiredSize <= 0)
+            {
+                pkcs8 = null;
+                return false;
+            }
+
+            byte[] buffer = new byte[requiredSize];
+            result = EcKeyExportPkcs8PrivateKey(key, buffer, buffer.Length, out int bytesWritten);
+
+            if (result != Success || bytesWritten != buffer.Length)
+            {
+                CryptographicOperations.ZeroMemory(buffer);
+                pkcs8 = null;
+                return false;
+            }
+
+            pkcs8 = buffer;
+            return true;
+        }
+
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByExplicitParameters")]
         internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,

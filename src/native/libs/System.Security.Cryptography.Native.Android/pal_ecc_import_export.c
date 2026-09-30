@@ -317,11 +317,6 @@ static jobject CreateKeyPairFromCurveParameters(
 
         loc[privKeySpec] = (*env)->NewObject(env, g_ECPrivateKeySpecClass, g_ECPrivateKeySpecCtor, bn[D], curveParameters);
         ON_EXCEPTION_PRINT_AND_GOTO(error);
-
-        // Java doesn't have a public implementation of operations on points on an elliptic curve
-        // so we can't yet derive a new public key from the private key and generator.
-        LOG_ERROR("Deriving a new public EC key from a provided private EC key and curve is unsupported");
-        goto error;
     }
     else
     {
@@ -332,8 +327,12 @@ static jobject CreateKeyPairFromCurveParameters(
     loc[algorithmName] = make_java_string(env, "EC");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algorithmName]);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
-    loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[pubKeySpec]);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
+
+    if (loc[pubKeySpec])
+    {
+        loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[pubKeySpec]);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
+    }
 
     if (loc[privKeySpec])
     {
@@ -356,6 +355,81 @@ cleanup:
     RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return keyPair;
+}
+
+int32_t AndroidCryptoNative_EcKeyExportPkcs8PrivateKey(const EC_KEY* key,
+                                                       uint8_t* destination,
+                                                       int32_t destinationLength,
+                                                       int32_t* bytesWritten)
+{
+    abort_if_invalid_pointer_argument(key);
+    abort_if_invalid_pointer_argument(bytesWritten);
+    abort_if_negative_integer_argument(destinationLength);
+
+    *bytesWritten = 0;
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    jsize encodedLength = 0;
+    INIT_LOCALS(loc, privateKey, encoded);
+
+    loc[privateKey] = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
+
+    if (TryClearJNIExceptions(env) || loc[privateKey] == NULL)
+        goto cleanup;
+
+    loc[encoded] = (*env)->CallObjectMethod(env, loc[privateKey], g_KeyGetEncoded);
+
+    if (TryClearJNIExceptions(env) || loc[encoded] == NULL)
+        goto cleanup;
+
+    encodedLength = (*env)->GetArrayLength(env, loc[encoded]);
+
+    if (TryClearJNIExceptions(env))
+        goto cleanup;
+
+    *bytesWritten = encodedLength;
+
+    if (encodedLength > destinationLength)
+    {
+        ret = INSUFFICIENT_BUFFER;
+        goto cleanup;
+    }
+
+    if (encodedLength > 0)
+    {
+        if (destination == NULL)
+            goto cleanup;
+
+        (*env)->GetByteArrayRegion(env, loc[encoded], 0, encodedLength, (jbyte*)destination);
+
+        if (TryClearJNIExceptions(env))
+            goto cleanup;
+    }
+
+    ret = SUCCESS;
+
+cleanup:
+    if (loc[encoded] != NULL)
+    {
+        encodedLength = (*env)->GetArrayLength(env, loc[encoded]);
+
+        if (!TryClearJNIExceptions(env))
+        {
+            jbyte* encodedBytes = (*env)->GetByteArrayElements(env, loc[encoded], NULL);
+
+            if (encodedBytes != NULL)
+            {
+                memset(encodedBytes, 0, (size_t)encodedLength);
+                (*env)->ReleaseByteArrayElements(env, loc[encoded], encodedBytes, 0);
+            }
+
+            (void)TryClearJNIExceptions(env);
+        }
+    }
+
+    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    return ret;
 }
 
 #define CURVE_NOT_SUPPORTED -1
