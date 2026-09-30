@@ -70,7 +70,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [InlineData(new[] { "appsettings.json" }, false)]
         [InlineData(new[] { "appsettings.json", "appsettings.Production.json" }, false)]
@@ -82,7 +81,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [InlineData(new[] { "**" }, true)]
         [InlineData(new[] { "sub/" }, true)]
         [InlineData(new[] { "appsettings.json", "sub/file.json" }, true)]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void IncludeSubdirectories_OnlyEnabledWhenAPatternRequiresIt(string[] patterns, bool expectedIncludeSubdirectories)
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -98,9 +97,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.True(fileSystemWatcher.EnableRaisingEvents);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void IncludeSubdirectories_UpgradedWhenSubdirectoryPatternAddedLater()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -114,9 +112,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.True(fileSystemWatcher.IncludeSubdirectories);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void IncludeSubdirectories_DowngradedWhenSubdirectoryPatternRemoved()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -133,9 +130,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.False(fileSystemWatcher.IncludeSubdirectories);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void IncludeSubdirectories_NotDowngradedWhileSubdirectoryPatternRemains()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -151,9 +147,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.True(fileSystemWatcher.IncludeSubdirectories);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void IncludeSubdirectories_NotDowngradedWhenWildcardSubdirectoryPatternRemains()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -169,9 +164,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.True(fileSystemWatcher.IncludeSubdirectories);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void IncludeSubdirectories_AlwaysTrueWhenWatcherIsAboveRoot()
         {
             using var tempDir = new TempDirectory(GetTestFilePath());
@@ -210,9 +204,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await changed;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void CreateFileChangeToken_DoesNotAllowPathsAboveRoot()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -280,9 +273,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await subFileChanged;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void Constructor_RejectsFswWithUnrelatedPath()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -446,9 +438,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.False(cts.IsCancellationRequested);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_AddsPollingChangeTokenWithCancellationToken_WhenActiveCallbackIsTrue()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -474,9 +465,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_AddsPollingChangeTokenWhenPollingIsEnabled()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -500,9 +490,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_DoesNotAddsPollingChangeTokenWhenCallbackIsDisabled()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -516,9 +505,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void GetOrAddWildcardChangeToken_AddsPollingChangeTokenWithCancellationToken_WhenActiveCallbackIsTrue()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -661,7 +649,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await changed;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(WatcherModeData))]
         public void CreateFileChangeToken_DoesNotThrow_WhenRootDeletedBeforeFirstWatch(bool useActivePolling)
@@ -717,9 +704,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await changed;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void CreateFileChangeToken_ReRegisterWhileRootMissing_TearsDownStaleWatcher()
         {
             using var root = new TempDirectory(GetTestFilePath());
