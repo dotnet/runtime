@@ -330,10 +330,6 @@ public:
                                             CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
 
-    void recGetDelegateCtorHelper(CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE targetMethod, CorInfoHelpFunc result);
-    void dmpGetDelegateCtorHelper(DLDL key, DWORD value);
-    CorInfoHelpFunc repGetDelegateCtorHelper(CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE targetMethod);
-
     void recGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP pNativeEntrypoint,CORINFO_METHOD_HANDLE methodHandle);
     void dmpGetHelperFtn(DWORD key, Agnostic_GetHelperFtn value);
     void repGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint,CORINFO_METHOD_HANDLE *pMethodHandle);
@@ -1244,7 +1240,6 @@ enum mcPackets
     Packet_GetWasmWellKnownGlobals = 240,
     Packet_CanValueClassInstancePointerEscape = 241,
     Packet_GetAwaitAwaiterInContinuationCall = 242,
-    Packet_GetDelegateCtorHelper = 243,
 };
 
 void SetDebugDumpVariables();

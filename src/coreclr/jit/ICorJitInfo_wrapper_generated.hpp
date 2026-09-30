@@ -725,16 +725,6 @@ void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
-CorInfoHelpFunc WrapICorJitInfo::getDelegateCtorHelper(
-          CORINFO_CLASS_HANDLE delegateType,
-          CORINFO_METHOD_HANDLE targetMethod)
-{
-    API_ENTER(getDelegateCtorHelper);
-    CorInfoHelpFunc temp = wrapHnd->getDelegateCtorHelper(delegateType, targetMethod);
-    API_LEAVE(getDelegateCtorHelper);
-    return temp;
-}
-
 CorInfoInitClassResult WrapICorJitInfo::initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,

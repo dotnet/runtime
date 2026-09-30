@@ -272,8 +272,8 @@ public class WasmInterpreterTransitions
         S52 s52 = self.InterpretedInstanceReturnsS52(); Assert.Equal(A, s52.A); Assert.Equal(B, s52.M);           // IS52Tp
         Assert.Equal(unchecked((short)C), InterpretedStaticReturnsS2NoArgs().A);                                             // IS2p
 
-        // R2R delegate construction uses the DELEGATE_CTOR_CLOSED helper for bounded closed-instance shapes
-        // and the general DELEGATE_CONSTRUCT helper for open, static, virtual, generic, and fallback shapes.
+        // R2R delegate construction calls Delegate.CtorClosed for bounded closed-instance shapes
+        // and Delegate.DelegateConstruct for open, static, virtual, generic, and fallback shapes.
         TransformDelegate openStatic = CreateOpenStaticDelegate();
         Assert.Equal(A + 1, openStatic(A));
         Assert.Null(openStatic.Target);

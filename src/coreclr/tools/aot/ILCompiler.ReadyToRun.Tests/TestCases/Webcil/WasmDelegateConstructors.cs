@@ -21,6 +21,18 @@ public sealed class WasmDelegateTarget
     public int InstanceTarget(int value) => value + _state;
 }
 
+public class WasmVirtualDelegateTarget
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int VirtualTarget(int value) => value + 2;
+}
+
+public sealed class WasmGenericDelegateTarget<T>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public int InstanceTarget(int value) => value + 3;
+}
+
 public struct WasmDelegateResult
 {
     public int Value;
@@ -44,6 +56,12 @@ public static class WasmDelegateConstructors
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ReturnsStruct CreateClosedStaticRetBuf(WasmDelegateTarget target) =>
         new(target.ClosedStaticRetBufTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Transform CreateClosedVirtual(WasmVirtualDelegateTarget target) => new(target.VirtualTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Transform CreateClosedGenericOwner(WasmGenericDelegateTarget<string> target) => new(target.InstanceTarget);
 }
 
 public static class WasmDelegateTargetExtensions

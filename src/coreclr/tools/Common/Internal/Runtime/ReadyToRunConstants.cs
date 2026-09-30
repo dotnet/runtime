@@ -381,9 +381,6 @@ namespace Internal.ReadyToRunConstants
         InitInstClass               = 0x117,
         R2RToInterpreter            = 0x118,
 
-        DelegateConstruct           = 0x119,
-        DelegateCtorClosed          = 0x11A,
-
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.

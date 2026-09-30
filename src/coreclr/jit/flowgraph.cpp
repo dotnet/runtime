@@ -1131,7 +1131,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
+    // so ReadyToRun uses GetDelegateCtor below, like the JIT.
+    if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+#else
     if (IsAot())
+#endif
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1178,27 +1184,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 JITDUMP("not optimized, NATIVEAOT no ldftnToken\n");
             }
         }
-#ifdef TARGET_WASM
-        // Wasm does not use the dynamically composed delegate constructor helpers. Call a managed
-        // helper that takes the same arguments as the constructor instead.
-        else
-        {
-            CorInfoHelpFunc helper = info.compCompHnd->getDelegateCtorHelper(clsHnd, targetMethodHnd);
-            if (helper != CORINFO_HELP_UNDEF)
-            {
-                JITDUMP("optimized, Wasm delegate constructor helper %d\n", helper);
-
-                GenTree* thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
-                GenTree* targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
-                call = gtNewHelperCallNode(helper, TYP_VOID, thisPointer, targetObjPointers, targetMethod);
-            }
-            else
-            {
-                JITDUMP("not optimized, no Wasm delegate constructor helper\n");
-            }
-        }
-#else
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
+#ifndef TARGET_WASM
         else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
@@ -1239,6 +1226,16 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             *ExactContextHnd = nullptr;
 
             call->gtCallMethHnd = alternateCtor;
+
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                // The importer computed the entry point for the original constructor.
+                CORINFO_CONST_LOOKUP entryPoint;
+                info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
+                call->setEntryPoint(entryPoint);
+            }
+#endif
 
             CallArg* lastArg = nullptr;
             if (ctorData.pArg3 != nullptr)

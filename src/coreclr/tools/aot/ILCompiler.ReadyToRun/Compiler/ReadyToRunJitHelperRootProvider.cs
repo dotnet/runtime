@@ -26,8 +26,6 @@ namespace ILCompiler
             RootMethod(rootProvider, "System"u8, "Math"u8, "ModInt64");
             RootMethod(rootProvider, "System"u8, "Math"u8, "ModUInt64");
             RootMethod(rootProvider, "System"u8, "Array"u8, "Ctor");
-            RootMethod(rootProvider, "System"u8, "Delegate"u8, "DelegateConstruct");
-            RootMethod(rootProvider, "System"u8, "Delegate"u8, "CtorClosed");
             RootMethod(rootProvider, "System"u8, "TypedReference"u8, "GetRefAny");
             RootMethod(rootProvider, "System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeFromHandle");
             RootMethod(rootProvider, "System"u8, "RuntimeMethodInfoStub"u8, "FromPtr");

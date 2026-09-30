@@ -6189,16 +6189,6 @@ void CEEInfo::getReadyToRunDelegateCtorHelper(
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getDelegateCtorHelper(
-        CORINFO_CLASS_HANDLE     delegateType,
-        CORINFO_METHOD_HANDLE    targetMethod
-        )
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called during AOT compilation
-}
-
-/***********************************************************************/
 // see code:Nullable#NullableVerification
 
 CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
