@@ -83,12 +83,10 @@ namespace ILCompiler.DependencyAnalysis
             if (_targetMethod.HasInstantiation)
             {
                 GvmDispatchCellInfoSectionNode.AddCellDependencies(sink, factory, _targetMethod);
-                return;
             }
             else
             {
                 InterfaceDispatchCellInfoSectionNode.AddCellDependencies(sink, factory, _targetMethod);
-                return;
             }
         }
 

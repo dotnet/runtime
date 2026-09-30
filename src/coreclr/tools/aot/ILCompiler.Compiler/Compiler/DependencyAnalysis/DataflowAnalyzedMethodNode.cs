@@ -43,7 +43,6 @@ namespace ILCompiler.DependencyAnalysis
                 // Something wrong with the input - missing references, etc.
                 // The method body likely won't compile either, so we don't care.
                 _runtimeDependencies = new List<(MethodDesc, INodeWithRuntimeDeterminedDependencies)>();
-                return;
             }
         }
 

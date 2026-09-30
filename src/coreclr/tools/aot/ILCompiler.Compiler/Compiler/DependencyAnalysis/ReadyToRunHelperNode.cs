@@ -136,7 +136,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
 #endif
 
-                return;
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
@@ -159,7 +158,6 @@ namespace ILCompiler.DependencyAnalysis
                 factory.MetadataManager.GetDependenciesDueToDelegateCreation(sink, factory, info.DelegateType,
                     info.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-                return;
             }
         }
 
