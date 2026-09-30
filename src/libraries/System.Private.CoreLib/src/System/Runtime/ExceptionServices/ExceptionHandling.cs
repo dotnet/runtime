@@ -57,9 +57,6 @@ namespace System.Runtime.ExceptionServices
         /// If another exception is thrown and caught while an exception is in flight, the original exception
         /// is returned again once the nested exception is caught.
         ///
-        /// If the thrown object does not derive from <see cref="Exception"/>, it is returned wrapped in a
-        /// <see cref="System.Runtime.CompilerServices.RuntimeWrappedException"/>.
-        ///
         /// The returned value is a point-in-time answer. This method is intended for diagnostic purposes, such as
         /// logging the exception that caused a finally block to run.
         /// </remarks>
