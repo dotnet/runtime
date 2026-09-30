@@ -15,9 +15,11 @@
 #include "threadsafe.hpp"
 #include "internal/metadataimport.hpp"
 #include <minipal/guid.h>
+#include <minipal/rwlock.h>
 
 #include <cstring>
 #include <limits>
+#include <memory>
 
 #if !defined(_MSC_VER) && !defined(DNMD_USE_CORECLR_GUIDS)
 extern "C" const GUID MetaDataCheckDuplicatesFor =
@@ -467,6 +469,46 @@ HRESULT GetDNMDPublicInterfaceFromInternal(
     minipal::com_ptr<IMDInternalImport> converted;
     converted.Attach(writable);
     return converted->QueryInterface(riid, publicInterface);
+}
+
+extern "C" DNMD_EXPORT
+HRESULT ReOpenDNMDMetaDataWithMemory(IUnknown* scope, void const* data, ULONG size, DWORD flags)
+{
+    if (scope == nullptr || data == nullptr || size == 0 ||
+        (flags & ~(ofCopyMemory | ofTakeOwnership)) != 0)
+        return E_INVALIDARG;
+
+    minipal::com_ptr<IDNMDOwner> owner;
+    HRESULT hr = scope->QueryInterface(IID_IDNMDOwner, (void**)&owner.p);
+    if (FAILED(hr))
+        return hr;
+
+    minipal::com_ptr<IMDInternalImport> internal;
+    hr = scope->QueryInterface(IID_IMDInternalImport, (void**)&internal.p);
+    if (FAILED(hr))
+        return hr;
+
+    minipal_rwlock* lock = internal->GetReaderWriterLock();
+    if (lock != nullptr && !minipal_rwlock_enter_write(lock))
+        return E_FAIL;
+    std::unique_ptr<minipal_rwlock, decltype(&minipal_rwlock_leave_write)> writeLock(lock, minipal_rwlock_leave_write);
+
+    malloc_ptr<void> backing{ ::malloc(size) };
+    if (backing == nullptr)
+        return E_OUTOFMEMORY;
+    std::memcpy(backing.get(), data, size);
+
+    mdhandle_t handle;
+    if (!md_create_handle(backing.get(), size, &handle))
+        return CLDB_E_FILE_CORRUPT;
+    mdhandle_ptr replacement{ handle };
+    if (!md_validate(replacement.get()))
+        return CLDB_E_FILE_CORRUPT;
+
+    hr = owner->ReplaceMetaData(std::move(replacement), std::move(backing));
+    if (SUCCEEDED(hr) && (flags & ofTakeOwnership) != 0)
+        CoTaskMemFree(const_cast<void*>(data));
+    return hr;
 }
 
 extern "C" DNMD_EXPORT

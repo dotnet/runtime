@@ -23,6 +23,14 @@ HRESULT GetSymBinder(
     REFGUID riid,
     void** ppObj);
 
+// Replace the metadata in an existing DNMD scope without changing its COM identity.
+extern "C" DNMD_EXPORT
+HRESULT ReOpenDNMDMetaDataWithMemory(
+    IUnknown* scope,
+    void const* data,
+    ULONG size,
+    DWORD flags);
+
 // Convert a DNMD read-only internal importer to an independent writable scope.
 // S_OK returns a new COM-owned interface; S_FALSE means input was already writable
 // and returns the input pointer without adding a reference.

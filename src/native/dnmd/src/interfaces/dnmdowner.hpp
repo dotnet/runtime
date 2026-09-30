@@ -98,6 +98,7 @@ private:
     malloc_ptr<void> _malloc_to_free;
     minipal::cotaskmem_ptr<void> _cotaskmem_to_free;
     mdhandle_ptr _handle;
+    std::atomic<mdhandle_t> _currentHandle;
     std::unique_ptr<PreviousVersion> _previous;
     uint32_t _duplicateChecks;
     uint32_t _updateMode;
@@ -121,6 +122,7 @@ public:
         , _malloc_to_free{ nullptr }
         , _cotaskmem_to_free{ nullptr }
         , _handle{ std::move(md_ptr) }
+        , _currentHandle{ _handle.get() }
         , _duplicateChecks{ duplicateChecks }
         , _updateMode{ updateMode }
         , _readWrite{ readWrite }
@@ -132,6 +134,7 @@ public:
         , _malloc_to_free{ std::move(mallocMem) }
         , _cotaskmem_to_free{ std::move(cotaskmemMem) }
         , _handle{ std::move(md_ptr) }
+        , _currentHandle{ _handle.get() }
         , _duplicateChecks{ duplicateChecks }
         , _updateMode{ updateMode }
         , _readWrite{ readWrite }
@@ -142,7 +145,7 @@ public:
 public: // IDNMDOwner
     mdhandle_t MetaData() override
     {
-        return _handle.get();
+        return _currentHandle.load(std::memory_order_acquire);
     }
 
     bool IsReadWrite() override
@@ -185,6 +188,7 @@ public: // IDNMDOwner
         _previous = std::move(previous);
         _malloc_to_free = std::move(backing);
         _handle = std::move(replacement);
+        _currentHandle.store(_handle.get(), std::memory_order_release);
         return S_OK;
     }
 };
