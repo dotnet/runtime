@@ -1112,7 +1112,8 @@ ep_rt_queue_job (
 		SystemJS_DiagnosticServerQueueJob (cb, params);
 	return true;
 #else
-	EP_UNREACHABLE ("Not implemented on this platform");
+	// No host event loop to run jobs on (e.g. WASI). Callers handle the failure; streaming sessions
+	// are flushed when they are disabled.
 	return false;
 #endif
 }

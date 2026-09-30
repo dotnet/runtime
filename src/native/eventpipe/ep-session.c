@@ -190,7 +190,11 @@ session_create_streaming_thread (EventPipeSession *session)
 #else
 	ep_session_inc_ref (session);
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
-	ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session);
+	if (!ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session)) {
+		// The host can't run jobs, so drop the job's reference. Buffered events are
+		// flushed when the session is disabled.
+		ep_rt_atomic_dec_uint32_t (&session->ref_count);
+	}
 #endif
 }
 
