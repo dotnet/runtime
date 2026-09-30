@@ -1438,14 +1438,18 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     // Make sure everything looks ok.
     assert((iterInfo.TestBlock != nullptr) && iterInfo.TestBlock->KindIs(BBJ_COND));
 
+    if (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree)
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": loop test is not the branch condition\n", loop->GetIndex());
+        return false;
+    }
+
     // clang-format off
     if (!incr->OperIs(GT_ADD, GT_SUB) ||
         !incr->AsOp()->gtOp1->OperIs(GT_LCL_VAR) ||
         (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
         !incr->AsOp()->gtOp2->OperIs(GT_CNS_INT) ||
-        (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc) ||
-
-        (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
+        (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc))
     {
         noway_assert(!"Bad precondition in Compiler::optUnrollLoops()");
         return false;
