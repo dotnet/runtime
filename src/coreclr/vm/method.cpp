@@ -2106,8 +2106,7 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 }
 
 //*******************************************************************************
-PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(
-    OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH, MethodDesc* pResolvedTargetMD)
+PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
     CONTRACTL
     {
@@ -2123,34 +2122,17 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(
     if (HasMethodInstantiation())
     {
         CheckRestore();
-        _ASSERTE(pResolvedTargetMD == nullptr ||
-            pResolvedTargetMD == ResolveGenericVirtualMethod(orThis, pMTOfThis));
-        MethodDesc *pResultMD = pResolvedTargetMD != nullptr
-            ? pResolvedTargetMD
-            : ResolveGenericVirtualMethod(orThis, pMTOfThis);
-
-        // If we're remoting this call we can't call directly on the returned
-        // method desc, we need to go through a stub that guarantees we end up
-        // in the remoting handler. The stub we use below is normally just for
-        // non-virtual calls on virtual methods (that have the same problem
-        // where we could end up bypassing the remoting system), but it serves
-        // our purpose here (basically pushes our correctly instantiated,
-        // resolved method desc on the stack and calls the remoting code).
+        MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis, pMTOfThis);
 
         return pResultMD->GetSingleCallableAddrOfCode();
     }
 
     if (IsInterface())
     {
-        _ASSERTE(pResolvedTargetMD == nullptr ||
-            pResolvedTargetMD == MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis));
-        MethodDesc * pTargetMD = pResolvedTargetMD != nullptr
-            ? pResolvedTargetMD
-            : MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis);
+        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis);
         return pTargetMD->GetSingleCallableAddrOfCode();
     }
 
-    // A class virtual slot can contain a dispatch stub; use it rather than the resolved method's entrypoint.
     return pMTOfThis->GetRestoredSlot(GetSlot());
 }
 

@@ -1622,8 +1622,7 @@ public:
     // The code that implements these was taken verbatim from elsewhere in the
     // codebase, and there may be subtle differences between the two, e.g. with
     // regard to thunking.
-    PCODE GetSingleCallableAddrOfVirtualizedCode(
-        OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH, MethodDesc* pResolvedTargetMD = nullptr);
+    PCODE GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
     PCODE GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
 
 #ifndef DACCESS_COMPILE
