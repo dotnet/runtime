@@ -87,6 +87,13 @@ namespace System.IO.Compression
             {
                 lock (SyncLock)
                 {
+                    // Re-check under the lock: a racing Dispose() may have already won and detached
+                    // _state, in which case this call must be a no-op rather than observe ObjectDisposedException.
+                    if (_isDisposed)
+                    {
+                        return;
+                    }
+
                     zlibStream = ZLibStream;
                     zlibStream.NextOut = ZLibNative.ZNullPtr;
                     zlibStream.AvailOut = 0;
@@ -98,8 +105,11 @@ namespace System.IO.Compression
             }
             catch
             {
-                _state = default;
-                _isDisposed = true;
+                lock (SyncLock)
+                {
+                    _state = default;
+                    _isDisposed = true;
+                }
                 zlibStream?.Dispose();
                 throw;
             }
