@@ -241,7 +241,7 @@ namespace System.IO.Tests
         protected override int BufferSize => 10;
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "Pipes are not supported on WASI.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Pipes are not supported on Browser or WASI.")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class AnonymousPipeFileStreamConnectedConformanceTests : ConnectedStreamConformanceTests
     {
         protected override Task<StreamPair> CreateConnectedStreamsAsync()
@@ -280,35 +280,35 @@ namespace System.IO.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "Pipes are not supported on WASI.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Pipes are not supported on Browser or WASI.")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class AnonymousPipeFileStreamConnectedConformanceTests_SyncRead_SyncWrite : AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe
     {
         protected override bool AsyncReads => false;
         protected override bool AsyncWrites => false;
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "Pipes are not supported on WASI.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Pipes are not supported on Browser or WASI.")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class AnonymousPipeFileStreamConnectedConformanceTests_AsyncRead_SyncWrite : AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe
     {
         protected override bool AsyncReads => true;
         protected override bool AsyncWrites => false;
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "Pipes are not supported on WASI.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Pipes are not supported on Browser or WASI.")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class AnonymousPipeFileStreamConnectedConformanceTests_SyncRead_AsyncWrite : AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe
     {
         protected override bool AsyncReads => false;
         protected override bool AsyncWrites => true;
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "Pipes are not supported on WASI.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Pipes are not supported on Browser or WASI.")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class AnonymousPipeFileStreamConnectedConformanceTests_AsyncRead_AsyncWrite : AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe
     {
         protected override bool AsyncReads => true;
         protected override bool AsyncWrites => true;
     }
 
-    [SkipOnPlatform(TestPlatforms.Wasi, "Pipes are not supported on WASI.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Pipes are not supported on Browser or WASI.")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class NamedPipeFileStreamConnectedConformanceTests : ConnectedStreamConformanceTests
     {
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
