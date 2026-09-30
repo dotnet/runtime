@@ -795,15 +795,27 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     }
     else
     {
+        bool allocatedNewTLSIndex = false;
         if (!g_pThreadStaticCollectibleTypeIndices->FindClearedIndex(&newTLSIndex))
         {
             uint32_t tlsRawIndex = g_NextTLSSlot;
             newTLSIndex = TLSIndex(TLSIndexType::Collectible, tlsRawIndex);
-            g_NextTLSSlot += 1;
+            allocatedNewTLSIndex = true;
         }
 
+        SArray<TLSIndex>& tlsIndexList = pMT->GetLoaderAllocator()->GetTLSIndexList();
+        tlsIndexList.Preallocate(tlsIndexList.GetCount() + 1);
+
+        // Set can still fail while growing the global map, but it does so before publishing
+        // the MethodTable. Once Set succeeds, the reserved list capacity makes Append non-failing,
+        // so every published collectible index is tracked for loader allocator cleanup.
         g_pThreadStaticCollectibleTypeIndices->Set(newTLSIndex, pMT, gcStatic);
-        pMT->GetLoaderAllocator()->GetTLSIndexList().Append(newTLSIndex);
+        _ASSERTE(tlsIndexList.GetAllocation() > tlsIndexList.GetCount());
+        tlsIndexList.Append(newTLSIndex);
+        if (allocatedNewTLSIndex)
+        {
+            g_NextTLSSlot += 1;
+        }
     }
 
     pIndex->VolatileStore(newTLSIndex); // Use a volatile store so that any other thread that sees the allocated index will also see the writes throughout this path.
