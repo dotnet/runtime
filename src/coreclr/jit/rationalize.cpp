@@ -2373,26 +2373,35 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 // particular statement, link that statement's nodes into the current basic block.
 Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree** use, GenTree* user)
 {
-    GenTree* const node = *use;
+    GenTree* node;
 
-    if (node->OperIs(GT_INTRINSIC))
+    // The below is a loop, because rewriting an intrinsic or HW intrinsic as a user call 
+    // may replace the node with another node which also needs the same pre-order processing.
+    // Continue until no replacement is made.
+    do
     {
-        if (m_rationalizer.m_compiler->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
+        node = *use;
+
+        if (node->OperIs(GT_INTRINSIC))
         {
-            m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
+            if (m_rationalizer.m_compiler->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
+            {
+                m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
+            }
         }
-    }
 #if defined(FEATURE_HW_INTRINSICS)
-    else if (node->OperIsHWIntrinsic())
-    {
-        if (node->AsHWIntrinsic()->IsUserCall())
+        else if (node->OperIsHWIntrinsic())
         {
-            m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors);
+            if (node->AsHWIntrinsic()->IsUserCall())
+            {
+                m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors);
+            }
         }
-    }
 #endif // FEATURE_HW_INTRINSICS
+    } while (*use != node);
 
 #ifdef TARGET_ARM64
+    node = *use;
     if (node->OperIs(GT_SUB))
     {
         m_rationalizer.RewriteSubLshDiv(use);
