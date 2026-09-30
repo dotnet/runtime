@@ -10,31 +10,56 @@ using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
+internal enum DumpType
+{
+    Mini,
+    Heap,
+    Triage,
+}
+
 internal sealed class DumpCreator
 {
     private const int MaxSyncBlocks = 1_000_000;
     private const int MaxThreads = 1_000_000;
 
     private readonly Target _target;
-    private readonly bool _includeHeap;
+    private readonly DumpType _dumpType;
     private readonly MemoryRegionEmitter _emitter;
     private readonly HashSet<TargetPointer> _loaderAllocators = [];
     private readonly MethodCollector _methods;
     private readonly ObjectCollector _objects;
 
-    public DumpCreator(
+    private DumpCreator(
         Target target,
-        CLRDataEnumMemoryFlags flags,
+        DumpType dumpType,
         MemoryRegionEmitter emitter)
     {
         _target = target;
-        _includeHeap = flags == CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP2;
+        _dumpType = dumpType;
         _emitter = emitter;
         _methods = new(target);
-        _objects = new(target, emitter, _methods, flags == CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_TRIAGE);
+        _objects = new(target, emitter, _methods, _dumpType);
     }
 
-    public void EnumerateMemoryRegions()
+    public static int Enumerate(Target target, MemoryRegionEmitter emitter, DumpType dumpType)
+    {
+        if (target is not ContractDescriptorTarget descriptorTarget)
+            return HResults.E_NOTIMPL;
+
+        target.Flush(FlushScope.All);
+        using IDisposable readScope = descriptorTarget.RegisterReadCallback((address, size) =>
+        {
+            if (emitter.ShouldEmitTargetRead(address, size))
+                emitter.Add(address, size);
+        });
+        foreach (TargetSpan range in descriptorTarget.EnumerateDescriptorMemory())
+            emitter.Add(range.Address.Value, range.Size);
+
+        new DumpCreator(target, dumpType, emitter).EnumerateMemoryRegions();
+        return emitter.Result;
+    }
+
+    private void EnumerateMemoryRegions()
     {
         TryEnumerate(EnumerateRuntimeModule);
         TryEnumerate(EnumerateStatics);
@@ -42,7 +67,7 @@ internal sealed class DumpCreator
         TryEnumerate(EnumerateModules);
         TryEnumerate(EnumerateThreads);
 
-        if (_includeHeap)
+        if (_dumpType == DumpType.Heap)
         {
             TryEnumerate(EnumerateGC);
             TryEnumerate(EnumerateCodeAndLoaderHeaps);
@@ -129,7 +154,7 @@ internal sealed class DumpCreator
                 _emitter.RegisterMetadataRange(ecmaMetadata.GetReadWriteSavedMetadataAddress(module));
 
             // Smaller dumps do not include in-memory symbols unless they are otherwise referenced.
-            if (loader.TryGetSymbolStream(module, out TargetPointer symbolBuffer, out uint symbolSize) && _includeHeap)
+            if (loader.TryGetSymbolStream(module, out TargetPointer symbolBuffer, out uint symbolSize) && _dumpType == DumpType.Heap)
                 _emitter.Add(symbolBuffer.Value, symbolSize);
 
             if (peAssembly != TargetPointer.Null)

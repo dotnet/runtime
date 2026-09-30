@@ -23,12 +23,30 @@ public sealed unsafe partial class SOSDacImpl : ICLRDataEnumMemoryRegions
         try
         {
             // Like the native DAC, ignore the reserved clrFlags argument.
-            return MemoryRegionEnumerator.Enumerate(_target, callback, miniDumpFlags);
+            DumpType dumpType = GetDumpType(miniDumpFlags);
+            MemoryRegionEmitter emitter = new((nint)callback, (uint)_target.PointerSize);
+            return DumpCreator.Enumerate(_target, emitter, dumpType);
         }
         catch (Exception ex)
         {
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
         }
+    }
+
+    internal static DumpType GetDumpType(uint miniDumpFlags)
+    {
+        const uint MiniDumpWithPrivateReadWriteMemory = 0x200;
+        const uint MiniDumpWithFullAuxiliaryState = 0x8000;
+        const uint MiniDumpFilterTriage = 0x100000;
+
+        if ((miniDumpFlags & MiniDumpWithPrivateReadWriteMemory) != 0)
+            return DumpType.Heap;
+        if ((miniDumpFlags & MiniDumpWithFullAuxiliaryState) != 0)
+            return DumpType.Mini;
+        if ((miniDumpFlags & MiniDumpFilterTriage) != 0)
+            return DumpType.Triage;
+
+        return DumpType.Mini;
     }
 }

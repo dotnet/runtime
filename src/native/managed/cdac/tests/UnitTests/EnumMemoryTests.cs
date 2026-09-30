@@ -1396,14 +1396,15 @@ public unsafe partial class EnumMemoryTests
     }
 
     [Fact]
-    public void Enumeration_RejectsOtherTargetImplementationsAtEnumeratorBoundary()
+    public void Enumeration_RejectsOtherTargetImplementationsAtDumpCreatorBoundary()
     {
         Mock<Target> target = new();
         target.SetupGet(t => t.PointerSize).Returns(8);
         ICLRDataEnumMemoryRegions impl = new SOSDacImpl(target.Object, legacyObj: null, new());
         using RecordingCallback callback = new(supportsUpdates: false);
 
-        Assert.Equal(HResults.E_NOTIMPL, MemoryRegionEnumerator.Enumerate(target.Object, (void*)callback.Address, 0));
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.Object.PointerSize);
+        Assert.Equal(HResults.E_NOTIMPL, DumpCreator.Enumerate(target.Object, emitter, DumpType.Mini));
         Assert.Equal(HResults.E_NOTIMPL, impl.EnumMemoryRegions((void*)callback.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
         Assert.Empty(callback.Ranges);
         target.Verify(t => t.Flush(It.IsAny<FlushScope>()), Times.Never);
@@ -1475,15 +1476,16 @@ public unsafe partial class EnumMemoryTests
     }
 
     [Theory]
-    [InlineData(0, 0)]
-    [InlineData(0x200, 3)]
-    [InlineData(0x100000, 2)]
-    [InlineData(0x100200, 3)]
-    [InlineData(0x108000, 0)]
-    [InlineData(0x108200, 3)]
-    public void DumpMode_UsesNativeMiniDumpFlagPrecedence(uint miniDumpFlags, int expected)
+    [InlineData(0, nameof(DumpType.Mini))]
+    [InlineData(0x200, nameof(DumpType.Heap))]
+    [InlineData(0x100000, nameof(DumpType.Triage))]
+    [InlineData(0x100200, nameof(DumpType.Heap))]
+    [InlineData(0x8000, nameof(DumpType.Mini))]
+    [InlineData(0x108000, nameof(DumpType.Mini))]
+    [InlineData(0x108200, nameof(DumpType.Heap))]
+    public void DumpMode_UsesNativeMiniDumpFlagPrecedence(uint miniDumpFlags, string expected)
     {
-        Assert.Equal(expected, (int)MemoryRegionEnumerator.GetDumpFlags(miniDumpFlags));
+        Assert.Equal(Enum.Parse<DumpType>(expected), SOSDacImpl.GetDumpType(miniDumpFlags));
     }
 
     [Theory]
@@ -1587,7 +1589,7 @@ public unsafe partial class EnumMemoryTests
 
         using RecordingCallback callback = new(supportsUpdates);
         MemoryRegionEmitter emitter = new(callback.Address, 8);
-        new ObjectCollector(target, emitter, new MethodCollector(target), triage).EnumerateObject(exception);
+        new ObjectCollector(target, emitter, new MethodCollector(target), triage ? DumpType.Triage : DumpType.Mini).EnumerateObject(exception);
 
         Assert.Contains(exception.Value, callback.Regions);
         Assert.Contains(innerException.Value, callback.Regions);
