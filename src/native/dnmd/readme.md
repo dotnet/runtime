@@ -6,15 +6,22 @@ DNMD provides the following tools:
 
 - `dnmd` - A static library with no external dependencies that represents the lowest level of reading ECMA-335.
 - `dnmd_interfaces` - A shared library (`.dll`|`.dylib`|`.so`) that consumes `dnmd` and provides higher level .NET APIs. At present the following interfaces are provided:
-  - [`IMetaDataDispenser`][api_dispenser]
+  - [`IMetaDataDispenser`][api_dispenser] / `IMetaDataDispenserEx`
   - [`IMetaDataImport`][api_import] / [`IMetaDataImport2`][api_import2]
   - [`IMetaDataAssemblyImport`][api_assemblyimport]
+  - `IMetaDataEmit` / `IMetaDataEmit2` / `IMetaDataEmitHelper`
+  - `IMetaDataAssemblyEmit`
+  - `IMDInternalImport` / `IMDInternalImportENC` for CoreCLR integration
 - `dnmd_interfaces_static` - A static library version of `dnmd_interfaces`.
 - `mddump` - Utility for dumping ECMA-335 tables.
 - `mdmerge` - Utility for merging EnC deltas into ECMA-335 tables.
 
 `IMetaDataDispenser::OpenScope` accepts raw ECMA-335 metadata files and managed
 PE32/PE32+ files. `OpenScopeOnMemory` accepts raw metadata rather than a PE image.
+In EnC mode, the interfaces layer records `ENCLog` entries and applies dense,
+non-remapping deltas. It does not generate deltas: `GetDeltaSaveSize` and
+`SaveDelta*` return `E_NOTIMPL`. Deltas containing `ENCMap` entries are not
+supported.
 
 The primary goal of DNMD is to explore the benefits of a rewrite of the metadata APIs in the .NET runtime. The rewrite has the following constraints:
 
