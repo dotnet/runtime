@@ -8,6 +8,7 @@ using Xunit;
 public class Runtime_134452
 {
     [Fact]
+    [SkipOnMono("CoreCLR JIT regression test")]
     public static void TestEntryPoint()
     {
         Assert.Equal(1, IntToFloatRounding(16777219));
