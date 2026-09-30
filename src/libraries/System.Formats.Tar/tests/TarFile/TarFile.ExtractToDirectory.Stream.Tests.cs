@@ -29,6 +29,12 @@ namespace System.Formats.Tar.Tests
 
         public static IEnumerable<object[]> GetExactRootDirMatchCasesAndBooleanData() => GetDataAndBooleanData(GetExactRootDirMatchCases());
 
+        public static IEnumerable<object[]> GetNormalizedPathAndBooleanData() => GetDataAndBooleanData(new[]
+        {
+            new object[] { "subdir/../readme.txt", "readme.txt" },
+            new object[] { "subdir/./readme.txt", Path.Join("subdir", "readme.txt") }
+        });
+
         [Fact]
         public async Task ExtractToDirectoryAsync_Cancel()
         {
@@ -103,23 +109,48 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
         }
 
-        [Fact]
-        public void ExtractToDirectory_DifferentlyCasedSiblingDirectory_Throws()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task ExtractToDirectory_DifferentlyCasedSiblingDirectory_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
             string destinationPath = Path.Join(root.Path, "Dest");
             Directory.CreateDirectory(destinationPath);
 
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
             {
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "../dest/pwn.txt"));
+                await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = writerHolder;
+                await WriteEntry(writer, new PaxTarEntry(TarEntryType.RegularFile, "../dest/pwn.txt"), async);
             }
 
             archive.Position = 0;
 
-            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(archive, destinationPath, overwriteFiles: false));
+            await Assert.ThrowsAsync<IOException>(() => ExtractToDirectory(archive, destinationPath, overwriteFiles: false, async));
             Assert.False(File.Exists(Path.Join(root.Path, "dest", "pwn.txt")));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetNormalizedPathAndBooleanData))]
+        public async Task ExtractToDirectory_NormalizedInRootPath_Succeeds(string entryName, string extractedPath, bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            using MemoryStream archive = new MemoryStream();
+            {
+                await using TarWriterHolder writerHolder = CreateTarWriter(archive, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = writerHolder;
+                PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, entryName)
+                {
+                    DataStream = new MemoryStream("content"u8.ToArray(), writable: false)
+                };
+                await WriteEntry(writer, entry, async);
+            }
+
+            archive.Position = 0;
+            await ExtractToDirectory(archive, root.Path, overwriteFiles: false, async);
+
+            Assert.Equal("content", File.ReadAllText(Path.Join(root.Path, extractedPath)));
         }
 
         [Theory]
