@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task IncludeSubdirectories_StarPatternIsNotRecursive_DoesNotMatchSubdirectoryFile()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -224,7 +224,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task Constructor_AcceptsFswWithPathAboveRoot()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -244,7 +244,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task Constructor_AcceptsFswWithPathBelowRoot()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -291,7 +291,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task HandlesOnRenamedEventsThatMatchRootPath()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -737,6 +737,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Theory]
         [MemberData(nameof(WatcherModeData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task WildcardToken_DoesNotThrow_WhenRootIsMissing(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -767,6 +768,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Theory]
         [MemberData(nameof(WatcherModeData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public async Task WildcardToken_FiresWhenFileCreatedInMissingPrefixDirectory(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -835,7 +837,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task Watch_DoesNotFireForSiblingDirectoryWithSharedPrefix()
         {
             using var tempDir = new TempDirectory(GetTestFilePath());
@@ -871,7 +873,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [Theory]
         [InlineData(true)]  // Win32Exception -> matched on NativeErrorCode
         [InlineData(false)] // IOException -> matched on HResult
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task OnError_SameErrorRecurs_SecondOccurrenceIsSuppressed(bool win32)
         {
             // Regression test for https://github.com/dotnet/runtime/issues/121475:
@@ -899,7 +901,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task OnError_DifferentErrorCode_IsReported(bool win32)
         {
             // Distinct errors (same type, different error code) are not the same persistent failure, so
@@ -920,7 +922,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [Theory]
         [InlineData(true)]  // InternalBufferOverflowException
         [InlineData(false)] // DirectoryNotFoundException
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task OnError_RecoverableError_IsAlwaysReported(bool bufferOverflow)
         {
             // InternalBufferOverflowException (events were dropped, rescan needed) and
@@ -948,7 +950,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             => win32 ? new Win32Exception(code) : new IOException("watcher error", code);
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task OnError_SameError_AfterDeliveredChange_IsReportedAgain()
         {
             // A change delivered between two identical errors proves the watcher works, so the second
@@ -970,7 +972,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task OnError_ChangeOutsideRoot_DoesNotResetDetection()
         {
             // When the watcher watches an ancestor, it can deliver events for
@@ -999,7 +1001,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task OnError_NullException_IsAlwaysReported()
         {
             // An Error with no exception carries no identity to de-duplicate, so every occurrence is
