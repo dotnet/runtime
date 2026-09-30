@@ -28,19 +28,24 @@ namespace System.Net
         private const string SafeSocketHandleTypeName = "System.Net.Sockets.SafeSocketHandle, System.Net.Sockets";
         private const string SocketFlagsTypeName = "System.Net.Sockets.SocketFlags, System.Net.Sockets";
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods)]
         private static readonly Type s_socketType = Type.GetType(SocketTypeName, throwOnError: true)!;
         private static readonly Type s_socketTypeEnum = Type.GetType(SocketTypeEnumName, throwOnError: true)!;
         private static readonly Type s_protocolTypeEnum = Type.GetType(ProtocolTypeEnumName, throwOnError: true)!;
-        // UnsafeAccessorType cannot represent the SocketType and ProtocolType value-type
-        // parameters without referencing System.Net.Sockets, which would create a cycle.
+        private static readonly Type s_socketFlagsEnum = Type.GetType(SocketFlagsTypeName, throwOnError: true)!;
+        // UnsafeAccessorType cannot represent the SocketType, ProtocolType and SocketFlags
+        // value-type parameters without referencing System.Net.Sockets, which would create a
+        // cycle, so the constructor and the SocketFlags-taking ReceiveAsync overload are
+        // invoked through reflection instead.
         private static readonly ConstructorInfo s_socketConstructor =
             s_socketType.GetConstructor(new[] { typeof(AddressFamily), s_socketTypeEnum, s_protocolTypeEnum })!;
-        private static readonly object s_socketTypeDgram = Enum.Parse(Type.GetType(SocketTypeEnumName, throwOnError: true)!, "Dgram");
-        private static readonly object s_socketTypeStream = Enum.Parse(Type.GetType(SocketTypeEnumName, throwOnError: true)!, "Stream");
-        private static readonly object s_protocolTypeUdp = Enum.Parse(Type.GetType(ProtocolTypeEnumName, throwOnError: true)!, "Udp");
-        private static readonly object s_protocolTypeTcp = Enum.Parse(Type.GetType(ProtocolTypeEnumName, throwOnError: true)!, "Tcp");
-        private static readonly object s_socketFlagsPeek = Enum.Parse(Type.GetType(SocketFlagsTypeName, throwOnError: true)!, "Peek");
+        private static readonly MethodInfo s_receiveAsyncWithFlags =
+            s_socketType.GetMethod("ReceiveAsync", new[] { typeof(Memory<byte>), s_socketFlagsEnum, typeof(CancellationToken) })!;
+        private static readonly object s_socketTypeDgram = Enum.Parse(s_socketTypeEnum, "Dgram");
+        private static readonly object s_socketTypeStream = Enum.Parse(s_socketTypeEnum, "Stream");
+        private static readonly object s_protocolTypeUdp = Enum.Parse(s_protocolTypeEnum, "Udp");
+        private static readonly object s_protocolTypeTcp = Enum.Parse(s_protocolTypeEnum, "Tcp");
+        private static readonly object s_socketFlagsPeek = Enum.Parse(s_socketFlagsEnum, "Peek");
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties,
             "System.Net.Sockets.Socket", "System.Net.Sockets")]
@@ -87,7 +92,7 @@ namespace System.Net
 
         public ValueTask<int> ReceiveAsync(Memory<byte> buffer, bool peek, CancellationToken cancellationToken) =>
             peek
-                ? ReceiveAsync(_socket, buffer, s_socketFlagsPeek, cancellationToken)
+                ? (ValueTask<int>)s_receiveAsyncWithFlags.Invoke(_socket, new object[] { buffer, s_socketFlagsPeek, cancellationToken })!
                 : ReceiveAsync(_socket, buffer, cancellationToken);
 
         public void Connect(EndPoint remoteEndPoint) => Connect(_socket, remoteEndPoint);
@@ -134,10 +139,6 @@ namespace System.Net
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReceiveAsync")]
         private static extern ValueTask<int> ReceiveAsync([UnsafeAccessorType(SocketTypeName)] object socket, Memory<byte> buffer, CancellationToken cancellationToken);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReceiveAsync")]
-        private static extern ValueTask<int> ReceiveAsync([UnsafeAccessorType(SocketTypeName)] object socket, Memory<byte> buffer,
-            [UnsafeAccessorType(SocketFlagsTypeName)] object flags, CancellationToken cancellationToken);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Connect")]
         private static extern void Connect([UnsafeAccessorType(SocketTypeName)] object socket, EndPoint remoteEndPoint);

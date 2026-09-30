@@ -1045,13 +1045,17 @@ private:
 public:
     int GetStackOffset() const
     {
-        assert(lvValueSize().IsExact());
+        assert(lvValueSize().IsExact() || lvIsOSRLocal);
         return lvStkOffs;
     }
 
     void SetStackOffset(int offset)
     {
-        assert(lvValueSize().IsExact());
+        // If the local is a vector or a mask and has unknown size, we have to deal with VL
+        // scaled offsets and shouldn't be using this function. There is an exception for OSR
+        // locals, because OSR is a JIT only feature. We can derive an exact offset in this
+        // situation.
+        assert(lvValueSize().IsExact() || lvIsOSRLocal);
         lvStkOffs = offset;
     }
 
@@ -1146,7 +1150,7 @@ public:
     ClassLayout* GetLayout() const
     {
 #if FEATURE_IMPLICIT_BYREFS
-        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_BYREF)));
+        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_I_IMPL, TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
 #endif
@@ -4337,8 +4341,8 @@ public:
     ABIPassingInformation* lvaParameterPassingInfo = nullptr;
     unsigned lvaParameterStackSize = 0;
 
-    unsigned lvaTrackedCount;             // actual # of locals being tracked
-    unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
+    unsigned lvaTrackedCount             = 0; // actual # of locals being tracked
+    unsigned lvaTrackedCountInSizeTUnits = 0; // min # of size_t's sufficient to hold a bit for all the locals being tracked
 
 #ifdef DEBUG
     VARSET_TP lvaTrackedVars; // set of tracked variables
@@ -4748,6 +4752,15 @@ public:
             return GetOffset((unsigned)tmpDsc->tdTempOffs(), tmpDsc->tdTempType() == TYP_MASK);
         }
 
+        // When the VL is known at compile-time (JIT mode), we can determine the absolute
+        // offset relative to the initial state of SP after the prolog.
+        int GetExactOffset(LclVarDsc* varDsc, unsigned vl)
+        {
+            assert(isPow2(vl) && (vl >= MIN_SVE_REGSIZE_BYTES) && (vl <= MAX_SVE_REGSIZE_BYTES));
+            int scale = varDsc->TypeIs(TYP_MASK) ? vl / 8 : vl;
+            return GetAddressingOffset(varDsc) * scale;
+        }
+
         // This system ensures we don't try and generate an address on the frame
         // without finishing all allocations.
         void Finalize()
@@ -4864,6 +4877,28 @@ public:
 #endif
     }
 
+    //----------------------------------------------------------------------------------
+    // lvaIsLocalOnUnknownSizeFrame: Is this local allocated on the UnknownSizeFrame,
+    //                               instead of in traditional stack memory?
+    //
+    // If `varTypeHasUnknownSize(lclType) == true`, the local should be allocated on
+    // UnknownSizeFrame. There are some exceptions however:
+    //  1. If the local is a field of a dependently promoted structure, that structure
+    //     will be placed on the original stack frame.
+    //  2. If the local is an OSR local, it will be placed on the traditional stack
+    //     frame, and have an exact virtual address assigned.
+    //
+    // TODO-SVE: Situation 1 is inherently not VL-agnostic, and needs to be handled
+    //           with VL-agnostic struct layouts.
+    //
+    // Returns:
+    //     True if the local has a stack home on the UnknownSizeFrame.
+    bool lvaLocalIsOnUnknownSizeFrame(unsigned varNum)
+    {
+        return lvaIsUnknownSizeLocal(varNum)
+        && !lvaIsOSRLocal(varNum) && !lvaIsFieldOfDependentlyPromotedStruct(lvaGetDesc(varNum));
+    }
+
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
     unsigned lvaGrabTemp(bool shortLifetime DEBUGARG(const char* reason));
@@ -4905,7 +4940,8 @@ public:
 
     bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum);
 
-    bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
+    bool      lvaIsImplicitByRefLocal(unsigned lclNum) const;
+    var_types lvaGetImplicitByRefParamType();
     bool lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const;
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
@@ -6244,10 +6280,6 @@ public:
     void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
 
-#ifdef DEBUG
-    void fgPostGlobalMorphChecks();
-#endif
-
     void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg), bool allowFGChange = true, bool invalidateDFSTreeOnFGChange = true);
@@ -7074,7 +7106,7 @@ public:
 
     void fgDebugCheckType(GenTree* node);
     void fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block);
-    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
+    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks::CHECK_NONE);

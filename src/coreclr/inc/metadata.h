@@ -151,7 +151,7 @@ struct HENUMInternal
 
     // This will only clear the content of enum and will not free the memory of enum
     static void ClearEnum(
-        HENUMInternal   *pmdEnum);
+        HENUMInternal   *pmdEnum) noexcept;
 
     // create a HENUMInternal. This will allocate the memory
     __checkReturn
@@ -293,6 +293,8 @@ EXTERN_GUID(IID_IMDInternalImport, 0x1b119f60, 0xc507, 0x4024, 0xbb, 0x39, 0xf8,
 #define INTERFACE IMDInternalImport
 DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
 {
+    STDMETHOD_(ULONG, Release)() noexcept PURE;
+
     //*****************************************************************************
     // return the count of entries of a given kind in a scope
     // For example, pass in mdtMethodDef will tell you how many MethodDef
@@ -403,7 +405,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     } // MDInternalRW::EnumReset
 
     void EnumClose(
-        HENUMInternal *phEnum)        // [IN] the enumerator to be closed
+        HENUMInternal *phEnum) noexcept // [IN] the enumerator to be closed
     {
         _ASSERTE( phEnum->m_EnumType == MDSimpleEnum ||
             phEnum->m_EnumType == MDDynamicArrayEnum);

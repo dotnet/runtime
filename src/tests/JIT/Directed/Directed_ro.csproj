@@ -3,6 +3,8 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
+    <!-- Managed ilasm consumes excessive amount of memory -->
+    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="array-il\_Arrayscomplex3.ilproj" />
