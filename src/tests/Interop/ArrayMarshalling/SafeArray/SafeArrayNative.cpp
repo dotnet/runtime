@@ -223,6 +223,27 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArray(SAFEARRAY* 
     return S_OK;
 }
 
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArrayElements(SAFEARRAY* d, VARTYPE expectedType, IUnknown* first, IUnknown* second)
+{
+    HRESULT hr;
+    VARTYPE elementType;
+    RETURN_IF_FAILED(::SafeArrayGetVartype(d, &elementType));
+    if (elementType != expectedType || ::SafeArrayGetDim(d) != 1)
+        return E_INVALIDARG;
+
+    LONG lowerBound, upperBound;
+    RETURN_IF_FAILED(::SafeArrayGetLBound(d, 1, &lowerBound));
+    RETURN_IF_FAILED(::SafeArrayGetUBound(d, 1, &upperBound));
+    if (upperBound - lowerBound != 1)
+        return E_INVALIDARG;
+
+    IUnknown** values;
+    RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
+    bool match = values[0] == first && values[1] == second;
+    RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
+    return match ? S_OK : E_FAIL;
+}
+
 extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanVariantIntArray(SAFEARRAY* d, int* result)
 {
     HRESULT hr;

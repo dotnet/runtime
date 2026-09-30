@@ -2097,6 +2097,45 @@ MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, 
         FALSE);
 }
 
+static void MarshalInterfaceWrapperArray(BASEARRAYREF* pArrayRef, IUnknown** pNativeElements, SIZE_T elementCount, VARTYPE vt)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    ASSERT_PROTECTED(pArrayRef);
+
+    MethodTable* pLastElementMT = NULL;
+    MethodTable* pDefaultInterfaceMT = NULL;
+    BOOL bDispatch = vt == VT_DISPATCH;
+    OBJECTREF element = NULL;
+    GCPROTECT_BEGIN(element);
+    for (SIZE_T i = 0; i < elementCount; i++)
+    {
+        element = ((OBJECTREF*)(*pArrayRef)->GetDataPtr())[i];
+        if (element == NULL)
+        {
+            pNativeElements[i] = NULL;
+            continue;
+        }
+
+        if (element->GetMethodTable() != pLastElementMT)
+        {
+            pLastElementMT = element->GetMethodTable();
+            pDefaultInterfaceMT = GetDefaultInterfaceMTForClass(pLastElementMT, &bDispatch);
+        }
+
+        pNativeElements[i] = pDefaultInterfaceMT != NULL
+            ? GetComIPFromObjectRef(&element, pDefaultInterfaceMT)
+            : GetComIPFromObjectRef(&element, bDispatch ? ComIpType_Dispatch : ComIpType_Unknown);
+    }
+    GCPROTECT_END();
+}
+
 //
 // MarshalSafeArrayForArrayRef marshals the contents of the array ref into the given
 // safe array. It is assumed that the type & dimensions of the arrays are compatible.
@@ -2140,9 +2179,18 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
             Array = *pArrayRef;
         }
 
-        // Use managed IArrayMarshaler<T> implementations for content conversion.
-        UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
-        invoker.InvokeThrowing(&Array, pSafeArray->pvData, (INT32)dwNumComponents, (void*)pConvertContentsCode);
+        if (bArrayOfInterfaceWrappers)
+        {
+            _ASSERTE(vt == VT_UNKNOWN || vt == VT_DISPATCH);
+            // Wrapper arrays expose each wrapped object's default COM interface, not
+            // necessarily the IUnknown or IDispatch selected by the SAFEARRAY VARTYPE.
+            MarshalInterfaceWrapperArray(&Array, (IUnknown**)pSafeArray->pvData, dwNumComponents, vt);
+        }
+        else
+        {
+            UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
+            invoker.InvokeThrowing(&Array, pSafeArray->pvData, (INT32)dwNumComponents, (void*)pConvertContentsCode);
+        }
 
         if (pSafeArray->cDims != 1)
         {
