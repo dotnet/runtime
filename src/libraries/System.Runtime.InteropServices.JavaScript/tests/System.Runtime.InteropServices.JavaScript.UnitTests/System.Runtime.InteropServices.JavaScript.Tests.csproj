@@ -23,6 +23,8 @@
 
     <!-- Remove when PublishReadyToRun becomes default https://github.com/dotnet/runtime/issues/132466 -->
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</PublishReadyToRun>
+    <!-- Eager R2R profile: precompile only the profiled subset; the rest stays interpreted. -->
+    <WasmReadyToRunProfile Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(RepoRoot)src/mono/wasm/Wasm.Build.Tests/data/ReadyToRunPartial.mibc</WasmReadyToRunProfile>
   </PropertyGroup>
 
   <!-- Make debugging easier -->

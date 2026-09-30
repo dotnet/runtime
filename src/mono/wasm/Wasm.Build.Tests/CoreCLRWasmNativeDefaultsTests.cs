@@ -26,6 +26,8 @@ namespace Wasm.Build.Tests
     {
         private static readonly Regex s_regex = new("\\*\\* WasmBuildNative:.*");
         private static readonly Regex s_r2rDirectoryRegex = new("\\*\\* WasmPublishR2RDir: '([^']*)'");
+        private static readonly Regex s_r2rExtraArgsRegex = new("\\*\\* R2RExtraArgs: '([^']*)'");
+        private static readonly Regex s_r2rPgoFilesRegex = new("\\*\\* R2RPgoFiles: '([^']*)'");
 
         public CoreCLRWasmNativeDefaultsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -155,6 +157,63 @@ namespace Wasm.Build.Tests
             Match match = s_r2rDirectoryRegex.Match(output);
             Assert.True(match.Success, output);
             Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
+        }
+
+        // The profile drives a crossgen2 --partial image: with a profile and R2R on, --partial is appended and
+        // the .mibc flows into PublishReadyToRunPgoFiles (crossgen2 -m:). With no profile the full closure is
+        // compiled (no --partial, no PGO input); the gate also requires PublishReadyToRun=true so a profile with
+        // R2R off is inert. Stops before crossgen2 - only the property/item wiring is under test; the crossgen2
+        // args just let the R2R restore resolve a compiler (in-build when BASE_DIR is set, SDK pack otherwise).
+        [Theory]
+        [InlineData(/*profileSet*/ true,  /*r2r*/ true,  /*expectPartial*/ true)]
+        [InlineData(/*profileSet*/ false, /*r2r*/ true,  /*expectPartial*/ false)]
+        [InlineData(/*profileSet*/ true,  /*r2r*/ false, /*expectPartial*/ false)]
+        public void WasmReadyToRunProfileControlsPartialAndPgoInput(bool profileSet, bool r2r, bool expectPartial)
+        {
+            Configuration config = Configuration.Release;
+            const string profilePath = "profile.mibc";
+            string printValueTarget = """
+                <Target Name="PrintR2RProfileFlow"
+                        DependsOnTargets="_WasmCoreClrSelectR2RDirectories">
+                    <Message Text="** R2RExtraArgs: '$(PublishReadyToRunCrossgen2ExtraArgs)'" Importance="High" />
+                    <Message Text="** R2RPgoFiles: '@(PublishReadyToRunPgoFiles)'" Importance="High" />
+                    <Error Text="Stopping after validating the R2R profile flow" />
+                </Target>
+                """;
+
+            string profileProperty = profileSet ? $"<WasmReadyToRunProfile>{profilePath}</WasmReadyToRunProfile>" : "";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                $"coreclr_r2r_profile_{profileSet}_{r2r}",
+                extraProperties: $"<PublishReadyToRun>{r2r}</PublishReadyToRun>{profileProperty}",
+                insertAtEnd: printValueTarget);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: $"-t:PrintR2RProfileFlow {ReadyToRunTests.GetR2RBuildArgs(config)}"));
+
+            Assert.Contains("Stopping after validating the R2R profile flow", output);
+
+            Match extraArgs = s_r2rExtraArgsRegex.Match(output);
+            Match pgoFiles = s_r2rPgoFilesRegex.Match(output);
+            Assert.True(extraArgs.Success, output);
+            Assert.True(pgoFiles.Success, output);
+
+            if (expectPartial)
+            {
+                Assert.Contains("--partial", extraArgs.Groups[1].Value);
+                Assert.Contains(profilePath, pgoFiles.Groups[1].Value);
+            }
+            else
+            {
+                Assert.DoesNotContain("--partial", extraArgs.Groups[1].Value);
+                Assert.Equal("", pgoFiles.Groups[1].Value);
+            }
         }
 
         [Theory]

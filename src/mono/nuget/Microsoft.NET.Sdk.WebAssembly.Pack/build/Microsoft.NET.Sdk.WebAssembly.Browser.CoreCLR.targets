@@ -27,7 +27,20 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- NYI/SIMD methods crossgen2 can't emit into R2R fall back to the runtime JIT. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- With a profile, compile only the profiled subset into the eager image (smaller startup); the rest
+         runs interpreted. Hardware intrinsics stay (ContainsMethodBody keeps them when the target has no
+         runtime codegen, i.e. wasm) and CoreLib JIT-helper implementations are rooted, so both remain
+         available before any interpreted call needs them. Without a profile the partial switch is omitted
+         and the full closure is compiled (unchanged behavior). -->
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmReadyToRunProfile)' != ''">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
+
+  <!-- Optional external method profile (.mibc) that selects the eager partial subset. Flows into the base
+       SDK ReadyToRun PGO input, so crossgen2 receives it as -m:&lt;profile&gt;; combined with the partial
+       switch above it compiles just the profiled methods. Absent, the eager image is the full closure. -->
+  <ItemGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmReadyToRunProfile)' != ''">
+    <PublishReadyToRunPgoFiles Include="$(WasmReadyToRunProfile)" />
+  </ItemGroup>
 
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:
        publish always crossgens the whole closure, so framework and app R2R both come from obj/R2R. Only the
