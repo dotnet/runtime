@@ -996,6 +996,55 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<long>((Array)signed2D, [0, 0], [1, 2], []));
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public static void TensorSpanArrayConstructorPreservesElementCompatibility(int rank)
+        {
+            Validate<int>(CreateArray<uint>(rank), true);
+            Validate<int>(CreateArray<DayOfWeek>(rank), true);
+            Validate<DayOfWeek>(CreateArray<int>(rank), true);
+            Validate<sbyte>(CreateArray<byte>(rank), true);
+            Validate<short>(CreateArray<ushort>(rank), true);
+            Validate<long>(CreateArray<ulong>(rank), true);
+            Validate<nuint>(CreateArray<nint>(rank), true);
+            Validate<nint>(IntPtr.Size == 8 ? CreateArray<long>(rank) : CreateArray<int>(rank), true);
+            Validate<short>(CreateArray<char>(rank), false);
+            Validate<byte>(CreateArray<bool>(rank), false);
+            Validate<int>(CreateArray<float>(rank), false);
+            Validate<object>(CreateArray<int>(rank), false);
+
+            static Array CreateArray<TElement>(int rank) => rank switch
+            {
+                1 => new TElement[1],
+                2 => new TElement[1, 1],
+                _ => new TElement[1, 1, 1],
+            };
+
+            static void Validate<T>(Array array, bool compatible)
+            {
+                int[] start = new int[array.Rank];
+                nint[] lengths = new nint[array.Rank];
+                Array.Fill(lengths, 1);
+
+                if (compatible)
+                {
+                    Assert.Equal(1, new TensorSpan<T>(array).FlattenedLength);
+                    Assert.Equal(1, new TensorSpan<T>(array, start, lengths, []).FlattenedLength);
+                    Assert.Equal(1, new ReadOnlyTensorSpan<T>(array).FlattenedLength);
+                    Assert.Equal(1, new ReadOnlyTensorSpan<T>(array, start, lengths, []).FlattenedLength);
+                }
+                else
+                {
+                    Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<T>(array));
+                    Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<T>(array, start, lengths, []));
+                    Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<T>(array));
+                    Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<T>(array, start, lengths, []));
+                }
+            }
+        }
+
         [Fact]
         public static void TensorSpanSpanConstructorTests()
         {

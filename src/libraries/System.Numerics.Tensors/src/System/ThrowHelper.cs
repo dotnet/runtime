@@ -38,16 +38,60 @@ namespace System
                 return;
             }
 
-            Type arrayType = array.GetType();
-            if (arrayType.GetElementType() == typeof(T))
+            Type elementType = array.GetType().GetElementType()!;
+            if (elementType == typeof(T))
             {
                 return;
             }
 
-            if ((array is not T[] && !typeof(T).MakeArrayType(array.Rank).IsInstanceOfType(array)) ||
-                (!isReadOnly && !typeof(T).IsValueType))
+            if (elementType.IsValueType)
             {
-                ThrowArrayTypeMismatchException();
+                // Array assignments allow enums and integers with the same reduced type.
+                if (ReducedType(elementType) == ReducedType(typeof(T)))
+                {
+                    return;
+                }
+            }
+            else if (isReadOnly && typeof(T).IsAssignableFrom(elementType))
+            {
+                return;
+            }
+
+            ThrowArrayTypeMismatchException();
+
+            static Type ReducedType(Type type)
+            {
+                if (type.IsEnum)
+                {
+                    type = Enum.GetUnderlyingType(type);
+                }
+
+                if (type == typeof(byte))
+                {
+                    return typeof(sbyte);
+                }
+
+                if (type == typeof(ushort))
+                {
+                    return typeof(short);
+                }
+
+                if (type == typeof(uint))
+                {
+                    return typeof(int);
+                }
+
+                if (type == typeof(ulong))
+                {
+                    return typeof(long);
+                }
+
+                if (type == typeof(nuint) || type == typeof(nint))
+                {
+                    return IntPtr.Size == 8 ? typeof(long) : typeof(int);
+                }
+
+                return type;
             }
         }
 

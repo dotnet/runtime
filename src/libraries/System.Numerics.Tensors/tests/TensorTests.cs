@@ -1685,6 +1685,16 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentException>(() => Tensor.Create([42]).PermuteDimensions([1]));
         }
 
+        [Fact]
+        public static void TensorRankZeroPermutationRequiresEmptyDimensions()
+        {
+            Tensor<int> tensor = Tensor<int>.Empty;
+            Assert.Same(tensor, tensor.PermuteDimensions([]));
+            Assert.Throws<ArgumentException>(() => tensor.PermuteDimensions([0]));
+            Assert.Throws<ArgumentException>(() => tensor.PermuteDimensions([-1]));
+            Assert.Throws<ArgumentException>(() => tensor.PermuteDimensions([0, 1]));
+        }
+
         [Theory]
         [InlineData(2)]
         [InlineData(3)]
@@ -1708,6 +1718,12 @@ namespace System.Numerics.Tensors.Tests
 
             dimensions[0] = dimensions[^1];
             Assert.Throws<ArgumentException>(() => tensor.PermuteDimensions(dimensions));
+
+            dimensions[0] = rank;
+            Assert.Throws<ArgumentException>(() => tensor.PermuteDimensions(dimensions));
+
+            dimensions[0] = rank - 1;
+            Assert.Equal([1, 2], tensor.PermuteDimensions(dimensions).ToArray());
         }
 
         [Theory]
@@ -3751,6 +3767,26 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([1, 2, 1, 2], broadcast.Reshape([2, 1, 2]).ToArray());
             Assert.Equal([1, 2, 1, 2], broadcast.Reshape([1, 2, 2]).Reshape([2, 2]).ToArray());
             Assert.Equal([1, 2, 3, 4], tensor.Reshape([1, 4]).Reshape([4]).ToArray());
+        }
+
+        [Theory]
+        [InlineData(4, false)]
+        [InlineData(4, true)]
+        [InlineData(6, false)]
+        [InlineData(6, true)]
+        public static void TensorReshapeRejectsInvalidShapeAcrossBufferSizes(int rank, bool isBroadcast)
+        {
+            Tensor<int> tensor = isBroadcast
+                ? Tensor.Create([1, 2], [2, 2], [0, 1])
+                : Tensor.Create([1, 2, 3, 4]);
+            nint[] invalidLengths = new nint[rank];
+            Array.Fill(invalidLengths, (nint)1);
+            invalidLengths[^1] = isBroadcast ? 4 : -2;
+
+            Assert.Throws<ArgumentException>(() => tensor.Reshape(invalidLengths));
+            Assert.Throws<ArgumentException>(() => tensor.AsTensorSpan().Reshape(invalidLengths));
+            Assert.Throws<ArgumentException>(() => tensor.AsReadOnlyTensorSpan().Reshape(invalidLengths));
+            Assert.Equal(isBroadcast ? [1, 2, 1, 2] : [1, 2, 3, 4], tensor.ToArray());
         }
 
         [Theory]
