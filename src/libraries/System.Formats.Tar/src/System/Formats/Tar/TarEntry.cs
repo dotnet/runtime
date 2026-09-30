@@ -437,6 +437,7 @@ namespace System.Formats.Tar
             // Normalize file path (resolves .. and . but not symlinks)
             string normalizedFile = Path.GetFullPath(fileDestinationPath);
 
+            // Windows supports per-directory case sensitivity, so containment checks must use ordinal comparisons.
             // Guard with StartsWith before computing relative path
             if (!normalizedFile.StartsWith(logicalPrefix, StringComparison.Ordinal) &&
                 !normalizedFile.Equals(logicalDest, StringComparison.Ordinal))
@@ -519,6 +520,7 @@ namespace System.Formats.Tar
 
             string fullPath = Path.GetFullPath(qualifiedPath); // Removes relative segments
 
+            // Windows supports per-directory case sensitivity, so containment checks must use ordinal comparisons.
             return fullPath.StartsWith(destinationDirectoryFullPath, StringComparison.Ordinal) ? fullPath : null;
         }
 
