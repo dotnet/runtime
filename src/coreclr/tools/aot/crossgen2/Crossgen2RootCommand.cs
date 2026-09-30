@@ -66,6 +66,14 @@ namespace ILCompiler
             new("--single-file-compilation") { Description = SR.SingleFileCompilationOption };
         public Option<bool> Partial { get; } =
             new("--partial") { Description = SR.PartialImageOption };
+        public Option<bool> PartialComplement { get; } =
+            new("--partial-complement") { Description = SR.PartialComplementOption };
+        public Option<bool> PartialKeepIntrinsicMethods { get; } =
+            new("--partial-keep-intrinsic-methods") { Description = SR.PartialKeepIntrinsicMethodsOption };
+        public Option<bool> SuppressComponentRewrite { get; } =
+            new("--suppress-component-rewrite") { Description = SR.SuppressComponentRewriteOption };
+        public Option<bool> HardBindCrossModuleTypeReferences { get; } =
+            new("--hard-cross-module-type-refs") { Description = SR.HardBindCrossModuleTypeReferencesOption };
         public Option<bool> CompileBubbleGenerics { get; } =
             new("--compilebubblegenerics") { Description = SR.BubbleGenericsOption };
         public Option<bool> EmbedPgoData { get; } =
@@ -195,6 +203,10 @@ namespace ILCompiler
             Options.Add(OutNearInput);
             Options.Add(SingleFileCompilation);
             Options.Add(Partial);
+            Options.Add(PartialComplement);
+            Options.Add(PartialKeepIntrinsicMethods);
+            Options.Add(SuppressComponentRewrite);
+            Options.Add(HardBindCrossModuleTypeReferences);
             Options.Add(CompileBubbleGenerics);
             Options.Add(EmbedPgoData);
             Options.Add(DgmlLogFileName);

@@ -48,7 +48,25 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortNa
     }
 }
 
-export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number): Promise<void> {
+// Attach an already-instantiated lazy R2R payload to a loaded assembly by name via the runtime's
+// CoreCLR_AttachLazyR2RImage export. Non-fatal: on failure the app keeps running on the eager image.
+export function attachLazyR2RImage(payloadPtr: number, payloadSize: number, assemblyName: string): number {
+    const sp = _ems_.stackSave();
+    try {
+        const nameLen = _ems_.lengthBytesUTF8(assemblyName) + 1;
+        const namePtr = _ems_.stackAlloc(nameLen);
+        _ems_.stringToUTF8Array(assemblyName, _ems_.HEAPU8, namePtr as any, nameLen);
+        const rc = _ems_._CoreCLR_AttachLazyR2RImage(namePtr as any, payloadPtr as any, payloadSize);
+        if (rc !== 0) {
+            _ems_.dotnetLogger.warn(`Lazy R2R attach for '${assemblyName}' failed (code ${rc}); continuing with the eager image.`);
+        }
+        return rc;
+    } finally {
+        _ems_.stackRestore(sp);
+    }
+}
+
+export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number, lazyR2RAssemblyName?: string): Promise<void> {
     // Boot-config sizes let us reserve the payload and table ranges before streaming instantiation.
     // Assets without a tableSize are IL-only images.
     if (typeof payloadSize !== "number" || payloadSize === 0) {
@@ -70,7 +88,7 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
             const data = await res.arrayBuffer();
             instance = (await WebAssembly.instantiate(data, imports)).instance;
         }
-        finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
+        finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath, lazyR2RAssemblyName);
     } catch (err) {
         // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
         // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
@@ -142,10 +160,10 @@ function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tabl
     return webcilImports;
 }
 
-// Records the table base for R2R images and registers the loaded image for
-// BrowserHost_ExternalAssemblyProbe. The engine has already installed the payload (and table slice)
-// from the module's active segments during instantiation.
-function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number, payloadSize: number, tableSize: number, virtualPath: string): void {
+// Records the table base for R2R images and either attaches the payload as a lazy R2R code
+// supplement or registers it for BrowserHost_ExternalAssemblyProbe. The engine has already
+// installed the payload (and table slice) from the module's active segments during instantiation.
+function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number, payloadSize: number, tableSize: number, virtualPath: string, lazyR2RAssemblyName?: string): void {
     const webcilVersion = (instance.exports.webcilVersion as WebAssembly.Global).value;
     if (webcilVersion !== webcilWrapperVersion) {
         throw new Error(`Webcil asset '${virtualPath}' has unsupported Webcil wrapper version ${webcilVersion}; expected ${webcilWrapperVersion}.`);
@@ -158,6 +176,13 @@ function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number
             throw new Error(`Webcil R2R asset '${virtualPath}' does not export patchWebcilHeader.`);
         }
         patchWebcilHeader(payloadPtr, payloadSize);
+    }
+
+    if (lazyR2RAssemblyName) {
+        // Lazy R2R supplement: the runtime takes ownership of the payload buffer (process lifetime),
+        // so it is neither registered as an assembly nor freed here.
+        attachLazyR2RImage(payloadPtr, payloadSize, lazyR2RAssemblyName);
+        return;
     }
 
     const name = virtualPath.startsWith(browserVirtualAppBase)

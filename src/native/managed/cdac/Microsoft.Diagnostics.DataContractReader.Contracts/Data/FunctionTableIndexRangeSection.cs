@@ -11,6 +11,6 @@ internal sealed partial class FunctionTableIndexRangeSection : IData<FunctionTab
 {
     [Field] public partial uint MinFunctionTableIndex { get; }
     [Field] public partial uint NumRuntimeFunctions { get; }
-    [Field] public partial TargetPointer R2RModule { get; }
+    [Field] public partial TargetPointer R2RInfo { get; }
     [Field] public partial TargetPointer Next { get; }
 }

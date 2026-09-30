@@ -9,7 +9,9 @@
 #include "common.h"
 #include "nativeimage.h"
 #include "hostinformation.h"
-
+#ifdef TARGET_WASM
+#include "webcildecoder.h"
+#endif
 // --------------------------------------------------------------------------------
 // Headers
 // --------------------------------------------------------------------------------
@@ -319,6 +321,120 @@ NativeImage *NativeImage::Open(
     }
 }
 #endif
+
+#if defined(TARGET_WASM) && !defined(DACCESS_COMPILE)
+
+// IMAGE_REL_BASED_PTR is the architecture-specific virtual-address reloc (see PEImageLayout::ApplyBaseRelocations).
+#ifdef TARGET_64BIT
+#define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
+#else
+#define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_HIGHLOW
+#endif
+
+// A lazily-attached supplemental R2R image is a host-allocated, memory-resident webcil buffer opened via a
+// plain ReadyToRunLoadedImage view -- it never passes through PEImageLayout::ApplyBaseRelocations the way the
+// eager (startup-loaded) webcil R2R images do. Its wasm function-table indices (and the min-function-table-index
+// stored after the RUNTIME_FUNCTION sentinel) are baked base-0 by crossgen and are meant to be relocated by the
+// runtime table base where the host actually placed the module's functions (grown into the shared indirect table
+// at load time, written into the webcil header's TableBase by getWebcilPayload). Without this relocation the VM
+// computes wrong entry-point indices and the first interp->R2R call traps with "null function or function
+// signature mismatch". Apply the same relocations here that ApplyBaseRelocations applies to eager webcil images:
+// IMAGE_REL_BASED_PTR (+= load delta; preferred base is 0 for webcil so delta == imageBase) and the additive
+// IMAGE_REL_BASED_WASM32/64_TABLE (+= tableBase). The buffer is host-owned and writable, so no page protection
+// dance is needed, and it is opened exactly once so a single application is correct.
+static void ApplyLazySupplementalWebcilRelocations(TADDR imageBase, WebcilDecoder &decoder)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (!decoder.HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_BASERELOC))
+        return;
+
+    const SSIZE_T delta = (SSIZE_T)imageBase; // GetPreferredBase() == NULL for webcil
+    const SSIZE_T tableBaseDelta = decoder.GetTableBaseOffset();
+
+    COUNT_T dirSize = 0;
+    TADDR dir = decoder.GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_BASERELOC, &dirSize);
+
+    COUNT_T dirPos = 0;
+    // WASM pads each reloc block to a 16-byte boundary, so validate the header is fully readable and stop on a
+    // zero-sized (padding) block, mirroring PEImageLayout::ApplyBaseRelocations.
+    while (dirPos + sizeof(IMAGE_BASE_RELOCATION) <= dirSize)
+    {
+        PIMAGE_BASE_RELOCATION r = (PIMAGE_BASE_RELOCATION)(dir + dirPos);
+        COUNT_T fixupsSize = VAL32(r->SizeOfBlock);
+        if (fixupsSize == 0)
+            break;
+
+        USHORT *fixups = (USHORT *)(r + 1);
+        COUNT_T fixupsCount = (fixupsSize - sizeof(IMAGE_BASE_RELOCATION)) / 2;
+        BYTE *pageAddress = (BYTE *)imageBase + VAL32(r->VirtualAddress);
+
+        for (COUNT_T i = 0; i < fixupsCount; i++)
+        {
+            USHORT fixup = VAL16(fixups[i]);
+            BYTE *address = pageAddress + (fixup & 0xfff);
+            switch (fixup >> 12)
+            {
+            case IMAGE_REL_BASED_PTR:
+                *(TADDR *)address += delta;
+                break;
+            case IMAGE_REL_BASED_WASM32_TABLE:
+                *(uint32_t *)address += (uint32_t)tableBaseDelta;
+                break;
+            case IMAGE_REL_BASED_WASM64_TABLE:
+                *(uint64_t *)address += (uint64_t)tableBaseDelta;
+                break;
+            case IMAGE_REL_BASED_ABSOLUTE:
+                break;
+            default:
+                break;
+            }
+        }
+        dirPos += fixupsSize;
+    }
+}
+NativeImage *NativeImage::OpenFromMemory(
+    TADDR imageBase,
+    uint32_t imageSize,
+    LPCUTF8 nativeImageFileName,
+    AssemblyBinder *pAssemblyBinder,
+    LoaderAllocator *pLoaderAllocator,
+    AllocMemTracker *pamTracker)
+{
+    STANDARD_VM_CONTRACT;
+
+    WebcilDecoder decoder;
+    decoder.Init((void *)imageBase, (COUNT_T)imageSize);
+    if (!decoder.HasReadyToRunHeader())
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    READYTORUN_HEADER *pHeader = decoder.GetReadyToRunHeader();
+    if (pHeader->Signature != READYTORUN_SIGNATURE)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+    if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    // Relocate the memory-resident buffer to the runtime table base before any structure reads its baked
+    // (base-0) function-table indices. Must run before the ReadyToRunInfo ctor reads m_minFunctionTableIndex.
+    ApplyLazySupplementalWebcilRelocations(imageBase, decoder);
+
+    // The payload buffer has process lifetime (allocated by the host loader), so the image layout is
+    // a plain view over it with no cleanup callback.
+    NewHolder<ReadyToRunLoadedImage> loadedImageHolder = new ReadyToRunLoadedImage(imageBase, imageSize);
+    NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, loadedImageHolder.Extract(), nativeImageFileName);
+    image->Initialize(pHeader, pLoaderAllocator, pamTracker);
+
+    // Supplemental images are not registered in the AppDomain native-image-by-name map; they are owned
+    // by the module they attach to (see ReadyToRunInfo::AttachSupplemental).
+    return image.Extract();
+}
+#endif // TARGET_WASM && !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, Assembly *pParentAssembly)

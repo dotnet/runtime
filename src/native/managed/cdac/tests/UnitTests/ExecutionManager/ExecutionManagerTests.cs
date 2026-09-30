@@ -1875,7 +1875,7 @@ public class ExecutionManagerTests
         TargetTestHelpers.LayoutResult sectionLayout = helpers.LayoutFields([
             new(nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex), DataType.uint32),
             new(nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions), DataType.uint32),
-            new(nameof(Data.FunctionTableIndexRangeSection.R2RModule), DataType.pointer),
+            new(nameof(Data.FunctionTableIndexRangeSection.R2RInfo), DataType.pointer),
             new(nameof(Data.FunctionTableIndexRangeSection.Next), DataType.pointer),
         ]);
         TargetTestHelpers.LayoutResult portableEntryPointLayout = helpers.LayoutFields([
@@ -1897,7 +1897,7 @@ public class ExecutionManagerTests
         MockMemorySpace.HeapFragment section = allocator.Allocate(sectionLayout.Stride, "FunctionTableIndexRangeSection");
         helpers.Write(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), PortableMinFunctionTableIndex);
         helpers.Write(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), 3u);
-        helpers.WritePointer(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RModule)].Offset, helpers.PointerSize), module.Address);
+        helpers.WritePointer(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RInfo)].Offset, helpers.PointerSize), r2rInfo.Address);
         helpers.WritePointer(
             section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.Next)].Offset, helpers.PointerSize),
             cyclicFunctionTableIndexRangeList ? section.Address : 0);

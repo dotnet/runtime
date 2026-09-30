@@ -1298,7 +1298,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             else
 #endif
             {
-                pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(ix);
+                pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(ix, pZapSigContext->pR2RInfo);
             }
 
             if (pModule != NULL)

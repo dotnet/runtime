@@ -350,21 +350,23 @@ inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 
 #include "nibblestream.h"
 
-FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods)
+FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods, ReadyToRunInfo * pInfo)
 {
     WRAPPER_NO_CONTRACT;
 
     COUNT_T nImportSections;
-    PTR_READYTORUN_IMPORT_SECTION pImportSections = GetImportSections(&nImportSections);
+    PTR_READYTORUN_IMPORT_SECTION pImportSections = (pInfo != NULL) ? pInfo->GetImportSections(&nImportSections) : GetImportSections(&nImportSections);
+    ReadyToRunLoadedImage * pNativeImage = (pInfo != NULL) ? pInfo->GetImage() : GetReadyToRunImage();
 
-    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetReadyToRunImage(), mayUsePrecompiledPInvokeMethods);
+    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, pNativeImage, mayUsePrecompiledPInvokeMethods, pInfo);
 }
 
 template<typename Ptr, typename FixupNativeEntryCallback>
 BOOL Module::FixupDelayListAux(TADDR pFixupList,
                                Ptr pThis, FixupNativeEntryCallback pfnCB,
                                PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                               ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods)
+                               ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods,
+                               ReadyToRunInfo * pInfo)
 {
     CONTRACTL
     {
@@ -454,7 +456,7 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
         {
             CONSISTENCY_CHECK(fixupIndex * sizeof(TADDR) < cbData);
 
-            if (!(pThis->*pfnCB)(pImportSection, fixupIndex, dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR)), mayUsePrecompiledPInvokeMethods))
+            if (!(pThis->*pfnCB)(pImportSection, fixupIndex, dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR)), mayUsePrecompiledPInvokeMethods, pInfo))
                 return FALSE;
 
             int delta = reader.ReadEncodedU32();
