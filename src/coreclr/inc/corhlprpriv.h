@@ -37,29 +37,7 @@
 // 520 bytes, so use accordinly.
 //
 //*****************************************************************************
-namespace NSQuickBytesHelper
-{
-    template <BOOL bThrow>
-    struct _AllocBytes;
-
-    template <>
-    struct _AllocBytes<TRUE>
-    {
-        static BYTE *Invoke(SIZE_T iItems)
-        {
-            return NEW_THROWS(iItems);
-        }
-    };
-
-    template <>
-    struct _AllocBytes<FALSE>
-    {
-        static BYTE *Invoke(SIZE_T iItems)
-        {
-            return NEW_NOTHROW(iItems);
-        }
-    };
-};
+#include "quickbytes.h"
 
 void DECLSPEC_NORETURN ThrowHR(HRESULT hr);
 
@@ -68,329 +46,133 @@ inline BOOL IsSuspendEEThread();
 #endif // !DACCESS_COMPILE
 
 template <SIZE_T SIZE, SIZE_T INCREMENT>
-class CQuickMemoryBase
+HRESULT CQuickMemoryBase<SIZE, INCREMENT>::ReSizeNoThrow(SIZE_T iItems)
 {
-protected:
-    template <typename ELEM_T>
-    static ELEM_T Min(ELEM_T a, ELEM_T b)
-        { return a < b ? a : b; }
-
-    template <typename ELEM_T>
-    static ELEM_T Max(ELEM_T a, ELEM_T b)
-        { return a < b ? b : a; }
-
-    // bGrow  - indicates that this is a resize and that the original data
-    //          needs to be copied over.
-    // bThrow - indicates whether or not memory allocations will throw.
-    template <BOOL bGrow, BOOL bThrow>
-    void *_Alloc(SIZE_T iItems)
-    {
-#if defined(_DEBUG)
-        {  // Exercise heap for OOM-fault injection purposes
-            BYTE * pb = NSQuickBytesHelper::_AllocBytes<bThrow>::Invoke(iItems);
-            _ASSERTE(!bThrow || pb != NULL); // _AllocBytes would have thrown if bThrow == TRUE
-            if (pb == NULL) return NULL; // bThrow == FALSE and we failed to allocate memory
-            delete [] pb; // Success, delete allocated memory.
-        }
-#endif
-        if (iItems <= cbTotal)
-        {   // Fits within existing memory allocation
-            iSize = iItems;
-        }
-        else if (iItems <= SIZE)
-        {   // Will fit in internal buffer.
-            if (pbBuff == NULL)
-            {   // Any previous allocation is in the internal buffer and the new
-                // allocation fits in the internal buffer, so just update the size.
-                iSize = iItems;
-                cbTotal = SIZE;
-            }
-            else
-            {   // There was a previous allocation, sitting in pbBuff
-                if (bGrow)
-                {   // If growing, need to copy any existing data over.
-                    memcpy(&rgData[0], pbBuff, Min(cbTotal, SIZE));
-                }
-
-                delete [] pbBuff;
-                pbBuff = NULL;
-                iSize = iItems;
-                cbTotal = SIZE;
-            }
-        }
-        else
-        {   // Need to allocate a new buffer
-            SIZE_T cbTotalNew = iItems + (bGrow ? INCREMENT : 0);
-            BYTE * pbBuffNew = NSQuickBytesHelper::_AllocBytes<bThrow>::Invoke(cbTotalNew);
-
-            if (!bThrow && pbBuffNew == NULL)
-            {   // Allocation failed. Zero out structure.
-                if (pbBuff != NULL)
-                {   // Delete old buffer
-                    delete [] pbBuff;
-                }
-                pbBuff = NULL;
-                iSize = 0;
-                cbTotal = 0;
-                return NULL;
-            }
-
-            if (bGrow && cbTotal > 0)
-            {   // If growing, need to copy any existing data over.
-                memcpy(pbBuffNew, (BYTE *)Ptr(), Min(cbTotal, cbTotalNew));
-            }
-
-            if (pbBuff != NULL)
-            {   // Delete old pre-existing buffer
-                delete [] pbBuff;
-                pbBuff = NULL;
-            }
-
-            pbBuff = pbBuffNew;
-            cbTotal = cbTotalNew;
-            iSize = iItems;
-        }
-
-        return Ptr();
-    }
-
-public:
-    void Init()
-    {
-        pbBuff = 0;
-        iSize = 0;
-        cbTotal = SIZE;
-    }
-
-    void Destroy()
-    {
-        if (pbBuff)
-        {
-            delete [] pbBuff;
-            pbBuff = 0;
-        }
-    }
-
-    void *AllocThrows(SIZE_T iItems)
-    {
-        return _Alloc<FALSE /*bGrow*/, TRUE /*bThrow*/>(iItems);
-    }
-
-    void *AllocNoThrow(SIZE_T iItems)
-    {
-        return _Alloc<FALSE /*bGrow*/, FALSE /*bThrow*/>(iItems);
-    }
-
-    void ReSizeThrows(SIZE_T iItems)
-    {
-        _Alloc<TRUE /*bGrow*/, TRUE /*bThrow*/>(iItems);
-    }
-
-    HRESULT ReSizeNoThrow(SIZE_T iItems)
-    {
 #ifdef _DEBUG
 #ifndef DACCESS_COMPILE
-        // Exercise heap for OOM-fault injection purposes
-        // But we can't do this if current thread suspends EE
-        if (!IsSuspendEEThread())
+    // Exercise heap for OOM-fault injection purposes
+    // But we can't do this if current thread suspends EE
+    if (!IsSuspendEEThread())
+    {
+        BYTE *pTmp = NEW_NOTHROW(iItems);
+        if (!pTmp)
         {
-            BYTE *pTmp = NEW_NOTHROW(iItems);
-            if (!pTmp)
-            {
-                return E_OUTOFMEMORY;
-            }
-            delete [] pTmp;
-        }
-#endif
-#endif
-
-        if (iItems <= cbTotal)
-        {
-            iSize = iItems;
-            return NOERROR;
-        }
-
-#ifndef DACCESS_COMPILE
-        // not allowed to do allocation if current thread suspends EE
-        if (IsSuspendEEThread())
             return E_OUTOFMEMORY;
+        }
+        delete [] pTmp;
+    }
+#endif
 #endif
 
-        BYTE *pbBuffNew = NEW_NOTHROW(iItems + INCREMENT);
-        if (!pbBuffNew)
-            return E_OUTOFMEMORY;
-
-        if (pbBuff)
-        {
-            memcpy(pbBuffNew, pbBuff, cbTotal);
-            delete [] pbBuff;
-        }
-        else
-        {
-            _ASSERTE(cbTotal == SIZE);
-            memcpy(pbBuffNew, rgData, cbTotal);
-        }
-
-        cbTotal = iItems + INCREMENT;
+    if (iItems <= cbTotal)
+    {
         iSize = iItems;
-        pbBuff = pbBuffNew;
         return NOERROR;
     }
 
-    void Shrink(SIZE_T iItems)
+#ifndef DACCESS_COMPILE
+    // not allowed to do allocation if current thread suspends EE
+    if (IsSuspendEEThread())
+        return E_OUTOFMEMORY;
+#endif
+
+    BYTE *pbBuffNew = NEW_NOTHROW(iItems + INCREMENT);
+    if (!pbBuffNew)
+        return E_OUTOFMEMORY;
+
+    if (pbBuff)
     {
-        _ASSERTE(iItems <= cbTotal);
-        iSize = iItems;
+        memcpy(pbBuffNew, pbBuff, cbTotal);
+        delete [] pbBuff;
+    }
+    else
+    {
+        _ASSERTE(cbTotal == SIZE);
+        memcpy(pbBuffNew, rgData, cbTotal);
     }
 
-    operator PVOID()
+    cbTotal = iItems + INCREMENT;
+    iSize = iItems;
+    pbBuff = pbBuffNew;
+    return NOERROR;
+}
+
+template <SIZE_T SIZE, SIZE_T INCREMENT>
+HRESULT CQuickMemoryBase<SIZE, INCREMENT>::ConvertUtf8_UnicodeNoThrow(const char * utf8str)
+{
+    bool allAscii;
+    DWORD length;
+
+    HRESULT hr = FString::Utf8_Unicode_Length(utf8str, & allAscii, & length);
+
+    if (SUCCEEDED(hr))
     {
-        return ((pbBuff) ? pbBuff : (PVOID)&rgData[0]);
-    }
+        LPWSTR buffer = (LPWSTR) AllocNoThrow((length + 1) * sizeof(WCHAR));
 
-    void *Ptr()
-    {
-        return ((pbBuff) ? pbBuff : (PVOID)&rgData[0]);
-    }
-
-    const void *Ptr() const
-    {
-        return ((pbBuff) ? pbBuff : (PVOID)&rgData[0]);
-    }
-
-    SIZE_T Size() const
-    {
-        return (iSize);
-    }
-
-    SIZE_T MaxSize() const
-    {
-        return (cbTotal);
-    }
-
-    void Maximize()
-    {
-        iSize = cbTotal;
-    }
-
-
-    // Convert UTF8 string to UNICODE string, optimized for speed
-    HRESULT ConvertUtf8_UnicodeNoThrow(const char * utf8str)
-    {
-        bool allAscii;
-        DWORD length;
-
-        HRESULT hr = FString::Utf8_Unicode_Length(utf8str, & allAscii, & length);
-
-        if (SUCCEEDED(hr))
+        if (buffer == NULL)
         {
-            LPWSTR buffer = (LPWSTR) AllocNoThrow((length + 1) * sizeof(WCHAR));
-
-            if (buffer == NULL)
-            {
-                hr = E_OUTOFMEMORY;
-            }
-            else
-            {
-                hr = FString::Utf8_Unicode(utf8str, allAscii, buffer, length);
-            }
+            hr = E_OUTOFMEMORY;
         }
-
-        return hr;
-    }
-
-    // Convert UTF8 string to UNICODE string, optimized for speed
-    void ConvertUtf8_Unicode(const char * utf8str)
-    {
-        bool allAscii;
-        DWORD length;
-
-        HRESULT hr = FString::Utf8_Unicode_Length(utf8str, & allAscii, & length);
-
-        if (SUCCEEDED(hr))
+        else
         {
-            LPWSTR buffer = (LPWSTR) AllocThrows((length + 1) * sizeof(WCHAR));
-
             hr = FString::Utf8_Unicode(utf8str, allAscii, buffer, length);
         }
-
-        if (FAILED(hr))
-        {
-            ThrowHR(hr);
-        }
     }
 
-    // Convert UNICODE string to UTF8 string, optimized for speed
-    void ConvertUnicode_Utf8(const WCHAR * pString)
+    return hr;
+}
+
+template <SIZE_T SIZE, SIZE_T INCREMENT>
+void CQuickMemoryBase<SIZE, INCREMENT>::ConvertUtf8_Unicode(const char * utf8str)
+{
+    bool allAscii;
+    DWORD length;
+
+    HRESULT hr = FString::Utf8_Unicode_Length(utf8str, & allAscii, & length);
+
+    if (SUCCEEDED(hr))
     {
-        bool allAscii;
-        DWORD length;
+        LPWSTR buffer = (LPWSTR) AllocThrows((length + 1) * sizeof(WCHAR));
 
-        HRESULT hr = FString::Unicode_Utf8_Length(pString, & allAscii, & length);
-
-        if (SUCCEEDED(hr))
-        {
-            LPSTR buffer = (LPSTR) AllocThrows((length + 1) * sizeof(char));
-
-            hr = FString::Unicode_Utf8(pString, allAscii, buffer, length);
-        }
-
-        if (FAILED(hr))
-        {
-            ThrowHR(hr);
-        }
+        hr = FString::Utf8_Unicode(utf8str, allAscii, buffer, length);
     }
 
-    // Copy single byte string and hold it
-    const char * SetString(const char * pStr, SIZE_T len)
+    if (FAILED(hr))
     {
-        LPSTR buffer = (LPSTR) AllocThrows(len + 1);
-
-        memcpy(buffer, pStr, len);
-        buffer[len] = 0;
-
-        return buffer;
+        ThrowHR(hr);
     }
+}
+
+template <SIZE_T SIZE, SIZE_T INCREMENT>
+void CQuickMemoryBase<SIZE, INCREMENT>::ConvertUnicode_Utf8(const WCHAR * pString)
+{
+    bool allAscii;
+    DWORD length;
+
+    HRESULT hr = FString::Unicode_Utf8_Length(pString, & allAscii, & length);
+
+    if (SUCCEEDED(hr))
+    {
+        LPSTR buffer = (LPSTR) AllocThrows((length + 1) * sizeof(char));
+
+        hr = FString::Unicode_Utf8(pString, allAscii, buffer, length);
+    }
+
+    if (FAILED(hr))
+    {
+        ThrowHR(hr);
+    }
+}
 
 #ifdef DACCESS_COMPILE
-    void
-    EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-    {
-        // Assume that 'this' is enumerated, either explicitly
-        // or because this class is embedded in another.
-        DacEnumMemoryRegion(dac_cast<TADDR>(pbBuff), iSize);
-    }
+template <SIZE_T SIZE, SIZE_T INCREMENT>
+void CQuickMemoryBase<SIZE, INCREMENT>::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+{
+    // Assume that 'this' is enumerated, either explicitly
+    // or because this class is embedded in another.
+    DacEnumMemoryRegion(dac_cast<TADDR>(pbBuff), iSize);
+}
 #endif // DACCESS_COMPILE
-
-    BYTE       *pbBuff;
-    SIZE_T      iSize;              // number of bytes used
-    SIZE_T      cbTotal;            // total bytes allocated in the buffer
-    // use UINT64 to enforce the alignment of the memory
-    UINT64 rgData[(SIZE+sizeof(UINT64)-1)/sizeof(UINT64)];
-};
-
-// These should be multiples of 8 so that data can be naturally aligned.
-#define     CQUICKBYTES_BASE_SIZE           512
-#define     CQUICKBYTES_INCREMENTAL_SIZE    128
-
-class CQuickBytesBase : public CQuickMemoryBase<CQUICKBYTES_BASE_SIZE, CQUICKBYTES_INCREMENTAL_SIZE>
-{
-};
-
-
-class CQuickBytes : public CQuickBytesBase
-{
-public:
-    CQuickBytes()
-    {
-        Init();
-    }
-
-    ~CQuickBytes()
-    {
-        Destroy();
-    }
-};
 
 /* to be used as static variable - no constructor/destructor, assumes zero
    initialized memory */
