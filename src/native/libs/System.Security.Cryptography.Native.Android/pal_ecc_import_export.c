@@ -364,7 +364,7 @@ int32_t AndroidCryptoNative_EcKeyExportPkcs8PrivateKey(const EC_KEY* key,
 {
     abort_if_invalid_pointer_argument(key);
     abort_if_invalid_pointer_argument(bytesWritten);
-    abort_if_negative_integer_argument(destinationLength);
+    abort_unless(destinationLength >= 0, "Parameter 'destinationLength' must not be negative");
 
     *bytesWritten = 0;
 
