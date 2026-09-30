@@ -1412,62 +1412,46 @@ namespace System.Numerics.Tensors
                 }
 
                 scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-                try
+                scoped Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+                if (dimensions.IsEmpty)
                 {
-                    scoped Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-                    try
+                    for (int i = 0; i < tensor.Rank; i++)
                     {
-                        if (dimensions.IsEmpty)
-                        {
-                            for (int i = 0; i < tensor.Rank; i++)
-                            {
-                                newLengths[i] = tensor.Lengths[tensor.Rank - 1 - i];
-                                newStrides[i] = tensor.Strides[tensor.Rank - 1 - i];
-                            }
-                        }
-                        else
-                        {
-                            scoped Span<ulong> seen = TensorOperation.RentedBuffer.CreateUninitialized(
-                                (tensor.Rank - 1) / 64 + 1, out TensorOperation.RentedBuffer<ulong> seenRentedBuffer);
-                            try
-                            {
-                                for (int i = 0; i < dimensions.Length; i++)
-                                {
-                                    int dimension = dimensions[i];
-                                    if ((uint)dimension >= (uint)tensor.Lengths.Length)
-                                    {
-                                        ThrowHelper.ThrowArgument_InvalidDimension();
-                                    }
-
-                                    int word = dimension / 64;
-                                    ulong bit = 1UL << (dimension % 64);
-                                    if ((seen[word] & bit) != 0)
-                                    {
-                                        ThrowHelper.ThrowArgument_PermuteAxisOrder();
-                                    }
-
-                                    seen[word] |= bit;
-                                    newLengths[i] = tensor.Lengths[dimension];
-                                    newStrides[i] = tensor.Strides[dimension];
-                                }
-                            }
-                            finally
-                            {
-                                seenRentedBuffer.Dispose();
-                            }
-                        }
-
-                        return new Tensor<T>(tensor._values, tensor._start, newLengths, newStrides, tensor.IsPinned);
-                    }
-                    finally
-                    {
-                        stridesRentedBuffer.Dispose();
+                        newLengths[i] = tensor.Lengths[tensor.Rank - 1 - i];
+                        newStrides[i] = tensor.Strides[tensor.Rank - 1 - i];
                     }
                 }
-                finally
+                else
                 {
-                    lengthsRentedBuffer.Dispose();
+                    scoped Span<ulong> seen = TensorOperation.RentedBuffer.CreateUninitialized(
+                        (tensor.Rank - 1) / 64 + 1, out TensorOperation.RentedBuffer<ulong> seenRentedBuffer);
+                    for (int i = 0; i < dimensions.Length; i++)
+                    {
+                        int dimension = dimensions[i];
+                        if ((uint)dimension >= (uint)tensor.Lengths.Length)
+                        {
+                            ThrowHelper.ThrowArgument_InvalidDimension();
+                        }
+
+                        int word = dimension / 64;
+                        ulong bit = 1UL << (dimension % 64);
+                        if ((seen[word] & bit) != 0)
+                        {
+                            ThrowHelper.ThrowArgument_PermuteAxisOrder();
+                        }
+
+                        seen[word] |= bit;
+                        newLengths[i] = tensor.Lengths[dimension];
+                        newStrides[i] = tensor.Strides[dimension];
+                    }
+                    seenRentedBuffer.Dispose();
                 }
+
+                Tensor<T> result = new Tensor<T>(tensor._values, tensor._start, newLengths, newStrides, tensor.IsPinned);
+                stridesRentedBuffer.Dispose();
+                lengthsRentedBuffer.Dispose();
+
+                return result;
             }
         }
         #endregion
@@ -1486,7 +1470,8 @@ namespace System.Numerics.Tensors
 
             lengths.CopyTo(result);
             int wildcardIndex = -1;
-            nint knownProduct = 1;
+            // A zero makes the entire product zero, regardless of preceding dimension sizes.
+            nint knownProduct = lengths.Contains(0) ? 0 : 1;
             for (int i = 0; i < lengths.Length; i++)
             {
                 nint length = lengths[i];
@@ -1584,25 +1569,15 @@ namespace System.Numerics.Tensors
             }
 
             scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(lengths.Length, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            try
-            {
-                GetReshapeLengths(lengths, tensor.FlattenedLength, newLengths);
-                scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-                try
-                {
-                    GetReshapeStrides(tensor.Lengths, tensor.Strides, tensor.IsDense, newLengths, strides);
+            GetReshapeLengths(lengths, tensor.FlattenedLength, newLengths);
+            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            GetReshapeStrides(tensor.Lengths, tensor.Strides, tensor.IsDense, newLengths, strides);
 
-                    return new Tensor<T>(tensor._values, tensor._start, newLengths, strides, tensor.IsPinned);
-                }
-                finally
-                {
-                    stridesRentedBuffer.Dispose();
-                }
-            }
-            finally
-            {
-                lengthsRentedBuffer.Dispose();
-            }
+            Tensor<T> result = new Tensor<T>(tensor._values, tensor._start, newLengths, strides, tensor.IsPinned);
+            stridesRentedBuffer.Dispose();
+            lengthsRentedBuffer.Dispose();
+
+            return result;
         }
 
         /// <summary>
@@ -1625,25 +1600,15 @@ namespace System.Numerics.Tensors
             }
 
             scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(lengths.Length, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            try
-            {
-                GetReshapeLengths(lengths, tensor.FlattenedLength, newLengths);
-                scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-                try
-                {
-                    GetReshapeStrides(tensor.Lengths, tensor.Strides, tensor.IsDense, newLengths, strides);
+            GetReshapeLengths(lengths, tensor.FlattenedLength, newLengths);
+            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            GetReshapeStrides(tensor.Lengths, tensor.Strides, tensor.IsDense, newLengths, strides);
 
-                    return new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides, tensor.IsPinned);
-                }
-                finally
-                {
-                    stridesRentedBuffer.Dispose();
-                }
-            }
-            finally
-            {
-                lengthsRentedBuffer.Dispose();
-            }
+            TensorSpan<T> result = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides, tensor.IsPinned);
+            stridesRentedBuffer.Dispose();
+            lengthsRentedBuffer.Dispose();
+
+            return result;
         }
 
         /// <summary>
@@ -1666,25 +1631,15 @@ namespace System.Numerics.Tensors
             }
 
             scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(lengths.Length, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            try
-            {
-                GetReshapeLengths(lengths, tensor.FlattenedLength, newLengths);
-                scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-                try
-                {
-                    GetReshapeStrides(tensor.Lengths, tensor.Strides, tensor.IsDense, newLengths, strides);
+            GetReshapeLengths(lengths, tensor.FlattenedLength, newLengths);
+            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            GetReshapeStrides(tensor.Lengths, tensor.Strides, tensor.IsDense, newLengths, strides);
 
-                    return new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides, tensor.IsPinned);
-                }
-                finally
-                {
-                    stridesRentedBuffer.Dispose();
-                }
-            }
-            finally
-            {
-                lengthsRentedBuffer.Dispose();
-            }
+            ReadOnlyTensorSpan<T> result = new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides, tensor.IsPinned);
+            stridesRentedBuffer.Dispose();
+            lengthsRentedBuffer.Dispose();
+
+            return result;
         }
         #endregion
 
@@ -3920,16 +3875,12 @@ namespace System.Numerics.Tensors
             where T : INumber<T>
         {
             T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
-            try
-            {
-                x.FlattenTo(flat);
+            x.FlattenTo(flat);
 
-                return TensorPrimitives.IndexOfMax<T>(flat.AsSpan(0, (int)x.FlattenedLength));
-            }
-            finally
-            {
-                ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-            }
+            nint result = TensorPrimitives.IndexOfMax<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+
+            return result;
         }
 
         #endregion
@@ -3953,16 +3904,12 @@ namespace System.Numerics.Tensors
             where T : INumber<T>
         {
             T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
-            try
-            {
-                x.FlattenTo(flat);
+            x.FlattenTo(flat);
 
-                return TensorPrimitives.IndexOfMaxMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
-            }
-            finally
-            {
-                ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-            }
+            nint result = TensorPrimitives.IndexOfMaxMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+
+            return result;
         }
         #endregion
 
@@ -3985,16 +3932,12 @@ namespace System.Numerics.Tensors
             where T : INumber<T>
         {
             T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
-            try
-            {
-                x.FlattenTo(flat);
+            x.FlattenTo(flat);
 
-                return TensorPrimitives.IndexOfMin<T>(flat.AsSpan(0, (int)x.FlattenedLength));
-            }
-            finally
-            {
-                ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-            }
+            nint result = TensorPrimitives.IndexOfMin<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+
+            return result;
         }
         #endregion
 
@@ -4019,16 +3962,12 @@ namespace System.Numerics.Tensors
             where T : INumber<T>
         {
             T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
-            try
-            {
-                x.FlattenTo(flat);
+            x.FlattenTo(flat);
 
-                return TensorPrimitives.IndexOfMinMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
-            }
-            finally
-            {
-                ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-            }
+            nint result = TensorPrimitives.IndexOfMinMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+
+            return result;
         }
         #endregion
 

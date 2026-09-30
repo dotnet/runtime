@@ -26,6 +26,56 @@ namespace System.Numerics.Tensors.Tests
                 new TensorSpan<int>(data, [4, 4], [])[5, 0]);
         }
 
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 1)]
+        [InlineData(3, 2)]
+        [InlineData(3, 3)]
+        [InlineData(6, 0)]
+        [InlineData(6, 1)]
+        [InlineData(6, 2)]
+        [InlineData(6, 3)]
+        public static void InvalidExplicitShapeAcrossBufferSizes(int rank, int invalidKind)
+        {
+            nint[] lengths = new nint[rank];
+            nint[] strides = new nint[rank];
+            Array.Fill(lengths, (nint)1);
+            lengths[0] = 2;
+            lengths[1] = 2;
+            strides[0] = 2;
+            strides[1] = 1;
+            switch (invalidKind)
+            {
+                case 0:
+                    lengths[0] = -2;
+                    break;
+                case 1:
+                    strides[0] = -2;
+                    break;
+                case 2:
+                    strides[0] = 1;
+                    break;
+                case 3:
+                    strides[0] = nint.MaxValue;
+                    break;
+            }
+
+            int[] data = [1, 2, 3, 4];
+            if (invalidKind != 2)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.Create(data, lengths, strides));
+                Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<int>(data, lengths, strides));
+                Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlyTensorSpan<int>(data, lengths, strides));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Tensor.Create(data, lengths, strides));
+                Assert.Throws<ArgumentException>(() => new TensorSpan<int>(data, lengths, strides));
+                Assert.Throws<ArgumentException>(() => new ReadOnlyTensorSpan<int>(data, lengths, strides));
+            }
+            Assert.Equal([1, 2, 3, 4], data);
+        }
+
         [Fact]
         public static void ReshapeHandlesZeroDimensions()
         {

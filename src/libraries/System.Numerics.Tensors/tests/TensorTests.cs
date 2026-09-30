@@ -1351,6 +1351,60 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [InlineData(2)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(15)]
+        [InlineData(16)]
+        [InlineData(17)]
+        [InlineData(64)]
+        public static void TensorGappedOperationsAcrossSliceThreshold(int columns)
+        {
+            int rowStride = columns + 3;
+            nint[] lengths = [2, columns];
+            nint[] strides = [rowStride, 1];
+            int[] input = Enumerable.Repeat(-99, 2 * rowStride).ToArray();
+            int[] output = Enumerable.Repeat(-99, input.Length).ToArray();
+            int[] expected = (int[])output.Clone();
+            for (int row = 0; row < 2; row++)
+            {
+                for (int column = 0; column < columns; column++)
+                {
+                    input[row * rowStride + column] = -(row * columns + column + 1);
+                }
+            }
+
+            ReadOnlyTensorSpan<int> source = new ReadOnlyTensorSpan<int>(input, lengths, strides);
+            TensorSpan<int> destination = new TensorSpan<int>(output, lengths, strides);
+
+            Tensor.Abs(source, destination);
+            Validate(1, 0);
+            Tensor.Add(source, source, destination);
+            Validate(-2, 0);
+            Tensor.Multiply(source, 3, destination);
+            Validate(-3, 0);
+            Tensor.Subtract(50, source, destination);
+            Validate(1, 50);
+            destination.Clear();
+            Validate(0, 0);
+            destination.Fill(7);
+            Validate(0, 7);
+
+            void Validate(int multiplier, int addend)
+            {
+                for (int row = 0; row < 2; row++)
+                {
+                    for (int column = 0; column < columns; column++)
+                    {
+                        expected[row * rowStride + column] = multiplier * (row * columns + column + 1) + addend;
+                    }
+                }
+                Assert.Equal(expected, output);
+            }
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public static void TensorOperationsOnBroadcastContiguousSlices(bool paddedRank)
@@ -1375,6 +1429,49 @@ namespace System.Numerics.Tensors.Tests
 
             Tensor.Subtract(10, source, result);
             Assert.Equal([11, 12, 13, 14, -99, -99, 11, 12, 13, 14, -99, -99], resultData);
+        }
+
+        [Theory]
+        [InlineData(3, 2)]
+        [InlineData(6, 2)]
+        [InlineData(6, 8)]
+        [InlineData(6, 16)]
+        public static void TensorGappedOperationsPropagateExceptions(int rank, int columns)
+        {
+            nint[] lengths = Enumerable.Repeat((nint)1, rank).ToArray();
+            nint[] strides = new nint[rank];
+            lengths[rank - 2] = 2;
+            lengths[rank - 1] = columns;
+            strides[rank - 2] = columns + 3;
+            strides[rank - 1] = 1;
+            int[] data = Enumerable.Repeat(1, 2 * (columns + 3)).ToArray();
+            data[0] = int.MinValue;
+            int[] output = Enumerable.Repeat(-99, data.Length).ToArray();
+            Tensor<int> source = Tensor.Create(data, lengths, strides);
+            Tensor<int> zero = Tensor.Create(new int[data.Length], lengths, strides);
+            Tensor<int> destination = Tensor.Create(output, lengths, strides);
+
+            Assert.Throws<OverflowException>(() => Tensor.Abs<int>(source.AsReadOnlyTensorSpan(), destination.AsTensorSpan()));
+            Assert.Throws<DivideByZeroException>(() => Tensor.Divide<int>(source.AsReadOnlyTensorSpan(), zero.AsReadOnlyTensorSpan(), destination.AsTensorSpan()));
+            Assert.Throws<DivideByZeroException>(() => Tensor.Divide<int>(source.AsReadOnlyTensorSpan(), 0, destination.AsTensorSpan()));
+            Assert.Throws<DivideByZeroException>(() => Tensor.Divide<int>(1, zero.AsReadOnlyTensorSpan(), destination.AsTensorSpan()));
+            Assert.All(output, value => Assert.Equal(-99, value));
+        }
+
+        [Theory]
+        [InlineData(3)]
+        [InlineData(6)]
+        public static void TensorComparisonBroadcastShapeOverflow(int rank)
+        {
+            nint[] xLengths = Enumerable.Repeat((nint)1, rank).ToArray();
+            nint[] yLengths = (nint[])xLengths.Clone();
+            xLengths[0] = nint.MaxValue;
+            yLengths[1] = 2;
+            Tensor<int> x = Tensor.Create([1], xLengths, new nint[rank]);
+            Tensor<int> y = Tensor.Create([1], yLengths, new nint[rank]);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.EqualsAny<int>(x.AsReadOnlyTensorSpan(), y.AsReadOnlyTensorSpan()));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.EqualsAll<int>(x.AsReadOnlyTensorSpan(), y.AsReadOnlyTensorSpan()));
         }
 
         [Fact]
@@ -3767,6 +3864,44 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([1, 2, 1, 2], broadcast.Reshape([2, 1, 2]).ToArray());
             Assert.Equal([1, 2, 1, 2], broadcast.Reshape([1, 2, 2]).Reshape([2, 2]).ToArray());
             Assert.Equal([1, 2, 3, 4], tensor.Reshape([1, 4]).Reshape([4]).ToArray());
+        }
+
+        [Theory]
+        [InlineData(3, false)]
+        [InlineData(3, true)]
+        [InlineData(6, false)]
+        [InlineData(6, true)]
+        public static void TensorEmptyReshapeIgnoresProductOverflow(int rank, bool zeroBeforeOverflow)
+        {
+            nint[] lengths = new nint[rank];
+            Array.Fill(lengths, (nint)1);
+            lengths[0] = nint.MaxValue;
+            lengths[1] = zeroBeforeOverflow ? 0 : 2;
+            lengths[^1] = zeroBeforeOverflow ? 2 : 0;
+            Tensor<int> empty = Tensor.CreateFromShape<int>([0]);
+            Tensor<int> expected = Tensor.CreateFromShape<int>(lengths);
+
+            Tensor<int> reshaped = empty.Reshape(lengths);
+            TensorSpan<int> span = empty.AsTensorSpan().Reshape(lengths);
+            ReadOnlyTensorSpan<int> readOnlySpan = empty.AsReadOnlyTensorSpan().Reshape(lengths);
+            Assert.Equal(lengths, reshaped.Lengths);
+            Assert.Equal(lengths, span.Lengths);
+            Assert.Equal(lengths, readOnlySpan.Lengths);
+            Assert.Equal(expected.Strides, reshaped.Strides);
+            Assert.Equal(expected.Strides, span.Strides);
+            Assert.Equal(expected.Strides, readOnlySpan.Strides);
+            Assert.Equal(0, reshaped.FlattenedLength);
+            Assert.Equal(0, span.FlattenedLength);
+            Assert.Equal(0, readOnlySpan.FlattenedLength);
+
+            lengths[0] = -1;
+            Assert.Throws<ArgumentException>(() => empty.Reshape(lengths));
+            Assert.Throws<ArgumentException>(() => empty.AsTensorSpan().Reshape(lengths));
+            Assert.Throws<ArgumentException>(() => empty.AsReadOnlyTensorSpan().Reshape(lengths));
+            lengths[0] = -2;
+            Assert.Throws<ArgumentException>(() => empty.Reshape(lengths));
+            Assert.Throws<ArgumentException>(() => empty.AsTensorSpan().Reshape(lengths));
+            Assert.Throws<ArgumentException>(() => empty.AsReadOnlyTensorSpan().Reshape(lengths));
         }
 
         [Theory]

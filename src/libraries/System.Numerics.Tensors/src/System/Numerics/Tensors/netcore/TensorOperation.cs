@@ -14,6 +14,9 @@ namespace System.Numerics.Tensors
         // Constructing slices costs more than indexed iteration for tiny tensors.
         internal const int MinSlicedOperationLength = 32;
 
+        // Three indexed traversals make binary slicing pay off at 16 elements rather than 32.
+        private const int MinSlicedBinaryOperationLength = 16;
+
         private static bool ValidateSourceOverlap<TSource, TDestination>(
             in ReadOnlyTensorSpan<TSource> source, in TensorSpan<TDestination> destination, bool isCopy = false)
         {
@@ -77,12 +80,13 @@ namespace System.Numerics.Tensors
             return new ReadOnlyTensorSpan<T>(in source._reference, in shape);
         }
 
-        internal static int GetDenseSliceDimension(in TensorShape source, in TensorShape destination, in TensorShape other = default)
+        internal static int GetDenseSliceDimension(in TensorShape source, in TensorShape destination, in TensorShape other = default,
+            int minimumLength = MinSlicedOperationLength)
         {
             ReadOnlySpan<nint> lengths = destination.Lengths;
-            if (!source.Lengths.SequenceEqual(lengths) ||
-                (other.Rank != 0 && !other.Lengths.SequenceEqual(lengths)) ||
-                destination.FlattenedLength == 0)
+            if (destination.FlattenedLength < minimumLength ||
+                !source.Lengths.SequenceEqual(lengths) ||
+                (other.Rank != 0 && !other.Lengths.SequenceEqual(lengths)))
             {
                 return -1;
             }
@@ -448,7 +452,7 @@ namespace System.Numerics.Tensors
                     return;
                 }
 
-                int dimension = GetDenseSliceDimension(optimizedX._shape, destination._shape, optimizedY._shape);
+                int dimension = GetDenseSliceDimension(optimizedX._shape, destination._shape, optimizedY._shape, MinSlicedBinaryOperationLength);
                 if (dimension >= 0)
                 {
                     ReadOnlyTensorDimensionSpan<TArg1> xSlices = optimizedX.GetDimensionSpan(dimension);
