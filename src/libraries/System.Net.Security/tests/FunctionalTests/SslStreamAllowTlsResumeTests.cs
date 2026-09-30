@@ -19,6 +19,7 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if DEBUG
     [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
     public class SslStreamTlsResumeTests
     {
@@ -413,7 +414,12 @@ namespace System.Net.Security.Tests
                 await RunConnectionAsync(serverOptions, clientOptions, false);
             }
         }
+    }
+#endif
 
+    [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+    public class SslStreamTlsResumeCallbackTests
+    {
         public static IEnumerable<object[]> RevalidateSwitchData()
         {
             foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
