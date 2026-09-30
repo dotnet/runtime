@@ -39,7 +39,7 @@ if not exist IL_DLLS\ilbody-implflags-versioning.dll (
 )
 
 REM Compile against V1 of the helper, with cross-module inlining of its methods
-%Core_Root%\crossgen2\crossgen2.exe -O --opt-cross-module:helper -r:%Core_Root%\*.dll -r:%25CD%\helperv1\helper.dll -o:ilbody-implflags-versioning.dll IL_DLLS\ilbody-implflags-versioning.dll
+%Core_Root%\crossgen2\crossgen2.exe -O --opt-cross-module:ImplFlagHelper -r:%Core_Root%\*.dll -r:%25CD%\helperv1\ImplFlagHelper.dll -o:ilbody-implflags-versioning.dll IL_DLLS\ilbody-implflags-versioning.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -48,7 +48,7 @@ IF NOT !CrossGenStatus!==0 (
 )
 
 REM Run against V2 of the helper
-copy /y helperv2\helper.dll helper.dll
+copy /y helperv2\ImplFlagHelper.dll ImplFlagHelper.dll
 
 endlocal
 ]]></CLRTestBatchPreCommands>
@@ -71,7 +71,7 @@ then
 fi
 
 # Compile against V1 of the helper, with cross-module inlining of its methods
-"$CORE_ROOT"/crossgen2/crossgen2 -O --opt-cross-module:helper -r:"$CORE_ROOT"/*.dll -r:helperv1/helper.dll -o:ilbody-implflags-versioning.dll IL_DLLS/ilbody-implflags-versioning.dll
+"$CORE_ROOT"/crossgen2/crossgen2 -O --opt-cross-module:ImplFlagHelper -r:"$CORE_ROOT"/*.dll -r:helperv1/ImplFlagHelper.dll -o:ilbody-implflags-versioning.dll IL_DLLS/ilbody-implflags-versioning.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -81,7 +81,7 @@ then
 fi
 
 # Run against V2 of the helper
-cp helperv2/helper.dll helper.dll
+cp helperv2/ImplFlagHelper.dll ImplFlagHelper.dll
 
 export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 ]]></CLRTestBashPreCommands>
@@ -95,7 +95,7 @@ export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
       <HelperV2TargetPath>$(OutputPath)/helperv2</HelperV2TargetPath>
     </PropertyGroup>
     <MakeDir Directories="$(HelperV1TargetPath);$(HelperV2TargetPath)" />
-    <Copy SourceFiles="$(HelperV1SourcePath)helper.dll" DestinationFolder="$(HelperV1TargetPath)" />
-    <Copy SourceFiles="$(HelperV2SourcePath)helper.dll" DestinationFolder="$(HelperV2TargetPath)" />
+    <Copy SourceFiles="$(HelperV1SourcePath)ImplFlagHelper.dll" DestinationFolder="$(HelperV1TargetPath)" />
+    <Copy SourceFiles="$(HelperV2SourcePath)ImplFlagHelper.dll" DestinationFolder="$(HelperV2TargetPath)" />
   </Target>
 </Project>

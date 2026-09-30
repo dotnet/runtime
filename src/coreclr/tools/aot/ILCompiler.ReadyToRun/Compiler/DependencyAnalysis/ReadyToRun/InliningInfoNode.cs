@@ -74,7 +74,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 MethodDesc inliner = methodNode.Method;
                 EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
-                MethodDesc inlinerIdentity = ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(inliner);
 
                 if (inlinerDefinition.IsNonVersionable())
                 {
@@ -85,8 +84,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Only encode inlining info for inliners within the active module, or if cross module inline format is in use
                 Debug.Assert(AllowCrossModuleInlines || (inlinerDefinition.Module == _module));
 
+                MethodDesc inlinerIdentity;
                 if (AllowCrossModuleInlines && !factory.CompilationModuleGroup.VersionsWithMethodBody(inlinerDefinition))
                 {
+                    inlinerIdentity = ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(inliner);
+
                     // Cross-module inliners are encoded by their own Check_IL_Body import. Thunks and stubs don't have one.
                     if (inlinerIdentity is null || inlinerIdentity.IsCompilerGeneratedILBodyForAsync())
                         continue;

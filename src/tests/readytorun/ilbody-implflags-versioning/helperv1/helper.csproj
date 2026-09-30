@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <AssemblyName>ImplFlagHelper</AssemblyName>
     <Features>$(Features);runtime-async=on</Features>
     <!-- V1 and V2 must produce identical IL bodies. -->
     <Optimize>true</Optimize>

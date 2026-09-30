@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-// This assembly is compiled with cross-module inlining against V1 of helper.dll and runs against V2,
+// This assembly is compiled with cross-module inlining against V1 of ImplFlagHelper.dll and runs against V2,
 // whose methods have the same IL bodies but different runtime-async or synchronized impl flags. Code
 // that inlined the V1 bodies must be rejected, so every result below must reflect the V2 semantics.
 public class ILBodyImplFlagsVersioning
