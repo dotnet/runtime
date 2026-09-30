@@ -29,6 +29,7 @@ namespace System.Runtime.Loader.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
     public class RefEmitLoadContextTests
     {
         public static string s_loadFromPath = null;

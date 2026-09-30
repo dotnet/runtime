@@ -319,6 +319,7 @@ namespace System.Data.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void DataColumn_ConvertExpression_SubjectToAllowList_Failure()
         {
             // Arrange
@@ -420,6 +421,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void SerializationGuard_BlocksFileAccessOnDeserialize()
         {
             // Arrange

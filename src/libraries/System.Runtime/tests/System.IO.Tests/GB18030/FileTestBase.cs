@@ -69,6 +69,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void Copy(string gb18030Line)
     {

@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XslTransformApiTests
 {
     //[TestCase(Name = "Null argument tests", Desc = "This testcase passes NULL arguments to all XslTransform methods")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CNullArgumentTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -345,6 +346,7 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltTransform.XmlResolver : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltTransform.XmlResolver : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltTransform.XmlResolver : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CXmlResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -508,6 +510,7 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltTransform.Load() - Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltTransform.Load() - Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltTransform.Load() - Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CLoadTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -924,6 +927,7 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltTransform.Load(,XmlResolver) - Integrity : URI, Stream", Desc = "URI,STREAM")]
     //[TestCase(Name = "XsltTransform.Load(,XmlResolver) - Integrity : URI, Writer", Desc = "URI,WRITER")]
     //[TestCase(Name = "XsltTransform.Load(,XmlResolver) - Integrity : URI, TextWriter", Desc = "URI,TEXTWRITER")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CLoadXmlResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -1267,6 +1271,7 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltTransform.Load(Url, Resolver) : URI, Stream", Desc = "URI,STREAM")]
     //[TestCase(Name = "XsltTransform.Load(Url, Resolver) : URI, Writer", Desc = "URI,WRITER")]
     //[TestCase(Name = "XsltTransform.Load(Url, Resolver) : URI, TextWriter", Desc = "URI,TEXTWRITER")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CLoadUrlResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -1339,6 +1344,7 @@ namespace System.Xml.XslTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltTransform.Load(Url) Integrity : URI, Stream", Desc = "URI,STREAM")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CLoadStringTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -1441,6 +1447,7 @@ namespace System.Xml.XslTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltTransform .Load(IXPathNavigable) : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CLoadXPathNavigableTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -1549,6 +1556,7 @@ namespace System.Xml.XslTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltTransform.Load(Reader) : Reader, Stream", Desc = "READER,STREAM")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CLoadReaderTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -1791,6 +1799,7 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltTransform.Transform() Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltTransform.Transform() Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltTransform.Transform() Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CTransformTestGeneric : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -2009,6 +2018,7 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltTransform.Transform(,XmlResolver) : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltTransform.Transform(,XmlResolver) : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltTransform.Transform(,XmlResolver) : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CTransformResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -2161,6 +2171,7 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltTransform.Transform(String, String) : Reader , String", Desc = "READER,STREAM")]
     //[TestCase(Name = "XsltTransform.Transform(String, String) : URI, String", Desc = "URI,STREAM")]
     //[TestCase(Name = "XsltTransform.Transform(String, String) : Navigator, String", Desc = "NAVIGATOR,STREAM")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CTransformStrStrTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -2552,6 +2563,7 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltTransform.Transform(String, String, Resolver) : Reader , String", Desc = "READER,STREAM")]
     //[TestCase(Name = "XsltTransform.Transform(String, String, Resolver) : URI, String", Desc = "URI,STREAM")]
     //[TestCase(Name = "XsltTransform.Transform(String, String, Resolver) : Navigator, String", Desc = "NAVIGATOR,STREAM")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CTransformStrStrResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -2644,6 +2656,7 @@ namespace System.Xml.XslTransformApiTests
     // This testcase is for bugs 109429, 111075 and 109644 fixed in Everett SP1
     //[TestCase(Name = "NDP1_1SP1 Bugs (URI,STREAM)", Desc = "URI,STREAM")]
     //[TestCase(Name = "NDP1_1SP1 Bugs (NAVIGATOR,TEXTWRITER)", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CNDP1_1SP1Test : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;

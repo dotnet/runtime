@@ -211,6 +211,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
         public void FileCopy()
         {
             // Copy to a new file.
