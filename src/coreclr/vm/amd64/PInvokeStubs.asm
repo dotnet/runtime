@@ -4,18 +4,22 @@
 include AsmMacros.inc
 include AsmConstants.inc
 
+ifdef FEATURE_VARARGS
 extern VarargPInvokeStubWorker:proc
+endif ; FEATURE_VARARGS
 extern JIT_PInvokeEndRarePath:proc
 
 extern g_TrapReturningThreads:DWORD
 
+ifdef FEATURE_VARARGS
+
 LEAF_ENTRY VarargPInvokeStub, _TEXT
-        mov             PINVOKE_CALLI_SIGTOKEN_REGISTER, rcx
+        mov             PINVOKE_VARARG_SIGTOKEN_REGISTER, rcx
         jmp             VarargPInvokeStubHelper
 LEAF_END VarargPInvokeStub, _TEXT
 
 LEAF_ENTRY VarargPInvokeStub_RetBuffArg, _TEXT
-        mov             PINVOKE_CALLI_SIGTOKEN_REGISTER, rdx
+        mov             PINVOKE_VARARG_SIGTOKEN_REGISTER, rdx
         jmp             VarargPInvokeStubHelper
 LEAF_END VarargPInvokeStub_RetBuffArg, _TEXT
 
@@ -23,7 +27,7 @@ LEAF_ENTRY VarargPInvokeStubHelper, _TEXT
         ;
         ; check for existing IL stub
         ;
-        mov             rax, [PINVOKE_CALLI_SIGTOKEN_REGISTER + OFFSETOF__VASigCookie__pPInvokeILStub]
+        mov             rax, [PINVOKE_VARARG_SIGTOKEN_REGISTER + OFFSETOF__VASigCookie__pPInvokeILStub]
         test            rax, rax
         jz              VarargPInvokeGenILStub
 
@@ -36,7 +40,7 @@ LEAF_END VarargPInvokeStubHelper, _TEXT
 
 ;
 ; IN: METHODDESC_REGISTER (R10) stub secret param
-;     PINVOKE_CALLI_SIGTOKEN_REGISTER (R11) VASigCookie*
+;     PINVOKE_VARARG_SIGTOKEN_REGISTER (R11) VASigCookie*
 ;
 ; ASSUMES: we already checked for an existing stub to use
 ;
@@ -48,13 +52,13 @@ NESTED_ENTRY VarargPInvokeGenILStub, _TEXT
         ; save target
         ;
         mov             r12, METHODDESC_REGISTER
-        mov             r13, PINVOKE_CALLI_SIGTOKEN_REGISTER
+        mov             r13, PINVOKE_VARARG_SIGTOKEN_REGISTER
 
         ;
         ; VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
         ;
         lea             rcx, [rsp + __PWTB_TransitionBlock]     ; pTransitionBlock*
-        mov             rdx, PINVOKE_CALLI_SIGTOKEN_REGISTER    ; pVASigCookie
+        mov             rdx, PINVOKE_VARARG_SIGTOKEN_REGISTER   ; pVASigCookie
         mov             r8, METHODDESC_REGISTER                 ; pMD
         call            VarargPInvokeStubWorker
 
@@ -62,12 +66,14 @@ NESTED_ENTRY VarargPInvokeGenILStub, _TEXT
         ; restore target
         ;
         mov             METHODDESC_REGISTER, r12
-        mov             PINVOKE_CALLI_SIGTOKEN_REGISTER, r13
+        mov             PINVOKE_VARARG_SIGTOKEN_REGISTER, r13
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         jmp             VarargPInvokeStubHelper
 
 NESTED_END VarargPInvokeGenILStub, _TEXT
+
+endif ; FEATURE_VARARGS
 
 ;
 ; in:

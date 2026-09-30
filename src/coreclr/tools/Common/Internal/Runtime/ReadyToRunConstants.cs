@@ -23,6 +23,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_StrippedILBodies = 0x00000200,         // IL method bodies have been stripped from the image
         READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
         READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
+        READYTORUN_FLAG_VerifyGCModeTransitions = 0x00001000,  // Code in this image verifies that GC mode transitions are legal. Catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -254,6 +255,7 @@ namespace Internal.ReadyToRunConstants
         CheckedWriteBarrier         = 0x31,
         ByRefWriteBarrier           = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
         BulkWriteBarrier            = 0x33,
+        BulkWriteBarrierSmall       = 0x34,
 
         // Array helpers
         Stelem_Ref                  = 0x38,
@@ -270,6 +272,7 @@ namespace Internal.ReadyToRunConstants
         GCPoll                      = 0x44,
         ReversePInvokeEnter         = 0x45,
         ReversePInvokeExit          = 0x46,
+        ResumeAfterCatch            = 0x47,
 
         // Get string handle lazily
         GetString = 0x50,

@@ -10,11 +10,14 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem.TypesDebugInfo;
 using ILCompiler.DependencyAnalysis.Wasm;
+using System.Linq;
 
 namespace ILCompiler.ObjectWriter
 {
     internal sealed partial class WasmRelocatableObjectWriter : WasmObjectWriter
     {
+        private WasmDataSection _dataSection;
+
         public WasmRelocatableObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null) : base(factory, options, outputInfoBuilder)
         {
         }
@@ -30,32 +33,67 @@ namespace ILCompiler.ObjectWriter
 
             return section;
         }
+
+        private protected override void EmitSectionsAndLayout()
+        {
+            List<IWasmDataSegment> dataSegments = new();
+            foreach (SectionDataEmitter section in _sections.Sections)
+            {
+                if (section is WasmDataSegmentEmitter dataSegment)
+                {
+                    dataSegments.Add(dataSegment);
+                }
+            }
+
+            if (dataSegments.Count == 0)
+            {
+                return;
+            }
+
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.DataCountSection);
+            writer.WriteULEB128((ulong)dataSegments.Count);
+            _dataSection = new WasmDataSection(dataSegments, new Utf8String("data"));
+        }
+
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
             Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
 
             FinalizeSectionEntryCounts();
+            _dataSection?.AssignSegmentLayout();
+            ResolveSectionRelocations();
 
             EmitWasmHeader(outputFileStream);
 
             foreach (int index in SectionEmitOrder)
             {
-                SectionDataEmitter section = _sections[index];
-                if (_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> relocations) &&
-                    section is WasmSection)
+                IWasmSection section = _sections[index] as IWasmSection;
+                if (section == null)
                 {
-                    using (Stream originalStream = section.ContentReadStream)
-                    {
-                        MemoryStream stream = new MemoryStream((int)originalStream.Length);
-                        originalStream.Position = 0;
-                        originalStream.CopyTo(stream);
-                        ResolveRelocations(index, stream, relocations, sectionStart: 0);
-                        section.ContentReadStream = stream;
-                        // originalStream may be disposed, section.Stream now points to resolved stream
-                    }
+                    continue;
+                }
+                _sections[index].EmitToStream(outputFileStream);
+            }
+
+            _dataSection?.EmitToStream(outputFileStream);
+        }
+
+        private void ResolveSectionRelocations()
+        {
+            foreach ((int sectionIndex, List<SymbolicRelocation> relocations) in _resolvableRelocations)
+            {
+                SectionDataEmitter section = _sections[sectionIndex];
+                if (section is not WasmSection && section is not WasmDataSegmentEmitter)
+                {
+                    continue;
                 }
 
-                section.EmitToStream(outputFileStream);
+                using Stream originalStream = section.ContentReadStream;
+                MemoryStream resolvedStream = new((int)originalStream.Length);
+                originalStream.Position = 0;
+                originalStream.CopyTo(resolvedStream);
+                ResolveRelocations(sectionIndex, resolvedStream, relocations, sectionStart: 0);
+                section.ContentReadStream = resolvedStream;
             }
         }
 
@@ -76,6 +114,7 @@ namespace ILCompiler.ObjectWriter
 
         private unsafe void ResolveRelocations(int sectionIndex, MemoryStream sectionStream, List<SymbolicRelocation> relocs, long sectionStart = 0)
         {
+            // TODO: We also need to emit relocations in the reloc section for the linker to resolve.
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
 
             foreach (SymbolicRelocation reloc in relocs)
@@ -95,6 +134,11 @@ namespace ILCompiler.ObjectWriter
 
                     switch (reloc.Type)
                     {
+                        case RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32:
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, reloc.Addend + addend);
+                            break;
+                        }
                         case RelocType.WASM_TYPE_INDEX_LEB:
                         case RelocType.WASM_GLOBAL_INDEX_LEB:
                         case RelocType.WASM_TABLE_INDEX_I32:
@@ -102,7 +146,8 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_TABLE_INDEX_SLEB:
                         case RelocType.WASM_TABLE_INDEX_REL_I32:
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
-                        case RelocType.WASM_MEMORY_ADDR_REL_SLEB when _sections.GetSection<WasmSection>(definedSymbol.SectionIndex).Type == WasmSectionType.Code:
+                        case RelocType.WASM_MEMORY_ADDR_REL_SLEB when
+                            _sections[definedSymbol.SectionIndex] is WasmSection { Type: WasmSectionType.Code }:
                         {
                             // These relocations reference a wasm structural index (function, type,
                             // table entry, or well-known global). We self-resolve them here to
@@ -121,12 +166,25 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
                             break;
                         }
+                        case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                        {
+                            if (_sections[definedSymbol.SectionIndex] is WasmDataSegmentEmitter segment)
+                            {
+long targetAddress = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value + addend)) + reloc.Addend;
+                                Relocation.WriteValue(reloc.Type, pData, targetAddress);
+                            }
+                            else
+                            {
+                                throw new NotImplementedException();
+                            }
+                            break;
+                        }
 
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
                             throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' at "
-                                + $"offset 0x{reloc.Offset:X} in section {sectionIndex} not yet implemented");
+                                + $"offset 0x{reloc.Offset:X} in section {_sections[sectionIndex].SectionName} not yet implemented");
 
                     }
 
@@ -149,16 +207,26 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        // TODO: This is a temporary workaround for the fact that we don't yet emit a COMDAT section (or any reloc / linking sections)
+        private protected override bool UsesSubsectionsViaSymbols => true;
+
         private protected override SectionDataEmitter CreateDataSection(
             ObjectNodeSection section,
             int sectionIndex,
             Stream sectionStream)
         {
-            return new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String("data"), sectionIndex);
+            return new WasmDataSegmentEmitter(
+                sectionStream,
+                new Utf8String(section.Name),
+                sectionIndex);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
+            if (_sections[sectionIndex] is WasmDataSegmentEmitter dataSegment)
+            {
+                dataSegment.UpdateAlignment(alignment);
+            }
         }
         private protected override void WriteGlobalSection()
         {
@@ -201,12 +269,23 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void WriteExports()
         {
+            WasmSection codeSection = GetOrCreateSection<WasmSection>(ObjectNodeSection.WasmCodeSection, out _);
+            int codeSectionIndex = codeSection.SectionIndex;
+            foreach (var symbol in _definedSymbols)
+            {
+                // We only export methods for now
+                if (!symbol.Value.Global || symbol.Value.SectionIndex != codeSectionIndex)
+                    continue;
+
+                WasmSymbol methodEntry = _wasmSymbolManager.GetSymbol(symbol.Key);
+                Debug.Assert(methodEntry.IndexSpace == WasmIndexSpace.Function);
+                WriteFunctionExport(symbol.Key.ToString(), methodEntry.Index);
+            }
         }
 
         private protected override void WriteElements()
         {
         }
-
 
         // ObjectWriter.Aot.cs methods
         private protected override void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo, Utf8String currentSymbolName)
@@ -218,7 +297,7 @@ namespace ILCompiler.ObjectWriter
             return null;
         }
 
-        private protected override void EmitDebugFunctionInfo(uint methodTypeIndex, Utf8String methodName, SymbolDefinition methodSymbol, INodeWithDebugInfo debugNode, bool hasSequencePoints)
+        private protected override void EmitDebugFunctionInfo(uint methodTypeIndex, Utf8String methodDisplayName, Utf8String methodName, SymbolDefinition methodSymbol, INodeWithDebugInfo debugNode)
         {
         }
 

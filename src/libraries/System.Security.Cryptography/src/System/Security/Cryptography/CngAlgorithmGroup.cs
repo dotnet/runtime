@@ -168,6 +168,17 @@ namespace System.Security.Cryptography
         public static CngAlgorithmGroup CompositeMLDsa =>
             field ??= new CngAlgorithmGroup("CompositeMLDSA"); // NCRYPT_COMPOSITE_MLDSA_ALGORITHM_GROUP
 
+        /// <summary>
+        ///   Gets a <see cref="CngAlgorithmGroup" /> object that specifies the Composite Module-Lattice-Based Key-Encapsulation
+        ///   Mechanism (Composite ML-KEM) family of algorithms.
+        /// </summary>
+        /// <value>
+        ///   An object that specifies the Composite ML-KEM family of algorithms.
+        /// </value>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithmGroup CompositeMLKem =>
+            field ??= new CngAlgorithmGroup("CompositeMLKEM"); // NCRYPT_COMPOSITE_MLKEM_ALGORITHM_GROUP
+
         private static CngAlgorithmGroup? s_dh;
         private static CngAlgorithmGroup? s_dsa;
         private static CngAlgorithmGroup? s_ecdh;

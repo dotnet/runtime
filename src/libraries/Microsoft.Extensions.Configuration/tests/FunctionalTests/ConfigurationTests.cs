@@ -840,7 +840,7 @@ IniKey1=IniValue2");
             _fileSystem.DeleteFile(_iniFile);
 
             await WaitForChange(
-                () => config["Key"] == "JsonValue1",
+                () => config["Key"] == "JsonValue1" && token.HasChanged,
                 "Notification failed for deleting ini file.");
 
             Assert.Equal("JsonValue1", config["Key"]);
@@ -850,7 +850,7 @@ IniKey1=IniValue2");
             _fileSystem.DeleteFile(_jsonFile);
 
             await WaitForChange(
-                () => config["Key"] == "XmlValue1",
+                () => config["Key"] == "XmlValue1" && token.HasChanged,
                 "Notification failed for deleting JSON file.");
 
             Assert.Equal("XmlValue1", config["Key"]);
@@ -860,7 +860,7 @@ IniKey1=IniValue2");
             _fileSystem.DeleteFile(_xmlFile);
 
             await WaitForChange(
-                () => config["Key"] == null,
+                () => config["Key"] is null && token.HasChanged,
                 "Notification failed for deleting XML file.");
 
             Assert.Null(config["Key"]);
@@ -870,7 +870,7 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(_jsonFile, @"{""Key"": ""JsonValue1""}");
 
             await WaitForChange(
-                () => config["Key"] == "JsonValue1",
+                () => config["Key"] == "JsonValue1" && token.HasChanged,
                 "Notification failed for re-creating JSON file.");
 
             Assert.Equal("JsonValue1", config["Key"]);
@@ -891,7 +891,7 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(_iniFile, @"Key = IniValue1");
 
             await WaitForChange(
-                () => config["Key"] == "IniValue1",
+                () => config["Key"] == "IniValue1" && token.HasChanged,
                 "Notification failed for re-creating ini file.");
 
             Assert.Equal("IniValue1", config["Key"]);

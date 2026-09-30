@@ -20,6 +20,7 @@ namespace System
 
         // Terminates this process with the given exit code.
         /// <safety>QCall that passes the integer exit code to the runtime to terminate the process; it accesses no caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
         [DoesNotReturn]
         private static safe partial void _Exit(int exitCode);
@@ -85,6 +86,7 @@ namespace System
             FailFast(new StackCrawlMarkHandle(ref mark), message, ObjectHandleOnStack.Create(ref exception), errorMessage);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_FailFast", StringMarshalling = StringMarshalling.Utf16)]
         [DoesNotReturn]
         private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
@@ -119,6 +121,7 @@ namespace System
         }
 
         /// <safety>QCall that returns the available processor count as an int; it accesses no caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
         internal static safe partial int GetProcessorCount();
 

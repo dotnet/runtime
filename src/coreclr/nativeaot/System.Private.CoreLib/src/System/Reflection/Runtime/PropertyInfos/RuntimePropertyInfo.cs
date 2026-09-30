@@ -6,16 +6,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
@@ -80,9 +79,9 @@ namespace System.Reflection.Runtime.PropertyInfos
             {
                 bool useGetter = CanRead;
                 RuntimeMethodInfo accessor = (useGetter ? Getter : Setter);
-                RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor.RuntimeParameters;
+                RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor?.RuntimeParameters ?? [];
                 int count = runtimeMethodParameterInfos.Length;
-                if (!useGetter)
+                if (!useGetter && accessor is not null)
                     count--;  // If we're taking the parameters off the setter, subtract one for the "value" parameter.
                 if (count == 0)
                 {
@@ -93,7 +92,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     indexParameters = new ParameterInfo[count];
                     for (int i = 0; i < count; i++)
                     {
-                        indexParameters[i] = RuntimePropertyIndexParameterInfo.GetRuntimePropertyIndexParameterInfo(this, runtimeMethodParameterInfos[i]);
+                        indexParameters[i] = new RuntimeParameterInfo(runtimeMethodParameterInfos[i], this);
                     }
                     _lazyIndexParameters = indexParameters;
                 }
@@ -283,7 +282,35 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         // Types that derive from RuntimePropertyInfo must implement the following public surface area members
         public abstract override PropertyAttributes Attributes { get; }
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public sealed override object[] GetCustomAttributes(bool inherit) =>
+            RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
+
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
+        }
+
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
+
+        public sealed override bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
+        }
+
         public abstract override bool Equals(object obj);
         public abstract override int GetHashCode();
         public abstract override int MetadataToken { get; }
@@ -297,6 +324,8 @@ namespace System.Reflection.Runtime.PropertyInfos
         /// Return a qualified handle that can be used to get the type of the property.
         /// </summary>
         protected abstract QSignatureTypeHandle PropertyTypeHandle { get; }
+
+        internal abstract QSignatureTypeHandle GetParameterTypeHandle(int position);
 
         protected enum PropertyMethodSemantics
         {

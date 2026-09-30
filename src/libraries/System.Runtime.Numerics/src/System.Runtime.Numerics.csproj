@@ -18,6 +18,7 @@
     <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.GcdInv.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.PowMod.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.PowTables.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.ShiftRot.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.Utils.cs" />

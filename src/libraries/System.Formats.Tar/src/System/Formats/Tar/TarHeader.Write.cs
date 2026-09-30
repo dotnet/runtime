@@ -330,6 +330,7 @@ namespace System.Formats.Tar
                 await WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
+
         // Checks if the linkname string is too long to fit in the regular header field.
         // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
         private bool IsLinkNameTooLongForRegularField() => _linkName != null && (Encoding.UTF8.GetByteCount(_linkName) + 1) > FieldLengths.LinkName;

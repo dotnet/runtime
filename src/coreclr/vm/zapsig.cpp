@@ -588,14 +588,11 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        if (index == 1)
         {
-            if (index == 1)
-            {
-                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
-            }
-            index--;
+            return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
         }
+        index--;
 
         pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
@@ -652,14 +649,11 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        if (index == 1)
         {
-            if (index == 1)
-            {
-                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
-            }
-            index--;
+            return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
         }
+        index--;
 
         pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
         if (pAssembly == NULL)

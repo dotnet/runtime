@@ -289,9 +289,10 @@ namespace System
             bool foundQuote = false;
             while (pos < formatLen)
             {
-                char ch = format[pos++];
+                char ch = format[pos];
                 if (ch == quoteChar)
                 {
+                    pos++;
                     foundQuote = true;
                     break;
                 }
@@ -302,9 +303,19 @@ namespace System
                     // Therefore, someone can use a format like "'minute:' mm\"" to display:
                     //  minute: 45"
                     // because the second double quote is escaped.
+                    pos++;
                     if (pos < formatLen)
                     {
-                        result.Append(TChar.CastFrom(format[pos++]));
+                        char escapedChar = format[pos];
+                        if (char.IsHighSurrogate(escapedChar) && pos + 1 < formatLen && char.IsLowSurrogate(format[pos + 1]))
+                        {
+                            pos += AppendChar(ref result, format[pos..]);
+                        }
+                        else
+                        {
+                            AppendChar(ref result, escapedChar);
+                            pos++;
+                        }
                     }
                     else
                     {
@@ -316,7 +327,15 @@ namespace System
                 }
                 else
                 {
-                    AppendChar(ref result, ch);
+                    if (char.IsHighSurrogate(ch) && pos + 1 < formatLen && char.IsLowSurrogate(format[pos + 1]))
+                    {
+                        pos += AppendChar(ref result, format[pos..]);
+                    }
+                    else
+                    {
+                        AppendChar(ref result, ch);
+                        pos++;
+                    }
                 }
             }
 
@@ -526,9 +545,9 @@ namespace System
                         if (tokenLen == 1)
                         {
                             string designator = dateTime.Hour < 12 ? dtfi.AMDesignator : dtfi.PMDesignator;
-                            if (designator.Length >= 1)
+                            if (designator.Length != 0)
                             {
-                                AppendChar(ref result, designator[0]);
+                                AppendChar(ref result, designator);
                             }
                         }
                         else
@@ -689,9 +708,17 @@ namespace System
                         // Besides, we will not allow "%%" to appear in the pattern.
                         if (nextChar >= 0 && nextChar != '%')
                         {
-                            char nextCharChar = (char)nextChar;
-                            FormatCustomized(dateTime, new ReadOnlySpan<char>(in nextCharChar), dtfi, offset, ref result);
-                            tokenLen = 2;
+                            if (char.IsHighSurrogate((char)nextChar) && i + 2 < format.Length && char.IsLowSurrogate(format[i + 2]))
+                            {
+                                FormatCustomized(dateTime, format.Slice(i + 1, 2), dtfi, offset, ref result);
+                                tokenLen = 3;
+                            }
+                            else
+                            {
+                                char nextCharChar = (char)nextChar;
+                                FormatCustomized(dateTime, new ReadOnlySpan<char>(in nextCharChar), dtfi, offset, ref result);
+                                tokenLen = 2;
+                            }
                         }
                         else
                         {
@@ -715,8 +742,16 @@ namespace System
                         nextChar = ParseNextChar(format, i);
                         if (nextChar >= 0)
                         {
-                            result.Append(TChar.CastFrom(nextChar));
-                            tokenLen = 2;
+                            char escapedChar = (char)nextChar;
+                            if (char.IsHighSurrogate(escapedChar) && i + 2 < format.Length && char.IsLowSurrogate(format[i + 2]))
+                            {
+                                tokenLen = 1 + AppendChar(ref result, format[(i + 1)..]);
+                            }
+                            else
+                            {
+                                AppendChar(ref result, escapedChar);
+                                tokenLen = 2;
+                            }
                         }
                         else
                         {
@@ -731,8 +766,15 @@ namespace System
                         // NOTENOTE : we can remove this rule if we enforce the enforced quote character rule.
                         // That is, if we ask everyone to use single quote or double quote to insert characters,
                         // then we can remove this default block.
-                        AppendChar(ref result, ch);
-                        tokenLen = 1;
+                        if (char.IsHighSurrogate(ch) && i + 1 < format.Length && char.IsLowSurrogate(format[i + 1]))
+                        {
+                            tokenLen = AppendChar(ref result, format[i..]);
+                        }
+                        else
+                        {
+                            AppendChar(ref result, ch);
+                            tokenLen = 1;
+                        }
                         break;
                 }
                 i += tokenLen;
@@ -749,9 +791,30 @@ namespace System
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
-                var r = new Rune(ch);
-                r.EncodeToUtf8(MemoryMarshal.AsBytes(result.AppendSpan(r.Utf8SequenceLength)));
+                AppendNonAsciiByte(ref result, ch);
             }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AppendNonAsciiByte(ref ValueListBuilder<TChar> result, char ch)
+            {
+                Rune rune = Rune.TryCreate(ch, out Rune value) ? value : Rune.ReplacementChar;
+                rune.EncodeToUtf8(MemoryMarshal.AsBytes(result.AppendSpan(rune.Utf8SequenceLength)));
+            }
+        }
+
+        internal static int AppendChar<TChar>(ref ValueListBuilder<TChar> result, scoped ReadOnlySpan<char> value) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(!value.IsEmpty);
+
+            char ch = value[0];
+            if (!char.IsHighSurrogate(ch) || value.Length == 1 || !char.IsLowSurrogate(value[1]))
+            {
+                AppendChar(ref result, ch);
+                return 1;
+            }
+
+            AppendString(ref result, value[..2]);
+            return 2;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

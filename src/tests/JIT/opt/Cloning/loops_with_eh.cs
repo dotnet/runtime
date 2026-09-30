@@ -1264,5 +1264,43 @@ public class LoopsWithEH
 
         return sum;
     }
-}
 
+    [Fact]
+    public static int Test_LoopBottomInNestedTry() => Sum_LoopBottomInNestedTry(data, data[64]) - 1923;
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static int Sum_LoopBottomInNestedTry(int[] data, int n)
+    {
+        int sum = 0;
+        int i = 0;
+
+        try
+        {
+        loop:
+            sum += data[i];
+            try
+            {
+                if (data[i] == 42)
+                {
+                    sum += 7;
+                }
+
+                i++;
+                if (i < n)
+                {
+                    goto loop;
+                }
+            }
+            catch (Exception)
+            {
+                sum = -1;
+            }
+        }
+        catch (Exception)
+        {
+            sum = -2;
+        }
+
+        return sum;
+    }
+}
