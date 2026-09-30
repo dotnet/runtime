@@ -6,10 +6,12 @@
 #define INITGUID
 #include <guiddef.h>
 
+// Used by the ICLRDataTarget and ICLRDataEnumMemoryRegionsCallback implementations.
 DEFINE_GUID(IID_IUnknown, 0x00000000, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
 #define TEMP_DIRECTORY_PATH "/tmp/"
 
+// Used to construct the default dump path.
 DWORD
 PALAPI
 GetTempPathA(
@@ -34,6 +36,7 @@ GetTempPathA(
     return dwPathLen;
 }
 
+// Used by the invalid parameter handler in pal/inc/rt/safecrt.h.
 VOID
 PALAPI
 RaiseException(
@@ -47,6 +50,7 @@ RaiseException(
 
 #ifdef _DEBUG
 
+// Used by _ASSERTE in the PAL headers.
 DWORD
 PALAPI
 GetCurrentProcessId()
@@ -54,6 +58,7 @@ GetCurrentProcessId()
     return getpid();
 }
 
+// Used by _ASSERTE in the PAL headers.
 VOID
 PALAPI
 DebugBreak()
@@ -63,6 +68,8 @@ DebugBreak()
 
 #endif // _DEBUG
 
+// createdump_static registers this callback when embedded in a host that owns a PAL.
+// The standalone createdump executable calls createdump_main directly.
 PALIMPORT
 VOID
 PALAPI
