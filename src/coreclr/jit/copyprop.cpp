@@ -201,8 +201,7 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        // JIT may recalculate EH-liveness under OptRepeat, so we wouldn't want such an otherwise enregisterable local
-        // on a field load.
+        // Avoid having to DNER an otherwise enregisterable local
         if (tree->OperIs(GT_LCL_FLD) && !newLclVarDsc->lvDoNotEnregister)
         {
             continue;
