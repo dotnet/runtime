@@ -753,13 +753,13 @@ namespace System.Reflection.Tests
                 IntrinsicInvokeSelectionAssertions.AssertUsesCachedTarget(invoker);
             }
 
-            IntrinsicInvokeSelectionAssertions.AssertNotPromoted(method, threshold);
-            IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, threshold);
+            IntrinsicInvokeSelectionAssertions.AssertNotPromoted(method, threshold, threshold);
+            IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, threshold, threshold);
 
             Assert.Same(argument, method.Invoke(target, arguments));
             Assert.Same(argument, invoker.Invoke(target, argument));
-            IntrinsicInvokeSelectionAssertions.AssertPromoted(method);
-            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(method, threshold);
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker, threshold);
         }
 
         [Fact]
@@ -1952,7 +1952,7 @@ namespace System.Reflection.Tests
             Assert.Equal(IntPtr.Zero, GetInvokeStateField<IntPtr>(invoker, "Thunk"));
         }
 
-        internal static void AssertPromoted(object invoker)
+        internal static void AssertPromoted(object invoker, int threshold)
         {
             if (!ShouldAssertSharedSelection)
             {
@@ -1961,36 +1961,35 @@ namespace System.Reflection.Tests
 
             if (!ShouldAssertPromotion)
             {
-                AssertNotPromoted(invoker, 0);
+                AssertNotPromoted(invoker, 0, threshold);
                 return;
             }
 
-            Assert.Equal(
-                GetInvokeStateField<int>(invoker, "SpecializationThreshold"),
-                GetInvokeStateField<int>(invoker, "InvocationCount"));
+            // The countdown reaches zero (or below, under racing decrements) once the threshold is hit.
+            Assert.True(GetInvokeStateField<int>(invoker, "InvocationsUntilSpecialization") <= 0);
             Assert.True(
                 GetRefArgsDelegate(invoker).Method.Name != SharedThunkMethodName ||
                 GetOptionalDelegate(invoker, "_invokeFunc_Obj4Args") is not null ||
                 GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs") is not null);
         }
 
-        internal static void AssertPromoted(MethodBase method)
+        internal static void AssertPromoted(MethodBase method, int threshold)
         {
             if (ShouldAssertSharedSelection)
             {
-                AssertPromoted(GetCachedInvoker(method));
+                AssertPromoted(GetCachedInvoker(method), threshold);
             }
         }
 
-        internal static void AssertNotPromoted(MethodBase method, int invocationCount)
+        internal static void AssertNotPromoted(MethodBase method, int invocationCount, int threshold)
         {
             if (ShouldAssertSharedSelection)
             {
-                AssertNotPromoted(GetCachedInvoker(method), invocationCount);
+                AssertNotPromoted(GetCachedInvoker(method), invocationCount, threshold);
             }
         }
 
-        internal static void AssertNotPromoted(object invoker, int invocationCount)
+        internal static void AssertNotPromoted(object invoker, int invocationCount, int threshold)
         {
             if (!ShouldAssertSharedSelection)
             {
@@ -2000,7 +1999,8 @@ namespace System.Reflection.Tests
             AssertShared(invoker);
             Assert.Null(GetOptionalDelegate(invoker, "_invokeFunc_Obj4Args"));
             Assert.Null(GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs"));
-            Assert.Equal(ShouldAssertPromotion ? invocationCount : 0, GetInvokeStateField<int>(invoker, "InvocationCount"));
+            int expectedRemaining = ShouldAssertPromotion ? threshold - invocationCount : threshold;
+            Assert.Equal(expectedRemaining, GetInvokeStateField<int>(invoker, "InvocationsUntilSpecialization"));
         }
 
         internal static void AssertUsesCachedTarget(object stateOwner)

@@ -45,12 +45,12 @@ namespace System.Reflection.Tests
 
                 if (i == 0 || i == IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold - 1)
                 {
-                    IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1);
+                    IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1, IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold);
                 }
             }
 
             Assert.Equal(IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold + 1, target.CallCount);
-            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker, IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold);
         }
 
         [Fact]

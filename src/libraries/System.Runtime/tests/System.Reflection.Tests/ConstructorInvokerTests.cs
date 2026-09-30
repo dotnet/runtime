@@ -41,11 +41,11 @@ namespace System.Reflection.Tests
                 Assert.Same(argument, result.Value);
                 if (i == 0 || i == IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold - 1)
                 {
-                    IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1);
+                    IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1, IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold);
                 }
             }
 
-            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker, IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold);
         }
 
         [Fact]

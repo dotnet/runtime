@@ -26,8 +26,11 @@ namespace System.Reflection
         {
             internal IntPtr Thunk;
             internal IntPtr FunctionPointer;
-            internal int InvocationCount;
-            internal int SpecializationThreshold;
+            internal Type? DeclaringType;
+            // Counts down from the specialization threshold to zero. A plain decrement is used instead of
+            // Interlocked.Decrement: this is a heuristic trigger, so occasionally dropped decrements under
+            // concurrent invocation are acceptable and simply delay specialization slightly.
+            internal int InvocationsUntilSpecialization;
         }
 
         internal static unsafe object? Invoke(
@@ -44,6 +47,11 @@ namespace System.Reflection
             {
                 if (!method.IsStatic && obj is not null && obj.GetType().IsValueType)
                 {
+                    // A virtual/interface method resolved against a boxed value-type receiver can resolve to an
+                    // unboxing stub or, for generic value types, a combined unboxing/instantiating stub whose
+                    // calling convention (this-pointer adjustment, implicit generic context) isn't guaranteed to
+                    // match the shared thunk signature. Fall back to the emitted invoker, which handles this
+                    // correctly, rather than risk calling through an incompatible entry point.
                     return InvokeEmitted(ref strategy, ref invokeFunc, method, obj, args, backwardsCompat);
                 }
 
@@ -56,14 +64,15 @@ namespace System.Reflection
                     }
 
                     state.FunctionPointer = functionPointer;
-                    state.SpecializationThreshold = GetSpecializationThreshold(method, functionPointer);
+                    state.DeclaringType = method.DeclaringType;
+                    state.InvocationsUntilSpecialization = GetSpecializationThreshold(method, functionPointer);
                     strategy |= StrategyDetermined;
                     Volatile.Write(ref state.Thunk, (IntPtr)thunk);
                 }
 
                 if (RuntimeFeature.IsDynamicCodeCompiled &&
                     !(LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke) &&
-                    Interlocked.Increment(ref state.InvocationCount) >= state.SpecializationThreshold)
+                    --state.InvocationsUntilSpecialization <= 0)
                 {
                     // Let the normal strategy selection specialize the next invocation's argument path.
                     strategy &= ~StrategyDetermined;
@@ -76,7 +85,7 @@ namespace System.Reflection
                     target = RuntimeMethodHandle.GetVirtualFunctionPointer((RuntimeMethodInfo)method, obj!);
                 }
 
-                object? result = thunk(target, obj, args, method.DeclaringType);
+                object? result = thunk(target, obj, args, state.DeclaringType);
                 GC.KeepAlive(method);
                 return result;
             }
