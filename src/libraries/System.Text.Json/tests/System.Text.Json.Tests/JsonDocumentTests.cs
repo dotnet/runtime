@@ -3861,6 +3861,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDocumentWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
         {
             AssertDuplicateProperty(jsonPayload, isValidJson);
@@ -3868,6 +3869,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDocumentArrayWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
         {
             jsonPayload = $"[{jsonPayload}]";
@@ -3876,6 +3878,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDocumentDeeplyNestedWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
         {
             jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
@@ -3884,6 +3887,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDocumentClassWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
         {
             jsonPayload = $$"""{"Object":{{jsonPayload}}}""";
@@ -3895,6 +3899,7 @@ namespace System.Text.Json.Tests
         [InlineData(3, 2)]
         [InlineData(100, 0)]
         [InlineData(100, 99)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDocumentObjectWithDuplicateProperties(int count, int insertPosition)
         {
             string json = CreatePayload(count, insertPosition, "p1");
@@ -3906,6 +3911,7 @@ namespace System.Text.Json.Tests
         [InlineData(3, 2)]
         [InlineData(100, 0)]
         [InlineData(100, 99)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDocumentEscapeWithDuplicateProperties(int count, int insertPosition)
         {
             string json = CreatePayload(count, insertPosition, """p\u0031""");
@@ -3917,6 +3923,7 @@ namespace System.Text.Json.Tests
         [InlineData(3, 2)]
         [InlineData(100, 0)]
         [InlineData(100, 99)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDocumentObjectWithNoDuplicateProperties(int count, int insertPosition)
         {
             string json = CreatePayload(count, insertPosition, "notduplicate");
@@ -3928,6 +3935,7 @@ namespace System.Text.Json.Tests
         [InlineData(3, 2)]
         [InlineData(100, 0)]
         [InlineData(100, 99)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDocumentEscapeWithNoDuplicateProperties(int count, int insertPosition)
         {
             string json = CreatePayload(count, insertPosition, """notduplicate\u0030\u0030""");
@@ -3995,6 +4003,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99126", TestPlatforms.Wasi)]
         public static void ParseJsonDuplicatePropertiesErrorMessageEscaped()
         {
             string json = """{"0":1,"\u0030":1}""";
