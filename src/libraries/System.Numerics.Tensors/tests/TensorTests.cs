@@ -121,6 +121,114 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 3)]
+        [InlineData(0, 9)]
+        [InlineData(0, 17)]
+        [InlineData(0, 33)]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(1, 3)]
+        [InlineData(1, 9)]
+        [InlineData(1, 17)]
+        [InlineData(1, 33)]
+        [InlineData(2, 0)]
+        [InlineData(2, 1)]
+        [InlineData(2, 3)]
+        [InlineData(2, 9)]
+        [InlineData(2, 17)]
+        [InlineData(2, 33)]
+        [InlineData(3, 0)]
+        [InlineData(3, 1)]
+        [InlineData(3, 3)]
+        [InlineData(3, 9)]
+        [InlineData(3, 17)]
+        [InlineData(3, 33)]
+        public static void TensorTanPreservesScalarAccuracy(int layout, int columns)
+        {
+            Test<float>(layout, columns);
+            Test<double>(layout, columns);
+            Test<Half>(layout, columns);
+
+            static void Test<T>(int layout, int columns)
+                where T : unmanaged, IFloatingPointIeee754<T>
+            {
+                nint[] lengths = [2, columns];
+                nint[] strides = layout switch
+                {
+                    1 => [columns + 3, columns > 1 ? 1 : 0],
+                    2 => [1, columns > 1 ? 2 : 0],
+                    3 => [0, columns > 1 ? 1 : 0],
+                    _ => [],
+                };
+                T[] storage = new T[2 * (columns + 3)];
+                T[] expected = new T[2 * columns];
+                for (int row = 0; row < 2; row++)
+                {
+                    for (int column = 0; column < columns; column++)
+                    {
+                        T pole = (T.CreateChecked(column % 16) + T.CreateChecked(0.5)) * T.Pi;
+                        T value = (column % 4) switch
+                        {
+                            0 => T.BitDecrement(pole),
+                            1 => T.BitIncrement(pole),
+                            2 => -T.BitDecrement(pole),
+                            _ => -T.BitIncrement(pole),
+                        };
+                        if (column == 0)
+                        {
+                            value = T.CreateChecked(-32.986717f);
+                        }
+                        else if (column >= 24)
+                        {
+                            value = (column % 5) switch
+                            {
+                                0 => T.Zero,
+                                1 => T.NegativeZero,
+                                2 => T.PositiveInfinity,
+                                3 => T.NegativeInfinity,
+                                _ => T.NaN,
+                            };
+                        }
+                        int offset = layout switch
+                        {
+                            1 => row * (columns + 3) + column,
+                            2 => row + 2 * column,
+                            3 => column,
+                            _ => row * columns + column,
+                        };
+                        storage[offset] = value;
+                        expected[row * columns + column] = T.Tan(value);
+                    }
+                }
+
+                Tensor<T> source = Tensor.Create(storage, lengths, strides);
+                AssertResult(Tensor.Tan<T>(source).ToArray());
+
+                Tensor<T> destination = Tensor.CreateFromShape<T>(lengths);
+                Tensor.Tan<T>(source.AsReadOnlyTensorSpan(), destination.AsTensorSpan());
+                AssertResult(destination.ToArray());
+
+                if (layout != 3)
+                {
+                    Tensor.Tan<T>(source.AsReadOnlyTensorSpan(), source.AsTensorSpan());
+                    AssertResult(source.ToArray());
+                }
+
+                void AssertResult(T[] actual)
+                {
+                    Assert.Equal(expected.Length, actual.Length);
+                    for (int i = 0; i < actual.Length; i++)
+                    {
+                        Helpers.AssertEqualWithTolerance(expected[i], actual[i],
+                            Helpers.DetermineTolerance<T>(doubleTolerance: 3e-13, floatTolerance: 1e-4f));
+                    }
+                }
+            }
+        }
+
         public delegate T PerformSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input);
         public delegate T PerformCalculationSpanInTOut<T>(ReadOnlySpan<T> input);
         public static IEnumerable<object[]> SpanInFloatOutData()
