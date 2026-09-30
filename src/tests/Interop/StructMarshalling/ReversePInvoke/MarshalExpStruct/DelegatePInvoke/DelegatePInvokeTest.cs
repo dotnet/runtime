@@ -16,8 +16,9 @@ public class Test_DelegatePInvokeTest
     [StructLayout(LayoutKind.Sequential)]
     private struct Inner<T>
     {
-        public T Value;
+        public T Value1;
         public bool Flag;
+        public T Value2;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -26,19 +27,38 @@ public class Test_DelegatePInvokeTest
         public Inner<int> Field;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeInner
+    {
+        public int Value1;
+        public int Flag;
+        public int Value2;
+    }
+
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int ReadFields(ref Outer value);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static unsafe int ReadNative(int* fields) => fields[0] + fields[1];
+    private static unsafe int ReadNative(NativeInner* fields)
+    {
+        // A managed bool is marshalled as a four-byte Win32 BOOL between the two ints.
+        return fields->Flag switch
+        {
+            1 => fields->Value1 + fields->Value2,
+            0 => -(fields->Value1 + fields->Value2),
+            _ => int.MinValue
+        };
+    }
 
     private static unsafe void TestGenericStructFieldMarshalling()
     {
         ReadFields read = Marshal.GetDelegateForFunctionPointer<ReadFields>(
-            (nint)(delegate* unmanaged[Cdecl]<int*, int>)&ReadNative);
-        Outer value = new() { Field = new Inner<int> { Value = 42, Flag = true } };
+            (nint)(delegate* unmanaged[Cdecl]<NativeInner*, int>)&ReadNative);
+        Outer value = new() { Field = new Inner<int> { Value1 = 41, Flag = true, Value2 = 2 } };
 
         Assert.Equal(43, read(ref value));
+        value.Field.Flag = false;
+        Assert.Equal(-43, read(ref value));
     }
 
     enum StructID
