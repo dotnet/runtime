@@ -5,7 +5,7 @@
     <!-- file locking can't be disabled on Windows -->
     <TargetFramework>$(NetCoreAppCurrent)-unix</TargetFramework>
 
-    <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(TargetOS)' == 'browser'">--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" TargetDir="test-dir" />
