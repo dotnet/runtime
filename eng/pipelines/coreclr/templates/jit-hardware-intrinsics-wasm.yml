@@ -5,10 +5,8 @@ parameters:
     type: string
 
 jobs:
-# Build CoreCLR + libraries for wasm and compile the wasm HardwareIntrinsics
-# tests. Browser/V8 can't execute these tests yet (wasm SIMD support is
-# incomplete), so this is build-only coverage -- sendToHelix is false. See the
-# note in build-runtime-tests-and-send-to-helix.yml.
+# Build CoreCLR + libraries for wasm, build the wasm HardwareIntrinsics tests,
+# and run them in Helix with ReadyToRun (crossgen2 at Helix time).
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
