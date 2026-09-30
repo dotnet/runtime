@@ -8557,6 +8557,46 @@ public:
     }
 };
 
+// A view of a local occurrence backed by an existing IR node.
+class LocalOccurrence
+{
+    GenTreeLclVarCommon* m_node;
+
+public:
+    explicit LocalOccurrence(GenTreeLclVarCommon* node)
+        : m_node(node)
+    {
+    }
+
+    GenTree* GetNode() const
+    {
+        return m_node;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_node->GetLclNum();
+    }
+
+    GenTreeFlags GetFlags() const
+    {
+        return m_node->gtFlags;
+    }
+
+    unsigned GetLclOffs() const
+    {
+        return m_node->GetLclOffs();
+    }
+
+    var_types GetAccessType(Compiler* compiler) const
+    {
+        assert(!m_node->OperIs(GT_LCL_ADDR));
+        return m_node->TypeGet();
+    }
+
+    unsigned GetAccessSize(Compiler* compiler) const;
+};
+
 class LocalsGenTreeList
 {
     Statement* m_stmt;
@@ -8564,15 +8604,15 @@ class LocalsGenTreeList
 public:
     class iterator
     {
-        GenTreeLclVarCommon* m_tree;
+        GenTree* m_tree;
 
     public:
-        explicit iterator(GenTreeLclVarCommon* tree)
+        explicit iterator(GenTree* tree)
             : m_tree(tree)
         {
         }
 
-        GenTreeLclVarCommon* operator*() const
+        GenTree* operator*() const
         {
             return m_tree;
         }
@@ -8580,14 +8620,14 @@ public:
         iterator& operator++()
         {
             assert((m_tree->gtNext == nullptr) || m_tree->gtNext->OperIsLocal() || m_tree->gtNext->OperIs(GT_LCL_ADDR));
-            m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtNext);
+            m_tree = m_tree->gtNext;
             return *this;
         }
 
         iterator& operator--()
         {
             assert((m_tree->gtPrev == nullptr) || m_tree->gtPrev->OperIsLocal() || m_tree->gtPrev->OperIs(GT_LCL_ADDR));
-            m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtPrev);
+            m_tree = m_tree->gtPrev;
             return *this;
         }
 
@@ -8609,15 +8649,12 @@ public:
         return iterator(nullptr);
     }
 
-    void Remove(GenTreeLclVarCommon* node);
-    void Replace(GenTreeLclVarCommon* firstNode,
-                 GenTreeLclVarCommon* lastNode,
-                 GenTreeLclVarCommon* newFirstNode,
-                 GenTreeLclVarCommon* newLastNode);
+    void Remove(GenTree* node);
+    void Replace(GenTree* firstNode, GenTree* lastNode, GenTree* newFirstNode, GenTree* newLastNode);
 
 private:
-    GenTree** GetForwardEdge(GenTreeLclVarCommon* node);
-    GenTree** GetBackwardEdge(GenTreeLclVarCommon* node);
+    GenTree** GetForwardEdge(GenTree* node);
+    GenTree** GetBackwardEdge(GenTree* node);
 };
 
 // We use the following format when printing the Statement number: Statement->GetID()
@@ -8687,6 +8724,9 @@ public:
 
     GenTreeList       TreeList() const;
     LocalsGenTreeList LocalsTreeList();
+
+    template <typename TVisitor>
+    GenTree::VisitResult VisitLogicalLocalOccurrencesViaLocalsTreeList(TVisitor visitor);
 
     const DebugInfo& GetDebugInfo() const
     {

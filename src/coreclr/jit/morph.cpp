@@ -15475,19 +15475,20 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
 
             // If so, check for any struct last use and only do the expensive
             // tree walk if one exists.
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (!varTypeIsStruct(lcl) || !lcl->OperIsLocalRead())
+            stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                GenTree* lcl = occurrence.GetNode();
+                if (!lcl->OperIsLocalRead() || !varTypeIsStruct(occurrence.GetAccessType(this)))
                 {
-                    continue;
+                    return GenTree::VisitResult::Continue;
                 }
 
-                if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+                if ((occurrence.GetFlags() & GTF_VAR_DEATH) != 0)
                 {
                     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-                    break;
+                    return GenTree::VisitResult::Abort;
                 }
-            }
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 #endif

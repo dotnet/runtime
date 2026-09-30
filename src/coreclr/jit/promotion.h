@@ -219,15 +219,18 @@ public:
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
 private:
-    void     MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);
-    unsigned GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarCommon* lcl);
-    void     MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
-    void     ComputeUseDefSets();
-    void     InterBlockLiveness();
-    bool     PerBlockLiveness(BasicBlock* block);
-    void     AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars);
-    void     FillInLiveness();
-    void     FillInLiveness(BitVec& life, BitVec volatileVars, Statement* stmt, GenTreeLclVarCommon* lcl);
+    template <typename TOccurrence>
+    void MarkUseDef(Statement* stmt, const TOccurrence& occurrence, BitVec& useSet, BitVec& defSet);
+
+    unsigned GetSizeOfLocalAddrDef(Statement* stmt, GenTree* lclAddr);
+
+    void MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
+    void ComputeUseDefSets();
+    void InterBlockLiveness();
+    bool PerBlockLiveness(BasicBlock* block);
+    void AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars);
+    void FillInLiveness();
+    void FillInLiveness(BitVec& life, BitVec volatileVars, Statement* stmt, GenTreeLclVarCommon* lcl);
 #ifdef DEBUG
     void DumpVarSet(BitVec set, BitVec allVars);
 #endif
