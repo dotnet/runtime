@@ -9,7 +9,7 @@ parameters:
 jobs:
 
 #
-# Build CoreCLR + libraries for WASI (wasm32-wasi).
+# Build CoreCLR + libraries for WASI (wasm32-wasip2).
 #
 # Produces a runtime pack + corerun.wasm artifact under
 # wasi.wasm.Release. The companion pipeline that actually runs the
