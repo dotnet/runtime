@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <atomic>
+#include <mutex>
 
 class CQuickBytes;
 class IMetaModelCommon;
@@ -13,11 +13,12 @@ class IMetaModelCommon;
 #include <metadata.h>
 #include "tearoffbase.hpp"
 #include "dnmdowner.hpp"
+#include "pal.hpp"
 
-class InternalMetadataImportRO final : public TearOffBase<IMDInternalImport>
+class InternalMetadataImportRO : public TearOffBase<IMDInternalImport>
 {
-    std::atomic_uint32_t _refCount{1};
     mdhandle_view m_handle;
+    pal::ReadWriteLock* m_lock;
 protected:
     virtual bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
     {
@@ -31,11 +32,13 @@ protected:
     }
 public:
 
-    InternalMetadataImportRO(IUnknown* controllingUnknown, mdhandle_view md_ptr)
+    InternalMetadataImportRO(IUnknown* controllingUnknown, mdhandle_view md_ptr, pal::ReadWriteLock* lock = nullptr)
         : TearOffBase(controllingUnknown)
         , m_handle{ md_ptr }
+        , m_lock{ lock }
     { }
     mdhandle_t MetaData() const { return m_handle.get(); }
+    pal::ReadWriteLock* Lock() const { return m_lock; }
 public: // IMDInternalImport
 
     //*****************************************************************************
@@ -757,6 +760,16 @@ public: // IMDInternalImport
         LPCSTR          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
         LPCSTR          *pszName) override;    // [OUT] Name of Custom Attribute.
 
+};
+
+class InternalMetadataImportRW final : public InternalMetadataImportRO
+{
+    minipal::com_ptr<IUnknown> _userContext;
+    std::mutex _contextMutex;
+public:
+    using InternalMetadataImportRO::InternalMetadataImportRO;
+
+    STDMETHOD(SetUserContextData)(IUnknown* context) override;
 };
 
 #endif // _SRC_INTERFACES_INTERNAL_METADATAIMPORT_HPP_

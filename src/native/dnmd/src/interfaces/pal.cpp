@@ -134,6 +134,11 @@ namespace pal
             minipal_rwlock_destroy(&_lock);
         }
 
+        minipal_rwlock* NativeHandle() noexcept
+        {
+            return &_lock;
+        }
+
         // BasicLockable cannot report acquisition failure; never continue without the lock.
         void lock_shared() noexcept
         {
@@ -168,6 +173,11 @@ pal::ReadWriteLock::ReadWriteLock()
 
 // Define here where pal::ReadWriteLock::Impl is defined
 pal::ReadWriteLock::~ReadWriteLock() = default;
+
+minipal_rwlock* pal::ReadWriteLock::NativeHandle() noexcept
+{
+    return _impl->NativeHandle();
+}
 
 pal::ReadLock::ReadLock(pal::ReadWriteLock& lock) noexcept
     : _lock{ lock }

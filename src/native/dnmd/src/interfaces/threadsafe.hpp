@@ -43,6 +43,16 @@ public:
     {
         return _inner.get();
     }
+
+    bool IsReadWrite() override
+    {
+        return _inner.IsReadWrite();
+    }
+
+    uint32_t DuplicateChecks() override
+    {
+        return _inner.DuplicateChecks();
+    }
 };
 
 template<typename TImport, typename TEmit>
@@ -101,6 +111,11 @@ public:
     }
 
     virtual ~ThreadSafeImportEmit() = default;
+
+    pal::ReadWriteLock* GetLock() noexcept
+    {
+        return &_lock;
+    }
 
 public: // IMetaDataImport
     STDMETHOD_(void, CloseEnum)(HCORENUM hEnum) override

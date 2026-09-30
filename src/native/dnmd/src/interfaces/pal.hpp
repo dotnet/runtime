@@ -6,6 +6,7 @@
 #include <array>
 #include <internal/dnmd_platform.hpp>
 #include <internal/span.hpp>
+#include <minipal/rwlock.h>
 
 namespace pal
 {
@@ -150,6 +151,7 @@ namespace pal
     public:
         ReadWriteLock();
         ~ReadWriteLock();
+        minipal_rwlock* NativeHandle() noexcept;
         ReadLock& GetReadLock() noexcept
         {
             return _readLock;

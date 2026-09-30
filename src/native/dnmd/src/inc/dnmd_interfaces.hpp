@@ -5,6 +5,8 @@
 #define DNMD_EXPORT
 #endif // !DNMD_EXPORT
 
+struct IMDInternalImport;
+
 // Create a metadata dispenser instance.
 //
 //  IMetaDataDispenser  - {809C652E-7396-11D2-9771-00A0C9B4D50C}
@@ -20,5 +22,21 @@ extern "C" DNMD_EXPORT
 HRESULT GetSymBinder(
     REFGUID riid,
     void** ppObj);
+
+// Convert a DNMD read-only internal importer to an independent writable scope.
+// S_OK returns a new COM-owned interface; S_FALSE means input was already writable
+// and returns the input pointer without adding a reference.
+extern "C" DNMD_EXPORT
+HRESULT ConvertDNMDInternalImport(
+    IMDInternalImport* source,
+    IMDInternalImport** converted);
+
+// Return a public interface for an internal importer, converting an RO scope
+// first so subsequent public-to-internal QI yields the writable importer.
+extern "C" DNMD_EXPORT
+HRESULT GetDNMDPublicInterfaceFromInternal(
+    IMDInternalImport* source,
+    REFIID riid,
+    void** publicInterface);
 
 #endif // _INC_DNMD_INTERFACES_HPP_

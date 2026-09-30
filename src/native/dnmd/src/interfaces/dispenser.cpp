@@ -17,6 +17,7 @@
 #include <minipal/guid.h>
 
 #include <cstring>
+#include <limits>
 
 #if !defined(_MSC_VER) && !defined(DNMD_USE_CORECLR_GUIDS)
 extern "C" const GUID MetaDataCheckDuplicatesFor =
@@ -29,34 +30,70 @@ namespace
         MDDupDefault | MDDupTypeDef | MDDupModuleRef | MDDupExportedType |
         MDDupAssemblyRef | MDDupPermission | MDDupFile;
 
+    bool HasCompressedTablesStream(void const* data, size_t size)
+    {
+        auto const* bytes = static_cast<uint8_t const*>(data);
+        if (size < 20)
+            return false;
+
+        uint32_t versionLength = uint32_t(bytes[12]) | (uint32_t(bytes[13]) << 8) |
+            (uint32_t(bytes[14]) << 16) | (uint32_t(bytes[15]) << 24);
+        if (versionLength > size - 20)
+            return false;
+        size_t offset = 16 + ((size_t(versionLength) + 3) & ~size_t(3));
+        if (offset > size - 4)
+            return false;
+
+        uint16_t streamCount = uint16_t(bytes[offset + 2]) | (uint16_t(bytes[offset + 3]) << 8);
+        offset += 4;
+        for (uint16_t i = 0; i < streamCount; ++i)
+        {
+            if (offset > size || size - offset < 9)
+                return false;
+
+            auto const* name = bytes + offset + 8;
+            auto const* end = static_cast<uint8_t const*>(std::memchr(name, '\0', size - offset - 8));
+            if (end == nullptr)
+                return false;
+            size_t nameLength = end - name;
+            if (nameLength == 2 && name[0] == '#' && name[1] == '~')
+                return true;
+            size_t paddedNameLength = (nameLength + 4) & ~size_t(3);
+            if (paddedNameLength > size - offset - 8)
+                return false;
+            offset += 8 + paddedNameLength;
+        }
+        return false;
+    }
+
+    minipal::com_ptr<ControllingIUnknown> CreateExposedObject(
+        minipal::com_ptr<ControllingIUnknown> unknown, DNMDOwner* owner,
+        bool threadSafe, uint32_t duplicateChecks)
+    {
+        mdhandle_view handle_view{ owner };
+        MetadataEmit* emit = unknown->CreateAndAddTearOff<MetadataEmit>(handle_view, duplicateChecks);
+        MetadataImportRO* import = unknown->CreateAndAddTearOff<MetadataImportRO>(handle_view);
+        if (!threadSafe)
+        {
+            (void)unknown->CreateAndAddTearOff<InternalMetadataImportRW>(handle_view);
+            return unknown;
+        }
+
+        minipal::com_ptr<ControllingIUnknown> threadSafeUnknown;
+        threadSafeUnknown.Attach(new ControllingIUnknown());
+
+        (void)threadSafeUnknown->CreateAndAddTearOff<DelegatingDNMDOwner>(handle_view);
+        auto* wrapper = threadSafeUnknown->CreateAndAddTearOff<ThreadSafeImportEmit<MetadataImportRO, MetadataEmit>>(
+            std::move(unknown), import, emit);
+        (void)threadSafeUnknown->CreateAndAddTearOff<InternalMetadataImportRW>(handle_view, wrapper->GetLock());
+        return threadSafeUnknown;
+    }
+
     class MDDispenser final : public TearOffBase<IMetaDataDispenserEx>
     {
         bool _threadSafe = false;
         uint32_t _duplicateChecks = MDDupDefault;
         CorMetaDataInitialSize _initialSize = MDInitialSizeDefault;
-    private:
-        minipal::com_ptr<ControllingIUnknown> CreateExposedObject(minipal::com_ptr<ControllingIUnknown> unknown, DNMDOwner* owner)
-        {
-            mdhandle_view handle_view{ owner };
-            MetadataEmit* emit = unknown->CreateAndAddTearOff<MetadataEmit>(handle_view, _duplicateChecks);
-            MetadataImportRO* import = unknown->CreateAndAddTearOff<MetadataImportRO>(handle_view);
-            if (!_threadSafe)
-            {
-                (void)unknown->CreateAndAddTearOff<InternalMetadataImportRO>(handle_view);
-                return unknown;
-            }
-            minipal::com_ptr<ControllingIUnknown> threadSafeUnknown;
-            threadSafeUnknown.Attach(new ControllingIUnknown());
-
-            // Define an IDNMDOwner* tear-off here so the thread-safe object can be identified as a DNMD object.
-            (void)threadSafeUnknown->CreateAndAddTearOff<DelegatingDNMDOwner>(handle_view);
-            (void)threadSafeUnknown->CreateAndAddTearOff<ThreadSafeImportEmit<MetadataImportRO, MetadataEmit>>(std::move(unknown), import, emit);
-            // TODO: Make thread-safe internal import implementation.
-            (void)threadSafeUnknown->CreateAndAddTearOff<InternalMetadataImportRO>(handle_view);
-            // ThreadSafeImportEmit took ownership of owner through unknown.
-            return threadSafeUnknown;
-        }
-
     protected:
         virtual bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
         {
@@ -115,8 +152,9 @@ namespace
 
             try
             {
-                DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr));
-                return CreateExposedObject(std::move(obj), owner)->QueryInterface(riid, (void**)ppIUnk);
+                DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr), _duplicateChecks, true);
+                return CreateExposedObject(std::move(obj), owner, _threadSafe, _duplicateChecks)
+                    ->QueryInterface(riid, (void**)ppIUnk);
             }
             catch(std::bad_alloc const&)
             {
@@ -175,10 +213,16 @@ namespace
 
             try
             {
-                DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr), std::move(copiedMem), std::move(nowOwned));
+                // Internal opens of compressed (#~) metadata start RO and upgrade on demand.
+                bool internalReadOnly = riid == IID_IMDInternalImport &&
+                    (dwOpenFlags & ofReadWriteMask) == ofRead &&
+                    HasCompressedTablesStream(pData, cbData);
+                bool readWrite = (dwOpenFlags & ofReadOnly) == 0 && !internalReadOnly;
+                DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(
+                    std::move(md_ptr), std::move(copiedMem), std::move(nowOwned), _duplicateChecks, readWrite);
                 mdhandle_view handle_view{ owner };
 
-                if (dwOpenFlags & ofReadOnly)
+                if (!readWrite)
                 {
                     // If we're read-only, then we don't need to deal with thread safety.
                     (void)obj->CreateAndAddTearOff<MetadataImportRO>(handle_view);
@@ -188,7 +232,8 @@ namespace
 
                 // If we're read-write, go through our helper to create an object that respects all of the options
                 // (as the various options affect writing operations only).
-                return CreateExposedObject(std::move(obj), owner)->QueryInterface(riid, (void**)ppIUnk);
+                return CreateExposedObject(std::move(obj), owner, _threadSafe, _duplicateChecks)
+                    ->QueryInterface(riid, (void**)ppIUnk);
             }
             catch(std::bad_alloc const&)
             {
@@ -327,6 +372,81 @@ namespace
             return E_NOTIMPL;
         }
     };
+}
+
+extern "C" DNMD_EXPORT
+HRESULT ConvertDNMDInternalImport(IMDInternalImport* source, IMDInternalImport** converted)
+{
+    if (converted == nullptr)
+        return E_INVALIDARG;
+    *converted = nullptr;
+    if (source == nullptr)
+        return E_INVALIDARG;
+
+    minipal::com_ptr<IDNMDOwner> sourceOwner;
+    HRESULT hr = source->QueryInterface(IID_IDNMDOwner, (void**)&sourceOwner);
+    if (FAILED(hr))
+        return hr;
+    if (sourceOwner->IsReadWrite())
+    {
+        *converted = source;
+        return S_FALSE;
+    }
+
+    size_t size = 0;
+    (void)md_write_to_buffer(sourceOwner->MetaData(), nullptr, &size);
+    if (size == 0)
+        return CLDB_E_FILE_CORRUPT;
+    if (size > std::numeric_limits<ULONG>::max())
+        return CLDB_E_TOO_BIG;
+
+    malloc_ptr<void> image{ ::malloc(size) };
+    if (image == nullptr)
+        return E_OUTOFMEMORY;
+    if (!md_write_to_buffer(sourceOwner->MetaData(), static_cast<uint8_t*>(image.get()), &size))
+        return CLDB_E_FILE_CORRUPT;
+
+    mdhandle_t handle;
+    if (!md_create_handle(image.get(), size, &handle))
+        return CLDB_E_FILE_CORRUPT;
+    mdhandle_ptr newHandle{ handle };
+
+    try
+    {
+        minipal::com_ptr<ControllingIUnknown> object;
+        object.Attach(new ControllingIUnknown());
+        DNMDOwner* owner = object->CreateAndAddTearOff<DNMDOwner>(
+            std::move(newHandle), std::move(image), minipal::cotaskmem_ptr<void>{},
+            sourceOwner->DuplicateChecks(), true);
+        auto exposed = CreateExposedObject(std::move(object), owner, true, owner->DuplicateChecks());
+        return exposed->QueryInterface(IID_IMDInternalImport, (void**)converted);
+    }
+    catch (std::bad_alloc const&)
+    {
+        return E_OUTOFMEMORY;
+    }
+}
+
+extern "C" DNMD_EXPORT
+HRESULT GetDNMDPublicInterfaceFromInternal(
+    IMDInternalImport* source, REFIID riid, void** publicInterface)
+{
+    if (publicInterface == nullptr)
+        return E_INVALIDARG;
+    *publicInterface = nullptr;
+    if (source == nullptr)
+        return E_INVALIDARG;
+
+    IMDInternalImport* writable = nullptr;
+    HRESULT hr = ConvertDNMDInternalImport(source, &writable);
+    if (FAILED(hr))
+        return hr;
+    if (hr == S_FALSE)
+        return source->QueryInterface(riid, publicInterface);
+
+    minipal::com_ptr<IMDInternalImport> converted;
+    converted.Attach(writable);
+    return converted->QueryInterface(riid, publicInterface);
 }
 
 extern "C" DNMD_EXPORT

@@ -39,6 +39,51 @@ static_assert(sizeof(HCORENUMImpl) <= sizeof(HENUMInternal), "HCORENUMImpl must 
     } \
 }
 
+class InternalMetadataReadScope final
+{
+    static thread_local InternalMetadataReadScope* _current;
+    InternalMetadataReadScope* _previous;
+    pal::ReadWriteLock* _lock;
+    bool _acquired = false;
+
+public:
+    explicit InternalMetadataReadScope(pal::ReadWriteLock* lock) noexcept
+        : _previous{ _current }
+        , _lock{ lock }
+    {
+        if (_lock != nullptr)
+        {
+            // Delegating importer methods can reenter the same nonrecursive reader lock.
+            bool held = false;
+            for (auto* scope = _previous; scope != nullptr; scope = scope->_previous)
+            {
+                if (scope->_lock == _lock)
+                {
+                    held = true;
+                    break;
+                }
+            }
+            if (!held)
+            {
+                _lock->GetReadLock().lock();
+                _acquired = true;
+            }
+        }
+        _current = this;
+    }
+
+    ~InternalMetadataReadScope() noexcept
+    {
+        _current = _previous;
+        if (_acquired)
+            _lock->GetReadLock().unlock();
+    }
+};
+
+thread_local InternalMetadataReadScope* InternalMetadataReadScope::_current = nullptr;
+
+#define LOCK_INTERNAL_READ() InternalMetadataReadScope readScope{ Lock() }
+
 namespace
 {
     int HexDigit(BYTE c)
@@ -161,6 +206,7 @@ namespace
 STDMETHODIMP_(ULONG) InternalMetadataImportRO::GetCountWithTokenKind(
     DWORD       tkKind)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t cursor;
     uint32_t count;
     if (!md_create_cursor(m_handle.get(), (mdtable_id_t)(tkKind >> 24), &cursor, &count))
@@ -173,6 +219,7 @@ STDMETHODIMP_(ULONG) InternalMetadataImportRO::GetCountWithTokenKind(
 STDMETHODIMP InternalMetadataImportRO::EnumTypeDefInit(
     HENUMInternal *phEnum)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t cursor;
     uint32_t count;
     if (!md_create_cursor(m_handle.get(), mdtid_TypeDef, &cursor, &count))
@@ -196,6 +243,7 @@ STDMETHODIMP InternalMetadataImportRO::EnumMethodImplInit(
     HENUMInternal   *phEnumBody,
     HENUMInternal   *phEnumDecl)
 {
+    LOCK_INTERNAL_READ();
     // COMPAT, the RO version of this API does not return the decl tokens
     // and it returns the MethodImpl tokens in the body enum.
     if (TypeFromToken(td) != mdtTypeDef)
@@ -218,6 +266,7 @@ STDMETHODIMP_(ULONG) InternalMetadataImportRO::EnumMethodImplGetCount(
     HENUMInternal   *phEnumBody,
     HENUMInternal   *phEnumDecl)
 {
+    LOCK_INTERNAL_READ();
     UNREFERENCED_PARAMETER(phEnumDecl);
     return EnumGetCount(phEnumBody);
 }
@@ -225,6 +274,7 @@ STDMETHODIMP_(void) InternalMetadataImportRO::EnumMethodImplReset(
     HENUMInternal   *phEnumBody,
     HENUMInternal   *phEnumDecl)
 {
+    LOCK_INTERNAL_READ();
     ToHCORENUMImpl(phEnumBody)->Reset(0);
     ToHCORENUMImpl(phEnumDecl)->Reset(0);
 }
@@ -234,6 +284,7 @@ STDMETHODIMP InternalMetadataImportRO::EnumMethodImplNext(
     mdToken         *ptkBody,
     mdToken         *ptkDecl)
 {
+    LOCK_INTERNAL_READ();
     UNREFERENCED_PARAMETER(phEnumDecl);
     HRESULT hr;
     ULONG numTokens = 0;
@@ -257,6 +308,7 @@ STDMETHODIMP_(void) InternalMetadataImportRO::EnumMethodImplClose(
     HENUMInternal   *phEnumBody,
     HENUMInternal   *phEnumDecl)
 {
+    LOCK_INTERNAL_READ();
     HCORENUMImpl::Destroy(ToHCORENUMImpl(phEnumBody));
     HCORENUMImpl::Destroy(ToHCORENUMImpl(phEnumDecl));
 }
@@ -264,6 +316,7 @@ STDMETHODIMP_(void) InternalMetadataImportRO::EnumMethodImplClose(
 STDMETHODIMP InternalMetadataImportRO::EnumGlobalFunctionsInit(
     HENUMInternal   *phEnum)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t globalType;
     if (!md_token_to_cursor(m_handle.get(), MD_GLOBAL_PARENT_TOKEN, &globalType))
         return CLDB_E_FILE_CORRUPT;
@@ -282,6 +335,7 @@ STDMETHODIMP InternalMetadataImportRO::EnumGlobalFunctionsInit(
 STDMETHODIMP InternalMetadataImportRO::EnumGlobalFieldsInit(
     HENUMInternal   *phEnum)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t globalType;
     if (!md_token_to_cursor(m_handle.get(), MD_GLOBAL_PARENT_TOKEN, &globalType))
         return CLDB_E_FILE_CORRUPT;
@@ -302,6 +356,7 @@ STDMETHODIMP InternalMetadataImportRO::EnumInit(
     mdToken     tkParent,
     HENUMInternal *phEnum)
 {
+    LOCK_INTERNAL_READ();
     switch (tkKind)
     {
         case mdtMethodDef:
@@ -440,6 +495,7 @@ STDMETHODIMP InternalMetadataImportRO::EnumAllInit(
     DWORD       tkKind,
     HENUMInternal *phEnum)
 {
+    LOCK_INTERNAL_READ();
     HCORENUMImpl* impl = ToHCORENUMImpl(phEnum);
     HCORENUMImpl::CreateTableEnumInAllocatedMemory(1, impl);
 
@@ -458,6 +514,7 @@ STDMETHODIMP_(bool) InternalMetadataImportRO::EnumNext(
     HENUMInternal *phEnum,
     mdToken     *ptk)
 {
+    LOCK_INTERNAL_READ();
     HCORENUMImpl* impl = ToHCORENUMImpl(phEnum);
     ULONG numTokens = 0;
     return impl->ReadTokens(ptk, 1, &numTokens) == S_OK && numTokens == 1;
@@ -465,16 +522,19 @@ STDMETHODIMP_(bool) InternalMetadataImportRO::EnumNext(
 STDMETHODIMP_(ULONG) InternalMetadataImportRO::EnumGetCount(
     HENUMInternal *phEnum)
 {
+    LOCK_INTERNAL_READ();
     return ToHCORENUMImpl(phEnum)->Count();
 }
 STDMETHODIMP_(void) InternalMetadataImportRO::EnumReset(
     HENUMInternal *phEnum)
 {
+    LOCK_INTERNAL_READ();
     ToHCORENUMImpl(phEnum)->Reset(0);
 }
 STDMETHODIMP_(void) InternalMetadataImportRO::EnumClose(
     HENUMInternal *phEnum)
 {
+    LOCK_INTERNAL_READ();
     HCORENUMImpl::DestroyInAllocatedMemory(ToHCORENUMImpl(phEnum));
 }
 
@@ -484,6 +544,7 @@ STDMETHODIMP InternalMetadataImportRO::EnumCustomAttributeByNameInit(
     LPCSTR      szName,
     HENUMInternal *phEnum)
 {
+    LOCK_INTERNAL_READ();
     HRESULT hr;
     HCORENUMImpl* impl = ToHCORENUMImpl(phEnum);
     HCORENUMImpl::CreateDynamicEnumInAllocatedMemory(impl);
@@ -551,6 +612,7 @@ STDMETHODIMP InternalMetadataImportRO::GetParentToken(
     mdToken     tkChild,
     mdToken     *ptkParent)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t cursor;
     if (!md_token_to_cursor(m_handle.get(), tkChild, &cursor))
         return CLDB_E_FILE_CORRUPT;
@@ -602,6 +664,7 @@ STDMETHODIMP InternalMetadataImportRO::GetCustomAttributeProps(
     mdCustomAttribute at,
     mdToken     *ptkType)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t cursor;
     if (!md_token_to_cursor(m_handle.get(), at, &cursor))
         return CLDB_E_FILE_CORRUPT;
@@ -616,6 +679,7 @@ STDMETHODIMP InternalMetadataImportRO::GetCustomAttributeAsBlob(
     void const  **ppBlob,
     ULONG       *pcbSize)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t cursor;
     if (!md_token_to_cursor(m_handle.get(), cv, &cursor))
         return CLDB_E_FILE_CORRUPT;
@@ -635,6 +699,7 @@ STDMETHODIMP InternalMetadataImportRO::GetScopeProps(
     LPCSTR      *pszName,
     GUID        *pmvid)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), MD_MODULE_TOKEN, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -655,6 +720,7 @@ STDMETHODIMP InternalMetadataImportRO::FindParamOfMethod(
     ULONG       iSeq,
     mdParamDef  *pparamdef)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t method;
     if (!md_token_to_cursor(m_handle.get(), md, &method))
         return CLDB_E_FILE_CORRUPT;
@@ -688,6 +754,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNameOfTypeDef(
     LPCSTR      *pszname,
     LPCSTR      *psznamespace)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), classdef, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -706,6 +773,7 @@ STDMETHODIMP InternalMetadataImportRO::GetIsDualOfTypeDef(
     mdTypeDef   classdef,
     ULONG       *pDual)
 {
+    LOCK_INTERNAL_READ();
     ULONG iFace = 0;
     HRESULT hr;
 
@@ -721,6 +789,7 @@ STDMETHODIMP InternalMetadataImportRO::GetIfaceTypeOfTypeDef(
     mdTypeDef   classdef,
     ULONG       *pIface)
 {
+    LOCK_INTERNAL_READ();
     HRESULT hr;
     const void* blob;
     ULONG size;
@@ -740,6 +809,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNameOfMethodDef(
     mdMethodDef md,
     LPCSTR     *pszName)
 {
+    LOCK_INTERNAL_READ();
     // Force inline calls to avoid https://developercommunity.visualstudio.com/t/Bad-quality-AMD64-bad-codegen---Storing/10764816
 #ifdef _MSC_VER
     [[msvc::forceinline_calls]]
@@ -762,6 +832,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNameAndSigOfMethodDef(
     ULONG           *pcbSigBlob,
     LPCSTR          *pszName)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), methoddef, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -784,6 +855,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNameOfFieldDef(
     mdFieldDef fd,
     LPCSTR    *pszName)
 {
+    LOCK_INTERNAL_READ();
     // Force inline calls to avoid https://developercommunity.visualstudio.com/t/Bad-quality-AMD64-bad-codegen---Storing/10764816
 #ifdef _MSC_VER
     [[msvc::forceinline_calls]]
@@ -805,6 +877,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNameOfTypeRef(
     LPCSTR      *psznamespace,
     LPCSTR      *pszname)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), classref, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -822,6 +895,7 @@ STDMETHODIMP InternalMetadataImportRO::GetResolutionScopeOfTypeRef(
     mdTypeRef classref,
     mdToken  *ptkResolutionScope)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), classref, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -838,6 +912,7 @@ STDMETHODIMP InternalMetadataImportRO::FindTypeRefByName(
     mdToken     tkResolutionScope,
     mdTypeRef   *ptk)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t cursor;
     uint32_t count;
     if (!md_create_cursor(m_handle.get(), mdtid_TypeRef, &cursor, &count))
@@ -883,6 +958,7 @@ STDMETHODIMP InternalMetadataImportRO::GetTypeDefProps(
     DWORD       *pdwAttr,
     mdToken     *ptkExtends)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), classdef, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -907,6 +983,7 @@ STDMETHODIMP InternalMetadataImportRO::GetItemGuid(
     mdToken     tkObj,
     CLSID       *pGuid)
 {
+    LOCK_INTERNAL_READ();
     if (pGuid == nullptr)
         return E_INVALIDARG;
 
@@ -937,6 +1014,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNestedClassProps(
     mdTypeDef   tkNestedClass,
     mdTypeDef   *ptkEnclosingClass)
 {
+    LOCK_INTERNAL_READ();
     if (TypeFromToken(tkNestedClass) != mdtTypeDef)
         return E_INVALIDARG;
 
@@ -961,6 +1039,7 @@ STDMETHODIMP InternalMetadataImportRO::GetCountNestedClasses(
     mdTypeDef   tkEnclosingClass,
     ULONG      *pcNestedClassesCount)
 {
+    LOCK_INTERNAL_READ();
     if (TypeFromToken(tkEnclosingClass) != mdtTypeDef)
         return E_INVALIDARG;
 
@@ -1003,6 +1082,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNestedClasses(
     ULONG       ulNestedClasses,
     ULONG      *pcNestedClasses)
 {
+    LOCK_INTERNAL_READ();
     if (TypeFromToken(tkEnclosingClass) != mdtTypeDef)
         return E_INVALIDARG;
 
@@ -1057,6 +1137,7 @@ STDMETHODIMP InternalMetadataImportRO::GetModuleRefProps(
     mdModuleRef mur,
     LPCSTR      *pszName)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), mur, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1072,6 +1153,7 @@ STDMETHODIMP InternalMetadataImportRO::GetSigOfMethodDef(
     ULONG *           pcbSigBlob,
     PCCOR_SIGNATURE * ppSig)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), tkMethodDef, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1091,6 +1173,7 @@ STDMETHODIMP InternalMetadataImportRO::GetSigOfFieldDef(
     ULONG *           pcbSigBlob,
     PCCOR_SIGNATURE * ppSig)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), tkFieldDef, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1110,6 +1193,7 @@ STDMETHODIMP InternalMetadataImportRO::GetSigFromToken(
     ULONG *           pcbSig,
     PCCOR_SIGNATURE * ppSig)
 {
+    LOCK_INTERNAL_READ();
     col_index_t targetColumn;
     switch (TypeFromToken(tk))
     {
@@ -1151,6 +1235,7 @@ STDMETHODIMP InternalMetadataImportRO::GetMethodDefProps(
     mdMethodDef md,
     DWORD      *pdwFlags)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), md, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1170,6 +1255,7 @@ STDMETHODIMP InternalMetadataImportRO::GetMethodImplProps(
     ULONG       *pulCodeRVA,
     DWORD       *pdwImplFlags)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), tk, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1200,6 +1286,7 @@ STDMETHODIMP InternalMetadataImportRO::GetFieldRVA(
     mdFieldDef  fd,
     ULONG       *pulCodeRVA)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t cursor;
     uint32_t count;
     mdcursor_t fieldRvaRow;
@@ -1221,6 +1308,7 @@ STDMETHODIMP InternalMetadataImportRO::GetFieldDefProps(
     mdFieldDef fd,
     DWORD     *pdwFlags)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), fd, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1365,6 +1453,7 @@ STDMETHODIMP InternalMetadataImportRO::GetDefaultValue(
     mdToken     tk,
     MDDefaultValue *pDefaultValue)
 {
+    LOCK_INTERNAL_READ();
     assert(pDefaultValue);
 
     HRESULT     hr;
@@ -1400,6 +1489,7 @@ STDMETHODIMP InternalMetadataImportRO::GetDispIdOfMemberDef(
     mdToken     tk,
     ULONG       *pDispid)
 {
+    LOCK_INTERNAL_READ();
     HRESULT     hr;                     // A result.
     const BYTE  *pBlob;                 // Blob with dispid.
     ULONG       cbBlob;                 // Length of blob.
@@ -1423,6 +1513,7 @@ STDMETHODIMP InternalMetadataImportRO::GetTypeOfInterfaceImpl(
     mdInterfaceImpl iiImpl,
     mdToken        *ptkType)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), iiImpl, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1545,6 +1636,7 @@ STDMETHODIMP InternalMetadataImportRO::FindTypeDef(
     mdToken     tkEnclosingClass,
     mdTypeDef   *ptypedef)
 {
+    LOCK_INTERNAL_READ();
     return FindTypeDefByName(this, szNamespace, szName, tkEnclosingClass, ptypedef);
 }
 
@@ -1555,6 +1647,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNameAndSigOfMemberRef(
     ULONG           *pcbSigBlob,
     LPCSTR          *pszName)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), memberref, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1581,6 +1674,7 @@ STDMETHODIMP InternalMetadataImportRO::GetParentOfMemberRef(
     mdMemberRef memberref,
     mdToken    *ptkParent)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), memberref, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1596,6 +1690,7 @@ STDMETHODIMP InternalMetadataImportRO::GetParamDefProps(
     DWORD     *pdwAttr,
     LPCSTR    *pszName)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), paramdef, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1630,6 +1725,7 @@ STDMETHODIMP InternalMetadataImportRO::GetPropertyInfoForMethodDef(
     LPCSTR      *pName,
     ULONG       *pSemantic)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     uint32_t count;
     if (!md_create_cursor(m_handle.get(), mdtid_MethodSemantics, &c, &count))
@@ -1676,6 +1772,7 @@ STDMETHODIMP InternalMetadataImportRO::GetClassPackSize(
     mdTypeDef   td,
     ULONG       *pdwPackSize)
 {
+    LOCK_INTERNAL_READ();
     if (TypeFromToken(td) != mdtTypeDef)
         return E_INVALIDARG;
 
@@ -1701,6 +1798,7 @@ STDMETHODIMP InternalMetadataImportRO::GetClassTotalSize(
     mdTypeDef   td,
     ULONG       *pdwClassSize)
 {
+    LOCK_INTERNAL_READ();
     if (TypeFromToken(td) != mdtTypeDef)
         return E_INVALIDARG;
 
@@ -1726,6 +1824,7 @@ STDMETHODIMP InternalMetadataImportRO::GetClassLayoutInit(
     mdTypeDef   td,
     MD_CLASS_LAYOUT *pLayout)
 {
+    LOCK_INTERNAL_READ();
     if (TypeFromToken(td) != mdtTypeDef)
         return E_INVALIDARG;
 
@@ -1761,6 +1860,7 @@ STDMETHODIMP InternalMetadataImportRO::GetClassLayoutNext(
     mdFieldDef  *pfd,
     ULONG       *pulOffset)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t fieldLayout;
     uint32_t fieldLayoutCount;
     if (!md_create_cursor(m_handle.get(), mdtid_FieldLayout, &fieldLayout, &fieldLayoutCount))
@@ -1803,6 +1903,7 @@ STDMETHODIMP InternalMetadataImportRO::GetFieldMarshal(
     PCCOR_SIGNATURE *pSigNativeType,
     ULONG       *pcbNativeType)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     uint32_t count;
     if (!md_create_cursor(m_handle.get(), mdtid_FieldMarshal, &c, &count))
@@ -1828,6 +1929,7 @@ STDMETHODIMP InternalMetadataImportRO::FindProperty(
     LPCSTR      szPropName,
     mdProperty  *pProp)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t propertyMap;
     uint32_t propertyMapCount;
     if (!md_create_cursor(m_handle.get(), mdtid_PropertyMap, &propertyMap, &propertyMapCount))
@@ -1869,6 +1971,7 @@ STDMETHODIMP InternalMetadataImportRO::GetPropertyProps(
     PCCOR_SIGNATURE *ppvSig,
     ULONG       *pcbSig)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), prop, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1908,6 +2011,7 @@ STDMETHODIMP InternalMetadataImportRO::FindEvent(
     LPCSTR      szEventName,
     mdEvent     *pEvent)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t eventMap;
     uint32_t eventMapCount;
     if (!md_create_cursor(m_handle.get(), mdtid_EventMap, &eventMap, &eventMapCount))
@@ -1948,6 +2052,7 @@ STDMETHODIMP InternalMetadataImportRO::GetEventProps(
     DWORD       *pdwEventFlags,
     mdToken     *ptkEventType)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), ev, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -1977,6 +2082,7 @@ STDMETHODIMP InternalMetadataImportRO::FindAssociate(
     DWORD       associate,
     mdMethodDef *pmd)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_create_cursor(m_handle.get(), mdtid_MethodSemantics, &c, NULL))
         return CLDB_E_FILE_CORRUPT;
@@ -2020,6 +2126,7 @@ STDMETHODIMP InternalMetadataImportRO::EnumAssociateInit(
     mdToken     evprop,
     HENUMInternal *phEnum)
 {
+    LOCK_INTERNAL_READ();
     HCORENUMImpl* impl = ToHCORENUMImpl(phEnum);
     return CreateEnumTokenRangeForSortedTableKey(m_handle.get(), mdtid_MethodSemantics, mdtMethodSemantics_Association, evprop, impl);
 }
@@ -2029,6 +2136,7 @@ STDMETHODIMP InternalMetadataImportRO::GetAllAssociates(
     ASSOCIATE_RECORD *pAssociateRec,
     ULONG       cAssociateRec)
 {
+    LOCK_INTERNAL_READ();
     uint32_t count = EnumGetCount(phEnum);
     if (count != cAssociateRec)
         return E_INVALIDARG;
@@ -2065,6 +2173,7 @@ STDMETHODIMP InternalMetadataImportRO::GetPermissionSetProps(
     void const  **ppvPermission,
     ULONG       *pcbPermission)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), pm, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -2092,6 +2201,7 @@ STDMETHODIMP InternalMetadataImportRO::GetUserString(
     ULONG   *pchString,
     LPCWSTR *pwszUserString)
 {
+    LOCK_INTERNAL_READ();
     if (TypeFromToken(stk) != mdtString || pchString == nullptr)
         return E_INVALIDARG;
 
@@ -2117,6 +2227,7 @@ STDMETHODIMP InternalMetadataImportRO::GetPinvokeMap(
     LPCSTR      *pszImportName,
     mdModuleRef *pmrImportDLL)
 {
+    LOCK_INTERNAL_READ();
     if (TypeFromToken(tk) != mdtMethodDef && TypeFromToken(tk) != mdtFieldDef)
         return E_INVALIDARG;
 
@@ -2172,6 +2283,7 @@ STDMETHODIMP InternalMetadataImportRO::GetAssemblyProps(
     AssemblyMetaDataInternal *pMetaData,
     DWORD       *pdwAssemblyFlags)
 {
+    LOCK_INTERNAL_READ();
     // Get properties from Assembly table.
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), mda, &c))
@@ -2260,6 +2372,7 @@ STDMETHODIMP InternalMetadataImportRO::GetAssemblyRefProps(
     ULONG       *pcbHashValue,
     DWORD       *pdwAssemblyRefFlags)
 {
+    LOCK_INTERNAL_READ();
     // Get properties from AssemblyRef table.
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), mdar, &c))
@@ -2339,6 +2452,7 @@ STDMETHODIMP InternalMetadataImportRO::GetFileProps(
     ULONG       *pcbHashValue,
     DWORD       *pdwFileFlags)
 {
+    LOCK_INTERNAL_READ();
     // Get properties from File table.
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), mdf, &c))
@@ -2379,6 +2493,7 @@ STDMETHODIMP InternalMetadataImportRO::GetExportedTypeProps(
     mdTypeDef   *ptkTypeDef,
     DWORD       *pdwExportedTypeFlags)
 {
+    LOCK_INTERNAL_READ();
     // Get properties from ExportedType table.
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), mdct, &c))
@@ -2424,6 +2539,7 @@ STDMETHODIMP InternalMetadataImportRO::GetManifestResourceProps(
     DWORD       *pdwOffset,
     DWORD       *pdwResourceFlags)
 {
+    LOCK_INTERNAL_READ();
     // Get properties from ManifestResource table.
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), mdmr, &c))
@@ -2463,6 +2579,7 @@ STDMETHODIMP InternalMetadataImportRO::FindExportedTypeByName(
     mdExportedType   tkEnclosingType,
     mdExportedType   *pmct)
 {
+    LOCK_INTERNAL_READ();
     if (szName == nullptr)
         return E_INVALIDARG;
 
@@ -2516,6 +2633,7 @@ STDMETHODIMP InternalMetadataImportRO::FindManifestResourceByName(
     LPCSTR      szName,
     mdManifestResource *pmmr)
 {
+    LOCK_INTERNAL_READ();
     if (szName == nullptr)
         return E_INVALIDARG;
 
@@ -2545,6 +2663,7 @@ STDMETHODIMP InternalMetadataImportRO::FindManifestResourceByName(
 STDMETHODIMP InternalMetadataImportRO::GetAssemblyFromScope(
     mdAssembly  *ptkAssembly)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t cursor;
     uint32_t count;
     if (!md_create_cursor(m_handle.get(), mdtid_Assembly, &cursor, &count))
@@ -2640,6 +2759,7 @@ STDMETHODIMP InternalMetadataImportRO::GetCustomAttributeByName(
     const void  **ppData,
     ULONG       *pcbData)
 {
+    LOCK_INTERNAL_READ();
     if (szName == nullptr)
         return E_INVALIDARG;
 
@@ -2753,6 +2873,7 @@ STDMETHODIMP InternalMetadataImportRO::GetTypeSpecFromToken(
     PCCOR_SIGNATURE *ppvSig,
     ULONG       *pcbSig)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), typespec, &c))
         return CLDB_E_FILE_CORRUPT;
@@ -2774,6 +2895,7 @@ STDMETHODIMP InternalMetadataImportRO::SetUserContextData(
 STDMETHODIMP_(BOOL) InternalMetadataImportRO::IsValidToken(
     mdToken     tk)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     return md_token_to_cursor(m_handle.get(), tk, &c);
 }
@@ -2788,6 +2910,7 @@ STDMETHODIMP InternalMetadataImportRO::TranslateSigWithScope(
     CQuickBytes *pqkSigEmit,
     ULONG       *pcbSig)
 {
+    LOCK_INTERNAL_READ();
     UNREFERENCED_PARAMETER(pAssemImport);
     UNREFERENCED_PARAMETER(pbHashValue);
     UNREFERENCED_PARAMETER(cbHashValue);
@@ -2810,23 +2933,31 @@ STDMETHODIMP_(IMetaModelCommon*) InternalMetadataImportRO::GetMetaModelCommon()
 STDMETHODIMP_(IUnknown *) InternalMetadataImportRO::GetCachedPublicInterface(BOOL fWithLock)
 {
     UNREFERENCED_PARAMETER(fWithLock);
-    return nullptr;
+    IMetaDataImport2* publicImport = nullptr;
+    if (FAILED(QueryInterface(IID_IMetaDataImport2, (void**)&publicImport)))
+        return nullptr;
+    return static_cast<IUnknown*>(publicImport);
 }
 __checkReturn
 STDMETHODIMP InternalMetadataImportRO::SetCachedPublicInterface(IUnknown *pUnk)
 {
-    UNREFERENCED_PARAMETER(pUnk);
-    return CLDB_E_FILE_CORRUPT;
+    if (pUnk == nullptr)
+        return S_OK;
+
+    minipal::com_ptr<IUnknown> current, proposed;
+    if (FAILED(QueryInterface(IID_IUnknown, (void**)&current)) ||
+        FAILED(pUnk->QueryInterface(IID_IUnknown, (void**)&proposed)))
+        return E_INVALIDARG;
+    return current.p == proposed.p ? S_OK : E_INVALIDARG;
 }
 STDMETHODIMP_(minipal_rwlock*) InternalMetadataImportRO::GetReaderWriterLock()
 {
-    return nullptr;
+    return Lock() == nullptr ? nullptr : Lock()->NativeHandle();
 }
 __checkReturn
 STDMETHODIMP InternalMetadataImportRO::SetReaderWriterLock(minipal_rwlock * pLock)
 {
-    UNREFERENCED_PARAMETER(pLock);
-    return S_OK;
+    return pLock == GetReaderWriterLock() ? S_OK : E_NOTIMPL;
 }
 STDMETHODIMP_(mdModule) InternalMetadataImportRO::GetModuleFromScope()
 {
@@ -2925,6 +3056,7 @@ STDMETHODIMP InternalMetadataImportRO::FindMethodDef(
     ULONG       cbSigBlob,
     mdMethodDef *pmd)
 {
+    LOCK_INTERNAL_READ();
    return ::FindMethodDef(
     m_handle.get(),
     classdef,
@@ -2944,6 +3076,7 @@ STDMETHODIMP InternalMetadataImportRO::FindMethodDefUsingCompare(
     void*       pSignatureArgs,
     mdMethodDef *pmd)
 {
+    LOCK_INTERNAL_READ();
     return ::FindMethodDef(
         m_handle.get(),
         classdef,
@@ -2965,6 +3098,7 @@ STDMETHODIMP InternalMetadataImportRO::GetFieldOffset(
     mdFieldDef  fd,
     ULONG       *pulOffset)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t fieldLayout;
     uint32_t fieldLayoutCount;
     if (!md_create_cursor(m_handle.get(), mdtid_FieldLayout, &fieldLayout, &fieldLayoutCount))
@@ -2990,6 +3124,7 @@ STDMETHODIMP InternalMetadataImportRO::GetMethodSpecProps(
     PCCOR_SIGNATURE *ppvSigBlob,
     ULONG       *pcbSigBlob)
 {
+    LOCK_INTERNAL_READ();
     // Get MethodSpec props from MethodSpec table.
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), ms, &c))
@@ -3034,6 +3169,26 @@ STDMETHODIMP InternalMetadataImportRO::ApplyEditAndContinue(
     return E_NOTIMPL;
 }
 
+STDMETHODIMP InternalMetadataImportRW::SetUserContextData(IUnknown* context)
+{
+    if (context == nullptr)
+        return E_INVALIDARG;
+
+    std::lock_guard<std::mutex> lock{ _contextMutex };
+    if (_userContext.p != nullptr)
+        return E_UNEXPECTED;
+
+    minipal::com_ptr<IUnknown> current, proposed;
+    if (FAILED(QueryInterface(IID_IUnknown, (void**)&current)) ||
+        FAILED(context->QueryInterface(IID_IUnknown, (void**)&proposed)) ||
+        current.p == proposed.p)
+        return E_INVALIDARG;
+
+    // PEAssembly transfers its old importer reference to the new importer on a successful swap.
+    _userContext.Attach(context);
+    return S_OK;
+}
+
 
 STDMETHODIMP InternalMetadataImportRO::GetGenericParamProps(
     mdGenericParam rd,
@@ -3043,6 +3198,7 @@ STDMETHODIMP InternalMetadataImportRO::GetGenericParamProps(
     DWORD *reserved,
     LPCSTR *szName)
 {
+    LOCK_INTERNAL_READ();
     UNREFERENCED_PARAMETER(reserved);
     // Get props from GenericParam table.
     mdcursor_t c;
@@ -3080,6 +3236,7 @@ STDMETHODIMP InternalMetadataImportRO::GetGenericParamConstraintProps(
     mdGenericParam *ptGenericParam,
     mdToken      *ptkConstraintType)
 {
+    LOCK_INTERNAL_READ();
     // Get props from GenericParamConstraint table.
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), rd, &c))
@@ -3101,6 +3258,7 @@ STDMETHODIMP InternalMetadataImportRO::GetGenericParamConstraintProps(
 STDMETHODIMP InternalMetadataImportRO::GetVersionString(
     LPCSTR      *pVer)
 {
+    LOCK_INTERNAL_READ();
     char const* versionString = md_get_version_string(m_handle.get());
     if (versionString == nullptr)
         versionString = "";
@@ -3113,6 +3271,7 @@ STDMETHODIMP InternalMetadataImportRO::GetTypeDefRefTokenInTypeSpec(
     mdTypeSpec  tkTypeSpec,
     mdToken    *tkEnclosedToken)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t spec;
     if (!md_token_to_cursor(m_handle.get(), tkTypeSpec, &spec))
         return CLDB_E_FILE_CORRUPT;
@@ -3127,6 +3286,7 @@ STDMETHODIMP InternalMetadataImportRO::GetTypeDefRefTokenInTypeSpec(
 
 STDMETHODIMP_(DWORD) InternalMetadataImportRO::GetMetadataStreamVersion()
 {
+    LOCK_INTERNAL_READ();
     // We only support the V1.0 or V2.0 version of the metadata format,
     // and V1 is forward compatible with V2, so we always can say that
     // the metadata is in the V2 format.
@@ -3138,6 +3298,7 @@ STDMETHODIMP InternalMetadataImportRO::GetNameOfCustomAttribute(
     LPCSTR          *pszNamespace,
     LPCSTR          *pszName)
 {
+    LOCK_INTERNAL_READ();
     mdcursor_t c;
     if (!md_token_to_cursor(m_handle.get(), mdAttribute, &c))
         return CLDB_E_FILE_CORRUPT;
