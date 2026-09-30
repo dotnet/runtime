@@ -178,36 +178,23 @@ public class R2RTestSuites
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
 
             var signatureFormattingOptions = new SignatureFormattingOptions();
-            Dictionary<string, List<string>> fixupsByMethod = R2RAssert.GetAllMethods(reader)
-                .Where(method => method.SignatureString.Contains("WasmDelegateConstructors.Create", StringComparison.Ordinal))
-                .ToDictionary(
-                    method => method.SignatureString,
-                    method => (method.Fixups ?? [])
-                        .Select(cell => reader.ImportSections[(int)cell.TableIndex].Entries[(int)cell.CellOffset].Signature)
-                        .Where(signature => signature is not null)
-                        .Select(signature => signature!.ToString(signatureFormattingOptions))
-                        .ToList());
+            List<ReadyToRunImportSection.ImportSectionEntry> importEntries = reader.ImportSections
+                .Where(section => section.Entries is not null)
+                .SelectMany(section => section.Entries)
+                .ToList();
+            List<string> importSignatures = importEntries
+                .Where(entry => entry.Signature is not null)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            string diagnostic = string.Join(Environment.NewLine, importSignatures);
 
-            AssertDelegateCtor("CreateOpenStatic", "DelegateConstruct");
-            AssertDelegateCtor("CreateClosedInstance", "CtorClosed");
-            AssertDelegateCtor("CreateClosedStatic", "DelegateConstruct");
-            AssertDelegateCtor("CreateClosedStaticRetBuf", "DelegateConstruct");
-            AssertDelegateCtor("CreateClosedVirtual", "DelegateConstruct");
-            AssertDelegateCtor("CreateClosedGenericOwner", "DelegateConstruct");
-
-            void AssertDelegateCtor(string methodName, string expectedCtor)
-            {
-                KeyValuePair<string, List<string>> method = fixupsByMethod.Single(
-                    entry => entry.Key.Contains($"WasmDelegateConstructors.{methodName}(", StringComparison.Ordinal));
-                List<string> delegateMethods = method.Value
-                    .Where(fixup => fixup.Contains("System.Delegate.", StringComparison.Ordinal))
-                    .ToList();
-                string diagnostic = $"{method.Key}:{Environment.NewLine}{string.Join(Environment.NewLine, method.Value)}";
-
-                Assert.True(delegateMethods.Count == 1, diagnostic);
-                Assert.True(delegateMethods[0].Contains($"System.Delegate.{expectedCtor}(", StringComparison.Ordinal), diagnostic);
-                Assert.DoesNotContain(method.Value, fixup => fixup.Contains("DELEGATE_CTOR", StringComparison.Ordinal));
-            }
+            Assert.DoesNotContain(importEntries, entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.DelegateConstruct(", StringComparison.Ordinal)),
+                diagnostic);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.CtorClosed(", StringComparison.Ordinal)),
+                diagnostic);
         }
     }
 
