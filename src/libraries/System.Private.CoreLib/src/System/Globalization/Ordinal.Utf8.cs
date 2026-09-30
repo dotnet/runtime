@@ -260,10 +260,8 @@ namespace System.Globalization
                     valueAu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charA, byteOffset));
                     valueBu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charB, byteOffset));
 
-                    byteOffset += 2;
-
-                    valueAu32 |= (uint)(Unsafe.AddByteOffset(ref charA, byteOffset) << 16);
-                    valueBu32 |= (uint)(Unsafe.AddByteOffset(ref charB, byteOffset) << 16);
+                    valueAu32 |= (uint)(Unsafe.AddByteOffset(ref charA, byteOffset + 2) << 16);
+                    valueBu32 |= (uint)(Unsafe.AddByteOffset(ref charB, byteOffset + 2) << 16);
                 }
                 else if (length == 2)
                 {
@@ -570,10 +568,8 @@ namespace System.Globalization
                     valueAu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref source, byteOffset));
                     valueBu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref prefix, byteOffset));
 
-                    byteOffset += 2;
-
-                    valueAu32 |= (uint)(Unsafe.AddByteOffset(ref source, byteOffset) << 16);
-                    valueBu32 |= (uint)(Unsafe.AddByteOffset(ref prefix, byteOffset) << 16);
+                    valueAu32 |= (uint)(Unsafe.AddByteOffset(ref source, byteOffset + 2) << 16);
+                    valueBu32 |= (uint)(Unsafe.AddByteOffset(ref prefix, byteOffset + 2) << 16);
                 }
                 else if (length == 2)
                 {

@@ -1411,6 +1411,47 @@ namespace System.Tests
             Assert.True(double.IsNaN(double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format)));
         }
 
+        [Fact]
+        public static void TestUtf8SpecialValueParsingDoesNotReadPastInput()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/134840
+            // EqualsIgnoreCaseUtf8_Scalar read 2 bytes past both buffers when the
+            // remaining tail was 3 bytes with non-ASCII data, causing the parse
+            // result to depend on memory beyond the input span.
+
+            // "\u221e" (infinity symbol used by most ICU cultures) is 3 bytes in
+            // UTF-8 (E2 88 9E), which triggers the affected tail path.
+            NumberFormatInfo nfi = new() { PositiveInfinitySymbol = "\u221e" };
+
+            // "\u301e" encodes as E3 80 9E \u2014 different character, same byte length.
+            // The char overload correctly rejects it.
+            Assert.False(double.TryParse("\u301e", NumberStyles.Float, nfi, out _));
+
+            // The UTF-8 overload must also reject it regardless of trailing memory.
+            byte[] withNulTrailer = [0xE3, 0x80, 0x9E, 0x00, 0x00];
+            byte[] withAsciiTrailer = [0xE3, 0x80, 0x9E, 0x41, 0x41];
+
+            Assert.False(double.TryParse(withNulTrailer.AsSpan(0, 3), NumberStyles.Float, nfi, out _));
+            Assert.False(double.TryParse(withAsciiTrailer.AsSpan(0, 3), NumberStyles.Float, nfi, out _));
+
+            // Also test after a 4-byte ASCII prefix (exercises the widening loop
+            // followed by the 3-byte tail): "ABCD\u221e" = 7 bytes UTF-8.
+            nfi = new() { PositiveInfinitySymbol = "ABCD\u221e" };
+
+            // Exact match must still succeed.
+            Assert.True(double.TryParse("ABCD\u221e", NumberStyles.Float, nfi, out double val));
+            Assert.True(double.IsPositiveInfinity(val));
+            Assert.True(double.TryParse(Encoding.UTF8.GetBytes("ABCD\u221e"), NumberStyles.Float, nfi, out val));
+            Assert.True(double.IsPositiveInfinity(val));
+
+            // "ABCD\u301e" (41 42 43 44 E3 80 9E) must be rejected.
+            byte[] probe7Nul = [0x41, 0x42, 0x43, 0x44, 0xE3, 0x80, 0x9E, 0x00, 0x00];
+            byte[] probe7Ascii = [0x41, 0x42, 0x43, 0x44, 0xE3, 0x80, 0x9E, 0x41, 0x41];
+
+            Assert.False(double.TryParse(probe7Nul.AsSpan(0, 7), NumberStyles.Float, nfi, out _));
+            Assert.False(double.TryParse(probe7Ascii.AsSpan(0, 7), NumberStyles.Float, nfi, out _));
+        }
+
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
         public static void MaxMagnitudeNumberTest(double x, double y, double expectedResult)
