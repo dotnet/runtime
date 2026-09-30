@@ -1375,13 +1375,9 @@ namespace Internal.JitInterface
             MethodDesc delegateInvoke = HandleToObject(clsHnd).GetKnownMethod("Invoke"u8, null);
             MetadataType systemDelegate = _compilation.TypeSystemContext.SystemModule.GetKnownType("System"u8, "Delegate"u8);
 
-            // Closed over a reference type instance with matching arity. Virtual and generic targets
-            // conservatively use the general DelegateConstruct.
+            // Closed over a reference type instance, matching COMDelegate::GetDelegateCtor.
             if (!targetMethod.Signature.IsStatic &&
-                !targetMethod.IsVirtual &&
                 !targetMethod.OwningType.IsValueType &&
-                !targetMethod.HasInstantiation &&
-                !targetMethod.OwningType.HasInstantiation &&
                 delegateInvoke.Signature.Length == targetMethod.Signature.Length)
             {
                 return ObjectToHandle(systemDelegate.GetKnownMethod("CtorClosed"u8, null));

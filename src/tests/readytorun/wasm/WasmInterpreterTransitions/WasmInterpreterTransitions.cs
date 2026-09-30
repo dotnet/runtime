@@ -290,8 +290,8 @@ public class WasmInterpreterTransitions
         S52 s52 = self.InterpretedInstanceReturnsS52(); Assert.Equal(A, s52.A); Assert.Equal(B, s52.M);           // IS52Tp
         Assert.Equal(unchecked((short)C), InterpretedStaticReturnsS2NoArgs().A);                                             // IS2p
 
-        // R2R delegate construction calls Delegate.CtorClosed for bounded closed-instance shapes
-        // and Delegate.DelegateConstruct for open, static, virtual, generic, and fallback shapes.
+        // R2R delegate construction calls Delegate.CtorClosed for closed reference-type instance targets
+        // and Delegate.DelegateConstruct for open, static, and value-type shapes.
         TransformDelegate openStatic = CreateOpenStaticDelegate();
         Assert.Equal(A + 1, openStatic(A));
         Assert.Null(openStatic.Target);
@@ -332,6 +332,27 @@ public class WasmInterpreterTransitions
         Assert.Equal(A + C, genericOwnerDelegate(A));
         Assert.Same(genericTarget, genericOwnerDelegate.Target);
         Assert.Equal(nameof(GenericDelegateTarget<string>.Transform), genericOwnerDelegate.Method.Name);
+
+        VirtualDelegateBase virtualBase = new(C);
+        TransformDelegate baseVirtualDelegate = CreateVirtualDelegate(virtualBase);
+        Assert.Equal(A + C, baseVirtualDelegate(A));
+        Assert.Same(virtualBase, baseVirtualDelegate.Target);
+        Assert.Equal(typeof(VirtualDelegateBase), baseVirtualDelegate.Method.DeclaringType);
+
+        VirtualDelegateDerived virtualDerived = new(C);
+        TransformDelegate derivedVirtualDelegate = CreateVirtualDelegate(virtualDerived);
+        Assert.Equal(A + C + 1, derivedVirtualDelegate(A));
+        Assert.Same(virtualDerived, derivedVirtualDelegate.Target);
+        Assert.Equal(typeof(VirtualDelegateDerived), derivedVirtualDelegate.Method.DeclaringType);
+
+        TransformDelegate sharedGenericMethodDelegate = self.CreateGenericMethodDelegate<string>();
+        Assert.Equal(A + C + 1, sharedGenericMethodDelegate(A));
+        Assert.Same(self, sharedGenericMethodDelegate.Target);
+        Assert.Equal(nameof(GenericMethodDelegateTarget), sharedGenericMethodDelegate.Method.Name);
+
+        TransformDelegate genericMethodDelegate = self.CreateGenericMethodDelegate<int>();
+        Assert.Equal(A + C + 2, genericMethodDelegate(A));
+        Assert.Same(self, genericMethodDelegate.Target);
 
         ReturnsS8Delegate closedStaticRetBufDelegate = CreateClosedStaticRetBufDelegate(self);
         S8 closedStaticRetBufResult = closedStaticRetBufDelegate(A);
@@ -385,6 +406,15 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static TransformDelegate CreateGenericOwnerDelegate(GenericDelegateTarget<string> target) => new(target.Transform);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateVirtualDelegate(VirtualDelegateBase target) => new(target.Transform);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int GenericMethodDelegateTarget<T>(int value) => value + _state + (typeof(T) == typeof(string) ? 1 : 2);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private TransformDelegate CreateGenericMethodDelegate<T>() => new(GenericMethodDelegateTarget<T>);
 
     [DllImport("echo", EntryPoint = "echo")]
     private static extern int Echo(int value);
@@ -874,6 +904,20 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int R2RInstanceTakesS16AndTwoInt(S16 s, int a, int b) => (int)(s.A + s.B) + a + b + _state; // MiTS16iip
+}
+
+internal class VirtualDelegateBase(int state)
+{
+    protected int State => state;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal virtual int Transform(int value) => value + State;
+}
+
+internal sealed class VirtualDelegateDerived(int state) : VirtualDelegateBase(state)
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal override int Transform(int value) => value + State + 1;
 }
 
 internal sealed class GenericDelegateTarget<T>(int state)
