@@ -37527,8 +37527,9 @@ bool Compiler::gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     bool                 valueIsNonNull = false;
     CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(value, &valueIsExact, &valueIsNonNull);
 
-    // Array's type is sealed and equals to value's type
-    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
+    // Array's type is sealed and equals to value's type.
+    // Shared handles (e.g. G<__Canon>) may represent different runtime types, so they don't qualify.
+    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle) && !eeIsSharedInst(arrayElementHandle))
     {
         JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
         return true;
