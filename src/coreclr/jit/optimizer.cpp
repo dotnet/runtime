@@ -3372,9 +3372,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         if (srcSize == 8)
                         {
                             assert(tree->TypeIs(TYP_INT));
-                            GenTree* castOp = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
-                            castOp->SetMorphed(this);
-                            *otherOpPtr = castOp;
+                            *otherOpPtr = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
                         }
                     }
                     return true;

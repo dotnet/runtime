@@ -52,6 +52,16 @@ public static class DiagnosticIds
     public const string KeyFileError = "ILA0032";
     public const string TooManyGenericParameters = "ILA0033";
     public const string UnsupportedTlsData = "ILA0034";
+    public const string GenericParameterConstraintOwnerOutOfRange = "ILA0035";
+    public const string InvalidExportOrdinal = "ILA0036";
+    public const string ExportOrdinalRangeTooLarge = "ILA0037";
+    public const string InvalidVTableSlotCount = "ILA0038";
+    public const string InvalidVTableExport = "ILA0039";
+    public const string InsufficientVTableData = "ILA0040";
+    public const string UnsupportedNativeExportMachine = "ILA0041";
+    public const string InvalidVTableWidth = "ILA0042";
+    public const string InvalidVTableEntry = "ILA0043";
+    public const string DuplicateExportOrdinal = "ILA0044";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -89,4 +99,15 @@ internal static class DiagnosticMessageTemplates
     public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
     public const string TooManyGenericParameters = "Generic parameter count {0} exceeds the maximum of {1}";
     public const string UnsupportedTlsData = "TLS RVA data declarations are not supported";
+    public const string GenericParameterConstraintOwnerOutOfRange = "Generic parameter constraint owner index {0} exceeds the maximum encodable generic parameter index of {1}";
+    public const string InvalidExportOrdinal = "Export ordinal {0} must be positive";
+    public const string ExportOrdinalRangeTooLarge = "Export ordinal {0} is too far from base ordinal {1}; the export address table index must not exceed {2}";
+    public const string InvalidVTableSlotCount = "VTable fixup slot count {0} must be between 0 and {1}";
+    public const string InvalidVTableExport = "Export '{0}' does not have a valid VTable entry association";
+    public const string InsufficientVTableData = "Data label '{0}' has {1} bytes available, but its VTable fixup requires {2} bytes";
+    public const string UnsupportedNativeExportMachine = "Native exports are not supported for target machine '{0}'";
+    public const string InvalidVTableWidth = "VTable fixup width flags 0x{0:X} do not match target machine '{1}'; expected exactly '{2}'";
+    public const string InvalidVTableEntry = "Method '{0}' references invalid VTable entry {1}";
+    public const string InvalidVTableSlot = "Method '{0}' references invalid VTable slot {1}; VTable entry {2} contains {3} slots";
+    public const string DuplicateExportOrdinal = "Export '{0}' uses ordinal {1}, which is already assigned to a different VTable target";
 }

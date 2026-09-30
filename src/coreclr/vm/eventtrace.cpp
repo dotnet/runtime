@@ -4454,25 +4454,7 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
         return 0;
     }
 
-    TADDR start = GetInterpreterCodeFromEntryPointIfPresent(entryPoint);
-
-#if defined(TARGET_WASM) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
-    if (start == entryPoint && entryPoint == pMethodDesc->GetPortableEntryPointIfExists() &&
-        PortableEntryPoint::HasNativeEntryPoint((PCODE)entryPoint))
-    {
-        // Native R2R portable entry points store a function-table index rather than an address
-        // registered with ExecutionManager. EventPipe needs the corresponding synthetic virtual IP.
-        DWORD functionTableIndex =
-            static_cast<DWORD>(reinterpret_cast<TADDR>(PortableEntryPoint::GetActualCode((PCODE)entryPoint)));
-        TADDR virtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionTableIndex);
-        if (virtualIP != 0)
-        {
-            start = virtualIP;
-        }
-    }
-#endif // TARGET_WASM && FEATURE_PORTABLE_ENTRYPOINTS
-
-    return start;
+    return GetDiagnosticCodeStartFromEntryPoint(pMethodDesc, entryPoint);
 }
 
 /****************************************************************************/
