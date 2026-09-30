@@ -283,7 +283,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         }
         else
         {
-            _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(offset));
+            _ASSERTE(!pModule->IsRvaFieldTls(offset));
             retVal = pModule->GetRvaField(offset);
         }
     }
