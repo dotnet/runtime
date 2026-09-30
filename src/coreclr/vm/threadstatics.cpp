@@ -37,9 +37,9 @@ static Volatile<bool> g_hasRetiredTLSIndices = false;
 // Collectible TLS indices are quarantined before they can be reused. Loader allocator
 // cleanup removes the MethodTable from the active map and marks its index retired, so
 // new types cannot claim the index while any thread can still contain state from the
-// old owner. At the next EE synchronization point, CleanupRetiredTLSIndices clears each
-// thread's loader handle for the old owner. Only after that pass is complete is the marker
-// changed to reusable and FindClearedIndex can return it.
+// old owner. At the next EE synchronization point, CleanupRetiredTLSIndices clears the
+// loader handle, TLS weak handle, and in-flight data for every thread. Only after that
+// pass is complete is the marker changed to reusable and FindClearedIndex can return it.
 static constexpr uint8_t ReusableTLSIndexMarker = 0;
 static constexpr uint8_t RetiredTLSIndexMarker = 1;
 #endif
@@ -871,13 +871,60 @@ void CleanupRetiredTLSIndices()
         Thread* pThread = nullptr;
         while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != nullptr)
         {
-            if (indexOffset >= pThread->cLoaderHandles)
+            ThreadLocalData* pThreadLocalData = pThread->GetThreadLocalDataPtr();
+            if (pThreadLocalData == nullptr && indexOffset >= pThread->cLoaderHandles)
             {
                 continue;
             }
 
-            SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
-            pThread->pLoaderHandles[indexOffset] = (LOADERHANDLE)nullptr;
+            OBJECTHANDLE hTlsData = nullptr;
+            InFlightTLSData* pRemovedInFlightData = nullptr;
+
+            {
+                SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+
+                if (indexOffset < pThread->cLoaderHandles)
+                {
+                    pThread->pLoaderHandles[indexOffset] = (LOADERHANDLE)nullptr;
+                }
+
+                if (pThreadLocalData != nullptr)
+                {
+                    if (indexOffset < pThreadLocalData->cCollectibleTlsData)
+                    {
+                        hTlsData = pThreadLocalData->pCollectibleTlsArrayData[indexOffset];
+                        pThreadLocalData->pCollectibleTlsArrayData[indexOffset] = nullptr;
+                    }
+
+                    InFlightTLSData** ppInFlightData = &pThreadLocalData->pInFlightData;
+                    while (*ppInFlightData != nullptr)
+                    {
+                        InFlightTLSData* pInFlightData = *ppInFlightData;
+                        if (pInFlightData->tlsIndex == entry.TlsIndex)
+                        {
+                            *ppInFlightData = pInFlightData->pNext;
+                            pInFlightData->pNext = pRemovedInFlightData;
+                            pRemovedInFlightData = pInFlightData;
+                        }
+                        else
+                        {
+                            ppInFlightData = &pInFlightData->pNext;
+                        }
+                    }
+                }
+            }
+
+            if (!IsHandleNullUnchecked(hTlsData))
+            {
+                DestroyLongWeakHandle(hTlsData);
+            }
+
+            while (pRemovedInFlightData != nullptr)
+            {
+                InFlightTLSData* pInFlightData = pRemovedInFlightData;
+                pRemovedInFlightData = pInFlightData->pNext;
+                delete pInFlightData;
+            }
         }
 
         g_pThreadStaticCollectibleTypeIndices->SetClearedMarker(entry.TlsIndex, ReusableTLSIndexMarker);
