@@ -64,7 +64,12 @@ namespace System.IO.Compression
             // next Deflater to rent that slot resets it via deflateReset(), and must still produce correct,
             // independent output.
             var options = new ZLibCompressionOptions { CompressionLevel = 5, CompressionStrategy = ZLibCompressionStrategy.Default };
-            byte[] incompressible = new byte[BufferSize * 5];
+
+            // Must be bigger than one output buffer (so Finish() needs 2+ writes to flush it, giving the
+            // faulty stream's 2nd write something to throw on) but smaller than zlib-ng's ~16,383-symbol
+            // block threshold (so nothing gets force-flushed to the destination mid-Write() - that would
+            // consume the "writesAllowedBeforeThrow" budget before Dispose()/Finish() ever runs).
+            byte[] incompressible = new byte[BufferSize + 1024];
             new Random(42).NextBytes(incompressible);
 
             var faultyDestination = new ThrowsAfterNWritesStream(writesAllowedBeforeThrow: 1);
