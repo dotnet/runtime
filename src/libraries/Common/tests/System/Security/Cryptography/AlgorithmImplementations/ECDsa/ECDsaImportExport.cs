@@ -12,8 +12,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class ECDsaImportExportTests : ECDsaTestsBase
     {
-        protected abstract bool CanDeriveNewPublicKey { get; }
-
 #if NET
         [Fact]
         public void DiminishedCoordsRoundtrip()
@@ -352,11 +350,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ImportFromPrivateOnlyKey()
         {
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-
             byte[] expectedX = "00d45615ed5d37fde699610a62cd43ba76bedd8f85ed31005fe00d6450fbbd101291abd96d4945a8b57bc73b3fe9f4671105309ec9b6879d0551d930dac8ba45d255".HexToByteArray();
             byte[] expectedY = "01425332844e592b440c0027972ad1526431c06732df19cd46a242172d4dd67c2c8c99dfc22e49949a56cf90c6473635ce82f25b33682fb19bc33bd910ed8ce3a7fa".HexToByteArray();
 
@@ -382,38 +378,30 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void DerivePublicKey_Named_P256()
         {
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-
             VerifyPrivateKeyDerivesPublicKey(EccTestData.GetNistP256ReferenceKey(), explicitCurve: false);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void DerivePublicKey_Named_P521_DiminishedCoords()
         {
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-
             VerifyPrivateKeyDerivesPublicKey(EccTestData.GetNistP521DiminishedCoordsParameters(), explicitCurve: false);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void DerivePublicKey_Named_Sect163k1()
         {
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-
             if (!ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid))
                 return;
 
             VerifyPrivateKeyDerivesPublicKey(EccTestData.Sect163k1Key1, explicitCurve: false);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void DerivePublicKey_Named_C2pnb163v1()
         {
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-
             if (!ECDsaFactory.IsCurveValid(EccTestData.C2pnb163v1Key1.Curve.Oid))
                 return;
 
@@ -424,7 +412,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void DerivePublicKey_Explicit_P256()
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
 
             VerifyPrivateKeyDerivesPublicKey(EccTestData.GetNistP256ReferenceKeyExplicit(), explicitCurve: true);
         }
@@ -433,7 +420,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void DerivePublicKey_Explicit_P521_DiminishedCoords()
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
 
             ECParameters p521 = EccTestData.GetNistP521DiminishedCoordsParameters();
             p521.Curve = EccTestData.GetNistP521ExplicitCurve();
@@ -444,7 +430,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void DerivePublicKey_Explicit_Sect163k1()
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
 
             if (!ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid))
                 return;
@@ -456,7 +441,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void DerivePublicKey_Explicit_C2pnb163v1()
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
 
             if (!ECDsaFactory.IsCurveValid(EccTestData.C2pnb163v1Key1.Curve.Oid))
                 return;
