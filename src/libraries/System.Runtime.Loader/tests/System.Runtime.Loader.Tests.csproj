@@ -9,9 +9,8 @@
     <!-- EnC tests on targets without a remote executor need the environment variable set before launching the test -->
     <!-- Also ask Mono to use make sequence points even without a debugger attached to match "dotnet watch" behavior -->
     <WasmXHarnessMonoArgs Condition="'$(TargetOS)' == 'browser'">--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug --setenv=MONO_DEBUG=gen-seq-points</WasmXHarnessMonoArgs>
-    <!-- WASI passes these arguments to wasmtime, which sets environment variables with env. -->
-    <WasmXHarnessMonoArgs Condition="'$(TargetOS)' == 'wasi'">--env=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs>
 
+    <!-- CoreCLR does not build the metadata updater for wasm, so ApplyUpdate tests are excluded for CoreCLR on WASI below. -->
     <!-- disabled due to https://github.com/dotnet/runtime/issues/65672 -->
     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
@@ -21,7 +20,7 @@
   </PropertyGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
+  <ItemGroup Condition="('$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT') and ('$(TargetOS)' != 'wasi' or '$(RuntimeFlavor)' != 'CoreCLR')">
     <Compile Include="ApplyUpdateTest.cs" />
     <Compile Include="ApplyUpdateUtil.cs" />
     <Compile Include="MetadataUpdateHandlerAttributeTest.cs" />
@@ -74,7 +73,7 @@
   </ItemGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
+  <ItemGroup Condition="('$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT') and ('$(TargetOS)' != 'wasi' or '$(RuntimeFlavor)' != 'CoreCLR')">
     <!-- ApplyUpdate tests -->
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
