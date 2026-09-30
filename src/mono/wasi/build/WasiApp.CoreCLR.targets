@@ -48,6 +48,12 @@
 
     See https://github.com/dotnet/runtime/issues/130129.
   -->
+  <!-- WasmApp.Common.targets disables System.Diagnostics.Metrics by default for Mono. CoreCLR keeps
+       it enabled, matching browser CoreCLR, so set the default before that import applies. -->
+  <PropertyGroup>
+    <MetricsSupport Condition="'$(MetricsSupport)' == ''">true</MetricsSupport>
+  </PropertyGroup>
+
   <!-- Reuse the shared WASI bundling; the Mono-only clang-link targets stay inert (gated on
        WasmBuildNative). Imported first so the CoreCLR overrides below win over its
        WasmAppRuntimeFlavor=Mono default. -->
