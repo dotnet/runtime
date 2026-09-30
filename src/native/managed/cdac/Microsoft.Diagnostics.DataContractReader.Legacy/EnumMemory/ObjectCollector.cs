@@ -17,13 +17,14 @@ internal sealed class ObjectCollector(
     Target target,
     MemoryRegionEmitter emitter,
     MethodCollector methods,
-    bool isTriage)
+    DumpType dumpType)
 {
     private const ulong MaxObjectSize = 64 * 1024 * 1024;
     private const int MaxInnerExceptionCount = 256;
     private const int MaxTypeTraversalDepth = 1_024;
 
     private readonly Target _target = target;
+    private readonly DumpType _dumpType = dumpType;
     private readonly MemoryRegionEmitter _emitter = emitter;
     private readonly MethodCollector _methods = methods;
     private readonly Dictionary<TargetPointer, string> _names = [];
@@ -154,13 +155,13 @@ internal sealed class ObjectCollector(
         }
         EnumerateStackTraceString(data.StackTraceString);
         if (data.RemoteStackTraceString != TargetPointer.Null &&
-            (!isTriage || !ExceptionTypeOverridesStackTraceGetter(exceptionObject)))
+            (_dumpType != DumpType.Triage || !ExceptionTypeOverridesStackTraceGetter(exceptionObject)))
         {
             EnumerateStackTraceString(data.RemoteStackTraceString);
         }
         _pendingObjects.Push(data.WatsonBuckets);
         _pendingObjects.Push(data.StackTrace);
-        if (!isTriage)
+        if (_dumpType != DumpType.Triage)
             _pendingObjects.Push(data.Message);
 
         foreach (ExceptionStackFrameInfo frame in exceptions.GetExceptionStackFrames(exceptionObject))
@@ -204,7 +205,7 @@ internal sealed class ObjectCollector(
             return;
 
         EnumerateObjectCore(address);
-        if (!isTriage)
+        if (_dumpType != DumpType.Triage)
             return;
 
         IObject objects = _target.Contracts.Object;
