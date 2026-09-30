@@ -36,79 +36,6 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void Diagnostic_DeprecatedNativeType_Variant()
-        {
-            // Using deprecated VARIANT native type triggers warning
-            string source = """
-                .assembly extern mscorlib { }
-                .assembly test { }
-                .class public auto ansi Test extends [mscorlib]System.Object
-                {
-                    .method public static void TestMethod(object marshal(variant) arg) cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
-            var warning = Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticIds.DeprecatedNativeType, warning.Id);
-            Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
-        }
-
-        [Fact]
-        public void Diagnostic_DeprecatedCustomMarshaller()
-        {
-            // Using 4-string custom marshaller syntax triggers warning
-            string source = """
-                .assembly extern mscorlib { }
-                .assembly test { }
-                .class public auto ansi Test extends [mscorlib]System.Object
-                {
-                    .method public static void TestMethod(object marshal(custom("guid", "nativeType", "marshallerType", "cookie")) arg) cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
-            var warning = Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticIds.DeprecatedCustomMarshaller, warning.Id);
-            Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
-        }
-
-        [Fact]
-        public void PinvokeMethod_SetsPinvokeImplFlag()
-        {
-            string source = """
-                .assembly extern mscorlib { }
-                .assembly test { }
-                .module test.dll
-                .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
-                {
-                    .method public static pinvokeimpl("kernel32.dll" winapi)
-                        int32 GetCurrentProcessId() cil managed preservesig
-                    {
-                    }
-                }
-                """;
-
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
-            var reader = pe.GetMetadataReader();
-
-            var method = reader.MethodDefinitions
-                .Select(h => reader.GetMethodDefinition(h))
-                .First(m => reader.GetString(m.Name) == "GetCurrentProcessId");
-
-            Assert.True(method.Attributes.HasFlag(MethodAttributes.PinvokeImpl));
-            var import = method.GetImport();
-            Assert.False(import.Module.IsNil);
-            Assert.Equal("GetCurrentProcessId", reader.GetString(import.Name));
-        }
-
-        [Fact]
         public void FixedArrayMarshalWithoutElementType_EmitsDescriptor()
         {
             string source = """
@@ -331,39 +258,6 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void MarshalLpStrParameter_EmitsMarshallingDescriptorBlob()
-        {
-            string source = """
-                .assembly extern mscorlib { }
-                .assembly test { }
-                .class public auto ansi Test extends [mscorlib]System.Object
-                {
-                    .method public static void Print(string marshal(lpstr) text) cil managed
-                    {
-                        ret
-                    }
-                }
-                """;
-
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
-            var reader = pe.GetMetadataReader();
-
-            var method = reader.MethodDefinitions
-                .Select(h => reader.GetMethodDefinition(h))
-                .First(m => reader.GetString(m.Name) == "Print");
-            var parameterHandle = Assert.Single(method.GetParameters());
-            var parameter = reader.GetParameter(parameterHandle);
-            var descriptor = parameter.GetMarshallingDescriptor();
-
-            Assert.False(descriptor.IsNil);
-            Assert.Equal("text", reader.GetString(parameter.Name));
-            Assert.Equal(1, reader.GetTableRowCount(TableIndex.FieldMarshal));
-            BlobReader descriptorReader = reader.GetBlobReader(descriptor);
-            Assert.Equal((byte)UnmanagedType.LPStr, descriptorReader.ReadByte());
-            Assert.Equal(0, descriptorReader.RemainingBytes);
-        }
-
-        [Fact]
         public void PinvokeMethod_WithAlias_EmitsImportNameAndModuleReference()
         {
             string source = """
@@ -417,6 +311,8 @@ namespace ILAssembler.Tests
             var moduleRef = reader.GetModuleReference(import.Module);
 
             Assert.True(method.Attributes.HasFlag(MethodAttributes.PinvokeImpl));
+            Assert.False(import.Module.IsNil);
+            Assert.Equal("GetCurrentProcessId", reader.GetString(import.Name));
             Assert.Equal("kernel32.dll", reader.GetString(moduleRef.Name));
             Assert.Equal(1, reader.GetTableRowCount(TableIndex.ModuleRef));
         }
@@ -476,6 +372,7 @@ namespace ILAssembler.Tests
         [InlineData("currency", 0x0F)]
         [InlineData("bstr", 0x13)]
         [InlineData("lpstr", 0x14)]
+        [InlineData("lpstr", 0x14, "string")]
         [InlineData("lpwstr", 0x15)]
         [InlineData("lptstr", 0x16)]
         [InlineData("iunknown", 0x19)]
@@ -491,9 +388,12 @@ namespace ILAssembler.Tests
         [InlineData("as any", 0x28)]
         [InlineData("lpstruct", 0x2B)]
         [InlineData("error", 0x2D)]
-        public void MarshalSimpleNativeType_EmitsExpectedDescriptor(string nativeType, int expectedTypeCode)
+        public void MarshalSimpleNativeType_EmitsExpectedDescriptor(
+            string nativeType,
+            int expectedTypeCode,
+            string parameterType = "object")
         {
-            var (diagnostics, image) = CompileParameterMarshallingDescriptor(nativeType);
+            var (diagnostics, image) = CompileParameterMarshallingDescriptor(nativeType, parameterType);
             Assert.Empty(diagnostics);
 
             using var pe = new PEReader(image);
@@ -605,9 +505,9 @@ namespace ILAssembler.Tests
             var (diagnostics, image) = CompileParameterMarshallingDescriptor(nativeType);
             if (usesDeprecatedForm)
             {
-                Assert.Contains(
-                    diagnostics,
-                    diagnostic => diagnostic.Id == DiagnosticIds.DeprecatedCustomMarshaller);
+                var warning = Assert.Single(diagnostics);
+                Assert.Equal(DiagnosticIds.DeprecatedCustomMarshaller, warning.Id);
+                Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
             }
             else
             {
@@ -708,7 +608,9 @@ namespace ILAssembler.Tests
             int expectedTypeCode)
         {
             var (diagnostics, image) = CompileParameterMarshallingDescriptor(nativeType);
-            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.DeprecatedNativeType);
+            var warning = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DeprecatedNativeType, warning.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
 
             using var pe = new PEReader(image);
             var reader = pe.GetMetadataReader();
@@ -739,14 +641,14 @@ namespace ILAssembler.Tests
         }
 
         private static (ImmutableArray<Diagnostic> Diagnostics, ImmutableArray<byte> Image)
-            CompileParameterMarshallingDescriptor(string nativeType)
+            CompileParameterMarshallingDescriptor(string nativeType, string parameterType = "object")
         {
             string source = $$"""
                 .assembly extern mscorlib { }
                 .assembly test { }
                 .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
                 {
-                    .method public static void M(object marshal({{nativeType}}) 'value') cil managed
+                    .method public static void M({{parameterType}} marshal({{nativeType}}) 'value') cil managed
                     {
                         ret
                     }
