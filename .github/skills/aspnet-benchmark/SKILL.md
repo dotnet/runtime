@@ -12,7 +12,7 @@ These benchmarks are useful for changes to the socket/IO stack, GC, JIT, and oth
 Use both of these implementations when assessing a runtime change:
 
 - `PlatformBenchmarks` exercises a highly optimized raw Kestrel `HttpApplication`.
-- `BasicMinimalApi` exercises the ASP.NET Core Minimal APIs stack.
+- `Minimal` exercises the ASP.NET Core Minimal APIs stack.
 
 A final comparison must show that neither implementation regresses. An improvement in one does not compensate for a regression in the other.
 
@@ -54,7 +54,7 @@ git clone https://github.com/aspnet/Benchmarks.git
 The relevant apps are:
 
 - `src/BenchmarksApps/TechEmpower/PlatformBenchmarks` — a raw Kestrel `HttpApplication` implementation of the TechEmpower benchmark suite (JSON serialization, plaintext, fortunes, single/multiple queries, updates).
-- `src/BenchmarksApps/BasicMinimalApi` — an ASP.NET Core Minimal APIs application whose `/todos` endpoint returns JSON.
+- `src/BenchmarksApps/TechEmpower/Minimal` — an ASP.NET Core Minimal APIs implementation of the same TechEmpower benchmark suite.
 
 ### Step 2: Build the Apps Against the Repo's Own SDK
 
@@ -66,11 +66,11 @@ TFM='<tfm>'
 cd <benchmarks-repo>/src/BenchmarksApps/TechEmpower/PlatformBenchmarks
 <runtime-repo>/.dotnet/dotnet build -c Release -p:TargetFrameworks="$TFM"
 
-cd <benchmarks-repo>/src/BenchmarksApps/BasicMinimalApi
+cd <benchmarks-repo>/src/BenchmarksApps/TechEmpower/Minimal
 <runtime-repo>/.dotnet/dotnet build -c Release -p:TargetFramework="$TFM" -p:TargetFrameworks="$TFM"
 ```
 
-This produces `bin/Release/<tfm>/PlatformBenchmarks.dll` and `bin/Release/<tfm>/BasicMinimalApi.dll` under their respective project directories.
+This produces `bin/Release/<tfm>/PlatformBenchmarks.dll` and `bin/Release/<tfm>/Minimal.dll` under their respective project directories.
 
 ### Step 3: Make the Repo's SDK Run Against Your Local Runtime Build
 
@@ -106,13 +106,13 @@ sleep 5
 curl --fail-with-body -sS http://127.0.0.1:5000/json
 ```
 
-After running its load tests, stop `PlatformBenchmarks`, then run `BasicMinimalApi`:
+After running its load tests, stop `PlatformBenchmarks`, then run `Minimal`:
 
 ```bash
-cd <benchmarks-repo>/src/BenchmarksApps/BasicMinimalApi/bin/Release/"$TFM"
-<runtime-repo>/.dotnet/dotnet exec BasicMinimalApi.dll --urls http://127.0.0.1:5000 &
+cd <benchmarks-repo>/src/BenchmarksApps/TechEmpower/Minimal/bin/Release/"$TFM"
+<runtime-repo>/.dotnet/dotnet exec Minimal.dll --urls http://127.0.0.1:5000 &
 sleep 5
-curl --fail-with-body -sS http://127.0.0.1:5000/todos
+curl --fail-with-body -sS http://127.0.0.1:5000/json
 ```
 
 Set whatever env var/`AppContext` switch you're comparing (e.g. `DOTNET_USE_IO_URING=1`/`=0`) *before* starting the process — it's read once at startup.
@@ -121,21 +121,21 @@ Set whatever env var/`AppContext` switch you're comparing (e.g. `DOTNET_USE_IO_U
 
 ```bash
 wrk -t12 -c256 -d15s --latency http://127.0.0.1:5000/json
-wrk -t12 -c256 -d15s --latency http://127.0.0.1:5000/todos
+wrk -t12 -c256 -d15s --latency http://127.0.0.1:5000/json
 ```
 
-Run the `/json` command while `PlatformBenchmarks` is running and the `/todos` command while `BasicMinimalApi` is running.
+Run the first `/json` command while `PlatformBenchmarks` is running and the second while `Minimal` is running.
 
 - `-t`: number of `wrk` threads — a good default is the machine's core count.
 - `-c`: number of concurrent connections — 256 is a reasonable default for a many-concurrent-connections scenario.
 - `-d15s`: run duration; 15s is normally enough to get a stable number.
 - `--latency`: also reports the latency percentile breakdown, not just aggregate throughput.
 
-On Windows, use `bombardier` instead, with equivalent options:
+On Windows, use `bombardier` instead, with equivalent options (run the first command against `PlatformBenchmarks` and the second against `Minimal`):
 
 ```powershell
 bombardier -c 256 -d 15s -l http://127.0.0.1:5000/json
-bombardier -c 256 -d 15s -l http://127.0.0.1:5000/todos
+bombardier -c 256 -d 15s -l http://127.0.0.1:5000/json
 ```
 
 - `-c`: concurrent connections (same meaning as `wrk -c`).
@@ -149,7 +149,7 @@ Repeat Steps 4-5 for each configuration being compared (e.g. once with the env v
 
 ### Step 6: Clean Up
 
-1. Kill the server process — find the actual `dotnet exec ... PlatformBenchmarks.dll` or `dotnet exec ... BasicMinimalApi.dll` PID (not the shell that launched it) with `pgrep -af PlatformBenchmarks` or `pgrep -af BasicMinimalApi`, then use `kill <pid>`.
+1. Kill the server process — find the actual `dotnet exec ... PlatformBenchmarks.dll` or `dotnet exec ... Minimal.dll` PID (not the shell that launched it) with `pgrep -af PlatformBenchmarks` or `pgrep -af Minimal.dll`, then use `kill <pid>`.
 2. **Restore the SDK's shared framework from the backup** and verify it with a recursive content comparison before considering the machine clean:
 
    ```bash
@@ -218,7 +218,7 @@ References:
 - [Crank controller command-line arguments](https://github.com/dotnet/crank/blob/main/src/Microsoft.Crank.Controller/README.md): complete controller and per-job option reference.
 - [Selecting .NET versions](https://github.com/dotnet/crank/blob/main/docs/dotnet_versions.md): framework, SDK, runtime, and ASP.NET version overrides.
 - [PlatformBenchmarks configuration](https://github.com/aspnet/Benchmarks/blob/main/scenarios/platform.benchmarks.yml): `json` scenario, `application` and `load` jobs, and load variables.
-- [Minimal APIs configuration](https://github.com/aspnet/Benchmarks/blob/main/scenarios/goldilocks.benchmarks.yml): `basicminimalapivanilla` and deployment-oriented Minimal APIs scenarios.
+- [Minimal APIs configuration](https://github.com/aspnet/Benchmarks/blob/main/src/BenchmarksApps/TechEmpower/Minimal/minimal.benchmarks.yml): `json`, `plaintext`, `fortunes`, and other scenarios for the same `Minimal` project used for local runs above. Unlike `PlatformBenchmarks`'s config, this one lives alongside the project rather than under the top-level `scenarios/` folder.
 - [Linux performance tracing](../../../docs/project/linux-performance-tracing.md): native and managed symbol resolution.
 
 ### 1. Establish the Inputs
@@ -320,7 +320,7 @@ Run the command once for each implementation, setting these values:
 | Implementation | `CONFIG` | `SCENARIO` | Example `RUN` suffix |
 |---|---|---|---|
 | PlatformBenchmarks | `https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml` | `json` | `json-candidate-a` |
-| Minimal APIs | `https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/goldilocks.benchmarks.yml` | `basicminimalapivanilla` | `basicminimalapivanilla-candidate-a` |
+| Minimal APIs | `https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/TechEmpower/Minimal/minimal.benchmarks.yml` | `json` | `minimal-json-candidate-a` |
 
 Create the results directory beforehand and use a unique run name for every launch. Replace angle-bracket placeholders before executing. Quote `"$OVERLAY/*"` so Crank, not the shell, expands the upload pattern. Extend the `sha256sum` list to cover the complete selected payload and compare the downloaded job output log with the local manifest. Keep the scenario's configured connection count, warmup, and duration unless the experiment specifically requires changing them; the scenario owners tune these defaults and may update them over time.
 
@@ -328,7 +328,7 @@ Create the results directory beforehand and use a unique run name for every laun
 
 The example's `published/` paths and `/bin/sh` command are for the standard Linux jobs used by these scenarios; adapt them if the job uses a different layout or OS. Confirm the build logs show the intended framework versions and that the application uses the deployed replacements, not an incompatible or separately located shared framework. File presence alone is not proof that a module was loaded; use module paths/build IDs from a diagnostic trace when investigating binding.
 
-Do not accept the runtime change based on only one implementation. Compare baseline and candidate results for both `json` and `basicminimalapivanilla`, investigating any regression before concluding that the change is beneficial.
+Do not accept the runtime change based on only one implementation. Compare baseline and candidate results for both implementations' `json` scenarios, investigating any regression before concluding that the change is beneficial.
 
 #### Windows controller with Linux binaries in WSL
 
