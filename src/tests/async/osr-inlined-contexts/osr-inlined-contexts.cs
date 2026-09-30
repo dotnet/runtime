@@ -66,24 +66,16 @@ public class Async2OsrInlinedContexts
     }
 
     [Fact]
-    public static void InlinedCalleeDoesNotClobberContextsInOsrMethod()
+    public static async Task InlinedCalleeDoesNotClobberContextsInOsrMethod()
     {
-        SynchronizationContext original = SynchronizationContext.Current;
         MarkerContext marker = new MarkerContext();
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(marker);
+        SynchronizationContext.SetSynchronizationContext(marker);
 
-            LoopWithInlinedCallee().GetAwaiter().GetResult();
+        await LoopWithInlinedCallee();
 
-            // The inlined callee has its own context save and restore, which must not
-            // disturb the caller's.
-            Assert.Same(marker, SynchronizationContext.Current);
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        // The inlined callee has its own context save and restore, which must not
+        // disturb the caller's.
+        Assert.Same(marker, SynchronizationContext.Current);
     }
 
     private static readonly AsyncLocal<int> s_local = new AsyncLocal<int>();
@@ -113,24 +105,13 @@ public class Async2OsrInlinedContexts
         return total;
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void ResumingInsideInlinedFrameOfOsrMethodKeepsContexts()
-    {
-        SynchronizationContext original = SynchronizationContext.Current;
-        try
-        {
-            LoopWithSuspendingInlinedCallee().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
-    }
+    [Fact]
+    public static async Task ResumingInsideInlinedFrameOfOsrMethodKeepsContexts() => await LoopWithSuspendingInlinedCallee();
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TailAwaitOnlyMethodCanResumeInOsrCode()
+    [Fact]
+    public static Task TailAwaitOnlyMethodCanResumeInOsrCode()
     {
-        Run().GetAwaiter().GetResult();
+        return Run();
 
         static async Task Run()
         {

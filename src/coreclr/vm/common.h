@@ -146,8 +146,8 @@ typedef PTR_Object OBJECTREF;
 typedef DPTR(OBJECTREF) PTR_OBJECTREF;
 typedef DPTR(PTR_OBJECTREF) PTR_PTR_OBJECTREF;
 
-Thread* GetThread();
-Thread* GetThreadNULLOk();
+Thread* GetThread() noexcept;
+Thread* GetThreadNULLOk() noexcept;
 
 EXTERN_C Thread* STDCALL GetThreadHelper();
 

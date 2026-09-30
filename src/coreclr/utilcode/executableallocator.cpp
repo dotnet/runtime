@@ -223,7 +223,7 @@ bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
     return g_preferredRangeMin <= (BYTE *)p && (BYTE *)p < g_preferredRangeMax;
 }
 
-ExecutableAllocator* ExecutableAllocator::Instance()
+ExecutableAllocator* ExecutableAllocator::Instance() noexcept
 {
     LIMITED_METHOD_CONTRACT;
     return g_instance;
@@ -503,12 +503,12 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
     }
 }
 
-void ExecutableAllocator::Release(void* pRX)
+void ExecutableAllocator::Release(void* pRX) noexcept
 {
     ReleaseWorker(pRX, false /* this is the standard Release of normally allocated memory */);
 }
 
-void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate)
+void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate) noexcept
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -945,7 +945,7 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 
 // Unmap writeable mapping at the specified address. The address must be an address
 // returned by the MapRW method.
-void ExecutableAllocator::UnmapRW(void* pRW)
+void ExecutableAllocator::UnmapRW(void* pRW) noexcept
 {
     LIMITED_METHOD_CONTRACT;
 

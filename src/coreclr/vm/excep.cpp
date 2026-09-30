@@ -2705,7 +2705,7 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
     GCPROTECT_END();
 }
 
-void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
+void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP) noexcept
 {
     CONTRACTL
     {
