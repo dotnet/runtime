@@ -59,7 +59,7 @@ these builds; those paths need to support absent legacy identities before
 they can be used for cDAC live debugging.
 
 Enumeration shares the SOS/process instance's COM identity and API lock.
-`MemoryRegionEnumerator.Enumerate` requires a `ContractDescriptorTarget`, returning
+`DumpCreator.Enumerate` requires a `ContractDescriptorTarget`, returning
 `E_NOTIMPL` for other target implementations. Each call flushes all cached target data
 and contract state, then uses `RegisterReadCallback` to report successful reads,
 including string terminators. Collection uses the existing target and contract instances;
@@ -108,7 +108,11 @@ regions used by dump collection. Shared `EntrypointHelpers.TryGetContractDescrip
 uses only `ICLRContractLocator`.
 The universal host's explicit-address dbgshim entrypoint bypasses descriptor discovery.
 
-The collector selects its collection mode from `miniDumpFlags`, as the native DAC does. The
+The COM entrypoint selects the collection mode from `miniDumpFlags`, as the native DAC does,
+and passes the derived `EnumMemory.DumpType` (`Mini`, `Heap`, or `Triage`) through
+the collection engine. It also wraps the native callback in `MemoryRegionEmitter`;
+`DumpCreator` accepts that managed adapter rather than a callback pointer and owns
+the flush, read-observation scope, and descriptor-memory enumeration. The
 `CLRDataEnumMemoryFlags` argument to `EnumMemoryRegions` is reserved and ignored.
 Triage exception collection omits messages and remote stack traces from types
 that override the `StackTrace` getter. Stack-trace strings have source-file

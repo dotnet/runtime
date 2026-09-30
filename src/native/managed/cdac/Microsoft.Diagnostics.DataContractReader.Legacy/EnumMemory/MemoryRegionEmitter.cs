@@ -7,44 +7,6 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
-internal static unsafe class MemoryRegionEnumerator
-{
-    private const uint MiniDumpWithPrivateReadWriteMemory = 0x200;
-    private const uint MiniDumpWithFullAuxiliaryState = 0x8000;
-    private const uint MiniDumpFilterTriage = 0x100000;
-
-    public static int Enumerate(Target target, void* callback, uint miniDumpFlags)
-    {
-        if (target is not ContractDescriptorTarget descriptorTarget)
-            return HResults.E_NOTIMPL;
-
-        target.Flush(FlushScope.All);
-        var emitter = new MemoryRegionEmitter((nint)callback, (uint)target.PointerSize);
-        using IDisposable readScope = descriptorTarget.RegisterReadCallback((address, size) =>
-        {
-            if (emitter.ShouldEmitTargetRead(address, size))
-                emitter.Add(address, size);
-        });
-        foreach (TargetSpan range in descriptorTarget.EnumerateDescriptorMemory())
-            emitter.Add(range.Address.Value, range.Size);
-
-        new DumpCreator(target, GetDumpFlags(miniDumpFlags), emitter).EnumerateMemoryRegions();
-        return emitter.Result;
-    }
-
-    internal static CLRDataEnumMemoryFlags GetDumpFlags(uint miniDumpFlags)
-    {
-        if ((miniDumpFlags & MiniDumpWithPrivateReadWriteMemory) != 0)
-            return CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP2;
-        if ((miniDumpFlags & MiniDumpWithFullAuxiliaryState) != 0)
-            return CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT;
-        if ((miniDumpFlags & MiniDumpFilterTriage) != 0)
-            return CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_TRIAGE;
-
-        return CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_MINI;
-    }
-}
-
 internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize)
 {
     private static readonly Guid s_ICLRDataEnumMemoryRegionsCallback2_Iid = new("3721A26F-8B91-4D98-A388-DB17B356FADB");
