@@ -130,10 +130,13 @@ namespace System.Security.Cryptography.Tests
             mldsa.SignData(data, signature, context);
             ExerciseSuccessfulVerify(mldsa, data, signature, context);
 
-            byte[] hash = HashInfo.Sha256.GetHash(data);
-            signature.AsSpan().Fill(0);
-            mldsa.SignPreHash(hash.AsSpan(), signature, HashInfo.Sha256.Oid, context);
-            ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, context);
+            if (MLDsaTestHelpers.PreHashIsSupported)
+            {
+                byte[] hash = HashInfo.Sha256.GetHash(data);
+                signature.AsSpan().Fill(0);
+                mldsa.SignPreHash(hash.AsSpan(), signature, HashInfo.Sha256.Oid, context);
+                ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, context);
+            }
         }
     }
 }
