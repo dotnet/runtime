@@ -3347,29 +3347,20 @@ namespace System.Tests
             // independent literal value and cross-checked with GetUtcOffset and DateTimeOffset.
             RemoteExecutor.Invoke(static (id, ticks, expectedTicks) =>
             {
-                string originalTZ = Environment.GetEnvironmentVariable("TZ");
-                try
-                {
-                    TimeZoneInfo.ClearCachedData();
-                    Environment.SetEnvironmentVariable("TZ", id);
+                Environment.SetEnvironmentVariable("TZ", id);
+                TimeZoneInfo.ClearCachedData();
 
-                    TimeZoneInfo local = TimeZoneInfo.Local;
-                    DateTime invalidLocal = DateTime.SpecifyKind(new DateTime(long.Parse(ticks)), DateTimeKind.Local);
-                    DateTime expectedUtc = new DateTime(long.Parse(expectedTicks), DateTimeKind.Utc);
-                    Assert.True(local.IsInvalidTime(invalidLocal), $"Expected an invalid time for '{id}'.");
+                TimeZoneInfo local = TimeZoneInfo.Local;
+                DateTime invalidLocal = DateTime.SpecifyKind(new DateTime(long.Parse(ticks)), DateTimeKind.Local);
+                DateTime expectedUtc = new DateTime(long.Parse(expectedTicks), DateTimeKind.Utc);
+                Assert.True(local.IsInvalidTime(invalidLocal), $"Expected an invalid time for '{id}'.");
 
-                    Assert.Equal(expectedUtc, invalidLocal.ToUniversalTime());
-                    Assert.Equal(expectedUtc, new DateTimeOffset(invalidLocal).UtcDateTime);
+                Assert.Equal(expectedUtc, invalidLocal.ToUniversalTime());
+                Assert.Equal(expectedUtc, new DateTimeOffset(invalidLocal).UtcDateTime);
 
-                    // The subtracted offset must match the standard (non-daylight) offset reported for this time.
-                    TimeSpan offset = local.GetUtcOffset(invalidLocal);
-                    Assert.Equal(expectedUtc, new DateTime(invalidLocal.Ticks - offset.Ticks, DateTimeKind.Utc));
-                }
-                finally
-                {
-                    TimeZoneInfo.ClearCachedData();
-                    Environment.SetEnvironmentVariable("TZ", originalTZ);
-                }
+                // The subtracted offset must match the standard (non-daylight) offset reported for this time.
+                TimeSpan offset = local.GetUtcOffset(invalidLocal);
+                Assert.Equal(expectedUtc, new DateTime(invalidLocal.Ticks - offset.Ticks, DateTimeKind.Utc));
             }, timeZoneId, wallClock.Ticks.ToString(), expectedUtcWallClock.Ticks.ToString()).Dispose();
         }
 
