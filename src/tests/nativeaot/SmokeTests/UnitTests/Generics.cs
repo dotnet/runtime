@@ -2530,11 +2530,25 @@ class Generics
     {
         struct Mine<T> { }
 
+        struct BranchMine<T> { }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CallWithNullable<T>(object m)
         {
             return m is T;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CallWithNullableBranch<T>(object m)
+        {
+            if (m is T)
+                return Matched();
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Matched() => true;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CallWithReferenceType<T>(object m)
@@ -2548,6 +2562,15 @@ class Generics
                 throw new Exception();
 
             if (CallWithNullable<Nullable<Mine<object>>>(new Mine<string>()))
+                throw new Exception();
+
+            if (!CallWithNullableBranch<Nullable<BranchMine<object>>>(new BranchMine<object>()))
+                throw new Exception();
+
+            if (CallWithNullableBranch<Nullable<BranchMine<object>>>(new BranchMine<string>()))
+                throw new Exception();
+
+            if (CallWithNullableBranch<Nullable<BranchMine<object>>>(null))
                 throw new Exception();
 
             if (!CallWithReferenceType<object>(new Mine<object>()))
