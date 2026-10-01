@@ -136,8 +136,17 @@ work that was never reached will count as unused. Likewise, incremental builds t
 linking do not refresh cache usage. Skip purge if the cache may still be in use, including
 during cancellation. Do not share a live directory with another job while purging.
 
-This is usage guidance, not automatic CI enablement. ILLink cache restore/upload wiring
-is separate from runtime's Roslyn/csc cache maintenance.
+Runtime's jobs that use `setup-sccache.yml` also enable ILLink caching under its existing
+Unix x64/arm64 platform gate. `setup-illink-cache.yml` restores a branch-scoped Azure
+Pipelines snapshot into `$(Pipeline.Workspace)/.illink-cache`, enables the experiment, and
+records build start. `global-build-job.yml` runs `purge-illink-cache.yml` after all post-build
+steps and before the `Cache@2` post-job save. The purge step builds the tool from the checkout
+because library-only builds need not include the tool project. It reports missing
+prerequisites and maintenance failures as warnings, and runs only when ILLink caching
+was enabled and the job was not canceled. When no versioned cache directory exists,
+as on a cold native-only build, it skips the maintenance tool build and purge.
+
+This configuration is separate from runtime's Roslyn/csc and native compiler caches.
 
 ## ILLink Task Properties
 

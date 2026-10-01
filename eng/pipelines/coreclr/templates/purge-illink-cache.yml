@@ -1,0 +1,44 @@
+steps:
+  - script: |
+      set -euo pipefail
+
+      if [[ -z "${ILLINK_EXPERIMENTAL_CACHE_PATH:-}" ||
+            -z "${ILLINK_CACHE_BUILD_START:-}" ]]; then
+          echo "##vso[task.logissue type=warning]ILLink cache configuration or build-start timestamp is unavailable; skipping purge."
+          exit 0
+      fi
+
+      if [[ ! -e "$ILLINK_EXPERIMENTAL_CACHE_PATH/v1" ]]; then
+          echo "No ILLink cache entries were created; skipping purge."
+          exit 0
+      fi
+
+      dotnet="$(Build.SourcesDirectory)/.dotnet/dotnet"
+      if [[ ! -x "$dotnet" ]]; then
+          echo "##vso[task.logissue type=warning]The build SDK is unavailable; skipping ILLink cache purge."
+          exit 0
+      fi
+
+      # Library-only builds need not build the tools.illink subset. Build the
+      # maintenance tool from this checkout into a known host-tool directory.
+      toolDirectory="$(Build.SourcesDirectory)/artifacts/bin/ILLink.CacheTool/ci-purge"
+      if ! "$dotnet" build \
+          "$(Build.SourcesDirectory)/src/tools/illink/src/ILLink.CacheTool/ILLink.CacheTool.csproj" \
+          --configuration Release --output "$toolDirectory" \
+          -m:1 -nodeReuse:false -p:BuildInParallel=false -p:UseSharedCompilation=false; then
+          echo "##vso[task.logissue type=warning]Could not build the ILLink cache maintenance tool; skipping purge."
+          exit 0
+      fi
+
+      if ! "$dotnet" "$toolDirectory/dotnet-illink-cache.dll" purge \
+          --cache-directory "$ILLINK_EXPERIMENTAL_CACHE_PATH" \
+          --before "$ILLINK_CACHE_BUILD_START"; then
+          echo "##vso[task.logissue type=warning]ILLink cache purge failed; see the tool diagnostics above."
+      fi
+    displayName: Purge unused ILLink cache entries
+    condition: and(succeededOrFailed(), eq(variables['ILLINK_EXPERIMENTAL_CACHE'], 'true'))
+    continueOnError: true
+    env:
+      DOTNET_PROCESSOR_COUNT: '2'
+      DOTNET_CLI_USE_MSBUILD_SERVER: '0'
+      MSBUILDDISABLENODEREUSE: '1'
