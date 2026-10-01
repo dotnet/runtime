@@ -262,24 +262,6 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
     return true;
 }
 
-static bool TryGetSpForPacSigning(const PacFrameInfo& pacFrameInfo,
-                                  PTR_PTR_VOID ppvRetAddrLocation,
-                                  uintptr_t *pSpForPacSign)
-{
-    if (!pacFrameInfo.hasPac)
-    {
-        *pSpForPacSign = 0;
-        return true;
-    }
-
-    if (ppvRetAddrLocation == NULL || pacFrameInfo.lrOffset == INT_MIN)
-        return false;
-
-    *pSpForPacSign = dac_cast<TADDR>(ppvRetAddrLocation) +
-        (pacFrameInfo.cfaOffset - pacFrameInfo.lrOffset - pacFrameInfo.pacCfaOffset);
-    return true;
-}
-
 #endif // TARGET_ARM64
 
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
@@ -1095,16 +1077,6 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 #define LDP_BITS2 0x28400000
 #define LDP_MASK2 0x7E400000
 
-// add sp, sp, #imm
-// 1001 0001 0xxx xxxx xxxx xx11 1111 1111
-#define ADD_SP_SP_BITS 0x910003FF
-#define ADD_SP_SP_MASK 0xFF8003FF
-
-// sub sp, fp, #imm
-// 1101 0001 0xxx xxxx xxxx xx11 1011 1111
-#define SUB_SP_FP_BITS 0xD10003BF
-#define SUB_SP_FP_MASK 0xFF8003FF
-
 // Branches, Exception Generating and System instruction group
 // xxx1 01xx xxxx xxxx xxxx xxxx xxxx xxxx
 #define BEGS_BITS 0x14000000
@@ -1131,8 +1103,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
         // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
         if ((instr & BEGS_MASK) == BEGS_BITS)
         {
-            // Pointer authentication instructions are part of the epilog. Keep scanning
-            // backwards to find the LR restore or SP adjustment that precedes them.
+            // Scan past authentication instructions to find the FP/LR restore.
             if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
             {
                 continue;
@@ -1164,26 +1135,6 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
             {
                 return -1;
             }
-        }
-
-        // Post-index restore sequences such as "ldp x19, x20, [sp], #0x10" also adjust SP
-        // before the final AUTIASP/RET. We avoid signing with a partially-restored SP.
-        int baseRegister = (instr >> 5) & 0x1f;
-        if (baseRegister == 31)
-        {
-            if ((instr & LDP_MASK2) == LDP_BITS2 ||
-                (instr & LDR_MASK2) == LDR_BITS2)
-            {
-                return -1;
-            }
-        }
-
-        // Stack pointer adjustments can happen before AUTIASP/RET in some epilog layouts,
-        // so treat them as being in the epilog as well.
-        if ((instr & ADD_SP_SP_MASK) == ADD_SP_SP_BITS ||
-            (instr & SUB_SP_FP_MASK) == SUB_SP_FP_BITS)
-        {
-            return -1;
         }
     }
 
@@ -1428,22 +1379,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
         return false;
 
-#if defined(TARGET_ARM64)
-    PacFrameInfo pacFrameInfo;
-    bool hasPacFrameInfo = TryGetPacFrameInfo(pNativeMethodInfo, &pacFrameInfo);
-    bool pacPresent = hasPacFrameInfo && pacFrameInfo.hasPac;
-    if (pacPresent)
-    {
-        // For PAC frames we only hijack locations where the current frame state is
-        // unambiguous. Partial prologs can save FP/LR before FP is established, and some
-        // epilog layouts adjust SP before the final AUTIASP/RET sequence.
-        if (IsInProlog(pMethodInfo, (PTR_VOID)pRegisterSet->IP) == 1)
-        {
-            return false;
-        }
-    }
-#endif
-
 #if defined(TARGET_ARM)
     // Ensure that PC doesn't have the Thumb bit set. Prolog and epilog
     // checks depend on it.
@@ -1514,6 +1449,14 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
+#if defined(TARGET_ARM64)
+    PacFrameInfo pacFrameInfo;
+    if (!TryGetPacFrameInfo(pNativeMethodInfo, &pacFrameInfo))
+    {
+        return false;
+    }
+#endif
+
     PTR_uintptr_t oldLocation = pRegisterSet->GetReturnAddressRegisterLocation();
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
@@ -1530,13 +1473,15 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
-
 #if defined(TARGET_ARM64)
-    if (!TryGetSpForPacSigning(pacFrameInfo, *ppvRetAddrLocation, pSpForArm64PacSign))
-        return false;
+    if (pacFrameInfo.hasPac)
+    {
+        // Unwinding recovers the entry SP, which NativeAOT used to sign LR.
+        *pSpForArm64PacSign = pRegisterSet->GetSP();
+    }
 #endif
 
+    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
     return true;
 #else
     return false;
