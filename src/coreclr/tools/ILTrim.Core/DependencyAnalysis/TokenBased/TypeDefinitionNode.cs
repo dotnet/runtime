@@ -75,6 +75,18 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodDefinition(_module, cctor.Handle), "Static constructor");
             }
 
+            if (type.IsInlineArray)
+            {
+                foreach (var fieldHandle in typeDef.GetFields())
+                {
+                    var fieldDef = _module.MetadataReader.GetFieldDefinition(fieldHandle);
+                    if (!fieldDef.Attributes.HasFlag(FieldAttributes.Static))
+                    {
+                        dependencies.Add(factory.FieldDefinition(_module, fieldHandle), "Instance field of an inline-array type");
+                    }
+                }
+            }
+
             var ecmaType = (EcmaType)_module.GetObject(_handle);
             if (ecmaType.IsValueType && LayoutTypeNode.IsLayoutType(ecmaType))
             {
