@@ -110,6 +110,78 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
+        // A WasmReadyToRunProfile drives a crossgen2 --partial image: only the profiled subset is precompiled,
+        // the rest is interpreted at runtime. Republish the same project through full, roots-only partial,
+        // profiled partial, and full states. This proves that the profile contributes methods, property-only
+        // changes invalidate incremental R2R output in both directions, and interpreter fallback covers methods
+        // left out of the eager image.
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Release)]
+        [TestCategory("no-workload")]
+        public async Task PublishPartialProfileRunsAllPages(Configuration config)
+        {
+            string profile = Path.Combine(BuildEnvironment.TestDataPath, "ReadyToRunPartial.mibc");
+            Assert.True(File.Exists(profile), $"Missing test profile '{profile}'.");
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.BlazorBasicTestApp,
+                "r2r_partial_profile",
+                extraProperties: """
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    <PublishTrimmed>false</PublishTrimmed>
+                    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmBuildTestRootsOnlyPartial)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--partial</PublishReadyToRunCrossgen2ExtraArgs>
+                    """);
+
+            string frameworkDir = PublishR2RClosure(info, config, extraArgs: "", label: "full");
+            AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            string r2rDir = GetObjSubDir(config, "R2R");
+            long fullBytes = SumR2RTableBytes(r2rDir);
+            Assert.True(fullBytes > 0, "Full-closure publish produced no R2R tables.");
+
+            frameworkDir = PublishR2RClosure(
+                info,
+                config,
+                extraArgs: "-p:WasmBuildTestRootsOnlyPartial=true",
+                label: "roots-only");
+            long rootsOnlyBytes = SumR2RTableBytes(r2rDir);
+            Assert.True(rootsOnlyBytes > 0, "Roots-only partial image produced no R2R tables.");
+            Assert.NotEqual(fullBytes, rootsOnlyBytes);
+
+            frameworkDir = PublishR2RClosure(
+                info,
+                config,
+                extraArgs: $"-p:WasmReadyToRunProfile=\"{profile}\"",
+                label: "profiled");
+            AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            AssertPerAppCrossgenRan(config, expected: true);
+
+            long profiledBytes = SumR2RTableBytes(r2rDir);
+            Assert.NotEqual(rootsOnlyBytes, profiledBytes);
+            Assert.NotEqual(fullBytes, profiledBytes);
+
+            await RunForPublishWithWebServer(new BlazorRunOptions(config,
+                CheckCounter: false,
+                ExecuteAfterLoaded: (_, page) => InteractAllPagesAsync(page)));
+
+            PublishR2RClosure(info, config, extraArgs: "", label: "full-restored");
+            long restoredFullBytes = SumR2RTableBytes(r2rDir);
+            Assert.Equal(fullBytes, restoredFullBytes);
+        }
+
+        private string PublishR2RClosure(ProjectInfo info, Configuration config, string extraArgs, string label)
+        {
+            string r2rArgs = $"{GetR2RBuildArgs(config)} {extraArgs}";
+            BlazorPublish(
+                info,
+                config,
+                new PublishOptions(
+                    UseCache: false,
+                    Label: label,
+                    ExtraMSBuildArgs: r2rArgs));
+            return GetBlazorBinFrameworkDir(config, forPublish: true);
+        }
+
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content
         // at each step. DetectRuntimeFailures (default) fails the run on any unhandled managed/JS exception.
         private static async Task InteractAllPagesAsync(IPage page)
@@ -224,7 +296,7 @@ namespace Wasm.Build.Tests
         // under BASE_DIR: the no-workload leg ships the shim but resolves crossgen2 itself from the SDK pack (the
         // SDK restores it when PublishReadyToRun is set), so passing a non-existent Crossgen2InBuildDir there
         // would break the call-helpers generator. All inert if BASE_DIR is unset.
-        private static string GetR2RBuildArgs(Configuration config)
+        internal static string GetR2RBuildArgs(Configuration config)
         {
             string? baseDir = EnvironmentVariables.BaseDir;
             if (string.IsNullOrEmpty(baseDir))
@@ -244,6 +316,20 @@ namespace Wasm.Build.Tests
             if (File.Exists(shimTargets))
                 args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
             return string.Join(" ", args);
+        }
+
+        // Total table bytes across the canonical per-app R2R outputs. Measuring the fingerprinted publish
+        // directory would count files retained from earlier incremental publishes.
+        private static long SumR2RTableBytes(string r2rDir)
+        {
+            long total = 0;
+            foreach (string wasm in Directory.EnumerateFiles(r2rDir, "*.wasm"))
+            {
+                using FileStream stream = File.OpenRead(wasm);
+                if (WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out _))
+                    total += tableSize;
+            }
+            return total;
         }
 
         private static void AssertCoreLibReadyToRun(string frameworkDir, bool expectReadyToRun)
