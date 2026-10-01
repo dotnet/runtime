@@ -21852,10 +21852,23 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
 //
 CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 {
-    bool                 isArrayExact   = false;
-    bool                 isArrayNonNull = false;
-    CORINFO_CLASS_HANDLE arrayClassHnd  = gtGetClassHandle(array, &isArrayExact, &isArrayNonNull);
+    bool isArrayExact   = false;
+    bool isArrayNonNull = false;
+    return gtGetArrayElementClassHandle(gtGetClassHandle(array, &isArrayExact, &isArrayNonNull));
+}
 
+//------------------------------------------------------------------------
+// gtGetArrayElementClassHandle: find class handle for elements of an array
+// of ref types
+//
+// Arguments:
+//    arrayClassHnd -- class handle of the array (may be nullptr)
+//
+// Return Value:
+//    nullptr if element class handle is unknown, otherwise the class handle.
+//
+CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(CORINFO_CLASS_HANDLE arrayClassHnd)
+{
     if (arrayClassHnd != nullptr)
     {
         // We know the class of the reference

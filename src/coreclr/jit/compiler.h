@@ -4177,6 +4177,7 @@ public:
     CORINFO_CLASS_HANDLE gtGetHelperCallClassHandle(GenTreeCall* call, bool* pIsExact, bool* pIsNonNull);
     // Get the element handle for an array of ref type.
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
+    CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(CORINFO_CLASS_HANDLE arrayClassHnd);
     // Get a class handle from a helper call argument
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get a method handle from a helper call argument

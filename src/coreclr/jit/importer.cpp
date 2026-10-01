@@ -7389,11 +7389,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
-                if (opts.OptimizationEnabled() && (gtGetArrayElementClassHandle(impStackTop(1).val) == ldelemClsHnd) &&
-                    info.compCompHnd->isExactType(ldelemClsHnd))
+                if (opts.OptimizationEnabled())
                 {
-                    JITDUMP("\nldelema of T[] with T exact: skipping covariant check\n");
-                    goto ARR_LD;
+                    const StackEntry&    arrSe      = impStackTop(1);
+                    CORINFO_CLASS_HANDLE arrElemHnd = gtGetArrayElementClassHandle(arrSe.val);
+
+                    // The tree may only know the shared (__Canon) array type, e.g. for a field of a shared
+                    // generic type, while the stack type was resolved in the exact context.
+                    // Only trust stack types when nothing flows in from predecessors.
+                    if ((arrElemHnd != ldelemClsHnd) && (block->bbStackDepthOnEntry() == 0) &&
+                        arrSe.val->TypeIs(TYP_REF) && arrSe.seTypeInfo.IsType(TYP_REF))
+                    {
+                        arrElemHnd = gtGetArrayElementClassHandle(arrSe.seTypeInfo.GetClassHandleForObjRef());
+                    }
+
+                    if ((arrElemHnd == ldelemClsHnd) && info.compCompHnd->isExactType(ldelemClsHnd))
+                    {
+                        JITDUMP("\nldelema of T[] with T exact: skipping covariant check\n");
+                        goto ARR_LD;
+                    }
                 }
 
                 GenTree* index = impPopStack().val;
