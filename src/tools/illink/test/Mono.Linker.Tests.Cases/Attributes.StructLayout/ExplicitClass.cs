@@ -35,10 +35,39 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
         public int never_used;
     }
 
+    [Kept]
+    [StructLayout(LayoutKind.Sequential)]
+    class ExplicitLayoutGrandBase
+    {
+        [Kept]
+        public int never_used_grandbase;
+    }
+
+    [Kept]
+    [KeptBaseType(typeof(ExplicitLayoutGrandBase))]
+    class ExplicitAutoLayoutIntermediate : ExplicitLayoutGrandBase
+    {
+        public int removed_auto_field;
+    }
+
+    [Kept]
+    [StructLayout(LayoutKind.Explicit)]
+    [KeptBaseType(typeof(ExplicitAutoLayoutIntermediate))]
+    class ExplicitLayoutThroughAutoIntermediate : ExplicitAutoLayoutIntermediate
+    {
+        [FieldOffset(0)]
+        [Kept]
+        public int used;
+    }
+
+    [RemovedMemberInAssembly("test.exe", typeof(ExplicitAutoLayoutIntermediate), "removed_auto_field")]
     public class ExplicitClass
     {
         [Kept]
         static UnallocatedExplicitClassData _myField;
+
+        [Kept]
+        static ExplicitLayoutThroughAutoIntermediate _layoutThroughAutoIntermediate;
 
         public static void Main()
         {
@@ -48,6 +77,11 @@ namespace Mono.Linker.Tests.Cases.Attributes.StructLayout
             _myField = null;
 
             typeof(UnallocatedButReferencedWithReflectionExplicitClassData).ToString();
+
+            if (string.Empty.Length > 0)
+            {
+                _layoutThroughAutoIntermediate.used = 123;
+            }
         }
     }
 }
