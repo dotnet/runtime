@@ -115,6 +115,21 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, method.OwningType);
         }
 
+        public static void ProcessUnresolvedGenericArgumentDataFlow(
+            in DiagnosticContext diagnosticContext,
+            ReflectionMarker reflectionMarker,
+            MethodDesc method)
+        {
+            ProcessUnresolvedGenericInstantiation(
+                diagnosticContext,
+                reflectionMarker,
+                method.Instantiation);
+            ProcessUnresolvedGenericInstantiation(
+                diagnosticContext,
+                reflectionMarker,
+                method.OwningType.Instantiation);
+        }
+
         public static void ProcessGenericArgumentDataFlow(in DiagnosticContext diagnosticContext, ReflectionMarker reflectionMarker, FieldDesc field)
         {
             ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, field.OwningType);
@@ -141,6 +156,29 @@ namespace ILCompiler.Dataflow
                 {
                     ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, genericArgument);
                 }
+            }
+        }
+
+        private static void ProcessUnresolvedGenericInstantiation(
+            in DiagnosticContext diagnosticContext,
+            ReflectionMarker reflectionMarker,
+            Instantiation instantiation)
+        {
+            foreach (TypeDesc genericParameter in instantiation)
+            {
+                if (genericParameter is not GenericParameterDesc genericParameterDesc)
+                    continue;
+
+                DynamicallyAccessedMemberTypes annotation =
+                    reflectionMarker.Annotations.GetGenericParameterAnnotation(genericParameterDesc);
+                if (annotation == DynamicallyAccessedMemberTypes.None)
+                    continue;
+
+                var action = new RequireDynamicallyAccessedMembersAction(
+                    reflectionMarker,
+                    diagnosticContext,
+                    genericParameterDesc);
+                action.Invoke(new MultiValue(UnknownValue.Instance), reflectionMarker.Annotations.GetGenericParameterValue(genericParameterDesc));
             }
         }
 

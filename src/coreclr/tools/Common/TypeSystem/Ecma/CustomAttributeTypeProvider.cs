@@ -11,10 +11,17 @@ namespace Internal.TypeSystem.Ecma
     public struct CustomAttributeTypeProvider : ICustomAttributeTypeProvider<TypeDesc>
     {
         private EcmaModule _module;
+        private bool _throwIfTypeNotFound;
 
         public CustomAttributeTypeProvider(EcmaModule module)
+            : this(module, throwIfTypeNotFound: true)
+        {
+        }
+
+        public CustomAttributeTypeProvider(EcmaModule module, bool throwIfTypeNotFound)
         {
             _module = module;
+            _throwIfTypeNotFound = throwIfTypeNotFound;
         }
 
         public TypeDesc GetPrimitiveType(PrimitiveTypeCode typeCode)
@@ -30,7 +37,7 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc GetSZArrayType(TypeDesc elementType)
         {
-            return elementType.MakeArrayType();
+            return elementType?.MakeArrayType();
         }
 
         public TypeDesc GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
@@ -56,11 +63,14 @@ namespace Internal.TypeSystem.Ecma
             if (name == null)
                 return null;
 
-            return _module.GetTypeByCustomAttributeTypeName(name);
+            return _module.GetTypeByCustomAttributeTypeName(name, _throwIfTypeNotFound);
         }
 
         public PrimitiveTypeCode GetUnderlyingEnumType(TypeDesc type)
         {
+            if (type is null)
+                throw new BadImageFormatException("The underlying type of an unresolved enum is unknown.");
+
             switch (type.UnderlyingType.Category)
             {
                 case TypeFlags.Byte:

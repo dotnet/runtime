@@ -274,6 +274,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _assemblyReferences.GetOrAdd(new HandleKey<AssemblyReferenceValue>(module, new AssemblyReferenceValue(reference)));
         }
+        public AssemblyReferenceNode AssemblyReference(EcmaModule module, AssemblyNameInfo reference)
+        {
+            return _assemblyReferences.GetOrAdd(new HandleKey<AssemblyReferenceValue>(module, new AssemblyReferenceValue(reference)));
+        }
 
         NodeCache<HandleKey<ModuleReferenceHandle>, ModuleReferenceNode> _moduleReferences
             = new NodeCache<HandleKey<ModuleReferenceHandle>, ModuleReferenceNode>(key

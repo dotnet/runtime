@@ -97,7 +97,6 @@ DataFlow.ObjectGetTypeDataflow
 DataFlow.RuntimeAsyncMethods
 DataFlow.StaticInterfaceMethodDataflow
 DataFlow.SuppressWarningWithLinkAttributes
-DataFlow.UnresolvedMembers
 DataFlow.UnusedVirtualMethodAnnotations
 DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation
 DataFlow.XmlAnnotations
