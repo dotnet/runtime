@@ -507,12 +507,12 @@ public:
 //*****************************************************************************
     void Trim();                            //
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
@@ -855,12 +855,12 @@ public:
         return (GetNextOffset() <= 1);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
@@ -975,11 +975,11 @@ public:
         const GUID *pGuid,          // The Guid to add to pool.
         UINT32     *pnIndex);       // Return index of Guid here.
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Get the size of the GUID obtained from the pool.
 // Needed for generic persisting of data blocks.
 //*****************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
     virtual ULONG GetSizeOfData( void const * data )
     {
         LIMITED_METHOD_CONTRACT;
@@ -1021,12 +1021,12 @@ public:
     ULONG GetNextIndex()
     { LIMITED_METHOD_CONTRACT; return (GetNextOffset() / sizeof(GUID)); }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
@@ -1137,11 +1137,11 @@ public:
     __checkReturn
     virtual HRESULT SetHash(int bHash);
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Get the size of the blob obtained from the pool.
 // Needed for generic persisting of data blocks.
 //*****************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
     virtual ULONG GetSizeOfData( void const * data )
     {
         WRAPPER_NO_CONTRACT;
@@ -1170,12 +1170,12 @@ public:
         return (GetNextOffset() <= 1);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const

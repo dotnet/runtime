@@ -3979,6 +3979,7 @@ private:
     ULONG            m_OriginalMDUpdateMode;
 };
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Called in live paths to fetch metadata for dynamic modules. This makes the metadata available to the
 // debugger from out-of-process.
 //
@@ -3996,7 +3997,6 @@ private:
 //    Class-load events are high-volume and events are slow. We can avoid the chattiness by ensuring
 //    the debugger knows that Class-load also means "refresh metadata".
 //
-#ifdef FEATURE_METADATA_PERSISTENCE
 void ReflectionModule::CaptureModuleMetaDataToMemory()
 {
     CONTRACTL

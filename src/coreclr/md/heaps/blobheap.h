@@ -307,8 +307,8 @@ public:
     {
         m_BlobPool.ResetOffsetOfEdit();
     }
-    // Gets size (in bytes) aligned to 4-bytes of adds made from the beginning of the last EnC session.
 #ifdef FEATURE_METADATA_PERSISTENCE
+    // Gets size (in bytes) aligned to 4-bytes of adds made from the beginning of the last EnC session.
     __checkReturn
     inline HRESULT GetEnCSessionAddedHeapSize_Aligned(
         _Out_ UINT32 *pcbSize) const

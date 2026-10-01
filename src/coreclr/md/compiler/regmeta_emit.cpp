@@ -65,10 +65,10 @@ ErrExit:
     return hr;
 } // STDMETHODIMP RegMeta::SetModuleProps()
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Saves a scope to a file of a given name.
 //*****************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
 STDMETHODIMP RegMeta::Save(                     // S_OK or error.
     LPCWSTR     szFile,                 // [IN] The filename to save to.
     DWORD       dwSaveFlags)            // [IN] Flags for the save.
@@ -653,10 +653,10 @@ ErrExit:
 // Internal helper functions.
 //*******************************************************************************
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*******************************************************************************
 // Perform optimizations of the metadata prior to saving.
 //*******************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
 HRESULT RegMeta::PreSave()              // Return code.
 {
     HRESULT     hr = S_OK;              // A result.

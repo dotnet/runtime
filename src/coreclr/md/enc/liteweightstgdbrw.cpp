@@ -433,10 +433,10 @@ HRESULT CLiteWeightStgdbRW::InitNew()
     return m_MiniMd.InitNew();
 }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Determine what the size of the saved data will be.
 //*****************************************************************************
-#ifdef FEATURE_METADATA_PERSISTENCE
 __checkReturn
 HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     CorSaveSize               fSave,                // Quick or accurate?
