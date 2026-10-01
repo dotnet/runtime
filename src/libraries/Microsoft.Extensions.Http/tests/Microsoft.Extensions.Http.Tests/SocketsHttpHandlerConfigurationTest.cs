@@ -14,6 +14,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Http
 {
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public class SocketsHttpHandlerConfigurationTest
     {
         private const string ParentSectionName = "HttpClientSettings";
@@ -27,7 +28,7 @@ namespace Microsoft.Extensions.Http
             { $"{ParentSectionName}:{SectionName}:SomeUnrelatedProperty", "WillBeIgnored" }
         };
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void UseSocketsHttpHandler_Parameterless_Success()
         {
             var serviceCollection = new ServiceCollection();
@@ -46,7 +47,7 @@ namespace Microsoft.Extensions.Http
             Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(socketsHttpHandlerChain));
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void DefaultPrimaryHandler_RespectsHandlerLifetime()
         {
             var serviceCollection = new ServiceCollection();
@@ -61,7 +62,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(TimeSpan.FromMinutes(42), handler.PooledConnectionLifetime);
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void DefaultPrimaryHandler_NamedClient_RespectsHandlerLifetime()
         {
             var serviceCollection = new ServiceCollection();
@@ -77,7 +78,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(TimeSpan.FromMinutes(2), Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(messageHandlerFactory.CreateHandler())).PooledConnectionLifetime);
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void UseSocketsHttpHandler_ConfiguredByAction_Success()
         {
             var serviceCollection = new ServiceCollection();
@@ -101,7 +102,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(TimeSpan.FromMinutes(1), configuredHandler.PooledConnectionLifetime);
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void UseSocketsHttpHandler_ConfiguredByBuilder_Success()
         {
             var serviceCollection = new ServiceCollection();
@@ -126,7 +127,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(TimeSpan.FromSeconds(10), configuredHandler.ConnectTimeout);
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void UseSocketsHttpHandler_ConfiguredByIConfiguration_Success()
         {
             IConfiguration config = new ConfigurationBuilder()
@@ -151,7 +152,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(TimeSpan.FromMinutes(1), configuredHandler.PooledConnectionLifetime);
         }
 
-        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Theory]
         [InlineData(nameof(SocketsHttpHandler.InitialHttp2StreamWindowSize), 16777216, "16777216")] // default value: 65535
         [InlineData(nameof(SocketsHttpHandler.MaxAutomaticRedirections), 3, "3")] // default value: 50
         [InlineData(nameof(SocketsHttpHandler.MaxConnectionsPerServer), 1, "1")] // default value: int.MaxValue
@@ -162,7 +163,7 @@ namespace Microsoft.Extensions.Http
             TestPropertyIsConfigured(propertyName, expectedValue, configValue);
         }
 
-        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Theory]
         [InlineData(nameof(SocketsHttpHandler.AllowAutoRedirect), false, "false")] // default value: true
         [InlineData(nameof(SocketsHttpHandler.EnableMultipleHttp2Connections), true, "true")] // default value: false
         [InlineData(nameof(SocketsHttpHandler.PreAuthenticate), true, "true")] // default value: false
@@ -173,7 +174,7 @@ namespace Microsoft.Extensions.Http
             TestPropertyIsConfigured(propertyName, expectedValue, configValue);
         }
 
-        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Theory]
         [InlineData(nameof(SocketsHttpHandler.PooledConnectionIdleTimeout))] // default value: 1m
         [InlineData(nameof(SocketsHttpHandler.PooledConnectionLifetime))] // default value: -1
         [InlineData(nameof(SocketsHttpHandler.ResponseDrainTimeout))] // default value: 2s
@@ -186,13 +187,13 @@ namespace Microsoft.Extensions.Http
             TestPropertyIsConfigured(propertyName, TimeSpan.FromSeconds(30), "00:00:30");
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void UseSocketsHttpHandler_ConfiguredByIConfiguration_AutomaticDecompression() // default value: None
         {
             TestPropertyIsConfigured(nameof(SocketsHttpHandler.AutomaticDecompression), DecompressionMethods.GZip, "gzip"); // should be case-insensitive
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void UseSocketsHttpHandler_ConfiguredByIConfiguration_KeepAlivePingPolicy() // default value: Always
         {
             TestPropertyIsConfigured(nameof(SocketsHttpHandler.KeepAlivePingPolicy), HttpKeepAlivePingPolicy.WithActiveRequests, "WithActiveRequests");
@@ -223,7 +224,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(expectedValue, propertyGetter(configuredHandler));
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void UseSocketsHttpHandler_ChainingActionAfterIConfiguration_Updates()
         {
             IConfiguration config = new ConfigurationBuilder()
@@ -259,7 +260,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(allowAllCertsSslOptions, configuredHandler.SslOptions); // from action
         }
 
-        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Fact]
         public void UseSocketsHttpHandler_ChainingIConfigurationAfterAction_Updates()
         {
             IConfiguration config = new ConfigurationBuilder()
@@ -295,7 +296,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(allowAllCertsSslOptions, configuredHandler.SslOptions); // from action
         }
 
-        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void UseSocketsHttpHandler_PresetSocketsHttpHandler_Updates(bool handlerSetByUseSocketsHttpHandler)
