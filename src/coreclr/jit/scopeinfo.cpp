@@ -58,11 +58,25 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "codegen.h"
 
 #if defined(TARGET_WASM)
-// Stack VarLoc records use the target register-number convention, not packed wasm local indices.
+// Stack VarLoc records use the reserved ambient SP register number, not a wasm local.
 static_assert(REG_FPBASE == REG_SPBASE);
 static_assert(REG_FPBASE == REG_NA);
 static_assert(static_cast<int>(REG_NA) == static_cast<int>(ICorDebugInfo::REGNUM_AMBIENT_SP));
 static_assert(static_cast<int>(ICorDebugInfo::REGNUM_AMBIENT_SP) == 2);
+
+//------------------------------------------------------------------------
+// siWasmDebugRegNum: Encode a wasm local as a debug-info register number.
+//
+// Arguments:
+//    reg - the JIT register representing a wasm local.
+//
+// Return Value:
+//    The wasm local index biased past the reserved debug-info register numbers.
+//
+static regNumber siWasmDebugRegNum(regNumber reg)
+{
+    return static_cast<regNumber>(ICorDebugInfo::WASM_LOCAL_REGNUM_BASE + WasmRegToIndex(reg));
+}
 #endif // defined(TARGET_WASM)
 
 //============================================================================
@@ -228,14 +242,14 @@ void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumb
     if (otherReg == REG_NA)
     {
         vlType       = VLT_REG;
-        vlReg.vlrReg = reg;
+        vlReg.vlrReg = siWasmDebugRegNum(reg);
     }
     else
     {
         assert(genIsValidReg(otherReg));
         vlType            = VLT_REG_REG;
-        vlRegReg.vlrrReg1 = reg;
-        vlRegReg.vlrrReg2 = otherReg;
+        vlRegReg.vlrrReg1 = siWasmDebugRegNum(reg);
+        vlRegReg.vlrrReg2 = siWasmDebugRegNum(otherReg);
     }
     return;
 #endif // defined(TARGET_WASM)
@@ -496,7 +510,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 {
 #if defined(TARGET_WASM)
     this->vlType       = VLT_REG;
-    this->vlReg.vlrReg = varDsc->GetRegNum();
+    this->vlReg.vlrReg = siWasmDebugRegNum(varDsc->GetRegNum());
     return;
 #endif // defined(TARGET_WASM)
 
@@ -661,7 +675,11 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
     {
         case VLT_REG:
         case VLT_REG_BYREF:
+#if defined(TARGET_WASM)
+            printf("$%u", (unsigned)varLoc->vlReg.vlrReg - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE);
+#else
             printf("%s", getRegName(varLoc->vlReg.vlrReg));
+#endif
             if (varLoc->vlType == VLT_REG_BYREF)
             {
                 printf(" byref");
@@ -714,6 +732,9 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             printf("%s-%s", getRegName(toJitReg(varLoc->vlRegReg.vlrrReg1)),
                    getRegName(toJitReg(varLoc->vlRegReg.vlrrReg2)));
         }
+#elif defined(TARGET_WASM)
+            printf("$%u-$%u", (unsigned)varLoc->vlRegReg.vlrrReg1 - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE,
+                   (unsigned)varLoc->vlRegReg.vlrrReg2 - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE);
 #else
             printf("%s-%s", getRegName(varLoc->vlRegReg.vlrrReg1), getRegName(varLoc->vlRegReg.vlrrReg2));
 #endif
@@ -1629,11 +1650,7 @@ void CodeGen::siInit()
     m_compiler->compResetScopeLists();
 
 #if defined(TARGET_WASM)
-    siWasmOpenedScopes = nullptr;
-    if (m_compiler->info.compVarScopesCount > 0)
-    {
-        siWasmOpenedScopes = new (m_compiler, CMK_DebugInfo) bool[m_compiler->info.compVarScopesCount]();
-    }
+    siWasmScopesOpened = false;
 #endif // defined(TARGET_WASM)
 }
 
@@ -1719,30 +1736,18 @@ void CodeGen::siBeginBlock(BasicBlock* block)
 //
 void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned int lastBlockILEndOffset)
 {
-    unsigned int beginOffs = block->bbCodeOffs;
-
 #if defined(TARGET_WASM)
-    // Scan all scopes directly because our elimination of irreducible flow does not emit blocks in
-    // increasing IL offset order.
-    if (m_compiler->opts.OptimizationDisabled())
+    // Wasm is compiled only ahead of time, where getVars reports no explicit ranges, so every
+    // scope covers the whole method. Our elimination of irreducible flow does not emit blocks in
+    // increasing IL offset order, so open all scopes in the first emitted block.
+    if (m_compiler->opts.OptimizationDisabled() && !siWasmScopesOpened)
     {
-        unsigned int endOffs = block->bbCodeOffsEnd;
+        siWasmScopesOpened = true;
 
         for (unsigned i = 0; i < m_compiler->info.compVarScopesCount; i++)
         {
             VarScopeDsc* varScope = &m_compiler->info.compVarScopes[i];
-
-            if (siWasmOpenedScopes[i])
-            {
-                continue;
-            }
-
-            if ((varScope->vsdLifeBeg >= endOffs) || (varScope->vsdLifeEnd <= beginOffs))
-            {
-                continue;
-            }
-
-            siWasmOpenedScopes[i] = true;
+            assert(varScope->vsdLifeBeg == 0);
 
             LclVarDsc* lclVarDsc = m_compiler->lvaGetDesc(varScope->vsdVarNum);
 
@@ -1763,6 +1768,8 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
 
     return;
 #endif // defined(TARGET_WASM)
+
+    unsigned int beginOffs = block->bbCodeOffs;
 
     // There aren't any tracked locals.
     //
