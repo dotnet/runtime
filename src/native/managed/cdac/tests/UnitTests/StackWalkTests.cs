@@ -884,12 +884,14 @@ public unsafe class StackWalkTests
 
     // A WASM walk seeded from the Frame chain must terminate when an active InlinedCallFrame does
     // not lead to managed code: either an R2R marker whose shadow frame yields no virtual IP, or a
-    // return address outside any code range. The walk also must not require the Debugger
-    // contract, which WASM targets do not advertise.
+    // return address outside any code range. WASM advertises the Debugger contract with a null
+    // g_pDebugger; runtimes built before that do not advertise it, and the walk must work either way.
     [Theory]
-    [InlineData(1ul)]
-    [InlineData(0x0004_2000ul)]
-    public void CreateStackWalk_WasmActiveInlinedCallFrameWithoutManagedCaller_Terminates(ulong callerReturnAddress)
+    [InlineData(1ul, false)]
+    [InlineData(0x0004_2000ul, false)]
+    [InlineData(1ul, true)]
+    [InlineData(0x0004_2000ul, true)]
+    public void CreateStackWalk_WasmActiveInlinedCallFrameWithoutManagedCaller_Terminates(ulong callerReturnAddress, bool advertiseDebugger)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
 
@@ -904,12 +906,18 @@ public unsafe class StackWalkTests
                 icfAddr = frameBuilder.AddInlinedCallFrame(callerReturnAddress, datum: 0, callSiteSP: 0x800).Address;
             },
             runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
-            configureTarget: targetBuilder => AddWasmR2RFunction(
-                targetBuilder,
-                targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000),
-                functionTableIndex: 5,
-                minVirtualIP: 0x0005_0000,
-                functionBeginAddress: 0x100));
+            configureTarget: targetBuilder =>
+            {
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                AddWasmR2RFunction(targetBuilder, allocator, functionTableIndex: 5, minVirtualIP: 0x0005_0000, functionBeginAddress: 0x100);
+                if (advertiseDebugger)
+                {
+                    // g_pDebugger: the in-process debugger is not built for WASM, so it stays null.
+                    MockMemorySpace.HeapFragment debuggerSlot = allocator.Allocate(4, "g_pDebugger");
+                    targetBuilder.AddGlobals((Constants.Globals.Debugger, debuggerSlot.Address));
+                    targetBuilder.AddContract<IDebugger>(version: "c1");
+                }
+            });
         thread!.Frame = icfAddr;
 
         IStackWalk stackWalk = target.Contracts.StackWalk;

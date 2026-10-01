@@ -736,7 +736,7 @@ The runtime installs a small set of redirect/hijack stubs whose code blocks are 
 
 The recovery step is driven by `IDebugger.GetHijackKind(controlPC)`, which returns a `HijackKind`:
 
-* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special. WASM has no hijack stubs and does not advertise the `Debugger` contract, so on WASM the walker always uses `HijackKind.None` without consulting it.
+* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special. WASM has no hijack stubs; its `Debugger` contract reports `HijackKind.None` for every IP, and if a WASM target does not advertise the contract (runtimes built before it was advertised there), the walker uses `HijackKind.None` without it.
 * `HijackKind.UnhandledException` — the IP is inside the `ExceptionHijack` stub. The saved `PT_CONTEXT*` is at `*SP` (the stub pushed it directly), so the implementation reads `*context.StackPointer`.
 * `HijackKind.Other` — the IP is inside another redirect stub. The saved `PT_CONTEXT*` is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_*` constants.
 

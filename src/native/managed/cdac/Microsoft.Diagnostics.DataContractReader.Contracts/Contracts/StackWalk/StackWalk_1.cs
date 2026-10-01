@@ -1227,12 +1227,23 @@ internal partial class StackWalk_1 : IStackWalk
                 : context.TryReadRegister((int)storage.RegisterNumber, out value);
     }
 
-    // WASM has no return-address hijacking and the runtime does not advertise the Debugger
-    // contract there (see datadescriptor.inc), so there is never a hijack stub to recover from.
+    // WASM runtimes built before the Debugger contract was advertised there do not have it. WASM
+    // has no in-process debugger and so no hijack stubs, so treat a missing contract as no hijack.
     private HijackKind GetHijackKind(TargetCodePointer controlPC)
-        => _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm
-            ? HijackKind.None
-            : _target.Contracts.Debugger.GetHijackKind(controlPC);
+    {
+        if (!_target.Contracts.TryGetContract(out IDebugger debugger, out System.Exception? failure))
+        {
+            if (failure is ContractMissingException
+                && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm)
+            {
+                return HijackKind.None;
+            }
+
+            throw failure;
+        }
+
+        return debugger.GetHijackKind(controlPC);
+    }
 
     // See https://github.com/dotnet/runtime/blob/71830fdb091c9be1ad297b8649ac445af628fb81/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L659
     private TargetPointer ComputeX86FramePointer(StackDataFrameHandle handle)
