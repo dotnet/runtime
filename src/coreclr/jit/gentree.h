@@ -2147,9 +2147,6 @@ public:
     template <typename TVisitor>
     VisitResult VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor);
 
-    template <typename TVisitor>
-    VisitResult VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor);
-
     bool HasAnyLocalDefs(Compiler* comp);
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
@@ -5738,6 +5735,9 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
     }
+
+    template <typename TVisitor>
+    VisitResult VisitCallLocalDefNodes(Compiler* comp, TVisitor visitor);
 
     InlineCandidateInfo* GetSingleInlineCandidateInfo()
     {

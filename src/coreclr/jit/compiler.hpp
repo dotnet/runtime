@@ -4964,7 +4964,7 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
 }
 
 //------------------------------------------------------------------------
-// VisitPhysicalLocalDefNodes: Visit physical GenTreeLclVarCommon nodes representing definitions in the specified node.
+// VisitCallLocalDefNodes: Visit local address nodes representing definitions made by this call.
 //
 // Arguments:
 //   comp    - the compiler instance
@@ -4974,31 +4974,18 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
 //
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor)
+GenTree::VisitResult GenTreeCall::VisitCallLocalDefNodes(Compiler* comp, TVisitor visitor)
 {
-    if (OperIs(GT_STORE_LCL_VAR))
+    GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(this);
+    if (asyncResumedLclAddr != nullptr)
     {
-        return visitor(AsLclVarCommon());
+        RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
     }
-    if (OperIs(GT_STORE_LCL_FLD))
-    {
-        return visitor(AsLclFld());
-    }
-    if (OperIs(GT_CALL))
-    {
-        GenTreeCall* call = AsCall();
 
-        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
-        if (asyncResumedLclAddr != nullptr)
-        {
-            RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
-        }
-
-        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (retBufLclAddr != nullptr)
-        {
-            return visitor(retBufLclAddr);
-        }
+    GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(this);
+    if (retBufLclAddr != nullptr)
+    {
+        return visitor(retBufLclAddr);
     }
 
     return VisitResult::Continue;
@@ -5016,7 +5003,7 @@ GenTree::VisitResult GenTree::VisitPhysicalLocalDefNodes(Compiler* comp, TVisito
 //
 inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
 {
-    return VisitPhysicalLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
+    return VisitLogicalLocalDefs(comp, [](const auto& def) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
 }
