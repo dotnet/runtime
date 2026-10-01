@@ -15,7 +15,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public sealed class WasmUnboxingStubNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISortableSymbolNode, IWasmFunctionBodyNode
+    public sealed class WasmUnboxingStubNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISortableSymbolNode, INodeWithCodeInfo
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _signature;
@@ -43,6 +43,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => false;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
+        bool INodeWithCodeInfo.IsShareableCode => true;
+        CodeInfo INodeWithCodeInfo.CodeInfo => default;
 
         public override string LookupString => _lookupString;
 

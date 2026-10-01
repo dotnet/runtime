@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature, IWasmFunctionBodyNode
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature, INodeWithCodeInfo
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -104,62 +104,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _methodCode;
         }
 
-        bool IWasmFunctionBodyNode.IsShareableWasmFunctionBody =>
+        bool INodeWithCodeInfo.IsShareableCode =>
             ColdCodeNode is null
             && _ehInfo?.Data is not { Length: > 0 }
             && GetFuncletKinds().Length == 0;
 
-        bool IWasmFunctionBodyNode.HasCompatibleWasmRuntimeMetadata(IWasmFunctionBodyNode other)
-        {
-            return other is MethodWithGCInfo otherMethod
-                && ArraysEqual(_gcInfo, otherMethod._gcInfo)
-                && FrameInfosEqual(_frameInfos, otherMethod._frameInfos)
-                && FrameInfosEqual(_coldFrameInfos, otherMethod._coldFrameInfos)
-                && FixupsEqual(_fixups, otherMethod._fixups);
-        }
-
-        private static bool ArraysEqual(byte[] left, byte[] right) =>
-            left is null ? right is null : right is not null && left.AsSpan().SequenceEqual(right);
-
-        private static bool FrameInfosEqual(FrameInfo[] left, FrameInfo[] right)
-        {
-            if (left is null || right is null)
-            {
-                return left is null && right is null;
-            }
-            if (left.Length != right.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < left.Length; i++)
-            {
-                if (!left[i].Equals(right[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool FixupsEqual(List<ISymbolNode> left, List<ISymbolNode> right)
-        {
-            if (left.Count != right.Count)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < left.Count; i++)
-            {
-                if (!ReferenceEquals(left[i], right[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        CodeInfo INodeWithCodeInfo.CodeInfo => new(_gcInfo, _frameInfos, _coldFrameInfos, _fixups);
 
         /// <summary>
         /// This helper structure represents the "coordinates" of a single

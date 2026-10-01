@@ -333,7 +333,6 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\WasmWellKnownGlobalSymbolNode.cs" Link="Compiler\DependencyAnalysis\WasmWellKnownGlobalSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\NodeFactory.Wasm.cs" Link="Compiler\DependencyAnalysis\NodeFactory.Wasm.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IWasmFunctionBodyNode.cs" Link="Compiler\DependencyAnalysis\IWasmFunctionBodyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />

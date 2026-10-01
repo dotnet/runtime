@@ -25,8 +25,8 @@ namespace ILCompiler.ObjectWriter
             {
                 if (dependency is not ObjectNode node
                     || node is not INodeWithTypeSignature signatureNode
-                    || node is not IWasmFunctionBodyNode bodyNode
-                    || !bodyNode.IsShareableWasmFunctionBody
+                    || node is not INodeWithCodeInfo codeNode
+                    || !codeNode.IsShareableCode
                     || shouldSkip(node))
                 {
                     continue;
@@ -37,12 +37,12 @@ namespace ILCompiler.ObjectWriter
                 {
                     continue;
                 }
-                if (HasSelfRelocation(node, data.Relocs))
+                if (HasTableIndexSelfRelocation(node, data.Relocs))
                 {
                     continue;
                 }
 
-                int hashCode = GetHashCode(signatureNode, data);
+                int hashCode = GetHashCode(node, signatureNode, data, codeNode.CodeInfo);
                 if (!_buckets.TryGetValue(hashCode, out List<ObjectNode> candidates))
                 {
                     candidates = [];
@@ -73,7 +73,7 @@ namespace ILCompiler.ObjectWriter
         public bool TryGetCanonicalBody(ObjectNode node, out ObjectNode canonical) =>
             _canonicalBodies.TryGetValue(node, out canonical);
 
-        private static bool HasSelfRelocation(ObjectNode node, Relocation[] relocations)
+        private static bool HasTableIndexSelfRelocation(ObjectNode node, Relocation[] relocations)
         {
             if (relocations is null)
             {
@@ -82,7 +82,15 @@ namespace ILCompiler.ObjectWriter
 
             foreach (Relocation relocation in relocations)
             {
-                if (ReferenceEquals(relocation.Target, node))
+                if (TargetsSelf(node, relocation.Target)
+                    && relocation.RelocType is
+                        RelocType.IMAGE_REL_BASED_WASM32_TABLE or
+                        RelocType.IMAGE_REL_BASED_WASM64_TABLE or
+                        RelocType.WASM_TABLE_INDEX_SLEB or
+                        RelocType.WASM_TABLE_INDEX_I32 or
+                        RelocType.WASM_TABLE_INDEX_I64 or
+                        RelocType.WASM_TABLE_INDEX_REL_I32 or
+                        RelocType.WASM_MEMORY_ADDR_REL_SLEB)
                 {
                     return true;
                 }
@@ -105,20 +113,23 @@ namespace ILCompiler.ObjectWriter
                 return false;
             }
 
-            IWasmFunctionBodyNode bodyNode = (IWasmFunctionBodyNode)node;
-            IWasmFunctionBodyNode candidateBodyNode = (IWasmFunctionBodyNode)candidate;
-            if (!bodyNode.HasCompatibleWasmRuntimeMetadata(candidateBodyNode)
-                || !candidateBodyNode.HasCompatibleWasmRuntimeMetadata(bodyNode))
+            INodeWithCodeInfo codeNode = (INodeWithCodeInfo)node;
+            INodeWithCodeInfo candidateCodeNode = (INodeWithCodeInfo)candidate;
+            if (!codeNode.CodeInfo.Equals(candidateCodeNode.CodeInfo))
             {
                 return false;
             }
 
             ObjectNode.ObjectData candidateData = candidate.GetData(factory);
             return data.Data.AsSpan().SequenceEqual(candidateData.Data)
-                && RelocationsEqual(data.Relocs, candidateData.Relocs);
+                && RelocationsEqual(node, data.Relocs, candidate, candidateData.Relocs);
         }
 
-        private static bool RelocationsEqual(Relocation[] left, Relocation[] right)
+        private static bool RelocationsEqual(
+            ObjectNode leftNode,
+            Relocation[] left,
+            ObjectNode rightNode,
+            Relocation[] right)
         {
             if (ReferenceEquals(left, right))
             {
@@ -132,8 +143,15 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < left.Length; i++)
             {
                 if (left[i].Offset != right[i].Offset
-                    || left[i].RelocType != right[i].RelocType
-                    || !ReferenceEquals(left[i].Target, right[i].Target))
+                    || left[i].RelocType != right[i].RelocType)
+                {
+                    return false;
+                }
+
+                bool leftTargetsSelf = TargetsSelf(leftNode, left[i].Target);
+                bool rightTargetsSelf = TargetsSelf(rightNode, right[i].Target);
+                if (leftTargetsSelf != rightTargetsSelf
+                    || (!leftTargetsSelf && !ReferenceEquals(left[i].Target, right[i].Target)))
                 {
                     return false;
                 }
@@ -142,11 +160,16 @@ namespace ILCompiler.ObjectWriter
             return true;
         }
 
-        private static int GetHashCode(INodeWithTypeSignature node, ObjectNode.ObjectData data)
+        private static int GetHashCode(
+            ObjectNode objectNode,
+            INodeWithTypeSignature node,
+            ObjectNode.ObjectData data,
+            CodeInfo codeInfo)
         {
             HashCode hash = new HashCode();
             hash.Add(WasmLowering.GetSignature(node).FuncType);
             hash.AddBytes(data.Data);
+            hash.Add(codeInfo);
 
             if (data.Relocs is not null)
             {
@@ -154,11 +177,28 @@ namespace ILCompiler.ObjectWriter
                 {
                     hash.Add(relocation.Offset);
                     hash.Add(relocation.RelocType);
-                    hash.Add(RuntimeHelpers.GetHashCode(relocation.Target));
+                    bool targetsSelf = TargetsSelf(objectNode, relocation.Target);
+                    hash.Add(targetsSelf);
+                    if (!targetsSelf)
+                    {
+                        hash.Add(RuntimeHelpers.GetHashCode(relocation.Target));
+                    }
                 }
             }
 
             return hash.ToHashCode();
+        }
+
+        private static bool TargetsSelf(ObjectNode node, ISymbolNode target)
+        {
+            if (ReferenceEquals(target, node))
+            {
+                return true;
+            }
+
+            return node is IMethodNode methodNode
+                && target is IMethodNode targetMethodNode
+                && targetMethodNode.Method == methodNode.Method;
         }
     }
 }

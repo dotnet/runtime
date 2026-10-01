@@ -117,6 +117,8 @@ namespace ILCompiler.DependencyAnalysis
         public FrameInfo[] FrameInfos => _frameInfos;
         public byte[] GCInfo => _gcInfo;
         public MethodExceptionHandlingInfoNode EHInfo => _ehInfo;
+        bool INodeWithCodeInfo.IsShareableCode => false;
+        CodeInfo INodeWithCodeInfo.CodeInfo => new(_gcInfo, _frameInfos, null, null);
 
         // TODO-WASM: Appropriately extract funclet kinds from eh clause info
         public FuncletKind[] GetFuncletKinds() => throw new NotImplementedException();
