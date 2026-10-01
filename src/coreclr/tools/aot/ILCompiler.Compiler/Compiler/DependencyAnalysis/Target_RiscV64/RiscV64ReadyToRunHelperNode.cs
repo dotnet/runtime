@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 
+using Internal.ReadyToRunConstants;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -136,7 +137,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.DispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.KnownExternFunction(KnownExternFunction.ResolveInterfaceMethod));
+                            encoder.EmitJMP(factory.KnownExternFunction(ReadyToRunHelper.ResolveInterfaceMethod));
                         }
                         else
                         {

@@ -409,6 +409,25 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+
+        // NativeAOT allocation helpers
+        NewFast,
+        NewFinalizable,
+        NewFastAlign8,
+        NewFinalizableAlign8,
+        NewFastMisalign,
+        NewPtrArrayFast,
+        NewArrayFastAlign8,
+        NewArrayFast,
+
+        // NativeAOT interface dispatch helpers
+        InterfaceDispatch,
+        InterfaceDispatchGuarded,
+        ResolveInterfaceMethodFast,
+        ResolveInterfaceMethod,
+
+        NyiLdVirtFtn,
+        TlsGetAddr,
     }
 
     // Enum used for HFA type recognition.

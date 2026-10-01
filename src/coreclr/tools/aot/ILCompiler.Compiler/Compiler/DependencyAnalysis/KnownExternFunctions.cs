@@ -3,175 +3,93 @@
 
 using System;
 
+using Internal.ReadyToRunConstants;
 using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Enumerates the fixed set of extern functions (mostly NativeAOT runtime helpers) that are referenced by name only (i.e.
-    /// without a backing <see cref="MethodDesc"/>) from the JIT interface and dependency analysis, e.g.
-    /// from <see cref="JitHelper"/> and CorInfoImpl.RyuJit's GetHelperFtnUncached. Each value corresponds
-    /// 1:1 with the mangled native symbol name emitted for it (see <see cref="KnownExternFunctions"/>),
-    /// and the mapping must produce, byte-for-byte, the strings of the exports that they correspond to
-    /// (including their architecture-dependent variants).
-    /// </summary>
-    public enum KnownExternFunction
-    {
-        // Exception helpers - Runtime/<arch>/ExceptionHandling.{S,asm}
-        ThrowEx,
-        Rethrow,
-        ThrowExact,
-        FallbackFailFast,
-        DebugBreak,
-
-        // GC write barriers - Runtime/portable.cpp (RhpAssignRef/RhpCheckedAssignRef) and per-arch asm
-        WriteBarrier,
-        CheckedWriteBarrier,
-        WriteBarrier_EAX,
-        WriteBarrier_EBX,
-        WriteBarrier_ECX,
-        WriteBarrier_EDI,
-        WriteBarrier_ESI,
-        WriteBarrier_EBP,
-        CheckedWriteBarrier_EAX,
-        CheckedWriteBarrier_EBX,
-        CheckedWriteBarrier_ECX,
-        CheckedWriteBarrier_EDI,
-        CheckedWriteBarrier_ESI,
-        CheckedWriteBarrier_EBP,
-        BulkMoveWithWriteBarrier,
-
-        // Allocation helpers - nativeaot/Runtime/portable.cpp, runtime/portable/AllocFast.cpp, and per-arch asm
-        NewArray,
-        NewObject,
-        NewFast,
-        NewFinalizable,
-        NewFastAlign8,
-        NewFinalizableAlign8,
-        NewFastMisalign,
-        NewPtrArrayFast,
-        NewArrayFastAlign8,
-        NewArrayFast,
-
-        // libc helpers
-        NativeMemSet,
-        DblRem,
-        FltRem,
-
-        // Runtime/MathHelpers.cpp
-        Lng2Dbl,
-        ULng2Dbl,
-        Lng2Flt,
-        ULng2Flt,
-        Dbl2Lng,
-        Dbl2ULng,
-        LMul,
-        LRsz,
-        LRsh,
-        LLsh,
-
-        // Runtime/<arch>/PInvoke.{S,asm}, Runtime/thread.cpp
-        PInvokeBegin,
-        PInvokeEnd,
-        ReversePInvokeEnter,
-        ReversePInvokeExit,
-
-        // Interface/generic virtual dispatch stubs - Runtime/EHHelpers.cpp, Runtime/<arch>/DispatchResolve.{S,asm}
-        GVMLookupForSlot,
-        InterfaceDispatch,
-        InterfaceDispatchGuarded,
-        ResolveInterfaceMethodFast,
-        ResolveInterfaceMethod,
-
-        // Misc
-        StackProbe,
-        GcPoll,
-        NyiLdVirtFtn,
-        TlsGetAddr,
-    }
-
-    /// <summary>
-    /// Names and signatures of the <see cref="KnownExternFunction"/> helpers. The helpers are referenced by name
+    /// NativeAOT extern names and signatures of the <see cref="ReadyToRunHelper"/> helpers. The helpers are referenced by name
     /// only, so there is no backing <see cref="MethodDesc"/> to source a signature from; the signature (needed to
     /// import the helper on Wasm) is derived here from each helper's declaration.
     /// </summary>
     internal static class KnownExternFunctions
     {
-        public static Utf8String GetName(KnownExternFunction function, TargetDetails target)
+        public static Utf8String GetName(ReadyToRunHelper function, TargetDetails target)
         {
             string name = function switch
             {
-                KnownExternFunction.ThrowEx => "RhpThrowEx",
-                KnownExternFunction.Rethrow => "RhpRethrow",
-                KnownExternFunction.ThrowExact => "RhpThrowExact",
-                KnownExternFunction.FallbackFailFast => "RhpFallbackFailFast",
-                KnownExternFunction.DebugBreak => "RhDebugBreak",
+                ReadyToRunHelper.Throw => "RhpThrowEx",
+                ReadyToRunHelper.Rethrow => "RhpRethrow",
+                ReadyToRunHelper.ThrowExact => "RhpThrowExact",
+                ReadyToRunHelper.FailFast => "RhpFallbackFailFast",
+                ReadyToRunHelper.DebugBreak => "RhDebugBreak",
 
-                KnownExternFunction.WriteBarrier => target.Architecture switch
+                ReadyToRunHelper.WriteBarrier => target.Architecture switch
                 {
                     TargetArchitecture.ARM64 => "RhpAssignRefArm64",
                     TargetArchitecture.LoongArch64 => "RhpAssignRefLoongArch64",
                     TargetArchitecture.RiscV64 => "RhpAssignRefRiscV64",
                     _ => "RhpAssignRef"
                 },
-                KnownExternFunction.CheckedWriteBarrier =>
+                ReadyToRunHelper.CheckedWriteBarrier =>
                     target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef",
-                KnownExternFunction.WriteBarrier_EAX => "RhpAssignRefEAX",
-                KnownExternFunction.WriteBarrier_EBX => "RhpAssignRefEBX",
-                KnownExternFunction.WriteBarrier_ECX => "RhpAssignRefECX",
-                KnownExternFunction.WriteBarrier_EDI => "RhpAssignRefEDI",
-                KnownExternFunction.WriteBarrier_ESI => "RhpAssignRefESI",
-                KnownExternFunction.WriteBarrier_EBP => "RhpAssignRefEBP",
-                KnownExternFunction.CheckedWriteBarrier_EAX => "RhpCheckedAssignRefEAX",
-                KnownExternFunction.CheckedWriteBarrier_EBX => "RhpCheckedAssignRefEBX",
-                KnownExternFunction.CheckedWriteBarrier_ECX => "RhpCheckedAssignRefECX",
-                KnownExternFunction.CheckedWriteBarrier_EDI => "RhpCheckedAssignRefEDI",
-                KnownExternFunction.CheckedWriteBarrier_ESI => "RhpCheckedAssignRefESI",
-                KnownExternFunction.CheckedWriteBarrier_EBP => "RhpCheckedAssignRefEBP",
-                KnownExternFunction.BulkMoveWithWriteBarrier => "RhBulkMoveWithWriteBarrier",
+                ReadyToRunHelper.WriteBarrier_EAX => "RhpAssignRefEAX",
+                ReadyToRunHelper.WriteBarrier_EBX => "RhpAssignRefEBX",
+                ReadyToRunHelper.WriteBarrier_ECX => "RhpAssignRefECX",
+                ReadyToRunHelper.WriteBarrier_EDI => "RhpAssignRefEDI",
+                ReadyToRunHelper.WriteBarrier_ESI => "RhpAssignRefESI",
+                ReadyToRunHelper.WriteBarrier_EBP => "RhpAssignRefEBP",
+                ReadyToRunHelper.CheckedWriteBarrier_EAX => "RhpCheckedAssignRefEAX",
+                ReadyToRunHelper.CheckedWriteBarrier_EBX => "RhpCheckedAssignRefEBX",
+                ReadyToRunHelper.CheckedWriteBarrier_ECX => "RhpCheckedAssignRefECX",
+                ReadyToRunHelper.CheckedWriteBarrier_EDI => "RhpCheckedAssignRefEDI",
+                ReadyToRunHelper.CheckedWriteBarrier_ESI => "RhpCheckedAssignRefESI",
+                ReadyToRunHelper.CheckedWriteBarrier_EBP => "RhpCheckedAssignRefEBP",
+                ReadyToRunHelper.BulkWriteBarrierSmall => "RhBulkMoveWithWriteBarrier",
 
-                KnownExternFunction.NewArray => "RhNewArray",
-                KnownExternFunction.NewObject => "RhNewObject",
-                KnownExternFunction.NewFast => "RhpNewFast",
-                KnownExternFunction.NewFinalizable => "RhpNewFinalizable",
-                KnownExternFunction.NewFastAlign8 => "RhpNewFastAlign8",
-                KnownExternFunction.NewFinalizableAlign8 => "RhpNewFinalizableAlign8",
-                KnownExternFunction.NewFastMisalign => "RhpNewFastMisalign",
-                KnownExternFunction.NewPtrArrayFast => "RhpNewPtrArrayFast",
-                KnownExternFunction.NewArrayFastAlign8 => "RhpNewArrayFastAlign8",
-                KnownExternFunction.NewArrayFast => "RhpNewArrayFast",
+                ReadyToRunHelper.NewArray => "RhNewArray",
+                ReadyToRunHelper.NewObject => "RhNewObject",
+                ReadyToRunHelper.NewFast => "RhpNewFast",
+                ReadyToRunHelper.NewFinalizable => "RhpNewFinalizable",
+                ReadyToRunHelper.NewFastAlign8 => "RhpNewFastAlign8",
+                ReadyToRunHelper.NewFinalizableAlign8 => "RhpNewFinalizableAlign8",
+                ReadyToRunHelper.NewFastMisalign => "RhpNewFastMisalign",
+                ReadyToRunHelper.NewPtrArrayFast => "RhpNewPtrArrayFast",
+                ReadyToRunHelper.NewArrayFastAlign8 => "RhpNewArrayFastAlign8",
+                ReadyToRunHelper.NewArrayFast => "RhpNewArrayFast",
 
-                KnownExternFunction.NativeMemSet => "memset",
-                KnownExternFunction.DblRem => "fmod",
-                KnownExternFunction.FltRem => "fmodf",
+                ReadyToRunHelper.NativeMemSet => "memset",
+                ReadyToRunHelper.DblRem => "fmod",
+                ReadyToRunHelper.FltRem => "fmodf",
 
-                KnownExternFunction.Lng2Dbl => "RhpLng2Dbl",
-                KnownExternFunction.ULng2Dbl => "RhpULng2Dbl",
-                KnownExternFunction.Lng2Flt => "RhpLng2Flt",
-                KnownExternFunction.ULng2Flt => "RhpULng2Flt",
-                KnownExternFunction.Dbl2Lng => "RhpDbl2Lng",
-                KnownExternFunction.Dbl2ULng => "RhpDbl2ULng",
-                KnownExternFunction.LMul => "RhpLMul",
-                KnownExternFunction.LRsz => "RhpLRsz",
-                KnownExternFunction.LRsh => "RhpLRsh",
-                KnownExternFunction.LLsh => "RhpLLsh",
+                ReadyToRunHelper.Lng2Dbl => "RhpLng2Dbl",
+                ReadyToRunHelper.ULng2Dbl => "RhpULng2Dbl",
+                ReadyToRunHelper.Lng2Flt => "RhpLng2Flt",
+                ReadyToRunHelper.ULng2Flt => "RhpULng2Flt",
+                ReadyToRunHelper.Dbl2Lng => "RhpDbl2Lng",
+                ReadyToRunHelper.Dbl2ULng => "RhpDbl2ULng",
+                ReadyToRunHelper.LMul => "RhpLMul",
+                ReadyToRunHelper.LRsz => "RhpLRsz",
+                ReadyToRunHelper.LRsh => "RhpLRsh",
+                ReadyToRunHelper.LLsh => "RhpLLsh",
 
-                KnownExternFunction.PInvokeBegin => "RhpPInvoke",
-                KnownExternFunction.PInvokeEnd => "RhpPInvokeReturn",
-                KnownExternFunction.ReversePInvokeEnter => "RhpReversePInvoke",
-                KnownExternFunction.ReversePInvokeExit => "RhpReversePInvokeReturn",
+                ReadyToRunHelper.PInvokeBegin => "RhpPInvoke",
+                ReadyToRunHelper.PInvokeEnd => "RhpPInvokeReturn",
+                ReadyToRunHelper.ReversePInvokeEnter => "RhpReversePInvoke",
+                ReadyToRunHelper.ReversePInvokeExit => "RhpReversePInvokeReturn",
 
-                KnownExternFunction.GVMLookupForSlot => "RhpDispatchResolve",
-                KnownExternFunction.InterfaceDispatch => "RhpInterfaceDispatch",
-                KnownExternFunction.InterfaceDispatchGuarded => "RhpInterfaceDispatchGuarded",
-                KnownExternFunction.ResolveInterfaceMethodFast => "RhpResolveInterfaceMethodFast",
-                KnownExternFunction.ResolveInterfaceMethod => "RhpResolveInterfaceMethod",
+                ReadyToRunHelper.GVMLookupForSlot => "RhpDispatchResolve",
+                ReadyToRunHelper.InterfaceDispatch => "RhpInterfaceDispatch",
+                ReadyToRunHelper.InterfaceDispatchGuarded => "RhpInterfaceDispatchGuarded",
+                ReadyToRunHelper.ResolveInterfaceMethodFast => "RhpResolveInterfaceMethodFast",
+                ReadyToRunHelper.ResolveInterfaceMethod => "RhpResolveInterfaceMethod",
 
-                KnownExternFunction.StackProbe => "RhpStackProbe",
-                KnownExternFunction.GcPoll => "RhpGcPoll",
-                KnownExternFunction.NyiLdVirtFtn => "NYI_LDVIRTFTN",
-                KnownExternFunction.TlsGetAddr => "__tls_get_addr",
+                ReadyToRunHelper.StackProbe => "RhpStackProbe",
+                ReadyToRunHelper.GCPoll => "RhpGcPoll",
+                ReadyToRunHelper.NyiLdVirtFtn => "NYI_LDVIRTFTN",
+                ReadyToRunHelper.TlsGetAddr => "__tls_get_addr",
 
                 _ => throw new NotImplementedException(function.ToString())
             };
@@ -186,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Extern function nodes are shared by name, so when a function is also reachable through a direct
         /// P/Invoke (e.g. CoreLib's memset), its signature must exactly match that P/Invoke's signature.
         /// </remarks>
-        public static ExternalTypeSignature? GetTypeSignature(KnownExternFunction function, TypeSystemContext context)
+        public static ExternalTypeSignature? GetTypeSignature(ReadyToRunHelper function, TypeSystemContext context)
         {
             TypeDesc voidType = context.GetWellKnownType(WellKnownType.Void);
             TypeDesc voidPointerType = voidType.MakePointerType();
@@ -205,82 +123,82 @@ namespace ILCompiler.DependencyAnalysis
 
             return function switch
             {
-                KnownExternFunction.ThrowEx => UnmanagedSignature(voidType, objectType),
-                KnownExternFunction.ThrowExact => UnmanagedSignature(voidType, objectType),
+                ReadyToRunHelper.Throw => UnmanagedSignature(voidType, objectType),
+                ReadyToRunHelper.ThrowExact => UnmanagedSignature(voidType, objectType),
 
-                KnownExternFunction.Rethrow => UnmanagedSignature(voidType),
+                ReadyToRunHelper.Rethrow => UnmanagedSignature(voidType),
 
-                KnownExternFunction.FallbackFailFast => UnmanagedSignature(voidType),
+                ReadyToRunHelper.FailFast => UnmanagedSignature(voidType),
 
-                KnownExternFunction.DebugBreak => UnmanagedSignature(voidType),
+                ReadyToRunHelper.DebugBreak => UnmanagedSignature(voidType),
 
-                KnownExternFunction.WriteBarrier => UnmanagedSignature(voidType, nativeIntType, objectType),
-                KnownExternFunction.CheckedWriteBarrier => UnmanagedSignature(voidType, nativeIntType, objectType),
+                ReadyToRunHelper.WriteBarrier => UnmanagedSignature(voidType, nativeIntType, objectType),
+                ReadyToRunHelper.CheckedWriteBarrier => UnmanagedSignature(voidType, nativeIntType, objectType),
 
-                KnownExternFunction.WriteBarrier_EAX or
-                KnownExternFunction.WriteBarrier_EBX or
-                KnownExternFunction.WriteBarrier_ECX or
-                KnownExternFunction.WriteBarrier_EDI or
-                KnownExternFunction.WriteBarrier_ESI or
-                KnownExternFunction.WriteBarrier_EBP or
-                KnownExternFunction.CheckedWriteBarrier_EAX or
-                KnownExternFunction.CheckedWriteBarrier_EBX or
-                KnownExternFunction.CheckedWriteBarrier_ECX or
-                KnownExternFunction.CheckedWriteBarrier_EDI or
-                KnownExternFunction.CheckedWriteBarrier_ESI or
-                KnownExternFunction.CheckedWriteBarrier_EBP => null,
+                ReadyToRunHelper.WriteBarrier_EAX or
+                ReadyToRunHelper.WriteBarrier_EBX or
+                ReadyToRunHelper.WriteBarrier_ECX or
+                ReadyToRunHelper.WriteBarrier_EDI or
+                ReadyToRunHelper.WriteBarrier_ESI or
+                ReadyToRunHelper.WriteBarrier_EBP or
+                ReadyToRunHelper.CheckedWriteBarrier_EAX or
+                ReadyToRunHelper.CheckedWriteBarrier_EBX or
+                ReadyToRunHelper.CheckedWriteBarrier_ECX or
+                ReadyToRunHelper.CheckedWriteBarrier_EDI or
+                ReadyToRunHelper.CheckedWriteBarrier_ESI or
+                ReadyToRunHelper.CheckedWriteBarrier_EBP => null,
 
-                KnownExternFunction.BulkMoveWithWriteBarrier => UnmanagedSignature(voidType, nativeIntType, nativeIntType, nativeUIntType),
+                ReadyToRunHelper.BulkWriteBarrierSmall => UnmanagedSignature(voidType, nativeIntType, nativeIntType, nativeUIntType),
 
-                KnownExternFunction.NewArray => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
-                KnownExternFunction.NewObject => UnmanagedSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewArray => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
+                ReadyToRunHelper.NewObject => UnmanagedSignature(objectType, nativeIntType),
 
-                KnownExternFunction.NewFast => UnmanagedSignature(objectType, nativeIntType),
-                KnownExternFunction.NewFinalizable => UnmanagedSignature(objectType, nativeIntType),
-                KnownExternFunction.NewFastAlign8 => UnmanagedSignature(objectType, nativeIntType),
-                KnownExternFunction.NewFinalizableAlign8 => UnmanagedSignature(objectType, nativeIntType),
-                KnownExternFunction.NewFastMisalign => UnmanagedSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFast => UnmanagedSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFinalizable => UnmanagedSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFastAlign8 => UnmanagedSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFinalizableAlign8 => UnmanagedSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFastMisalign => UnmanagedSignature(objectType, nativeIntType),
 
-                KnownExternFunction.NewPtrArrayFast => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
-                KnownExternFunction.NewArrayFastAlign8 => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
-                KnownExternFunction.NewArrayFast => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
+                ReadyToRunHelper.NewPtrArrayFast => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
+                ReadyToRunHelper.NewArrayFastAlign8 => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
+                ReadyToRunHelper.NewArrayFast => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
 
-                KnownExternFunction.NativeMemSet => UnmanagedSignature(voidPointerType, voidPointerType, int32Type, nativeUIntType),
-                KnownExternFunction.DblRem => UnmanagedSignature(doubleType, doubleType, doubleType),
-                KnownExternFunction.FltRem => UnmanagedSignature(singleType, singleType, singleType),
+                ReadyToRunHelper.NativeMemSet => UnmanagedSignature(voidPointerType, voidPointerType, int32Type, nativeUIntType),
+                ReadyToRunHelper.DblRem => UnmanagedSignature(doubleType, doubleType, doubleType),
+                ReadyToRunHelper.FltRem => UnmanagedSignature(singleType, singleType, singleType),
 
-                KnownExternFunction.Lng2Dbl => UnmanagedSignature(doubleType, int64Type),
-                KnownExternFunction.ULng2Dbl => UnmanagedSignature(doubleType, uint64Type),
-                KnownExternFunction.Lng2Flt => UnmanagedSignature(singleType, int64Type),
-                KnownExternFunction.ULng2Flt => UnmanagedSignature(singleType, uint64Type),
-                KnownExternFunction.Dbl2Lng => UnmanagedSignature(int64Type, doubleType),
-                KnownExternFunction.Dbl2ULng => UnmanagedSignature(uint64Type, doubleType),
+                ReadyToRunHelper.Lng2Dbl => UnmanagedSignature(doubleType, int64Type),
+                ReadyToRunHelper.ULng2Dbl => UnmanagedSignature(doubleType, uint64Type),
+                ReadyToRunHelper.Lng2Flt => UnmanagedSignature(singleType, int64Type),
+                ReadyToRunHelper.ULng2Flt => UnmanagedSignature(singleType, uint64Type),
+                ReadyToRunHelper.Dbl2Lng => UnmanagedSignature(int64Type, doubleType),
+                ReadyToRunHelper.Dbl2ULng => UnmanagedSignature(uint64Type, doubleType),
 
-                KnownExternFunction.LMul => UnmanagedSignature(int64Type, int64Type, int64Type),
-                KnownExternFunction.LRsz => UnmanagedSignature(uint64Type, uint64Type, int32Type),
-                KnownExternFunction.LRsh => UnmanagedSignature(int64Type, int64Type, int32Type),
-                KnownExternFunction.LLsh => UnmanagedSignature(int64Type, int64Type, int32Type),
+                ReadyToRunHelper.LMul => UnmanagedSignature(int64Type, int64Type, int64Type),
+                ReadyToRunHelper.LRsz => UnmanagedSignature(uint64Type, uint64Type, int32Type),
+                ReadyToRunHelper.LRsh => UnmanagedSignature(int64Type, int64Type, int32Type),
+                ReadyToRunHelper.LLsh => UnmanagedSignature(int64Type, int64Type, int32Type),
 
-                KnownExternFunction.PInvokeBegin => UnmanagedSignature(voidType, nativeIntType),
-                KnownExternFunction.PInvokeEnd => UnmanagedSignature(voidType, nativeIntType),
-                KnownExternFunction.ReversePInvokeEnter => UnmanagedSignature(voidType, nativeIntType),
-                KnownExternFunction.ReversePInvokeExit => UnmanagedSignature(voidType, nativeIntType),
+                ReadyToRunHelper.PInvokeBegin => UnmanagedSignature(voidType, nativeIntType),
+                ReadyToRunHelper.PInvokeEnd => UnmanagedSignature(voidType, nativeIntType),
+                ReadyToRunHelper.ReversePInvokeEnter => UnmanagedSignature(voidType, nativeIntType),
+                ReadyToRunHelper.ReversePInvokeExit => UnmanagedSignature(voidType, nativeIntType),
 
-                KnownExternFunction.GcPoll => UnmanagedSignature(voidType),
+                ReadyToRunHelper.GCPoll => UnmanagedSignature(voidType),
 
-                KnownExternFunction.GVMLookupForSlot => UnmanagedSignature(nativeIntType, objectType, nativeIntType),
-                KnownExternFunction.ResolveInterfaceMethod => UnmanagedSignature(nativeIntType, objectType, nativeIntType),
-                KnownExternFunction.ResolveInterfaceMethodFast => throw new NotImplementedException(
-                    $"{nameof(KnownExternFunction.ResolveInterfaceMethodFast)} is not implemented by the runtime."),
+                ReadyToRunHelper.GVMLookupForSlot => UnmanagedSignature(nativeIntType, objectType, nativeIntType),
+                ReadyToRunHelper.ResolveInterfaceMethod => UnmanagedSignature(nativeIntType, objectType, nativeIntType),
+                ReadyToRunHelper.ResolveInterfaceMethodFast => throw new NotImplementedException(
+                    $"{nameof(ReadyToRunHelper.ResolveInterfaceMethodFast)} is not implemented by the runtime."),
 
-                KnownExternFunction.InterfaceDispatch or
-                KnownExternFunction.InterfaceDispatchGuarded => null,
+                ReadyToRunHelper.InterfaceDispatch or
+                ReadyToRunHelper.InterfaceDispatchGuarded => null,
 
-                KnownExternFunction.StackProbe => null,
+                ReadyToRunHelper.StackProbe => null,
 
-                KnownExternFunction.NyiLdVirtFtn => null,
+                ReadyToRunHelper.NyiLdVirtFtn => null,
 
-                KnownExternFunction.TlsGetAddr => null,
+                ReadyToRunHelper.TlsGetAddr => null,
 
                 _ => throw new NotImplementedException(function.ToString())
             };

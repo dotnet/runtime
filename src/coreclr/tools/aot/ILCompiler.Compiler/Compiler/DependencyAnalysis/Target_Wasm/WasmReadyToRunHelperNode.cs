@@ -9,6 +9,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter.WasmInstructions;
 
 using Internal.JitInterface;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -178,7 +179,7 @@ namespace ILCompiler.DependencyAnalysis
                         MethodDesc targetMethod = (MethodDesc)Target;
                         if (targetMethod.OwningType.IsInterface)
                         {
-                            ISymbolNode helper = factory.KnownExternFunction(KnownExternFunction.ResolveInterfaceMethod);
+                            ISymbolNode helper = factory.KnownExternFunction(ReadyToRunHelper.ResolveInterfaceMethod);
                             expressions.Add(Local.Get(1));
                             expressions.Add(I32.ConstRVA(factory.DispatchCell(targetMethod)));
                             expressions.Add(ControlFlow.ReturnCall(helper));

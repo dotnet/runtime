@@ -192,16 +192,10 @@ namespace ILCompiler
             protected override int GetValueHashCode(Helper value) => (int)value.HelperID;
             protected override Helper CreateValueFromKey(ReadyToRunHelper key)
             {
-                KnownExternFunction? knownFunction;
-                MethodDesc methodDesc;
-                JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key, out knownFunction, out methodDesc);
-                Debug.Assert(knownFunction != null || methodDesc != null);
-
-                ISymbolNode entryPoint;
-                if (knownFunction != null)
-                    entryPoint = _compilation.NodeFactory.KnownExternFunction(knownFunction.Value);
-                else
-                    entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
+                MethodDesc methodDesc = JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key);
+                ISymbolNode entryPoint = methodDesc is null
+                    ? _compilation.NodeFactory.KnownExternFunction(key)
+                    : _compilation.NodeFactory.MethodEntrypoint(methodDesc);
 
                 return new Helper(key, entryPoint);
             }

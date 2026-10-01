@@ -13,6 +13,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal.IL;
 using Internal.JitInterface;
 using Internal.NativeFormat;
+using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -1041,7 +1042,7 @@ namespace ILCompiler.DependencyAnalysis
             return _externDataSymbols.GetOrAdd(name);
         }
 
-        public ExternFunctionSymbolNode KnownExternFunction(KnownExternFunction function)
+        public ExternFunctionSymbolNode KnownExternFunction(ReadyToRunHelper function)
         {
             return ExternFunctionSymbol(
                 KnownExternFunctions.GetName(function, TypeSystemContext.Target),
