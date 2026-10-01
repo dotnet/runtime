@@ -1366,6 +1366,26 @@ namespace Internal.JitInterface
             pResult = CreateConstLookupToSymbol(entrypoint);
         }
 
+        private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
+        {
+            // Only Wasm calls this; other targets use the dynamically composed delegate constructor helpers.
+            Debug.Assert(_compilation.NodeFactory.Target.IsWasm);
+
+            MethodDesc targetMethod = HandleToObject(targetMethodHnd);
+            MethodDesc delegateInvoke = HandleToObject(clsHnd).GetKnownMethod("Invoke"u8, null);
+            MetadataType systemDelegate = _compilation.TypeSystemContext.SystemModule.GetKnownType("System"u8, "Delegate"u8);
+
+            // Closed over a reference type instance, matching COMDelegate::GetDelegateCtor.
+            if (!targetMethod.Signature.IsStatic &&
+                !targetMethod.OwningType.IsValueType &&
+                delegateInvoke.Signature.Length == targetMethod.Signature.Length)
+            {
+                return ObjectToHandle(systemDelegate.GetKnownMethod("CtorClosed"u8, null));
+            }
+
+            return ObjectToHandle(systemDelegate.GetKnownMethod("DelegateConstruct"u8, null));
+        }
+
         private FieldWithToken ComputeFieldWithToken(FieldDesc field, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             ModuleToken token = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
