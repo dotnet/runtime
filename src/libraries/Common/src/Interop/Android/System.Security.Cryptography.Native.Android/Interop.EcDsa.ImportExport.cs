@@ -42,31 +42,45 @@ internal static partial class Interop
             int destinationLength,
             out int bytesWritten);
 
-        internal static bool TryExportEcKeyPkcs8PrivateKey(SafeEcKeyHandle key, out byte[]? pkcs8)
+        internal static bool TryExportEcKeyPkcs8PrivateKey(SafeEcKeyHandle key, out ArraySegment<byte> pkcs8)
         {
             const int Success = 1;
             const int InsufficientBuffer = -1;
 
+            pkcs8 = default;
             int result = EcKeyExportPkcs8PrivateKey(key, Span<byte>.Empty, 0, out int requiredSize);
 
             if (result != InsufficientBuffer || requiredSize <= 0)
             {
-                pkcs8 = null;
                 return false;
             }
 
-            byte[] buffer = new byte[requiredSize];
-            result = EcKeyExportPkcs8PrivateKey(key, buffer, buffer.Length, out int bytesWritten);
+            byte[] buffer = CryptoPool.Rent(requiredSize);
 
-            if (result != Success || bytesWritten != buffer.Length)
+            try
             {
-                CryptographicOperations.ZeroMemory(buffer);
-                pkcs8 = null;
-                return false;
-            }
+                result = EcKeyExportPkcs8PrivateKey(
+                    key,
+                    buffer.AsSpan(0, requiredSize),
+                    requiredSize,
+                    out int bytesWritten);
 
-            pkcs8 = buffer;
-            return true;
+                if (result != Success || bytesWritten != requiredSize)
+                {
+                    return false;
+                }
+
+                pkcs8 = new ArraySegment<byte>(buffer, 0, bytesWritten);
+                return true;
+            }
+            finally
+            {
+                // Return what we rented if we didn't assign the `out pkcs8`.
+                if (pkcs8.Array is null)
+                {
+                    CryptoPool.Return(buffer, requiredSize);
+                }
+            }
         }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByExplicitParameters")]

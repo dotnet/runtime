@@ -83,8 +83,7 @@ namespace System.Security.Cryptography
         {
             publicKey = default;
 
-            if (!Interop.AndroidCrypto.TryExportEcKeyPkcs8PrivateKey(key, out byte[]? pkcs8) ||
-                pkcs8 is null)
+            if (!Interop.AndroidCrypto.TryExportEcKeyPkcs8PrivateKey(key, out ArraySegment<byte> pkcs8))
             {
                 return false;
             }
@@ -95,12 +94,12 @@ namespace System.Security.Cryptography
             {
                 KeyFormatHelper.ReadPkcs8<ECParameters>(
                     s_validOids,
-                    pkcs8,
+                    pkcs8.AsSpan(),
                     EccKeyFormatHelper.FromECPrivateKey,
                     out int bytesRead,
                     out recoveredParameters);
 
-                if (bytesRead != pkcs8.Length || recoveredParameters.Q.X is null || recoveredParameters.Q.Y is null)
+                if (bytesRead != pkcs8.Count || recoveredParameters.Q.X is null || recoveredParameters.Q.Y is null)
                 {
                     return false;
                 }
@@ -114,7 +113,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(pkcs8);
+                CryptoPool.Return(pkcs8);
 
                 if (recoveredParameters.D is not null)
                 {
