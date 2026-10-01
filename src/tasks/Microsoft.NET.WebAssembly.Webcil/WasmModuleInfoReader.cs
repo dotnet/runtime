@@ -412,12 +412,16 @@ public static class WasiR2RComposition
         out int imageBase,
         out int imageCapacity,
         out int tableBase,
-        out int reservedTableStart)
+        out int reservedTableStart,
+        out int compositeNameBase,
+        out int compositeNameCapacity)
     {
         WasmModuleInfo module = ReadModule(path);
         imageBase = GetRequiredI32Export(module, "wasi_r2r_image_base");
         imageCapacity = GetRequiredI32Export(module, "wasi_r2r_image_cap");
         tableBase = GetRequiredI32Export(module, "wasi_r2r_table_base");
+        compositeNameBase = GetRequiredI32Export(module, "wasi_r2r_composite_name_base");
+        compositeNameCapacity = GetRequiredI32Export(module, "wasi_r2r_composite_name_cap");
         reservedTableStart = int.MaxValue;
         foreach ((bool Active, int? Offset) segment in module.ElementSegments)
         {
