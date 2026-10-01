@@ -65,6 +65,7 @@ export interface AssetEntryInternal extends AssetEntry {
     inprogress?: boolean
     tableSize?: number
     payloadSize?: number
+    isCompositeImage?: boolean
 }
 
 export type LoaderConfigInternal = LoaderConfig & {
