@@ -360,14 +360,9 @@ namespace System.Net.Security
                     SR.Format(SR.net_tlssession_validation_not_pending, nameof(AcceptWithDefaultValidation)));
             }
 
-            // Build a fresh X509Chain locally and seed it with the peer-sent intermediates.
-            // The chain instance is never exposed to TlsSession callers; once validation is
-            // recorded it is disposed in SetRemoteCertificateValidationResult below.
+            // Build a fresh X509Chain locally. VerifyRemoteCertificateCore applies the configured
+            // chain policy before adding the peer-sent intermediates captured by this session.
             using X509Chain chain = new X509Chain();
-            if (_externalRemoteCertificates is { Count: > 0 } intermediates)
-            {
-                chain.ChainPolicy.ExtraStore.AddRange(intermediates);
-            }
 
             ProtocolToken alertToken = default;
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
@@ -389,7 +384,9 @@ namespace System.Net.Security
                     trust: null,
                     ref alertToken,
                     ref sslPolicyErrors,
-                    out _);
+                    out _,
+                    _externalRemoteCertificates,
+                    cloneCertificateChainPolicy: true);
             }
             finally
             {
@@ -1856,25 +1853,69 @@ namespace System.Net.Security
         // when AcceptWithDefaultValidation runs.
         private void CaptureRemoteCertificateForExternalValidation()
         {
+            X509ChainPolicy? chainPolicy = _options.CertificateChainPolicy?.Clone();
+            int preexistingExtraCertsCount = chainPolicy?.ExtraStore.Count ?? 0;
             X509Chain? chain = null;
-            _externalPendingCert = CertificateValidationPal.GetRemoteCertificate(
-                _securityContext, ref chain, _options.CertificateChainPolicy);
+            X509Certificate2Collection? intermediates = null;
 
-            // Snapshot the peer-sent intermediates into a flat collection and dispose the
-            // platform-built chain immediately. The chain instance never escapes the PAL
-            // boundary into TlsSession state or its public surface.
-            if (chain is not null)
+            try
             {
-                if (chain.ChainElements.Count > 1)
+                _externalPendingCert = CertificateValidationPal.GetRemoteCertificate(
+                    _securityContext, ref chain, chainPolicy);
+
+                if (chain is not null)
                 {
-                    X509Certificate2Collection intermediates = new X509Certificate2Collection();
-                    for (int i = 1; i < chain.ChainElements.Count; i++)
+                    X509Certificate2Collection extraStore = chain.ChainPolicy.ExtraStore;
+                    while (extraStore.Count > preexistingExtraCertsCount)
                     {
-                        intermediates.Add(new X509Certificate2(chain.ChainElements[i].Certificate));
+                        X509Certificate2 certificate = extraStore[preexistingExtraCertsCount];
+                        extraStore.RemoveAt(preexistingExtraCertsCount);
+
+                        bool transferred = false;
+                        try
+                        {
+                            if (_externalPendingCert is null ||
+                                !certificate.RawDataMemory.Span.SequenceEqual(_externalPendingCert.RawDataMemory.Span))
+                            {
+                                (intermediates ??= new X509Certificate2Collection()).Add(certificate);
+                                transferred = true;
+                            }
+                        }
+                        finally
+                        {
+                            if (!transferred)
+                            {
+                                certificate.Dispose();
+                            }
+                        }
                     }
-                    _externalRemoteCertificates = intermediates;
                 }
-                chain.Dispose();
+
+                _externalRemoteCertificates = intermediates;
+                intermediates = null;
+            }
+            finally
+            {
+                if (intermediates is not null)
+                {
+                    foreach (X509Certificate2 certificate in intermediates)
+                    {
+                        certificate.Dispose();
+                    }
+                }
+
+                if (chain is not null)
+                {
+                    X509Certificate2Collection extraStore = chain.ChainPolicy.ExtraStore;
+                    while (extraStore.Count > preexistingExtraCertsCount)
+                    {
+                        X509Certificate2 certificate = extraStore[preexistingExtraCertsCount];
+                        extraStore.RemoveAt(preexistingExtraCertsCount);
+                        certificate.Dispose();
+                    }
+
+                    chain.Dispose();
+                }
             }
 
             _externalValidationPending = true;

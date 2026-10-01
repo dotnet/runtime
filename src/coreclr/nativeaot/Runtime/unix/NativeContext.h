@@ -4,6 +4,8 @@
 #ifndef __NATIVE_CONTEXT_H__
 #define __NATIVE_CONTEXT_H__
 
+#ifndef HOST_WASM
+
 #if HAVE_UCONTEXT_H
 #include <ucontext.h>
 #else
@@ -277,4 +279,5 @@ struct NATIVE_CONTEXT
 #endif // TARGET_ARM
 };
 
+#endif // !HOST_WASM
 #endif // __NATIVE_CONTEXT_H__

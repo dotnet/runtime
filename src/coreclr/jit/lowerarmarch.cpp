@@ -761,7 +761,9 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 #else  // !TARGET_ARM
-    if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
+    // Keep offset + size strictly below INT32_MAX, as required by unrolled block codegen.
+    ClrSafeInt<int> endOffset = ClrSafeInt<int>(offset) + ClrSafeInt<int>(size);
+    if (endOffset.IsOverflow() || (endOffset.Value() == INT32_MAX))
     {
         return;
     }
@@ -1393,12 +1395,13 @@ bool Lowering::TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next
 void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 {
     assert(node->GetHWIntrinsicId() == NI_AdvSimd_FusedMultiplyAddScalar);
+    assert(varTypeIsFloating(node->GetSimdBaseType()));
 
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
-    auto lowerOperand = [this](GenTree* op) {
+    auto lowerOperand = [this, node](GenTree* op) {
         bool wasNegated = false;
 
         if (op->OperIsHWIntrinsic())
@@ -1412,7 +1415,8 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
             {
                 GenTree* valueOp = opIntrinsic->Op(1);
 
-                if (valueOp->OperIs(GT_NEG))
+                // Reinterprets can make the scalar's negation differ from negating an FMA element.
+                if (valueOp->OperIs(GT_NEG) && valueOp->TypeIs(node->GetSimdBaseType()))
                 {
                     opIntrinsic->Op(1) = valueOp->gtGetOp1();
                     BlockRange().Remove(valueOp);

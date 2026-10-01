@@ -351,7 +351,7 @@ DEBUG_NOINLINE void ClrEnterCriticalSection(CRITSEC_COOKIE cookie) {
     pCrst->Enter();
 }
 
-DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
+DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept
 {
     CONTRACTL
     {
