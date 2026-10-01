@@ -98,6 +98,14 @@ namespace Fragment
                 }
                 requests[i] = new Request();
 
+                if (OperatingSystem.IsBrowser() && (totalReqs % NumRequests == 0))
+                {
+                    // Browser finalizers are scheduled on the JS event loop, which this
+                    // synchronous loop never yields to. Drain them periodically so dead
+                    // requests can release their pins and survivor arrays.
+                    GC.WaitForPendingFinalizers();
+                }
+
                 if (instRequests == NumRequests)
                 {
                     if (nreqsToSteady == 0)
