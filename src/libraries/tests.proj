@@ -410,6 +410,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(EnableAggressiveTrimming)' == 'true' and '$(RunDisabledWasiTests)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/135045 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition\tests\System.ComponentModel.Composition.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TestSingleFile)' == 'true' and '$(TestNativeAot)' != 'true'">
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
