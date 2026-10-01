@@ -58,6 +58,9 @@ namespace System.Threading
                 {
                     ThreadPoolWorkQueue.Dispatch();
                     WasiFinalizerScheduler.DrainIfPending();
+#if FEATURE_PERFTRACING && CORECLR
+                    WasiEventPipeJobs.EnsurePumpIfPending();
+#endif
                 }
             }
             finally
@@ -80,6 +83,9 @@ namespace System.Threading
                 {
                     ThreadPoolWorkQueue.Dispatch();
                     WasiFinalizerScheduler.DrainIfPending();
+#if FEATURE_PERFTRACING && CORECLR
+                    WasiEventPipeJobs.EnsurePumpIfPending();
+#endif
                 }
             }
             finally

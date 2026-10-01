@@ -1094,6 +1094,9 @@ ep_rt_thread_create (
 #ifdef HOST_BROWSER
 #include "wasm/entrypoints.h"
 typedef size_t (*ep_rt_job_cb_t)(void *data);
+#elif defined(TARGET_WASI)
+// Queues a job on the native list drained by the managed WASI event loop (see eventpipeinternal.cpp).
+bool ep_rt_coreclr_wasi_queue_job (size_t (*cb)(void *data), void *data);
 #endif
 
 static
@@ -1111,8 +1114,10 @@ ep_rt_queue_job (
 	if (!cb (params))
 		SystemJS_DiagnosticServerQueueJob (cb, params);
 	return true;
+#elif defined(TARGET_WASI)
+	return ep_rt_coreclr_wasi_queue_job ((size_t (*)(void *))job_func, params);
 #else
-	// No host event loop to run jobs on (e.g. WASI). Callers handle the failure; streaming sessions
+	// No host event loop to run jobs on. Callers handle the failure; streaming sessions
 	// are flushed when they are disabled.
 	return false;
 #endif
