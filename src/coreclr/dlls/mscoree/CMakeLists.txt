@@ -5,6 +5,7 @@ if(FEATURE_GDBJIT)
 endif(FEATURE_GDBJIT)
 
 set(CLR_SOURCES
+    dnmdbridge.cpp
     mscoree.cpp
     exports.cpp
 )

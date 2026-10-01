@@ -77,10 +77,7 @@ set(CORECLR_LIBRARIES
     debug-pal
     ${LIB_UNWINDER}
     v3binder
-    mdcompiler_wks
-    mdruntime_wks
-    mdruntimerw_wks
-    ceefgen
+    ceefgen # PE writing for Reflection.Emit's CreateICeeGen
     corguids
     utilcode
     v3binder
