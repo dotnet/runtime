@@ -70,12 +70,6 @@ namespace System.Reflection
                 }
 
                 if (RuntimeFeature.IsDynamicCodeCompiled &&
-                    // ForceEmitInvoke alone never reaches here: MethodInvokerCommon.Initialize pre-selects the
-                    // emit-only strategy at construction, which replaces the shared-thunk delegate with a plain
-                    // emitted invoker before this method is ever entered. The one case where ForceEmitInvoke can
-                    // still be true here is when both switches are set simultaneously (a contradictory
-                    // configuration); Initialize then falls back to the default/undetermined strategy, so
-                    // invocation proceeds through the shared thunk and both switches remain readable below.
                     !(LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke) &&
                     --state.InvocationsUntilSpecialization <= 0)
                 {
