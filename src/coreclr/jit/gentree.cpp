@@ -15810,7 +15810,9 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
             CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isArg0NonNull);
             CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isArg1NonNull);
             // A null receiver should throw, but a null argument must return false.
-            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull)
+            // Shared enum types may have the same canonical handle but different runtime types.
+            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull ||
+                eeIsSharedInst(cls0))
             {
                 break;
             }
