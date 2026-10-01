@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -433,14 +434,10 @@ public unsafe partial class EnumMemoryTests
 
     private sealed class CorDebugDataTarget(MockMemorySpace.MemoryContext memory) : ICorDebugDataTarget
     {
-        public ContractDescriptorTarget.GetTargetThreadContextDelegate? ReadThreadContext { get; init; }
-
         public int GetPlatform(int* platform) => throw new NotImplementedException();
 
         public int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, byte* context)
-            => ReadThreadContext is not null
-                ? ReadThreadContext(threadId, contextFlags, new Span<byte>(context, checked((int)contextSize)))
-                : throw new NotImplementedException();
+            => throw new NotImplementedException();
 
         public int ReadVirtual(ulong address, byte* buffer, uint bytesRequested, uint* bytesRead)
         {
@@ -484,7 +481,7 @@ public unsafe partial class EnumMemoryTests
         {
             using RecordingCallback callback = new(supportsUpdates: false);
             Assert.Equal(HResults.S_OK, impl.EnumMemoryRegions((void*)callback.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
-            Assert.Equal(2 * (i + 1), imageReadCount);
+            Assert.Equal(3 * (i + 1), imageReadCount);
             Assert.True(imageReadUnderLock);
             Assert.Contains((ImageBase, 64u), callback.Ranges);
             Assert.Contains((ImageBase + 0x80, 264u), callback.Ranges);
@@ -496,11 +493,11 @@ public unsafe partial class EnumMemoryTests
 
         using RecordingCallback cancelled = new(supportsUpdates: false) { CancelAtAddress = ImageBase };
         Assert.Equal(HResults.COR_E_OPERATIONCANCELED, impl.EnumMemoryRegions((void*)cancelled.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
-        Assert.Equal(5, imageReadCount);
+        Assert.Equal(7, imageReadCount);
         using RecordingCallback afterCancellation = new(supportsUpdates: false);
         Assert.Equal(HResults.S_OK, impl.EnumMemoryRegions((void*)afterCancellation.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
         Assert.Contains((ImageBase, 0x300u), afterCancellation.Ranges);
-        Assert.Equal(7, imageReadCount);
+        Assert.Equal(10, imageReadCount);
     }
 
     [Theory]
@@ -597,15 +594,15 @@ public unsafe partial class EnumMemoryTests
     }
 
     [Theory]
-    [InlineData("no-base", false, 0)]
-    [InlineData("unreadable-dos", false, 1)]
-    [InlineData("unreadable-pe", false, 2)]
-    [InlineData("not-pe", true, 1)]
-    [InlineData("negative-offset", false, 1)]
-    [InlineData("bad-signature", false, 2)]
-    [InlineData("bad-optional-header", false, 2)]
-    [InlineData("zero-headers", false, 2)]
-    public void RuntimeImageDiscovery_HandlesMissingOrInvalidImages(string scenario, bool expected, int expectedReads)
+    [InlineData("no-base", 0)]
+    [InlineData("unreadable-dos", 1)]
+    [InlineData("unreadable-pe", 2)]
+    [InlineData("not-pe", 1)]
+    [InlineData("negative-offset", 1)]
+    [InlineData("bad-signature", 2)]
+    [InlineData("bad-optional-header", 2)]
+    [InlineData("zero-headers", 2)]
+    public void RuntimeImageDiscovery_HandlesMissingOrInvalidImages(string scenario, int expectedReads)
     {
         const ulong ImageBase = 0x10000;
         byte[] image = CreateRuntimeImage(is64Bit: true);
@@ -652,18 +649,20 @@ public unsafe partial class EnumMemoryTests
             runtimeImageBase: scenario == "no-base" ? TargetPointer.Null : new(ImageBase));
 
         Assert.Equal(0, reads);
-        Assert.Equal(expected, RuntimeModuleInfo.TryCreate(target, out RuntimeModuleInfo module));
-        Assert.Equal(expectedReads, reads);
-        if (expected)
-        {
-            Assert.Equal(ImageBase, module.ImageBase);
-            Assert.Equal(0u, module.SizeOfHeaders);
-            Assert.Empty(module.EnumerateMemoryRegions());
-        }
+        PEImageCollector imageCollector = new(target);
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, 8);
+        if (scenario == "no-base")
+            Assert.Equal(HResults.S_OK, MemoryEnumerator.Enumerate(target, emitter, DumpType.Mini));
+        else if (scenario is "unreadable-dos" or "unreadable-pe")
+            Assert.Throws<VirtualReadException>(() => imageCollector.EnumerateMemoryRegions(ImageBase, (uint)image.Length, isMapped: true, emitter, DumpType.Mini));
         else
-        {
-            Assert.Null(module);
-        }
+            imageCollector.EnumerateMemoryRegions(ImageBase, (uint)image.Length, isMapped: true, emitter, DumpType.Mini);
+        Assert.Equal(expectedReads, reads);
+        if (scenario == "no-base")
+            Assert.DoesNotContain(callback.Ranges, range => range.Address >= ImageBase && range.Address < ImageBase + (uint)image.Length);
+        else
+            Assert.Empty(callback.Ranges);
     }
 
     [Theory]
@@ -684,12 +683,12 @@ public unsafe partial class EnumMemoryTests
         }
 
         int reads = 0;
-        Assert.True(RuntimeModuleInfo.TryCreate(ImageBase, (address, buffer) =>
+        Assert.True(PEImageInfo.TryCreate(ImageBase, (uint)image.Length, isMapped: true, (address, buffer) =>
         {
             reads++;
             image.AsSpan(checked((int)(address - ImageBase)), buffer.Length).CopyTo(buffer);
             return true;
-        }, out RuntimeModuleInfo module));
+        }, out PEImageInfo module));
         Assert.Equal(2, reads);
         List<TargetSpan> expected = [new(ImageBase, 0x300)];
         if (!emptyDirectories)
@@ -705,6 +704,215 @@ public unsafe partial class EnumMemoryTests
         Assert.Equal(2, reads);
     }
 
+    public static IEnumerable<object[]> ModuleDebugPayloadCases()
+    {
+        foreach (bool is64Bit in new[] { false, true })
+        foreach (bool mapped in new[] { false, true })
+        foreach (bool triage in new[] { false, true })
+        foreach (bool supportsUpdates in new[] { false, true })
+            yield return [is64Bit, mapped, triage, supportsUpdates, @"C:\private\symbols\module.pdb"];
+
+        foreach (string path in new[] { "/private/symbols/module.pdb", "module.pdb", "", "/private/" + new string('a', 300) + "/module.pdb", "/private/" + new string('a', 300) + ".pdb" })
+            yield return [true, true, true, true, path];
+    }
+
+    [Theory]
+    [MemberData(nameof(ModuleDebugPayloadCases))]
+    public void ModuleCollection_IncludesDebugPayloads(bool is64Bit, bool mapped, bool triage, bool supportsUpdates, string pdbPath)
+    {
+        const ulong ImageBase = 0x10000;
+        byte[] image = CreateManagedDebugImage(is64Bit, mapped, pdbPath);
+        ContractDescriptorTarget target = CreateManagedImageTarget(image, is64Bit, mapped);
+        using RecordingCallback callback = new(supportsUpdates);
+        MemoryRegionEmitter emitter = new(callback.Address, is64Bit ? 8u : 4u);
+        Assert.Equal(HResults.S_OK, MemoryEnumerator.Enumerate(target, emitter, triage ? DumpType.Triage : DumpType.Mini));
+
+        uint sectionOffset = mapped ? 0x1000u : 0x400u;
+        ulong debugAddress = ImageBase + sectionOffset;
+        ulong payloadAddress = debugAddress + 0x400;
+        uint payloadSize = 24 + (uint)Encoding.UTF8.GetByteCount(pdbPath) + 1;
+        Assert.Contains((ImageBase, 0x300u), callback.Ranges);
+        Assert.Contains((debugAddress, 56u), callback.Ranges);
+        Assert.Contains((payloadAddress, payloadSize), callback.Ranges);
+        Assert.Contains((debugAddress + 0x200, 8u), callback.Ranges);
+        Assert.DoesNotContain(callback.Ranges, r => r.Address == ImageBase && r.Size == image.Length);
+        Assert.DoesNotContain(callback.Ranges, r => r.Address <= debugAddress + 0x300 && r.Address + r.Size > debugAddress + 0x300);
+        if (triage && supportsUpdates)
+        {
+            byte[] path = image.AsSpan((int)(sectionOffset + 0x400 + 24), (int)payloadSize - 24).ToArray();
+            foreach ((ulong address, byte[] update) in callback.Updates)
+                update.CopyTo(path.AsSpan(checked((int)(address - payloadAddress - 24))));
+            string fileName = pdbPath[(Math.Max(pdbPath.LastIndexOf('/'), pdbPath.LastIndexOf('\\')) + 1)..];
+            byte[] expected = new byte[path.Length];
+            Encoding.UTF8.GetBytes(fileName, expected);
+            Assert.Equal(expected, path);
+        }
+        else
+        {
+            Assert.Empty(callback.Updates);
+        }
+        Assert.Equal(HResults.S_OK, emitter.Result);
+
+        TestPlaceholderTarget dumpTarget = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = is64Bit })
+            .UseReader((ulong address, Span<byte> buffer) =>
+            {
+                int length = buffer.Length;
+                if (!callback.Ranges.Exists(r => address >= r.Address && address - r.Address <= r.Size && (ulong)length <= r.Size - (address - r.Address)))
+                    return HResults.E_FAIL;
+
+                image.AsSpan(checked((int)(address - ImageBase)), buffer.Length).CopyTo(buffer);
+                foreach ((ulong updateAddress, byte[] update) in callback.Updates)
+                {
+                    ulong start = Math.Max(address, updateAddress);
+                    ulong end = Math.Min(address + (uint)buffer.Length, updateAddress + (uint)update.Length);
+                    if (start < end)
+                        update.AsSpan((int)(start - updateAddress), (int)(end - start)).CopyTo(buffer[(int)(start - address)..]);
+                }
+                return HResults.S_OK;
+            })
+            .Build();
+        using PEReader reader = new(new TargetStream(dumpTarget, ImageBase, image.Length), mapped ? PEStreamOptions.IsLoadedImage : PEStreamOptions.Default);
+        ImmutableArray<DebugDirectoryEntry> entries = reader.ReadDebugDirectory();
+        Assert.Equal(2, entries.Length);
+        CodeViewDebugDirectoryData codeView = reader.ReadCodeViewDebugDirectoryData(entries[0]);
+        string expectedPath = triage && supportsUpdates
+            ? pdbPath[(Math.Max(pdbPath.LastIndexOf('/'), pdbPath.LastIndexOf('\\')) + 1)..]
+            : pdbPath;
+        Assert.Equal(expectedPath, codeView.Path);
+    }
+
+    private static ContractDescriptorTarget CreateManagedImageTarget(byte[] image, bool is64Bit, bool mapped)
+    {
+        const ulong ImageBase = 0x10000;
+        TargetPointer imageBase = new(ImageBase);
+        uint imageSize = (uint)image.Length;
+        uint imageFlags = mapped ? 1u : 0u;
+        Contracts.ModuleHandle module = new(new TargetPointer(0x8000));
+        Mock<ILoader> loader = new();
+        loader.Setup(l => l.GetModuleHandles(It.IsAny<TargetPointer>(), It.IsAny<AssemblyIterationFlags>())).Returns([module]);
+        loader.Setup(l => l.TryGetLoadedImageContents(module, out imageBase, out imageSize, out imageFlags)).Returns(true);
+        return ContractDescriptorTarget.Create(
+            ContractDescriptorParser.ParseCompact("""{"version":2,"contracts":{"Loader":"c1","EcmaMetadata":"c1"}}"""u8), [],
+            (ulong address, Span<byte> buffer) =>
+            {
+                if (address < ImageBase || address - ImageBase > (ulong)image.Length
+                    || (ulong)buffer.Length > (ulong)image.Length - (address - ImageBase))
+                    return HResults.E_FAIL;
+
+                image.AsSpan((int)(address - ImageBase), buffer.Length).CopyTo(buffer);
+                return HResults.S_OK;
+            },
+            (_, _) => HResults.E_NOTIMPL, (_, _, _) => HResults.E_NOTIMPL, (_, _) => HResults.E_NOTIMPL,
+            (ulong _, out ulong address) => { address = 0; return HResults.E_NOTIMPL; },
+            isLittleEndian: true, pointerSize: is64Bit ? 8 : 4,
+            contractRegistrations: [registry =>
+            {
+                registry.Register<ILoader>("c1", _ => loader.Object);
+                registry.Register<IEcmaMetadata>("c1", _ => new Mock<IEcmaMetadata>().Object);
+            }]);
+    }
+
+    [Theory]
+    [InlineData(false, false, "valid")]
+    [InlineData(false, true, "valid")]
+    [InlineData(true, false, "valid")]
+    [InlineData(true, true, "valid")]
+    [InlineData(true, false, "unreadable-directory")]
+    [InlineData(true, true, "unreadable-directory")]
+    [InlineData(true, false, "invalid-payload")]
+    [InlineData(true, true, "invalid-payload")]
+    [InlineData(true, false, "empty-payload")]
+    [InlineData(true, true, "empty-payload")]
+    public void ImageDebugEntries_ReadLazilyAndValidatePayloadRanges(bool is64Bit, bool mapped, string scenario)
+    {
+        const ulong ImageBase = 0x10000;
+        byte[] image = CreateManagedDebugImage(is64Bit, mapped, "module.pdb");
+        int sectionOffset = mapped ? 0x1000 : 0x400;
+        if (scenario == "invalid-payload")
+            BinaryPrimitives.WriteUInt32LittleEndian(image.AsSpan(sectionOffset + 20), uint.MaxValue - 8);
+        if (scenario == "empty-payload")
+            image.AsSpan(sectionOffset + 16, 4).Clear();
+
+        List<ulong> reads = [];
+        bool ReadMemory(ulong address, Span<byte> buffer)
+        {
+            reads.Add(address);
+            if (scenario == "unreadable-directory" && address == ImageBase + (uint)sectionOffset)
+                return false;
+            image.AsSpan(checked((int)(address - ImageBase)), buffer.Length).CopyTo(buffer);
+            return true;
+        }
+
+        Assert.True(PEImageInfo.TryCreate(ImageBase, (uint)image.Length, mapped, ReadMemory, out PEImageInfo module));
+        Assert.DoesNotContain(ImageBase + (uint)sectionOffset, reads);
+        IEnumerable<PEImageInfo.DebugEntry> entries = module.EnumerateDebugEntries(ReadMemory);
+        Assert.DoesNotContain(ImageBase + (uint)sectionOffset, reads);
+        if (scenario is "unreadable-directory" or "invalid-payload")
+        {
+            Assert.Throws<InvalidOperationException>(() => new List<PEImageInfo.DebugEntry>(entries));
+        }
+        else
+        {
+            List<PEImageInfo.DebugEntry> expected = [];
+            if (scenario != "empty-payload")
+                expected.Add(new(DebugDirectoryEntryType.CodeView, new TargetSpan(ImageBase + (uint)sectionOffset + 0x400, 35)));
+            expected.Add(new(DebugDirectoryEntryType.PdbChecksum, new TargetSpan(ImageBase + (uint)sectionOffset + 0x200, 8)));
+            Assert.Equal(expected, entries);
+            Assert.DoesNotContain(ImageBase + (uint)sectionOffset + 0x400, reads);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, 0x400u)]
+    [InlineData(false, 0x800u)]
+    [InlineData(true, 0x1000u)]
+    [InlineData(true, 0x1400u)]
+    public void ModuleCollection_PropagatesImageCancellation(bool mapped, uint offset)
+    {
+        const ulong ImageBase = 0x10000;
+        byte[] image = CreateManagedDebugImage(is64Bit: true, mapped, "module.pdb");
+        ContractDescriptorTarget target = CreateManagedImageTarget(image, is64Bit: true, mapped);
+        using RecordingCallback callback = new(supportsUpdates: false) { CancelAtAddress = ImageBase + offset };
+        MemoryRegionEmitter emitter = new(callback.Address, 8);
+        OperationCanceledException exception = Assert.Throws<OperationCanceledException>(() =>
+            MemoryEnumerator.Enumerate(target, emitter, DumpType.Mini));
+        Assert.Equal(HResults.COR_E_OPERATIONCANCELED, exception.HResult);
+    }
+
+    private static byte[] CreateManagedDebugImage(bool is64Bit, bool mapped, string pdbPath)
+    {
+        byte[] image = new byte[0x3000];
+        CreateRuntimeImage(is64Bit).AsSpan(0, 0x300).CopyTo(image);
+        Span<byte> peHeader = image.AsSpan(0x80);
+        ushort optionalHeaderSize = is64Bit ? (ushort)240 : (ushort)224;
+        BinaryPrimitives.WriteUInt16LittleEndian(peHeader[6..], 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(peHeader[20..], optionalHeaderSize);
+        BinaryPrimitives.WriteUInt32LittleEndian(peHeader[(24 + 56)..], (uint)image.Length);
+        int directoryOffset = 24 + (is64Bit ? 112 : 96);
+        BinaryPrimitives.WriteUInt32LittleEndian(peHeader[(directoryOffset - 4)..], 16);
+        peHeader.Slice(directoryOffset, 16 * 8).Clear();
+        BinaryPrimitives.WriteUInt32LittleEndian(peHeader[(directoryOffset + 6 * 8)..], 0x1000);
+        BinaryPrimitives.WriteUInt32LittleEndian(peHeader[(directoryOffset + 6 * 8 + 4)..], 56);
+        Span<byte> section = peHeader[(24 + optionalHeaderSize)..];
+        BinaryPrimitives.WriteUInt32LittleEndian(section[8..], 0x1000);
+        BinaryPrimitives.WriteUInt32LittleEndian(section[12..], 0x1000);
+        BinaryPrimitives.WriteUInt32LittleEndian(section[16..], 0x1000);
+        BinaryPrimitives.WriteUInt32LittleEndian(section[20..], 0x400);
+        int sectionOffset = mapped ? 0x1000 : 0x400;
+        Span<byte> debug = image.AsSpan(sectionOffset);
+        BinaryPrimitives.WriteUInt32LittleEndian(debug[12..], (uint)DebugDirectoryEntryType.CodeView);
+        BinaryPrimitives.WriteUInt32LittleEndian(debug[16..], 24 + (uint)Encoding.UTF8.GetByteCount(pdbPath) + 1);
+        BinaryPrimitives.WriteUInt32LittleEndian(debug[20..], 0x1400);
+        BinaryPrimitives.WriteUInt32LittleEndian(debug[24..], 0x800);
+        BinaryPrimitives.WriteUInt32LittleEndian(debug[(28 + 12)..], (uint)DebugDirectoryEntryType.PdbChecksum);
+        BinaryPrimitives.WriteUInt32LittleEndian(debug[(28 + 16)..], 8);
+        BinaryPrimitives.WriteUInt32LittleEndian(debug[(28 + 20)..], 0x1200);
+        BinaryPrimitives.WriteUInt32LittleEndian(debug[(28 + 24)..], 0x600);
+        "RSDS"u8.CopyTo(debug[0x400..]);
+        Encoding.UTF8.GetBytes(pdbPath, debug[(0x400 + 24)..]);
+        return image;
+    }
+
     private static byte[] CreateRuntimeImage(bool is64Bit)
     {
         byte[] image = new byte[0x1000];
@@ -712,7 +920,7 @@ public unsafe partial class EnumMemoryTests
         BinaryPrimitives.WriteInt32LittleEndian(image.AsSpan(0x3c), 0x80);
         Span<byte> peHeader = image.AsSpan(0x80);
         BinaryPrimitives.WriteUInt32LittleEndian(peHeader, 0x00004550);
-        BinaryPrimitives.WriteUInt16LittleEndian(peHeader.Slice(24), is64Bit ? (ushort)0x20b : (ushort)0x10b);
+        BinaryPrimitives.WriteUInt16LittleEndian(peHeader.Slice(24), (ushort)(is64Bit ? PEMagic.PE32Plus : PEMagic.PE32));
         BinaryPrimitives.WriteUInt32LittleEndian(peHeader.Slice(24 + 60), 0x300);
         int directoryOffset = 24 + (is64Bit ? 112 : 96);
         foreach ((int index, uint rva, uint size) in new[] { (0, 0x400u, 0x100u), (2, 0x600u, 0x40u), (6, 0x700u, 0x20u) })
@@ -891,53 +1099,6 @@ public unsafe partial class EnumMemoryTests
         using RecordingCallback afterCancellation = new(supportsUpdates: false);
         Assert.Equal(HResults.S_OK, impl.EnumMemoryRegions((void*)afterCancellation.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
         Assert.Contains(PointerAddress, afterCancellation.Regions);
-    }
-
-    [Theory]
-    [InlineData(HResults.S_OK, false)]
-    [InlineData(HResults.S_FALSE, false)]
-    [InlineData(HResults.E_FAIL, false)]
-    [InlineData(HResults.S_OK, true)]
-    [InlineData(HResults.S_FALSE, true)]
-    [InlineData(HResults.E_FAIL, true)]
-    public void NativeDataTarget_AlignsThreadContextsAndPreservesFailure(int result, bool corDebug)
-    {
-        ContractDescriptorTarget.GetTargetThreadContextDelegate readContext = (_, _, buffer) =>
-        {
-            fixed (byte* context = buffer)
-                Assert.Equal((nuint)0, (nuint)context & 15);
-            buffer.Fill(0xab);
-            return result;
-        };
-        ContractDescriptorTarget target;
-        if (corDebug)
-        {
-            TargetTestHelpers helpers = new(new() { IsLittleEndian = true, Is64Bit = true });
-            ContractDescriptorBuilder builder = new(helpers);
-            ulong descriptorAddress = new ContractDescriptorBuilder.DescriptorBuilder(builder).CreateSubDescriptor(0x2000, 0x3000, 0x4000);
-            CorDebugDataTarget dataTarget = new(builder.GetMemoryContext()) { ReadThreadContext = readContext };
-            target = Entrypoints.CreateTargetFromCorDebugDataTarget(dataTarget, descriptorAddress, 0x10000);
-        }
-        else
-        {
-            ICLRDataTarget dataTarget = new RuntimeDataTarget([]) { ReadThreadContext = readContext };
-            target = ContractDescriptorTarget.Create(
-                ContractDescriptorParser.ParseCompact("""{"version":2}"""u8), [],
-                (_, _) => HResults.E_NOTIMPL, (_, _) => HResults.E_NOTIMPL, dataTarget.GetThreadContext,
-                (_, _) => HResults.E_NOTIMPL,
-                (ulong _, out ulong address) => { address = 0; return HResults.E_NOTIMPL; },
-                isLittleEndian: true, pointerSize: 8);
-        }
-        int reads = 0;
-        using IDisposable readScope = target.RegisterReadCallback((_, _) => reads++);
-        byte* storage = stackalloc byte[80];
-        byte* aligned = (byte*)(((nuint)storage + 15) & ~(nuint)15);
-        Span<byte> buffer = new(aligned + 1, 64);
-        buffer.Fill(0xcc);
-
-        Assert.Equal(result == HResults.S_OK, target.TryGetThreadContext(1, 0, buffer));
-        Assert.All(buffer.ToArray(), value => Assert.Equal(result == HResults.S_OK ? (byte)0xab : (byte)0xcc, value));
-        Assert.Equal(0, reads);
     }
 
     [Theory]
@@ -1396,7 +1557,7 @@ public unsafe partial class EnumMemoryTests
     }
 
     [Fact]
-    public void Enumeration_RejectsOtherTargetImplementationsAtDumpCreatorBoundary()
+    public void Enumeration_RejectsOtherTargetImplementationsAtMemoryEnumeratorBoundary()
     {
         Mock<Target> target = new();
         target.SetupGet(t => t.PointerSize).Returns(8);
@@ -1404,7 +1565,7 @@ public unsafe partial class EnumMemoryTests
         using RecordingCallback callback = new(supportsUpdates: false);
 
         MemoryRegionEmitter emitter = new(callback.Address, (uint)target.Object.PointerSize);
-        Assert.Equal(HResults.E_NOTIMPL, DumpCreator.Enumerate(target.Object, emitter, DumpType.Mini));
+        Assert.Equal(HResults.E_NOTIMPL, MemoryEnumerator.Enumerate(target.Object, emitter, DumpType.Mini));
         Assert.Equal(HResults.E_NOTIMPL, impl.EnumMemoryRegions((void*)callback.Address, 0, CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT));
         Assert.Empty(callback.Ranges);
         target.Verify(t => t.Flush(It.IsAny<FlushScope>()), Times.Never);
@@ -1501,7 +1662,7 @@ public unsafe partial class EnumMemoryTests
     public void TriageStackTrace_RemovesFileInfoAndZerosRemainingCharacters(string original, string expected)
     {
         char[] buffer = original.ToCharArray();
-        ObjectCollector.StripFileInfoFromStackTrace(buffer);
+        Sanitizer.StripFileInfoFromStackTrace(buffer);
         Assert.Equal(expected.PadRight(original.Length, '\0'), new string(buffer));
     }
 
@@ -1622,7 +1783,6 @@ public unsafe partial class EnumMemoryTests
     private partial class RuntimeDataTarget(byte[] image) : ICLRDataTarget
     {
         public ContractDescriptorTarget.ReadFromTargetDelegate? ReadMemory { get; init; }
-        public ContractDescriptorTarget.GetTargetThreadContextDelegate? ReadThreadContext { get; init; }
         public ulong ImageBase { get; set; } = 0x10000;
         public int LookupResult { get; set; }
         public bool ShortRead { get; init; }
@@ -1668,9 +1828,7 @@ public unsafe partial class EnumMemoryTests
         public int SetTLSValue(uint threadID, uint index, ulong value) => throw new NotImplementedException();
         public int GetCurrentThreadID(uint* threadID) => throw new NotImplementedException();
         public int GetThreadContext(uint threadID, uint contextFlags, uint contextSize, byte* context)
-            => ReadThreadContext is not null
-                ? ReadThreadContext(threadID, contextFlags, new Span<byte>(context, checked((int)contextSize)))
-                : throw new NotImplementedException();
+            => throw new NotImplementedException();
         public int SetThreadContext(uint threadID, uint contextSize, byte* context) => throw new NotImplementedException();
         public int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer) => throw new NotImplementedException();
     }

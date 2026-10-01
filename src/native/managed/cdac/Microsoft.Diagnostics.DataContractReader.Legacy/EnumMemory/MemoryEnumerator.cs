@@ -17,7 +17,7 @@ internal enum DumpType
     Triage,
 }
 
-internal sealed class DumpCreator
+internal sealed class MemoryEnumerator
 {
     private const int MaxSyncBlocks = 1_000_000;
     private const int MaxThreads = 1_000_000;
@@ -28,8 +28,9 @@ internal sealed class DumpCreator
     private readonly HashSet<TargetPointer> _loaderAllocators = [];
     private readonly MethodCollector _methods;
     private readonly ObjectCollector _objects;
+    private readonly PEImageCollector _peImageCollector;
 
-    private DumpCreator(
+    private MemoryEnumerator(
         Target target,
         DumpType dumpType,
         MemoryRegionEmitter emitter)
@@ -39,6 +40,7 @@ internal sealed class DumpCreator
         _emitter = emitter;
         _methods = new(target);
         _objects = new(target, emitter, _methods, _dumpType);
+        _peImageCollector = new(target);
     }
 
     public static int Enumerate(Target target, MemoryRegionEmitter emitter, DumpType dumpType)
@@ -55,16 +57,16 @@ internal sealed class DumpCreator
         foreach (TargetSpan range in descriptorTarget.EnumerateDescriptorMemory())
             emitter.Add(range.Address.Value, range.Size);
 
-        new DumpCreator(target, dumpType, emitter).EnumerateMemoryRegions();
+        new MemoryEnumerator(target, dumpType, emitter).EnumerateMemoryRegions();
         return emitter.Result;
     }
 
     private void EnumerateMemoryRegions()
     {
-        TryEnumerate(EnumerateRuntimeModule);
+        TryEnumerate(EnumerateNativeRuntimeModule);
         TryEnumerate(EnumerateStatics);
         TryEnumerate(EnumerateDebugger);
-        TryEnumerate(EnumerateModules);
+        TryEnumerate(EnumerateManagedModules);
         TryEnumerate(EnumerateThreads);
 
         if (_dumpType == DumpType.Heap)
@@ -79,13 +81,10 @@ internal sealed class DumpCreator
         TryEnumerate(WriteMiniMetadata);
     }
 
-    private void EnumerateRuntimeModule()
+    private void EnumerateNativeRuntimeModule()
     {
-        if (RuntimeModuleInfo.TryCreate(_target, out RuntimeModuleInfo runtimeModule))
-        {
-            foreach (TargetSpan range in runtimeModule.EnumerateMemoryRegions())
-                _emitter.Add(range.Address.Value, range.Size);
-        }
+        if (_target.TryGetRuntimeImageBase(out TargetPointer imageBase))
+            _peImageCollector.EnumerateMemoryRegions(imageBase, uint.MaxValue, isMapped: true, _emitter, _dumpType, includeExportsAndResources: true);
     }
 
     private static void TryEnumerate(Action enumerate)
@@ -119,7 +118,7 @@ internal sealed class DumpCreator
         _target.Contracts.ReJIT.IsEnabled();
     }
 
-    private void EnumerateModules()
+    private void EnumerateManagedModules()
     {
         ILoader loader = _target.Contracts.Loader;
         IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
@@ -147,8 +146,15 @@ internal sealed class DumpCreator
             loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.TypeDefToMethodTable);
             loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.TypeRefToMethodTable);
 
-            if (loader.TryGetLoadedImageContents(module, out _, out _, out _))
+            if (loader.TryGetLoadedImageContents(module, out TargetPointer imageBase, out uint imageSize, out uint imageFlags))
+            {
                 _emitter.RegisterMetadataRange(ecmaMetadata.GetReadOnlyMetadataAddress(module));
+                TryEnumerate(() =>
+                {
+                    const uint ImageFlagMapped = 1;
+                    _peImageCollector.EnumerateMemoryRegions(imageBase, imageSize, (imageFlags & ImageFlagMapped) != 0, _emitter, _dumpType);
+                });
+            }
 
             if (flags.HasFlag(ModuleFlags.ReflectionEmit))
                 _emitter.RegisterMetadataRange(ecmaMetadata.GetReadWriteSavedMetadataAddress(module));
