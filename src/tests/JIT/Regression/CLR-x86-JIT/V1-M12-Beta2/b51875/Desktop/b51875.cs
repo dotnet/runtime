@@ -26,7 +26,6 @@ namespace b51875
             return 0;
         }
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134975", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
         [Fact]
         public static int TestEntryPoint()
         {
