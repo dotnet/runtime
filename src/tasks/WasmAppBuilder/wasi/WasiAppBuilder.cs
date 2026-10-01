@@ -97,7 +97,11 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
         if (!DeployFiles(FilesToIncludeInFileSystem, nameof(FilesToIncludeInFileSystem)))
             return false;
 
-        Directory.CreateDirectory(Path.Combine(AppDir, "tmp"));
+        // The guest's /tmp maps to tmp/ under the bundle. Keep a file in it so archiving the bundle
+        // (e.g. zipping it for Helix) doesn't drop the otherwise empty directory.
+        string tmpDir = Path.Combine(AppDir, "tmp");
+        Directory.CreateDirectory(tmpDir);
+        File.WriteAllText(Path.Combine(tmpDir, "README.md"), "Backs the app's /tmp directory when it runs under a WASI host.\n");
 
         UpdateRuntimeConfigJson();
         return !Log.HasLoggedErrors;
