@@ -118,7 +118,7 @@ public:
             return GenTree::VisitResult::Continue;
         };
 
-        call->VisitLocalDefNodes(m_compiler, moveToEnd);
+        call->VisitPhysicalLocalDefNodes(m_compiler, moveToEnd);
     }
 
     //-------------------------------------------------------------------

@@ -432,6 +432,11 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_BULK_WRITEBARRIER,
 
+    // Same as CORINFO_HELP_BULK_WRITEBARRIER, but it is the raw worker: it does not split the copy
+    // into chunks and does not poll for GC afterwards. The JIT is only allowed to use it when the
+    // size is a small compile-time constant, so that the copy cannot starve the GC.
+    CORINFO_HELP_BULK_WRITEBARRIER_SMALL,
+
     /* Accessing fields */
 
     CORINFO_HELP_GETFIELDADDR,
@@ -3544,9 +3549,11 @@ public:
             ) = 0;
 
     // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
+    // preserveNegativeDependency requests that the absence of the instruction set be preserved as a prerequisite.
     virtual bool notifyInstructionSetUsage(
             CORINFO_InstructionSet      instructionSet,
-            bool                        supportEnabled
+            bool                        supportEnabled,
+            bool                        preserveNegativeDependency
             ) = 0;
 
     // Notify EE that JIT needs an entry-point that is tail-callable.

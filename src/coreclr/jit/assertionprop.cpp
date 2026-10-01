@@ -90,6 +90,9 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 //
 static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
 {
+    // Only valid during global assertion prop, this relies on value numbers.
+    assert(comp->vnStore != nullptr);
+
     NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
 
     if (intrinsic != NI_Vector_ExtractMostSignificantBits)
@@ -4688,19 +4691,12 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return nullptr;
     }
 
-    // See if we have "PHI ==/!= null" tree. If so, we iterate over all PHI's arguments,
-    // and if all of them are known to be non-null, we can bash the comparison to true/false.
-    if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF))
+    // Use non-null assertions for the address or its base, including across PHIs.
+    if (op2->IsIntegralConst(0) && varTypeIsI(op1))
     {
-        JITDUMP("Checking PHI [%06u] arguments for non-nullness\n", dspTreeID(op1))
-        auto visitor = [this](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
-            return optAssertionVNIsNonNull(reachingVN, reachingAssertions) ? AssertVisit::Continue : AssertVisit::Abort;
-        };
-
-        ValueNum op1vn = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-        if (optVisitReachingAssertions(op1vn, visitor) == AssertVisit::Continue)
+        if (optAssertionVNIsNonNull(op1VN, assertions))
         {
-            JITDUMP("... all of PHI's arguments are never null!\n");
+            JITDUMP("Proved [%06u] non-null\n", dspTreeID(op1));
             assert(newTree->OperIs(GT_EQ, GT_NE));
             newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
             return optAssertionProp_Update(newTree, tree, stmt);
@@ -5274,7 +5270,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 //
 bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
 {
-    if (vn == ValueNumStore::NoVN)
+    if ((vn == ValueNumStore::NoVN) || !varTypeIsI(vnStore->TypeOfVN(vn)))
     {
         return false;
     }
@@ -5963,7 +5959,11 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            // This optimization needs value numbers, which are not available during local assertion prop.
+            if (!optLocalAssertionProp)
+            {
+                optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            }
             return nullptr;
 #endif // FEATURE_HW_INTRINSICS
 

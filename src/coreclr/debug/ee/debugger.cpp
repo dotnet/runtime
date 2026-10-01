@@ -25,6 +25,7 @@
 #include "../../vm/dwreport.h"
 #include "../../vm/eepolicy.h"
 #include "../../vm/excep.h"
+#include "../../vm/externalmemoryhandle.h"
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
 #include "dbgtransportsession.h"
@@ -1291,6 +1292,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     memset(m_result, 0, sizeof(m_result));
     m_md = NULL;
     m_resultType = TypeHandle();
+    m_externalMemoryOwner = NULL;
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
@@ -1310,6 +1312,56 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     {
         memcpy(&m_context, pContext, sizeof(m_context));
     }
+}
+
+DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory)
+    : m_pHandle(NULL),
+      m_pMemory(pMemory)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    m_pHandle = ExternalMemoryHandle::Add(pMT, m_pMemory, 0);
+}
+
+DebuggerExternalMemoryOwner::~DebuggerExternalMemoryOwner()
+{
+    WRAPPER_NO_CONTRACT;
+
+    ExternalMemoryHandle::Remove(m_pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+    DeleteInteropSafe(m_pMemory);
+}
+
+BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(m_externalMemoryOwner == NULL);
+
+    BYTE *pMemory = new (interopsafe) BYTE[size];
+    EX_TRY
+    {
+        m_externalMemoryOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
+    }
+    EX_CATCH
+    {
+        DeleteInteropSafe(pMemory);
+        EX_RETHROW;
+    }
+    EX_END_CATCH
+
+    return pMemory;
 }
 
 #ifdef _DEBUG
@@ -4839,6 +4891,14 @@ HRESULT Debugger::MapPatchToDJI(DebuggerControllerPatch *dcp, DebuggerJitInfo *d
     // We shouldn't have been asked to map an already bound patch
     _ASSERTE( !dcp->IsBound() );
 
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    if (ExecutionManager::IsReadyToRunCode(dac_cast<PCODE>(djiTo->m_addrOfCode)))
+    {
+        // Leave deferred patches unbound because this configuration cannot patch R2R code.
+        return S_OK;
+    }
+#endif
+
     // If the patch has no DJI then we're doing a UnbindFunctionPatches/RebindFunctionPatches.  Either
     // way, we simply want the most recent version.  In the absence of EnC we should have djiCur == djiTo.
     DebuggerJitInfo *djiCur = dcp->HasDJI() ? dcp->GetDJI() : djiTo;
@@ -4880,7 +4940,12 @@ HRESULT Debugger::MapPatchToDJI(DebuggerControllerPatch *dcp, DebuggerJitInfo *d
             LOG((LF_CORDB, LL_EVERYTHING, "D::MPTDJI trying to bind patch... could be problem\n"));
             if (DebuggerController::BindPatch(dcp, djiTo->m_nativeCodeVersion.GetMethodDesc(), NULL))
             {
-                DebuggerController::ActivatePatch(dcp);
+                if (!DebuggerController::ActivatePatch(dcp))
+                {
+                    DebuggerController::GetPatchTable()->UnbindPatch(dcp);
+                    return CORDBG_E_CODE_NOT_AVAILABLE;
+                }
+
                 LOG((LF_CORDB, LL_INFO1000, "D::MPTDJI Binding went fine!\n" ));
                 return S_OK;
             }
@@ -8924,6 +8989,10 @@ void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
     if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
         return;
 
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    DebuggerController::CancelOutstandingThreadStarter(pRuntimeThread);
+#endif
+
     {
         GCX_PREEMP();
         PollWaitingForHelper();
@@ -9810,9 +9879,13 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.funcEvalKey = pDE->m_funcEvalKey;
     ipce->FuncEvalComplete.successful = pDE->m_successful;
     ipce->FuncEvalComplete.aborted = pDE->m_aborted;
-    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(pDE->m_result);
+    void *pResult = pDE->m_externalMemoryOwner != NULL
+        ? static_cast<void *>(pDE->m_externalMemoryOwner->GetMemory())
+        : static_cast<void *>(pDE->m_result);
+    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
+    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner);
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
@@ -9821,17 +9894,19 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
                                            pDE->m_resultType,
                                            &ipce->FuncEvalComplete.resultType);
 
-    _ASSERTE(ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE);
-
-    // We must adjust the result address to point to the right place
-    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr)),
-        GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
+    if (ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE)
+    {
+        // We must adjust the result address to point to the right place
+        ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr)),
+            GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
+    }
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: returned el %04x resultAddr %p\n",
         static_cast<unsigned>(ipce->FuncEvalComplete.resultType.elementType),
         (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
-    m_pRCThread->SendIPCEvent();
+    IfFailThrow(m_pRCThread->SendIPCEvent());
+    pDE->m_externalMemoryOwner = NULL;
 
 #endif
 }
@@ -10865,6 +10940,13 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             default:
                 pEvent->hr = E_INVALIDARG;
             }
+            break;
+        }
+
+    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER:
+        {
+            DebuggerExternalMemoryOwner *pOwner = pEvent->DisposeExternalMemoryOwner.vmExternalMemoryOwner.GetRawPtr();
+            DeleteInteropSafe(pOwner);
             break;
         }
 
