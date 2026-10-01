@@ -1750,7 +1750,7 @@ public unsafe partial class EnumMemoryTests
 
         using RecordingCallback callback = new(supportsUpdates);
         MemoryRegionEmitter emitter = new(callback.Address, 8);
-        new ObjectCollector(target, emitter, new MethodCollector(target), triage ? DumpType.Triage : DumpType.Mini).EnumerateObject(exception);
+        new ObjectCollector(target, emitter, new MethodCollector(target, emitter), triage ? DumpType.Triage : DumpType.Mini).EnumerateObject(exception);
 
         Assert.Contains(exception.Value, callback.Regions);
         Assert.Contains(innerException.Value, callback.Regions);
@@ -1770,6 +1770,128 @@ public unsafe partial class EnumMemoryTests
             Assert.Empty(callback.Updates);
         }
         Assert.Equal(0, emitter.Result);
+    }
+
+    [Theory]
+    [InlineData(false, nameof(DumpType.Mini))]
+    [InlineData(true, nameof(DumpType.Mini))]
+    [InlineData(true, nameof(DumpType.Heap))]
+    [InlineData(true, nameof(DumpType.Triage))]
+    [InlineData(false, nameof(DumpType.Mini), CodePointerFlags.HasArm32ThumbBit)]
+    public void ExceptionCollection_EnumeratesInstructionPointersForSavedFrames(bool is64Bit, string dumpType, CodePointerFlags codePointerFlags = default)
+    {
+        TargetPointer exception = new(0x1000);
+        TargetPointer exceptionTable = new(0x2000);
+        TargetPointer savedIp = new(0x8001);
+        ulong expectedIp = codePointerFlags == CodePointerFlags.HasArm32ThumbBit ? 0x8000ul : 0x8001ul;
+        uint pointerSize = is64Bit ? 8u : 4u;
+        Mock<IObject> objects = new();
+        objects.Setup(o => o.GetSize(exception)).Returns(128);
+        objects.Setup(o => o.GetMethodTableAddress(exception)).Returns(exceptionTable);
+        Mock<IRuntimeTypeSystem> types = new();
+        types.Setup(t => t.GetTypeHandle(exceptionTable)).Returns(new TestTypeHandle(exceptionTable));
+        types.Setup(t => t.GetWellKnownMethodTable(WellKnownMethodTable.Exception)).Returns(exceptionTable);
+        Mock<IException> exceptions = new();
+        exceptions.Setup(e => e.GetExceptionStackFrames(exception)).Returns(
+        [
+            new ExceptionStackFrameInfo(savedIp, TargetPointer.Null, false),
+            new ExceptionStackFrameInfo(new TargetPointer(savedIp.Value + 0x100), TargetPointer.Null, false),
+        ]);
+        Mock<IPlatformMetadata> platformMetadata = new();
+        platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(codePointerFlags);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = is64Bit })
+            .AddMockContract(objects.Object)
+            .AddMockContract(types.Object)
+            .AddMockContract(exceptions.Object)
+            .AddMockContract(platformMetadata.Object)
+            .AddMockContract(new Mock<IExecutionManager>().Object)
+            .AddMockContract(new Mock<IFeatureFlags>().Object)
+            .UseReader((ulong _, Span<byte> _) => -1)
+            .Build();
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+        new ObjectCollector(target, emitter, new MethodCollector(target, emitter), Enum.Parse<DumpType>(dumpType)).EnumerateObject(exception);
+
+        Assert.Contains((expectedIp, pointerSize), callback.Ranges);
+        Assert.Contains((expectedIp + 0x100, pointerSize), callback.Ranges);
+        Assert.Equal(HResults.S_OK, emitter.Result);
+    }
+
+    [Fact]
+    public void MethodCollection_EnumeratesInstructionPointersBeforeCodeBlockDeduplication()
+    {
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(It.IsAny<TargetCodePointer>()))
+            .Returns(new CodeBlockHandle(new TargetPointer(0x2000)));
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = true })
+            .AddMockContract(new Mock<IPlatformMetadata>().Object)
+            .AddMockContract(executionManager.Object)
+            .AddMockContract(new Mock<IDebugInfo>().Object)
+            .Build();
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+        MethodCollector methods = new(target, emitter);
+
+        methods.CaptureMethod(TargetPointer.Null, new TargetCodePointer(0x8000));
+        methods.CaptureMethod(TargetPointer.Null, new TargetCodePointer(0x8100));
+        methods.CaptureMethod(TargetPointer.Null, new TargetCodePointer(0x8000));
+        methods.CaptureMethod(TargetPointer.Null, TargetCodePointer.Null);
+
+        Assert.Equal([(0x8000ul, 8u), (0x8100ul, 8u), (0x8000ul, 8u)], callback.Ranges);
+        Assert.Single(executionManager.Invocations, invocation => invocation.Method.Name == nameof(IExecutionManager.GetGCInfo));
+    }
+
+    [Theory]
+    [InlineData(false, 0x8000ul)]
+    [InlineData(true, 0x8000ul)]
+    [InlineData(false, 7ul)]
+    [InlineData(true, 7ul)]
+    [InlineData(false, 0xf0000000ul)]
+    public void MethodCollection_CapturesOnlyInstructionPointerBytes(bool is64Bit, ulong instructionPointer)
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = is64Bit })
+            .AddMockContract(new Mock<IPlatformMetadata>().Object)
+            .AddMockContract(new Mock<IExecutionManager>().Object)
+            .UseReader((ulong _, Span<byte> _) => throw new InvalidOperationException("IP collection must not read or decode instructions."))
+            .Build();
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+        new MethodCollector(target, emitter).CaptureMethod(TargetPointer.Null, new TargetCodePointer(instructionPointer));
+
+        ulong expectedAddress = is64Bit ? instructionPointer : unchecked((ulong)(long)(int)instructionPointer);
+        Assert.Equal([(expectedAddress, is64Bit ? 8u : 4u)], callback.Ranges);
+        Assert.Equal(HResults.S_OK, emitter.Result);
+    }
+
+    [Theory]
+    [InlineData(true, 0ul)]
+    [InlineData(true, ulong.MaxValue)]
+    [InlineData(false, uint.MaxValue)]
+    public void MethodCollection_InvalidInstructionPointerIsSkipped(bool is64Bit, ulong instructionPointer)
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = is64Bit })
+            .AddMockContract(new Mock<IPlatformMetadata>().Object)
+            .AddMockContract(new Mock<IExecutionManager>().Object)
+            .Build();
+        using RecordingCallback callback = new(supportsUpdates: false);
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+        new MethodCollector(target, emitter).CaptureMethod(TargetPointer.Null, new TargetCodePointer(instructionPointer));
+
+        Assert.Empty(callback.Ranges);
+        Assert.Equal(HResults.S_OK, emitter.Result);
+    }
+
+    [Fact]
+    public void MethodCollection_InstructionPointerCancellationPropagates()
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new() { IsLittleEndian = true, Is64Bit = true })
+            .AddMockContract(new Mock<IPlatformMetadata>().Object)
+            .Build();
+        using RecordingCallback callback = new(supportsUpdates: false) { Result = HResults.COR_E_OPERATIONCANCELED };
+        MemoryRegionEmitter emitter = new(callback.Address, (uint)target.PointerSize);
+
+        Assert.Throws<OperationCanceledException>(() =>
+            new MethodCollector(target, emitter).CaptureMethod(TargetPointer.Null, new TargetCodePointer(0x8000)));
     }
 
     private sealed record TestTypeHandle(TargetPointer Address) : ITypeHandle;

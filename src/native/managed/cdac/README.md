@@ -95,6 +95,12 @@ Managed module collection also includes PE headers, debug-directory tables, and
 the payloads referenced by their entries, including CodeView PDB identifiers.
 Mapped images resolve RVAs directly; flat images resolve them through section headers.
 This preserves file-backed image mapping without including entire managed images.
+Method collection includes one target-pointer-sized region starting at each
+live-stack and saved exception-stack IP to satisfy method-instance address-readability
+checks. Unlike the legacy DAC, it does not capture surrounding instruction windows
+or indirect-call slots. Saved exception
+frames collect the code, GC, and debug-map dependencies needed for source-line lookup,
+even when those methods are no longer on the live stack.
 `Sanitizer` owns the PDB-path and stack-trace sanitization helpers.
 Triage collection strips CodeView PDB paths to filenames through the optional
 memory-update callback, leaving the PDB identifiers unchanged.

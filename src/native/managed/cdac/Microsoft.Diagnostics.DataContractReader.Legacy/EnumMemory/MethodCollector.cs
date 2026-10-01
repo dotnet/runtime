@@ -11,22 +11,23 @@ using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
-internal sealed class MethodCollector(Target target)
+internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter)
 {
     private readonly Target _target = target;
+    private readonly MemoryRegionEmitter _emitter = emitter;
     private readonly HashSet<TargetPointer> _captured = [];
     private readonly HashSet<TargetPointer> _capturedCodeBlocks = [];
     private readonly Dictionary<TargetPointer, string> _names = [];
 
     public IReadOnlyDictionary<TargetPointer, string> Names => _names;
 
-    public void CaptureMethod(TargetPointer methodDesc)
-        => CaptureMethod(methodDesc, TargetCodePointer.Null);
-
     public void CaptureMethod(TargetPointer methodDesc, TargetCodePointer instructionPointer)
     {
         if (instructionPointer != TargetCodePointer.Null)
+        {
+            EnumerateInstructionPointer(instructionPointer);
             EnumerateCodeDependencies(instructionPointer);
+        }
 
         if (methodDesc == TargetPointer.Null || !_captured.Add(methodDesc))
             return;
@@ -34,6 +35,17 @@ internal sealed class MethodCollector(Target target)
         EnumerateMethodDependencies(methodDesc);
         EnumerateMethodDescDataDependencies(methodDesc);
         CacheMethodName(methodDesc);
+    }
+
+    private void EnumerateInstructionPointer(TargetCodePointer instructionPointer)
+    {
+        ulong address = instructionPointer.ToAddress(_target).Value;
+        uint size = (uint)_target.PointerSize;
+        ulong maxAddress = _target.PointerSize == sizeof(uint) ? uint.MaxValue : ulong.MaxValue;
+        if (address > maxAddress - size)
+            return;
+
+        _emitter.Add(address, size);
     }
 
     private void EnumerateCodeDependencies(TargetCodePointer instructionPointer)
