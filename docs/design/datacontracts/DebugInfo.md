@@ -225,39 +225,17 @@ Signed integers are encoded using the same unsigned scheme, with the sign bit st
 
 ### WebAssembly Variable Register Encoding
 
-WASM has no physical registers. RyuJIT packs a `(local index, debug value type)` tuple into the
-32-bit `regNumber` payload, and that packed value appears in every register field of the Vars
-stream:
+WASM has no physical registers. Every register field in the Vars stream holds a WebAssembly local
+index biased past the reserved register numbers:
 
 ```text
-packedRegister = localIndex | ((uint)debugValueType << WasmDebugRegisterTypeShift)
+register = localIndex + WASM_LOCAL_REGNUM_BASE
 ```
 
-The encoding uses the following values:
-
-| Value type | Encoded value |
-| --- | --- |
-| `Invalid` | `0` |
-| `I32` | `1` |
-| `I64` | `2` |
-| `F32` | `3` |
-| `F64` | `4` |
-| `V128` | `5` |
-| `ExnRef` | `6` |
-
-The target advertises `WasmDebugRegisterTypeShift` and `WasmDebugValueTypeCount` as `uint8`
-numeric data descriptor globals. These values define how to separate the local index from the
-debug value type. A reader must reject an unsupported or missing encoding rather than fall back
-to a compiled-in shift and plausibly decode the wrong local or type.
-
-Debug value type `0` is reserved so that small raw values remain available for pseudo-registers
-such as `REGNUM_AMBIENT_SP`. A packed value whose value type is `0` or greater than or equal to
-`WasmDebugValueTypeCount` does not name a local.
-
-`WasmDebugValueTypeCount` is JIT debug-encoding vocabulary, not the complete WebAssembly
-specification type set. Managed references currently use the JIT's machine `I32`/`I64`
-representation; the encoding does not independently identify a managed GC reference. A future
-bit-width or value-count change requires a format-aware, versioned reader update.
+`WASM_LOCAL_REGNUM_BASE` is `3`, one past `REGNUM_AMBIENT_SP`. Values `0` through `2` remain
+`REGNUM_PC`, `REGNUM_COUNT`, and `REGNUM_AMBIENT_SP`. As on other targets, the value type is not
+encoded: it is implied by the variable's type and by the local's declaration in the WebAssembly
+function.
 
 ### WebAssembly Stack Base Encoding
 

@@ -125,7 +125,9 @@ public class R2RTestSuites
             const byte WasmI32Const = 0x41;
             const byte WasmI32Sub = 0x6B;
             const byte WasmI64 = 0x7E;
+            const byte WasmF64 = 0x7C;
             const int WasmEncodedFrameBase = 2;
+            const int WasmLocalRegisterBase = 3;
 
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
@@ -148,7 +150,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x3C,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000001,
+                    data1: WasmLocalRegisterBase + 1,
                     data2: 0,
                     data3: 0));
             Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
@@ -160,7 +162,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x3C,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000002,
+                    data1: WasmLocalRegisterBase + 2,
                     data2: 0,
                     data3: 0));
             Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
@@ -172,7 +174,7 @@ public class R2RTestSuites
                     startOffset: 0x59,
                     endOffset: 0x74,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000002,
+                    data1: WasmLocalRegisterBase + 2,
                     data2: 0,
                     data3: 0));
             Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
@@ -184,7 +186,7 @@ public class R2RTestSuites
                     startOffset: 0x2F,
                     endOffset: 0x51,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000004,
+                    data1: WasmLocalRegisterBase + 4,
                     data2: 0,
                     data3: 0));
             Assert.Single(optimizedRoot.DebugInfo.VariablesList, variable =>
@@ -196,7 +198,7 @@ public class R2RTestSuites
                     startOffset: 0x59,
                     endOffset: 0x74,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000004,
+                    data1: WasmLocalRegisterBase + 4,
                     data2: 0,
                     data3: 0));
             Assert.DoesNotContain(
@@ -222,7 +224,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x27,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000001,
+                    data1: WasmLocalRegisterBase + 1,
                     data2: 0,
                     data3: 0));
             Assert.Single(leafRoot.DebugInfo.VariablesList, variable =>
@@ -269,7 +271,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x41,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000001,
+                    data1: WasmLocalRegisterBase + 1,
                     data2: 0,
                     data3: 0));
             Assert.Single(locallocRoot.DebugInfo.VariablesList, variable =>
@@ -310,8 +312,6 @@ public class R2RTestSuites
                 [WasmLocalGet, 3, WasmI32Load, 0, 0x1C]);
             ReadyToRunMethod addDoubles = Assert.Single(methods, method =>
                 method.SignatureString.Contains("AddDoubles", StringComparison.Ordinal));
-            const int WasmRegTypeShift = 29;
-            const uint F64WasmValueType = 4;
             List<NativeVarInfo> doubleVariables = addDoubles.RuntimeFunctions
                 .Where(runtimeFunction => runtimeFunction.DebugInfo is not null)
                 .SelectMany(runtimeFunction => runtimeFunction.DebugInfo!.VariablesList)
@@ -328,7 +328,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x22,
                     locationType: VarLocType.VLT_REG,
-                    data1: unchecked((int)0x80000001),
+                    data1: WasmLocalRegisterBase + 1,
                     data2: 0,
                     data3: 0));
             Assert.Single(doubleVariables, variable =>
@@ -352,7 +352,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x22,
                     locationType: VarLocType.VLT_REG,
-                    data1: unchecked((int)0x80000002),
+                    data1: WasmLocalRegisterBase + 2,
                     data2: 0,
                     data3: 0));
             Assert.Single(doubleVariables, variable =>
@@ -367,14 +367,18 @@ public class R2RTestSuites
                     data1: WasmEncodedFrameBase,
                     data2: 0x10,
                     data3: 0));
+            WebcilImageReader.WasmFunctionInfo addDoublesBody =
+                ResolveWasmBody(reader, webcilReader, Assert.Single(addDoubles.RuntimeFunctions));
             Assert.All(
                 doubleVariables.Where(variable => variable.VariableLocation.VarLocType == VarLocType.VLT_REG),
-                variable => Assert.Equal(F64WasmValueType, (uint)variable.VariableLocation.Data1 >> WasmRegTypeShift));
+                variable => Assert.Equal(
+                    WasmF64,
+                    addDoublesBody.ParamTypes[variable.VariableLocation.Data1 - WasmLocalRegisterBase]));
             Assert.DoesNotContain(doubleVariables, variable => variable.Variable.Type == VariableType.Local);
 
             // Prove the exact assertion is sensitive to a garbled decoder rather than merely
-            // counting entries. Mutate the local-index bits in the packed register and verify the
-            // known-good record no longer matches.
+            // counting entries. Mutate the encoded local index and verify the known-good record
+            // no longer matches.
             NativeVarInfo mutatedLeft = leftInLocal;
             VarLoc mutatedLocation = mutatedLeft.VariableLocation;
             mutatedLocation.Data1++;
@@ -388,7 +392,7 @@ public class R2RTestSuites
                 startOffset: 0x0,
                 endOffset: 0x22,
                 locationType: VarLocType.VLT_REG,
-                data1: unchecked((int)0x80000001),
+                data1: WasmLocalRegisterBase + 1,
                 data2: 0,
                 data3: 0));
             // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
@@ -402,20 +406,20 @@ public class R2RTestSuites
                     variableType: VariableType.Parameter,
                     variableIndex: 0,
                     startOffset: 0x0,
-                    endOffset: 0xC1,
+                    endOffset: 0xBE,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000001,
+                    data1: WasmLocalRegisterBase + 1,
                     data2: 0,
                     data3: 0));
             WebcilImageReader.WasmFunctionInfo sumStaticBody = ResolveWasmBody(reader, webcilReader, sumStaticRoot);
             Assert.Equal(new byte[] { WasmI32, WasmI32, WasmI32 }, sumStaticBody.ParamTypes);
-            Assert.Equal(new (uint Count, byte ValType)[] { (7, WasmI32) }, sumStaticBody.Locals);
+            Assert.Equal(new (uint Count, byte ValType)[] { (9, WasmI32) }, sumStaticBody.Locals);
             AssertWasmInstructionPrefix(
                 sumStaticBody,
-                [WasmLocalGet, 0, WasmI32Const, 0x20, WasmI32Sub, WasmLocalTee, 0]);
+                [WasmLocalGet, 0, WasmI32Const, 0x10, WasmI32Sub, WasmLocalTee, 0]);
             AssertWasmContainsInstructions(
                 sumStaticBody,
-                [WasmLocalGet, 0, WasmI32Load, 0, 0x14]);
+                [WasmLocalGet, 0, WasmI32Load, 0, 0x0C]);
             // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
             ReadyToRunMethod sumWithFinally = Assert.Single(methods, method =>
                 method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal));
@@ -432,7 +436,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x3B,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000001,
+                    data1: WasmLocalRegisterBase + 1,
                     data2: 0,
                     data3: 0));
             Assert.Single(sumWithFinallyRoot.DebugInfo.VariablesList, variable =>
@@ -479,7 +483,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x3B,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000001,
+                    data1: WasmLocalRegisterBase + 1,
                     data2: 0,
                     data3: 0));
             Assert.Single(gcLocalRoot.DebugInfo.VariablesList, variable =>
@@ -489,7 +493,7 @@ public class R2RTestSuites
                     variableType: VariableType.Parameter,
                     variableIndex: 0,
                     startOffset: 0x3B,
-                    endOffset: 0x1B6,
+                    endOffset: 0x1B3,
                     locationType: VarLocType.VLT_STK,
                     data1: WasmEncodedFrameBase,
                     data2: 0x2C,
@@ -501,7 +505,7 @@ public class R2RTestSuites
                     variableType: VariableType.Local,
                     variableIndex: 0,
                     startOffset: 0x3B,
-                    endOffset: 0x1B6,
+                    endOffset: 0x1B3,
                     locationType: VarLocType.VLT_STK,
                     data1: WasmEncodedFrameBase,
                     data2: 0x24,
@@ -513,7 +517,7 @@ public class R2RTestSuites
                     variableType: VariableType.Local,
                     variableIndex: 1,
                     startOffset: 0x3B,
-                    endOffset: 0x1B6,
+                    endOffset: 0x1B3,
                     locationType: VarLocType.VLT_STK,
                     data1: WasmEncodedFrameBase,
                     data2: 0x20,
@@ -538,7 +542,7 @@ public class R2RTestSuites
             DebugInfoBoundsEntry collectCall = Assert.Single(
                 gcLocalRoot.DebugInfo.BoundsList,
                 bound => bound.ILOffset == 0x10);
-            Assert.Equal(0x161u, collectCall.NativeOffset);
+            Assert.Equal(0x15Eu, collectCall.NativeOffset);
             Assert.Equal(SourceTypes.StackEmpty, collectCall.SourceTypes);
             Assert.True(gcMarker.StartOffset <= collectCall.NativeOffset);
             Assert.True(collectCall.NativeOffset < gcMarker.EndOffset);
@@ -575,7 +579,7 @@ public class R2RTestSuites
                     startOffset: 0x0,
                     endOffset: 0x41,
                     locationType: VarLocType.VLT_REG,
-                    data1: 0x20000001,
+                    data1: WasmLocalRegisterBase + 1,
                     data2: 0,
                     data3: 0));
             Assert.Single(locallocFinallyRoot.DebugInfo.VariablesList, variable =>
@@ -682,7 +686,7 @@ public class R2RTestSuites
                     variableType: VariableType.Local,
                     variableIndex: 0,
                     startOffset: 0x36,
-                    endOffset: 0x2B1,
+                    endOffset: 0x2A5,
                     locationType: VarLocType.VLT_STK,
                     data1: WasmEncodedFrameBase,
                     data2: 0x48,
@@ -694,7 +698,7 @@ public class R2RTestSuites
                     variableType: VariableType.Local,
                     variableIndex: 1,
                     startOffset: 0x36,
-                    endOffset: 0x2B1,
+                    endOffset: 0x2A5,
                     locationType: VarLocType.VLT_STK,
                     data1: WasmEncodedFrameBase,
                     data2: 0x44,
@@ -706,7 +710,7 @@ public class R2RTestSuites
                     variableType: VariableType.Local,
                     variableIndex: 2,
                     startOffset: 0x36,
-                    endOffset: 0x2B1,
+                    endOffset: 0x2A5,
                     locationType: VarLocType.VLT_STK,
                     data1: WasmEncodedFrameBase,
                     data2: 0x40,
@@ -718,7 +722,7 @@ public class R2RTestSuites
                     variableType: VariableType.Local,
                     variableIndex: 3,
                     startOffset: 0x36,
-                    endOffset: 0x2B1,
+                    endOffset: 0x2A5,
                     locationType: VarLocType.VLT_STK,
                     data1: WasmEncodedFrameBase,
                     data2: 0x3C,
@@ -738,7 +742,7 @@ public class R2RTestSuites
             DebugInfoBoundsEntry slotIdentityGcCall = Assert.Single(
                 gcSlotRoot.DebugInfo.BoundsList,
                 bound => bound.ILOffset == 0x2D);
-            Assert.Equal(0x18Cu, slotIdentityGcCall.NativeOffset);
+            Assert.Equal(0x186u, slotIdentityGcCall.NativeOffset);
             Assert.All(
                 new[] { firstMarker, secondMarker, nullMarker },
                 marker =>
@@ -817,7 +821,7 @@ public class R2RTestSuites
                     body.Image.AsSpan(body.InstructionOffset, body.InstructionLength);
                 Assert.True(
                     instructions.IndexOf(expected) >= 0,
-                    $"Expected wasm instruction sequence {Convert.ToHexString(expected)}.");
+                    $"Expected wasm instruction sequence {Convert.ToHexString(expected)} in {Convert.ToHexString(instructions)}.");
             }
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
@@ -1156,15 +1160,12 @@ public class R2RTestSuites
     }
 
     [Theory]
+    [InlineData(0, "PC")]
     [InlineData(2, "ambient SP")]
-    [InlineData(3, "Unknown '3'")]
-    [InlineData(0x20000001, "$1 (i32)")]
-    [InlineData(0x40000002, "$2 (i64)")]
-    [InlineData(0x60000003, "$3 (f32)")]
-    [InlineData(unchecked((int)0x80000004), "$4 (f64)")]
-    [InlineData(unchecked((int)0xA0000005), "$5 (v128)")]
-    [InlineData(unchecked((int)0xC0000006), "$6 (exnref)")]
-    [InlineData(unchecked((int)0xE0000001), "Unknown '-536870911'")]
+    [InlineData(3, "$0")]
+    [InlineData(4, "$1")]
+    [InlineData(0x2000_0002, "$536870911")]
+    [InlineData(-1, "Unknown '-1'")]
     public void WasmDebugRegisterIsDecoded(int register, string expected)
     {
         Assert.Equal(expected, DebugInfo.GetPlatformSpecificRegister(WasmMachine.Wasm32, register));
