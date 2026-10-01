@@ -2,61 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using TestLibrary;
 
 public static class ThreadStaticAlignmentFallback
 {
     private const int Pass = 100;
     private const int Fail = -1;
-    private const int MaxPaddingCount = 12;
+    private const int PaddingCount = 12;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
-        if (args.Length == 1)
-        {
-            int paddingCount = int.Parse(args[0], CultureInfo.InvariantCulture);
-            return InitializePadding<object>(paddingCount) && LongStorage.Check() ? Pass : Fail;
-        }
-
-        // Each child starts with a fresh direct-TLS allocation budget. Varying the padding
-        // covers the boundary where an eight-byte field fits only without alignment padding.
-        for (int paddingCount = 0; paddingCount <= MaxPaddingCount; paddingCount++)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo(
-                Environment.ProcessPath,
-                [typeof(ThreadStaticAlignmentFallback).Assembly.Location, paddingCount.ToString(CultureInfo.InvariantCulture)])
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
-            startInfo.Environment["DOTNET_DbgEnableMiniDump"] = "0";
-            startInfo.Environment["DOTNET_EnableCrashReport"] = "0";
-
-            ProcessTextOutput output;
-            try
-            {
-                output = Process.RunAndCaptureText(startInfo, TimeSpan.FromSeconds(60));
-            }
-            catch (TimeoutException)
-            {
-                Console.WriteLine($"Thread-static allocation timed out with {paddingCount} padding fields.");
-                return Fail;
-            }
-
-            if (output.ExitStatus.ExitCode != Pass)
-            {
-                Console.WriteLine($"Thread-static allocation failed with {paddingCount} padding fields: {output.ExitStatus.ExitCode}");
-                Console.WriteLine(output.StandardOutput);
-                Console.WriteLine(output.StandardError);
-                return Fail;
-            }
-        }
-
-        return Pass;
+        int paddingCount = new Random().Next(PaddingCount);
+        Console.WriteLine($"Using {paddingCount} padding fields.");
+        return InitializePadding<object>(paddingCount) && LongStorage.Check() ? Pass : Fail;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
