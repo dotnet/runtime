@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using ILCompiler.Reflection.ReadyToRun;
+using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Xunit;
 using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
@@ -210,6 +211,107 @@ internal static class WasmR2RAssert
         }
 
         return false;
+    }
+
+    public static bool MethodsShareFunctionDefinitionButRetainTableSlots(
+        ReadyToRunReader reader,
+        string firstMethodName,
+        string secondMethodName,
+        out string diagnostic)
+    {
+        List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+        ReadyToRunMethod firstMethod = methods.Single(method =>
+            method.SignatureString.Contains(firstMethodName, StringComparison.Ordinal));
+        ReadyToRunMethod secondMethod = methods.Single(method =>
+            method.SignatureString.Contains(secondMethodName, StringComparison.Ordinal));
+
+        int firstSlot = firstMethod.EntryPointRuntimeFunctionId;
+        int secondSlot = secondMethod.EntryPointRuntimeFunctionId;
+        if (firstSlot == secondSlot)
+        {
+            diagnostic = $"Methods unexpectedly share runtime-function/table slot {firstSlot}.";
+            return false;
+        }
+
+        var webcilReader = (WebcilImageReader)reader.CompositeReader;
+        uint[] functionIndices = ReadWasmElementFunctionIndices(webcilReader);
+        if ((uint)firstSlot >= (uint)functionIndices.Length || (uint)secondSlot >= (uint)functionIndices.Length)
+        {
+            diagnostic =
+                $"Method slots {firstSlot} and {secondSlot} are outside the {functionIndices.Length}-entry element segment.";
+            return false;
+        }
+
+        uint firstFunction = functionIndices[firstSlot];
+        uint secondFunction = functionIndices[secondSlot];
+        if (firstFunction != secondFunction)
+        {
+            diagnostic =
+                $"Method slots {firstSlot} and {secondSlot} reference different function definitions " +
+                $"{firstFunction} and {secondFunction}.";
+            return false;
+        }
+
+        uint functionCount = ReadWasmSectionEntryCount(webcilReader, WasmSectionKind.Function);
+        if (functionCount >= functionIndices.Length)
+        {
+            diagnostic =
+                $"Found {functionCount} function definitions for {functionIndices.Length} table slots; " +
+                "expected at least one folded definition.";
+            return false;
+        }
+
+        diagnostic =
+            $"Methods retain slots {firstSlot} and {secondSlot}, both referencing function definition {firstFunction}; " +
+            $"the image has {functionCount} definitions and {functionIndices.Length} slots.";
+        return true;
+    }
+
+    public static bool StringThunksShareFunctionDefinitionButRetainTableSlots(
+        ReadyToRunReader reader,
+        string firstLookupString,
+        string secondLookupString,
+        out string diagnostic)
+    {
+        Dictionary<string, uint> thunkSlots = ReadStringThunkSlots(reader);
+        if (!thunkSlots.TryGetValue(firstLookupString, out uint firstSlot) ||
+            !thunkSlots.TryGetValue(secondLookupString, out uint secondSlot))
+        {
+            diagnostic =
+                $"Could not find string thunks '{firstLookupString}' and '{secondLookupString}'. " +
+                $"Found: [{string.Join(", ", thunkSlots.Keys)}]";
+            return false;
+        }
+
+        if (firstSlot == secondSlot)
+        {
+            diagnostic = $"String thunks unexpectedly share table slot {firstSlot}.";
+            return false;
+        }
+
+        var webcilReader = (WebcilImageReader)reader.CompositeReader;
+        uint[] functionIndices = ReadWasmElementFunctionIndices(webcilReader);
+        if (firstSlot >= (uint)functionIndices.Length || secondSlot >= (uint)functionIndices.Length)
+        {
+            diagnostic =
+                $"String thunk slots {firstSlot} and {secondSlot} are outside the " +
+                $"{functionIndices.Length}-entry element segment.";
+            return false;
+        }
+
+        uint firstFunction = functionIndices[firstSlot];
+        uint secondFunction = functionIndices[secondSlot];
+        if (firstFunction != secondFunction)
+        {
+            diagnostic =
+                $"String thunk slots {firstSlot} and {secondSlot} reference different function definitions " +
+                $"{firstFunction} and {secondFunction}.";
+            return false;
+        }
+
+        diagnostic =
+            $"String thunks retain slots {firstSlot} and {secondSlot}, both referencing function definition {firstFunction}.";
+        return true;
     }
 
     /// <summary>
@@ -522,6 +624,80 @@ internal static class WasmR2RAssert
             return 0;
 
         return ReadWasmUleb32(image, ref offset, sectionEnd);
+    }
+
+    private static uint[] ReadWasmElementFunctionIndices(WebcilImageReader reader)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        if (!TryGetWasmSectionBounds(image, WasmSectionKind.Element, out int offset, out int sectionEnd))
+        {
+            throw new BadImageFormatException("WASM image does not contain an element section.");
+        }
+
+        uint segmentCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+        if (segmentCount != 1)
+        {
+            throw new BadImageFormatException($"Expected one WASM element segment; found {segmentCount}.");
+        }
+
+        uint flags = ReadWasmUleb32(image, ref offset, sectionEnd);
+        if (flags != 0)
+        {
+            throw new BadImageFormatException("Expected an active table-0 WASM element segment.");
+        }
+        if (ReadWasmByte(image, ref offset, sectionEnd) != 0x23
+            || ReadWasmUleb32(image, ref offset, sectionEnd) != (uint)WebCilObjectWriter.TableBaseGlobalIndex
+            || ReadWasmByte(image, ref offset, sectionEnd) != 0x0B)
+        {
+            throw new BadImageFormatException("Expected the WASM element segment at the imported table base.");
+        }
+
+        uint elementCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+        var functionIndices = new uint[checked((int)elementCount)];
+        for (int i = 0; i < functionIndices.Length; i++)
+        {
+            functionIndices[i] = ReadWasmUleb32(image, ref offset, sectionEnd);
+        }
+
+        if (offset != sectionEnd)
+        {
+            throw new BadImageFormatException("Unexpected trailing data in the WASM element section.");
+        }
+
+        return functionIndices;
+    }
+
+    private static Dictionary<string, uint> ReadStringThunkSlots(ReadyToRunReader reader)
+    {
+        ReadyToRunImportSection.ImportSectionEntry entry = reader.ImportSections
+            .Where(section => section.Entries is not null)
+            .SelectMany(section => section.Entries)
+            .Single(entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
+
+        ReadOnlySpan<byte> image = reader.Image;
+        int offset = reader.GetOffset(checked((int)entry.SignatureRVA));
+        if (image[offset++] != (byte)ReadyToRunFixupKind.InjectStringThunks)
+        {
+            throw new BadImageFormatException("Invalid InjectStringThunks signature.");
+        }
+
+        var thunkSlots = new Dictionary<string, uint>(StringComparer.Ordinal);
+        while (image[offset] != 0)
+        {
+            int terminator = image[offset..].IndexOf((byte)0);
+            if (terminator < 0)
+            {
+                throw new BadImageFormatException("Unterminated InjectStringThunks key.");
+            }
+
+            string lookupString = System.Text.Encoding.UTF8.GetString(image.Slice(offset, terminator));
+            offset += terminator + 1;
+            uint slot = BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset, sizeof(uint)));
+            offset += sizeof(uint);
+            thunkSlots.Add(lookupString, slot);
+        }
+
+        return thunkSlots;
     }
 
     private static Dictionary<string, WasmExportIndex> ReadWasmExports(WebcilImageReader reader)

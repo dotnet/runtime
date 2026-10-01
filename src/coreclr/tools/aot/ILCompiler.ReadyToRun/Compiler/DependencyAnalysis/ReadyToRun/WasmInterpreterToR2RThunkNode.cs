@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// (pcode, pArgs, pRet, pPortableEntryPointContext) and calls a function
     /// compiled via R2R with the appropriate wasm-level calling convention.
     /// </summary>
-    public class WasmInterpreterToR2RThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public class WasmInterpreterToR2RThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode, INodeWithCodeInfo
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _wasmSignature;
@@ -39,6 +39,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => false;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
+        bool INodeWithCodeInfo.IsShareableCode => true;
+        CodeInfo INodeWithCodeInfo.CodeInfo => default;
 
         public WasmInterpreterToR2RThunkNode(NodeFactory factory, WasmSignature wasmSignature)
         {

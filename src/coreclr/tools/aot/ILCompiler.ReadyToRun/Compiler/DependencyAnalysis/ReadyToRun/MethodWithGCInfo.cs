@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature, INodeWithCodeInfo
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -103,6 +103,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             return _methodCode;
         }
+
+        bool INodeWithCodeInfo.IsShareableCode =>
+            ColdCodeNode is null
+            && _ehInfo?.Data is not { Length: > 0 }
+            && GetFuncletKinds().Length == 0;
+
+        CodeInfo INodeWithCodeInfo.CodeInfo => new(_gcInfo, _frameInfos, _coldFrameInfos, _fixups);
 
         /// <summary>
         /// This helper structure represents the "coordinates" of a single

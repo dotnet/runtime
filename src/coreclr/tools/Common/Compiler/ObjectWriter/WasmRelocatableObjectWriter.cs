@@ -141,22 +141,25 @@ namespace ILCompiler.ObjectWriter
                         }
                         case RelocType.WASM_TYPE_INDEX_LEB:
                         case RelocType.WASM_GLOBAL_INDEX_LEB:
-                        case RelocType.WASM_TABLE_INDEX_I32:
-                        case RelocType.WASM_TABLE_INDEX_I64:
-                        case RelocType.WASM_TABLE_INDEX_SLEB:
-                        case RelocType.WASM_TABLE_INDEX_REL_I32:
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
-                        case RelocType.WASM_MEMORY_ADDR_REL_SLEB when
-                            _sections[definedSymbol.SectionIndex] is WasmSection { Type: WasmSectionType.Code }:
                         {
-                            // These relocations reference a wasm structural index (function, type,
-                            // table entry, or well-known global). We self-resolve them here to
+                            // These relocations reference a Wasm structural index. We self-resolve them here to
                             // the index assigned when the symbol was registered into its index space.
                             if (!_wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol))
                             {
                                 throw new InvalidOperationException($"Symbol '{reloc.SymbolName}' was not registered. Relocation type {reloc.Type}.");
                             }
                             Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
+                            break;
+                        }
+                        case RelocType.WASM_TABLE_INDEX_I32:
+                        case RelocType.WASM_TABLE_INDEX_I64:
+                        case RelocType.WASM_TABLE_INDEX_SLEB:
+                        case RelocType.WASM_TABLE_INDEX_REL_I32:
+                        case RelocType.WASM_MEMORY_ADDR_REL_SLEB when
+                            _sections[definedSymbol.SectionIndex] is WasmSection { Type: WasmSectionType.Code }:
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, GetTableSlot(reloc.SymbolName) + addend);
                             break;
                         }
                         case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:

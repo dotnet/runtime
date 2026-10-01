@@ -3,7 +3,7 @@
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface INodeWithCodeInfo
+    public partial interface INodeWithCodeInfo
     {
         FrameInfo[] FrameInfos
         {

@@ -14,7 +14,7 @@ using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class WasmImportThunk : AssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public class WasmImportThunk : AssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode, INodeWithCodeInfo
     {
         private readonly TypeSystemContext _context;
         private readonly Import _helperCell;
@@ -82,6 +82,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => _wasmSignature.SignatureString.Contains('a');
         bool INodeWithTypeSignature.HasGenericContextArg => false;
+        bool INodeWithCodeInfo.IsShareableCode => true;
+        CodeInfo INodeWithCodeInfo.CodeInfo => default;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
