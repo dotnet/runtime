@@ -8660,7 +8660,8 @@ bool GenTree::OperRequiresAsgFlag() const
             return true;
 
         case GT_CALL:
-            return const_cast<GenTree*>(this)->HasAnyLocalDefs(JitTls::GetCompiler());
+            return AsCall()->IsOptimizingRetBufAsLocal() ||
+                   (AsCall()->IsAsync() && AsCall()->GetAsyncInfo().DefinesResumedIndicator);
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
