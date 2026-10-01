@@ -866,7 +866,7 @@ internal partial class StackWalk_1 : IStackWalk
             case StackWalkState.NativeMarker:
             {
                 TargetCodePointer ip = handle.Context.InstructionPointer;
-                HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(ip);
+                HijackKind hijackKind = GetHijackKind(ip);
                 if (hijackKind != HijackKind.None)
                 {
                     IPlatformAgnosticContext recoveredContext = RetrieveHijackedContext(handle.Context, hijackKind == HijackKind.UnhandledException);
@@ -908,7 +908,11 @@ internal partial class StackWalk_1 : IStackWalk
                     {
                         handle.FrameIter.UpdateContextFromCurrentFrame(handle.Context);
                     }
-                    if (!isActiveICF)
+                    // An active ICF is normally left current so CheckForSkippedFrames can pass it
+                    // once the walk reaches its managed caller. If the context it produced is not
+                    // managed code, nothing would ever advance past it, so step over it here to
+                    // guarantee the walk makes progress.
+                    if (!isActiveICF || !IsManaged(handle.Context.InstructionPointer, out _))
                     {
                         handle.FrameIter.Next();
                     }
@@ -1196,6 +1200,13 @@ internal partial class StackWalk_1 : IStackWalk
                 : context.TryReadRegister((int)storage.RegisterNumber, out value);
     }
 
+    // WASM has no return-address hijacking and the runtime does not advertise the Debugger
+    // contract there (see datadescriptor.inc), so there is never a hijack stub to recover from.
+    private HijackKind GetHijackKind(TargetCodePointer controlPC)
+        => _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm
+            ? HijackKind.None
+            : _target.Contracts.Debugger.GetHijackKind(controlPC);
+
     // See https://github.com/dotnet/runtime/blob/71830fdb091c9be1ad297b8649ac445af628fb81/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L659
     private TargetPointer ComputeX86FramePointer(StackDataFrameHandle handle)
     {
@@ -1218,7 +1229,7 @@ internal partial class StackWalk_1 : IStackWalk
 
         // Native marker / initial native context: RetrieveHijackedContext already returns the context
         // the stub unwinds to, so PCTAddr = hijackedContext.Esp - sizeof(DWORD).
-        HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(handle.Context.InstructionPointer);
+        HijackKind hijackKind = GetHijackKind(handle.Context.InstructionPointer);
         IPlatformAgnosticContext hijacked = RetrieveHijackedContext(handle.Context, hijackKind == HijackKind.UnhandledException);
         return new TargetPointer(hijacked.StackPointer.Value - pointerSize);
     }

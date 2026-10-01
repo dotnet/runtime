@@ -143,7 +143,11 @@ public static class CoreCLRContracts
 
         // Transitive contract accesses from the implementations above.
         Validate<IConditionalWeakTable>(registry); // IComWrappers: ComWrappers_1.cs
-        Validate<IDebugger>(registry);             // IStackWalk: StackWalk_1.cs
+        // IStackWalk: StackWalk_1.cs. Not advertised on WASM, which has no debugger hijacking.
+        if (registry.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.Wasm)
+        {
+            Validate<IDebugger>(registry);
+        }
         Validate<IPlatformMetadata>(registry);     // IAuxiliarySymbols/IPrecodeStubs: CodePointerUtils.cs, PrecodeStubs_Common.cs
         Validate<ISHash>(registry);                // ILoader: Loader_1.cs
 

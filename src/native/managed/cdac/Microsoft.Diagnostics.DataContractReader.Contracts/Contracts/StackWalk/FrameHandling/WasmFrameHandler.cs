@@ -16,7 +16,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// pointer. The base <see cref="BaseFrameHandler.HandleInlinedCallFrame"/> already reads that
 /// <c>InlinedCallFrame.CallSiteSP</c> (plus the caller return address and callee-saved frame
 /// pointer) into the three synthetic <see cref="WasmContext"/> slots, which is the common
-/// P/Invoke-boundary seeding path. The software/faulting exception frame handlers likewise read a
+/// P/Invoke-boundary seeding path; an inlined P/Invoke from R2R code instead stores a marker and is
+/// resolved from its R2R shadow frame. The software/faulting exception frame handlers likewise read a
 /// serialized <see cref="WasmContext"/> blob from the frame's <c>TargetContext</c>.
 ///
 /// Hijack frames are a debugger / GC-suspension concept that is not yet supported on WASM.
@@ -24,11 +25,31 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext> contextHolder)
     : BaseFrameHandler(target, contextHolder), IPlatformFrameHandler
 {
+    // INLINED_PINVOKE_FROM_R2R from src/coreclr/vm/frames.h. An R2R inlined P/Invoke has no native
+    // return address on WASM, so the runtime stores this marker and derives IP/SP from CallSiteSP.
+    private const ulong InlinedPInvokeFromR2R = 1;
+
     private readonly ContextHolder<WasmContext> _holder = contextHolder;
 
     public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
     {
-        base.HandleInlinedCallFrame(inlinedCallFrame);
+        if (inlinedCallFrame.CallerReturnAddress.Value == InlinedPInvokeFromR2R)
+        {
+            // Mirrors InlinedCallFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp.
+            // If no R2R virtual IP can be recovered the IP is left null (not managed code), so the
+            // stack walker steps past this frame rather than treating the marker as an address.
+            Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
+            _holder.Context.StackPointer = inlinedCallFrame.CallSiteSP;
+            _holder.Context.InstructionPointer = unwinder.GetVirtualIP(inlinedCallFrame.CallSiteSP);
+            // Root-function frame base; the funclet-aware logical frame pointer is not modeled yet.
+            _holder.Context.FramePointer = unwinder.TryGetFramePointer(inlinedCallFrame.CallSiteSP, out TargetPointer framePointer)
+                ? framePointer
+                : TargetPointer.Null;
+        }
+        else
+        {
+            base.HandleInlinedCallFrame(inlinedCallFrame);
+        }
 
         // When the frame directly above this P/Invoke transition is an InterpreterFrame, stash its
         // address in the synthetic first-argument register so the subsequent interpreter virtual
