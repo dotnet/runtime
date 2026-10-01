@@ -25,7 +25,6 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/../hostpolicy.h
     ${CMAKE_CURRENT_LIST_DIR}/../fx_definition.h
     ${CMAKE_CURRENT_LIST_DIR}/../fx_reference.h
-    ${CMAKE_CURRENT_LIST_DIR}/../roll_fwd_on_no_candidate_fx_option.h
     ${CMAKE_CURRENT_LIST_DIR}/command_line.h
     ${CMAKE_CURRENT_LIST_DIR}/corehost_init.h
     ${CMAKE_CURRENT_LIST_DIR}/fx_muxer.h
@@ -36,4 +35,3 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/sdk_info.h
     ${CMAKE_CURRENT_LIST_DIR}/sdk_resolver.h
 )
-

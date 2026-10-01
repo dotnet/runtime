@@ -4,7 +4,6 @@
 #include "json_parser.h"
 #include "pal.h"
 #include <rapidjson/writer.h>
-#include "roll_fwd_on_no_candidate_fx_option.h"
 #include "runtime_config.h"
 #include "trace.h"
 #include "utils.h"
@@ -13,17 +12,14 @@
 
 // The semantics of applying the runtimeconfig.json values follows, in the following steps from
 // first to last, where last always wins. These steps are also annotated in the code here.
-// 0) Start with the default values
-// 1) Apply the environment settings for DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX
-// 2) Apply the values in the current "runtimeOptions" section
-// 3) Apply the values in the referenced "frameworks" section
-// 4) Apply the environment settings for DOTNET_ROLL_FORWARD
-// 5) Apply the overrides (from command line or other)
+// 0) Apply the values in the current "runtimeOptions" section
+// 1) Apply the values in the referenced "frameworks" section
+// 2) Apply the environment settings for DOTNET_ROLL_FORWARD
+// 3) Apply the overrides (from command line or other)
 
 runtime_config_t::runtime_config_t()
     : m_default_settings()
     , m_override_settings()
-    , m_specified_settings(none)
     , m_is_framework_dependent(false)
     , m_valid(false)
     , m_roll_forward_to_prerelease(false)
@@ -37,9 +33,7 @@ runtime_config_t::runtime_config_t()
 }
 
 runtime_config_t::settings_t::settings_t()
-    : has_apply_patches(false)
-    , apply_patches(true)
-    , has_roll_forward(false)
+    : has_roll_forward(false)
     , roll_forward(roll_forward_option::Minor)
 {
 }
@@ -49,20 +43,6 @@ void runtime_config_t::parse(const pal::string_t& path, const pal::string_t& dev
     m_path = path;
     m_dev_path = dev_path;
     m_override_settings = override_settings;
-
-    // Step #0: start with the default values
-    m_default_settings.set_apply_patches(true);
-    roll_forward_option roll_forward = roll_forward_option::Minor;
-
-    // Step #1: set the defaults from the environment DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX (apply patches has no env. variable)
-    pal::string_t env_roll_forward_on_no_candidate_fx;
-    if (pal::getenv(_X("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX"), &env_roll_forward_on_no_candidate_fx))
-    {
-        auto val = static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(env_roll_forward_on_no_candidate_fx.c_str()));
-        roll_forward = roll_fwd_on_no_candidate_fx_to_roll_forward(val);
-    }
-
-    m_default_settings.set_roll_forward(roll_forward);
 
     // Parse the file
     m_valid = ensure_parsed();
@@ -140,7 +120,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         }
     }
 
-    // Step #2: set the defaults from the "runtimeOptions"
+    // Step #0: set the defaults from the "runtimeOptions"
     const auto& roll_forward = opts_obj.FindMember(_X("rollForward"));
     if (roll_forward != opts_obj.MemberEnd())
     {
@@ -151,32 +131,6 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
             return false;
         }
         m_default_settings.set_roll_forward(val);
-
-        if (!mark_specified_setting(specified_roll_forward))
-        {
-            return false;
-        }
-    }
-
-    const auto& apply_patches = opts_obj.FindMember(_X("applyPatches"));
-    if (apply_patches != opts_obj.MemberEnd())
-    {
-        m_default_settings.set_apply_patches(apply_patches->value.GetBool());
-        if (!mark_specified_setting(specified_roll_forward_on_no_candidate_fx_or_apply_patched))
-        {
-            return false;
-        }
-    }
-
-    const auto& roll_fwd_on_no_candidate_fx = opts_obj.FindMember(_X("rollForwardOnNoCandidateFx"));
-    if (roll_fwd_on_no_candidate_fx != opts_obj.MemberEnd())
-    {
-        auto val = static_cast<roll_fwd_on_no_candidate_fx_option>(roll_fwd_on_no_candidate_fx->value.GetInt());
-        m_default_settings.set_roll_forward(roll_fwd_on_no_candidate_fx_to_roll_forward(val));
-        if (!mark_specified_setting(specified_roll_forward_on_no_candidate_fx_or_apply_patched))
-        {
-            return false;
-        }
     }
 
     const auto& tfm = opts_obj.FindMember(_X("tfm"));
@@ -185,7 +139,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         m_tfm = tfm->value.GetString();
     }
 
-    // Step #3: read the "framework" and "frameworks" section
+    // Step #1: read the "framework" and "frameworks" section
     const auto& framework = opts_obj.FindMember(_X("framework"));
     if (framework != opts_obj.MemberEnd())
     {
@@ -236,11 +190,6 @@ namespace
         if (settings.has_roll_forward)
         {
             fx_ref.set_roll_forward(settings.roll_forward);
-        }
-
-        if (settings.has_apply_patches)
-        {
-            fx_ref.set_apply_patches(settings.apply_patches);
         }
     }
 }
@@ -296,34 +245,9 @@ bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, boo
             return false;
         }
         fx_out.set_roll_forward(val);
-        if (!mark_specified_setting(specified_roll_forward))
-        {
-            return false;
-        }
     }
 
-    const auto& apply_patches = fx_obj.FindMember(_X("applyPatches"));
-    if (apply_patches != fx_obj.MemberEnd())
-    {
-        fx_out.set_apply_patches(apply_patches->value.GetBool());
-        if (!mark_specified_setting(specified_roll_forward_on_no_candidate_fx_or_apply_patched))
-        {
-            return false;
-        }
-    }
-
-    const auto& roll_fwd_on_no_candidate_fx = fx_obj.FindMember(_X("rollForwardOnNoCandidateFx"));
-    if (roll_fwd_on_no_candidate_fx != fx_obj.MemberEnd())
-    {
-        auto val = static_cast<roll_fwd_on_no_candidate_fx_option>(roll_fwd_on_no_candidate_fx->value.GetInt());
-        fx_out.set_roll_forward(roll_fwd_on_no_candidate_fx_to_roll_forward(val));
-        if (!mark_specified_setting(specified_roll_forward_on_no_candidate_fx_or_apply_patched))
-        {
-            return false;
-        }
-    }
-
-    // Step #4: apply environment for DOTNET_ROLL_FORWARD
+    // Step #2: apply environment for DOTNET_ROLL_FORWARD
     pal::string_t env_roll_forward;
     if (pal::getenv(_X("DOTNET_ROLL_FORWARD"), &env_roll_forward))
     {
@@ -337,7 +261,7 @@ bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, boo
         fx_out.set_roll_forward(val);
     }
 
-    // Step #5: apply overrides (command line and such)
+    // Step #3: apply overrides (command line and such)
     apply_settings_to_fx_reference(m_override_settings, fx_out);
 
     return true;
@@ -460,19 +384,5 @@ void runtime_config_t::set_fx_version(pal::string_t version)
     assert(m_frameworks.size() > 0);
 
     m_frameworks[0].set_fx_version(version);
-    m_frameworks[0].set_apply_patches(false);
     m_frameworks[0].set_roll_forward(roll_forward_option::Disable);
-}
-
-bool runtime_config_t::mark_specified_setting(specified_setting setting)
-{
-    // If there's any flag set but the one we're trying to set, it's invalid
-    if (m_specified_settings & ~setting)
-    {
-        trace::error(_X("It's invalid to use both `rollForward` and one of `rollForwardOnNoCandidateFx` or `applyPatches` in the same runtime config."));
-        return false;
-    }
-
-    m_specified_settings = static_cast<specified_setting>(m_specified_settings | setting);
-    return true;
 }

@@ -17,10 +17,6 @@ public:
     {
         settings_t();
 
-        bool has_apply_patches;
-        bool apply_patches;
-        void set_apply_patches(bool value) { has_apply_patches = true; apply_patches = value; }
-
         bool has_roll_forward;
         roll_forward_option roll_forward;
         void set_roll_forward(roll_forward_option value) { has_roll_forward = true; roll_forward = value; }
@@ -48,21 +44,11 @@ private:
     std::unordered_map<pal::string_t, pal::string_t> m_properties;
     fx_reference_vector_t m_frameworks;
     fx_reference_vector_t m_included_frameworks;
-    settings_t m_default_settings;   // the default settings (Steps #0 and #1)
-    settings_t m_override_settings;  // the settings that can't be changed (Step #5)
+    settings_t m_default_settings;   // the default settings (Step #0)
+    settings_t m_override_settings;  // the settings that can't be changed (Step #3)
     std::list<pal::string_t> m_probe_paths;
 
     pal::string_t m_tfm;
-
-    // This is used to detect cases where rollForward is used together with the obsoleted
-    // rollForwardOnNoCandidateFx/applyPatches.
-    // Flags
-    enum specified_setting
-    {
-        none = 0x0,
-        specified_roll_forward = 0x1,
-        specified_roll_forward_on_no_candidate_fx_or_apply_patched = 0x2
-    } m_specified_settings;
 
     pal::string_t m_dev_path;
     pal::string_t m_path;
@@ -75,7 +61,5 @@ private:
 
     bool parse_framework(const json_parser_t::value_t& fx_obj, bool name_and_version_only, fx_reference_t& fx_out);
     bool read_framework_array(const json_parser_t::value_t& frameworks, bool name_and_version_only, fx_reference_vector_t& frameworks_out);
-
-    bool mark_specified_setting(specified_setting setting);
 };
 #endif // __RUNTIME_CONFIG_H__

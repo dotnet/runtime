@@ -4,7 +4,6 @@
 #include "pal.h"
 #include "fx_ver.h"
 #include "fx_reference.h"
-#include "roll_fwd_on_no_candidate_fx_option.h"
 
 bool fx_reference_t::is_compatible_with_higher_version(const fx_ver_t& higher_version) const
 {
@@ -29,20 +28,9 @@ bool fx_reference_t::is_compatible_with_higher_version(const fx_ver_t& higher_ve
         return false;
     }
 
-    // Verify patch roll forward
-    if (get_fx_version_number().get_patch() != higher_version.get_patch()
-        && version_compatibility_range == version_compatibility_range_t::patch
-        && apply_patches == false)
-    {
-        return false;
-    }
-
     // In here it means that either everything but pre-release part is the same, or the difference is OK
     // The roll-forward rules don't affect pre-release roll forward except when
-    //  - rollForward is Disable - in which case no roll forward should occur, and the versions must exactly match
-    //  - rollForward is LatestPatch and applyPatches=false - which would normally mean exactly the same as Disable, but
-    //    for backward compat reasons this is a special case. In this case applyPatches is ignored for pre-release versions.
-    //    So even if pre-release are different, the versions are compatible.
+    // rollForward is Disable, in which case no roll forward should occur and the versions must exactly match.
     if (version_compatibility_range == version_compatibility_range_t::exact)
     {
         // We know the versions are different since we compared 100% equality above, so they're not compatible.
@@ -69,11 +57,6 @@ void fx_reference_t::merge_roll_forward_settings_from(const fx_reference_t& from
     if (from.roll_to_highest_version)
     {
         roll_to_highest_version = from.roll_to_highest_version;
-    }
-
-    if (from.apply_patches == false)
-    {
-        apply_patches = false;
     }
 
     if (from.prefer_release)

@@ -79,9 +79,6 @@ namespace
         fx_ver_t best_match_version = start_with_version;
 
         // For Disable, there's no roll forward (in fact we should not even get here).
-        // For backward compatibility reasons we also need to consider the apply_patches setting
-        // For backward compatibility reasons the apply_patches for pre-release framework reference only applies to the patch portion of the version,
-        //   we can still roll on the pre-release part of the version even if apply_patches=false.
         // If we've found a pre-release version match, then don't apply automatic roll to latest patch.
         if (fx_ref.get_version_compatibility_range() >= version_compatibility_range_t::patch &&
             !best_match_version.is_prerelease())
@@ -108,7 +105,6 @@ namespace
                 }
 
                 if ((!release_only || !ver.is_prerelease()) &&
-                    (fx_ref.get_apply_patches() || ver.get_patch() == apply_patch_from_version.get_patch()) &&
                     ver >= apply_patch_from_version &&
                     ver.get_major() == apply_patch_from_version.get_major() &&
                     ver.get_minor() == apply_patch_from_version.get_minor())
@@ -144,9 +140,8 @@ namespace
         const fx_reference_t& fx_ref)
     {
         trace::verbose(
-            _X("Attempting FX roll forward starting from version='[%s]', apply_patches=%d, version_compatibility_range=%s, roll_to_highest_version=%d, prefer_release=%d"),
+            _X("Attempting FX roll forward starting from version='[%s]', version_compatibility_range=%s, roll_to_highest_version=%d, prefer_release=%d"),
             fx_ref.get_fx_version().c_str(),
-            fx_ref.get_apply_patches(),
             version_compatibility_range_to_string(fx_ref.get_version_compatibility_range()).c_str(),
             fx_ref.get_roll_to_highest_version(),
             fx_ref.get_prefer_release());
@@ -212,18 +207,11 @@ namespace
         append_path(&fx_dir, _X("shared"));
         append_path(&fx_dir, fx_ref.get_fx_name().c_str());
 
-        // Roll forward is disabled when:
-        //   roll_forward is set to Disable
-        //   roll_forward is set to LatestPatch AND
-        //     apply_patches is false AND
-        //     release framework reference (this is for backward compat with pre-release rolling over pre-release portion of version ignoring apply_patches)
-        //   use exact version is set (this is when --fx-version was used on the command line)
-        if ((fx_ref.get_version_compatibility_range() == version_compatibility_range_t::exact) ||
-            ((fx_ref.get_version_compatibility_range() == version_compatibility_range_t::patch) && (!fx_ref.get_apply_patches() && !fx_ref.get_fx_version_number().is_prerelease())))
+        // Roll forward is disabled when roll_forward is set to Disable or --fx-version was used on the command line.
+        if (fx_ref.get_version_compatibility_range() == version_compatibility_range_t::exact)
         {
             trace::verbose(
-                _X("Did not roll forward because apply_patches=%d, version_compatibility_range=%s chose [%s]"),
-                fx_ref.get_apply_patches(),
+                _X("Did not roll forward because version_compatibility_range=%s chose [%s]"),
                 version_compatibility_range_to_string(fx_ref.get_version_compatibility_range()).c_str(),
                 fx_ref.get_fx_version().c_str());
 
@@ -395,11 +383,6 @@ void fx_resolver_t::update_newest_references(
 
 // Processes one framework's runtime configuration.
 // For the most part this is about resolving framework references.
-// - host_info
-//     Information about the host - mainly used to determine where to search for frameworks.
-// - override_settings
-//     Framework resolution settings which will win over anything found (settings coming from command line).
-//     Passed as fx_reference_t for simplicity, the version part of that structure is ignored.
 // - config
 //     Parsed runtime configuration to process.
 // - effective_parent_fx_ref

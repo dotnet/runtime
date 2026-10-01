@@ -24,7 +24,6 @@
 #include "runtime_config.h"
 #include "sdk_info.h"
 #include "sdk_resolver.h"
-#include "roll_fwd_on_no_candidate_fx_option.h"
 #include "bundle/info.h"
 #include "install_info.h"
 
@@ -431,19 +430,6 @@ namespace
 
         runtime_config_t::settings_t override_settings;
 
-        // `Roll forward` is set to Minor (2) (roll_forward_option::Minor) by default.
-        // For backward compatibility there are two settings:
-        //  - rollForward (the new one) which has more possible values
-        //  - rollForwardOnNoCandidateFx (the old one) with only 0-Off, 1-Minor, 2-Major
-        // It can be changed through:
-        // 1. Command line argument --roll-forward or --roll-forward-on-no-candidate-fx
-        // 2. DOTNET_ROLL_FORWARD env var.
-        // 3. Runtimeconfig json file ('rollForward' or 'rollForwardOnNoCandidateFx' property in "framework" section).
-        // 4. Runtimeconfig json file ('rollForward' or 'rollForwardOnNoCandidateFx' property in a "runtimeOptions" section).
-        // 5. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var.
-        // The conflicts will be resolved by following the priority rank described above (from 1 to 5, lower number wins over higher number).
-        // The env var condition is verified in the config file processing
-
         pal::string_t roll_forward = command_line::get_option_value(opts, known_options::roll_forward, _X(""));
         if (roll_forward.length() > 0)
         {
@@ -455,21 +441,6 @@ namespace
             }
 
             override_settings.set_roll_forward(val);
-        }
-
-        pal::string_t roll_fwd_on_no_candidate_fx = command_line::get_option_value(opts, known_options::roll_forward_on_no_candidate_fx, _X(""));
-        if (roll_fwd_on_no_candidate_fx.length() > 0)
-        {
-            if (override_settings.has_roll_forward)
-            {
-                trace::error(_X("It's invalid to use both '%s' and '%s' command line options."),
-                    command_line::get_option_name(known_options::roll_forward),
-                    command_line::get_option_name(known_options::roll_forward_on_no_candidate_fx));
-                return StatusCode::InvalidArgFailure;
-            }
-
-            auto val = static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str()));
-            override_settings.set_roll_forward(roll_fwd_on_no_candidate_fx_to_roll_forward(val));
         }
 
         // Read config
@@ -490,7 +461,7 @@ namespace
             pal::string_t fx_version_specified = command_line::get_option_value(opts, known_options::fx_version, _X(""));
             if (fx_version_specified.length() > 0)
             {
-                // This will also set roll forward defaults on the ref
+                // This also disables roll forward for the framework reference.
                 app_config.set_fx_version(fx_version_specified);
             }
 
