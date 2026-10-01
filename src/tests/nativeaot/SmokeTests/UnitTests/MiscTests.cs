@@ -77,18 +77,19 @@ class MiscTests
         static void TestSzArray()
         {
             var array = new LargeStruct[ElementCount];
+            var references = new object[2 * ElementCount];
             for (int i = 0; i < array.Length; i++)
             {
-                array[i].First = MakeReference(i, 'a');
-                array[i].Second = MakeReference(i, 'A');
+                array[i].First = references[2 * i] = MakeReference(i, 'a');
+                array[i].Second = references[2 * i + 1] = MakeReference(i, 'A');
             }
 
             Compact();
 
             for (int i = 0; i < array.Length; i++)
             {
-                Check("SzArray.First", i, MakeReference(i, 'a'), array[i].First);
-                Check("SzArray.Second", i, MakeReference(i, 'A'), array[i].Second);
+                Check("SzArray.First", i, references[2 * i], array[i].First);
+                Check("SzArray.Second", i, references[2 * i + 1], array[i].Second);
             }
         }
 
@@ -97,9 +98,14 @@ class MiscTests
         {
             // Rank-2 array type materialized at run time by the type loader.
             Array array = Array.CreateInstance(typeof(LargeStruct), ElementCount, 1);
+            var references = new object[2 * ElementCount];
             for (int i = 0; i < ElementCount; i++)
             {
-                object boxed = new LargeStruct { First = MakeReference(i, 'a'), Second = MakeReference(i, 'A') };
+                object boxed = new LargeStruct
+                {
+                    First = references[2 * i] = MakeReference(i, 'a'),
+                    Second = references[2 * i + 1] = MakeReference(i, 'A')
+                };
                 array.SetValue(boxed, i, 0);
             }
 
@@ -108,8 +114,8 @@ class MiscTests
             for (int i = 0; i < ElementCount; i++)
             {
                 var element = (LargeStruct)array.GetValue(i, 0);
-                Check("MdArray.First", i, MakeReference(i, 'a'), element.First);
-                Check("MdArray.Second", i, MakeReference(i, 'A'), element.Second);
+                Check("MdArray.First", i, references[2 * i], element.First);
+                Check("MdArray.Second", i, references[2 * i + 1], element.Second);
             }
         }
 
@@ -117,9 +123,8 @@ class MiscTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static object MakeReference(int i, char tag) => new string(tag, 8 + i);
 
-        // Allocate garbage and force a blocking, compacting GC so that the element
-        // references are both scanned and relocated. Then allocate again to make any
-        // wrongly-reclaimed slot observably wrong rather than accidentally intact.
+        // Keep the original objects rooted separately so identity checks detect
+        // array references that were not updated when the objects moved.
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void Compact()
         {
@@ -129,15 +134,12 @@ class MiscTests
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
-
-            for (int i = 0; i < 1000; i++)
-                GC.KeepAlive(new string('z', 16));
         }
 
         static void Check(string which, int index, object expected, object actual)
         {
-            if (!expected.Equals(actual))
-                throw new Exception($"{which}[{index}]: got '{actual ?? "<null>"}'");
+            if (!ReferenceEquals(expected, actual))
+                throw new Exception($"{which}[{index}]: reference mismatch");
         }
     }
 }

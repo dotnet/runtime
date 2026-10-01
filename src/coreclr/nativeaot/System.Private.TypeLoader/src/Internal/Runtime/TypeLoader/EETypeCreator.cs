@@ -242,7 +242,7 @@ namespace Internal.Runtime.TypeLoader
                         // Specific-canonical templates have the same instance layout, including SZ-array elements.
                         Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
                     }
-                    Debug.Assert(pEEType->ContainsGCPointers == (cbGCDesc != 0));
+                    Debug.Assert(RuntimeAugments.GetGCDescSize(pEEType->ToRuntimeTypeHandle()) == cbGCDesc);
 
                     // Copy VTable entries from template type
                     IntPtr* pVtable = (IntPtr*)((byte*)pEEType + sizeof(MethodTable));
@@ -351,10 +351,11 @@ namespace Internal.Runtime.TypeLoader
             nint* gcDesc = (nint*)pEEType;
             nint* elementGCDesc = (nint*)elementEEType;
             // A series spanning the entire boxed payload has only the two header words subtracted.
-            if (elementEEType == null || elementGCDesc[-3] == -2 * IntPtr.Size)
+            if (elementEEType == null || elementGCDesc[-3] == -2 * sizeof(nint))
             {
+                Debug.Assert(cbGCDesc == 3 * sizeof(nint));
                 gcDesc[-3] = -baseSize;
-                gcDesc[-2] = baseSize - IntPtr.Size;
+                gcDesc[-2] = baseSize - sizeof(nint);
                 gcDesc[-1] = 1;
                 return;
             }
@@ -363,7 +364,7 @@ namespace Internal.Runtime.TypeLoader
             int series = (int)elementGCDesc[-1];
             int firstOffset = (int)elementGCDesc[-2];
             gcDesc[-1] = -series;
-            gcDesc[-2] = baseSize - 2 * IntPtr.Size + firstOffset;
+            gcDesc[-2] = baseSize - 2 * sizeof(nint) + firstOffset;
             elementGCDesc -= 2;
 
 #if TARGET_64BIT
@@ -378,11 +379,12 @@ namespace Internal.Runtime.TypeLoader
                 // The last skip wraps to the first GC pointer in the next unboxed element.
                 int nextOffset = i + 1 < series
                     ? (int)*elementGCDesc
-                    : firstOffset + elementBaseSize - 2 * IntPtr.Size;
+                    : firstOffset + elementBaseSize - 2 * sizeof(nint);
                 Debug.Assert(length > 0 && nextOffset >= offset + length);
                 *ptr-- = (ushort)(nextOffset - offset - length);
-                *ptr-- = (ushort)(length / IntPtr.Size);
+                *ptr-- = (ushort)(length / sizeof(nint));
             }
+            Debug.Assert(cbGCDesc == (byte*)gcDesc - (byte*)(ptr + 1));
         }
 
         private static int GetMdArrayGCDescSize(ArrayType arrayType, out MethodTable* elementEEType)
@@ -393,7 +395,7 @@ namespace Internal.Runtime.TypeLoader
             if (!elementType.IsValueType)
             {
                 Debug.Assert(!elementType.IsByRef);
-                return elementType.IsPointer || elementType.IsFunctionPointer ? 0 : 3 * IntPtr.Size;
+                return elementType.IsPointer || elementType.IsFunctionPointer ? 0 : 3 * sizeof(nint);
             }
 
             RuntimeTypeHandle elementHandle = elementType.GetRuntimeTypeHandle();
@@ -406,7 +408,7 @@ namespace Internal.Runtime.TypeLoader
 
             int series = (int)((nint*)elementEEType)[-1];
             Debug.Assert(series > 0);
-            return (series + 2) * IntPtr.Size;
+            return (series + 2) * sizeof(nint);
         }
 
         public static RuntimeTypeHandle CreateFunctionPointerEEType(uint hashCodeOfNewType, RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, FunctionPointerType functionPointerType)

@@ -30,7 +30,6 @@ namespace Internal.Runtime.TypeLoader
                 return s_noMetadataRuntimeInterfacesAlgorithm;
             }
 
-            type.ComputeTemplate();
             return s_nativeLayoutInterfacesAlgorithm;
         }
 

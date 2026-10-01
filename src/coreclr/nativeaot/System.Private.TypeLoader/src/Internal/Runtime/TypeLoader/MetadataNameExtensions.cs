@@ -38,9 +38,9 @@ namespace Internal.Runtime.TypeLoader
             string nspace;
             typeDefHandle.GetFullName(reader, out name, out enclosing, out nspace);
 
-            if (enclosing is not null && name is not null)
+            if (enclosing is not null)
                 return enclosing + "+" + name;
-            else if (nspace is not null && name is not null)
+            else if (nspace is not null)
                 return nspace + "." + name;
 
             return name;
