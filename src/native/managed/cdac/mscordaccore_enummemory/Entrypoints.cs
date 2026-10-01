@@ -5,7 +5,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
-using Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -32,8 +31,8 @@ internal static class Entrypoints
             EntrypointHelpers.TryGetContractDescriptorAddress(dataTarget, out TargetPointer contractAddress);
             if (contractAddress == TargetPointer.Null)
             {
-                RuntimeModuleInfo.TryReadMemory readMemory = (address, buffer) => TryReadTarget(dataTarget, address, buffer);
-                if (!RuntimeModuleInfo.TryCreate(runtimeImageBase, readMemory, out RuntimeModuleInfo module)
+                PEImageInfo.TryReadMemory readMemory = (address, buffer) => TryReadTarget(dataTarget, address, buffer);
+                if (!PEImageInfo.TryCreate(runtimeImageBase, uint.MaxValue, isMapped: true, readMemory, out PEImageInfo module)
                     || !module.TryGetExport(readMemory, "DotNetRuntimeContractDescriptor"u8, out ulong exportAddress))
                 {
                     return CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND;
