@@ -171,7 +171,7 @@ namespace Wasm.Build.Tests
         public void WasmReadyToRunProfileControlsPartialAndPgoInput(bool profileSet, bool r2r, bool expectPartial)
         {
             Configuration config = Configuration.Release;
-            const string profilePath = "profile.mibc";
+            string profilePath = Path.Combine(BuildEnvironment.TestDataPath, "ReadyToRunPartial.mibc");
             string printValueTarget = """
                 <Target Name="PrintR2RProfileFlow"
                         DependsOnTargets="_WasmCoreClrSelectR2RDirectories">
@@ -214,6 +214,31 @@ namespace Wasm.Build.Tests
                 Assert.DoesNotContain("--partial", extraArgs.Groups[1].Value);
                 Assert.Equal("", pgoFiles.Groups[1].Value);
             }
+        }
+
+        [Fact]
+        public void WasmReadyToRunProfileMustExist()
+        {
+            Configuration config = Configuration.Release;
+            const string profilePath = "missing-profile.mibc";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_r2r_missing_profile",
+                extraProperties: $"""
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    <WasmReadyToRunProfile>{profilePath}</WasmReadyToRunProfile>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                config,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: ReadyToRunTests.GetR2RBuildArgs(config)));
+
+            Assert.Contains($"WasmReadyToRunProfile '{profilePath}' does not exist.", output);
         }
 
         [Theory]

@@ -77,6 +77,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WasmCoreClrValidateReadyToRun"
           Condition="'$(PublishReadyToRun)' == 'true'"
           BeforeTargets="_WasmCoreClrSelectR2RDirectories">
+    <Error Condition="'$(WasmReadyToRunProfile)' != '' and !Exists('$(WasmReadyToRunProfile)')"
+           Text="WasmReadyToRunProfile '$(WasmReadyToRunProfile)' does not exist. Specify an existing .mibc file generated for the assemblies being published." />
     <Error Condition="'$(PublishReadyToRunComposite)' == 'true'"
            Text="PublishReadyToRunComposite is not supported for CoreCLR browser-wasm; only non-composite (per-assembly) R2R images are supported." />
     <Error Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm'"
@@ -224,11 +226,32 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WasmCoreClrConservativeR2RInputs"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
           BeforeTargets="_CreateR2RImages">
+    <PropertyGroup>
+      <_WasmReadyToRunState>Profile=$(WasmReadyToRunProfile)|ExtraArgs=$(PublishReadyToRunCrossgen2ExtraArgs)</_WasmReadyToRunState>
+      <_WasmReadyToRunStateHash>$([MSBuild]::StableStringHash('$(_WasmReadyToRunState)', 'Sha256'))</_WasmReadyToRunStateHash>
+      <_WasmReadyToRunStateDirectory>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'R2R'))</_WasmReadyToRunStateDirectory>
+      <_WasmReadyToRunStateFile>$(_WasmReadyToRunStateDirectory)browser-r2r-state-$(_WasmReadyToRunStateHash).stamp</_WasmReadyToRunStateFile>
+      <_WasmReadyToRunStateChanged Condition="!Exists('$(_WasmReadyToRunStateFile)')">true</_WasmReadyToRunStateChanged>
+    </PropertyGroup>
     <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference)" />
+      <_WasmObsoleteReadyToRunState Include="$(_WasmReadyToRunStateDirectory)browser-r2r-state-*.stamp"
+                                    Exclude="$(_WasmReadyToRunStateFile)" />
+    </ItemGroup>
+    <!-- Output timestamps can be newer than a newly written state file. Delete every batch output on a
+         state change so _CreateR2RImages cannot retain a mixture of full and partial images. -->
+    <Delete Condition="'$(_WasmReadyToRunStateChanged)' == 'true'"
+            Files="@(_ReadyToRunCompileList->'%(OutputR2RImage)');@(_ReadyToRunCompileList->'%(OutputPDBImage)')" />
+    <Delete Files="@(_WasmObsoleteReadyToRunState)" />
+    <WriteLinesToFile File="$(_WasmReadyToRunStateFile)"
+                      Lines="$(_WasmReadyToRunState)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunStateFile);@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference)" />
       <!-- crossgen2 itself, not just the JIT: an updated compiler with an unchanged JIT must still invalidate. -->
       <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
+      <FileWrites Include="$(_WasmReadyToRunStateFile)" />
     </ItemGroup>
   </Target>
 
