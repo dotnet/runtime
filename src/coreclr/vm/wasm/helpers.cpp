@@ -513,12 +513,16 @@ EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersSta
 // WasmPerformanceInstrumentation filter. Cooperative throughout; on an active sampling session it
 // anchors a managed stack walk with an InlinedCallFrame derived from the caller's shadow SP, then
 // delegates to the shared SamplingProfiler_OnSamplepoint (which owns the adaptive skip counter).
-EXTERN_C void JIT_WasmProfSamplepointImpl(uintptr_t callersStackPointer)
-{
 #if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
-    extern bool SamplingProfiler_IsActive();
-    extern void SamplingProfiler_OnSamplepoint();
+EXTERN_C bool SamplingProfiler_IsActive();
+EXTERN_C void SamplingProfiler_OnSamplepoint();
+#endif
 
+HCIMPL0(void, JIT_WasmProfSamplepoint)
+{
+    FCALL_CONTRACT;
+
+#if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
     if (!SamplingProfiler_IsActive())
         return;
 
@@ -541,24 +545,7 @@ EXTERN_C void JIT_WasmProfSamplepointImpl(uintptr_t callersStackPointer)
     UNREFERENCED_PARAMETER(callersStackPointer);
 #endif // FEATURE_PERFTRACING && PERFTRACING_DISABLE_THREADS
 }
-
-// Naked shim modeled on JIT_PollGC: publish the caller's shadow SP to the __stack_pointer global
-// before any native code runs, then restore it. The second parameter provides a scratch local.
-EXTERN_C void JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, uintptr_t scratch);
-EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_WasmProfSamplepoint(uintptr_t callersStackPointer, uintptr_t scratch)
-{
-    asm(
-        "global.get __stack_pointer\n"
-        "local.set 1\n"                 /* save previous __stack_pointer into the scratch local */
-        "local.get 0\n"                 /* callersStackPointer */
-        "global.set __stack_pointer\n"
-        "local.get 0\n"                 /* sp argument for the impl */
-        "call %[JIT_WasmProfSamplepointImpl]\n"
-        "local.get 1\n"                 /* restore previous __stack_pointer */
-        "global.set __stack_pointer\n"
-        "return\n"
-        :: [JIT_WasmProfSamplepointImpl] "i" (JIT_WasmProfSamplepointImpl));
-}
+HCIMPLEND
 
 void InitJITHelpers1()
 {

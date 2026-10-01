@@ -29,15 +29,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
-  <Target Name="_WasmCoreClrAddPerformanceInstrumentationToReadyToRun"
-          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''"
-          DependsOnTargets="_AddWasmPerformanceInstrumentationEnvironmentVariables"
-          BeforeTargets="_PrepareForReadyToRunCompilation">
-    <PropertyGroup>
-      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:WasmPerformanceInstrumentation=$(_WasmPerfInstFilter)</PublishReadyToRunCrossgen2ExtraArgs>
-    </PropertyGroup>
-  </Target>
-
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:
        publish always crossgens the whole closure, so framework and app R2R both come from obj/R2R. Only the
        dev-loop build differs - it never crossgens, so its BCL comes from the runtime pack's R2R images.
