@@ -4804,41 +4804,6 @@ GenTree::VisitResult VisitPromotedRangeLocalDefs(
 }
 
 //------------------------------------------------------------------------
-// IsEntireLocalDef: Check whether a physical local definition entirely
-// defines its local.
-//
-// Arguments:
-//   comp - the compiler instance
-//   def  - the physical definition
-//
-// Return Value:
-//   True if it does.
-//
-inline bool GenTree::IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def)
-{
-    if (OperIs(GT_STORE_LCL_VAR))
-    {
-        return true;
-    }
-
-    if (OperIs(GT_STORE_LCL_FLD))
-    {
-        return !def->IsPartialLclFld(comp);
-    }
-
-    assert(OperIs(GT_CALL));
-    GenTreeCall* call = AsCall();
-    if (def == comp->gtCallGetDefinedAsyncResumedLclAddr(call))
-    {
-        return comp->lvaLclExactSize(def->GetLclNum()) == TARGET_POINTER_SIZE;
-    }
-
-    assert(def == comp->gtCallGetDefinedRetBufLclAddr(call));
-    ValueSize storeSize(comp->typGetObjLayout(call->gtRetClsHnd)->GetSize());
-    return comp->IsEntireAccess(def->GetLclNum(), def->GetLclOffs(), storeSize);
-}
-
-//------------------------------------------------------------------------
 // VisitLocalDef: Visit the logical locals represented by one physical definition.
 //
 // Arguments:

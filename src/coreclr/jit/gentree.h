@@ -2135,8 +2135,6 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    bool IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def);
-
     template <typename TVisitor>
     VisitResult VisitLocalDef(Compiler* comp, GenTreeLclVarCommon* def, TVisitor visitor);
 
@@ -4528,6 +4526,9 @@ struct AsyncCallInfo
     // these the JIT can skip the check for a null continuation after the call
     // and suspend unconditionally.
     bool AlwaysSuspends = false;
+
+    // This async call defines a 'resumed' indicator local
+    bool DefinesResumedIndicator = false;
 
     bool NeedsToSaveAndRestoreExecutionContext() const
     {

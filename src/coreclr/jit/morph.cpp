@@ -6491,16 +6491,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         }
     }
 
-    // Mark local definitions produced by the call.
-    call->VisitCallLocalDefNodes(this, [=](GenTreeLclVarCommon* def) {
-        def->gtFlags |= GTF_VAR_DEF;
-        if (!call->IsEntireLocalDef(this, def))
-        {
-            // Model partial definitions as uses followed by definitions.
-            def->gtFlags |= GTF_VAR_USEASG;
-        }
-        return GenTree::VisitResult::Continue;
-    });
     if (call->OperRequiresAsgFlag())
     {
         call->gtFlags |= GTF_ASG;
