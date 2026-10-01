@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace Webcil;
 
@@ -38,6 +39,25 @@ public static class WasmWebcilModule
 
         int difference = left - right;
         return AddIntegers(sum, difference);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Vector128<int> OptimizedVectorVariables(Vector128<int> left, Vector128<int> right)
+    {
+        Vector128<int> sum = left + right;
+        if (sum.GetElement(0) < 0)
+        {
+            return AddVectors(sum, right);
+        }
+
+        Vector128<int> difference = left - right;
+        return AddVectors(sum, difference);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Vector128<int> AddVectors(Vector128<int> left, Vector128<int> right)
+    {
+        return left + right;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]

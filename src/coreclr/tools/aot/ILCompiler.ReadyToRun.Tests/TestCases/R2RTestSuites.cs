@@ -137,6 +137,7 @@ public class R2RTestSuites
         {
             const byte WasmI32 = 0x7F;
             const byte WasmF64 = 0x7C;
+            const byte WasmV128 = 0x7B;
             const int WasmEncodedFrameBase = 2;
             const int WasmLocalRegisterBase = 3;
 
@@ -164,13 +165,20 @@ public class R2RTestSuites
                 }
             }
 
-            // Optimized code keeps tracked variables in wasm locals.
+            // Optimized code keeps tracked variables, including vectors, in wasm locals.
             ReadyToRunMethod optimizedTrackedVariables = GetMethod(methods, "OptimizedTrackedVariables");
             RuntimeFunction optimizedRoot = GetRoot(optimizedTrackedVariables);
             WebcilImageReader.WasmFunctionInfo optimizedBody = ResolveWasmBody(reader, webcilReader, optimizedRoot);
             AssertRegisterRecord(optimizedRoot, optimizedBody, VariableType.Parameter, 0, WasmI32);
             AssertRegisterRecord(optimizedRoot, optimizedBody, VariableType.Parameter, 1, WasmI32);
             AssertRegisterRecord(optimizedRoot, optimizedBody, VariableType.Local, 0, WasmI32);
+            ReadyToRunMethod optimizedVectorVariables = GetMethod(methods, "OptimizedVectorVariables");
+            RuntimeFunction optimizedVectorRoot = GetRoot(optimizedVectorVariables);
+            WebcilImageReader.WasmFunctionInfo optimizedVectorBody =
+                ResolveWasmBody(reader, webcilReader, optimizedVectorRoot);
+            AssertRegisterRecord(optimizedVectorRoot, optimizedVectorBody, VariableType.Parameter, 0, WasmV128);
+            AssertRegisterRecord(optimizedVectorRoot, optimizedVectorBody, VariableType.Parameter, 1, WasmV128);
+            AssertRegisterRecord(optimizedVectorRoot, optimizedVectorBody, VariableType.Local, 0, WasmV128);
 
             // Unoptimized code receives parameters in wasm locals and then homes them to the frame.
             ReadyToRunMethod leafFrameLocal = GetMethod(methods, "LeafFrameLocal");
