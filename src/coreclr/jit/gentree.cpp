@@ -12186,7 +12186,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_GCPOLL:
         case GT_WASM_THROW_REF:
         case GT_WASM_JEXCEPT:
-        case GT_WASM_PROF_SAMPLEPOINT:
             m_state = -1;
             return;
 
@@ -14375,7 +14374,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_GCPOLL:
         case GT_WASM_THROW_REF:
         case GT_WASM_JEXCEPT:
-        case GT_WASM_PROF_SAMPLEPOINT:
             break;
 
         case GT_CONTINUATION_MEMBER_OFFSET:

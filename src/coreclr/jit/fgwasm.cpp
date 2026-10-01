@@ -2433,7 +2433,7 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
         for (GenTree* tree : LIR::AsRange(block))
         {
-            if (tree->IsCall())
+            if (tree->IsCall() && IsPotentialGCSafePoint(tree))
             {
                 // For any ref/byref values live at the point of a call, spill them into pinned slots
                 //  on the stack where the GC can see them so it won't move them.
@@ -3488,34 +3488,6 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     }
 }
 
-// Enumerates direct control-flow successors without implicit EH edges.
-class WasmProfSuccessorEnumerator
-{
-    BasicBlock* m_block;
-    unsigned    m_nextSucc = 0;
-
-public:
-    WasmProfSuccessorEnumerator(Compiler* /* comp */, BasicBlock* block, const bool /* useProfile */ = false)
-        : m_block(block)
-    {
-    }
-
-    BasicBlock* Block()
-    {
-        return m_block;
-    }
-
-    BasicBlock* NextSuccessor()
-    {
-        if (m_nextSucc >= m_block->NumSucc())
-        {
-            return nullptr;
-        }
-
-        return m_block->GetSucc(m_nextSucc++);
-    }
-};
-
 //-----------------------------------------------------------------------------
 // fgWasmProfInstrument: insert EventPipe CPU-sampling samplepoints
 //
@@ -3529,10 +3501,9 @@ public:
 //   WasmPerformanceInstrumentation MethodSet filter (same key the interpreter
 //   uses, so both engines share the filter and the runtime skip counter).
 //
-//   Each samplepoint is a GT_WASM_PROF_SAMPLEPOINT leaf that codegen lowers to a
-//   call to CORINFO_HELP_WASM_PROF_SAMPLEPOINT. We run just before fgWasmVirtualIP
-//   so the per-block Virtual IP store is inserted ahead of the samplepoint, giving
-//   the cooperative stack walk a correct Virtual IP for the sampled frame.
+//   Each samplepoint is a call to CORINFO_HELP_WASM_PROF_SAMPLEPOINT. The later
+//   fgWasmVirtualIP phase inserts its per-block Virtual IP store ahead of the
+//   samplepoint, giving the cooperative stack walk a correct Virtual IP.
 //
 PhaseStatus Compiler::fgWasmProfInstrument()
 {
@@ -3546,65 +3517,46 @@ PhaseStatus Compiler::fgWasmProfInstrument()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Insert a samplepoint at the beginning of a block. Because fgWasmVirtualIP runs
-    // later and also inserts at the beginning, its Virtual IP store will precede the samplepoint.
     auto insertSamplepoint = [this](BasicBlock* block) {
-        GenTree* const samplepoint = new (this, GT_WASM_PROF_SAMPLEPOINT) GenTree(GT_WASM_PROF_SAMPLEPOINT, TYP_VOID);
-        LIR::AsRange(block).InsertAtBeginning(samplepoint);
+        GenTree* samplepoint = gtNewHelperCallNode(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, TYP_VOID);
+        samplepoint          = fgMorphCall(samplepoint->AsCall());
+        gtSetEvalOrder(samplepoint);
+        LIR::AsRange(block).InsertAtBeginning(LIR::SeqTree(this, samplepoint));
     };
 
     unsigned samplepointsAdded = 0;
 
-    // Method entry.
-    insertSamplepoint(fgFirstBB);
-    samplepointsAdded++;
-
-    // Loop back-edges: a DFS back edge (source -> target where target is an
-    // ancestor still on the DFS stack) identifies target as a loop header.
-    // We sample at each unique loop header, which executes on every iteration.
+    // A DFS back edge identifies its ancestor target as a loop header. Sample at
+    // every unique loop header, including loops formed through EH flow.
     // Unlike fgHasCycleWithoutGCSafePoint we do NOT skip BBF_GC_SAFE_POINT blocks:
     // the framework is not instrumented, so a loop calling only BCL methods would
     // otherwise never sample.
-    BitVecTraits traits(fgBBNumMax + 1, this);
-    BitVec       onStack(BitVecOps::MakeEmpty(&traits));
-    BitVec       headers(BitVecOps::MakeEmpty(&traits));
-    unsigned*    preorderNums = new (this, CMK_DepthFirstSearch) unsigned[fgBBNumMax + 1];
+    FlowGraphDfsTree* const dfsTree = fgComputeDfs();
+    BitVecTraits            traits  = dfsTree->PostOrderTraits();
+    BitVec                  samplepointBlocks(BitVecOps::MakeEmpty(&traits));
 
-    auto visitPreorder = [&](BasicBlock* block, unsigned preorderNum) {
-        preorderNums[block->bbNum] = preorderNum;
-        BitVecOps::AddElemD(&traits, onStack, block->bbNum);
-    };
+    // Method entry.
+    BitVecOps::AddElemD(&traits, samplepointBlocks, fgFirstBB->bbPostorderNum);
 
-    auto visitPostorder = [&](BasicBlock* block, unsigned) {
-        BitVecOps::RemoveElemD(&traits, onStack, block->bbNum);
-    };
-
-    auto visitEdge = [&](BasicBlock* block, BasicBlock* succ) {
-        if ((preorderNums[succ->bbNum] <= preorderNums[block->bbNum]) &&
-            BitVecOps::IsMember(&traits, onStack, succ->bbNum))
-        {
-            BitVecOps::AddElemD(&traits, headers, succ->bbNum);
-        }
-    };
-
-    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_DepthFirstSearch));
-    for (BasicBlock* const block : Blocks())
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
     {
-        entryBlocks.push_back(block);
+        BasicBlock* const source = dfsTree->GetPostOrder(i);
+        source->VisitAllSuccs(this, [&](BasicBlock* target) {
+            assert(dfsTree->Contains(target));
+            if (dfsTree->IsAncestor(target, source))
+            {
+                BitVecOps::AddElemD(&traits, samplepointBlocks, target->bbPostorderNum);
+            }
+
+            return BasicBlockVisit::Continue;
+        });
     }
 
-    fgRunDfs<WasmProfSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge)>(
-        visitPreorder, visitPostorder, visitEdge, entryBlocks);
-
-    for (BasicBlock* const block : Blocks())
-    {
-        // fgFirstBB already got an entry samplepoint above.
-        if ((block != fgFirstBB) && BitVecOps::IsMember(&traits, headers, block->bbNum))
-        {
-            insertSamplepoint(block);
-            samplepointsAdded++;
-        }
-    }
+    BitVecOps::VisitBits(&traits, samplepointBlocks, [&](unsigned postorderNum) {
+        insertSamplepoint(dfsTree->GetPostOrder(postorderNum));
+        samplepointsAdded++;
+        return true;
+    });
 
     JITDUMP("Added %u Wasm profiler samplepoint(s)\n", samplepointsAdded);
     return (samplepointsAdded > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;

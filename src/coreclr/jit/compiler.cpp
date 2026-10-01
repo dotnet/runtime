@@ -5018,6 +5018,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform any strongly connected components into reducible flow.
     //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
+
+    // Insert EventPipe CPU-sampling samplepoints before lowering.
+    //
+    DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, &Compiler::fgWasmProfInstrument);
 #endif
 
     // Assign registers to variables, etc.
@@ -5044,11 +5048,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
 #ifdef TARGET_WASM
-    // Insert EventPipe CPU-sampling samplepoints before the Virtual IP phase, so the
-    // per-block Virtual IP stores land ahead of each samplepoint.
-    //
-    DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, &Compiler::fgWasmProfInstrument);
-
     // Determine if a Virtual IP is needed and add code as needed to
     // keep the Virtual IP updated.
     //
