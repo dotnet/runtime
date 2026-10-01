@@ -3,7 +3,6 @@
 //
 
 #include "common.h"
-#include <minipal/time.h>
 
 #include "mscoree.h"
 #include "corhost.h"
@@ -237,8 +236,33 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
         return TRUE;
     }
 
-    _ASSERTE(CALLER_LIMITS_SPINNING == 0);
-    return minipal_switch_to_thread(dwSwitchCount);
+    // In deciding when to insert sleeps, we wait until we have been spinning
+    // for a long time and then always sleep.  The former is to let short perf-critical
+    // __SwitchToThread loops avoid context switches.  The latter is to ensure
+    // that if many threads are spinning waiting for a lower-priority thread
+    // to run that they will eventually all be asleep at the same time.
+    //
+    // The specific values are derived from the NDP 2.0 SP1 fix: it waits for
+    // 8 million cycles of __SwitchToThread calls where each takes ~300-500,
+    // which means we should wait in the neighborhood of 25000 calls.
+    //
+    // As of early 2011, ARM CPUs are much slower, so we need a lower threshold.
+    // The following two values appear to yield roughly equivalent spin times
+    // on their respective platforms.
+    //
+#ifdef TARGET_ARM
+    #define SLEEP_START_THRESHOLD (5 * 1024)
+#else
+    #define SLEEP_START_THRESHOLD (32 * 1024)
+#endif
+
+    _ASSERTE(CALLER_LIMITS_SPINNING < SLEEP_START_THRESHOLD);
+    if (dwSwitchCount >= SLEEP_START_THRESHOLD)
+    {
+        ClrSleepEx(1, FALSE);
+    }
+
+    return SwitchToThread();
 }
 
 // Locking routines supplied by the EE to the other DLLs of the CLR.  In a _DEBUG
