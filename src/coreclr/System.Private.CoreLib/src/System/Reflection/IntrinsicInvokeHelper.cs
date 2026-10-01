@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -26,7 +25,7 @@ namespace System.Reflection
         {
             internal IntPtr Thunk;
             internal IntPtr FunctionPointer;
-            internal Type? DeclaringType;
+            internal RuntimeType? DeclaringType;
             // Counts down from the specialization threshold to zero. A plain decrement is used instead of
             // Interlocked.Decrement: this is a heuristic trigger, so occasionally dropped decrements under
             // concurrent invocation are acceptable and simply delay specialization slightly.
@@ -55,7 +54,7 @@ namespace System.Reflection
                     return InvokeEmitted(ref strategy, ref invokeFunc, method, obj, args, backwardsCompat);
                 }
 
-                var thunk = (delegate*<IntPtr, object?, IntPtr*, Type?, object?>)Volatile.Read(ref state.Thunk);
+                var thunk = (delegate*<IntPtr, object?, IntPtr*, RuntimeType?, object?>)Volatile.Read(ref state.Thunk);
                 if (thunk is null)
                 {
                     if (!TryGetShape(method, argumentTypes, out thunk, out IntPtr functionPointer))
@@ -64,13 +63,19 @@ namespace System.Reflection
                     }
 
                     state.FunctionPointer = functionPointer;
-                    state.DeclaringType = method.DeclaringType;
+                    state.DeclaringType = (RuntimeType?)method.DeclaringType;
                     state.InvocationsUntilSpecialization = GetSpecializationThreshold(method, functionPointer);
                     strategy |= StrategyDetermined;
                     Volatile.Write(ref state.Thunk, (IntPtr)thunk);
                 }
 
                 if (RuntimeFeature.IsDynamicCodeCompiled &&
+                    // ForceEmitInvoke alone never reaches here: MethodInvokerCommon.Initialize pre-selects the
+                    // emit-only strategy at construction, which replaces the shared-thunk delegate with a plain
+                    // emitted invoker before this method is ever entered. The one case where ForceEmitInvoke can
+                    // still be true here is when both switches are set simultaneously (a contradictory
+                    // configuration); Initialize then falls back to the default/undetermined strategy, so
+                    // invocation proceeds through the shared thunk and both switches remain readable below.
                     !(LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke) &&
                     --state.InvocationsUntilSpecialization <= 0)
                 {
@@ -82,7 +87,7 @@ namespace System.Reflection
                 if (target == IntPtr.Zero)
                 {
                     // The same MethodInfo can be invoked on different implementations.
-                    target = RuntimeMethodHandle.GetVirtualFunctionPointer((RuntimeMethodInfo)method, obj!);
+                    target = RuntimeMethodHandle.GetVirtualFunctionPointer((RuntimeMethodInfo)method, state.DeclaringType!, obj!);
                 }
 
                 object? result = thunk(target, obj, args, state.DeclaringType);
@@ -126,7 +131,7 @@ namespace System.Reflection
         private static unsafe bool TryGetShape(
             MethodBase method,
             ReadOnlySpan<RuntimeType> argumentTypes,
-            out delegate*<IntPtr, object?, IntPtr*, Type?, object?> thunk,
+            out delegate*<IntPtr, object?, IntPtr*, RuntimeType?, object?> thunk,
             out IntPtr functionPointer)
         {
             unsafe
@@ -249,7 +254,7 @@ namespace System.Reflection
         private static Type GetInputType(RuntimeType type) =>
             type.IsActualEnum ? type.GetEnumUnderlyingType() : type;
 
-        private static unsafe delegate*<IntPtr, object?, IntPtr*, Type?, object?> ClassifyConstructor(ReadOnlySpan<RuntimeType> arguments)
+        private static unsafe delegate*<IntPtr, object?, IntPtr*, RuntimeType?, object?> ClassifyConstructor(ReadOnlySpan<RuntimeType> arguments)
         {
             unsafe
             {
@@ -292,7 +297,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe delegate*<IntPtr, object?, IntPtr*, Type?, object?> ClassifyStaticReferenceArguments(int count, Type returnType)
+        private static unsafe delegate*<IntPtr, object?, IntPtr*, RuntimeType?, object?> ClassifyStaticReferenceArguments(int count, Type returnType)
         {
             unsafe
             {
@@ -324,7 +329,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe delegate*<IntPtr, object?, IntPtr*, Type?, object?> ClassifyInstanceReferenceArguments(int count, Type returnType)
+        private static unsafe delegate*<IntPtr, object?, IntPtr*, RuntimeType?, object?> ClassifyInstanceReferenceArguments(int count, Type returnType)
         {
             unsafe
             {
@@ -382,7 +387,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe delegate*<IntPtr, object?, IntPtr*, Type?, object?> ClassifyInstancePrimitive(Type type)
+        private static unsafe delegate*<IntPtr, object?, IntPtr*, RuntimeType?, object?> ClassifyInstancePrimitive(Type type)
         {
             unsafe
             {
@@ -407,7 +412,7 @@ namespace System.Reflection
         // Classifiers return a fn pointer (not invoking it) so the JIT doesn't pull thunks into
         // the classifier's compiled body.
 
-        private static unsafe delegate*<IntPtr, object?, IntPtr*, Type?, object?> ClassifyStatic0Return(Type returnType)
+        private static unsafe delegate*<IntPtr, object?, IntPtr*, RuntimeType?, object?> ClassifyStatic0Return(Type returnType)
         {
             unsafe
             {
@@ -436,7 +441,7 @@ namespace System.Reflection
 
         // Per-shape thunks. JIT compiles only the ones used.
 
-        private static unsafe object? Static_Void_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Void_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -445,7 +450,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Bool_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Bool_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -453,7 +458,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Byte_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Byte_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -461,7 +466,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_SByte_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_SByte_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -469,7 +474,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Char_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Char_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -477,7 +482,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Short_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Short_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -485,7 +490,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_UShort_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_UShort_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -493,7 +498,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Int_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Int_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -501,7 +506,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_UInt_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_UInt_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -509,7 +514,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Long_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Long_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -517,7 +522,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_ULong_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_ULong_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -525,7 +530,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Float_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Float_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -533,7 +538,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Double_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Double_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -541,7 +546,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_NInt_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_NInt_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -549,7 +554,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_NUInt_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_NUInt_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -557,7 +562,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Object_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        private static unsafe object? Static_Object_0(IntPtr fn, object? _, IntPtr* __, RuntimeType? ___)
         {
             unsafe
             {
@@ -565,7 +570,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Void_1Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Void_1Obj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -576,7 +581,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Object_1Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Object_1Obj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -586,7 +591,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Void_2Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Void_2Obj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -599,7 +604,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Object_2Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Object_2Obj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -609,7 +614,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Object_3Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Object_3Obj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -619,7 +624,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Object_4Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Object_4Obj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -629,7 +634,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Void_3Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Void_3Obj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -640,7 +645,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Void_4Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Void_4Obj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -651,7 +656,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Object_Int(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Object_Int(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -659,7 +664,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Static_Bool_ObjByRefObj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        private static unsafe object? Static_Bool_ObjByRefObj(IntPtr fn, object? _, IntPtr* args, RuntimeType? __)
         {
             unsafe
             {
@@ -669,7 +674,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Object_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Object_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -678,7 +683,7 @@ namespace System.Reflection
         }
 
 #pragma warning disable CA1859 // These thunks must match the shared object-returning function-pointer signature.
-        private static unsafe object? Instance_Bool_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Bool_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -686,7 +691,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Byte_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Byte_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -694,7 +699,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_SByte_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_SByte_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -702,7 +707,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Char_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Char_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -710,7 +715,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Short_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Short_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -718,7 +723,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_UShort_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_UShort_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -726,7 +731,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Int_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Int_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -734,7 +739,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_UInt_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_UInt_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -742,7 +747,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Long_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Long_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -750,7 +755,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_ULong_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_ULong_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -758,7 +763,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Float_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Float_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -766,7 +771,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Double_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Double_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -774,7 +779,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_NInt_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_NInt_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -782,7 +787,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_NUInt_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_NUInt_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -790,7 +795,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Int_2Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Int_2Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -801,7 +806,7 @@ namespace System.Reflection
         }
 #pragma warning restore CA1859
 
-        private static unsafe object? Instance_Object_1Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Object_1Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -811,7 +816,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Object_2Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Object_2Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -821,7 +826,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Object_3Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Object_3Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -831,7 +836,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Object_4Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Object_4Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -841,7 +846,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_0(IntPtr fn, object? obj, IntPtr* _, Type? __)
+        private static unsafe object? Instance_Void_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? __)
         {
             unsafe
             {
@@ -850,7 +855,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_1Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_1Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -861,7 +866,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_2Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_2Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -872,7 +877,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_3Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_3Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -883,7 +888,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_4Obj(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_4Obj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -894,7 +899,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_Bool(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_Bool(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -903,7 +908,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_Byte(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_Byte(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -912,7 +917,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_SByte(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_SByte(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -921,7 +926,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_Char(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_Char(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -930,7 +935,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_Short(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_Short(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -939,7 +944,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_UShort(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_UShort(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -948,7 +953,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_Int(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_Int(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -957,7 +962,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_UInt(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_UInt(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -966,7 +971,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_Long(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_Long(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -975,7 +980,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_ULong(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_ULong(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -984,7 +989,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_Float(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_Float(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -993,7 +998,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_Double(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_Double(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -1002,7 +1007,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_NInt(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_NInt(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -1011,7 +1016,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_NUInt(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_NUInt(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -1020,7 +1025,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Instance_Void_FloatFloatFloatInt(IntPtr fn, object? obj, IntPtr* args, Type? _)
+        private static unsafe object? Instance_Void_FloatFloatFloatInt(IntPtr fn, object? obj, IntPtr* args, RuntimeType? _)
         {
             unsafe
             {
@@ -1037,16 +1042,14 @@ namespace System.Reflection
         //
         // This method unifies the two paths so our shared constructor thunks will always have a "this" instance
         // when they go to invoke the constructor.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "Caller anchors the ctor MethodBase, keeping its type reachable.")]
-        private static object GetConstructorInstance(object? obj, Type? declaringType)
+        private static object GetConstructorInstance(object? obj, RuntimeType? declaringType)
         {
             Debug.Assert(declaringType != typeof(string));
             Debug.Assert(!declaringType!.IsArray);
-            return obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
+            return obj ?? declaringType!.GetUninitializedObject();
         }
 
-        private static unsafe object? Ctor_0(IntPtr fn, object? obj, IntPtr* _, Type? declaringType)
+        private static unsafe object? Ctor_0(IntPtr fn, object? obj, IntPtr* _, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1056,7 +1059,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_1(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_1(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1071,7 +1074,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_2(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_2(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1087,7 +1090,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_3(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_3(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1104,7 +1107,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_4(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_4(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1114,7 +1117,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_5(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_5(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1127,7 +1130,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_6(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_6(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1140,7 +1143,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_7(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_7(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1153,7 +1156,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_8(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_8(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1166,7 +1169,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_Bool(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_Bool(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1176,7 +1179,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_Int(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_Int(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1186,7 +1189,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_Long(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_Long(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1196,7 +1199,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_IntInt(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_IntInt(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1206,7 +1209,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_LongLong(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_LongLong(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1216,7 +1219,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_ObjInt(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_ObjInt(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1228,7 +1231,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_ObjIntObjObj(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_ObjIntObjObj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1241,7 +1244,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_ObjObjBoolObj(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_ObjObjBoolObj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {
@@ -1254,7 +1257,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe object? Ctor_ObjObjObjBoolObj(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        private static unsafe object? Ctor_ObjObjObjBoolObj(IntPtr fn, object? obj, IntPtr* args, RuntimeType? declaringType)
         {
             unsafe
             {

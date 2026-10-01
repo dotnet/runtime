@@ -1100,9 +1100,8 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetVirtualFunctionPointer")]
         private static partial IntPtr GetVirtualFunctionPointer(RuntimeMethodHandleInternal method, QCallTypeHandle declaringType, ObjectHandleOnStack target);
 
-        internal static IntPtr GetVirtualFunctionPointer(RuntimeMethodInfo method, object target)
+        internal static IntPtr GetVirtualFunctionPointer(RuntimeMethodInfo method, RuntimeType declaringType, object target)
         {
-            RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
             return GetVirtualFunctionPointer(IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref declaringType),
                 ObjectHandleOnStack.Create(ref target));
         }
