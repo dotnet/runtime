@@ -499,6 +499,7 @@ public class Application {
 
 
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134994", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
     [Fact]
     public static void TestEntryPoint()
     {
