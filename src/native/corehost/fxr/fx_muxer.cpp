@@ -620,7 +620,7 @@ namespace
         if (rc != StatusCode::Success)
             return rc;
 
-        const runtime_config_t app_config = app->get_runtime_config();
+        const runtime_config_t& app_config = app->get_runtime_config();
         if (!app_config.get_is_framework_dependent())
         {
             trace::error(_X("Initialization for self-contained components is not supported"));
@@ -662,7 +662,7 @@ namespace
         if (rc != StatusCode::Success)
             return rc;
 
-        const runtime_config_t app_config = app.get_runtime_config();
+        const runtime_config_t& app_config = app.get_runtime_config();
         if (!app_config.get_is_framework_dependent())
         {
             trace::error(_X("Initialization for self-contained components is not supported"));

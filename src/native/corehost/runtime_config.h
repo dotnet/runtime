@@ -38,7 +38,7 @@ public:
     void set_fx_version(pal::string_t version);
 
 private:
-    bool ensure_parsed(); //todo: const runtime_config_t* defaults
+    bool ensure_parsed();
     bool ensure_dev_config_parsed();
 
     std::unordered_map<pal::string_t, pal::string_t> m_properties;
