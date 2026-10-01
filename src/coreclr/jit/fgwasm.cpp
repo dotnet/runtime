@@ -3488,6 +3488,34 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     }
 }
 
+// Enumerates direct control-flow successors without implicit EH edges.
+class WasmProfSuccessorEnumerator
+{
+    BasicBlock* m_block;
+    unsigned    m_nextSucc = 0;
+
+public:
+    WasmProfSuccessorEnumerator(Compiler* /* comp */, BasicBlock* block, const bool /* useProfile */ = false)
+        : m_block(block)
+    {
+    }
+
+    BasicBlock* Block()
+    {
+        return m_block;
+    }
+
+    BasicBlock* NextSuccessor()
+    {
+        if (m_nextSucc >= m_block->NumSucc())
+        {
+            return nullptr;
+        }
+
+        return m_block->GetSucc(m_nextSucc++);
+    }
+};
+
 //-----------------------------------------------------------------------------
 // fgWasmProfInstrument: insert EventPipe CPU-sampling samplepoints
 //
@@ -3538,58 +3566,35 @@ PhaseStatus Compiler::fgWasmProfInstrument()
     // the framework is not instrumented, so a loop calling only BCL methods would
     // otherwise never sample.
     BitVecTraits traits(fgBBNumMax + 1, this);
-    BitVec       visited(BitVecOps::MakeEmpty(&traits));
     BitVec       onStack(BitVecOps::MakeEmpty(&traits));
     BitVec       headers(BitVecOps::MakeEmpty(&traits));
+    unsigned*    preorderNums = new (this, CMK_DepthFirstSearch) unsigned[fgBBNumMax + 1];
 
-    struct DfsFrame
-    {
-        BasicBlock* block;
-        unsigned    nextSucc;
+    auto visitPreorder = [&](BasicBlock* block, unsigned preorderNum) {
+        preorderNums[block->bbNum] = preorderNum;
+        BitVecOps::AddElemD(&traits, onStack, block->bbNum);
     };
 
-    ArrayStack<DfsFrame> stack(getAllocator(CMK_ArrayStack));
+    auto visitPostorder = [&](BasicBlock* block, unsigned) {
+        BitVecOps::RemoveElemD(&traits, onStack, block->bbNum);
+    };
 
-    for (BasicBlock* const start : Blocks())
+    auto visitEdge = [&](BasicBlock* block, BasicBlock* succ) {
+        if ((preorderNums[succ->bbNum] <= preorderNums[block->bbNum]) &&
+            BitVecOps::IsMember(&traits, onStack, succ->bbNum))
+        {
+            BitVecOps::AddElemD(&traits, headers, succ->bbNum);
+        }
+    };
+
+    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_DepthFirstSearch));
+    for (BasicBlock* const block : Blocks())
     {
-        if (BitVecOps::IsMember(&traits, visited, start->bbNum))
-        {
-            continue;
-        }
-
-        BitVecOps::AddElemD(&traits, visited, start->bbNum);
-        BitVecOps::AddElemD(&traits, onStack, start->bbNum);
-        stack.Push(DfsFrame{start, 0});
-
-        while (stack.Height() > 0)
-        {
-            DfsFrame&         top      = stack.TopRef();
-            BasicBlock* const block    = top.block;
-            const unsigned    numSuccs = block->NumSucc();
-
-            if (top.nextSucc < numSuccs)
-            {
-                BasicBlock* const succ = block->GetSucc(top.nextSucc++);
-
-                if (BitVecOps::IsMember(&traits, onStack, succ->bbNum))
-                {
-                    // Back edge: succ is a loop header.
-                    BitVecOps::AddElemD(&traits, headers, succ->bbNum);
-                }
-                else if (!BitVecOps::IsMember(&traits, visited, succ->bbNum))
-                {
-                    BitVecOps::AddElemD(&traits, visited, succ->bbNum);
-                    BitVecOps::AddElemD(&traits, onStack, succ->bbNum);
-                    stack.Push(DfsFrame{succ, 0});
-                }
-            }
-            else
-            {
-                BitVecOps::RemoveElemD(&traits, onStack, block->bbNum);
-                stack.Pop();
-            }
-        }
+        entryBlocks.push_back(block);
     }
+
+    fgRunDfs<WasmProfSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge)>(
+        visitPreorder, visitPostorder, visitEdge, entryBlocks);
 
     for (BasicBlock* const block : Blocks())
     {
