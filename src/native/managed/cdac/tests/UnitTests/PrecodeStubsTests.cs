@@ -543,9 +543,19 @@ public class PrecodeStubsTests
         Assert.Equal(unreadableAddress, actual);
     }
 
+    public static IEnumerable<object[]> PortableEntryPointVersions()
+    {
+        foreach (object[] data in new MockTarget.StdArch())
+        {
+            // c2 is advertised with portable entry points; c1 covers runtimes built before it existed.
+            yield return [data[0], "c2"];
+            yield return [data[0], "c1"];
+        }
+    }
+
     [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetMethodDescFromStubAddress_PortableEntryPoint_ReturnsOwningMethodDesc(MockTarget.Architecture arch)
+    [MemberData(nameof(PortableEntryPointVersions))]
+    public void GetMethodDescFromStubAddress_PortableEntryPoint_ReturnsOwningMethodDesc(MockTarget.Architecture arch, string contractVersion)
     {
         MockMemorySpace.Builder builder = new(new TargetTestHelpers(arch));
         TargetTestHelpers helpers = builder.TargetTestHelpers;
@@ -572,7 +582,7 @@ public class PrecodeStubsTests
             .AddGlobals((Constants.Globals.FeaturePortableEntrypoints, 1ul))
             .AddMockContract(platformMetadata)
             .AddContract<IFeatureFlags>(version: "c1")
-            .AddContract<IPrecodeStubs>(version: "c1")
+            .AddContract<IPrecodeStubs>(version: contractVersion)
             .Build();
 
         IPrecodeStubs precodeStubs = target.Contracts.PrecodeStubs;

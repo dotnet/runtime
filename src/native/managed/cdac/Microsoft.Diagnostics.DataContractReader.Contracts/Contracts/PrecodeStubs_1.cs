@@ -113,9 +113,6 @@ internal sealed class PrecodeStubs_1 : PrecodeStubsCommon<PrecodeStubs_1_Impl>
     public override TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(
         TargetCodePointer entryPoint)
     {
-        if (UsesPortableEntryPoints)
-            return entryPoint;
-
         try
         {
             TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);

@@ -32,14 +32,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation> : IPrecodeStubs w
 {
     private readonly Target _target;
     private readonly CodePointerFlags _codePointerFlags;
-    private readonly bool _portableEntryPoints;
-    private readonly Data.PrecodeMachineDescriptor? _machineDescriptor;
-
-    // Not available with portable entry points: the runtime has no precode stubs to describe.
-    internal Data.PrecodeMachineDescriptor MachineDescriptor
-        => _machineDescriptor ?? throw new InvalidOperationException("Precode stubs are not used with portable entry points.");
-
-    protected bool UsesPortableEntryPoints => _portableEntryPoints;
+    internal readonly Data.PrecodeMachineDescriptor MachineDescriptor;
 
     protected Target Target => _target;
 
@@ -150,22 +143,13 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation> : IPrecodeStubs w
     {
         _target = target;
         IPlatformMetadata pm = target.Contracts.PlatformMetadata;
-        _portableEntryPoints = target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints);
-        if (!_portableEntryPoints)
-        {
-            TargetPointer descAddr = pm.GetPrecodeMachineDescriptor();
-            _machineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(descAddr);
-        }
+        TargetPointer descAddr = pm.GetPrecodeMachineDescriptor();
+        MachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(descAddr);
         _codePointerFlags = pm.GetCodePointerFlags();
     }
 
     TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)
     {
-        // Mirrors MethodDesc::GetMethodDescFromPrecode: with FEATURE_PORTABLE_ENTRYPOINTS the
-        // entry point is a PortableEntryPoint that records its owning MethodDesc.
-        if (_portableEntryPoints)
-            return _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entryPoint.AsTargetPointer).MethodDesc;
-
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 
         return precode.GetMethodDesc(_target, MachineDescriptor);

@@ -55,7 +55,6 @@ _None._
 
 | Contract Name |
 | --- |
-| `FeatureFlags` |
 | `PlatformMetadata` |
 <!-- END GENERATED: usage contract=PrecodeStubs version=c1 -->
 
@@ -127,8 +126,6 @@ registers) into an address. On other architectures applying the mask is a no-op.
 ```
 
 ### `MethodDescFromStubAddress`
-
-When the `FeatureFlags` contract reports `PortableEntrypoints` (for example on WASM), the runtime has no precode stubs and does not describe `PrecodeMachineDescriptor`. Every entry point is a `PortableEntryPoint`, so `GetMethodDescFromStubAddress` returns its `MethodDesc` field, matching native `MethodDesc::GetMethodDescFromPrecode`. `GetInterpreterCodeFromInterpreterPrecodeIfPresent` returns the entry point unchanged, and `GetPrecodeEntryPointFromInteriorAddress` is not supported.
 
 ```csharp
     internal enum KnownPrecodeType
@@ -310,3 +307,34 @@ computes the entry point of the precode.
         return new TargetPointer(entryPointAddress);
     }
 ```
+
+## Version 2
+
+<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c2 -->
+### Data descriptors used
+
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `PortableEntryPoint` | `MethodDesc` | `pointer` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=PrecodeStubs version=c2 -->
+
+Version 2 is advertised by runtimes built with `FEATURE_PORTABLE_ENTRYPOINTS` (for example WebAssembly). Those runtimes have no executable precode stubs and do not describe `PrecodeMachineDescriptor`: every entry point is a `PortableEntryPoint` that records its owning `MethodDesc`. Runtimes with portable entry points that were built before Version 2 existed advertise Version 1; readers serve them with the Version 2 algorithm when the `FeatureFlags` contract reports `PortableEntrypoints`.
+
+```csharp
+    // Mirrors the FEATURE_PORTABLE_ENTRYPOINTS path of MethodDesc::GetMethodDescFromPrecode.
+    TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)
+    {
+        Data.PortableEntryPoint portableEntryPoint = // read PortableEntryPoint at entryPoint
+        return portableEntryPoint.MethodDesc;
+    }
+```
+
+There are no interpreter precodes, so `GetInterpreterCodeFromInterpreterPrecodeIfPresent` returns the entry point unchanged. `GetPrecodeEntryPointFromInteriorAddress` is not supported.
