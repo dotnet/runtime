@@ -1046,6 +1046,22 @@ JS_ENGINES = [NODE_JS]
   </PropertyGroup>
 
   <!-- General targets -->
+  <Target Name="_ValidateNode406Toolchain"
+          AfterTargets="BuildMono"
+          Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(ProvisionEmscriptenOnly)' != 'true'">
+    <PropertyGroup>
+      <_NodeValidationNpmCli>$(EMSDK_PATH)node/lib/node_modules/npm/bin/npm-cli.js</_NodeValidationNpmCli>
+      <_NodeValidationNpmCli Condition="'$(HostOS)' == 'windows'">$(EMSDK_PATH)node/bin/node_modules/npm/bin/npm-cli.js</_NodeValidationNpmCli>
+    </PropertyGroup>
+    <Message Text="Validating Node transport $(NodePackageVersion) at $(EMSDK_PATH)node/bin/node$(ExeSuffix)" Importance="High" />
+    <Exec Command="&quot;$(EMSDK_PATH)node/bin/node$(ExeSuffix)&quot; -e &quot;require('node:assert/strict').equal(process.versions.node, '24.18.1'); console.log(process.execPath, process.version)&quot;" />
+    <Exec Command="&quot;$(EMSDK_PATH)node/bin/node$(ExeSuffix)&quot; &quot;$(_NodeValidationNpmCli)&quot; --version"
+          ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_ValidatedNpmVersion" />
+    </Exec>
+    <Error Condition="'$(_ValidatedNpmVersion)' != '11.19.1'" Text="Expected npm 11.19.1, got '$(_ValidatedNpmVersion)'." />
+  </Target>
+
   <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="$(MonoDependsOnTargets)" Condition="'$(ProvisionEmscriptenOnly)' != 'true'">
 
     <!-- If you don't specify the AOT host, assume it's the build machine -->
