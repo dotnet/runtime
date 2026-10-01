@@ -25,7 +25,7 @@ namespace System.Numerics.Tensors
             dimension += 1;
 
             _tensor = tensor;
-            _length = TensorPrimitives.Product(tensor.Lengths[..dimension]);
+            _length = TensorShape.GetProduct(tensor.Lengths[..dimension]);
             _dimension = dimension;
             _sliceShape = TensorShape.Create((dimension != tensor.Rank) ? tensor.Lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
         }
@@ -57,7 +57,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensorDimension">The tensor dimension span to convert to a readonly tensor dimension span.</param>
         /// <returns>The tensor dimension span that corresponds to <paramref name="tensorDimension" />.</returns>
         public static implicit operator ReadOnlyTensorDimensionSpan<T>(scoped in TensorDimensionSpan<T> tensorDimension) =>
-            new ReadOnlyTensorDimensionSpan<T>(tensorDimension._tensor, tensorDimension._dimension);
+            new ReadOnlyTensorDimensionSpan<T>(tensorDimension._tensor, tensorDimension._dimension - 1);
 
         /// <summary>Gets an enumerator for the readonly tensor dimension span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);

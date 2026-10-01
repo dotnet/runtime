@@ -1131,7 +1131,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
+    // so ReadyToRun uses GetDelegateCtor below, like the JIT.
+    if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+#else
     if (IsAot())
+#endif
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1179,9 +1185,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
-                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
-                    // composing a helper
+#ifndef TARGET_WASM
         else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
@@ -1222,6 +1226,16 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             *ExactContextHnd = nullptr;
 
             call->gtCallMethHnd = alternateCtor;
+
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                // The importer computed the entry point for the original constructor.
+                CORINFO_CONST_LOOKUP entryPoint;
+                info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
+                call->setEntryPoint(entryPoint);
+            }
+#endif
 
             CallArg* lastArg = nullptr;
             if (ctorData.pArg3 != nullptr)

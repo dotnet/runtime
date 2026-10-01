@@ -74,6 +74,38 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetPath_ReflectionEmitReturnsEmpty(MockTarget.Architecture arch)
+    {
+        var (target, moduleAddr) = CreatePETarget(
+            arch,
+            timeStamp: 1,
+            imageSize: 2,
+            path: @"C:\some\path\TestModule.dll",
+            moduleFlags: (uint)ModuleFlags.ReflectionEmit);
+        ILoader contract = target.Contracts.Loader;
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.Equal(string.Empty, contract.GetPath(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetPath_ProbeExtensionReturnsEmpty(MockTarget.Architecture arch)
+    {
+        var (target, moduleAddr) = CreatePETarget(
+            arch,
+            timeStamp: 1,
+            imageSize: 2,
+            path: @"C:\some\path\TestModule.dll",
+            probeExtensionType: 1);
+        ILoader contract = target.Contracts.Loader;
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.Equal(string.Empty, contract.GetPath(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void Module_NoCodeVersioning_MethodDefToILCodeVersioningStateMapIsNull(MockTarget.Architecture arch)
     {
         // On builds without code versioning (e.g. WASM, FEATURE_CODE_VERSIONING off) the Module
@@ -1201,7 +1233,9 @@ public unsafe class LoaderTests
         uint imageSize,
         string? path,
         uint format = 0,
-        bool nullImageLayout = false)
+        bool nullImageLayout = false,
+        uint moduleFlags = 0,
+        int probeExtensionType = 0)
     {
         const uint Lfanew = 0x80;
         TargetTestHelpers helpers = new(arch);
@@ -1259,12 +1293,18 @@ public unsafe class LoaderTests
 
         var peImageFrag = allocator.Allocate(peImageLayout.Stride, "PEImage");
         helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.LoadedImageLayout)].Offset, helpers.PointerSize), nullImageLayout ? TargetPointer.Null : layoutFrag.Address);
+        helpers.Write(
+            peImageFrag.Data.AsSpan().Slice(
+                peImageLayout.Fields[nameof(Data.PEImage.ProbeExtensionResult)].Offset
+                    + probeExtLayout.Fields[nameof(Data.ProbeExtensionResult.Type)].Offset,
+                sizeof(int)),
+            probeExtensionType);
 
         var peAssemblyFrag = allocator.Allocate(peAssemblyLayout.Stride, "PEAssembly");
         helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
 
         // Build a Module that owns the PEAssembly and carries the module path.
-        MockLoaderModule module = loader.AddModule(path: path);
+        MockLoaderModule module = loader.AddModule(path: path, flags: moduleFlags);
         module.PEAssembly = peAssemblyFrag.Address;
 
         var target = targetBuilder

@@ -120,6 +120,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
         internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
         internal bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; } = true;
+        internal bool HAS_INTERRUPTIBLE_RANGES { get; } = true;
 
         internal GcInfoTypes(Machine machine, bool denormalizeCodeOffsets)
         {
@@ -180,6 +181,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     LIVESTATE_RLE_RUN_ENCBASE = 2;
                     LIVESTATE_RLE_SKIP_ENCBASE = 4;
                     HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
+                    HAS_INTERRUPTIBLE_RANGES = false;
                     break;
 
                 case Machine.I386:

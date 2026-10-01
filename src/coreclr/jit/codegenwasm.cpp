@@ -4128,6 +4128,8 @@ void CodeGen::genCallFinally(BasicBlock* block)
 
     assert((funcletIndex >= 1) && (funcletIndex < m_compiler->compFuncCount()));
 
+    ensureCurrentFuncIsUnwindable();
+
     EmitCallParams params;
     params.callType = EmitCallType::EC_INDIR_R;
 

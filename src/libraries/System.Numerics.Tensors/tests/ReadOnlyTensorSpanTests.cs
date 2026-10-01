@@ -9,14 +9,207 @@ namespace System.Numerics.Tensors.Tests
 {
     public class ReadOnlyTensorSpanTests
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ReadOnlyTensorSpanOverlappingStridedCopyThrowsBeforeWriting(bool flatten)
+        {
+            int[] data = [1, 2, 3, 4, 5, 6];
+
+            if (flatten)
+            {
+                Assert.Throws<ArgumentException>(() =>
+                    new ReadOnlyTensorSpan<int>(data, [2, 2], [3, 1]).FlattenTo(data.AsSpan(2, 4)));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() =>
+                    new ReadOnlyTensorSpan<int>(data, [2, 2], [3, 1]).CopyTo(new TensorSpan<int>(data, 2, [2, 2], [])));
+            }
+
+            Assert.Equal([1, 2, 3, 4, 5, 6], data);
+        }
+
+        [Fact]
+        public static void TensorAuditCopiedReadOnlyEnumeratorKeepsIndependentPosition()
+        {
+            ReadOnlyTensorSpan<int> tensor = new ReadOnlyTensorSpan<int>([10, 20, 99, 30, 40], [2, 2], [3, 1]);
+            ReadOnlyTensorSpan<int>.Enumerator first = tensor.GetEnumerator();
+            Assert.True(first.MoveNext());
+            ReadOnlyTensorSpan<int>.Enumerator second = first;
+
+            for (int i = 0; i < 3; i++)
+            {
+                second.Reset();
+                Assert.True(second.MoveNext());
+                Assert.True(second.MoveNext());
+                Assert.True(first.MoveNext());
+            }
+
+            Assert.Equal(40, first.Current);
+        }
+
+        [Fact]
+        public static void ReadOnlyTensorSpanOverlappingBroadcastThrowsBeforeWriting()
+        {
+            int[] data = [1, 2, 3, 4];
+
+            Assert.Throws<ArgumentException>(() =>
+                new ReadOnlyTensorSpan<int>(data, 1, [1, 2], [0, 1]).CopyTo(new TensorSpan<int>(data, [2, 2])));
+
+            Assert.Equal([1, 2, 3, 4], data);
+        }
+
+        [Fact]
+        public static void ReadOnlyTensorSpanOverlappingReferenceCopyThrowsBeforeWriting()
+        {
+            string[] data = ["a", "b", "c", "d", "e", "f"];
+
+            Assert.Throws<ArgumentException>(() =>
+                new ReadOnlyTensorSpan<string>(data, [2, 2], [3, 1]).FlattenTo(data.AsSpan(2, 4)));
+
+            Assert.Equal(["a", "b", "c", "d", "e", "f"], data);
+        }
+
+        [Fact]
+        public static void ReadOnlyTensorSpanCopyToIdenticalStridedViewNeedsNoSnapshot()
+        {
+            int[] data = [1, 2, 3, 4, 5, 6];
+            ReadOnlyTensorSpan<int> source = new ReadOnlyTensorSpan<int>(data, [2, 2], [3, 1]);
+            Assert.True(source.TryCopyTo(new TensorSpan<int>(data, [2, 2], [3, 1])));
+            Assert.Equal([1, 2, 3, 4, 5, 6], data);
+
+            int[] repeated = [7];
+            Assert.True(new ReadOnlyTensorSpan<int>(repeated, [3], [0])
+                .TryCopyTo(new TensorSpan<int>(repeated, [3], [0])));
+            Assert.Equal([7], repeated);
+        }
+
+        [Fact]
+        public static void ReadOnlyTensorSpanDenseOverlapUsesMemmove()
+        {
+            int[] data = [1, 2, 3, 4, 5];
+            new ReadOnlyTensorSpan<int>(data, 0, [4], []).CopyTo(new TensorSpan<int>(data, 1, [4], []));
+            Assert.Equal([1, 1, 2, 3, 4], data);
+        }
+
+        [Fact]
+        public static void EmptyReadOnlyTensorSpanCannotExposeData()
+        {
+            ReadOnlyTensorSpan<int> empty = default;
+            Assert.False(empty.TryGetSpan(ReadOnlySpan<nint>.Empty, 1, out _));
+            Assert.Equal(0, empty.Slice(ReadOnlySpan<nint>.Empty).FlattenedLength);
+            Assert.True(empty.TryFlattenTo(Span<int>.Empty));
+
+            ReadOnlyTensorSpan<int>.Enumerator enumerator = empty.GetEnumerator();
+            Assert.False(enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(static () =>
+            {
+                ReadOnlyTensorSpan<int>.Enumerator current = default(ReadOnlyTensorSpan<int>).GetEnumerator();
+                _ = current.Current;
+            });
+            Assert.Throws<InvalidOperationException>(static () =>
+            {
+                ReadOnlyTensorSpan<int>.Enumerator current = new ReadOnlyTensorSpan<int>([7]).GetEnumerator();
+                _ = current.Current;
+            });
+        }
+
+        [Fact]
+        public static unsafe void ExplicitShapePointerRejectsNegativeLength()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(static () =>
+            {
+                int* value = stackalloc int[1];
+                _ = new ReadOnlyTensorSpan<int>(value, -1, [1]);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(static () =>
+            {
+                int* value = stackalloc int[1];
+                _ = new TensorSpan<int>(value, -1, [1]);
+            });
+        }
+
+        [Fact]
+        public static void NegativePrintLimitIsRejected()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(static () =>
+                new ReadOnlyTensorSpan<int>(new int[] { 123 }, [0]).ToString([-1]));
+            Assert.Throws<ArgumentOutOfRangeException>(static () =>
+                new ReadOnlyTensorSpan<int>(new int[] { 123 }, [1]).ToString([-1]));
+        }
+
+        [Theory]
+        [InlineData(0, new int[] { 1, 2 }, 8, "1, 1, 1, 1, 1, 1, 1, 1")]
+        [InlineData(4, new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 }, 3, "0, 4, 8")]
+        public static void ToStringUsesInnermostStride(int stride, int[] data, int length, string expected)
+        {
+            ReadOnlyTensorSpan<int> tensor = new ReadOnlyTensorSpan<int>(data, [length], [stride]);
+            Assert.Contains($"[{expected}]", tensor.ToString([length]));
+        }
+
+        [Fact]
+        public static void InvalidShapeAndSliceThrowDocumentedExceptions()
+        {
+            int[] data = new int[16];
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new ReadOnlyTensorSpan<int>(data, [nint.MaxValue, 2], []));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new ReadOnlyTensorSpan<int>(data.AsSpan(), [nint.MaxValue, 2], []));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new ReadOnlyTensorSpan<int>((Array)data, [0], [nint.MaxValue, 2], []));
+            Assert.Throws<ArgumentOutOfRangeException>(static () =>
+            {
+                unsafe
+                {
+                    int* pointer = stackalloc int[1];
+                    _ = new ReadOnlyTensorSpan<int>(pointer, 1, [nint.MaxValue, 2], []);
+                }
+            });
+            ReadOnlyTensorSpan<int> highRank = new ReadOnlyTensorSpan<int>(
+                data, [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0]);
+            Assert.Equal(1, highRank.FlattenedLength);
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new ReadOnlyTensorSpan<int>(data, [nint.MaxValue, 2, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0]));
+            Assert.Throws<ArgumentException>(() =>
+                new ReadOnlyTensorSpan<int>(data, [1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0]));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new ReadOnlyTensorSpan<int>(data, [4, 4], []).Slice([5, 0]));
+            Assert.Throws<IndexOutOfRangeException>(() =>
+                new ReadOnlyTensorSpan<int>(data, [4, 4], [])[5, 0]);
+        }
+
+        [Fact]
+        public static void ReshapeHandlesZeroDimensions()
+        {
+            int[] data = [1, 2, 3, 4];
+            Assert.Throws<ArgumentException>(() => new ReadOnlyTensorSpan<int>(data).Reshape([-1, 0]));
+
+            ReadOnlyTensorSpan<int> empty = Tensor.CreateFromShape<int>([0, 0, 7]).AsReadOnlyTensorSpan();
+            ReadOnlyTensorSpan<int> reshaped = empty.Reshape([0, 1, 0, 1]);
+            Assert.Equal([0, 1, 0, 1], reshaped.Lengths);
+            Assert.Equal(0, reshaped.FlattenedLength);
+            Assert.Throws<ArgumentException>(() => new ReadOnlyTensorSpan<int>(Array.Empty<int>()).Reshape([0, -1]));
+
+            ReadOnlyTensorSpan<int> broadcast = Tensor.Create([1, 2], [2, 2], [0, 1]).AsReadOnlyTensorSpan();
+            ReadOnlyTensorSpan<int> withoutSingleton = broadcast.Reshape([1, 2, 2]).Reshape([2, 2]);
+            Assert.Equal([0, 1], withoutSingleton.Strides);
+            Assert.Equal(2, withoutSingleton[1, 1]);
+        }
+
         [Fact]
         public static void ReadOnlyTensorSpanSystemArrayConstructorTests()
         {
-            // When using System.Array constructor make sure the type of the array matches T[]
+            // When using System.Array constructor make sure incompatible element types are rejected
             Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<double>(array: new[] { 1 }));
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<long>((Array)new byte[8]));
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<long>((Array)new byte[2, 4], [0, 0], [2, 4], []));
 
             string[] stringArray = { "a", "b", "c" };
             Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>(array: stringArray));
+            Assert.Equal("a", new ReadOnlyTensorSpan<object>((Array)stringArray)[0]);
+            Assert.Equal("a", new ReadOnlyTensorSpan<object>((object[])stringArray)[0]);
 
             // Make sure basic T[,] constructor works
             int[,] a = new int[,] { { 91, 92, -93, 94 } };
@@ -221,6 +414,31 @@ namespace System.Numerics.Tensors.Tests
             // Assert.Equal(94, spanInt[0, 1]);
             // Assert.Equal(94, spanInt[1, 0]);
             // Assert.Equal(94, spanInt[1, 1]);
+        }
+
+        [Fact]
+        public static void ReadOnlyTensorSpanArrayConstructorSupportsArrayAssignments()
+        {
+            string[] strings = ["first", "second"];
+            Assert.Equal("first", new ReadOnlyTensorSpan<object>((Array)strings)[0]);
+            Assert.Equal("second", new ReadOnlyTensorSpan<object>((Array)strings, [1], [1], [])[0]);
+
+            string[,] strings2D = { { "first", "second" } };
+            Assert.Equal("second", new ReadOnlyTensorSpan<object>((Array)strings2D)[0, 1]);
+            Assert.Equal("second", new ReadOnlyTensorSpan<object>((Array)strings2D, [0, 1], [1, 1], [])[0, 0]);
+
+            int[] signed = [-1, 2];
+            uint[] unsigned = (uint[])(object)signed;
+            Assert.Equal(unsigned[0], new ReadOnlyTensorSpan<uint>((Array)signed)[0]);
+            Assert.Equal(unsigned[1], new ReadOnlyTensorSpan<uint>((Array)signed, [1], [1], [])[0]);
+
+            int[,] signed2D = { { -1, 2 } };
+            uint[,] unsigned2D = (uint[,])(object)signed2D;
+            Assert.Equal(unsigned2D[0, 0], new ReadOnlyTensorSpan<uint>((Array)signed2D)[0, 0]);
+            Assert.Equal(unsigned2D[0, 1], new ReadOnlyTensorSpan<uint>((Array)signed2D, [0, 1], [1, 1], [])[0, 0]);
+
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<long>((Array)signed));
+            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<long>((Array)signed2D, [0, 0], [1, 2], []));
         }
 
         [Fact]
@@ -549,6 +767,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static unsafe void ReadOnlyTensorSpanPointerConstructorTests()
         {
+            Assert.Throws<ArgumentOutOfRangeException>(static () =>
+            {
+                int* data = stackalloc int[1];
+                _ = new ReadOnlyTensorSpan<int>(data, -1);
+            });
+
             // Make sure basic T[] constructor works
             Span<int> a = [91, 92, -93, 94];
             ReadOnlyTensorSpan<int> spanInt;

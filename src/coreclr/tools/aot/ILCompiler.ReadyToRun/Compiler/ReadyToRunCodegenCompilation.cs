@@ -728,6 +728,7 @@ namespace ILCompiler
         private WorkerState _singleThreadedWorkerState;
         private int _compilationSessionGeneratedColdCode;
         private bool _hasAddedAsyncReferences = false;
+        private bool _hasAddedDelegateCtorReferences = false;
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
@@ -763,6 +764,9 @@ namespace ILCompiler
                         bool shouldBeCompiled = !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method);
                         if (method.IsAsyncCall() && shouldBeCompiled)
                             AddNecessaryAsyncReferences(method);
+
+                        if (_nodeFactory.Target.IsWasm && shouldBeCompiled)
+                            AddNecessaryDelegateCtorReferences(method);
 
                         if ((method.IsCompilerGeneratedILBodyForAsync() || ((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method)) && shouldBeCompiled)
                             EnsureGeneratedILTokensAreAvailable(method);
@@ -1052,6 +1056,26 @@ namespace ILCompiler
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
             _hasAddedAsyncReferences = true;
+        }
+
+        private void AddNecessaryDelegateCtorReferences(MethodDesc method)
+        {
+            if (_hasAddedDelegateCtorReferences ||
+                method.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+            {
+                return;
+            }
+
+            // Keep in sync with CorInfoImpl.GetDelegateCtor. The JIT replaces delegate constructor
+            // calls with calls to these, so nothing in the caller's IL refers to them.
+            TypeDesc delegateType = TypeSystemContext.SystemModule.GetKnownType("System"u8, "Delegate"u8);
+            MethodDesc[] requiredMethods =
+            [
+                delegateType.GetKnownMethod("CtorClosed"u8, null),
+                delegateType.GetKnownMethod("DelegateConstruct"u8, null),
+            ];
+            _tokenManager.EnsureDefTokensAreAvailable(requiredMethods, ecmaMethod.Module, false);
+            _hasAddedDelegateCtorReferences = true;
         }
 
         public ISymbolNode GetFieldRvaData(FieldDesc field)

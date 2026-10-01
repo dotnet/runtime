@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using Mono.Options;
 
 namespace Microsoft.WebAssembly.AppHost;
 
@@ -14,7 +12,6 @@ internal sealed class WasiEngineArguments
     public WasmHost Host => CommonConfig.Host;
     public CommonConfiguration CommonConfig { get; init; }
 
-    public bool ForwardExitCode { get; private set; }
     public string[] AppArgs { get; init; }
 
     public bool IsSingleFileBundle =>
@@ -24,20 +21,7 @@ internal sealed class WasiEngineArguments
     public WasiEngineArguments(CommonConfiguration commonConfig)
     {
         CommonConfig = commonConfig;
-        AppArgs = GetOptions().Parse(commonConfig.RemainingArgs).ToArray();
-        ParseJsonProperties(CommonConfig.HostConfig.Properties);
-    }
-
-    private OptionSet GetOptions() => new OptionSet
-    {
-        // until WASI can work with unix exit code https://github.com/WebAssembly/wasi-cli/pull/44
-        { "forward-exit-code", "Forward process exit code via stderr", v => ForwardExitCode = true }
-    };
-
-    public void ParseJsonProperties(IDictionary<string, JsonElement>? properties)
-    {
-        if (properties?.TryGetValue("forward-exit-code", out JsonElement forwardElement) == true)
-            ForwardExitCode = forwardElement.GetBoolean();
+        AppArgs = commonConfig.RemainingArgs.ToArray();
     }
 
     public void Validate()

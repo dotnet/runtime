@@ -155,6 +155,50 @@ public class R2RTestSuites
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmDelegateConstructors()
+    {
+        var wasmDelegateConstructors = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmDelegateConstructors),
+            SourceResourceNames = ["Webcil/WasmDelegateConstructors.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmDelegateConstructors),
+            [
+                new(nameof(WasmDelegateConstructors), [new CrossgenAssembly(wasmDelegateConstructors)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+            List<ReadyToRunImportSection.ImportSectionEntry> importEntries = reader.ImportSections
+                .Where(section => section.Entries is not null)
+                .SelectMany(section => section.Entries)
+                .ToList();
+            List<string> importSignatures = importEntries
+                .Where(entry => entry.Signature is not null)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            string diagnostic = string.Join(Environment.NewLine, importSignatures);
+
+            Assert.DoesNotContain(importEntries, entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.DelegateConstruct(", StringComparison.Ordinal)),
+                diagnostic);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.CtorClosed(", StringComparison.Ordinal)),
+                diagnostic);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmVirtualDispatch()
     {
         var wasmVirtualDispatch = new CompiledAssembly

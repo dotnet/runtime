@@ -654,22 +654,6 @@ static int run(const configuration& config)
     return exit_code;
 #else // TARGET_BROWSER
     int final_exit_code = corerun_shutdown(exit_code);
-#ifdef TARGET_WASI
-    // wasi:cli/exit's stable exit() only signals ok/err, so wasmtime
-    // collapses any non-zero Main return to host exit 1. When
-    // DOTNET_WASI_PRINT_EXIT_CODE=1, emit a "WASM EXIT <n>" marker on
-    // stderr matching Mono (src/mono/wasi/runtime/main.c); the WASI
-    // launcher in src/tests/Common/CLRTest.Execute.Bash.targets recovers
-    // the value from that. wasi:cli/exit already defines
-    // exit-with-code(status-code: u8), but it is gated
-    // @unstable(feature = cli-exit-with-code) in wasi-cli 0.2.x. Once that
-    // feature stabilizes and wasi-libc/wasi-sdk/wasmtime expose it, this
-    // marker (and the parser in CLRTest.Execute.Bash.targets) can be removed.
-    if (pal::getenv(W("DOTNET_WASI_PRINT_EXIT_CODE")) == W("1"))
-    {
-        pal::fprintf(stderr, W("WASM EXIT %d\n"), final_exit_code);
-    }
-#endif // TARGET_WASI
     return final_exit_code;
 #endif // TARGET_BROWSER
 }
@@ -879,7 +863,13 @@ int MAIN(const int argc, const char_t* argv[])
         return self_test();
 
     int exit_code = run(config);
+#ifdef TARGET_WASI
+    // Returning from main only reports success/failure through wasi:cli/run.
+    // exit() reports the actual code through wasi:cli/exit's exit-with-code.
+    exit(exit_code);
+#else
     return exit_code;
+#endif
 }
 
 extern "C" DLL_EXPORT HRESULT CDECL GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)

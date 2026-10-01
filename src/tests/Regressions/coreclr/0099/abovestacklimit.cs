@@ -6,6 +6,7 @@ using TestLibrary;
 
 public class Test_abovestacklimit{
  [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/132855", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
 	[Fact]
 	public static int TestEntryPoint(){
 		int retVal;

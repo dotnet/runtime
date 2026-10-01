@@ -21,8 +21,10 @@ namespace System.Net.Security
         public int KeyExchKeySize { get; private set; }
 
         public byte[]? ApplicationProtocol { get; internal set; }
-#if DEBUG
+
+        // Indicates whether the current TLS session was resumed (abbreviated handshake)
+        // rather than negotiated via a full handshake. Used to decide whether the peer
+        // certificate needs to be (re)validated on this connection.
         public bool TlsResumed { get; private set; }
-#endif
     }
 }

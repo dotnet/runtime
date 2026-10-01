@@ -442,9 +442,13 @@ struct RangeOps
         // For RSZ by N >= 1, result is in [0, UINT_MAX >> N] regardless of r1's signedness.
         // When r1 isn't proven non-negative, the bound above is unsound (negative r1 reinterprets
         // as large unsigned), so override with the type-based bound.
-        if (logical && (r2.LowerLimit().GetConstant() >= 1) &&
-            !(r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0)))
+        if (logical && !(r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0)))
         {
+            if (r2.LowerLimit().GetConstant() == 0)
+            {
+                // A shift by 0 may preserve a negative r1, so nothing is known.
+                return Limit(Limit::keUnknown);
+            }
             result.lLimit = Limit(Limit::keConstant, 0);
             result.uLimit = Limit(Limit::keConstant, (int)(UINT32_MAX >> r2.LowerLimit().GetConstant()));
         }
