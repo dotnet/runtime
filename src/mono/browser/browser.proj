@@ -373,7 +373,19 @@
 
       <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/').Replace('\','/'))&quot;</CMakeConfigurationEmsdkPath>
 
+      <!-- CMake only detects the compiler on a build directory's first configure, so a toolchain file that changes later
+           (e.g. an SDK version bump, which moves the versioned tool cache directory) would otherwise keep using the old
+           compiler. Reconfigure from scratch in that case. emcmake injects its own toolchain file unless one is specified. -->
+      <_CMakeToolchainFile>$(CMAKE_TOOLCHAIN_FILE)</_CMakeToolchainFile>
+      <_CMakeToolchainFile Condition="'$(_CMakeToolchainFile)' == '' and Exists('$(EMSDK_PATH)/emscripten/emcmake.py')">$(EMSDK_PATH)/emscripten/cmake/Modules/Platform/Emscripten.cmake</_CMakeToolchainFile>
+      <_CMakeToolchainFile Condition="'$(_CMakeToolchainFile)' == '' and Exists('$(EMSDK_PATH)/upstream/emscripten/emcmake.py')">$(EMSDK_PATH)/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake</_CMakeToolchainFile>
+      <_CMakeToolchainFile>$([System.Text.RegularExpressions.Regex]::Replace('$(_CMakeToolchainFile)', '[\\/]+', '/'))</_CMakeToolchainFile>
+      <_CMakeCachedToolchainFile Condition="'$(_CMakeToolchainFile)' != '' and Exists('$(NativeBinDir)CMakeCache.txt')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(NativeBinDir)CMakeCache.txt')), '(?m)(?&lt;=^CMAKE_TOOLCHAIN_FILE:[A-Za-z]*=)[^\r\n]*').Value)</_CMakeCachedToolchainFile>
+      <_CMakeCachedToolchainFile>$([System.Text.RegularExpressions.Regex]::Replace('$(_CMakeCachedToolchainFile)', '[\\/]+', '/'))</_CMakeCachedToolchainFile>
+      <_CMakeFresh Condition="'$(_CMakeCachedToolchainFile)' != '' and '$(_CMakeCachedToolchainFile)' != '$(_CMakeToolchainFile)'">true</_CMakeFresh>
+
       <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(_CMakeFresh)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) --fresh</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_BUILD_TYPE=$(Configuration)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
@@ -449,6 +461,7 @@
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
+    <Message Condition="'$(_CMakeFresh)' == 'true'" Text="CMake toolchain changed from $(_CMakeCachedToolchainFile) to $(_CMakeToolchainFile); reconfiguring from scratch." Importance="High" />
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)"
           EnvironmentVariables="@(_CmakeEnvironmentVariable)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)"

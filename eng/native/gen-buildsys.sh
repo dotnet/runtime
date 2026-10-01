@@ -123,7 +123,43 @@ if [[ "$host_arch" == "wasm" ]]; then
     fi
 fi
 
+# CMake only detects the compiler on a build directory's first configure, so a toolchain file that
+# changes later (e.g. a WASI SDK or emscripten version bump, which moves the versioned tool cache
+# directory) would otherwise keep using the old compiler. Reconfigure from scratch in that case.
+normalize_toolchain_path()
+{
+    local path="${1//\\//}"
+    local dir="${path%/*}" resolved
+    if [[ "$dir" != "$path" && -d "$dir" ]] && resolved="$(CDPATH= cd -P "$dir" 2>/dev/null && pwd -P)"; then
+        path="$resolved/${path##*/}"
+    fi
+    echo "$path" | sed -e 's|//*|/|g' -e 's|/$||'
+}
+
+requested_toolchain_file="${CMAKE_TOOLCHAIN_FILE:-}"
+if [[ -z "$requested_toolchain_file" && "$host_arch" == "wasm" && "$target_os" == "browser" ]]; then
+    # emcmake injects its own toolchain file when none is specified.
+    if emcmake_path="$(command -v emcmake)"; then
+        requested_toolchain_file="$(dirname "$emcmake_path")/cmake/Modules/Platform/Emscripten.cmake"
+    fi
+fi
+for arg in $cmake_extra_defines "${__UnprocessedCMakeArgs[@]}" "${cmake_extra_defines_wasm[@]}"; do
+    case "$arg" in
+        -DCMAKE_TOOLCHAIN_FILE=*|-DCMAKE_TOOLCHAIN_FILE:*=*) requested_toolchain_file="${arg#*=}" ;;
+    esac
+done
+
+cmake_fresh=()
+if [[ -n "$requested_toolchain_file" && -f "$2/CMakeCache.txt" ]]; then
+    cached_toolchain_file="$(sed -n 's/^CMAKE_TOOLCHAIN_FILE:[A-Za-z]*=//p' "$2/CMakeCache.txt" | head -n 1)"
+    if [[ -n "$cached_toolchain_file" && "$(normalize_toolchain_path "$cached_toolchain_file")" != "$(normalize_toolchain_path "$requested_toolchain_file")" ]]; then
+        echo "CMake toolchain changed from $cached_toolchain_file to $requested_toolchain_file; reconfiguring from scratch."
+        cmake_fresh=("--fresh")
+    fi
+fi
+
 $cmake_command \
+  "${cmake_fresh[@]}" \
   --no-warn-unused-cli \
   -G "$generator" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
