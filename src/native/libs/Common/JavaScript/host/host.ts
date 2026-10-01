@@ -17,8 +17,11 @@ export function initializeCoreCLR(): number {
     const loaderConfig = _ems_.dotnetApi.getConfig();
 
     const workingDirPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(loaderConfig.virtualWorkingDirectory!) as any;
-    _ems_._BrowserHost_SetWorkingDirectory(workingDirPtr);
+    const workingDirectoryResult = _ems_._BrowserHost_SetWorkingDirectory(workingDirPtr);
     _ems_._free(workingDirPtr);
+    if (workingDirectoryResult !== 0) {
+        return workingDirectoryResult;
+    }
 
     const hostContractPtr = _ems_._BrowserHost_CreateHostContract();
     const runtimeConfigProperties = new Map<string, string>();

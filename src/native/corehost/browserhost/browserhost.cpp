@@ -189,6 +189,12 @@ static void BrowserHost_EnsureParentDirs(const char* path)
     }
 }
 
+static int BrowserHost_CreateDirectory(const char* path)
+{
+    BrowserHost_EnsureParentDirs(path);
+    return mkdir(path, 0755) == 0 || errno == EEXIST ? 0 : -1;
+}
+
 // Write bytes to a file in the (WASMFS) virtual filesystem, creating any missing parent
 // directories. This replaces the JS FS.createPath + FS.createDataFile pattern so the
 // JavaScript FS API (and -sFORCE_FILESYSTEM) is not required on the browser host.
@@ -229,10 +235,16 @@ extern "C" int BrowserHost_WriteFileToVfs(const char* path, const void* data, in
 // Create (mkdir -p) and change into the working directory. Replaces FS.createPath + FS.chdir.
 extern "C" int BrowserHost_SetWorkingDirectory(const char* path)
 {
-    BrowserHost_EnsureParentDirs(path);
-    if (mkdir(path, 0755) != 0 && errno != EEXIST)
+    // SpecialFolder.CommonApplicationData maps to /usr/share.
+    if (BrowserHost_CreateDirectory("/usr/share") != 0)
     {
-        // best-effort; chdir() below surfaces a real failure
+        std::fprintf(stderr, "BrowserHost_SetWorkingDirectory: mkdir('/usr/share') failed - errno %d\n", errno);
+        return -1;
+    }
+    if (BrowserHost_CreateDirectory(path) != 0)
+    {
+        std::fprintf(stderr, "BrowserHost_SetWorkingDirectory: mkdir('%s') failed - errno %d\n", path, errno);
+        return -1;
     }
     if (chdir(path) != 0)
     {

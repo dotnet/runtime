@@ -115,8 +115,9 @@ else()
                 string(REPLACE "HEAP64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
                 string(REPLACE "HEAPU64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
 
-                # Add Node.js host file system support.
-                list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sNODERAWFS=1 -lnodefs.js)
+                # Link the Node.js bridge without NODERAWFS's root hook; corerun supplies
+                # its own hook to map the virtual root to the host filesystem root.
+                list(APPEND CORERUN_BROWSER_LINK_OPTIONS -sNODE_HOST_ENV=1 -lnodefs.js)
             endif()
             list(APPEND CORERUN_BROWSER_LINK_OPTIONS
                 -sINITIAL_MEMORY=134217728
