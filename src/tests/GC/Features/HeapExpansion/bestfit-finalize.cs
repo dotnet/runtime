@@ -5,6 +5,7 @@
 //which pin some of their newly allocated objects.
 using System;
 using System.Threading;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -98,9 +99,9 @@ namespace Fragment
                 }
                 requests[i] = new Request();
 
-                if ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) && (totalReqs % NumRequests == 0))
+                if (!RuntimeFeature.IsMultithreadingSupported && (totalReqs % NumRequests == 0))
                 {
-                    // On single-threaded wasm, finalizers are scheduled on the host event loop,
+                    // Without a finalizer thread, finalizers are scheduled on the host event loop,
                     // which this synchronous loop never yields to. Drain them periodically so
                     // dead requests can release their pins and survivor arrays.
                     GC.WaitForPendingFinalizers();
