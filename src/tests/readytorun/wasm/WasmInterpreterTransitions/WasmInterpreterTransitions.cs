@@ -2,10 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
+
+[assembly: DisableRuntimeMarshalling]
 
 namespace System.Runtime
 {
@@ -39,6 +44,11 @@ public class WasmInterpreterTransitions
     {
         public int A;
         public int B;
+    }
+
+    public struct S4
+    {
+        public int Value;
     }
 
     public struct S12
@@ -83,13 +93,110 @@ public class WasmInterpreterTransitions
     }
 
     private delegate S2 ReturnsS2Delegate(int a);
+    private delegate S8 ReturnsS8Delegate(int value);
+    private delegate int TransformDelegate(int value);
+
+    private delegate SingleInt ReturnsSingleIntDelegate();
+    private delegate SmallEnum ReturnsSmallEnumDelegate();
+    private delegate ObjectPair ReturnsObjectPairDelegate();
+    private delegate S16 AggregateTargetDelegate<T>(T value, int marker);
+    private delegate ObjectPair RuntimeTargetDelegate(
+        long unusedLong1,
+        float unusedFloat1,
+        double unusedDouble1,
+        int unusedInt,
+        long unusedLong2,
+        double unusedDouble2,
+        float unusedFloat2);
 
     private readonly int _state = C;
+    internal int State => _state;
 
     [Fact]
     public static void TestEntryPoint()
     {
         WasmInterpreterTransitions self = new();
+
+        // R2R -> native P/Invoke -> generated native-to-managed export -> R2R UCO.
+        Assert.Equal(A + C, Echo(A));
+        Assert.Equal(A + C, EchoSingleIntStruct(A).Value);
+        Assert.Equal((Wide >> 16) * F64 + F32, EchoMixedScalars(Wide >> 16, F32, F64));
+        unsafe
+        {
+            int value = A;
+            EchoPointer(&value, B);
+            Assert.Equal(A + B, value);
+        }
+
+        // Reverse-pinvoke (UnmanagedCallersOnly) entry that re-enters managed code. crossgen2 must
+        // thread the UCO method's $sp (loaded from the __stack_pointer global in its prolog) into the
+        // R2R->interpreter thunk; passing 0 makes the thunk store below a null base and trap ("memory
+        // access out of bounds"). The SkiaSharp SKManagedStream shape — GCHandle -> generic GetUserData
+        // -> virtual interpreted override — is what reproduces it; a straight-line call does not.
+        {
+            ConcreteManagedStream streamTarget = new();
+            GCHandle gch = GCHandle.Alloc(streamTarget);
+            try
+            {
+                IntPtr ctx = GCHandle.ToIntPtr(gch);
+                unsafe
+                {
+                    delegate* unmanaged<IntPtr, IntPtr, int> fp = &StreamLengthProxy;
+                    Assert.Equal(C, fp(IntPtr.Zero, ctx));
+                }
+
+                Assert.Equal(42, R2RCallsNestingUco());
+            }
+            finally
+            {
+                gch.Free();
+            }
+        }
+
+        unsafe { Assert.Equal(A + C, s_ucoToInterpreted(A)); }
+
+        {
+            object first = new();
+            object second = new();
+            ObjectPairTarget target = new(first, second);
+            ReturnsObjectPairDelegate callback = target.GetPair;
+            Assert.Same(target, callback.Target);
+            ObjectPair pair = callback();
+            Assert.Same(first, pair.First);
+            Assert.Same(second, pair.Second);
+
+            ReturnsObjectPairDelegate interpretedCallback = CreateObjectPairDelegate(target);
+            pair = interpretedCallback();
+            Assert.Same(first, pair.First);
+            Assert.Same(second, pair.Second);
+
+            ReturnsObjectPairDelegate interpretedTargetCallback = target.GetPairInterpreted;
+            pair = interpretedTargetCallback();
+            Assert.Same(first, pair.First);
+            Assert.Same(second, pair.Second);
+
+            MethodInfo genericTargetMethod =
+                typeof(GenericObjectPairTarget<string>).GetMethod(nameof(GenericObjectPairTarget<string>.GetPair));
+            ReturnsObjectPairDelegate genericTargetCallback =
+                (ReturnsObjectPairDelegate)Delegate.CreateDelegate(
+                    typeof(ReturnsObjectPairDelegate),
+                    target,
+                    genericTargetMethod);
+            pair = InvokeObjectPairDelegate(genericTargetCallback);
+            Assert.Same(first, pair.First);
+            Assert.Same(second, pair.Second);
+
+            ReturnsSingleIntDelegate singleIntCallback = target.GetSingleInt;
+            Assert.Equal(A, singleIntCallback().Value);
+
+            ReturnsSmallEnumDelegate enumCallback = target.GetSmallEnum;
+            Assert.Equal(SmallEnum.Value, enumCallback());
+
+            VerifyDynamicClosedStaticDelegate();
+            VerifyRuntimeGeneratedTarget(target);
+            VerifySharedAdapterSignatures();
+            VerifyRecycledRuntimeGeneratedTargets(first, second);
+        }
 
         // R2R -> interpreted, struct returns. The return buffer follows 'this' for an instance
         // method and the stack pointer for a static one, which is where the two forms differ.
@@ -182,9 +289,424 @@ public class WasmInterpreterTransitions
         Assert.Equal(153, self.InterpretedIntFrom17Int(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17));           // IiTiiiiiiiiiiiiiiiip
         S52 s52 = self.InterpretedInstanceReturnsS52(); Assert.Equal(A, s52.A); Assert.Equal(B, s52.M);           // IS52Tp
         Assert.Equal(unchecked((short)C), InterpretedStaticReturnsS2NoArgs().A);                                             // IS2p
+
+        // R2R delegate construction calls Delegate.CtorClosed for closed reference-type instance targets
+        // and Delegate.DelegateConstruct for open, static, and value-type shapes.
+        TransformDelegate openStatic = CreateOpenStaticDelegate();
+        Assert.Equal(A + 1, openStatic(A));
+        Assert.Null(openStatic.Target);
+        Assert.Equal(nameof(StaticDelegateTarget), openStatic.Method.Name);
+
+        WasmDelegateHelpers.Target openInstanceTarget = new(C);
+        WasmDelegateHelpers.OpenTransform openInstance = WasmDelegateHelpers.Factory.Create();
+        Assert.Equal(A + C, openInstance(openInstanceTarget, A));
+        Assert.Null(openInstance.Target);
+        Assert.Equal(nameof(WasmDelegateHelpers.Target.Transform), openInstance.Method.Name);
+
+        TransformDelegate closedInstance = self.CreateClosedInstanceDelegate();
+        Assert.Equal(A + C, closedInstance(A));
+        Assert.Same(self, closedInstance.Target);
+        Assert.Equal(nameof(InstanceDelegateTarget), closedInstance.Method.Name);
+
+        TransformDelegate closedStatic = CreateClosedStaticDelegate(self);
+        Assert.Equal(A + C, closedStatic(A));
+        Assert.Same(self, closedStatic.Target);
+        Assert.Equal(nameof(WasmDelegateTargets.ClosedStaticDelegateTarget), closedStatic.Method.Name);
+
+        for (int i = 0; i < 100; i++)
+        {
+            Assert.Equal(A + 1, CreateOpenStaticDelegate()(A));
+            Assert.Equal(A + C, WasmDelegateHelpers.Factory.Create()(openInstanceTarget, A));
+            Assert.Equal(A + C, self.CreateClosedInstanceDelegate()(A));
+            Assert.Equal(A + C, CreateClosedStaticDelegate(self)(A));
+        }
+
+        Assert.Throws<ArgumentException>(() => CreateClosedInstanceDelegate(null!));
+        TransformDelegate virtualDelegate = self.CreateVirtualDelegate();
+        Assert.Equal(A + C, virtualDelegate(A));
+        Assert.Same(self, virtualDelegate.Target);
+        Assert.Equal(nameof(VirtualDelegateTarget), virtualDelegate.Method.Name);
+
+        GenericDelegateTarget<string> genericTarget = new(C);
+        TransformDelegate genericOwnerDelegate = CreateGenericOwnerDelegate(genericTarget);
+        Assert.Equal(A + C, genericOwnerDelegate(A));
+        Assert.Same(genericTarget, genericOwnerDelegate.Target);
+        Assert.Equal(nameof(GenericDelegateTarget<string>.Transform), genericOwnerDelegate.Method.Name);
+
+        VirtualDelegateBase virtualBase = new(C);
+        TransformDelegate baseVirtualDelegate = CreateVirtualDelegate(virtualBase);
+        Assert.Equal(A + C, baseVirtualDelegate(A));
+        Assert.Same(virtualBase, baseVirtualDelegate.Target);
+        Assert.Equal(typeof(VirtualDelegateBase), baseVirtualDelegate.Method.DeclaringType);
+
+        VirtualDelegateDerived virtualDerived = new(C);
+        TransformDelegate derivedVirtualDelegate = CreateVirtualDelegate(virtualDerived);
+        Assert.Equal(A + C + 1, derivedVirtualDelegate(A));
+        Assert.Same(virtualDerived, derivedVirtualDelegate.Target);
+        Assert.Equal(typeof(VirtualDelegateDerived), derivedVirtualDelegate.Method.DeclaringType);
+
+        TransformDelegate sharedGenericMethodDelegate = self.CreateGenericMethodDelegate<string>();
+        Assert.Equal(A + C + 1, sharedGenericMethodDelegate(A));
+        Assert.Same(self, sharedGenericMethodDelegate.Target);
+        Assert.Equal(nameof(GenericMethodDelegateTarget), sharedGenericMethodDelegate.Method.Name);
+
+        TransformDelegate genericMethodDelegate = self.CreateGenericMethodDelegate<int>();
+        Assert.Equal(A + C + 2, genericMethodDelegate(A));
+        Assert.Same(self, genericMethodDelegate.Target);
+
+        ReturnsS8Delegate closedStaticRetBufDelegate = CreateClosedStaticRetBufDelegate(self);
+        S8 closedStaticRetBufResult = closedStaticRetBufDelegate(A);
+        Assert.Equal(A, closedStaticRetBufResult.A);
+        Assert.Equal(C, closedStaticRetBufResult.B);
+        Assert.Same(self, closedStaticRetBufDelegate.Target);
+        Assert.Equal(nameof(WasmDelegateTargets.ClosedStaticRetBufDelegateTarget), closedStaticRetBufDelegate.Method.Name);
+
+        ReturnsS8Delegate openStaticRetBufDelegate = CreateOpenStaticRetBufDelegate();
+        S8 openStaticRetBufResult = openStaticRetBufDelegate(A);
+        Assert.Equal(A, openStaticRetBufResult.A);
+        Assert.Equal(B, openStaticRetBufResult.B);
     }
 
     private static int s_sideEffect;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int StaticDelegateTarget(int value) => value + 1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int InstanceDelegateTarget(int value) => value + _state;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    protected virtual int VirtualDelegateTarget(int value) => value + _state;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateOpenStaticDelegate() => new(StaticDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ReturnsS8Delegate CreateOpenStaticRetBufDelegate() => new(OpenStaticRetBufDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateClosedStaticDelegate(WasmInterpreterTransitions target) =>
+        new(target.ClosedStaticDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ReturnsS8Delegate CreateClosedStaticRetBufDelegate(WasmInterpreterTransitions target) =>
+        new(target.ClosedStaticRetBufDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static S8 OpenStaticRetBufDelegateTarget(int value) => new S8 { A = value, B = B };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private TransformDelegate CreateClosedInstanceDelegate() => new(InstanceDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateClosedInstanceDelegate(WasmInterpreterTransitions target) => new(target.InstanceDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private TransformDelegate CreateVirtualDelegate() => new(VirtualDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateGenericOwnerDelegate(GenericDelegateTarget<string> target) => new(target.Transform);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateVirtualDelegate(VirtualDelegateBase target) => new(target.Transform);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int GenericMethodDelegateTarget<T>(int value) => value + _state + (typeof(T) == typeof(string) ? 1 : 2);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private TransformDelegate CreateGenericMethodDelegate<T>() => new(GenericMethodDelegateTarget<T>);
+
+    [DllImport("echo", EntryPoint = "echo")]
+    private static extern int Echo(int value);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo")]
+    private static int ManagedEcho(int value) => value + C;
+
+    [DllImport("echo", EntryPoint = "echo_single_int_struct")]
+    private static extern S4 EchoSingleIntStruct(int value);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo_single_int_struct")]
+    private static S4 ManagedEchoSingleIntStruct(int value) => new() { Value = value + C };
+
+    [DllImport("echo", EntryPoint = "echo_mixed_scalars")]
+    private static extern double EchoMixedScalars(long value, float addend, double scale);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo_mixed_scalars")]
+    private static double ManagedEchoMixedScalars(long value, float addend, double scale) => value * scale + addend;
+
+    [DllImport("echo", EntryPoint = "echo_pointer")]
+    private static extern unsafe void EchoPointer(int* value, int delta);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo_pointer")]
+    private static unsafe void ManagedEchoPointer(int* value, int delta) => *value += delta;
+
+    private static void VerifyDynamicClosedStaticDelegate()
+    {
+        AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName("DynamicClosedStaticDelegateAssembly"),
+            AssemblyBuilderAccess.Run);
+        ModuleBuilder module = assembly.DefineDynamicModule("DynamicClosedStaticDelegateModule");
+
+        TypeBuilder resultBuilder = module.DefineType(
+            "DynamicResult",
+            TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed,
+            typeof(ValueType));
+        FieldBuilder firstField = resultBuilder.DefineField("First", typeof(int), FieldAttributes.Public);
+        FieldBuilder secondField = resultBuilder.DefineField("Second", typeof(int), FieldAttributes.Public);
+        Type resultType = resultBuilder.CreateType();
+
+        Type[] invokeParameters =
+        {
+            typeof(long),
+            typeof(float),
+            typeof(double),
+            typeof(int),
+            typeof(long),
+            typeof(double),
+            typeof(float),
+            typeof(double),
+        };
+
+        TypeBuilder targetBuilder = module.DefineType(
+            "DynamicTarget",
+            TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+        Type[] targetParameters = new Type[invokeParameters.Length + 1];
+        targetParameters[0] = typeof(object);
+        Array.Copy(invokeParameters, 0, targetParameters, 1, invokeParameters.Length);
+        MethodBuilder targetMethodBuilder = targetBuilder.DefineMethod(
+            "Target",
+            MethodAttributes.Public | MethodAttributes.Static,
+            resultType,
+            targetParameters);
+        ILGenerator il = targetMethodBuilder.GetILGenerator();
+        LocalBuilder result = il.DeclareLocal(resultType);
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Initobj, resultType);
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Castclass, typeof(int[]));
+        il.Emit(OpCodes.Ldc_I4_0);
+        il.Emit(OpCodes.Ldelem_I4);
+        il.Emit(OpCodes.Stfld, firstField);
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Castclass, typeof(int[]));
+        il.Emit(OpCodes.Ldc_I4_1);
+        il.Emit(OpCodes.Ldelem_I4);
+        il.Emit(OpCodes.Stfld, secondField);
+        il.Emit(OpCodes.Ldloc, result);
+        il.Emit(OpCodes.Ret);
+        MethodInfo targetMethod = targetBuilder.CreateType().GetMethod("Target");
+
+        TypeBuilder delegateBuilder = module.DefineType(
+            "DynamicDelegate",
+            TypeAttributes.Public | TypeAttributes.Sealed,
+            typeof(MulticastDelegate));
+        ConstructorBuilder constructor = delegateBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            new[] { typeof(object), typeof(IntPtr) });
+        constructor.SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+        MethodBuilder invoke = delegateBuilder.DefineMethod(
+            "Invoke",
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+            resultType,
+            invokeParameters);
+        invoke.SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+        Type delegateType = delegateBuilder.CreateType();
+
+        int[] target = { A, B };
+        Delegate callback = Delegate.CreateDelegate(delegateType, target, targetMethod);
+        Assert.Same(target, callback.Target);
+
+        object boxedResult = callback.DynamicInvoke(1L, 2.0f, 3.0, 4, 5L, 6.0, 7.0f, 8.0);
+        Assert.Equal(A, (int)resultType.GetField("First").GetValue(boxedResult));
+        Assert.Equal(B, (int)resultType.GetField("Second").GetValue(boxedResult));
+    }
+
+    private static void VerifyRuntimeGeneratedTarget(ObjectPairTarget target)
+    {
+        DynamicMethod targetMethod = new(
+            "RuntimeGeneratedTarget",
+            typeof(ObjectPair),
+            new[]
+            {
+                typeof(ObjectPairTarget),
+                typeof(long),
+                typeof(float),
+                typeof(double),
+                typeof(int),
+                typeof(long),
+                typeof(double),
+                typeof(float),
+            });
+        ILGenerator il = targetMethod.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldfld, typeof(ObjectPairTarget).GetField(nameof(ObjectPairTarget.Pair)));
+        il.Emit(OpCodes.Ret);
+
+        RuntimeTargetDelegate callback = (RuntimeTargetDelegate)targetMethod.CreateDelegate(
+            typeof(RuntimeTargetDelegate),
+            target);
+        ObjectPair result = InvokeRuntimeGeneratedTarget(callback);
+        Assert.Same(target.Pair.First, result.First);
+        Assert.Same(target.Pair.Second, result.Second);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ObjectPair InvokeRuntimeGeneratedTarget(RuntimeTargetDelegate callback) =>
+        callback(1, 2.0f, 3.0, 4, 5, 6.0, 7.0f);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ObjectPair InvokeObjectPairDelegate(ReturnsObjectPairDelegate callback) => callback();
+
+    private static void VerifySharedAdapterSignatures()
+    {
+        AggregateTargetDelegate<S8> small = CreateAggregateTarget<S8>();
+        AggregateTargetDelegate<S12> large = CreateAggregateTarget<S12>();
+
+        // Both calls share their physical D adapter, but their target I thunks copy different layouts.
+        S16 smallResult = small(new S8 { A = A, B = B }, C);
+        Assert.Equal(A, smallResult.A);
+        Assert.Equal(A + B + C, smallResult.B);
+        S16 largeResult = large(new S12 { A = A, B = B, C = C }, 7);
+        Assert.Equal(A, largeResult.A);
+        Assert.Equal(A + B + C + 7, largeResult.B);
+    }
+
+    private static AggregateTargetDelegate<T> CreateAggregateTarget<T>()
+    {
+        DynamicMethod targetMethod = new(
+            "AggregateTarget",
+            typeof(S16),
+            new[] { typeof(object), typeof(T), typeof(int) });
+        ILGenerator il = targetMethod.GetILGenerator();
+        LocalBuilder result = il.DeclareLocal(typeof(S16));
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Castclass, typeof(int[]));
+        il.Emit(OpCodes.Ldc_I4_0);
+        il.Emit(OpCodes.Ldelem_I4);
+        il.Emit(OpCodes.Conv_I8);
+        il.Emit(OpCodes.Stfld, typeof(S16).GetField(nameof(S16.A)));
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Ldarg_2);
+        foreach (FieldInfo field in typeof(T).GetFields())
+        {
+            il.Emit(OpCodes.Ldarga_S, (byte)1);
+            il.Emit(OpCodes.Ldfld, field);
+            il.Emit(OpCodes.Add);
+        }
+        il.Emit(OpCodes.Conv_I8);
+        il.Emit(OpCodes.Stfld, typeof(S16).GetField(nameof(S16.B)));
+        il.Emit(OpCodes.Ldloc, result);
+        il.Emit(OpCodes.Ret);
+
+        return (AggregateTargetDelegate<T>)targetMethod.CreateDelegate(
+            typeof(AggregateTargetDelegate<T>), new[] { A });
+    }
+
+    private static void VerifyRecycledRuntimeGeneratedTargets(object first, object second)
+    {
+        // LCG MethodDescs are recycled after their DynamicMethod is collected. Exercise enough
+        // generations to reuse a descriptor and verify an adapter cache hit prepares its new PEP.
+        for (int i = 0; i < 32; i++)
+        {
+            ObjectPairTarget target = new(i % 2 == 0 ? first : second, i);
+            WeakReference weakTarget = CreateAndInvokeRuntimeGeneratedTarget(target);
+
+            for (int collection = 0; weakTarget.IsAlive && collection < 3; collection++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+            Assert.False(weakTarget.IsAlive);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference CreateAndInvokeRuntimeGeneratedTarget(ObjectPairTarget target)
+    {
+        DynamicMethod targetMethod = new(
+            "RecycledRuntimeGeneratedTarget",
+            typeof(ObjectPair),
+            new[] { typeof(ObjectPairTarget) });
+        ILGenerator il = targetMethod.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldfld, typeof(ObjectPairTarget).GetField(nameof(ObjectPairTarget.Pair)));
+        il.Emit(OpCodes.Ret);
+
+        ReturnsObjectPairDelegate callback = (ReturnsObjectPairDelegate)targetMethod.CreateDelegate(
+            typeof(ReturnsObjectPairDelegate),
+            target);
+        ObjectPair result = InvokeObjectPairDelegate(callback);
+        Assert.Same(target.Pair.First, result.First);
+        Assert.Same(target.Pair.Second, result.Second);
+
+        return new WeakReference(targetMethod);
+    }
+
+    // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
+    private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;
+
+    [UnmanagedCallersOnly]
+    private static int UnmanagedCallerCallsInterpreted(int a) => InterpretedFromUnmanagedCaller(a);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int InterpretedFromUnmanagedCaller(int a) => a + C;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ReturnsObjectPairDelegate CreateObjectPairDelegate(ObjectPairTarget target) => target.GetPair;
+
+    // SkiaSharp SKManagedStream callback shape: GCHandle resolve (generic + castclass) then a virtual
+    // call whose override is interpreted.
+    private abstract class ManagedStreamLike
+    {
+        public abstract int OnGetLengthCore();
+    }
+
+    private sealed class ConcreteManagedStream : ManagedStreamLike
+    {
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override int OnGetLengthCore() => C;
+    }
+
+    private static T GetUserData<T>(IntPtr ptr, out GCHandle handle) where T : class
+    {
+        handle = GCHandle.FromIntPtr(ptr);
+        return (T)handle.Target!;
+    }
+
+    // R2R caller -> UCO -> UCO. Each calli is an inlined PInvoke; the inner one lowers the
+    // __stack_pointer global, and the outer one's epilog asserts that the global is back at the
+    // caller's SP, so this fails unless the UCO epilog restores the global before returning.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe int R2RCallsNestingUco()
+    {
+        delegate* unmanaged<int> fp = &UcoWithInlinedPInvoke;
+        return fp();
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe int UcoWithInlinedPInvoke()
+    {
+        delegate* unmanaged<int> fp = &UcoLeaf;
+        return fp() + 1;
+    }
+
+    [UnmanagedCallersOnly]
+    private static int UcoLeaf() => 41;
+
+    [UnmanagedCallersOnly]
+    private static int StreamLengthProxy(IntPtr s, IntPtr context)
+    {
+        ManagedStreamLike stream = GetUserData<ManagedStreamLike>(context, out _);
+        return stream.OnGetLengthCore();
+    }
 
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -382,4 +904,81 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int R2RInstanceTakesS16AndTwoInt(S16 s, int a, int b) => (int)(s.A + s.B) + a + b + _state; // MiTS16iip
+}
+
+internal class VirtualDelegateBase(int state)
+{
+    protected int State => state;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal virtual int Transform(int value) => value + State;
+}
+
+internal sealed class VirtualDelegateDerived(int state) : VirtualDelegateBase(state)
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal override int Transform(int value) => value + State + 1;
+}
+
+internal sealed class GenericDelegateTarget<T>(int state)
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal int Transform(int value) => value + state;
+}
+
+internal static class WasmDelegateTargets
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static int ClosedStaticDelegateTarget(this WasmInterpreterTransitions target, int value) =>
+        value + target.State;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static WasmInterpreterTransitions.S8 ClosedStaticRetBufDelegateTarget(
+        this WasmInterpreterTransitions target,
+        int value) =>
+        new WasmInterpreterTransitions.S8 { A = value, B = target.State };
+}
+
+public struct ObjectPair
+{
+    public object First;
+    public object Second;
+}
+
+public struct SingleInt
+{
+    public int Value;
+}
+
+public enum SmallEnum
+{
+    Value = 1,
+}
+
+public sealed class ObjectPairTarget
+{
+    public ObjectPairTarget(object first, object second)
+    {
+        Pair = new ObjectPair { First = first, Second = second };
+    }
+
+    public ObjectPair Pair;
+}
+
+public static class ObjectPairTargetExtensions
+{
+    public static ObjectPair GetPair(this ObjectPairTarget target) => target.Pair;
+
+    public static SingleInt GetSingleInt(this ObjectPairTarget target) => new SingleInt { Value = 0x11223344 };
+
+    public static SmallEnum GetSmallEnum(this ObjectPairTarget target) => SmallEnum.Value;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ObjectPair GetPairInterpreted(this ObjectPairTarget target) => target.Pair;
+}
+
+public static class GenericObjectPairTarget<T>
+{
+    public static ObjectPair GetPair(ObjectPairTarget target) => target.Pair;
 }

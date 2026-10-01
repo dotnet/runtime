@@ -91,6 +91,10 @@ export class HostBuilder implements DotnetHostBuilder {
         });
         return this;
     }
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder {
+        Module.onDownloadResourceProgress = callback;
+        return this;
+    }
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
         setLoadBootResourceCallback(loadBootResource);
         return this;

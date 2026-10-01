@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-extern alias crossgen2;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -9,14 +8,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using ILCompiler.ObjectWriter;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Xunit;
 using Xunit.Abstractions;
-using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCases;
 
@@ -842,6 +839,50 @@ public class R2RTestSuites
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmDelegateConstructors()
+    {
+        var wasmDelegateConstructors = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmDelegateConstructors),
+            SourceResourceNames = ["Webcil/WasmDelegateConstructors.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmDelegateConstructors),
+            [
+                new(nameof(WasmDelegateConstructors), [new CrossgenAssembly(wasmDelegateConstructors)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+            List<ReadyToRunImportSection.ImportSectionEntry> importEntries = reader.ImportSections
+                .Where(section => section.Entries is not null)
+                .SelectMany(section => section.Entries)
+                .ToList();
+            List<string> importSignatures = importEntries
+                .Where(entry => entry.Signature is not null)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            string diagnostic = string.Join(Environment.NewLine, importSignatures);
+
+            Assert.DoesNotContain(importEntries, entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.DelegateConstruct(", StringComparison.Ordinal)),
+                diagnostic);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.CtorClosed(", StringComparison.Ordinal)),
+                diagnostic);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmVirtualDispatch()
     {
         var wasmVirtualDispatch = new CompiledAssembly
@@ -1092,6 +1133,25 @@ public class R2RTestSuites
             ReadyToRunSection section = reader.ReadyToRunHeader.Sections.Values.First();
             int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
             Assert.Equal(0, payloadOffset & 0xF);
+
+            WasmR2RAssert.AssertWebcilSegmentLayout(webcilReader, isComponentStub: false);
+
+            foreach (string assemblyName in new[] { "CompositeLib", nameof(WasmCompositeModule) })
+            {
+                string componentPath = Path.Combine(
+                    Path.GetDirectoryName(reader.Filename)!,
+                    assemblyName + ".wasm");
+                Assert.True(File.Exists(componentPath), $"Component image not found: {componentPath}");
+
+                var componentReader = new WebcilImageReader(File.ReadAllBytes(componentPath));
+                WasmR2RAssert.AssertWebcilSegmentLayout(componentReader, isComponentStub: true);
+
+                IAssemblyMetadata metadata = componentReader.GetStandaloneAssemblyMetadata();
+                Assert.NotNull(metadata);
+                Assert.Equal(
+                    assemblyName,
+                    metadata.MetadataReader.GetString(metadata.MetadataReader.GetAssemblyDefinition().Name));
+            }
         }
     }
 
@@ -1791,6 +1851,42 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaits(", 1, out diag), diag);
             Assert.True(R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaitsWithRefs(", 1, out diag), diag);
             Assert.True(R2RAssert.AsyncMethodsWithResumptionStubsAreAdjacent(reader, out diag), diag);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void RuntimeAsyncWasmDiagnosticIPFixups()
+    {
+        var asm = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeAsyncWasmDiagnosticIPFixups),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/AsyncMultipleSuspensionPoints.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeAsyncWasmDiagnosticIPFixups),
+            [
+                new(nameof(RuntimeAsyncWasmDiagnosticIPFixups), [new CrossgenAssembly(asm)])
+                {
+                    AdditionalArgs = { "--determinism-stress=2" },
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(
+                WasmR2RAssert.HasExpectedAsyncResumeInfoFixups(reader, out string diagnostic),
+                diagnostic);
+            Assert.True(
+                R2RAssert.WasmAsyncResumeTargetsMatchRuntimeFunctionOrder(reader, out diagnostic),
+                diagnostic);
         }
     }
 
@@ -2658,6 +2754,56 @@ public class R2RTestSuites
         }
     }
 
+    /// <summary>
+    /// Tests cross-module generic compilation where the runtime-async variant of a method from an
+    /// --opt-cross-module library is compiled into the consumer and inlines another library method.
+    /// The inlining info must reference the IL body fixup that was recorded for the async variant.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    public void AsyncCrossModuleGenericInliner()
+    {
+        var asyncCrossModuleGenericLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncCrossModuleGenericLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/AsyncCrossModuleGenericLib.cs"],
+            Features = { RuntimeAsyncFeature },
+        };
+        var consumer = new CompiledAssembly
+        {
+            AssemblyName = "AsyncGenericInlinerConsumer",
+            SourceResourceNames = ["CrossModuleInlining/AsyncGenericInlinerConsumer.cs"],
+            References = [asyncCrossModuleGenericLib],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AsyncCrossModuleGenericInliner),
+            [
+                new(consumer.AssemblyName,
+                [
+                    new CrossgenAssembly(asyncCrossModuleGenericLib)
+                    {
+                        Kind = Crossgen2InputKind.Reference,
+                        Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                    new CrossgenAssembly(consumer),
+                ])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncCrossModuleGenericLib", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliners(reader, "GetAsyncGenericValue", ["InvokeGetValueAsync"], out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GetValueTask", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinerCount(reader, "GetSharedInlineeValue", "GetValueTask", 1, out diag), diag);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void VirtualMethodGenericsNonGVM()
     {
@@ -2911,56 +3057,8 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            var imageSpan = reader.Image.AsSpan();
-            Assert.True(imageSpan.Slice(0, 8) is [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00], "Expected wasm magic and version at the start of the image");
-            // Skip wasm magic and version
-            long offset = 8;
-            int sectionCount = 0;
-            const int MaxExpectedSectionCount = 64; // sanity check to avoid infinite loops in case of malformed wasm image
-            while (offset < imageSpan.Length && sectionCount < MaxExpectedSectionCount)
-            {
-                sectionCount++;
-                byte sectionKind = imageSpan[(int)offset];
-                long sectionSize = (long)DwarfHelper.ReadULEB128(imageSpan.Slice((int)(offset + 1)), out int sectionSizeBytes);
-                if (sectionKind != 11 /*Data*/)
-                {
-                    offset += (long)sectionSize + 1 + sectionSizeBytes;
-                    continue;
-                }
-
-                // Data section for webcil:
-                // (byte) 11 // section kind
-                // (ULEB) section size
-                // (ULEB) segment count
-                // Webcil segment 0
-                // | (byte) segment kind (1, passive)
-                // | (ULEB) segment size
-                // | (byte*) content - 2 little endian u32 (payloadsize, tablesize)
-                // Webcil payload
-                // | (segment kind) (1, passive)
-                // | (ULEB) segment size
-                // | (byte*) content - webcil data, aligned
-
-                int segmentCount = (int)DwarfHelper.ReadULEB128(imageSpan.Slice((int)(offset + 1 + sectionSizeBytes)), out int segmentCountBytes);
-                Assert.True(segmentCount == 2, "Expected 2 segments in the data section");
-
-                int firstSegmentOffset = (int)(offset + 1 + sectionSizeBytes + segmentCountBytes);
-                int firstSegmentKind = imageSpan[firstSegmentOffset];
-                Assert.True(firstSegmentKind == 1, "Expected first segment to be passive (kind 1)");
-                int firstSegmentSize = (int)DwarfHelper.ReadULEB128(imageSpan.Slice(firstSegmentOffset + 1), out int firstSegmentSizeBytes);
-
-                int payloadSegmentOffset = firstSegmentOffset + 1 + firstSegmentSizeBytes + firstSegmentSize;
-                int payloadSegmentKind = imageSpan[payloadSegmentOffset];
-                Assert.True(payloadSegmentKind == 1, "Expected second segment to be passive (kind 1)");
-                int payloadSegmentSize = (int)DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentOffset + 1), out int payloadSegmentSizeBytes);
-                int payloadContentOffset = payloadSegmentOffset + 1 + payloadSegmentSizeBytes;
-                Assert.True(payloadContentOffset % WebCilObjectWriter.WebcilSectionAlignment == 0,
-                    $"Expected payload content to be aligned to {WebCilObjectWriter.WebcilSectionAlignment} bytes, but got offset {payloadContentOffset}");
-                Assert.True(payloadContentOffset + payloadSegmentSize == offset + sectionSize + 1 + sectionSizeBytes,
-                    $"Expected payload segment to end at the end of the data section, but got {payloadContentOffset + payloadSegmentSize} vs {offset + sectionSize + 1 + sectionSizeBytes}");
-                return;
-            }
-            Assert.Fail("Data section not found in the wasm image");
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            WasmR2RAssert.AssertWebcilSegmentLayout(webcilReader, isComponentStub: false);
         }
     }
 }

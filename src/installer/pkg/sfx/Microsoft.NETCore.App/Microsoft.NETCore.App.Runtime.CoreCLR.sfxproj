@@ -6,6 +6,8 @@
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+  <Import Project="$(WasmPInvokeModulesPropsPath)"
+          Condition="'$(TargetOS)' == 'browser'" />
 
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
@@ -34,7 +36,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' == 'true'">
-    <IncludeMibcFilesInReadyToRun>false</IncludeMibcFilesInReadyToRun>
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
     <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunEmitSymbols>false</PublishReadyToRunEmitSymbols>
@@ -90,6 +91,7 @@
       <_WasmCoreLibIL Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)System.Private.CoreLib.dll</_WasmCoreLibIL>
       <_WasmCoreLibIL Condition="'$(_WasmCoreLibIL)' == '' and Exists('$(CoreCLRArtifactsPath)IL\System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)IL\System.Private.CoreLib.dll</_WasmCoreLibIL>
       <_WasmCrossgen2Exe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmCrossgen2Exe>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
     <Error Condition="'$(_WasmCoreLibIL)' == ''"
            Text="PublishReadyToRun is true but System.Private.CoreLib IL was not found under '$(CoreCLRArtifactsPath)'. Build CoreCLR first or set PublishReadyToRun=false." />
@@ -98,6 +100,7 @@
     <ItemGroup>
       <_ReadyToRunCompilerInputs Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.dll;$(_WasmCoreLibIL)" />
       <_ReadyToRunCompilerInputs Include="$(Crossgen2InBuildDir)*jit*.dll;$(Crossgen2InBuildDir)*jit*.dylib;$(Crossgen2InBuildDir)*jit*.so" />
+      <_ReadyToRunCompilerInputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)" />
     </ItemGroup>
   </Target>
 

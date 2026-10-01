@@ -2391,6 +2391,31 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 }
 
 //------------------------------------------------------------------------
+// UpdateStoreType: Update the type of a GC store whose data may point to the stack.
+//
+// Arguments:
+//    store   - Store node
+//    newType - New type of the store data
+//
+void ObjectAllocator::UpdateStoreType(GenTree* store, var_types newType)
+{
+    assert(varTypeIsGC(store->TypeGet()));
+
+    StoreInfo* const info = m_StoreAddressToIndexMap.LookupPointer(store);
+    if (info != nullptr)
+    {
+        unsigned const addressIndex = info->m_index;
+        if ((addressIndex != BAD_VAR_NUM) && !DoesIndexPointToStack(addressIndex))
+        {
+            store->ChangeType(TYP_BYREF);
+            return;
+        }
+    }
+
+    store->ChangeType(newType);
+}
+
+//------------------------------------------------------------------------
 // UpdateAncestorTypes: Update types of some ancestor nodes of a possibly-stack-pointing
 //                      tree from TYP_REF to TYP_BYREF or TYP_I_IMPL.
 //
@@ -2436,6 +2461,28 @@ void ObjectAllocator::UpdateAncestorTypes(
                     {
                         parent->ChangeType(newType);
                     }
+                }
+                break;
+            }
+
+            case GT_STORE_LCL_FLD:
+            {
+                assert(tree == parent->AsLclVarCommon()->Data());
+
+                if (parent->TypeIs(TYP_STRUCT))
+                {
+                    assert(retypeFields);
+                    GenTreeLclFld* const store     = parent->AsLclFld();
+                    ClassLayout* const   oldLayout = store->GetLayout();
+
+                    if (oldLayout->HasGCPtr())
+                    {
+                        store->SetLayout(GetRetypedLayout(oldLayout, newLayout));
+                    }
+                }
+                else if (varTypeIsGC(parent->TypeGet()))
+                {
+                    UpdateStoreType(parent, newType);
                 }
                 break;
             }
@@ -2578,27 +2625,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                     if (varTypeIsGC(parent->TypeGet()))
                     {
                         // We are storing a non-struct value, possibly to a struct field.
-                        //
-                        // See if we can figure out the field type from the address.
-                        // It might be TYP_BYREF even if the value we are storing is TYP_I_IMPL.
-                        //
-                        StoreInfo* const info       = m_StoreAddressToIndexMap.LookupPointer(parent);
-                        bool             wasRetyped = false;
-
-                        if (info != nullptr)
-                        {
-                            unsigned const addressIndex = info->m_index;
-                            if ((addressIndex != BAD_VAR_NUM) && !DoesIndexPointToStack(addressIndex))
-                            {
-                                parent->ChangeType(TYP_BYREF);
-                                wasRetyped = true;
-                            }
-                        }
-
-                        if (!wasRetyped)
-                        {
-                            parent->ChangeType(newType);
-                        }
+                        UpdateStoreType(parent, newType);
                     }
                     else if (retypeFields && parent->OperIs(GT_STORE_BLK))
                     {
@@ -2607,25 +2634,7 @@ void ObjectAllocator::UpdateAncestorTypes(
 
                         if (oldLayout->HasGCPtr())
                         {
-                            if (newLayout->GetSize() == oldLayout->GetSize())
-                            {
-                                block->SetLayout(newLayout);
-                            }
-                            else
-                            {
-                                // We must be storing just a portion of the original local
-                                //
-                                assert(newLayout->GetSize() > oldLayout->GetSize());
-
-                                if (newLayout->HasGCPtr())
-                                {
-                                    block->SetLayout(GetByrefLayout(oldLayout));
-                                }
-                                else
-                                {
-                                    block->SetLayout(GetNonGCLayout(oldLayout));
-                                }
-                            }
+                            block->SetLayout(GetRetypedLayout(oldLayout, newLayout));
                         }
                     }
                 }
@@ -2653,26 +2662,7 @@ void ObjectAllocator::UpdateAncestorTypes(
 
                         if (oldLayout->HasGCPtr())
                         {
-                            if (newLayout->GetSize() == oldLayout->GetSize())
-                            {
-                                block->SetLayout(newLayout);
-                            }
-                            else
-                            {
-                                // We must be loading just a portion of the original local
-                                //
-                                assert(newLayout->GetSize() > oldLayout->GetSize());
-
-                                if (newLayout->HasGCPtr())
-                                {
-                                    block->SetLayout(GetByrefLayout(oldLayout));
-                                }
-                                else
-                                {
-                                    block->SetLayout(GetNonGCLayout(oldLayout));
-                                }
-                            }
-
+                            block->SetLayout(GetRetypedLayout(oldLayout, newLayout));
                             didRetype = true;
                         }
                     }
@@ -3598,6 +3588,30 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
                     // they are properly disjoint and things will work out just fine.
                     //
                     JITDUMP("Looks like enumerator var re-use (multiple defining GDVs)\n");
+
+                    // Since we are walking in RPO, all appearances assigned to
+                    // earlier candidates have already been seen. The partition
+                    // is unsafe if this definition may reach those appearances
+                    // through a backedge, or if it is on a sibling flow path.
+                    //
+                    for (CloneInfo* const previousInfo : CloneMap::ValueIteration(&m_CloneMap))
+                    {
+                        if (previousInfo->m_local != enumeratorLocal)
+                        {
+                            continue;
+                        }
+
+                        EnumeratorVar* previousEnumeratorVar = nullptr;
+                        bool const     hasDominatingDef =
+                            previousInfo->m_appearanceMap->Lookup(enumeratorLocal, &previousEnumeratorVar) &&
+                            (previousEnumeratorVar->m_def != nullptr) &&
+                            m_compiler->m_domTree->Dominates(previousEnumeratorVar->m_def->m_block, block);
+
+                        if (block->HasFlag(BBF_BACKWARD_JUMP) || !hasDominatingDef)
+                        {
+                            previousInfo->m_hasConflictingRedefinition = true;
+                        }
+                    }
                 }
 
                 // We will query this info if we see CALL(enumeratorLocal)
@@ -3986,6 +4000,12 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     assert(!info->m_checkedCanClone);
     JITDUMP("** Seeing if we can clone to guarantee non-escape under V%02u\n", info->m_local);
     BasicBlock* const allocBlock = info->m_allocBlock;
+
+    if (info->m_hasConflictingRedefinition)
+    {
+        JITDUMP("V%02u has a later definition that may reach its guarded uses\n", info->m_local);
+        return false;
+    }
 
     // Cloning redirects the allocation block's sole outgoing edge to the fast path,
     // so the allocation block must be a block kind that has a single target.
@@ -4971,6 +4991,29 @@ ClassLayout* ObjectAllocator::GetBoxedLayout(ClassLayout* layout)
 #endif
 
     return m_compiler->typGetCustomLayout(b);
+}
+
+//------------------------------------------------------------------------------
+// GetRetypedLayout: get the retyped layout for a struct use.
+//
+// Arguments:
+//   oldLayout - layout of the struct use
+//   newLayout - retyped layout of the containing local
+//
+ClassLayout* ObjectAllocator::GetRetypedLayout(ClassLayout* oldLayout, ClassLayout* newLayout)
+{
+    assert(oldLayout->HasGCPtr());
+
+    if (newLayout->GetSize() == oldLayout->GetSize())
+    {
+        return newLayout;
+    }
+
+    // The use refers to just a portion of the retyped local.
+    //
+    assert(newLayout->GetSize() > oldLayout->GetSize());
+
+    return newLayout->HasGCPtr() ? GetByrefLayout(oldLayout) : GetNonGCLayout(oldLayout);
 }
 
 //------------------------------------------------------------------------------

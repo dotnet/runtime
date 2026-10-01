@@ -58,7 +58,9 @@ class SString;
 class MethodTable;
 class DynamicMethodTable;
 class TieredCompilationManager;
+#ifdef FEATURE_INLINE_TRACKING
 class JITInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING
 
 #ifdef FEATURE_METADATA_UPDATER
 class EnCEEClassData;
@@ -72,7 +74,9 @@ class EnCEEClassData;
 #define METHOD_STUBS_HASH_BUCKETS 11
 #define GUID_TO_TYPE_HASH_BUCKETS 16
 
+#ifdef FEATURE_INLINE_TRACKING
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING
 
 //
 // LookupMaps are used to implement RID maps
@@ -818,9 +822,11 @@ public:
     bool GetJMCStatus();
     void SetJMCStatus(bool fStatus);
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // If this is a dynamic module, eagerly serialize the metadata so that it is available for DAC.
     // This is a nop for non-dynamic modules.
     void UpdateDynamicMetadataIfNeeded();
+#endif
 
 #ifdef _DEBUG
     //
@@ -1030,7 +1036,7 @@ public:
         return m_pPEAssembly->GetMDImport();
     }
 
-#ifndef DACCESS_COMPILE
+#ifdef PROFILING_SUPPORTED
     IMetaDataEmit *GetEmitter()
     {
         WRAPPER_NO_CONTRACT;
@@ -1046,7 +1052,7 @@ public:
     }
 
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
-#endif // !DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED
 
 #if defined(FEATURE_READYTORUN)
     BOOL IsInSameVersionBubble(Module *target);
@@ -1409,8 +1415,10 @@ public:
     void NotifyProfilerLoadFinished(HRESULT hr);
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_INLINE_TRACKING
     BOOL HasReadyToRunInlineTrackingMap();
     COUNT_T GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+#endif // FEATURE_INLINE_TRACKING
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
@@ -1660,9 +1668,9 @@ private:
 
     DebuggerSpecificData  m_debuggerSpecificData;
 
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+#if defined(FEATURE_INLINE_TRACKING) && (defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA))
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+#endif // FEATURE_INLINE_TRACKING && (PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA)
 
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.dll R2R image stores
@@ -1792,8 +1800,10 @@ public:
         return m_pInMemoryWriter;
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Eagerly serialize the metadata to a buffer that the debugger can retrieve.
     void CaptureModuleMetaDataToMemory();
+#endif
 };
 
 struct ModuleHolderTraits final

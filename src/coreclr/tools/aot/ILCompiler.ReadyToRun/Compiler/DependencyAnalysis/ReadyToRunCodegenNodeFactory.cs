@@ -466,6 +466,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmInterpreterToR2RThunkNode(this, key);
             });
 
+            _wasmClosedStaticRetBufThunks = new NodeCache<WasmClosedStaticRetBufThunkKey, WasmClosedStaticRetBufThunkNode>(key =>
+            {
+                return new WasmClosedStaticRetBufThunkNode(this, key.Signature);
+            });
+
             _wasmVirtualDispatchThunks = new NodeCache<WasmVirtualDispatchThunkKey, WasmVirtualDispatchThunkNode>(key =>
             {
                 return new WasmVirtualDispatchThunkNode(this, key.Signature);
@@ -558,6 +563,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new WasmTypeNode(key);
             });
+
+            _wasmMethodRelativeVirtualIPs = new(method =>
+            {
+                return new WasmMethodRelativeVirtualIPNode(this, method);
+            });
         }
 
         public int CompilationCurrentPhase { get; private set; }
@@ -575,6 +585,8 @@ namespace ILCompiler.DependencyAnalysis
         public GlobalHeaderNode Header;
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
+
+        internal WasmAsyncResumeInfoFixupsNode WasmAsyncResumeInfoFixups;
 
         public HotColdMapNode HotColdMap;
 
@@ -1012,6 +1024,30 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
         }
 
+        private readonly struct WasmClosedStaticRetBufThunkKey : IEquatable<WasmClosedStaticRetBufThunkKey>
+        {
+            public WasmSignature Signature { get; }
+
+            public WasmClosedStaticRetBufThunkKey(WasmSignature signature)
+            {
+                Signature = signature;
+            }
+
+            public bool Equals(WasmClosedStaticRetBufThunkKey other) =>
+                Signature.FuncType.Equals(other.Signature.FuncType);
+
+            public override bool Equals(object obj) =>
+                obj is WasmClosedStaticRetBufThunkKey other && Equals(other);
+
+            public override int GetHashCode() => Signature.FuncType.GetHashCode();
+        }
+
+        private NodeCache<WasmClosedStaticRetBufThunkKey, WasmClosedStaticRetBufThunkNode> _wasmClosedStaticRetBufThunks;
+        public WasmClosedStaticRetBufThunkNode WasmClosedStaticRetBufThunk(WasmSignature wasmSignature)
+        {
+            return _wasmClosedStaticRetBufThunks.GetOrAdd(new WasmClosedStaticRetBufThunkKey(wasmSignature));
+        }
+
         private readonly struct WasmVirtualDispatchThunkKey : IEquatable<WasmVirtualDispatchThunkKey>
         {
             public WasmSignature Signature { get; }
@@ -1052,6 +1088,12 @@ namespace ILCompiler.DependencyAnalysis
 
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable);
+
+            if (Target.IsWasm)
+            {
+                WasmAsyncResumeInfoFixups = new WasmAsyncResumeInfoFixupsNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.WasmAsyncResumeInfo, WasmAsyncResumeInfoFixups);
+            }
 
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
@@ -1457,6 +1499,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
+        private NodeCache<MethodWithGCInfo, WasmMethodRelativeVirtualIPNode> _wasmMethodRelativeVirtualIPs;
 
         private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>
         {
@@ -1502,6 +1545,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             WasmFuncType funcType = WasmLowering.GetSignature(method).FuncType;
             return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+
+        public WasmTypeNode WasmTypeNode(INodeWithTypeSignature node)
+        {
+            return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(node).FuncType);
+        }
+
+        internal WasmMethodRelativeVirtualIPNode WasmMethodRelativeVirtualIP(MethodWithGCInfo method)
+        {
+            return _wasmMethodRelativeVirtualIPs.GetOrAdd(method);
         }
     }
 }

@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <set>
 #include <sstream>
@@ -16,6 +17,21 @@
 
 // Shared pal (path handling, CORE_ROOT/TPA helpers); header-only, so no corerun object is linked.
 #include "corerun.hpp"
+
+// WASI R2R external-assembly probe, so the per-app host serves statically-composed R2R images instead
+// of silently interpreting everything. Requires corerun.hpp above (pal::try_map_file_readonly).
+#include "wasi_r2r_probe.hpp"
+
+namespace wasi_r2r
+{
+// A ReadyToRun publish supplies strong definitions sized from its composite. Keep non-R2R app links
+// working with a minimal placeholder.
+extern "C"
+{
+    alignas(16) __attribute__((weak)) uint8_t g_wasi_r2r_image[64] = {};
+    __attribute__((weak)) uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image);
+}
+}
 
 #include <host_runtime_contract.h>
 
@@ -26,7 +42,6 @@ namespace envvar
 {
     const char_t* const coreRoot = W("CORE_ROOT");
     const char_t* const coreLibraries = W("CORE_LIBRARIES");
-    const char_t* const printExitCode = W("DOTNET_WASI_PRINT_EXIT_CODE");
 }
 
 // Statically linked at the per-app relink, so declared extern here (as browserhost does).
@@ -70,9 +85,36 @@ extern "C" __attribute__((weak)) int32_t GlobalizationNative_LoadICUData(const c
 static std::vector<std::string> s_property_keys;
 static std::vector<std::string> s_property_values;
 
+// R2R external-assembly probe search dirs, captured before coreclr_initialize so the probe callback
+// (invoked later by the runtime) can reach them.
+static string_t s_r2r_app_path;
+static string_t s_r2r_core_root;
+static string_t s_r2r_core_libs;
+
 static void log_error_info(const char* line)
 {
     std::fprintf(stderr, "%s\n", line);
+}
+
+// Serves statically-composed R2R images (the composite plus per-assembly stubs) to the runtime, using
+// the shared WASI probe. Returns false for everything else, so non-R2R assemblies load normally via the
+// TPA list.
+static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
+    const char* path,
+    void** data_start,
+    int64_t* size)
+{
+    const char* name = path;
+    const char* slash = ::strrchr(name, '/');
+    if (slash != nullptr)
+        name = slash + 1;
+
+    const char* const r2r_dirs[] = {
+        s_r2r_app_path.empty() ? nullptr : s_r2r_app_path.c_str(),
+        s_r2r_core_libs.empty() ? nullptr : s_r2r_core_libs.c_str(),
+        (s_r2r_core_root.empty() || s_r2r_core_root == s_r2r_app_path) ? nullptr : s_r2r_core_root.c_str()
+    };
+    return wasi_r2r::WasiStaticR2RProbe(name, r2r_dirs, sizeof(r2r_dirs) / sizeof(r2r_dirs[0]), data_start, size);
 }
 
 // Include only the first instance of each simple assembly name (CoreCLR may otherwise prefer a
@@ -172,6 +214,11 @@ int main(int argc, char* argv[])
         core_root = app_path;
     pal::ensure_trailing_delimiter(core_root);
 
+    // Capture the R2R probe search dirs (trailing-delimited) for the external_assembly_probe callback.
+    s_r2r_app_path = app_path;
+    s_r2r_core_root = core_root;
+    s_r2r_core_libs = core_libs;
+
     string_t exe_path = pal::get_exe_path();
 
     string_t tpa_list = build_tpa(core_root, core_libs);
@@ -193,6 +240,7 @@ int main(int argc, char* argv[])
     static host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
     host_contract.get_runtime_property = &get_runtime_property;
     host_contract.pinvoke_override = &callhelpers_pinvoke_override;
+    host_contract.external_assembly_probe = &external_assembly_probe;
     {
         std::stringstream ss;
         ss << "0x" << std::hex << (size_t)(&host_contract);
@@ -260,12 +308,7 @@ int main(int argc, char* argv[])
         latched_exit_code = -1;
     }
 
-    // wasi:cli/exit's exit() only signals ok/err, so wasmtime collapses a non-zero result to host
-    // exit 1. Under DOTNET_WASI_PRINT_EXIT_CODE=1, emit a "WASM EXIT <n>" marker the WASI launcher
-    // parses (matching Mono). exit-with-code is stable in WASI 0.3 but still @unstable in the wasip2
-    // world this targets; see corerun.cpp.
-    if (pal::getenv(envvar::printExitCode) == W("1"))
-        std::fprintf(stderr, "WASM EXIT %d\n", latched_exit_code);
-
-    return latched_exit_code;
+    // Returning from main only reports success/failure through wasi:cli/run.
+    // exit() reports the actual code through wasi:cli/exit's exit-with-code.
+    std::exit(latched_exit_code);
 }

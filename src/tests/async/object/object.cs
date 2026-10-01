@@ -9,9 +9,9 @@ using Xunit;
 public class Async2Object
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static async Task<int> TestEntryPoint()
     {
-        return (int)AsyncTestEntryPoint(100).Result;
+        return (int)(await AsyncTestEntryPoint(100));
     }
 
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
