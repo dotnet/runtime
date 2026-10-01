@@ -1860,7 +1860,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 #endif
 }
 
-void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSPEND_REASON reason)
+void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSPEND_REASON reason) noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -2050,7 +2050,7 @@ extern void WaitForEndOfShutdown();
 // currently in progress.  This is the situation when returning back into
 // the EE from outside.  See the comments in DisablePreemptiveGC() to understand
 // why we Enable GC here!
-void Thread::RareDisablePreemptiveGC()
+void Thread::RareDisablePreemptiveGC() noexcept
 {
     PreserveLastErrorHolder preserveLastError;
 
@@ -2450,7 +2450,7 @@ bool ThreadStore::IsTrappingThreadsForSuspension()
 
 #ifdef FEATURE_HIJACK
 
-void RedirectedThreadFrame::ExceptionUnwind_Impl()
+void RedirectedThreadFrame::ExceptionUnwind_Impl() noexcept
 {
     CONTRACTL
     {

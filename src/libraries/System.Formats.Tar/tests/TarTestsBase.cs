@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -957,15 +958,16 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        internal static void VerifyCreateFromDirectory_UsesWriterOptions(Stream archive, bool preserveLinks)
+        internal static async Task VerifyCreateFromDirectory_UsesWriterOptions(Stream archive, bool preserveLinks, bool async)
         {
             archive.Position = 0;
-            using TarReader reader = new TarReader(archive);
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-            TarEntry entry1 = reader.GetNextEntry();
+            TarEntry entry1 = await GetNextEntry(reader, async: async);
             Assert.NotNull(entry1);
 
-            TarEntry entry2 = reader.GetNextEntry();
+            TarEntry entry2 = await GetNextEntry(reader, async: async);
             Assert.NotNull(entry2);
 
             if (preserveLinks)
@@ -978,7 +980,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(TarEntryType.RegularFile, entry2.EntryType);
             }
 
-            Assert.Null(reader.GetNextEntry());
+            Assert.Null(await GetNextEntry(reader, async: async));
         }
 
         protected static byte[] BuildRawPaxArchive(

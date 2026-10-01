@@ -28,6 +28,7 @@ internal class WasmModuleReader : IDisposable
         Code,
         Data,
         DataCount,
+        Tag,
     }
 
     private readonly BinaryReader _reader;
