@@ -1722,7 +1722,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
     unsigned int beginOffs = block->bbCodeOffs;
 
 #if defined(TARGET_WASM)
-    // Scan all scopes directly because the relooper does not emit blocks in
+    // Scan all scopes directly because our elimination of irreducible flow does not emit blocks in
     // increasing IL offset order.
     if (m_compiler->opts.OptimizationDisabled())
     {
