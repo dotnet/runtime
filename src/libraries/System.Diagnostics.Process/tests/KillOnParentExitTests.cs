@@ -56,10 +56,12 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void KillOnParentExit_ProcessStartsAfterParentJoinsAdditionalJob()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void KillOnParentExit_ProcessStartsAfterParentJoinsAdditionalJob(bool startSuspended)
         {
-            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke((startSuspendedString) =>
             {
                 using (Process seed = CreateProcess(static () => RemoteExecutor.SuccessExitCode))
                 {
@@ -74,13 +76,19 @@ namespace System.Diagnostics.Tests
 
                 using Process child = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
                 child.StartInfo.KillOnParentExit = true;
+                child.StartInfo.StartSuspended = bool.Parse(startSuspendedString);
                 child.Start();
+
+                if (child.StartInfo.StartSuspended)
+                {
+                    child.SafeHandle.Resume();
+                }
 
                 Assert.True(child.WaitForExit(WaitInMS));
                 Assert.Equal(RemoteExecutor.SuccessExitCode, child.ExitCode);
 
                 return RemoteExecutor.SuccessExitCode;
-            });
+            }, startSuspended.ToString());
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -333,9 +341,11 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern SafeFileHandle CreateJobObjectW(IntPtr jobAttributes, IntPtr name);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool AssignProcessToJobObject(SafeFileHandle job, SafeProcessHandle process);

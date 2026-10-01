@@ -120,19 +120,16 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(s_killOnParentExitJobsLock.IsReadLockHeld || s_killOnParentExitJobsLock.IsWriteLockHeld);
 
-            if (s_killOnParentExitJob is null)
+            lock (s_killOnParentExitJobs)
             {
-                lock (s_killOnParentExitJobs)
+                if (s_killOnParentExitJob is null)
                 {
-                    if (s_killOnParentExitJob is null)
-                    {
-                        s_killOnParentExitJob = CreateKillOnParentExitJob();
-                        s_killOnParentExitJobs.Add(s_killOnParentExitJob);
-                    }
+                    s_killOnParentExitJob = CreateKillOnParentExitJob();
+                    s_killOnParentExitJobs.Add(s_killOnParentExitJob);
                 }
-            }
 
-            return s_killOnParentExitJob;
+                return s_killOnParentExitJob;
+            }
         }
 
         private static unsafe Interop.Kernel32.SafeJobHandle ReplaceKillOnParentExitJob()
@@ -222,8 +219,7 @@ namespace Microsoft.Win32.SafeHandles
             // or pass bInheritHandles=false when there are no valid handles to inherit.
             // For that, we need a reader lock (concurrent starts with different explicit lists are safe).
             // When InheritedHandles is not set, we use the existing approach with a writer lock.
-            bool useReadLock = restrictInheritedHandles;
-            if (useReadLock)
+            if (restrictInheritedHandles)
             {
                 ProcessUtils.s_processStartLock.EnterReadLock();
             }
@@ -549,7 +545,7 @@ namespace Microsoft.Win32.SafeHandles
                     s_killOnParentExitJobsLock.ExitReadLock();
                 }
 
-                if (useReadLock)
+                if (restrictInheritedHandles)
                 {
                     ProcessUtils.s_processStartLock.ExitReadLock();
                 }
