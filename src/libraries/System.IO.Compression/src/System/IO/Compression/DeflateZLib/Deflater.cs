@@ -18,7 +18,11 @@ namespace System.IO.Compression
         // avoiding the page-fault/heap-contention regression from zlib-ng's larger single allocation
         // per deflate state (see https://github.com/dotnet/runtime/issues/134700).
         // Sixteen maximum-sized states cap idle native memory at roughly 5.2 MiB.
+        // The regression was specific to Windows' single shared, lock-serialized heap, so pooling is
+        // scoped to Windows: other platforms would otherwise retain that unmanaged memory indefinitely
+        // for no measured benefit.
         private const int MaxPooledDeflaterStates = 16;
+        private static readonly bool s_poolingEnabled = OperatingSystem.IsWindows();
         private static readonly object s_poolLock = new();
         private static readonly DeflaterState?[] s_pool = new DeflaterState?[MaxPooledDeflaterStates];
         private static int s_nextEvictionIndex;
@@ -335,6 +339,11 @@ namespace System.IO.Compression
 
         private static DeflaterState? RentDeflaterState(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
         {
+            if (!s_poolingEnabled)
+            {
+                return null;
+            }
+
             // The 4 parameters below must match exactly: deflateReset() resets zlib's internal counters/buffers
             // but cannot change the level/strategy/windowBits/memLevel a stream was originally initialized with,
             // so a pooled state is only safe to reuse for another Deflater requesting the identical configuration.
@@ -355,6 +364,12 @@ namespace System.IO.Compression
 
         private static void ReturnToPool(DeflaterState state)
         {
+            if (!s_poolingEnabled)
+            {
+                state.Dispose();
+                return;
+            }
+
             DeflaterState? evictedState = null;
             lock (s_poolLock)
             {

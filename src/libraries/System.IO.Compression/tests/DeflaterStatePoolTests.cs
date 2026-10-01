@@ -16,7 +16,7 @@ namespace System.IO.Compression
     // ZLibStream all share a pool of native deflate states, keyed by compression level/strategy/window
     // bits/mem level. These tests live here (rather than in the shared CompressionStreamUnitTestBase used by
     // Brotli/Zstandard fixtures too) because only these three formats are backed by the pooled Deflater.
-    public class DeflaterStatePoolTests
+    public class DeflaterStatePool134700Tests
     {
         public enum StreamFormat
         {
