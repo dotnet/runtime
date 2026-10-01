@@ -74,13 +74,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     ArenaAllocatorWithDestructorT<InterpMemKindTraits> arenaAllocator;
 
-#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
-    // Without a JIT, all valid modes must use the interpreter.
-    if (static_cast<unsigned>(InterpConfig.InterpMode()) > 3)
-    {
-        NO_WAY("Unsupported value for DOTNET_InterpMode");
-    }
-#else
+#if defined(FEATURE_DYNAMIC_CODE_COMPILED)
     bool doInterpret = false;
 
     if ((g_interpModule != NULL) && (methodInfo->scope == g_interpModule))
