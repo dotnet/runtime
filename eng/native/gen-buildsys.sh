@@ -133,21 +133,16 @@ for arg in $cmake_extra_defines "${__UnprocessedCMakeArgs[@]}" "${cmake_extra_de
         -DCMAKE_TOOLCHAIN_FILE=*|-DCMAKE_TOOLCHAIN_FILE:*=*) compiler_inputs+=$'\n'"$arg" ;;
     esac
 done
+# The cmake command, including any wrapper such as emcmake or scan-build, resolved to full paths.
 for tool in $cmake_command; do
     compiler_inputs+=$'\n'"$(command -v "$tool" || echo "$tool")"
 done
 
 compiler_inputs_file="$2/cmake_compiler_inputs.txt"
 cmake_fresh=()
-if [[ -f "$2/CMakeCache.txt" ]]; then
-    if [[ ! -f "$compiler_inputs_file" ]]; then
-        echo "No record of the compiler inputs used to configure $2; reconfiguring from scratch."
-        cmake_fresh=("--fresh")
-    elif [[ "$(cat "$compiler_inputs_file")" != "$compiler_inputs" ]]; then
-        echo "CMake compiler inputs changed since $2 was last configured; reconfiguring from scratch."
-        diff "$compiler_inputs_file" - <<< "$compiler_inputs" | sed -n -e 's/^< /  was: /p' -e 's/^> /  now: /p'
-        cmake_fresh=("--fresh")
-    fi
+if [[ -f "$2/CMakeCache.txt" && "$(cat "$compiler_inputs_file" 2>/dev/null)" != "$compiler_inputs" ]]; then
+    echo "CMake compiler inputs changed since $2 was last configured; reconfiguring from scratch."
+    cmake_fresh=("--fresh")
 fi
 
 $cmake_command \
@@ -160,11 +155,7 @@ $cmake_command \
   "${__UnprocessedCMakeArgs[@]}" \
   "${cmake_extra_defines_wasm[@]}" \
   -S "$1" \
-  -B "$2"
-cmake_exit_code=$?
+  -B "$2" \
+  && printf '%s\n' "$compiler_inputs" > "$compiler_inputs_file"
 
-if [[ "$cmake_exit_code" == 0 ]]; then
-    printf '%s\n' "$compiler_inputs" > "$compiler_inputs_file"
-fi
-
-exit "$cmake_exit_code"
+# don't add anything after this line so the cmake exit code gets propagated correctly

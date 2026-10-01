@@ -136,16 +136,10 @@ set "__CompilerInputsFile=!__IntermediatesDirPath!\cmake_compiler_inputs.txt"
 set __CMakeFreshArg=
 if exist "!__IntermediatesDirPath!\CMakeCache.txt" (
     >"!__CompilerInputsFile!.new" echo(!__CompilerInputs!
-    if exist "!__CompilerInputsFile!" (
-        fc /b "!__CompilerInputsFile!" "!__CompilerInputsFile!.new" >nul 2>&1
-        if errorlevel 1 (
-            echo CMake compiler inputs changed since !__IntermediatesDirPath! was last configured; reconfiguring from scratch.
-            for /f "usebackq delims=" %%l in ("!__CompilerInputsFile!") do echo   was: %%l
-            echo   now: !__CompilerInputs!
-            set __CMakeFreshArg=--fresh
-        )
-    ) else (
-        echo No record of the compiler inputs used to configure !__IntermediatesDirPath!; reconfiguring from scratch.
+    rem fc also fails when there is no record yet.
+    fc /b "!__CompilerInputsFile!" "!__CompilerInputsFile!.new" >nul 2>&1
+    if errorlevel 1 (
+        echo CMake compiler inputs changed since !__IntermediatesDirPath! was last configured; reconfiguring from scratch.
         set __CMakeFreshArg=--fresh
     )
     del "!__CompilerInputsFile!.new" 2>nul
