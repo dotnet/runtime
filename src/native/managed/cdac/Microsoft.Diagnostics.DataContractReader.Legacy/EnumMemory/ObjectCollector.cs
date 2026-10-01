@@ -221,7 +221,7 @@ internal sealed class ObjectCollector(
             for (int i = 0; i < buffer.Length; i++)
                 buffer[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)buffer[i]);
         }
-        StripFileInfoFromStackTrace(buffer);
+        Sanitizer.StripFileInfoFromStackTrace(buffer);
         if (_target.IsLittleEndian != BitConverter.IsLittleEndian)
         {
             for (int i = 0; i < buffer.Length; i++)
@@ -229,33 +229,6 @@ internal sealed class ObjectCollector(
         }
         // Native DAC also uses the optional update callback, leaving the string length unchanged.
         _emitter.Update(address.Value + offsetToFirstChar, bytes);
-    }
-
-    internal static void StripFileInfoFromStackTrace(Span<char> buffer)
-    {
-        // Mirror StripFileInfoFromStackTrace in vm/excep.cpp, including trailing-text removal.
-        int depth = 0;
-        int written = 0;
-        int lastMethodEnd = 0;
-        for (int i = 0; i < buffer.Length; i++)
-        {
-            char c = buffer[i];
-            buffer[written++] = c;
-            if (c == '(')
-                depth++;
-            else if (c == ')')
-            {
-                if (depth == 1)
-                {
-                    lastMethodEnd = written;
-                    while (i + 1 < buffer.Length && buffer[i + 1] is not '\r' and not '\n')
-                        i++;
-                }
-                depth--;
-            }
-        }
-
-        buffer[lastMethodEnd..].Clear();
     }
 
     private void CacheMethodTableName(TargetPointer methodTable)
