@@ -290,7 +290,7 @@ InterpreterFrame
 
 This produces three frames in order: C, B, A (innermost to outermost).
 
-When the stack walk starts with a context in interpreted code (e.g., from a debugger breakpoint, or a context seeded from an interpreted P/Invoke's `InlinedCallFrame`), the interpreted frames are already yielded from the initial context as frameless frames. Like native `StackFrameIterator::Init`, the walker reads the owning `InterpreterFrame` from the context's first-argument register and moves the Frame iterator past it, skipping any Frames before it, so the same frames are not walked twice. If the context does not record its owner, a head `InterpreterFrame` is skipped instead.
+When the stack walk starts with a context in interpreted code (e.g., from a debugger breakpoint, or a context seeded from an interpreted P/Invoke's `InlinedCallFrame`), the interpreted frames are already yielded from the initial context as frameless frames. Like native `StackFrameIterator::Init`, the walker reads the owning `InterpreterFrame` from the context's first-argument register and sets the Frame iterator to that Frame's `Next`, so the same frames are not walked twice. If the context does not record its owner, a head `InterpreterFrame` is skipped instead.
 
 An interpreted P/Invoke pushes an active `InlinedCallFrame` whose `CallSiteSP` is the top `InterpMethodContextFrame` of the `InterpreterFrame` that immediately follows it (native `InlinedCallFrame::IsInInterpreter`). When the walker reaches such a Frame, it moves to that `InterpreterFrame` without updating the context; the `InterpreterFrame` then switches into the interpreted chain.
 
@@ -453,7 +453,7 @@ InlinedCallFrames store and update only the IP, SP, and FP of a given context. I
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
 * On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is that shadow frame's base. If no virtual IP can be recovered, IP is set to null.
 
-An active InlinedCallFrame normally stays the current Frame after its context update so the skipped-Frame check can step past it once the walk reaches the managed caller. If the updated IP is not managed code, the walker advances past the Frame immediately instead, so a walk always makes progress.
+An active InlinedCallFrame stays the current Frame after its context update so the skipped-Frame check can step past it once the walk reaches the managed caller. If the updated IP is not managed code (for example, no WASM R2R virtual IP could be recovered), the walk fails, matching native `StackFrameIterator::NextRaw`; otherwise it would never advance past the Frame.
 
 **Return Address**: `CallerReturnAddress`, but only when the frame has an active call (i.e., `CallerReturnAddress != 0`). Returns null otherwise.
 

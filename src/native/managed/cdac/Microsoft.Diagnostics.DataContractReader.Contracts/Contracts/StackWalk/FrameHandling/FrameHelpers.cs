@@ -567,15 +567,10 @@ internal sealed class FrameHelpers
     }
 
     /// <summary>
-    /// Returns the owning InterpreterFrame recorded in the first-argument register of a context in
-    /// interpreted code, or <see cref="TargetPointer.Null"/> if none is recorded.
+    /// Returns the first-argument register, which holds the owning InterpreterFrame for a context
+    /// in interpreted code (native <c>GetFirstArgReg</c>).
     /// </summary>
-    public TargetPointer GetOwningInterpreterFrame(IPlatformAgnosticContext context)
-        => context.TryReadRegister(GetFirstArgRegisterName(), out TargetNUInt value)
-            ? new TargetPointer(value.Value)
-            : TargetPointer.Null;
-
-    private TargetPointer GetFirstArgRegister(IPlatformAgnosticContext context)
+    public TargetPointer GetFirstArgRegister(IPlatformAgnosticContext context)
     {
         string registerName = GetFirstArgRegisterName();
         if (!context.TryReadRegister(registerName, out TargetNUInt value))

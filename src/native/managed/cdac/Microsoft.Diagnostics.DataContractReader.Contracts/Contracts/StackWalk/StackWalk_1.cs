@@ -252,10 +252,9 @@ internal partial class StackWalk_1 : IStackWalk
     // When the walk starts inside interpreted code, move the frame iterator past the
     // InterpreterFrame that owns the current InterpMethodContextFrame chain; otherwise a later
     // Frame step would re-walk the same chain. Mirrors native StackFrameIterator::Init/ResetRegDisp,
-    // which read the owning InterpreterFrame from the first-argument register. Explicit Frames
-    // between the iterator and the owner (e.g. an interpreted P/Invoke's InlinedCallFrame) belong
-    // to the same chain and are skipped with it. Falls back to skipping a head InterpreterFrame when
-    // the context does not record its owner (see dotnet/runtime#126953).
+    // which set the Frame cursor to the Next of the owning InterpreterFrame recorded in the
+    // first-argument register. Falls back to skipping a head InterpreterFrame when the context does
+    // not record its owner (see dotnet/runtime#126953).
     private void SkipOwningInterpreterFrame(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIterator)
     {
         if (state != StackWalkState.Frameless
@@ -265,9 +264,16 @@ internal partial class StackWalk_1 : IStackWalk
             return;
         }
 
-        TargetPointer owningFrame = _frameHelpers.GetOwningInterpreterFrame(context);
-        if (owningFrame != TargetPointer.Null && frameIterator.TryMovePast(owningFrame))
-            return;
+        TargetPointer owningFrame = _frameHelpers.GetFirstArgRegister(context);
+        if (owningFrame != TargetPointer.Null)
+        {
+            Data.Frame owning = _target.ProcessedData.GetOrAdd<Data.Frame>(owningFrame);
+            if (_frameHelpers.GetFrameType(owning.Identifier) == FrameType.InterpreterFrame)
+            {
+                frameIterator.MoveTo(owning.Next);
+                return;
+            }
+        }
 
         if (frameIterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
             frameIterator.Next();
@@ -924,11 +930,16 @@ internal partial class StackWalk_1 : IStackWalk
                     {
                         handle.FrameIter.UpdateContextFromCurrentFrame(handle.Context);
                     }
-                    // An active ICF is normally left current so CheckForSkippedFrames can pass it
-                    // once the walk reaches its managed caller. If the context it produced is not
-                    // managed code, nothing would ever advance past it, so step over it here to
-                    // guarantee the walk makes progress.
-                    if (!isActiveICF || !IsManaged(handle.Context.InstructionPointer, out _))
+                    // An active ICF is left current so CheckForSkippedFrames can pass it once the
+                    // walk reaches its managed caller. If its context is not managed code (e.g. no
+                    // WASM R2R virtual IP could be recovered), nothing would ever advance past it;
+                    // native NextRaw fails the walk (SWA_FAILED) in that case, so do the same.
+                    if (isActiveICF && !IsManaged(handle.Context.InstructionPointer, out _))
+                    {
+                        handle.State = StackWalkState.Error;
+                        return false;
+                    }
+                    if (!isActiveICF)
                     {
                         handle.FrameIter.Next();
                     }

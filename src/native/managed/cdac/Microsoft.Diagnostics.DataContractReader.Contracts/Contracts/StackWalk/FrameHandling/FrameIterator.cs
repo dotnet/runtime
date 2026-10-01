@@ -46,29 +46,10 @@ internal sealed class FrameIterator
     }
 
     /// <summary>
-    /// If <paramref name="frameAddress"/> is at or after the current frame in the chain, moves the
-    /// cursor to the frame that follows it and returns true. Otherwise leaves the cursor unchanged.
+    /// Moves the cursor to <paramref name="frameAddress"/> (native <c>m_crawl.pFrame = ...</c>).
     /// </summary>
-    public bool TryMovePast(TargetPointer frameAddress)
-    {
-        TargetPointer candidate = currentFramePointer;
-        while (candidate != terminator && candidate != TargetPointer.Null)
-        {
-            if (candidate == frameAddress)
-            {
-                currentFramePointer = target.ProcessedData.GetOrAdd<Data.Frame>(candidate).Next;
-                return true;
-            }
-
-            // Frames are pushed at decreasing addresses, so the chain is strictly increasing.
-            TargetPointer next = target.ProcessedData.GetOrAdd<Data.Frame>(candidate).Next;
-            if (next.Value <= candidate.Value)
-                break;
-            candidate = next;
-        }
-
-        return false;
-    }
+    public void MoveTo(TargetPointer frameAddress)
+        => currentFramePointer = frameAddress;
 
     /// <summary>
     /// Returns the <see cref="FrameType"/> of the current frame.

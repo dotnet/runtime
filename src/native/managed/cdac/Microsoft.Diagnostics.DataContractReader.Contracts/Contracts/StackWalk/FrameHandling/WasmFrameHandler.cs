@@ -36,8 +36,8 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
         if (inlinedCallFrame.CallerReturnAddress.Value == InlinedPInvokeFromR2R)
         {
             // Mirrors InlinedCallFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp.
-            // If no R2R virtual IP can be recovered the IP is left null (not managed code), so the
-            // stack walker steps past this frame rather than treating the marker as an address.
+            // If no R2R virtual IP can be recovered the IP is left null (not managed code), and the
+            // stack walker fails the walk as native does, rather than treating the marker as an address.
             Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
             _holder.Context.StackPointer = inlinedCallFrame.CallSiteSP;
             _holder.Context.InstructionPointer = unwinder.GetVirtualIP(inlinedCallFrame.CallSiteSP);
