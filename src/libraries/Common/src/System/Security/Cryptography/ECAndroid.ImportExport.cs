@@ -23,18 +23,17 @@ namespace System.Security.Cryptography
 
             if (parameters.D is not null && parameters.Q.X is null)
             {
-                if (!TryRecoverPublicKey(key, out ECPoint publicKey))
-                {
-                    key.Dispose();
-                    throw new CryptographicException();
-                }
-
-                ECParameters completeParameters = parameters;
-                completeParameters.Q = publicKey;
                 SafeEcKeyHandle? completeKey = null;
 
                 try
                 {
+                    if (!TryRecoverPublicKey(key, out ECPoint publicKey))
+                    {
+                        throw new CryptographicException();
+                    }
+
+                    ECParameters completeParameters = parameters;
+                    completeParameters.Q = publicKey;
                     completeKey = ImportParametersCore(completeParameters);
 
                     if (completeKey is null || completeKey.IsInvalid)

@@ -78,7 +78,7 @@ Returns 1 upon success, -1 if the destination is too small, otherwise 0.
 PALEXPORT int32_t AndroidCryptoNative_EcKeyExportPkcs8PrivateKey(const EC_KEY* key,
                                                                  uint8_t* destination,
                                                                  int32_t destinationLength,
-                                                                 int32_t* bytesWritten);
+                                                                 int32_t* bytesWrittenOrRequired);
 
 /*
 Returns the new EC_KEY instance using the explicit parameters.

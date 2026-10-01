@@ -360,13 +360,13 @@ cleanup:
 int32_t AndroidCryptoNative_EcKeyExportPkcs8PrivateKey(const EC_KEY* key,
                                                        uint8_t* destination,
                                                        int32_t destinationLength,
-                                                       int32_t* bytesWritten)
+                                                       int32_t* bytesWrittenOrRequired)
 {
     abort_if_invalid_pointer_argument(key);
-    abort_if_invalid_pointer_argument(bytesWritten);
+    abort_if_invalid_pointer_argument(bytesWrittenOrRequired);
     abort_unless(destinationLength >= 0, "Parameter 'destinationLength' must not be negative");
 
-    *bytesWritten = 0;
+    *bytesWrittenOrRequired = 0;
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
@@ -388,7 +388,7 @@ int32_t AndroidCryptoNative_EcKeyExportPkcs8PrivateKey(const EC_KEY* key,
     if (TryClearJNIExceptions(env))
         goto cleanup;
 
-    *bytesWritten = encodedLength;
+    *bytesWrittenOrRequired = encodedLength;
 
     if (encodedLength > destinationLength)
     {
