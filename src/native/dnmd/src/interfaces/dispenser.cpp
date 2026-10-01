@@ -269,42 +269,6 @@ namespace
         MDDupDefault | MDDupTypeDef | MDDupModuleRef | MDDupExportedType |
         MDDupAssemblyRef | MDDupPermission | MDDupFile;
 
-    bool HasCompressedTablesStream(void const* data, size_t size)
-    {
-        auto const* bytes = static_cast<uint8_t const*>(data);
-        if (size < 20)
-            return false;
-
-        uint32_t versionLength = uint32_t(bytes[12]) | (uint32_t(bytes[13]) << 8) |
-            (uint32_t(bytes[14]) << 16) | (uint32_t(bytes[15]) << 24);
-        if (versionLength > size - 20)
-            return false;
-        size_t offset = 16 + ((size_t(versionLength) + 3) & ~size_t(3));
-        if (offset > size - 4)
-            return false;
-
-        uint16_t streamCount = uint16_t(bytes[offset + 2]) | (uint16_t(bytes[offset + 3]) << 8);
-        offset += 4;
-        for (uint16_t i = 0; i < streamCount; ++i)
-        {
-            if (offset > size || size - offset < 9)
-                return false;
-
-            auto const* name = bytes + offset + 8;
-            auto const* end = static_cast<uint8_t const*>(std::memchr(name, '\0', size - offset - 8));
-            if (end == nullptr)
-                return false;
-            size_t nameLength = end - name;
-            if (nameLength == 2 && name[0] == '#' && name[1] == '~')
-                return true;
-            size_t paddedNameLength = (nameLength + 4) & ~size_t(3);
-            if (paddedNameLength > size - offset - 8)
-                return false;
-            offset += 8 + paddedNameLength;
-        }
-        return false;
-    }
-
     minipal::com_ptr<ControllingIUnknown> CreateExposedObject(
         minipal::com_ptr<ControllingIUnknown> unknown, DNMDOwner* owner,
         bool threadSafe, uint32_t duplicateChecks)
@@ -539,7 +503,7 @@ namespace
                 // Internal opens of compressed (#~) metadata start RO and upgrade on demand.
                 bool internalReadOnly = riid == IID_IMDInternalImport &&
                     (dwOpenFlags & ofReadWriteMask) == ofRead &&
-                    HasCompressedTablesStream(pData, cbData);
+                    !md_is_uncompressed_table_heap(md_ptr.get());
                 bool readWrite = (dwOpenFlags & ofReadOnly) == 0 && !internalReadOnly;
                 DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(
                     std::move(md_ptr), std::move(copiedMem), std::move(nowOwned), _duplicateChecks, _updateMode, readWrite);

@@ -68,6 +68,10 @@ bool md_dump_tables(mdhandle_t handle, int32_t table_id);
 
 char const* md_get_version_string(mdhandle_t handle);
 
+// Returns whether the metadata tables use the uncompressed (#-) format.
+// Returns false for a null handle.
+bool md_is_uncompressed_table_heap(mdhandle_t handle);
+
 //
 // All tables possible in ECMA-335
 //

@@ -732,6 +732,12 @@ char const* md_get_version_string(mdhandle_t handle)
     return cxt->version;
 }
 
+bool md_is_uncompressed_table_heap(mdhandle_t handle)
+{
+    mdcxt_t* cxt = extract_mdcxt(handle);
+    return cxt != NULL && (cxt->context_flags & mdc_uncompressed_table_heap) != 0;
+}
+
 #ifdef DNMD_PORTABLE_PDB
 bool md_get_pdb_id(mdhandle_t handle, size_t* pdb_id_len, uint8_t* pdb_id)
 {

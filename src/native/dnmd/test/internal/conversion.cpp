@@ -4,6 +4,7 @@
 #include <minipal_com.h>
 #include <cor.h>
 #include <metadata.h>
+#include <dnmd.h>
 #include <dnmd_interfaces.hpp>
 #include <mdinternalemit.h>
 #include <minipal/rwlock.h>
@@ -347,6 +348,8 @@ TEST(InternalConversion, CompressedInternalReadDefaultsToReadOnly)
         ofRead | ofCopyMemory, IID_IMDInternalImport, (IUnknown**)&internal));
     minipal::com_ptr<IDNMDOwner> owner;
     ASSERT_EQ(S_OK, internal->QueryInterface(IID_IDNMDOwner, (void**)&owner));
+    EXPECT_FALSE(md_is_uncompressed_table_heap(nullptr));
+    EXPECT_FALSE(md_is_uncompressed_table_heap(owner->MetaData()));
     EXPECT_FALSE(owner->IsReadWrite());
     minipal::com_ptr<IMetaDataEmit> emit;
     EXPECT_EQ(E_NOINTERFACE, internal->QueryInterface(IID_IMetaDataEmit, (void**)&emit));
@@ -406,11 +409,52 @@ TEST(InternalConversion, UncompressedInternalReadIsAlreadyWritable)
         ofRead | ofCopyMemory, IID_IMDInternalImport, (IUnknown**)&internal));
     minipal::com_ptr<IDNMDOwner> owner;
     ASSERT_EQ(S_OK, internal->QueryInterface(IID_IDNMDOwner, (void**)&owner));
+    EXPECT_TRUE(md_is_uncompressed_table_heap(owner->MetaData()));
     EXPECT_TRUE(owner->IsReadWrite());
     EXPECT_EQ(nullptr, internal->GetReaderWriterLock());
     IMDInternalImport* unchanged = nullptr;
     EXPECT_EQ(S_FALSE, ConvertDNMDInternalImport(internal.p, &unchanged));
     EXPECT_EQ(internal.p, unchanged);
+}
+
+TEST(InternalConversion, HandleReportsUncompressedAfterCreatingIndirectTable)
+{
+    std::vector<uint8_t> image;
+    ASSERT_NO_FATAL_FAILURE(CreateImage(image));
+
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_EQ(S_OK, dispenser->OpenScopeOnMemory(image.data(), (ULONG)image.size(),
+        ofRead | ofCopyMemory, IID_IMetaDataEmit, (IUnknown**)&emit));
+    minipal::com_ptr<IDNMDOwner> owner;
+    ASSERT_EQ(S_OK, emit->QueryInterface(IID_IDNMDOwner, (void**)&owner));
+    EXPECT_FALSE(md_is_uncompressed_table_heap(owner->MetaData()));
+
+    uint8_t signature[] = { IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I4 };
+    mdMethodDef earlier, later;
+    ASSERT_EQ(S_OK, emit->DefineMethod(TokenFromRid(2, mdtTypeDef), W("Earlier"), mdPublic | mdStatic,
+        signature, sizeof(signature), 0, 0, &earlier));
+    ASSERT_EQ(S_OK, emit->DefineMethod(TokenFromRid(2, mdtTypeDef), W("Later"), mdPublic | mdStatic,
+        signature, sizeof(signature), 0, 0, &later));
+    mdParamDef laterParam, earlierParam;
+    ASSERT_EQ(S_OK, emit->DefineParam(later, 1, W("later"), pdIn, ELEMENT_TYPE_VOID, nullptr, 0, &laterParam));
+    EXPECT_FALSE(md_is_uncompressed_table_heap(owner->MetaData()));
+    ASSERT_EQ(S_OK, emit->DefineParam(earlier, 1, W("earlier"), pdIn, ELEMENT_TYPE_VOID, nullptr, 0, &earlierParam));
+    EXPECT_TRUE(md_is_uncompressed_table_heap(owner->MetaData()));
+
+    DWORD size;
+    ASSERT_EQ(S_OK, emit->GetSaveSize(cssAccurate, &size));
+    std::vector<uint8_t> saved(size);
+    ASSERT_EQ(S_OK, emit->SaveToMemory(saved.data(), size));
+
+    minipal::com_ptr<IMDInternalImport> reopened;
+    ASSERT_EQ(S_OK, dispenser->OpenScopeOnMemory(saved.data(), size,
+        ofRead | ofCopyMemory, IID_IMDInternalImport, (IUnknown**)&reopened));
+    minipal::com_ptr<IDNMDOwner> reopenedOwner;
+    ASSERT_EQ(S_OK, reopened->QueryInterface(IID_IDNMDOwner, (void**)&reopenedOwner));
+    EXPECT_TRUE(md_is_uncompressed_table_heap(reopenedOwner->MetaData()));
+    EXPECT_TRUE(reopenedOwner->IsReadWrite());
 }
 
 TEST(InternalConversion, SeparateConversionsHaveIndependentMetadata)
