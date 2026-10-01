@@ -157,7 +157,7 @@ namespace ILCompiler.DependencyAnalysis
                             !typeDefinition.IsValueType &&
                             LayoutTypeNode.IsLayoutType(typeDefinition))
                         {
-                            _dependencies.Add(factory.LayoutType(typeDefinition), "Reflected type with sequential or explicit layout");
+                            _dependencies.Add(factory.LayoutType(typeDefinition), "Layout type token");
                         }
 
                         if (method != null && !requiresMethodBodyScanner)

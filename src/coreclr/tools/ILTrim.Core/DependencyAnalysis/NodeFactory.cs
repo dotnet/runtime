@@ -100,6 +100,7 @@ namespace ILCompiler.DependencyAnalysis
             => new LayoutTypeNode(key));
         public LayoutTypeNode LayoutType(EcmaType type)
         {
+            Debug.Assert(LayoutTypeNode.IsLayoutType(type));
             return _layoutTypes.GetOrAdd(type);
         }
 

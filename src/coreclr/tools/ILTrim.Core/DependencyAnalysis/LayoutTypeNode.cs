@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 
@@ -13,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents the instance fields required by a type with sequential or explicit layout.
+    /// Represents the instance fields required by a type with layout.
     /// </summary>
     public sealed class LayoutTypeNode : DependencyNodeCore<NodeFactory>
     {
@@ -21,14 +22,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public LayoutTypeNode(EcmaType type)
         {
+            Debug.Assert(IsLayoutType(type));
             _type = type;
         }
 
         public static bool IsLayoutType(EcmaType type)
         {
-            TypeDefinition typeDef = type.Module.MetadataReader.GetTypeDefinition(type.Handle);
-            return typeDef.Attributes.HasFlag(TypeAttributes.SequentialLayout)
-                || typeDef.Attributes.HasFlag(TypeAttributes.ExplicitLayout);
+            return type.IsSequentialLayout || type.IsExplicitLayout || type.IsExtendedLayout;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
             MetadataReader reader = _type.Module.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(_type.Handle);
 
-            if (factory.IsModuleTrimmed(_type.Module) && IsLayoutType(_type))
+            if (factory.IsModuleTrimmed(_type.Module))
             {
                 foreach (FieldDefinitionHandle fieldHandle in typeDef.GetFields())
                 {
@@ -45,14 +45,18 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         yield return new(
                             factory.FieldDefinition(_type.Module, fieldHandle),
-                            "Instance field of a type with sequential or explicit layout");
+                            "Instance field of a type with layout");
                     }
                 }
             }
 
-            if (_type.BaseType?.GetTypeDefinition() is EcmaType baseType)
+            for (TypeDesc baseType = _type.BaseType; baseType is not null; baseType = baseType.BaseType)
             {
-                yield return new(factory.LayoutType(baseType), "Base type");
+                if (baseType.GetTypeDefinition() is EcmaType baseDefinition && IsLayoutType(baseDefinition))
+                {
+                    yield return new(factory.LayoutType(baseDefinition), "Layout base type");
+                    break;
+                }
             }
         }
 

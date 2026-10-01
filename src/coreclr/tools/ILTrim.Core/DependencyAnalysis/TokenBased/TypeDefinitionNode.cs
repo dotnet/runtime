@@ -78,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
             var ecmaType = (EcmaType)_module.GetObject(_handle);
             if (ecmaType.IsValueType && LayoutTypeNode.IsLayoutType(ecmaType))
             {
-                dependencies.Add(factory.LayoutType(ecmaType), "Instance fields of a value type with sequential or explicit layout");
+                dependencies.Add(factory.LayoutType(ecmaType), "Instance fields of a value type with layout");
             }
 
             if (ecmaType.IsValueType)

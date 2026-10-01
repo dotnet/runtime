@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 yield return new(
                     factory.LayoutType(_type),
-                    "Instance fields of a reflected type with sequential or explicit layout");
+                    "Instance fields of a reflected type with layout");
             }
         }
 
