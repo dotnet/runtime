@@ -18,6 +18,7 @@ public class Runtime_134936
     }
 
     [Fact]
+    [SkipOnMono("Requires precise GC")]
     public static void TestEntryPoint()
     {
         try
