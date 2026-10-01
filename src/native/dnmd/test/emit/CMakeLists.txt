@@ -12,6 +12,7 @@ set(SOURCES
 	assemblyref.cpp
 	param.cpp
 	fieldmarshal.cpp
+	customattribute.cpp
 	fieldrva.cpp
 	duplicates.cpp
 	initialsize.cpp

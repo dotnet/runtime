@@ -28,6 +28,10 @@ class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyE
     mdhandle_view _md_ptr;
     uint32_t _duplicateChecks;
     std::unordered_map<mdtable_id_t, DuplicateIndex> _duplicateIndexes;
+    mdhandle_t _knownAttributesHandle = nullptr;
+    std::unordered_map<mdToken, uint32_t> _knownAttributes;
+    mdToken _lastKnownConstructor = mdTokenNil;
+    uint32_t _lastKnownAttribute = UINT32_MAX;
 
     bool CheckDuplicates(CorCheckDuplicatesFor flag) const
     {
@@ -47,6 +51,7 @@ class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyE
 
     HRESULT LogToken(mdToken token, uint32_t operation = 0);
     HRESULT LogRow(mdcursor_t row, uint32_t operation = 0);
+    HRESULT FindCachedKnownAttribute(mdToken constructor, uint32_t& index);
     HRESULT AddMethodSemantic(mdcursor_t parent, CorMethodSemanticsAttr semantic, mdMethodDef method);
     HRESULT RemoveSemantics(mdToken parent, CorMethodSemanticsAttr semantic);
 

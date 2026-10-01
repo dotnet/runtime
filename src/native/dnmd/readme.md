@@ -20,6 +20,9 @@ DNMD provides the following tools:
 PE32/PE32+ files. `OpenScopeOnMemory` accepts raw metadata rather than a PE image.
 `IMetaDataImport::ResolveTypeRef` searches live DNMD scopes by type name and
 nesting. It does not bind assembly references; the first matching scope wins.
+`IMetaDataEmit::DefineCustomAttribute` applies supported interop, layout, and
+flag pseudoattributes to their metadata tables. Security-related attributes
+remain ordinary custom attributes and do not set security flags.
 In EnC mode, the interfaces layer records `ENCLog` entries and applies dense,
 non-remapping deltas. It does not generate deltas: `GetDeltaSaveSize` and
 `SaveDelta*` return `E_NOTIMPL`. Deltas containing `ENCMap` entries are not

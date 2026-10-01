@@ -2,6 +2,8 @@
 #include "importhelpers.hpp"
 #include "signatures.hpp"
 #include "pal.hpp"
+#include <corerror.h>
+#include <metadata.h>
 #include <array>
 #include <cctype>
 #include <limits>
@@ -12,6 +14,7 @@
 #include <algorithm>
 #include <utility>
 #include <cstring>
+#include <vector>
 #include <minipal/strings.h>
 
 #define RETURN_IF_FAILED(exp) \
@@ -1931,6 +1934,9 @@ HRESULT MetadataEmit::SetParent(
     if (!md_set_column_value_as_token(c, mdtMemberRef_Class, tk))
         return E_FAIL;
 
+    _knownAttributes.erase(mr);
+    if (_lastKnownConstructor == mr)
+        _lastKnownConstructor = mdTokenNil;
     return LogToken(mr);
 }
 
@@ -2010,7 +2016,11 @@ HRESULT MetadataEmit::DeleteToken(
             if (!md_set_column_value_as_utf8(c, mdtTypeDef_TypeName, deletedName))
                 return E_FAIL;
             HRESULT hr = AddFlag(MetaData(), tkObj, mdtTypeDef_Flags, tdSpecialName | tdRTSpecialName);
-            return FAILED(hr) ? hr : LogToken(tkObj);
+            if (FAILED(hr))
+                return hr;
+            _knownAttributes.clear();
+            _lastKnownConstructor = mdTokenNil;
+            return LogToken(tkObj);
         }
         case mdtMethodDef:
         {
@@ -2510,6 +2520,963 @@ HRESULT MetadataEmit::DeletePinvokeMap(
     return LogToken(tk);
 }
 
+namespace
+{
+    // ECMA-335 II.22.10 and II.23.3: custom-attribute signatures have a
+    // two-byte prolog, fixed arguments, and optionally named arguments.
+    class CustomAttributeReader
+    {
+        uint8_t const* _data;
+        size_t _size;
+        size_t _offset = 0;
+
+    public:
+        CustomAttributeReader(void const* data, size_t size)
+            : _data(static_cast<uint8_t const*>(data)), _size(size)
+        {
+        }
+
+        bool Empty() const { return _offset == _size; }
+
+        bool ReadByte(uint8_t& value)
+        {
+            if (_offset == _size)
+                return false;
+            value = _data[_offset++];
+            return true;
+        }
+
+        bool ReadUInt16(uint16_t& value)
+        {
+            if (_size - _offset < 2)
+                return false;
+            value = uint16_t(_data[_offset]) | (uint16_t(_data[_offset + 1]) << 8);
+            _offset += 2;
+            return true;
+        }
+
+        bool ReadUInt32(uint32_t& value)
+        {
+            if (_size - _offset < 4)
+                return false;
+            value = uint32_t(_data[_offset]) | (uint32_t(_data[_offset + 1]) << 8) |
+                (uint32_t(_data[_offset + 2]) << 16) | (uint32_t(_data[_offset + 3]) << 24);
+            _offset += 4;
+            return true;
+        }
+
+        bool ReadCompressedUInt(uint32_t& value)
+        {
+            uint8_t first;
+            if (!ReadByte(first))
+                return false;
+            if ((first & 0x80) == 0)
+            {
+                value = first;
+                return true;
+            }
+            if ((first & 0xc0) == 0x80)
+            {
+                uint8_t second;
+                if (!ReadByte(second))
+                    return false;
+                value = (uint32_t(first & 0x3f) << 8) | second;
+                return true;
+            }
+            if ((first & 0xe0) == 0xc0 && _size - _offset >= 3)
+            {
+                value = (uint32_t(first & 0x1f) << 24) | (uint32_t(_data[_offset]) << 16) |
+                    (uint32_t(_data[_offset + 1]) << 8) | _data[_offset + 2];
+                _offset += 3;
+                return true;
+            }
+            return false;
+        }
+
+        bool ReadString(char const*& value, uint32_t& length)
+        {
+            if (_offset == _size)
+                return false;
+            if (_data[_offset] == 0xff)
+            {
+                ++_offset;
+                value = nullptr;
+                length = 0;
+                return true;
+            }
+            if (!ReadCompressedUInt(length) || length > _size - _offset)
+                return false;
+            value = reinterpret_cast<char const*>(_data + _offset);
+            _offset += length;
+            return true;
+        }
+    };
+
+    enum class KnownAttributeKind
+    {
+        DllImport,
+        Guid,
+        ComImport,
+        InterfaceType,
+        ClassInterface,
+        Serializable,
+        NonSerialized,
+        MethodImplEmpty,
+        MethodImplShort,
+        MethodImplEnum,
+        MarshalAsShort,
+        MarshalAsEnum,
+        PreserveSig,
+        In,
+        Out,
+        Optional,
+        StructLayoutShort,
+        StructLayoutEnum,
+        FieldOffset,
+        TypeLibVersion,
+        ComCompatibleVersion,
+        SpecialName,
+        WindowsRuntimeImport,
+    };
+
+    struct KnownAttribute
+    {
+        char const* nameSpace;
+        char const* name;
+        uint64_t targets;
+        KnownAttributeKind kind;
+        uint8_t argumentType;
+        uint8_t argumentCount;
+        bool keep;
+        bool matchSignature;
+    };
+
+    constexpr uint64_t TargetMask(mdToken token)
+    {
+        return uint64_t(1) << (token >> 24);
+    }
+
+    constexpr uint64_t typeTarget = TargetMask(mdtTypeDef);
+    constexpr uint64_t typeRefTarget = TargetMask(mdtTypeRef);
+    constexpr uint64_t methodTarget = TargetMask(mdtMethodDef);
+    constexpr uint64_t fieldTarget = TargetMask(mdtFieldDef);
+    constexpr uint64_t paramTarget = TargetMask(mdtParamDef);
+    constexpr uint64_t assemblyTarget = TargetMask(mdtAssembly);
+
+    // Keep the overload order and name-only fallbacks of RegMeta::_IsKnownCustomAttribute.
+    constexpr KnownAttribute knownAttributes[] =
+    {
+        { "System.Runtime.InteropServices", "DllImportAttribute", methodTarget, KnownAttributeKind::DllImport, SERIALIZATION_TYPE_STRING, 1, false, false },
+        { "System.Runtime.InteropServices", "GuidAttribute", typeTarget | typeRefTarget | TargetMask(mdtModule) | assemblyTarget, KnownAttributeKind::Guid, SERIALIZATION_TYPE_STRING, 1, true, false },
+        { "System.Runtime.InteropServices", "ComImportAttribute", typeTarget, KnownAttributeKind::ComImport, 0, 0, false, false },
+        { "System.Runtime.InteropServices", "InterfaceTypeAttribute", typeTarget, KnownAttributeKind::InterfaceType, SERIALIZATION_TYPE_U2, 1, true, false },
+        { "System.Runtime.InteropServices", "ClassInterfaceAttribute", typeTarget | assemblyTarget | typeRefTarget, KnownAttributeKind::ClassInterface, SERIALIZATION_TYPE_U2, 1, true, false },
+        { "System", "SerializableAttribute", typeTarget, KnownAttributeKind::Serializable, 0, 0, false, false },
+        { "System", "NonSerializedAttribute", fieldTarget, KnownAttributeKind::NonSerialized, 0, 0, false, false },
+        { "System.Runtime.CompilerServices", "MethodImplAttribute", methodTarget, KnownAttributeKind::MethodImplEmpty, 0, 0, false, true },
+        { "System.Runtime.CompilerServices", "MethodImplAttribute", methodTarget, KnownAttributeKind::MethodImplShort, SERIALIZATION_TYPE_I2, 1, false, true },
+        { "System.Runtime.CompilerServices", "MethodImplAttribute", methodTarget, KnownAttributeKind::MethodImplEnum, SERIALIZATION_TYPE_U4, 1, false, false },
+        { "System.Runtime.InteropServices", "MarshalAsAttribute", fieldTarget | paramTarget | TargetMask(mdtProperty), KnownAttributeKind::MarshalAsShort, SERIALIZATION_TYPE_I2, 1, false, true },
+        { "System.Runtime.InteropServices", "MarshalAsAttribute", fieldTarget | paramTarget | TargetMask(mdtProperty), KnownAttributeKind::MarshalAsEnum, SERIALIZATION_TYPE_U4, 1, false, false },
+        { "System.Runtime.InteropServices", "PreserveSigAttribute", methodTarget, KnownAttributeKind::PreserveSig, 0, 0, false, false },
+        { "System.Runtime.InteropServices", "InAttribute", paramTarget, KnownAttributeKind::In, 0, 0, false, false },
+        { "System.Runtime.InteropServices", "OutAttribute", paramTarget, KnownAttributeKind::Out, 0, 0, false, false },
+        { "System.Runtime.InteropServices", "OptionalAttribute", paramTarget, KnownAttributeKind::Optional, 0, 0, false, false },
+        { "System.Runtime.InteropServices", "StructLayoutAttribute", typeTarget, KnownAttributeKind::StructLayoutShort, SERIALIZATION_TYPE_I2, 1, false, true },
+        { "System.Runtime.InteropServices", "StructLayoutAttribute", typeTarget, KnownAttributeKind::StructLayoutEnum, SERIALIZATION_TYPE_I4, 1, false, false },
+        { "System.Runtime.InteropServices", "FieldOffsetAttribute", fieldTarget, KnownAttributeKind::FieldOffset, SERIALIZATION_TYPE_U4, 1, false, false },
+        { "System.Runtime.InteropServices", "TypeLibVersionAttribute", assemblyTarget | typeRefTarget, KnownAttributeKind::TypeLibVersion, SERIALIZATION_TYPE_I4, 2, true, false },
+        { "System.Runtime.InteropServices", "ComCompatibleVersionAttribute", assemblyTarget | typeRefTarget, KnownAttributeKind::ComCompatibleVersion, SERIALIZATION_TYPE_I4, 4, true, false },
+        { "System.Runtime.CompilerServices", "SpecialNameAttribute", typeTarget | methodTarget | fieldTarget | TargetMask(mdtProperty) | TargetMask(mdtEvent), KnownAttributeKind::SpecialName, 0, 0, false, false },
+        { "System.Runtime.InteropServices.WindowsRuntime", "WindowsRuntimeImportAttribute", typeTarget, KnownAttributeKind::WindowsRuntimeImport, 0, 0, false, false },
+    };
+
+    // Not handled here: DynamicSecurityMethodAttribute and SuppressUnmanagedCodeSecurityAttribute
+    // set security-related metadata flags in RegMeta. Until those semantics are supported, both
+    // remain ordinary custom attributes without the corresponding flag changes.
+
+    bool MatchesConstructorSignature(uint8_t const* signature, uint32_t length, KnownAttribute const& attribute)
+    {
+        CustomAttributeReader reader(signature, length);
+        uint8_t callingConvention, returnType;
+        uint32_t argumentCount;
+        if (!reader.ReadByte(callingConvention) || !reader.ReadCompressedUInt(argumentCount) ||
+            !reader.ReadByte(returnType) || returnType != ELEMENT_TYPE_VOID ||
+            argumentCount != attribute.argumentCount)
+            return false;
+        for (uint32_t i = 0; i < argumentCount; ++i)
+        {
+            uint8_t argumentType;
+            if (!reader.ReadByte(argumentType) || argumentType != attribute.argumentType)
+                return false;
+        }
+        return reader.Empty();
+    }
+
+    HRESULT FindKnownAttribute(mdhandle_t metadata, mdToken constructor, KnownAttribute const** result)
+    {
+        *result = nullptr;
+        mdcursor_t method;
+        if (!md_token_to_cursor(metadata, constructor, &method))
+            return CLDB_E_RECORD_NOTFOUND;
+
+        mdToken parent;
+        col_index_t signatureColumn;
+        if (TypeFromToken(constructor) == mdtMemberRef)
+        {
+            if (!md_get_column_value_as_token(method, mdtMemberRef_Class, &parent))
+                return CLDB_E_FILE_CORRUPT;
+            signatureColumn = mdtMemberRef_Signature;
+        }
+        else
+        {
+            if (!md_find_token_of_range_element(method, &parent))
+                return CLDB_E_RECORD_NOTFOUND;
+            signatureColumn = mdtMethodDef_Signature;
+        }
+
+        if (TypeFromToken(parent) != mdtTypeDef && TypeFromToken(parent) != mdtTypeRef)
+            return S_OK;
+        mdcursor_t parentRow;
+        if (!md_token_to_cursor(metadata, parent, &parentRow))
+            return CLDB_E_FILE_CORRUPT;
+        char const* nameSpace;
+        char const* name;
+        if (!md_get_column_value_as_utf8(parentRow,
+                TypeFromToken(parent) == mdtTypeDef ? mdtTypeDef_TypeNamespace : mdtTypeRef_TypeNamespace, &nameSpace)
+            || !md_get_column_value_as_utf8(parentRow,
+                TypeFromToken(parent) == mdtTypeDef ? mdtTypeDef_TypeName : mdtTypeRef_TypeName, &name))
+            return CLDB_E_FILE_CORRUPT;
+
+        for (KnownAttribute const& attribute : knownAttributes)
+        {
+            if (std::strcmp(nameSpace, attribute.nameSpace) != 0 || std::strcmp(name, attribute.name) != 0)
+                continue;
+            if (attribute.matchSignature)
+            {
+                uint8_t const* signature;
+                uint32_t length;
+                if (!md_get_column_value_as_blob(method, signatureColumn, &signature, &length))
+                    return CLDB_E_FILE_CORRUPT;
+                if (!MatchesConstructorSignature(signature, length, attribute))
+                    continue;
+            }
+            *result = &attribute;
+            break;
+        }
+        return S_OK;
+    }
+
+    struct AttributeValue
+    {
+        uint32_t number = 0;
+        char const* string = nullptr;
+        uint32_t length = 0;
+        bool supplied = false;
+    };
+
+    struct NamedAttributeArgument
+    {
+        char const* name;
+        uint8_t type;
+        char const* enumType = nullptr;
+    };
+
+    constexpr NamedAttributeArgument dllImportArguments[] =
+    {
+        { "CallingConvention", SERIALIZATION_TYPE_ENUM, "System.Runtime.InteropServices.CallingConvention" },
+        { "CharSet", SERIALIZATION_TYPE_ENUM, "System.Runtime.InteropServices.CharSet" },
+        { "EntryPoint", SERIALIZATION_TYPE_STRING },
+        { "ExactSpelling", SERIALIZATION_TYPE_BOOLEAN },
+        { "SetLastError", SERIALIZATION_TYPE_BOOLEAN },
+        { "PreserveSig", SERIALIZATION_TYPE_BOOLEAN },
+        { "BestFitMapping", SERIALIZATION_TYPE_BOOLEAN },
+        { "ThrowOnUnmappableChar", SERIALIZATION_TYPE_BOOLEAN },
+    };
+
+    constexpr NamedAttributeArgument methodImplArguments[] =
+    {
+        { "MethodCodeType", SERIALIZATION_TYPE_ENUM, "System.Runtime.CompilerServices.MethodCodeType" },
+    };
+
+    constexpr NamedAttributeArgument marshalAsArguments[] =
+    {
+        { "ArraySubType", SERIALIZATION_TYPE_ENUM, "System.Runtime.InteropServices.UnmanagedType" },
+        { "SafeArraySubType", SERIALIZATION_TYPE_ENUM, "System.Runtime.InteropServices.VarEnum" },
+        { "SafeArrayUserDefinedSubType", SERIALIZATION_TYPE_TYPE },
+        { "SizeParamIndex", SERIALIZATION_TYPE_I2 },
+        { "SizeConst", SERIALIZATION_TYPE_I4 },
+        { "MarshalType", SERIALIZATION_TYPE_STRING },
+        { "MarshalTypeRef", SERIALIZATION_TYPE_TYPE },
+        { "MarshalCookie", SERIALIZATION_TYPE_STRING },
+        { "IidParameterIndex", SERIALIZATION_TYPE_I4 },
+    };
+
+    constexpr NamedAttributeArgument structLayoutArguments[] =
+    {
+        { "Pack", SERIALIZATION_TYPE_I4 },
+        { "Size", SERIALIZATION_TYPE_I4 },
+        { "CharSet", SERIALIZATION_TYPE_ENUM, "System.Runtime.InteropServices.CharSet" },
+    };
+
+    struct ParsedAttribute
+    {
+        std::array<AttributeValue, 4> fixed{};
+        std::array<AttributeValue, 9> named{};
+    };
+
+    HRESULT ReadAttributeValue(CustomAttributeReader& reader, uint8_t type, AttributeValue& value)
+    {
+        value.supplied = true;
+        if (type == SERIALIZATION_TYPE_STRING || type == SERIALIZATION_TYPE_TYPE)
+            return reader.ReadString(value.string, value.length) ? S_OK : META_E_CA_INVALID_BLOB;
+        if (type == SERIALIZATION_TYPE_I2 || type == SERIALIZATION_TYPE_U2)
+        {
+            uint16_t number;
+            if (!reader.ReadUInt16(number))
+                return META_E_CA_INVALID_BLOB;
+            value.number = number;
+            return S_OK;
+        }
+        if (type == SERIALIZATION_TYPE_I4 || type == SERIALIZATION_TYPE_U4 || type == SERIALIZATION_TYPE_ENUM)
+            return reader.ReadUInt32(value.number) ? S_OK : META_E_CA_INVALID_BLOB;
+        if (type == SERIALIZATION_TYPE_BOOLEAN)
+        {
+            uint8_t number;
+            if (!reader.ReadByte(number))
+                return META_E_CA_INVALID_BLOB;
+            value.number = number;
+            return S_OK;
+        }
+        return META_E_CA_INVALID_BLOB;
+    }
+
+    bool MatchesEnumType(AttributeValue const& value, char const* expected)
+    {
+        size_t expectedLength = std::strlen(expected);
+        return value.string != nullptr && value.length >= expectedLength &&
+            std::memcmp(value.string, expected, expectedLength) == 0 &&
+            (value.length == expectedLength || value.string[expectedLength] == ',');
+    }
+
+    HRESULT ParseKnownAttribute(KnownAttribute const& attribute, void const* blob, ULONG length,
+                                ParsedAttribute& parsed)
+    {
+        // RegMeta does not parse attributes with neither fixed nor named arguments.
+        if (attribute.argumentCount == 0 && attribute.kind != KnownAttributeKind::MethodImplEmpty)
+            return S_OK;
+
+        CustomAttributeReader reader(blob, length);
+        uint16_t prolog;
+        if (!reader.ReadUInt16(prolog) || prolog != 1)
+            return META_E_CA_INVALID_BLOB;
+
+        for (uint32_t i = 0; i < attribute.argumentCount; ++i)
+        {
+            HRESULT hr = ReadAttributeValue(reader, attribute.argumentType, parsed.fixed[i]);
+            if (FAILED(hr))
+                return hr;
+        }
+
+        NamedAttributeArgument const* expected = nullptr;
+        size_t expectedCount = 0;
+        switch (attribute.kind)
+        {
+        case KnownAttributeKind::DllImport:
+            expected = dllImportArguments;
+            expectedCount = sizeof(dllImportArguments) / sizeof(dllImportArguments[0]);
+            break;
+        case KnownAttributeKind::MethodImplEmpty:
+        case KnownAttributeKind::MethodImplShort:
+        case KnownAttributeKind::MethodImplEnum:
+            expected = methodImplArguments;
+            expectedCount = sizeof(methodImplArguments) / sizeof(methodImplArguments[0]);
+            break;
+        case KnownAttributeKind::MarshalAsShort:
+        case KnownAttributeKind::MarshalAsEnum:
+            expected = marshalAsArguments;
+            expectedCount = sizeof(marshalAsArguments) / sizeof(marshalAsArguments[0]);
+            break;
+        case KnownAttributeKind::StructLayoutShort:
+        case KnownAttributeKind::StructLayoutEnum:
+            expected = structLayoutArguments;
+            expectedCount = sizeof(structLayoutArguments) / sizeof(structLayoutArguments[0]);
+            break;
+        default:
+            break;
+        }
+
+        if (reader.Empty())
+            return S_OK;
+        uint16_t namedCount;
+        if (!reader.ReadUInt16(namedCount))
+            return META_E_CA_INVALID_BLOB;
+        for (uint32_t i = 0; i < namedCount; ++i)
+        {
+            uint8_t tag, type;
+            if (!reader.ReadByte(tag))
+                return META_E_CA_INVALID_BLOB;
+            if (tag != SERIALIZATION_TYPE_FIELD && tag != SERIALIZATION_TYPE_PROPERTY)
+                return META_E_CA_INVALID_ARGTYPE;
+            if (!reader.ReadByte(type))
+                return META_E_CA_INVALID_BLOB;
+            AttributeValue enumName;
+            if (type == SERIALIZATION_TYPE_ENUM &&
+                (!reader.ReadString(enumName.string, enumName.length) || enumName.string == nullptr))
+                return META_E_CA_INVALID_BLOB;
+            AttributeValue name;
+            if (!reader.ReadString(name.string, name.length) || name.string == nullptr || name.length == 0)
+                return META_E_CA_INVALID_BLOB;
+
+            size_t index = 0;
+            for (; index < expectedCount; ++index)
+            {
+                if (expected[index].type == type &&
+                    name.length == std::strlen(expected[index].name) &&
+                    std::memcmp(name.string, expected[index].name, name.length) == 0 &&
+                    (type != SERIALIZATION_TYPE_ENUM || MatchesEnumType(enumName, expected[index].enumType)))
+                    break;
+            }
+            if (index == expectedCount)
+                return META_E_CA_UNKNOWN_ARGUMENT;
+            if (parsed.named[index].supplied)
+                return META_E_CA_REPEATED_ARG;
+            HRESULT hr = ReadAttributeValue(reader, type, parsed.named[index]);
+            if (FAILED(hr))
+                return hr;
+        }
+        return reader.Empty() ? S_OK : META_E_CA_INVALID_BLOB;
+    }
+
+    HRESULT UpdateAttributeFlags(mdhandle_t metadata, mdToken owner, col_index_t column,
+                                 uint32_t mask, uint32_t value, bool& changed)
+    {
+        mdcursor_t row;
+        if (!md_token_to_cursor(metadata, owner, &row))
+            return CLDB_E_RECORD_NOTFOUND;
+        uint32_t existing;
+        if (!md_get_column_value_as_constant(row, column, &existing))
+            return CLDB_E_FILE_CORRUPT;
+        uint32_t updated = (existing & ~mask) | value;
+        changed = existing != updated;
+        if (!changed)
+            return S_OK;
+        return md_set_column_value_as_constant(row, column, updated) ? S_OK : E_FAIL;
+    }
+
+    HRESULT NullTerminate(AttributeValue const& value, malloc_ptr<void>& buffer)
+    {
+        if (value.string == nullptr || std::memchr(value.string, 0, value.length) != nullptr)
+            return META_E_CA_INVALID_VALUE;
+        if (size_t(value.length) == SIZE_MAX)
+            return E_OUTOFMEMORY;
+        malloc_ptr<void> copy{ ::malloc(size_t(value.length) + 1) };
+        if (copy == nullptr)
+            return E_OUTOFMEMORY;
+        std::memcpy(copy.get(), value.string, value.length);
+        static_cast<char*>(copy.get())[value.length] = '\0';
+        buffer = std::move(copy);
+        return S_OK;
+    }
+
+    HRESULT FindModuleReference(mdhandle_t metadata, char const* name, mdModuleRef& result)
+    {
+        result = mdModuleRefNil;
+        mdcursor_t row;
+        uint32_t count;
+        if (!md_create_cursor(metadata, mdtid_ModuleRef, &row, &count))
+            return S_OK;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            char const* existing;
+            if (!md_get_column_value_as_utf8(row, mdtModuleRef_Name, &existing))
+                return CLDB_E_FILE_CORRUPT;
+            if (std::strcmp(existing, name) == 0)
+                return md_cursor_to_token(row, &result) ? S_OK : CLDB_E_FILE_CORRUPT;
+            if (i + 1 < count && !md_cursor_next(&row))
+                return CLDB_E_FILE_CORRUPT;
+        }
+        return S_OK;
+    }
+
+    HRESULT DefineDllImportAttribute(MetadataEmit* emit, mdMethodDef method, ParsedAttribute const& attribute,
+                                     bool& mapChanged)
+    {
+        HRESULT hr;
+        AttributeValue const& dllName = attribute.fixed[0];
+        if (dllName.string == nullptr || dllName.length == 0)
+            return META_E_CA_INVALID_VALUE;
+
+        uint32_t flags = 0;
+        AttributeValue const& callingConvention = attribute.named[0];
+        if (!callingConvention.supplied)
+            flags |= pmCallConvWinapi;
+        else
+        {
+            switch (callingConvention.number)
+            {
+            case 0: break;
+            case 1: flags |= pmCallConvWinapi; break;
+            case 2: flags |= pmCallConvCdecl; break;
+            case 3: flags |= pmCallConvStdcall; break;
+            case 4: flags |= pmCallConvThiscall; break;
+            case 5: flags |= pmCallConvFastcall; break;
+            default: return META_E_CA_INVALID_VALUE;
+            }
+        }
+        if (attribute.named[1].supplied)
+        {
+            switch (attribute.named[1].number)
+            {
+            case 0: break;
+            case 1: flags |= pmCharSetNotSpec; break;
+            case 2: flags |= pmCharSetAnsi; break;
+            case 3: flags |= pmCharSetUnicode; break;
+            case 4: flags |= pmCharSetAuto; break;
+            default: return META_E_CA_INVALID_VALUE;
+            }
+        }
+        if (attribute.named[3].number != 0)
+            flags |= pmNoMangle;
+        if (attribute.named[4].number != 0)
+            flags |= pmSupportsLastError;
+        if (attribute.named[6].supplied)
+            flags |= attribute.named[6].number ? pmBestFitEnabled : pmBestFitDisabled;
+        if (attribute.named[7].supplied)
+            flags |= attribute.named[7].number ? pmThrowOnUnmappableCharEnabled : pmThrowOnUnmappableCharDisabled;
+
+        mdcursor_t methodRow;
+        if (!md_token_to_cursor(emit->MetaData(), method, &methodRow))
+            return CLDB_E_RECORD_NOTFOUND;
+        uint32_t methodFlags;
+        if (!md_get_column_value_as_constant(methodRow, mdtMethodDef_ImplFlags, &methodFlags))
+            return CLDB_E_FILE_CORRUPT;
+        uint32_t metadataFlags;
+        if (!md_get_column_value_as_constant(methodRow, mdtMethodDef_Flags, &metadataFlags))
+            return CLDB_E_FILE_CORRUPT;
+        uint32_t updatedMethodFlags = attribute.named[5].supplied && attribute.named[5].number == 0
+            ? methodFlags & ~uint32_t(miPreserveSig) : methodFlags | miPreserveSig;
+
+        char const* methodName;
+        if (!md_get_column_value_as_utf8(methodRow, mdtMethodDef_Name, &methodName))
+            return CLDB_E_FILE_CORRUPT;
+        AttributeValue entryPoint = attribute.named[2];
+        if (!entryPoint.supplied)
+        {
+            entryPoint.string = methodName;
+            entryPoint.length = static_cast<uint32_t>(std::strlen(methodName));
+        }
+        else if (entryPoint.string == nullptr)
+            entryPoint.string = "";
+
+        malloc_ptr<void> moduleName, entryName;
+        RETURN_IF_FAILED(NullTerminate(dllName, moduleName));
+        RETURN_IF_FAILED(NullTerminate(entryPoint, entryName));
+        pal::StringConvert<char, WCHAR> wideModule(static_cast<char const*>(moduleName.get()));
+        pal::StringConvert<char, WCHAR> wideEntry(static_cast<char const*>(entryName.get()));
+        if (!wideModule.Success() || !wideEntry.Success())
+            return META_E_CA_INVALID_VALUE;
+
+        mdModuleRef module;
+        RETURN_IF_FAILED(FindModuleReference(emit->MetaData(), static_cast<char const*>(moduleName.get()), module));
+        if (IsNilToken(module))
+        {
+            hr = emit->DefineModuleRef(wideModule, &module);
+            if (FAILED(hr))
+                return hr;
+        }
+
+        mdcursor_t implMap{}, existing{};
+        uint32_t count;
+        bool hasMap = md_create_cursor(emit->MetaData(), mdtid_ImplMap, &implMap, &count) &&
+            md_find_row_from_cursor(implMap, mdtImplMap_MemberForwarded, method, &existing);
+        if (hasMap)
+        {
+            uint32_t existingFlags;
+            mdModuleRef existingModule;
+            char const* existingName;
+            if (!md_get_column_value_as_constant(existing, mdtImplMap_MappingFlags, &existingFlags)
+                || !md_get_column_value_as_token(existing, mdtImplMap_ImportScope, &existingModule)
+                || !md_get_column_value_as_utf8(existing, mdtImplMap_ImportName, &existingName))
+                return CLDB_E_FILE_CORRUPT;
+            if (existingFlags != flags || existingModule != module ||
+                std::strcmp(existingName, static_cast<char const*>(entryName.get())) != 0)
+            {
+                RETURN_IF_FAILED(emit->SetPinvokeMap(method, flags, wideEntry, module));
+                mapChanged = true;
+            }
+        }
+        else
+        {
+            RETURN_IF_FAILED(emit->DefinePinvokeMap(method, flags, wideEntry, module));
+        }
+        if (hasMap && (metadataFlags & mdPinvokeImpl) == 0)
+            RETURN_IF_FAILED(emit->SetMethodProps(method, metadataFlags | mdPinvokeImpl, UINT32_MAX, UINT32_MAX));
+        return updatedMethodFlags == methodFlags ? S_OK : emit->SetMethodImplFlags(method, updatedMethodFlags);
+    }
+
+    HRESULT DefineStructLayoutAttribute(MetadataEmit* emit, mdTypeDef type, ParsedAttribute const& attribute,
+                                        bool& metadataChanged)
+    {
+        uint32_t layout = attribute.fixed[0].number;
+        if (layout > 3)
+            return META_E_CA_INVALID_VALUE;
+        uint32_t pack = attribute.named[0].number;
+        uint32_t size = attribute.named[1].number;
+        if (attribute.named[0].supplied && (pack > 128 || (pack != 0 && (pack & (pack - 1)) != 0)))
+            return META_E_CA_INVALID_VALUE;
+        if (attribute.named[1].supplied && size > INT32_MAX)
+            return META_E_CA_INVALID_VALUE;
+
+        uint32_t charSet = 0;
+        if (attribute.named[2].supplied)
+        {
+            switch (attribute.named[2].number)
+            {
+            case 2: charSet = tdAnsiClass; break;
+            case 3: charSet = tdUnicodeClass; break;
+            case 4: charSet = tdAutoClass; break;
+            default: return META_E_CA_INVALID_VALUE;
+            }
+        }
+
+        mdcursor_t typeRow;
+        if (!md_token_to_cursor(emit->MetaData(), type, &typeRow))
+            return CLDB_E_RECORD_NOTFOUND;
+        uint32_t existingFlags;
+        if (!md_get_column_value_as_constant(typeRow, mdtTypeDef_Flags, &existingFlags))
+            return CLDB_E_FILE_CORRUPT;
+        uint32_t layoutFlags[] = { tdSequentialLayout, tdExtendedLayout, tdExplicitLayout, tdAutoLayout };
+        uint32_t mask = tdLayoutMask | (attribute.named[2].supplied ? tdStringFormatMask : 0);
+        uint32_t flags = (existingFlags & ~mask) | layoutFlags[layout] | charSet;
+
+        if (attribute.named[0].supplied || attribute.named[1].supplied)
+        {
+            mdcursor_t layouts{}, existing{};
+            uint32_t count;
+            bool hasLayout = md_create_cursor(emit->MetaData(), mdtid_ClassLayout, &layouts, &count) &&
+                md_find_row_from_cursor(layouts, mdtClassLayout_Parent, RidFromToken(type), &existing);
+            uint32_t oldPack = 0, oldSize = 0;
+            if (hasLayout &&
+                (!md_get_column_value_as_constant(existing, mdtClassLayout_PackingSize, &oldPack) ||
+                 !md_get_column_value_as_constant(existing, mdtClassLayout_ClassSize, &oldSize)))
+                return CLDB_E_FILE_CORRUPT;
+            uint32_t newPack = attribute.named[0].supplied ? pack : oldPack;
+            uint32_t newSize = attribute.named[1].supplied ? size : oldSize;
+            if (!hasLayout || newPack != oldPack || newSize != oldSize)
+            {
+                HRESULT hr = emit->SetClassLayout(type, newPack, nullptr, newSize);
+                if (FAILED(hr))
+                    return hr;
+                metadataChanged = true;
+            }
+        }
+
+        if (flags == existingFlags)
+            return S_OK;
+        if (!md_set_column_value_as_constant(typeRow, mdtTypeDef_Flags, flags))
+            return E_FAIL;
+        metadataChanged = true;
+        return S_OK;
+    }
+
+    HRESULT CompressNativeValue(std::vector<uint8_t>& native, uint32_t value)
+    {
+        uint8_t bytes[4];
+        ULONG count = CorSigCompressData(value, bytes);
+        if (count == ULONG(-1))
+            return META_E_CA_INVALID_BLOB;
+        native.insert(native.end(), bytes, bytes + count);
+        return S_OK;
+    }
+
+    HRESULT AppendNativeString(std::vector<uint8_t>& native, AttributeValue const& value)
+    {
+        HRESULT hr = CompressNativeValue(native, value.length);
+        if (FAILED(hr))
+            return hr;
+        if (value.length != 0)
+            native.insert(native.end(), value.string, value.string + value.length);
+        return S_OK;
+    }
+
+    HRESULT EncodeNativeType(ParsedAttribute const& attribute, mdToken owner, std::vector<uint8_t>& native)
+    {
+        HRESULT hr;
+        uint32_t type = attribute.fixed[0].number;
+        RETURN_IF_FAILED(CompressNativeValue(native, type));
+        AttributeValue const& arrayType = attribute.named[0];
+        AttributeValue const& safeArrayType = attribute.named[1];
+        AttributeValue const& userDefinedType = attribute.named[2];
+        AttributeValue const& paramIndex = attribute.named[3];
+        AttributeValue const& size = attribute.named[4];
+        AttributeValue const& marshalType = attribute.named[5];
+        AttributeValue const& marshalTypeRef = attribute.named[6];
+        AttributeValue const& cookie = attribute.named[7];
+        AttributeValue const& iidIndex = attribute.named[8];
+
+        switch (type)
+        {
+        case NATIVE_TYPE_INTF:
+        case NATIVE_TYPE_IUNKNOWN:
+        case NATIVE_TYPE_IDISPATCH:
+            if (iidIndex.supplied)
+            {
+                if (iidIndex.number > INT32_MAX)
+                    return META_E_CA_NEGATIVE_PARAMINDEX;
+                RETURN_IF_FAILED(CompressNativeValue(native, iidIndex.number));
+            }
+            break;
+        case NATIVE_TYPE_FIXEDARRAY:
+            if (safeArrayType.supplied || paramIndex.supplied)
+                return META_E_CA_INVALID_MARSHALAS_FIELDS;
+            if (TypeFromToken(owner) != mdtFieldDef)
+                return META_E_CA_NT_FIELDONLY;
+            if (size.supplied && size.number > INT32_MAX)
+                return META_E_CA_NEGATIVE_CONSTSIZE;
+            RETURN_IF_FAILED(CompressNativeValue(native, size.supplied ? size.number : 1));
+            if (arrayType.supplied)
+                RETURN_IF_FAILED(CompressNativeValue(native, arrayType.number));
+            break;
+        case NATIVE_TYPE_FIXEDSYSSTRING:
+            if (!size.supplied)
+                return META_E_CA_FIXEDSTR_SIZE_REQUIRED;
+            if (arrayType.supplied || paramIndex.supplied || safeArrayType.supplied)
+                return META_E_CA_INVALID_MARSHALAS_FIELDS;
+            if (TypeFromToken(owner) != mdtFieldDef)
+                return META_E_CA_NT_FIELDONLY;
+            RETURN_IF_FAILED(CompressNativeValue(native, size.number));
+            break;
+        case NATIVE_TYPE_BYVALSTR:
+            if (TypeFromToken(owner) != mdtParamDef)
+                return META_E_CA_INVALID_TARGET;
+            break;
+        case NATIVE_TYPE_SAFEARRAY:
+            if (arrayType.supplied || paramIndex.supplied || size.supplied)
+                return META_E_CA_INVALID_MARSHALAS_FIELDS;
+            if (safeArrayType.supplied)
+            {
+                RETURN_IF_FAILED(CompressNativeValue(native, safeArrayType.number));
+                if (userDefinedType.supplied)
+                {
+                    // VT_DISPATCH, VT_UNKNOWN, and VT_RECORD can carry a type name.
+                    if (safeArrayType.number != 9 && safeArrayType.number != 13 && safeArrayType.number != 36)
+                        return META_E_CA_INVALID_MARSHALAS_FIELDS;
+                    RETURN_IF_FAILED(AppendNativeString(native, userDefinedType));
+                }
+            }
+            break;
+        case NATIVE_TYPE_ARRAY:
+            if (safeArrayType.supplied || (arrayType.supplied && arrayType.number == NATIVE_TYPE_CUSTOMMARSHALER))
+                return META_E_CA_INVALID_MARSHALAS_FIELDS;
+            RETURN_IF_FAILED(CompressNativeValue(native, arrayType.supplied ? arrayType.number : NATIVE_TYPE_MAX));
+            if (paramIndex.supplied)
+            {
+                if (paramIndex.number > INT16_MAX)
+                    return META_E_CA_NEGATIVE_PARAMINDEX;
+                RETURN_IF_FAILED(CompressNativeValue(native, paramIndex.number));
+                if (size.supplied)
+                {
+                    if (size.number > INT32_MAX)
+                        return META_E_CA_NEGATIVE_CONSTSIZE;
+                    RETURN_IF_FAILED(CompressNativeValue(native, size.number));
+                    RETURN_IF_FAILED(CompressNativeValue(native, ntaSizeParamIndexSpecified));
+                }
+            }
+            else if (size.supplied)
+            {
+                RETURN_IF_FAILED(CompressNativeValue(native, 0));
+                RETURN_IF_FAILED(CompressNativeValue(native, size.number));
+                RETURN_IF_FAILED(CompressNativeValue(native, 0));
+            }
+            break;
+        case NATIVE_TYPE_CUSTOMMARSHALER:
+            if (!marshalType.supplied && !marshalTypeRef.supplied)
+                return META_E_CA_CUSTMARSH_TYPE_REQUIRED;
+            RETURN_IF_FAILED(CompressNativeValue(native, 0));
+            RETURN_IF_FAILED(CompressNativeValue(native, 0));
+            RETURN_IF_FAILED(AppendNativeString(native, marshalType.supplied ? marshalType : marshalTypeRef));
+            RETURN_IF_FAILED(AppendNativeString(native, cookie));
+            break;
+        default:
+            break;
+        }
+        return native.size() <= UINT32_MAX ? S_OK : CLDB_E_TOO_BIG;
+    }
+
+    HRESULT FindParameter(mdhandle_t metadata, mdMethodDef method, uint32_t sequence, mdParamDef& param)
+    {
+        param = mdParamDefNil;
+        mdcursor_t methodRow;
+        if (!md_token_to_cursor(metadata, method, &methodRow))
+            return CLDB_E_FILE_CORRUPT;
+        mdcursor_t row;
+        uint32_t count;
+        if (!md_get_column_value_as_range(methodRow, mdtMethodDef_ParamList, &row, &count))
+            return CLDB_E_FILE_CORRUPT;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            mdcursor_t resolved;
+            uint32_t currentSequence;
+            if (!md_resolve_indirect_cursor(row, &resolved) ||
+                !md_get_column_value_as_constant(resolved, mdtParam_Sequence, &currentSequence))
+                return CLDB_E_FILE_CORRUPT;
+            if (currentSequence == sequence)
+                return md_cursor_to_token(resolved, &param) ? S_OK : CLDB_E_FILE_CORRUPT;
+            if (i + 1 < count && !md_cursor_next(&row))
+                return CLDB_E_FILE_CORRUPT;
+        }
+        return S_OK;
+    }
+
+    HRESULT FindPropertyMarshalParameters(mdhandle_t metadata, mdProperty property,
+                                          mdParamDef& returnParam, mdParamDef& valueParam)
+    {
+        // ECMA-335 II.22.33: the marshal descriptors belong to existing Param rows,
+        // specifically the getter's return and the setter's last parameter.
+        returnParam = mdParamDefNil;
+        valueParam = mdParamDefNil;
+        mdcursor_t row;
+        uint32_t count;
+        if (!md_create_cursor(metadata, mdtid_MethodSemantics, &row, &count))
+            return S_OK;
+        mdMethodDef getter = mdMethodDefNil, setter = mdMethodDefNil;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            mdToken association;
+            uint32_t semantic;
+            if (!md_get_column_value_as_token(row, mdtMethodSemantics_Association, &association) ||
+                !md_get_column_value_as_constant(row, mdtMethodSemantics_Semantics, &semantic))
+                return CLDB_E_FILE_CORRUPT;
+            if (association == property && (semantic == msGetter || semantic == msSetter))
+            {
+                mdMethodDef method;
+                if (!md_get_column_value_as_token(row, mdtMethodSemantics_Method, &method))
+                    return CLDB_E_FILE_CORRUPT;
+                if (semantic == msGetter)
+                    getter = method;
+                else
+                    setter = method;
+            }
+            if (i + 1 < count && !md_cursor_next(&row))
+                return CLDB_E_FILE_CORRUPT;
+        }
+        if (!IsNilToken(getter))
+        {
+            HRESULT hr = FindParameter(metadata, getter, 0, returnParam);
+            if (FAILED(hr))
+                return hr;
+        }
+        if (!IsNilToken(setter))
+        {
+            mdcursor_t methodRow;
+            uint8_t const* signature;
+            uint32_t length;
+            if (!md_token_to_cursor(metadata, setter, &methodRow) ||
+                !md_get_column_value_as_blob(methodRow, mdtMethodDef_Signature, &signature, &length))
+                return CLDB_E_FILE_CORRUPT;
+            CustomAttributeReader reader(signature, length);
+            uint8_t convention;
+            uint32_t paramCount, genericCount;
+            if (!reader.ReadByte(convention) ||
+                ((convention & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0 && !reader.ReadCompressedUInt(genericCount)) ||
+                !reader.ReadCompressedUInt(paramCount))
+                return CLDB_E_FILE_CORRUPT;
+            if (paramCount != 0)
+                return FindParameter(metadata, setter, paramCount, valueParam);
+        }
+        return S_OK;
+    }
+
+    HRESULT SetMarshalAttribute(MetadataEmit* emit, mdToken owner, ParsedAttribute const& attribute)
+    {
+        try
+        {
+            std::vector<uint8_t> native;
+            native.reserve(24);
+            HRESULT hr = EncodeNativeType(attribute, owner, native);
+            if (FAILED(hr))
+                return hr;
+
+            mdParamDef returnParam = mdParamDefNil, valueParam = mdParamDefNil;
+            if (TypeFromToken(owner) == mdtProperty)
+            {
+                RETURN_IF_FAILED(FindPropertyMarshalParameters(emit->MetaData(), owner, returnParam, valueParam));
+            }
+            mdToken targets[] = { TypeFromToken(owner) == mdtProperty ? returnParam : owner, valueParam };
+            for (mdToken target : targets)
+            {
+                if (IsNilToken(target))
+                    continue;
+                mdcursor_t marshalRows{}, existing{}, parent{};
+                uint32_t count, flags;
+                if (!md_token_to_cursor(emit->MetaData(), target, &parent) ||
+                    !md_get_column_value_as_constant(parent,
+                        TypeFromToken(target) == mdtFieldDef ? mdtField_Flags : mdtParam_Flags, &flags))
+                    return CLDB_E_FILE_CORRUPT;
+                uint32_t marshalFlag = TypeFromToken(target) == mdtFieldDef
+                    ? uint32_t(fdHasFieldMarshal) : uint32_t(pdHasFieldMarshal);
+                bool hasMarshal = md_create_cursor(emit->MetaData(), mdtid_FieldMarshal, &marshalRows, &count) &&
+                    md_find_row_from_cursor(marshalRows, mdtFieldMarshal_Parent, target, &existing);
+                if (hasMarshal)
+                {
+                    uint8_t const* previous;
+                    uint32_t previousLength;
+                    if (!md_get_column_value_as_blob(existing, mdtFieldMarshal_NativeType, &previous, &previousLength))
+                        return CLDB_E_FILE_CORRUPT;
+                    if (previousLength == native.size() &&
+                        std::memcmp(previous, native.data(), previousLength) == 0 &&
+                        (flags & marshalFlag) != 0)
+                        continue;
+                }
+                RETURN_IF_FAILED(emit->SetFieldMarshal(target, native.data(), static_cast<ULONG>(native.size())));
+            }
+            return S_OK;
+        }
+        catch (std::bad_alloc const&)
+        {
+            return E_OUTOFMEMORY;
+        }
+    }
+}
+
+HRESULT MetadataEmit::FindCachedKnownAttribute(mdToken constructor, uint32_t& index)
+{
+    mdhandle_t metadata = MetaData();
+    if (_knownAttributesHandle != metadata)
+    {
+        _knownAttributes.clear();
+        _knownAttributesHandle = metadata;
+        _lastKnownConstructor = mdTokenNil;
+    }
+
+    std::unordered_map<mdToken, uint32_t>::const_iterator cached = _knownAttributes.find(constructor);
+    if (cached != _knownAttributes.end())
+    {
+        index = cached->second;
+        _lastKnownConstructor = constructor;
+        _lastKnownAttribute = index;
+        return S_OK;
+    }
+
+    KnownAttribute const* attribute;
+    HRESULT hr = FindKnownAttribute(metadata, constructor, &attribute);
+    if (FAILED(hr))
+        return hr;
+    index = attribute == nullptr ? UINT32_MAX : static_cast<uint32_t>(attribute - knownAttributes);
+    try
+    {
+        _knownAttributes.emplace(constructor, index);
+    }
+    catch (std::bad_alloc const&)
+    {
+        return E_OUTOFMEMORY;
+    }
+    _lastKnownConstructor = constructor;
+    _lastKnownAttribute = index;
+    return S_OK;
+}
+
 
 HRESULT MetadataEmit::DefineCustomAttribute(
         mdToken     tkOwner,
@@ -2518,18 +3485,187 @@ HRESULT MetadataEmit::DefineCustomAttribute(
         ULONG       cbCustomAttribute,
         mdCustomAttribute *pcv)
 {
+    HRESULT hr;
     if (TypeFromToken(tkOwner) == mdtCustomAttribute)
         return E_INVALIDARG;
 
     if (IsNilToken(tkOwner)
         || IsNilToken(tkCtor)
         || (TypeFromToken(tkCtor) != mdtMethodDef
-            && TypeFromToken(tkCtor) != mdtMemberRef) )
+            && TypeFromToken(tkCtor) != mdtMemberRef)
+        || (pCustomAttribute == nullptr && cbCustomAttribute != 0))
     {
         return E_INVALIDARG;
     }
 
-    // TODO: Recognize pseudoattributes and handle them appropriately.
+    uint32_t knownIndex;
+    if (_knownAttributesHandle == MetaData() && _lastKnownConstructor == tkCtor)
+        knownIndex = _lastKnownAttribute;
+    else
+        RETURN_IF_FAILED(FindCachedKnownAttribute(tkCtor, knownIndex));
+    KnownAttribute const* known = knownIndex == UINT32_MAX ? nullptr : &knownAttributes[knownIndex];
+    if (known != nullptr)
+    {
+        if (pcv != nullptr)
+            *pcv = mdCustomAttributeNil;
+
+        unsigned table = TypeFromToken(tkOwner) >> 24;
+        if (table >= 64 || (known->targets & (uint64_t(1) << table)) == 0)
+            return META_E_CA_INVALID_TARGET;
+
+        mdcursor_t ownerRow;
+        if (!md_token_to_cursor(MetaData(), tkOwner, &ownerRow))
+            return CLDB_E_RECORD_NOTFOUND;
+
+        ParsedAttribute attribute;
+        RETURN_IF_FAILED(ParseKnownAttribute(*known, pCustomAttribute, cbCustomAttribute, attribute));
+
+        uint32_t mask = 0, value = 0;
+        col_index_t column = mdtTypeDef_Flags;
+        bool metadataChanged = false;
+        switch (known->kind)
+        {
+        case KnownAttributeKind::DllImport:
+            RETURN_IF_FAILED(DefineDllImportAttribute(this, tkOwner, attribute, metadataChanged));
+            if (metadataChanged)
+                RETURN_IF_FAILED(LogToken(tkOwner));
+            break;
+        case KnownAttributeKind::Guid:
+        {
+            AttributeValue const& guid = attribute.fixed[0];
+            if (guid.string == nullptr || guid.length != 36)
+                return META_E_CA_INVALID_UUID;
+            for (uint32_t i = 0; i < guid.length; ++i)
+            {
+                unsigned char c = static_cast<unsigned char>(guid.string[i]);
+                if (i == 8 || i == 13 || i == 18 || i == 23)
+                {
+                    if (c != '-')
+                        return META_E_CA_INVALID_UUID;
+                }
+                else if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))
+                    return META_E_CA_INVALID_UUID;
+            }
+            break;
+        }
+        case KnownAttributeKind::InterfaceType:
+            if (attribute.fixed[0].number >= ifLast)
+                return META_E_CA_INVALID_VALUE;
+            break;
+        case KnownAttributeKind::ClassInterface:
+            if (attribute.fixed[0].number >= clsIfLast)
+                return META_E_CA_INVALID_VALUE;
+            break;
+        case KnownAttributeKind::TypeLibVersion:
+        case KnownAttributeKind::ComCompatibleVersion:
+            for (uint32_t i = 0; i < known->argumentCount; ++i)
+                if (attribute.fixed[i].number > INT32_MAX)
+                    return META_E_CA_INVALID_VALUE;
+            break;
+        case KnownAttributeKind::MethodImplEmpty:
+        case KnownAttributeKind::MethodImplShort:
+        case KnownAttributeKind::MethodImplEnum:
+        case KnownAttributeKind::PreserveSig:
+        {
+            uint32_t implFlags;
+            if (!md_get_column_value_as_constant(ownerRow, mdtMethodDef_ImplFlags, &implFlags))
+                return CLDB_E_FILE_CORRUPT;
+            uint32_t updated = implFlags;
+            if (known->kind == KnownAttributeKind::PreserveSig)
+                updated |= miPreserveSig;
+            else
+            {
+                if (known->kind != KnownAttributeKind::MethodImplEmpty)
+                {
+                    uint32_t userFlags = attribute.fixed[0].number;
+                    if ((userFlags & ~uint32_t(miUserMask)) != 0)
+                        return META_E_CA_INVALID_VALUE;
+                    updated |= userFlags;
+                }
+                if (attribute.named[0].supplied)
+                {
+                    uint32_t codeType = attribute.named[0].number;
+                    if ((codeType & ~uint32_t(miCodeTypeMask)) != 0)
+                        return META_E_CA_INVALID_VALUE;
+                    updated = (updated & ~uint32_t(miCodeTypeMask)) | codeType;
+                }
+            }
+            if (updated != implFlags)
+                RETURN_IF_FAILED(SetMethodImplFlags(tkOwner, updated));
+            break;
+        }
+        case KnownAttributeKind::MarshalAsShort:
+        case KnownAttributeKind::MarshalAsEnum:
+            RETURN_IF_FAILED(SetMarshalAttribute(this, tkOwner, attribute));
+            break;
+        case KnownAttributeKind::StructLayoutShort:
+        case KnownAttributeKind::StructLayoutEnum:
+            RETURN_IF_FAILED(DefineStructLayoutAttribute(this, tkOwner, attribute, metadataChanged));
+            if (metadataChanged)
+                RETURN_IF_FAILED(LogToken(tkOwner));
+            break;
+        case KnownAttributeKind::FieldOffset:
+        {
+            uint32_t offset = attribute.fixed[0].number;
+            if (offset > INT32_MAX)
+                return META_E_CA_INVALID_VALUE;
+            mdcursor_t layouts{}, existing{};
+            uint32_t count;
+            if (md_create_cursor(MetaData(), mdtid_FieldLayout, &layouts, &count) &&
+                md_find_row_from_cursor(layouts, mdtFieldLayout_Field, RidFromToken(tkOwner), &existing))
+            {
+                uint32_t previous;
+                if (!md_get_column_value_as_constant(existing, mdtFieldLayout_Offset, &previous))
+                    return CLDB_E_FILE_CORRUPT;
+                if (previous == offset)
+                    break;
+            }
+            RETURN_IF_FAILED(SetFieldLayoutHelper(tkOwner, offset));
+            break;
+        }
+        case KnownAttributeKind::ComImport:
+            mask = value = tdImport;
+            break;
+        case KnownAttributeKind::Serializable:
+            mask = value = tdSerializable;
+            break;
+        case KnownAttributeKind::WindowsRuntimeImport:
+            mask = value = tdWindowsRuntime;
+            break;
+        case KnownAttributeKind::NonSerialized:
+            column = mdtField_Flags;
+            mask = value = fdNotSerialized;
+            break;
+        case KnownAttributeKind::In:
+        case KnownAttributeKind::Out:
+        case KnownAttributeKind::Optional:
+            column = mdtParam_Flags;
+            mask = value = known->kind == KnownAttributeKind::In ? pdIn :
+                known->kind == KnownAttributeKind::Out ? pdOut : pdOptional;
+            break;
+        case KnownAttributeKind::SpecialName:
+            switch (TypeFromToken(tkOwner))
+            {
+            case mdtTypeDef: mask = value = tdSpecialName; break;
+            case mdtMethodDef: column = mdtMethodDef_Flags; mask = value = mdSpecialName; break;
+            case mdtFieldDef: column = mdtField_Flags; mask = value = fdSpecialName; break;
+            case mdtProperty: column = mdtProperty_Flags; mask = value = prSpecialName; break;
+            case mdtEvent: column = mdtEvent_EventFlags; mask = value = evSpecialName; break;
+            default: return META_E_CA_INVALID_TARGET;
+            }
+            break;
+        default:
+            return E_NOTIMPL;
+        }
+        if (mask != 0)
+        {
+            RETURN_IF_FAILED(UpdateAttributeFlags(MetaData(), tkOwner, column, mask, value, metadataChanged));
+            if (metadataChanged)
+                RETURN_IF_FAILED(LogToken(tkOwner));
+        }
+        if (!known->keep)
+            return S_OK;
+    }
 
     // We hand out tokens here, so we can't move rows to keep the parent column sorted.
     md_added_row_t new_row;
@@ -2542,15 +3678,17 @@ HRESULT MetadataEmit::DefineCustomAttribute(
     if (!md_set_column_value_as_token(new_row, mdtCustomAttribute_Type, tkCtor))
         return E_FAIL;
 
-    uint8_t const* pCustomAttributeBlob = (uint8_t const*)pCustomAttribute;
+    uint8_t const* pCustomAttributeBlob = static_cast<uint8_t const*>(pCustomAttribute);
     uint32_t customAttributeBlobLen = cbCustomAttribute;
     if (!md_set_column_value_as_blob(new_row, mdtCustomAttribute_Value, pCustomAttributeBlob, customAttributeBlobLen))
         return E_FAIL;
 
-    if (!md_cursor_to_token(new_row, pcv))
+    mdCustomAttribute token;
+    if (!md_cursor_to_token(new_row, &token))
         return CLDB_E_FILE_CORRUPT;
-
-    return LogToken(*pcv);
+    if (pcv != nullptr)
+        *pcv = token;
+    return LogToken(token);
 }
 
 HRESULT MetadataEmit::SetCustomAttributeValue(
@@ -4451,7 +5589,7 @@ HRESULT MetadataEmit::ChangeMvid(REFGUID newMvid)
         return CLDB_E_FILE_CORRUPT;
 
     mdguid_t mvid;
-    static_assert(sizeof(mvid) == sizeof(newMvid));
+    static_assert(sizeof(mvid) == sizeof(newMvid), "Metadata and COM GUIDs must have the same size");
     std::memcpy(&mvid, &newMvid, sizeof(mvid));
     return md_set_column_value_as_guid(module, mdtModule_Mvid, mvid) ? LogToken(MD_MODULE_TOKEN) : E_FAIL;
 }
