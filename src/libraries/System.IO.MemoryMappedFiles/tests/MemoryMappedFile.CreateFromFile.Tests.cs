@@ -743,8 +743,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test exceptional behavior when trying to create a map for a non-shared file that's currently in use.
         /// </summary>
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "the emscripten implementation ignores FileShare.None")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void FileInUse_CreateFromFile_FailsWithExistingNoShareFile()
         {
             // Already opened with a FileStream

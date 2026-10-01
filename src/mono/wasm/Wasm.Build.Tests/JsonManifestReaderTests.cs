@@ -45,6 +45,10 @@ public sealed class JsonManifestReaderTests
 		      { "identity": "--enable-threads", "source": "runtime-pack" },
 		    ],
 		    "EmccDefaultExportedRuntimeMethods": [],
+		    "EmccDefaultIncomingModuleJSAPI": [
+		      "instantiateWasm",
+		      "onRuntimeInitialized",
+		    ],
 		    "PropertiesThatTriggerRelinking": [
 		      { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "false" },
 		    ],
@@ -77,6 +81,10 @@ public sealed class JsonManifestReaderTests
 			});
 		Assert.Null(task.EmccDefaultExportedFunctions);
 		Assert.Empty(task.EmccDefaultExportedRuntimeMethods!);
+		Assert.Collection(
+			task.EmccDefaultIncomingModuleJSAPI!,
+			item => Assert.Equal("instantiateWasm", item.ItemSpec),
+			item => Assert.Equal("onRuntimeInitialized", item.ItemSpec));
 		ITaskItem relinkingProperty = Assert.Single(task.PropertiesThatTriggerRelinking!);
 		Assert.Equal("InvariantGlobalization", relinkingProperty.ItemSpec);
 		Assert.Equal("false", relinkingProperty.GetMetadata("defaultValueInRuntimePack"));
@@ -128,11 +136,13 @@ public sealed class JsonManifestReaderTests
 			    </MonoRuntimeComponentManifestReadTask>
 			    <ReadWasmProps JsonFilePath="$(MSBuildThisFileDirectory)input.json">
 			      <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_Flags" />
+			      <Output TaskParameter="EmccDefaultIncomingModuleJSAPI" ItemName="_EmccIncomingModuleJSAPI" />
 			      <Output TaskParameter="PropertiesThatTriggerRelinking" ItemName="_Relinking" />
 			    </ReadWasmProps>
 			    <Message Importance="High" Text="linking=@(_Linking)|rid=%(_Linking.RuntimeIdentifier)" />
 			    <Message Importance="High" Text="components=@(_Components)|rid=%(_Components.RuntimeIdentifier)" />
 			    <Message Importance="High" Text="flags=@(_Flags, ',')" />
+			    <Message Importance="High" Text="incoming=@(_EmccIncomingModuleJSAPI, ',')" />
 			    <Message Importance="High" Text="relinking=@(_Relinking)|default=%(_Relinking.defaultValueInRuntimePack)" />
 			  </Target>
 			</Project>
@@ -169,6 +179,7 @@ public sealed class JsonManifestReaderTests
 		Assert.Contains("linking=static|rid=win-x64", output);
 		Assert.Contains("components=diagnostics_tracing|rid=win-x64", output);
 		Assert.Contains("flags=--enable-simd,--enable-threads", output);
+		Assert.Contains("incoming=instantiateWasm,onRuntimeInitialized", output);
 		Assert.Contains("relinking=InvariantGlobalization|default=false", output);
 		Assert.DoesNotContain("Custom TaskFactory", output);
 	}

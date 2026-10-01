@@ -48,6 +48,9 @@ public sealed class ReadWasmProps : Microsoft.Build.Utilities.Task
     public ITaskItem[]? EmccDefaultExportedRuntimeMethods => _json?.GetItems(nameof(EmccDefaultExportedRuntimeMethods));
 
     [Output]
+    public ITaskItem[]? EmccDefaultIncomingModuleJSAPI => _json?.GetItems(nameof(EmccDefaultIncomingModuleJSAPI));
+
+    [Output]
     public ITaskItem[]? PropertiesThatTriggerRelinking => _json?.GetItems(nameof(PropertiesThatTriggerRelinking));
 
     public override bool Execute()

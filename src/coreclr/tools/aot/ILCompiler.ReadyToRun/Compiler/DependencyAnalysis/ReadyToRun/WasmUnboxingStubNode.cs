@@ -36,7 +36,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _targetType = targetType;
             _kind = kind;
             _hasReturnBuffer = hasReturnBuffer;
-            _lookupString = GetLookupString(kind, signature.FuncType, hasReturnBuffer);
+            string prefix = kind switch
+            {
+                UnboxingStubKind.Normal => "U",
+                UnboxingStubKind.MethodTable => "UG",
+                UnboxingStubKind.MethodDesc => "UM",
+                _ => throw new UnreachableException(),
+            };
+            _lookupString = GetLookupString(prefix, signature.FuncType, hasReturnBuffer);
         }
 
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_signature, _context);
@@ -165,55 +172,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Local.Get(targetEntryPointLocalIndex));
             expressions.Add(I32.Load(0));
             expressions.Add(ControlFlow.CallIndirect(_targetType, 0));
-        }
-
-        private static string GetLookupString(UnboxingStubKind kind, WasmFuncType funcType, bool hasReturnBuffer)
-        {
-            Utf8StringBuilder sb = new Utf8StringBuilder();
-            sb.Append(kind switch
-            {
-                UnboxingStubKind.Normal => "U",
-                UnboxingStubKind.MethodTable => "UG",
-                UnboxingStubKind.MethodDesc => "UM",
-                _ => throw new UnreachableException(),
-            });
-
-            if (funcType.Returns.Types.Length == 0)
-            {
-                sb.Append('v');
-            }
-            else
-            {
-                foreach (WasmValueType type in funcType.Returns.Types)
-                {
-                    AppendTypeCode(sb, type);
-                }
-            }
-
-            if (hasReturnBuffer)
-            {
-                sb.Append('r');
-            }
-
-            foreach (WasmValueType type in funcType.Params.Types)
-            {
-                AppendTypeCode(sb, type);
-            }
-
-            return sb.ToString();
-        }
-
-        private static void AppendTypeCode(Utf8StringBuilder sb, WasmValueType type)
-        {
-            sb.Append(type switch
-            {
-                WasmValueType.I32 => 'i',
-                WasmValueType.I64 => 'l',
-                WasmValueType.F32 => 'f',
-                WasmValueType.F64 => 'd',
-                WasmValueType.V128 => 'V',
-                _ => throw new UnreachableException(),
-            });
         }
 
         protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();

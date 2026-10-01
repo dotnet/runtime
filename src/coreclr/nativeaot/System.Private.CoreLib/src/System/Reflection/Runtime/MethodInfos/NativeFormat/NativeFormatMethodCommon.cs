@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
-using System.Reflection.Runtime.ParameterInfos.NativeFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 
@@ -55,21 +53,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             }
         }
 
-        public void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QSignatureTypeHandle[] typeSignatures, MethodBase contextMethod, TypeContext typeContext)
-        {
-            foreach (ParameterHandle parameterHandle in _method.Parameters)
-            {
-                Parameter parameterRecord = parameterHandle.GetParameter(_reader);
-                int index = parameterRecord.Sequence;
-                result[index] =
-                    NativeFormatMethodParameterInfo.GetNativeFormatMethodParameterInfo(
-                        contextMethod,
-                        index - 1,
-                        parameterHandle,
-                        typeSignatures[index],
-                        typeContext);
-            }
-        }
+        public ParameterHandleCollection ParameterHandles => _method.Parameters;
 
         public int GenericParameterCount => MethodHandle.GetMethod(Reader).GenericParameters.Count;
 

@@ -462,6 +462,313 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        public async Task ServerSession_ExternalValidation_PreservesClientCertificateChain()
+        {
+            const string serverName = "localhost";
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 preexistingExtraCertificate = TestCertificates.GetClientCertificate();
+            using TestCertificates.PkiHolder clientPki = TestCertificates.GenerateCertificates(
+                serverName,
+                serverCertificate: false);
+            X509Certificate2 expectedIntermediate = clientPki.IssuerChain[0];
+
+            X509ChainPolicy chainPolicy = new X509ChainPolicy
+            {
+                RevocationMode = X509RevocationMode.NoCheck,
+            };
+            chainPolicy.ExtraStore.Add(preexistingExtraCertificate);
+
+            int validatorCalls = 0;
+            bool callbackSawPreexistingCertificate = false;
+            bool callbackSawPeerIntermediate = false;
+            bool sessionSawPeerIntermediate = false;
+            bool sessionSawPeerLeaf = false;
+            bool sessionSawPreexistingCertificate = false;
+            bool secondValidationSawFirstPeerIntermediate = false;
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = true,
+                CertificateChainPolicy = chainPolicy,
+                RemoteCertificateValidationCallback = (_, _, chain, _) =>
+                {
+                    validatorCalls++;
+                    Assert.NotNull(chain);
+                    if (validatorCalls == 1)
+                    {
+                        callbackSawPreexistingCertificate = chain.ChainPolicy.ExtraStore.Find(
+                            X509FindType.FindByThumbprint,
+                            preexistingExtraCertificate.Thumbprint,
+                            validOnly: false).Count > 0;
+                        callbackSawPeerIntermediate = chain.ChainPolicy.ExtraStore.Find(
+                            X509FindType.FindByThumbprint,
+                            expectedIntermediate.Thumbprint,
+                            validOnly: false).Count > 0;
+                    }
+                    else
+                    {
+                        secondValidationSawFirstPeerIntermediate = chain.ChainPolicy.ExtraStore.Find(
+                            X509FindType.FindByThumbprint,
+                            expectedIntermediate.Thumbprint,
+                            validOnly: false).Count > 0;
+                    }
+                    return true;
+                },
+            });
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsBufferSession session = NewBufferSession(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateContext = clientPki.CreateSslStreamCertificateContext(),
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+
+                Task serverHandshake = DriveHandshakeWithExternalValidationAsync(
+                    session,
+                    serverStream,
+                    onSuspend: () =>
+                    {
+                        X509Certificate2Collection? remoteCertificates = session.GetRemoteCertificates();
+                        if (remoteCertificates is not null)
+                        {
+                            sessionSawPeerIntermediate = remoteCertificates.Find(
+                                X509FindType.FindByThumbprint,
+                                expectedIntermediate.Thumbprint,
+                                validOnly: false).Count > 0;
+                            sessionSawPeerLeaf = remoteCertificates.Find(
+                                X509FindType.FindByThumbprint,
+                                clientPki.EndEntity.Thumbprint,
+                                validOnly: false).Count > 0;
+                            sessionSawPreexistingCertificate = remoteCertificates.Find(
+                                X509FindType.FindByThumbprint,
+                                preexistingExtraCertificate.Thumbprint,
+                                validOnly: false).Count > 0;
+                        }
+                        session.AcceptWithDefaultValidation();
+                    });
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.Equal(1, validatorCalls);
+                Assert.True(callbackSawPreexistingCertificate);
+                Assert.True(callbackSawPeerIntermediate);
+                Assert.True(sessionSawPeerIntermediate);
+                Assert.False(sessionSawPeerLeaf);
+                Assert.False(sessionSawPreexistingCertificate);
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(clientSsl.IsAuthenticated);
+            }
+
+            (clientStream, serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            using (TlsBufferSession session = NewBufferSession(ctx))
+            {
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificates = new X509CertificateCollection { preexistingExtraCertificate },
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                Task serverHandshake = DriveHandshakeWithExternalValidationAsync(
+                    session,
+                    serverStream,
+                    onSuspend: () => session.AcceptWithDefaultValidation());
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.Equal(2, validatorCalls);
+                Assert.False(secondValidationSawFirstPeerIntermediate);
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(clientSsl.IsAuthenticated);
+            }
+        }
+
+        [Fact]
+        public async Task ServerSession_ExternalValidation_ConcurrentSessionsPreserveOwnCertificateChain()
+        {
+            const int SessionCount = 4;
+            const string serverName = "localhost";
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = true,
+                CertificateChainPolicy = new X509ChainPolicy
+                {
+                    RevocationMode = X509RevocationMode.NoCheck,
+                },
+            });
+
+            TestCertificates.PkiHolder?[] clientPkis = new TestCertificates.PkiHolder?[SessionCount];
+            try
+            {
+                Task[] handshakes = new Task[SessionCount];
+                for (int i = 0; i < SessionCount; i++)
+                {
+                    clientPkis[i] = TestCertificates.GenerateCertificates(
+                        serverName,
+                        testName: $"{nameof(ServerSession_ExternalValidation_ConcurrentSessionsPreserveOwnCertificateChain)}_{i}",
+                        serverCertificate: false);
+                }
+
+                for (int i = 0; i < SessionCount; i++)
+                {
+                    handshakes[i] = RunHandshakeAsync(clientPkis[i]!);
+                }
+
+                await Task.WhenAll(handshakes).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            finally
+            {
+                foreach (TestCertificates.PkiHolder? clientPki in clientPkis)
+                {
+                    clientPki?.Dispose();
+                }
+            }
+
+            async Task RunHandshakeAsync(TestCertificates.PkiHolder clientPki)
+            {
+                X509Certificate2 expectedIntermediate = clientPki.IssuerChain[0];
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+                using (TlsBufferSession session = NewBufferSession(ctx))
+                {
+                    Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                    {
+                        TargetHost = serverName,
+                        EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                        ClientCertificateContext = clientPki.CreateSslStreamCertificateContext(),
+                        RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                    });
+                    Task serverHandshake = DriveHandshakeWithExternalValidationAsync(
+                        session,
+                        serverStream,
+                        onSuspend: () =>
+                        {
+                            X509Certificate2Collection? remoteCertificates = session.GetRemoteCertificates();
+                            Assert.NotNull(remoteCertificates);
+                            Assert.NotEmpty(remoteCertificates.Find(
+                                X509FindType.FindByThumbprint,
+                                expectedIntermediate.Thumbprint,
+                                validOnly: false));
+                            Assert.Empty(remoteCertificates.Find(
+                                X509FindType.FindByThumbprint,
+                                clientPki.EndEntity.Thumbprint,
+                                validOnly: false));
+
+                            for (int i = 0; i < clientPkis.Length; i++)
+                            {
+                                TestCertificates.PkiHolder? otherPki = clientPkis[i];
+                                if (otherPki is not null && !ReferenceEquals(otherPki, clientPki))
+                                {
+                                    Assert.Empty(remoteCertificates.Find(
+                                        X509FindType.FindByThumbprint,
+                                        otherPki.IssuerChain[0].Thumbprint,
+                                        validOnly: false));
+                                }
+                            }
+
+                            session.SetRemoteCertificateValidationResult(SslPolicyErrors.None);
+                        });
+
+                    await Task.WhenAll(clientHandshake, serverHandshake);
+                    Assert.True(session.IsHandshakeComplete);
+                    Assert.True(clientSsl.IsAuthenticated);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ServerSession_ExternalValidation_ConcurrentLeafOnlySessionsDoNotShareChainPolicy()
+        {
+            const int SessionCount = 4;
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+
+            object callbackLock = new object();
+            bool sharedPolicyObserved = false;
+            int validatorCalls = 0;
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = true,
+                CertificateChainPolicy = new X509ChainPolicy
+                {
+                    RevocationMode = X509RevocationMode.NoCheck,
+                },
+                RemoteCertificateValidationCallback = (_, _, chain, _) =>
+                {
+                    Assert.NotNull(chain);
+                    lock (callbackLock)
+                    {
+                        sharedPolicyObserved |= chain.ChainPolicy.CertificatePolicy.Count != 0;
+                        chain.ChainPolicy.CertificatePolicy.Add(new System.Security.Cryptography.Oid("1.3.6.1.4.1.311.99999.1"));
+                    }
+                    Interlocked.Increment(ref validatorCalls);
+                    return true;
+                },
+            });
+
+            Task[] handshakes = new Task[SessionCount];
+            for (int i = 0; i < SessionCount; i++)
+            {
+                handshakes[i] = RunHandshakeAsync();
+            }
+
+            await Task.WhenAll(handshakes).WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(SessionCount, validatorCalls);
+            Assert.False(sharedPolicyObserved);
+
+            async Task RunHandshakeAsync()
+            {
+                string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+                using (TlsBufferSession session = NewBufferSession(ctx))
+                {
+                    Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                    {
+                        TargetHost = serverName,
+                        EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                        ClientCertificates = new X509CertificateCollection { clientCert },
+                        RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                    });
+                    Task serverHandshake = DriveHandshakeWithExternalValidationAsync(
+                        session,
+                        serverStream,
+                        onSuspend: () =>
+                        {
+                            Assert.Null(session.GetRemoteCertificates());
+                            session.AcceptWithDefaultValidation();
+                        });
+
+                    await Task.WhenAll(clientHandshake, serverHandshake);
+                    Assert.True(session.IsHandshakeComplete);
+                    Assert.True(clientSsl.IsAuthenticated);
+                }
+            }
+        }
+
         // Cross-platform baseline: SslStream on BOTH sides, server rejects client cert.
         // - TLS 1.2 with OpenSSL: server validates client cert before sending ServerFinished, so the
         //   client's AuthenticateAsClientAsync must throw AuthenticationException.
@@ -1498,10 +1805,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task ClientSession_ExternalCertificateValidation_AcceptWithDefaultValidation_FailsOnUntrustedCert()
         {
-            // The test cert chain isn't installed in the system trust store, so the default
-            // validation policy must report at least RemoteCertificateChainErrors.
-            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
-            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+            const string serverName = "localhost";
+            using TestCertificates.PkiHolder pkiHolder = TestCertificates.GenerateCertificates(serverName);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -1517,7 +1822,7 @@ namespace System.Net.Security.Tests
 
                 Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
-                    ServerCertificate = serverCert,
+                    ServerCertificateContext = pkiHolder.CreateSslStreamCertificateContext(),
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     ClientCertificateRequired = false,
                 });
@@ -1529,6 +1834,13 @@ namespace System.Net.Security.Tests
                         session, clientStream,
                         onSuspend: () =>
                         {
+                            X509Certificate2Collection? remoteCertificates = session.GetRemoteCertificates();
+                            Assert.NotNull(remoteCertificates);
+                            Assert.NotEmpty(remoteCertificates);
+                            Assert.Empty(remoteCertificates.Find(
+                                X509FindType.FindByThumbprint,
+                                pkiHolder.EndEntity.Thumbprint,
+                                validOnly: false));
                             observedErrors = session.AcceptWithDefaultValidation();
                         });
                 });
@@ -1539,7 +1851,7 @@ namespace System.Net.Security.Tests
                 await serverHandshake.WaitAsync(TimeSpan.FromSeconds(30));
                 await clientHandshake.WaitAsync(TimeSpan.FromSeconds(30));
 
-                Assert.NotEqual(SslPolicyErrors.None, observedErrors);
+                Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, observedErrors);
 
                 // Encrypt must now throw because validation reported errors.
                 byte[] plain = "should-fail"u8.ToArray();
@@ -2903,6 +3215,60 @@ namespace System.Net.Security.Tests
             Assert.Equal(clientCert.Thumbprint, observedInCallbackThumbprint);
 
             // Prove the session is still usable: unblock the client's parked read.
+            await WriteAllOverSocketAsync(session, TestHelper.s_ping).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(TestHelper.s_ping.Length, await clientRead.WaitAsync(TimeSpan.FromSeconds(30)));
+            Assert.Equal(TestHelper.s_ping, appBuf);
+        }
+
+        // A TLS 1.3 client that sets no certificate doesn't offer post-handshake authentication,
+        // so RequestClientCertificate() on a socket-bound server has nothing to request: it
+        // completes without re-arming the handshake and the session stays usable.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task SocketBoundSession_RequestClientCertificate_Tls13PhaNotOffered_Completes()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(() => DriveSocketHandshakeToCompletionAsync(session));
+            await Task.WhenAll(clientAuth, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+            byte[] appBuf = new byte[TestHelper.s_ping.Length];
+            Task<int> clientRead = clientSsl.ReadAsync(appBuf).AsTask();
+
+            Assert.Equal(TlsOperationStatus.Complete, session.RequestClientCertificate());
+            Assert.True(session.IsHandshakeComplete);
+            Assert.Null(session.GetRemoteCertificate());
+
             await WriteAllOverSocketAsync(session, TestHelper.s_ping).WaitAsync(TimeSpan.FromSeconds(30));
             Assert.Equal(TestHelper.s_ping.Length, await clientRead.WaitAsync(TimeSpan.FromSeconds(30)));
             Assert.Equal(TestHelper.s_ping, appBuf);
