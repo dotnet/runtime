@@ -916,7 +916,7 @@ public:
     // Additionally, if the non-BoxedEntryPointStub is RequiresInstMethodTableArg()
     // then pass on the MethodTable as an extra argument to the
     // underlying unboxed-this-MethodDesc.
-    BOOL IsUnboxingStub()
+    bool IsUnboxingStub()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1670,6 +1670,9 @@ public:
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
+#ifndef DACCESS_COMPILE
+    PCODE GetNativeCodeVolatile();
+#endif
 
     // Returns either the jitted code or the interpreter code (will not return the InterpreterStub which GetNativeCode might return)
     PCODE GetCodeForInterpreterOrJitted()
@@ -1867,11 +1870,6 @@ public:
     //================================================================
     // Running the Prestub preparation step.
 
-    // The stub produced by prestub requires method desc to be passed
-    // in dedicated register.
-    // See HasMDContextArg() for the related stub version.
-    BOOL RequiresMDContextArg();
-
     // Returns true if the method has to have stable entrypoint always.
     BOOL RequiresStableEntryPoint();
 private:
@@ -1965,6 +1963,7 @@ protected:
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
 #ifdef FEATURE_INTERPRETER
+// [cDAC] [ExecutionManager]: Contract depends on the value of INTERPRETER_CODE_POISON.
 #define INTERPRETER_CODE_POISON 1
     PTR_InterpByteCodeStart m_interpreterCode;
 public:
@@ -2399,7 +2398,7 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
-extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex);
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex, QCallExceptionStatus* qcallError);
 #endif // DACCESS_COMPILE
 
 template<> struct cdac_data<MethodDesc>
@@ -2410,6 +2409,9 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
     static constexpr size_t EntryPointFlags = offsetof(MethodDesc, m_bFlags4);
     static constexpr size_t CodeData = offsetof(MethodDesc, m_codeData);
+#ifdef FEATURE_INTERPRETER
+    static constexpr size_t InterpreterCode = offsetof(MethodDesc, m_interpreterCode);
+#endif // FEATURE_INTERPRETER
 };
 
 #ifndef DACCESS_COMPILE
@@ -2570,21 +2572,6 @@ public:
     bool FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
-public:
-    PrepareCodeConfig *GetNextInSameThread() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_nextInSameThread;
-    }
-
-    void SetNextInSameThread(PrepareCodeConfig *config)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(config == nullptr || m_nextInSameThread == nullptr);
-
-        m_nextInSameThread = config;
-    }
-
 protected:
     MethodDesc* m_pMethodDesc;
     NativeCodeVersion m_nativeCodeVersion;
@@ -2615,7 +2602,6 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
-    PrepareCodeConfig *m_nextInSameThread;
 };
 
 #ifdef FEATURE_CODE_VERSIONING
@@ -3216,14 +3202,6 @@ public:
         return type == DynamicMethodDesc::StubAsyncResume;
     }
 
-    // Whether the stub takes a context argument that is an interop MethodDesc.
-    // See RequiresMDContextArg() for the non-stub version.
-    bool HasMDContextArg() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IsPInvokeVarArgStub();
-    }
-
     //
     // following implementations defined in DynamicMethod.cpp
     //
@@ -3369,7 +3347,7 @@ public:
         kLastError                      = 0x0080,   // setLastError keyword specified
         kNativeNoMangle                 = 0x0100,   // nomangle keyword specified
 
-        kVarArgs                        = 0x0200,
+        //unused                        = 0x0200,
         kStdCall                        = 0x0400,
         kThisCall                       = 0x0800,
 
@@ -3452,13 +3430,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return m_pszEntrypointName;
-    }
-
-    BOOL IsVarArgs() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (m_wPInvokeFlags & kVarArgs) != 0;
     }
 
     BOOL IsStdCall() const

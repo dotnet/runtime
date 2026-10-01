@@ -483,8 +483,16 @@ namespace System.Globalization
                         nextChar = DateTimeFormat.ParseNextChar(format, i);
                         if (nextChar >= 0)
                         {
-                            result.Append(TChar.CastFrom(nextChar));
-                            tokenLen = 2;
+                            char escapedChar = (char)nextChar;
+                            if (char.IsHighSurrogate(escapedChar) && i + 2 < format.Length && char.IsLowSurrogate(format[i + 2]))
+                            {
+                                tokenLen = 1 + DateTimeFormat.AppendChar(ref result, format[(i + 1)..]);
+                            }
+                            else
+                            {
+                                DateTimeFormat.AppendChar(ref result, escapedChar);
+                                tokenLen = 2;
+                            }
                         }
                         else
                         {

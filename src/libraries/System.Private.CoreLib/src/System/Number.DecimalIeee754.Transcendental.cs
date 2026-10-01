@@ -20,6 +20,56 @@ internal static partial class Number
 
     private static bool DecimalIeee754UsesDouble<TValue>() => false;
 
+    // The log/pow reduction writes x = 2^n * g. Only n == 0 can make log(x) small, so other
+    // intervals need no decimal residual. Use the engine's existing 1/sqrt(2) boundary.
+    private static bool DiyFp128LogNeedsResidual(in DiyFp128 argument)
+        => argument._exponent == ((argument._hi <= LogOneOverSqrt2) ? 1 : 0);
+
+    // Restores exact dyadic operands before domain checks and binary subtraction. Otherwise returns
+    // the nonzero decimal residual where cancellation is possible; zero means to use the binary path.
+    private static DiyFp128 DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(
+        in DecodedDecimalIeee754<TValue> decoded, ref DiyFp128 argument)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (argument._exponent is 0 or 1)
+        {
+            // For 1/2 <= |x| < 2, subtraction is exact in the operand's decimal quantum.
+            int scale = -decoded.UnbiasedExponent;
+
+            TValue one = (scale == TDecimal.Precision) ? TDecimal.MaxSignificand + TValue.One : TDecimal.Power10(scale);
+
+            // An exact dyadic input has coefficient n * 5^scale and value n * 2^-scale.
+            // Division can leave guard bits even for such inputs. Round to a 64-bit candidate,
+            // check its alignment to 2^-scale, then verify its decimal coefficient exactly.
+            // exponent + scale is in [1, 35]; a carry out of hi represents 2^exponent.
+            ulong hi = argument._hi + (argument._lo >> 63);
+            int shift = argument._exponent + scale;
+            if ((hi << shift) == 0)
+            {
+                ulong integer = (hi == 0) ? 1UL << shift : hi >> (64 - shift);
+                TValue coefficient = TValue.CreateTruncating(integer) * (one >> scale);
+                if (coefficient == decoded.Significand)
+                {
+                    argument._hi = (hi == 0) ? UxMsb : hi;
+                    argument._lo = 0;
+                    argument._exponent += (hi == 0) ? 1 : 0;
+                    return default;
+                }
+            }
+
+            bool negative = decoded.Significand < one;
+            TValue difference = negative ? one - decoded.Significand : decoded.Significand - one;
+
+            DiyFp128 numerator = DiyFp128FromUInt128(UInt128.CreateTruncating(difference), negative ? UxSignBit : 0);
+            DiyFp128 denominator = DiyFp128FromUInt128(UInt128.CreateTruncating(one), 0);
+            DiyFp128Divide(numerator, denominator, DiyFp128FullPrecision, out DiyFp128 result);
+            return result;
+        }
+
+        return default;
+    }
+
     /// <summary>Computes <c>e^x</c>.</summary>
     internal static TValue ExpDecimalIeee754<TDecimal, TValue>(TValue x)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
@@ -311,8 +361,24 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Log(value));
         }
 
+        return DiyFp128ToDecimal<TDecimal, TValue>(LogDecimalIeee754<TDecimal, TValue>(decoded));
+    }
+
+    private static DiyFp128 LogDecimalIeee754<TDecimal, TValue>(in DecodedDecimalIeee754<TValue> decoded)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Ln(argument));
+        if (DiyFp128LogNeedsResidual(argument))
+        {
+            DiyFp128 residual = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+            if (!DiyFp128IsZero(residual))
+            {
+                return DiyFp128Ln1p(residual);
+            }
+        }
+
+        return DiyFp128Ln(argument);
     }
 
     /// <summary>Computes <c>log_newBase(x)</c> as <c>log(x) / log(newBase)</c>, mirroring the
@@ -341,19 +407,33 @@ internal static partial class Number
         }
 
         DecodedDecimalIeee754<TValue> decodedX = UnpackDecimalIeee754<TDecimal, TValue>(x);
-        bool xIsOne = !TDecimal.IsInfinity(x) && !TDecimal.IsNegative(x)
-                    && DecimalIeee754MagnitudeIsOne<TDecimal, TValue>(decodedX.UnbiasedExponent, decodedX.Significand);
         bool baseIsZero = !TDecimal.IsInfinity(newBase) && TValue.IsZero(decodedBase.Significand);
         bool baseIsPositiveInfinity = TDecimal.IsInfinity(newBase) && !TDecimal.IsNegative(newBase);
 
-        if (!xIsOne && (baseIsZero || baseIsPositiveInfinity))
+        if (baseIsZero || baseIsPositiveInfinity)
         {
-            return TDecimal.NaNMask;
+            bool xIsOne = !TDecimal.IsInfinity(x) && !TDecimal.IsNegative(x)
+                        && DecimalIeee754MagnitudeIsOne<TDecimal, TValue>(decodedX.UnbiasedExponent, decodedX.Significand);
+            if (!xIsOne)
+            {
+                return TDecimal.NaNMask;
+            }
         }
 
-        TValue logX = LogDecimalIeee754<TDecimal, TValue>(x);
-        TValue logBase = LogDecimalIeee754<TDecimal, TValue>(newBase);
-        return DivideDecimalIeee754<TDecimal, TValue>(logX, logBase);
+        if (DecimalIeee754UsesDouble<TValue>() || TDecimal.IsInfinity(x) || TDecimal.IsInfinity(newBase)
+            || decodedX.Signed || decodedBase.Signed || TValue.IsZero(decodedX.Significand) || baseIsZero)
+        {
+            TValue logX = LogDecimalIeee754<TDecimal, TValue>(x);
+            TValue logBase = LogDecimalIeee754<TDecimal, TValue>(newBase);
+            return DivideDecimalIeee754<TDecimal, TValue>(logX, logBase);
+        }
+
+        // Keep both logarithms and their quotient wide; rounding them to decimal first loses
+        // accuracy even when each logarithm is individually correctly rounded.
+        DiyFp128 numerator = LogDecimalIeee754<TDecimal, TValue>(decodedX);
+        DiyFp128 denominator = LogDecimalIeee754<TDecimal, TValue>(decodedBase);
+        DiyFp128Divide(numerator, denominator, DiyFp128FullPrecision, out DiyFp128 result);
+        return DiyFp128ToDecimal<TDecimal, TValue>(result);
     }
 
     /// <summary>Computes <c>log2(x)</c>.</summary>
@@ -393,6 +473,15 @@ internal static partial class Number
         }
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        if (DiyFp128LogNeedsResidual(argument))
+        {
+            DiyFp128 residual = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+            if (!DiyFp128IsZero(residual))
+            {
+                return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Log2P1(residual));
+            }
+        }
+
         return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Log2(argument));
     }
 
@@ -433,6 +522,15 @@ internal static partial class Number
         }
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        if (DiyFp128LogNeedsResidual(argument))
+        {
+            DiyFp128 residual = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+            if (!DiyFp128IsZero(residual))
+            {
+                return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Log10P1(residual));
+            }
+        }
+
         return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Log10(argument));
     }
 
@@ -514,21 +612,32 @@ internal static partial class Number
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
-        // Guard the 1 + x domain in the binary128 engine (the double path gets this from IEEE): the
-        // conversion error is always below the decimal granularity near x = -1, so 1 + x is exact here.
-        DiyFp128 onePlus = default;
-        DiyFp128AddSub(DiyFp128One, argument, UxAdd, new Span<DiyFp128>(ref onePlus));
-
-        if ((onePlus._hi | onePlus._lo) == 0)
+        if (decoded.Signed && (argument._exponent >= 0))
         {
-            // logP1(-1) = -inf.
-            return TDecimal.NegativeInfinity;
-        }
+            DiyFp128 onePlus = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
 
-        if (onePlus._sign != 0)
-        {
-            // logP1(x < -1) is invalid and produces the canonical quiet NaN.
-            return TDecimal.NaNMask;
+            if (DiyFp128MagnitudeExceedsOne(argument))
+            {
+                return TDecimal.NaNMask;
+            }
+
+            if (DiyFp128MagnitudeIsOne(argument))
+            {
+                return TDecimal.NegativeInfinity;
+            }
+
+            if (!DiyFp128IsZero(onePlus))
+            {
+                onePlus._sign ^= UxSignBit;
+
+                DiyFp128 logarithm = logBase switch
+                {
+                    LogBase.Two => DiyFp128Log2(onePlus),
+                    LogBase.Ten => DiyFp128Log10(onePlus),
+                    _ => DiyFp128Ln(onePlus),
+                };
+                return DiyFp128ToDecimal<TDecimal, TValue>(logarithm);
+            }
         }
 
         DiyFp128 result128 = logBase switch
@@ -674,7 +783,7 @@ internal static partial class Number
         bool yIsOddInteger = false;
         bool yIsInteger = false;
 
-        if (!yInf)
+        if (!yInf && TDecimal.IsNegative(x))
         {
             yIsInteger = DecimalIeee754IsInteger<TDecimal, TValue>(dy.UnbiasedExponent, dy.Significand, out yIsOddInteger);
         }
@@ -762,7 +871,10 @@ internal static partial class Number
         // The engine evaluates |x|^y; a negative base with an odd integer exponent carries the sign.
         DiyFp128 baseValue = DecimalToDiyFp128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
         DiyFp128 exponentValue = DecimalToDiyFp128<TDecimal, TValue>(dy.Signed, dy.UnbiasedExponent, dy.Significand);
-        DiyFp128 magnitude = DiyFp128Pow(baseValue, exponentValue);
+        DiyFp128 baseMinusOne = DiyFp128LogNeedsResidual(baseValue)
+            ? DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(dx, ref baseValue)
+            : default;
+        DiyFp128 magnitude = DiyFp128Pow(baseValue, exponentValue, baseMinusOne);
 
         if (dx.Signed && yIsOddInteger)
         {
@@ -926,6 +1038,14 @@ internal static partial class Number
             return TDecimal.NaNMask;
         }
 
+        if (n == 1)
+        {
+            // Retain the full-precision result cohort without a binary conversion or approximation.
+            int padding = int.Min(TDecimal.Precision - TDecimal.CountDigits(dx.Significand), dx.UnbiasedExponent - TDecimal.MinAdjustedExponent);
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(
+                dx.Signed, dx.Significand * TDecimal.Power10(padding), dx.UnbiasedExponent - padding);
+        }
+
         if (DecimalIeee754UsesDouble<TValue>())
         {
             double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
@@ -939,15 +1059,17 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        // The engine evaluates |x|^(1/n) with the reciprocal formed exactly in the binary128 domain;
+        // The engine evaluates |x|^(1/n) with the reciprocal formed in binary128 working precision;
         // a negative base only reaches here with an odd n, so it simply carries the sign. `n` is taken
         // through `long` so `int.MinValue`'s magnitude does not overflow.
-        DiyFp128 one = new DiyFp128(0u, 1, 0x8000_0000_0000_0000, 0);
-        DiyFp128 degree = DecimalToDiyFp128<TDecimal, TValue>(nNegative, 0, TValue.CreateTruncating(long.Abs(n)));
-        DiyFp128Divide(one, degree, DiyFp128FullPrecision, out DiyFp128 exponent);
+        DiyFp128 degree = DiyFp128FromWord(n);
+        DiyFp128Divide(DiyFp128One, degree, DiyFp128FullPrecision, out DiyFp128 exponent);
 
         DiyFp128 baseValue = DecimalToDiyFp128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
-        DiyFp128 magnitude = DiyFp128Pow(baseValue, exponent);
+        DiyFp128 baseMinusOne = DiyFp128LogNeedsResidual(baseValue)
+            ? DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(dx, ref baseValue)
+            : default;
+        DiyFp128 magnitude = DiyFp128Pow(baseValue, exponent, baseMinusOne);
 
         if (dx.Signed)
         {
@@ -1190,11 +1312,14 @@ internal static partial class Number
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
+        DiyFp128 magnitudeMinusOne = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+
         if (DiyFp128MagnitudeExceedsOne(argument))
         {
             return TDecimal.NaNMask;
         }
-        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Asin(argument));
+
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Asin(argument, magnitudeMinusOne));
     }
 
     /// <summary>Computes <c>acos(x)</c>, the result in radians.</summary>
@@ -1235,11 +1360,14 @@ internal static partial class Number
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
+        DiyFp128 magnitudeMinusOne = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+
         if (DiyFp128MagnitudeExceedsOne(argument))
         {
             return TDecimal.NaNMask;
         }
-        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Acos(argument));
+
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Acos(argument, magnitudeMinusOne));
     }
 
     /// <summary>Computes <c>atan2(y, x)</c>, the angle of the vector (x, y) in radians.</summary>
@@ -1337,8 +1465,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.SinPi(value));
         }
 
-        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128SinPi(argument));
+        DiyFp128 argument = ReduceDecimalIeee754Pi<TDecimal, TValue>(decoded, out int octant);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128SinPi(argument, octant));
     }
 
     /// <summary>Computes <c>cos(pi * x)</c>.</summary>
@@ -1371,8 +1499,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.CosPi(value));
         }
 
-        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128CosPi(argument));
+        DiyFp128 argument = ReduceDecimalIeee754Pi<TDecimal, TValue>(decoded, out int octant);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128CosPi(argument, octant));
     }
 
     /// <summary>Computes <c>tan(pi * x)</c>.</summary>
@@ -1405,13 +1533,18 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.TanPi(value));
         }
 
-        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        DiyFp128SinCosPi(argument, out DiyFp128 sin, out DiyFp128 cos);
+        DiyFp128 argument = ReduceDecimalIeee754Pi<TDecimal, TValue>(decoded, out int octant);
+        DiyFp128SinCosPi(argument, octant, out DiyFp128 sin, out DiyFp128 cos);
 
         if (DiyFp128IsZero(cos))
         {
             // A half-integer argument is a pole; tanPi returns a signed infinity matching sinPi's sign.
             return (sin._sign != 0) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+        }
+
+        if (DiyFp128IsZero(sin))
+        {
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(sin.IsNegative ^ cos.IsNegative, TValue.Zero, 0);
         }
 
         DiyFp128Divide(sin, cos, DiyFp128FullPrecision, out DiyFp128 tangent);
@@ -1453,8 +1586,8 @@ internal static partial class Number
                     ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(cosValue));
         }
 
-        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        DiyFp128SinCosPi(argument, out DiyFp128 sin, out DiyFp128 cos);
+        DiyFp128 argument = ReduceDecimalIeee754Pi<TDecimal, TValue>(decoded, out int octant);
+        DiyFp128SinCosPi(argument, octant, out DiyFp128 sin, out DiyFp128 cos);
         return (DiyFp128ToDecimal<TDecimal, TValue>(sin), DiyFp128ToDecimal<TDecimal, TValue>(cos));
     }
 
@@ -1536,12 +1669,14 @@ internal static partial class Number
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
+        DiyFp128 magnitudeMinusOne = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+
         if (DiyFp128MagnitudeExceedsOne(argument))
         {
             return TDecimal.NaNMask;
         }
 
-        DiyFp128Divide(DiyFp128Asin(argument), GetInvTrigConstant(4), DiyFp128FullPrecision, out DiyFp128 quotient);
+        DiyFp128Divide(DiyFp128Asin(argument, magnitudeMinusOne), GetInvTrigConstant(4), DiyFp128FullPrecision, out DiyFp128 quotient);
         return DiyFp128ToDecimal<TDecimal, TValue>(quotient);
     }
 
@@ -1583,12 +1718,14 @@ internal static partial class Number
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
+        DiyFp128 magnitudeMinusOne = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+
         if (DiyFp128MagnitudeExceedsOne(argument))
         {
             return TDecimal.NaNMask;
         }
 
-        DiyFp128Divide(DiyFp128Acos(argument), GetInvTrigConstant(4), DiyFp128FullPrecision, out DiyFp128 quotient);
+        DiyFp128Divide(DiyFp128Acos(argument, magnitudeMinusOne), GetInvTrigConstant(4), DiyFp128FullPrecision, out DiyFp128 quotient);
         return DiyFp128ToDecimal<TDecimal, TValue>(quotient);
     }
 
@@ -1829,11 +1966,14 @@ internal static partial class Number
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
+        DiyFp128 magnitudeMinusOne = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+
         if (!DiyFp128MagnitudeExceedsOne(argument) && !DiyFp128MagnitudeIsOne(argument))
         {
             return TDecimal.NaNMask;
         }
-        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Acosh(argument));
+
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Acosh(argument, magnitudeMinusOne));
     }
 
     /// <summary>Computes <c>atanh(x)</c>.</summary>
@@ -1870,6 +2010,8 @@ internal static partial class Number
 
         DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
+        DiyFp128 magnitudeMinusOne = DecimalIeee754MagnitudeMinusOne<TDecimal, TValue>(decoded, ref argument);
+
         if (DiyFp128MagnitudeIsOne(argument))
         {
             // atanh(+/-1) = +/-inf (pole).
@@ -1882,6 +2024,6 @@ internal static partial class Number
             return TDecimal.NaNMask;
         }
 
-        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Atanh(argument));
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Atanh(argument, magnitudeMinusOne));
     }
 }

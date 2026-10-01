@@ -58,7 +58,9 @@ class SString;
 class MethodTable;
 class DynamicMethodTable;
 class TieredCompilationManager;
+#ifdef FEATURE_INLINE_TRACKING
 class JITInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING
 
 #ifdef FEATURE_METADATA_UPDATER
 class EnCEEClassData;
@@ -72,7 +74,9 @@ class EnCEEClassData;
 #define METHOD_STUBS_HASH_BUCKETS 11
 #define GUID_TO_TYPE_HASH_BUCKETS 16
 
+#ifdef FEATURE_INLINE_TRACKING
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING
 
 //
 // LookupMaps are used to implement RID maps
@@ -329,6 +333,7 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 #define IS_FIELD_MEMBER_REF ((TADDR)0x00000002) // [cDAC] [Loader]: Contract depends on this value.
 
 
+#ifdef FEATURE_VARARGS
 //
 // VASigCookies are allocated to encapsulate a varargs call signature.
 // A reference to the cookie is embedded in the code stream.  Cookies
@@ -376,6 +381,7 @@ struct VASigCookieBlock final
     UINT                 m_numCookies;
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
+#endif // FEATURE_VARARGS
 
 
 // Hashtable of absolute addresses of IL blobs for dynamics, keyed by token
@@ -703,8 +709,10 @@ private:
     Volatile<DWORD>          m_dwTransientFlags;
     Volatile<DWORD>          m_dwPersistedFlags;
 
+#ifdef FEATURE_VARARGS
     // Linked list of VASig cookie blocks: protected by m_pStubListCrst
     VASigCookieBlock        *m_pVASigCookieBlock;
+#endif // FEATURE_VARARGS
 
     PTR_Assembly            m_pAssembly;
 
@@ -1405,8 +1413,10 @@ public:
     void NotifyProfilerLoadFinished(HRESULT hr);
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_INLINE_TRACKING
     BOOL HasReadyToRunInlineTrackingMap();
     COUNT_T GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+#endif // FEATURE_INLINE_TRACKING
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
@@ -1416,14 +1426,17 @@ public:
 public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
-    // Enregisters a VASig.
-    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
-
     // Computes the module that owns runtime artifacts created for a standalone signature.
     // Clears *pTypeContext if the signature does not actually use the generic context.
     Module* GetLoaderModuleForSignature(Signature signature, SigTypeContext* pTypeContext);
+
+#ifdef FEATURE_VARARGS
+    // Enregisters a VASig.
+    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
+
 private:
     static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
+#endif // FEATURE_VARARGS
 
 public:
 #ifndef DACCESS_COMPILE
@@ -1653,9 +1666,9 @@ private:
 
     DebuggerSpecificData  m_debuggerSpecificData;
 
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+#if defined(FEATURE_INLINE_TRACKING) && (defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA))
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+#endif // FEATURE_INLINE_TRACKING && (PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA)
 
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.dll R2R image stores
@@ -1820,18 +1833,6 @@ struct ReflectionModuleHolderTraits final
 };
 
 using ReflectionModuleHolder = LifetimeHolder<ReflectionModuleHolderTraits>;
-
-
-
-//----------------------------------------------------------------------
-// VASigCookieEx (used to create a fake VASigCookie for unmanaged->managed
-// calls to vararg functions. These fakes are distinguished from the
-// real thing by having a null mdVASig.
-//----------------------------------------------------------------------
-struct VASigCookieEx : public VASigCookie
-{
-    const BYTE *m_pArgs;        // pointer to first unfixed unmanaged arg
-};
 
 // Save the command line for the current process.
 void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);

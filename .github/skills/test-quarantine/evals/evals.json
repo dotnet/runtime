@@ -1,0 +1,308 @@
+{
+  "skill_name": "test-quarantine",
+  "evals": [
+    {
+      "id": 1,
+      "name": "configuration-specific-method",
+      "prompt": "A discovered runtime-test method fails only when two independent configuration conditions are true. The nearest mode with only one condition passes. Add the narrowest temporary quarantine.",
+      "expected_output": "Use method-level ActiveIssue with both existing PlatformDetection or Utilities predicates. Explain that multiple user-defined conditions are ANDed and validate the nearest passing mode still executes.",
+      "assertions": [
+        {
+          "name": "method-level-activeissue",
+          "description": "Selects method-level ActiveIssue",
+          "type": "contains",
+          "check": "method-level"
+        },
+        {
+          "name": "combines-conditions",
+          "description": "Requires both independent predicates",
+          "type": "contains_any",
+          "check": ["AND", "both conditions", "both predicates"]
+        },
+        {
+          "name": "validates-retained-mode",
+          "description": "Proves the nearest passing mode remains active",
+          "type": "contains_any",
+          "check": ["still executes", "retained coverage", "nearest unaffected"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "partial-theory-failure",
+      "prompt": "Four InlineData rows in a 30-row theory fail while the other 26 pass. Quarantine the failure against an open issue.",
+      "expected_output": "Split the four affected rows into a quarantined theory method or separate data source, share the implementation, and keep the 26 passing rows active.",
+      "assertions": [
+        {
+          "name": "splits-failing-data",
+          "description": "Separates the affected theory rows",
+          "type": "contains_any",
+          "check": ["Split the four", "separate data source", "second theory"]
+        },
+        {
+          "name": "reuses-implementation",
+          "description": "Avoids duplicated assertions",
+          "type": "contains_any",
+          "check": ["share the implementation", "shared helper", "reuse"]
+        },
+        {
+          "name": "retains-passing-rows",
+          "description": "Keeps the 26 passing rows active",
+          "type": "contains_any",
+          "check": ["26 passing", "passing rows still run", "keep unaffected data"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "pre-execution-crossgen-failure",
+      "prompt": "A runtime-test project fails while Crossgen compiles it, before the xUnit method runs. It is normally part of a merged runner. Should I add ActiveIssue?",
+      "expected_output": "ActiveIssue is too late. Use a narrowly conditioned CrossGenTest=false project property and RequiresProcessIsolation as required for its per-test script. Verify sibling merged tests remain covered.",
+      "assertions": [
+        {
+          "name": "rejects-activeissue",
+          "description": "Recognizes the failure precedes xUnit dispatch",
+          "type": "contains_any",
+          "check": ["ActiveIssue is too late", "before xUnit", "before test execution"]
+        },
+        {
+          "name": "uses-crossgen-property",
+          "description": "Uses the property matching the failing phase",
+          "type": "contains",
+          "check": "CrossGenTest"
+        },
+        {
+          "name": "requires-process-isolation",
+          "description": "Applies the documented script-level isolation requirement",
+          "type": "contains",
+          "check": "RequiresProcessIsolation"
+        },
+        {
+          "name": "retains-siblings",
+          "description": "Checks merged-runner sibling coverage",
+          "type": "contains_any",
+          "check": ["sibling", "other merged tests", "remaining child projects"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "platform-runtime-overload",
+      "prompt": "A library test fails on one platform under Mono for every target framework but passes under CoreCLR. Which ActiveIssue overload should I use, and is TargetFrameworkMonikers.Any meaningful?",
+      "expected_output": "Use the platform/TFM/runtime overload with the exact TestPlatforms value, TargetFrameworkMonikers.Any, and TestRuntimes.Mono. Explain that Any is the all-TFM placeholder while retaining the other restrictions.",
+      "assertions": [
+        {
+          "name": "uses-platform-enum",
+          "description": "Uses the exact TestPlatforms value",
+          "type": "contains",
+          "check": "TestPlatforms"
+        },
+        {
+          "name": "uses-mono-runtime",
+          "description": "Scopes the quarantine to Mono",
+          "type": "contains",
+          "check": "TestRuntimes.Mono"
+        },
+        {
+          "name": "explains-any-placeholder",
+          "description": "Explains the all-framework placeholder",
+          "type": "contains",
+          "check": "TargetFrameworkMonikers.Any"
+        },
+        {
+          "name": "scopes-overload-to-libraries",
+          "description": "Warns that the runtime-test generator does not compose this overload the same way",
+          "type": "contains_any",
+          "check": ["library tests only", "do not use in src/tests", "runtime-test wrapper"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "hidden-runner-failure",
+      "prompt": "The merged runner's outer process returns its expected success code, so disable the only suspicious child project.",
+      "expected_output": "Reject the inference from process status. Inspect generated dispatch, runner logs, and structured xUnit/TRX results to resolve the exact failing method before selecting project-level suppression.",
+      "assertions": [
+        {
+          "name": "rejects-process-status",
+          "description": "Does not infer test success from the wrapper process code",
+          "type": "contains_any",
+          "check": ["process status is insufficient", "do not infer", "outer process"]
+        },
+        {
+          "name": "requires-structured-results",
+          "description": "Uses test-result evidence",
+          "type": "contains_any",
+          "check": ["xUnit", "TRX", "structured test results"]
+        },
+        {
+          "name": "resolves-method-first",
+          "description": "Finds the exact failing method before broad suppression",
+          "type": "contains_any",
+          "check": ["exact failing method", "method-level", "generated dispatch"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "custom-main-runtime-test",
+      "prompt": "A process-isolated runtime test has a custom Main and no generated xUnit dispatch. It fails only under one target condition. Add a temporary issue-linked skip.",
+      "expected_output": "Use a narrowly conditioned CLRTestTargetUnsupported in the project file because xUnit ActiveIssue cannot intercept a custom Main test. Include the issue link and preserve other targets.",
+      "assertions": [
+        {
+          "name": "uses-target-unsupported",
+          "description": "Selects the runtime-test project mechanism",
+          "type": "contains",
+          "check": "CLRTestTargetUnsupported"
+        },
+        {
+          "name": "explains-xunit-limit",
+          "description": "Explains why ActiveIssue cannot apply",
+          "type": "contains_any",
+          "check": ["custom Main", "no generated xUnit", "cannot intercept"]
+        },
+        {
+          "name": "conditions-target",
+          "description": "Keeps unaffected targets active",
+          "type": "contains_any",
+          "check": ["narrowly conditioned", "other targets", "unaffected targets"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "fix-instead-of-quarantine",
+      "prompt": "This test exposes a straightforward product bug and I want you to fix the implementation. Please add ActiveIssue first so CI is green.",
+      "expected_output": "Stop the quarantine workflow because the user asked to fix the underlying product bug. Do not add ActiveIssue unless a separate decision establishes that a temporary quarantine is required.",
+      "assertions": [
+        {
+          "name": "stops-quarantine",
+          "description": "Does not silently switch from fixing to disabling",
+          "type": "contains_any",
+          "check": ["do not add ActiveIssue", "not add ActiveIssue", "fix the underlying product bug"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "post-merge-issue-labels",
+      "prompt": "The quarantine PR merged. It disabled tests against three separate tracking issues. What issue cleanup is required?",
+      "expected_output": "Add disabled-test to all three referenced issues, remove clean-CI blocking labels when appropriate, and keep the product issues open as re-enable trackers.",
+      "assertions": [
+        {
+          "name": "labels-every-issue",
+          "description": "Updates every issue represented by the merged quarantine",
+          "type": "contains_any",
+          "check": ["all three", "every referenced issue", "each tracking issue"]
+        },
+        {
+          "name": "uses-disabled-test-label",
+          "description": "Uses the repository's exact label",
+          "type": "contains",
+          "check": "disabled-test"
+        },
+        {
+          "name": "removes-blocking-labels",
+          "description": "Removes no-longer-applicable clean-CI blockers",
+          "type": "contains_any",
+          "check": ["remove", "blocking-clean-ci", "blocking labels"]
+        },
+        {
+          "name": "keeps-tracker-open",
+          "description": "Does not treat disabling as fixing",
+          "type": "contains_any",
+          "check": ["keep", "re-enable tracker", "do not close"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "grep-discoverable-project-exclusion",
+      "prompt": "I need to conditionally set R2RIncompatible in a runtime-test csproj because the failure occurs before method dispatch. How should I reference the tracking issue so automated searches can find the disabled test?",
+      "expected_output": "Place an adjacent XML comment containing the literal ActiveIssue and the full dotnet/runtime issue URL immediately before the conditioned property.",
+      "assertions": [
+        {
+          "name": "uses-activeissue-marker",
+          "description": "Includes the literal marker used by repository searches",
+          "type": "contains",
+          "check": "<!-- ActiveIssue"
+        },
+        {
+          "name": "uses-full-issue-url",
+          "description": "Includes a full tracking issue URL rather than a bare number",
+          "type": "contains",
+          "check": "https://github.com/dotnet/runtime/issues/"
+        },
+        {
+          "name": "places-comment-adjacent",
+          "description": "Places the marker next to the exclusion property",
+          "type": "contains_any",
+          "check": ["adjacent", "immediately before", "<!-- ActiveIssue"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "stress-mode-precedence",
+      "prompt": "A normal discovered runtime-test method fails only under CoreCLR GCStress. The project is currently merged and has no reason to require its own process. Should I set GCStressIncompatible and RequiresProcessIsolation?",
+      "expected_output": "Do not introduce process isolation. Prefer SkipOnCoreClr with the matching RuntimeTestModes GCStress value and verify ordinary CoreCLR runs remain active.",
+      "assertions": [
+        {
+          "name": "uses-mode-filter",
+          "description": "Uses the xUnit filter that directly represents the failing mode",
+          "type": "contains",
+          "check": "SkipOnCoreClr"
+        },
+        {
+          "name": "uses-runtime-test-modes",
+          "description": "Scopes the skip to GCStress",
+          "type": "contains",
+          "check": "RuntimeTestModes"
+        },
+        {
+          "name": "rejects-new-isolation",
+          "description": "Does not add process isolation solely for the mode skip",
+          "type": "contains_any",
+          "check": ["do not introduce process isolation", "do not add RequiresProcessIsolation", "keep the merged test"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "umbrella-subtest",
+      "prompt": "One invocation inside a legacy runtime-test entry point fails in a specific mode, but the same entry point manually runs 40 other passing subtests. Add the narrowest quarantine.",
+      "expected_output": "Do not skip the umbrella entry point. Guard only the failing subtest invocation with the precise existing predicate, retain skipped-test reporting, and verify the other 40 invocations still run.",
+      "assertions": [
+        {
+          "name": "guards-single-invocation",
+          "description": "Suppresses only the failing manually dispatched subtest",
+          "type": "contains_any",
+          "check": ["guard only the failing", "single subtest invocation", "only that invocation"]
+        },
+        {
+          "name": "keeps-umbrella-active",
+          "description": "Does not disable the outer entry point",
+          "type": "contains_any",
+          "check": ["do not skip the umbrella", "keep the entry point", "outer method remains active"]
+        },
+        {
+          "name": "validates-siblings",
+          "description": "Confirms passing sibling subtests still execute",
+          "type": "contains_any",
+          "check": ["other 40", "sibling subtests", "remaining invocations"]
+        }
+      ],
+      "files": []
+    }
+  ]
+}

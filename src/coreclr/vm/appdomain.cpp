@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "appdomain.hpp"
+#include "externalmemoryhandle.h"
 #include "peimagelayout.inl"
 #include "field.h"
 #include "strongnameinternal.h"
@@ -720,7 +721,9 @@ void SystemDomain::Attach()
 #ifdef FEATURE_COMINTEROP
     CLRToCOMStubManager::Init();
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_VARARGS
     InteropDispatchStubManager::Init();
+#endif // FEATURE_VARARGS
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
     AsyncThunkStubManager::Init();
@@ -1686,10 +1689,6 @@ void AppDomain::Init()
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
 
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
-    if (!m_handleStore)
-    {
-        COMPlusThrowOM();
-    }
 
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_TypeEquivalenceCrst.Init(CrstTypeEquivalenceMap);

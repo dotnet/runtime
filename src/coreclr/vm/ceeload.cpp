@@ -85,6 +85,7 @@
 
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
+#ifdef FEATURE_INLINE_TRACKING
 BOOL Module::HasReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -108,6 +109,7 @@ COUNT_T Module::GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef in
 #endif
     return 0;
 }
+#endif // FEATURE_INLINE_TRACKING
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 BOOL Module::HasJitInlineTrackingMap()
@@ -4260,6 +4262,7 @@ Module* Module::GetLoaderModuleForSignature(Signature signature, SigTypeContext*
     return ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, pTypeContext->m_classInst, pTypeContext->m_methodInst);
 }
 
+#ifdef FEATURE_VARARGS
 //==========================================================================
 // Enregisters a VASig.
 //==========================================================================
@@ -4423,6 +4426,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
     return pCookie;
 }
+#endif // FEATURE_VARARGS
 
 #endif // !DACCESS_COMPILE
 
@@ -4793,7 +4797,9 @@ void Module::ExpandAll()
 // Wrap all static_assert's in asmconstants.h with a class definition.  Many of the
 // fields referenced below are private, and this class is a friend of the
 // enclosing type.
+#ifdef FEATURE_VARARGS
 #include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
+#endif // FEATURE_VARARGS
 class CheckAsmOffsets
 {
 #ifndef CROSSBITNESS_COMPILE

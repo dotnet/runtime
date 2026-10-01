@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options.Generators
@@ -95,6 +96,16 @@ namespace Microsoft.Extensions.Options.Generators
             var asyncValidationAttributeSymbol = GetSymbol(AsyncValidationAttributeType);
             var validatorSymbol = GetSymbol(ValidatorType);
             bool hasTryValidateValueAsyncMethod = validatorSymbol?.GetMembers("TryValidateValueAsync").Length > 0;
+            bool hasValidationAttributeFormatMessageMethod = validationAttributeSymbol
+                .GetMembers("FormatMessage")
+                .Any(static member =>
+                    member is IMethodSymbol method &&
+                    method.IsVirtual &&
+                    method.DeclaredAccessibility == Accessibility.Public &&
+                    method.ReturnType.SpecialType == SpecialType.System_String &&
+                    method.Parameters.Length == 2 &&
+                    method.Parameters[0].Type.SpecialType == SpecialType.System_String &&
+                    method.Parameters[1].Type.SpecialType == SpecialType.System_String);
 
             symbolHolder = new(
                 optionsValidatorSymbol,
@@ -118,7 +129,8 @@ namespace Microsoft.Extensions.Options.Generators
                 iAsyncValidatableObjectSymbol,
                 hasTryValidateValueAsyncMethod,
                 asyncValidateOptionsSymbol,
-                asyncValidationAttributeSymbol);
+                asyncValidationAttributeSymbol,
+                hasValidationAttributeFormatMessageMethod);
 
             return true;
         }

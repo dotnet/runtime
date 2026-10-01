@@ -221,10 +221,10 @@ if(CLR_CMAKE_HOST_OS STREQUAL emscripten)
     set(CLR_CMAKE_HOST_BROWSER 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL emscripten)
 
-if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+if(CLR_CMAKE_HOST_OS STREQUAL wasi)
     set(CLR_CMAKE_HOST_WASI 1)
     set(CLR_CMAKE_HOST_UNIX 1)
-endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+endif(CLR_CMAKE_HOST_OS STREQUAL wasi)
 
 #--------------------------------------------
 # This repo builds two set of binaries
@@ -505,6 +505,10 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 else()
     if(CLR_CMAKE_RUNTIME_CORECLR)
+        if(NOT CLR_CROSS_COMPONENTS_BUILD)
+            # CoreCLR does not use throwing exception object destructors.
+            add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fassume-nothrow-exception-dtor>)
+        endif()
         if(CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CROSS_COMPONENTS_BUILD)
             add_link_options(-fwasm-exceptions)
             add_link_options(-sWASM_LEGACY_EXCEPTIONS=0)
@@ -525,7 +529,7 @@ else()
             add_compile_options(-mbulk-memory)
             add_compile_options(-msimd128)
         endif()
-        if(CLR_CMAKE_TARGET_WASI)
+        if(CLR_CMAKE_TARGET_WASI AND NOT CLR_CROSS_COMPONENTS_BUILD)
             # Native wasm exceptions: sjlj cannot handle the interpreter's
             # ResumeAfterCatch (throw-from-catch). -wasm-use-legacy-eh=false
             # selects the new try_table/throw_ref proposal that wasmtime 45+

@@ -112,6 +112,8 @@ DEFINE_DACVAR(PTR_GcDacVars, dac__g_gcDacGlobals, g_gcDacGlobals)
 DEFINE_DACVAR(PTR_AppDomain, AppDomain__m_pTheAppDomain, AppDomain::m_pTheAppDomain)
 DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_pSystemDomain)
 
+DEFINE_DACVAR(SListTail<ExternalMemoryHandle>, ExternalMemoryHandle__s_handles, ExternalMemoryHandle::s_handles)
+
 #ifdef FEATURE_INTEROP_DEBUGGING
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
@@ -150,6 +152,8 @@ DEFINE_DACVAR(ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)
 DEFINE_DACVAR(PTR_DWORD, dac__g_card_table, ::g_card_table)
 DEFINE_DACVAR(PTR_BYTE, dac__g_lowest_address, ::g_lowest_address)
 DEFINE_DACVAR(PTR_BYTE, dac__g_highest_address, ::g_highest_address)
+// Not read by the DAC. Kept so that the (permanently zeroed) global is still captured in
+// mini/triage dumps, where the cDAC reads it for the GC contract c1 GlobalAllocContext global.
 DEFINE_DACVAR(ee_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_context)
 
 DEFINE_DACVAR(IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)

@@ -3377,7 +3377,12 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             assert((tree->gtFlags & GTF_VAR_DEF) != 0);
-            assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            if (!fgImplicitByRefLclFldsStale || !tree->OperIs(GT_STORE_LCL_FLD) ||
+                !lvaGetDesc(tree->AsLclFld())->TypeIs(lvaGetImplicitByRefParamType()) ||
+                !lvaIsImplicitByRefLocal(tree->AsLclFld()->GetLclNum()))
+            {
+                assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            }
             break;
 
         case GT_CATCH_ARG:
@@ -3592,12 +3597,10 @@ void Compiler::fgDebugCheckType(GenTree* node)
 // and then calls gtDispFlags to display the rest.
 //
 // Arguments:
-//    tree       - Tree whose flags are being checked
-//    dispFlags  - the first argument for gtDispFlags (flags to display),
-//                 including GTF_IND_INVARIANT, GTF_IND_NONFAULTING, GTF_IND_NONNULL
-//    debugFlags - the second argument to gtDispFlags
+//    tree      - Tree whose flags are being checked
+//    dispFlags - Flags to display, including GTF_IND_INVARIANT, GTF_IND_NONFAULTING, GTF_IND_NONNULL
 //
-void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
+void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags)
 {
     if (tree->OperIs(GT_IND))
     {
@@ -3605,7 +3608,7 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenT
         printf("%c", (dispFlags & GTF_IND_NONFAULTING) ? 'n' : '-');
         printf("%c", (dispFlags & GTF_IND_NONNULL) ? '@' : '-');
     }
-    GenTree::gtDispFlags(dispFlags, debugFlags);
+    GenTree::gtDispFlags(dispFlags);
 }
 
 //------------------------------------------------------------------------------
@@ -3622,7 +3625,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
     {
         // Print the tree so we can see it in the log.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags);
         printf("\n");
         gtDispTree(tree);
 
@@ -3630,7 +3633,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
 
         // Print the tree again so we can see it right after we hook up the debugger.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags);
         printf("\n");
         gtDispTree(tree);
     }
@@ -3661,7 +3664,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
             {
                 // Print the tree so we can see it in the log.
                 printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-                Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
+                Compiler::fgDebugCheckDispFlags(tree, extraFlags);
                 printf("\n");
                 gtDispTree(tree);
             }
@@ -3676,7 +3679,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
 
             // Print the tree again so we can see it right after we hook up the debugger.
             printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
+            Compiler::fgDebugCheckDispFlags(tree, extraFlags);
             printf("\n");
             gtDispTree(tree);
         }
@@ -3850,7 +3853,7 @@ void Compiler::fgDebugCheckLinkedLocals()
                     return GenTree::VisitResult::Continue;
                 };
 
-                node->VisitLocalDefNodes(m_compiler, linkDefs);
+                node->VisitPhysicalLocalDefNodes(m_compiler, linkDefs);
             }
 
             return WALK_CONTINUE;
@@ -3861,7 +3864,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             auto defIsNode = [=](GenTree* def) {
                 return node == def ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
             };
-            return call->VisitLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
+            return call->VisitPhysicalLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
         }
     };
 
@@ -4020,7 +4023,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block)
         }
 
         // For each statement check that the nodes are threaded correctly - m_treeList.
-        if (fgNodeThreading != NodeThreading::None)
+        if ((fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR))
         {
             fgDebugCheckNodeLinks(block, stmt);
         }
@@ -4409,58 +4412,32 @@ public:
 
     void ProcessDefs(GenTree* tree)
     {
-        auto visitDef = [=](const LocalDef& def) {
-            const bool       isUse  = (def.Def->gtFlags & GTF_VAR_USEASG) != 0;
-            unsigned const   lclNum = def.Def->GetLclNum();
-            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+        auto visitDef = [=](const auto& def) {
+            GenTreeLclVarCommon* defNode = def.GetDefNode();
+            const bool           isUse   = (defNode->gtFlags & GTF_VAR_USEASG) != 0;
+            unsigned const       lclNum  = def.GetLclNum();
+            LclVarDsc* const     varDsc  = m_compiler->lvaGetDesc(lclNum);
 
-            assert(!(def.IsEntire && isUse));
+            assert(def.IsEntire(m_compiler) || isUse);
 
-            if (def.Def->HasCompositeSsaName())
+            unsigned const ssaNum = def.GetSsaNum(m_compiler);
+            ProcessDef(defNode, lclNum, ssaNum);
+
+            if (!def.IsEntire(m_compiler))
             {
-                for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+                assert(isUse);
+                unsigned useSsaNum = SsaConfig::RESERVED_SSA_NUM;
+                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
-                    unsigned const   fieldLclNum = varDsc->lvFieldLclStart + index;
-                    LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
-                    unsigned const   fieldSsaNum = def.Def->GetSsaNum(m_compiler, index);
-
-                    ssize_t   fieldStoreOffset;
-                    ValueSize fieldStoreSize;
-                    if (m_compiler->gtStoreMayDefineField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
-                                                          &fieldStoreSize))
-                    {
-                        ProcessDef(def.Def, fieldLclNum, fieldSsaNum);
-
-                        if (!ValueNumStore::LoadStoreIsEntire(fieldVarDsc->lvValueSize(), fieldStoreOffset,
-                                                              fieldStoreSize))
-                        {
-                            assert(isUse);
-                            unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();
-                            ProcessUse(def.Def, fieldLclNum, fieldUseSsaNum);
-                        }
-                    }
+                    useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
                 }
-            }
-            else
-            {
-                unsigned const ssaNum = def.Def->GetSsaNum();
-                ProcessDef(def.Def, lclNum, ssaNum);
-
-                if (isUse)
-                {
-                    unsigned useSsaNum = SsaConfig::RESERVED_SSA_NUM;
-                    if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-                    {
-                        useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
-                    }
-                    ProcessUse(def.Def, lclNum, useSsaNum);
-                }
+                ProcessUse(defNode, lclNum, useSsaNum);
             }
 
             return GenTree::VisitResult::Continue;
         };
 
-        tree->VisitLocalDefs(m_compiler, visitDef);
+        tree->VisitLogicalLocalDefs(m_compiler, visitDef);
     }
 
     void ProcessUse(GenTreeLclVarCommon* tree, unsigned lclNum, unsigned ssaNum)

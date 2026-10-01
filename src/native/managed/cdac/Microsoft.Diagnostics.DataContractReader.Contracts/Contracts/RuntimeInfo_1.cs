@@ -41,7 +41,7 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
     string IRuntimeInfo.GetRuntimeProductVersion()
         => _runtimeProductVersion ??= _target.ReadGlobalString(Constants.Globals.RuntimeProductVersionString);
 
-    uint IRuntimeInfo.GetCurrentReaderVersion() => 1;
+    uint IRuntimeInfo.GetCurrentReaderVersion() => 2;
 
     uint IRuntimeInfo.GetRecommendedReaderVersion()
         => _recommendedReaderVersion ??= ReadRecommendedReaderVersion();
