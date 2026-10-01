@@ -58,6 +58,8 @@ uint64_t minipal_get_system_time()
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <sched.h>
+#include <unistd.h>
 
 inline static void YieldProcessor(void);
 
@@ -150,6 +152,63 @@ uint64_t minipal_get_system_time(void)
 }
 
 #endif // HOST_WINDOWS
+
+void minipal_sleep(uint32_t milliseconds)
+{
+#if defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    (void)milliseconds;
+#elif HOST_WINDOWS
+    Sleep(milliseconds);
+#else
+    if (milliseconds == 0)
+    {
+        sched_yield();
+        return;
+    }
+
+    if (milliseconds == UINT32_MAX)
+    {
+        while (1)
+        {
+            usleep(999000);
+        }
+    }
+
+    struct timespec requested;
+    requested.tv_sec = milliseconds / 1000;
+    requested.tv_nsec = (milliseconds % 1000) * 1000000;
+
+    struct timespec remaining;
+    while (nanosleep(&requested, &remaining) != 0 && errno == EINTR)
+    {
+        requested = remaining;
+    }
+#endif
+}
+
+bool minipal_switch_to_thread(uint32_t switchCount)
+{
+    // Short yield loops avoid sleeps; prolonged contention must eventually
+    // sleep so that a lower-priority thread can make progress. These thresholds
+    // correspond to roughly the same spinning time on ARM and other CPUs.
+#if defined(HOST_ARM)
+    const uint32_t sleepStartThreshold = 5 * 1024;
+#else
+    const uint32_t sleepStartThreshold = 32 * 1024;
+#endif
+    if (switchCount >= sleepStartThreshold)
+    {
+        minipal_sleep(1);
+    }
+
+#if HOST_WINDOWS
+    return SwitchToThread() != 0;
+#elif defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    return false;
+#else
+    return sched_yield() == 0;
+#endif
+}
 
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
