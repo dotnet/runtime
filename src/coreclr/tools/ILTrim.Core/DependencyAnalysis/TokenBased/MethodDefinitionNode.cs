@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -55,9 +56,8 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
 
-            if (!IsInstanceMethodOnReferenceType)
+            if (!CanStubBody(factory, methodDef))
             {
-                // Static methods and methods on value types are not subject to the unused method body optimization.
                 dependencies.Add(factory.MethodBody(_module, Handle), "Method body");
             }
 
@@ -185,11 +185,14 @@ namespace ILCompiler.DependencyAnalysis
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
             var ecmaType = (EcmaType)_module.GetObject(declaringType);
 
-            // Conditionally depend on the method body if the declaring type was constructed.
-            yield return new(
-                factory.MethodBody(_module, Handle),
-                factory.ConstructedType(ecmaType),
-                "Method body on constructed type");
+            if (CanStubBody(factory, methodDef))
+            {
+                // Conditionally depend on the method body if the declaring type was constructed.
+                yield return new(
+                    factory.MethodBody(_module, Handle),
+                    factory.ConstructedType(ecmaType),
+                    "Method body on constructed type");
+            }
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
@@ -202,11 +205,17 @@ namespace ILCompiler.DependencyAnalysis
 
             EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
-            int bodyOffset = bodyNode.Marked
-                || !writeContext.Factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name)
-                || !IsWorthConvertingToThrow(methodDef)
-                ? bodyNode.Write(writeContext)
-                : writeContext.WriteUnreachableMethodBody(Handle, _module);
+            int bodyOffset;
+            if (bodyNode.Marked)
+            {
+                bodyOffset = bodyNode.Write(writeContext);
+            }
+            else
+            {
+                bool canStubBody = CanStubBody(writeContext.Factory, methodDef);
+                Debug.Assert(canStubBody);
+                bodyOffset = writeContext.WriteUnreachableMethodBody(Handle, _module);
+            }
 
             BlobBuilder signatureBlob = writeContext.GetSharedBlobBuilder();
             EcmaSignatureRewriter.RewriteMethodSignature(
@@ -232,6 +241,13 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return outputHandle;
+        }
+
+        private bool CanStubBody(NodeFactory factory, MethodDefinition methodDef)
+        {
+            return IsInstanceMethodOnReferenceType &&
+                factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name) &&
+                IsWorthConvertingToThrow(methodDef);
         }
 
         private bool IsWorthConvertingToThrow(MethodDefinition methodDef)

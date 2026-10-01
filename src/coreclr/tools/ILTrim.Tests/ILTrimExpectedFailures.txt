@@ -332,10 +332,7 @@ Reflection.ActivatorCreateInstance
 Reflection.AssemblyImportedViaReflectionWithDerivedType
 Reflection.CoreLibMessages
 Reflection.EventHanderTypeGetInvokeMethod
-Reflection.EventsUsedViaReflection
 Reflection.IsAssignableFrom
-Reflection.MethodsUsedViaReflection
-Reflection.MethodUsedViaReflection
 Reflection.ObjectGetType
 Reflection.ObjectGetTypeLibraryMode
 Reflection.ParametersUsedViaReflection
@@ -456,7 +453,6 @@ UnreachableBlock.TryFinallyBlocks
 UnreachableBlock.UninitializedLocals
 UnreachableBlock.WorksWithDynamicAssembly
 UnreachableBody.BodyWithManyVariablesWithSymbols
-UnreachableBody.CanDisableLazyBodyMarking
 UnreachableBody.DoesNotApplyToCopiedAssembly
 UnreachableBody.DoesNotApplyToCopiedAssembly2
 UnreachableBody.ExplicitInstructionCheck
