@@ -36,8 +36,8 @@ setlocal enabledelayedexpansion
 
 set __SourceDir=%1
 set __IntermediatesDir=%2
-set "__CMakeCacheFile=%~2\CMakeCache.txt"
-set "__RequestedToolchainFile=%CMAKE_TOOLCHAIN_FILE%"
+set "__IntermediatesDirPath=%~2"
+set "__CompilerInputs=CMAKE_TOOLCHAIN_FILE=!CMAKE_TOOLCHAIN_FILE!;CC=!CC!;CXX=!CXX!;VCToolsInstallDir=!VCToolsInstallDir!"
 set __VSVersion=%3
 set __Arch=%4
 set __CmakeGenerator=Visual Studio
@@ -64,11 +64,9 @@ if /i "%__Arch%" == "wasm" (
         exit /B 1
     )
     if /i "%__Os%" == "browser" (
-        set CMakeToolPrefix=emcmake
-        rem emcmake injects its own toolchain file when none is specified.
-        if "!__RequestedToolchainFile!" == "" (
-            for %%i in (emcmake.bat) do if not "%%~$PATH:i" == "" set "__RequestedToolchainFile=%%~dp$PATH:icmake/Modules/Platform/Emscripten.cmake"
-        )
+        rem emcmake may be a batch file; call it so that control returns to this script.
+        set "CMakeToolPrefix=call emcmake"
+        for %%i in (emcmake.exe emcmake.bat) do set "__CompilerInputs=!__CompilerInputs!;%%i=%%~$PATH:i"
         rem Use WASM-specific tryrun cache to speed up CMake configure
         set __ExtraCmakeParams="-C %__repoRoot%/eng/native/tryrun.browser.cmake" !__ExtraCmakeParams!
     )
@@ -82,7 +80,7 @@ if /i "%__Arch%" == "wasm" (
             set "WASI_SDK_PATH=!WASM_TOOL_CACHE_RESULT!"
         )
         set __CmakeGenerator=Ninja
-        set "__RequestedToolchainFile=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake"
+        set "__CompilerInputs=!__CompilerInputs!;-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake"
         set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake"
     )
 ) else (
@@ -113,14 +111,15 @@ if /i "%__Os%" == "android" (
         set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=armeabi-v7a"
     )
 
-    set "__RequestedToolchainFile=%ANDROID_NDK_ROOT%/build/cmake/android.toolchain.cmake"
+    set "__CompilerInputs=!__CompilerInputs!;-DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_ROOT%/build/cmake/android.toolchain.cmake"
     set __ExtraCmakeParams=!__ExtraCmakeParams! "-DCMAKE_TOOLCHAIN_FILE='%ANDROID_NDK_ROOT:\=/%/build/cmake/android.toolchain.cmake'" "-C %__repoRoot%/eng/native/tryrun.cmake"
 )
 
 :loop
 if [%6] == [] goto end_loop
 set "__CurrentArg=%~6"
-if /i "!__CurrentArg:~0,23!" == "-DCMAKE_TOOLCHAIN_FILE=" set "__RequestedToolchainFile=!__CurrentArg:~23!"
+if /i "!__CurrentArg:~0,23!" == "-DCMAKE_TOOLCHAIN_FILE=" set "__CompilerInputs=!__CompilerInputs!;!__CurrentArg!"
+if /i "!__CurrentArg:~0,23!" == "-DCMAKE_TOOLCHAIN_FILE:" set "__CompilerInputs=!__CompilerInputs!;!__CurrentArg!"
 set __ExtraCmakeParams=%__ExtraCmakeParams% %6
 shift
 goto loop
@@ -128,29 +127,28 @@ goto loop
 
 set __ExtraCmakeParams="-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams%
 
-rem CMake only detects the compiler on a build directory's first configure, so a toolchain file that
-rem changes later (e.g. a WASI SDK or emscripten version bump, which moves the versioned tool cache
-rem directory) would otherwise keep using the old compiler. Reconfigure from scratch in that case.
+rem CMake detects the compiler only on a build directory's first configure. Later configures keep the
+rem cached compiler even when the toolchain file, CC/CXX, the MSVC toolset or emcmake now select a
+rem different one, for example a new SDK version in the versioned wasm tool cache. Record those inputs
+rem next to the cache and reconfigure from scratch when they change.
+set "__CompilerInputs=!__CompilerInputs:"=!"
+set "__CompilerInputsFile=!__IntermediatesDirPath!\cmake_compiler_inputs.txt"
 set __CMakeFreshArg=
-set __CachedToolchainFile=
-if not "!__RequestedToolchainFile!" == "" if exist "%__CMakeCacheFile%" (
-    for /f "usebackq tokens=1,* delims==" %%a in (`findstr /b /c:"CMAKE_TOOLCHAIN_FILE:" "%__CMakeCacheFile%"`) do (
-        if "!__CachedToolchainFile!" == "" set "__CachedToolchainFile=%%b"
-    )
-)
-if not "!__CachedToolchainFile!" == "" (
-    set "__CachedToolchainNorm=!__CachedToolchainFile:\=/!"
-    set "__CachedToolchainNorm=!__CachedToolchainNorm:'=!"
-    set "__RequestedToolchainNorm=!__RequestedToolchainFile:\=/!"
-    set "__RequestedToolchainNorm=!__RequestedToolchainNorm:'=!"
-    for /l %%n in (1,1,4) do (
-        set "__CachedToolchainNorm=!__CachedToolchainNorm://=/!"
-        set "__RequestedToolchainNorm=!__RequestedToolchainNorm://=/!"
-    )
-    if /i not "!__CachedToolchainNorm!" == "!__RequestedToolchainNorm!" (
-        echo CMake toolchain changed from !__CachedToolchainFile! to !__RequestedToolchainFile!; reconfiguring from scratch.
+if exist "!__IntermediatesDirPath!\CMakeCache.txt" (
+    >"!__CompilerInputsFile!.new" echo(!__CompilerInputs!
+    if exist "!__CompilerInputsFile!" (
+        fc /b "!__CompilerInputsFile!" "!__CompilerInputsFile!.new" >nul 2>&1
+        if errorlevel 1 (
+            echo CMake compiler inputs changed since !__IntermediatesDirPath! was last configured; reconfiguring from scratch.
+            for /f "usebackq delims=" %%l in ("!__CompilerInputsFile!") do echo   was: %%l
+            echo   now: !__CompilerInputs!
+            set __CMakeFreshArg=--fresh
+        )
+    ) else (
+        echo No record of the compiler inputs used to configure !__IntermediatesDirPath!; reconfiguring from scratch.
         set __CMakeFreshArg=--fresh
     )
+    del "!__CompilerInputsFile!.new" 2>nul
 )
 
 set __CmdLineOptionsUpToDateFile=%__IntermediatesDir%\cmake_cmd_line.txt
@@ -177,6 +175,7 @@ echo %CMakeToolPrefix% "%CMakePath% %__CMakeFreshArg% %__ExtraCmakeParams% --no-
 
 if "%errorlevel%" == "0" (
     echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
+    >"!__CompilerInputsFile!" echo(!__CompilerInputs!
 )
 
 endlocal

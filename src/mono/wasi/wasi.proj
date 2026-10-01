@@ -143,18 +143,8 @@
       -->
       <CMakeConfigurationLinkFlags>$(CMakeBuildRuntimeConfigureCmd) -Wl,--component-type,&quot;$([MSBuild]::NormalizePath('$(RepoRoot)', 'src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit').Replace('\','/'))&quot;</CMakeConfigurationLinkFlags>
 
-      <!-- CMake only detects the compiler on a build directory's first configure, so a toolchain file that changes later
-           (e.g. an SDK version bump, which moves the versioned tool cache directory) would otherwise keep using the old
-           compiler. Reconfigure from scratch in that case. -->
-      <_CMakeToolchainFile>$([MSBuild]::NormalizePath('$(RuntimeBuildWasiSdkPath)', 'share/cmake/wasi-sdk-p2.cmake'))</_CMakeToolchainFile>
-      <_CMakeToolchainFile>$([System.Text.RegularExpressions.Regex]::Replace('$(_CMakeToolchainFile)', '[\\/]+', '/'))</_CMakeToolchainFile>
-      <_CMakeCachedToolchainFile Condition="'$(_CMakeToolchainFile)' != '' and Exists('$(NativeBinDir)CMakeCache.txt')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(NativeBinDir)CMakeCache.txt')), '(?m)(?&lt;=^CMAKE_TOOLCHAIN_FILE:[A-Za-z]*=)[^\r\n]*').Value)</_CMakeCachedToolchainFile>
-      <_CMakeCachedToolchainFile>$([System.Text.RegularExpressions.Regex]::Replace('$(_CMakeCachedToolchainFile)', '[\\/]+', '/'))</_CMakeCachedToolchainFile>
-      <_CMakeFresh Condition="'$(_CMakeCachedToolchainFile)' != '' and '$(_CMakeCachedToolchainFile)' != '$(_CMakeToolchainFile)'">true</_CMakeFresh>
-
       <CMakeBuildRuntimeConfigureCmd>cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">cmake -G Ninja $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(_CMakeFresh)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) --fresh</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) --no-warn-unused-cli -DCMAKE_TOOLCHAIN_FILE=&quot;$([MSBuild]::NormalizePath('$(RuntimeBuildWasiSdkPath)', 'share/cmake/wasi-sdk-p2.cmake'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASICC_FLAGS=&quot;$(CMakeConfigurationWasiFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
@@ -200,7 +190,6 @@
           DestinationFolder="%(_FilesToCopy.DestinationFolder)"
           SkipUnchangedFiles="true" />
 
-    <Message Condition="'$(_CMakeFresh)' == 'true'" Text="CMake toolchain changed from $(_CMakeCachedToolchainFile) to $(_CMakeToolchainFile); reconfiguring from scratch." Importance="High" />
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" />
 

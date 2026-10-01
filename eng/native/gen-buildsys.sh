@@ -123,37 +123,29 @@ if [[ "$host_arch" == "wasm" ]]; then
     fi
 fi
 
-# CMake only detects the compiler on a build directory's first configure, so a toolchain file that
-# changes later (e.g. a WASI SDK or emscripten version bump, which moves the versioned tool cache
-# directory) would otherwise keep using the old compiler. Reconfigure from scratch in that case.
-normalize_toolchain_path()
-{
-    local path="${1//\\//}"
-    local dir="${path%/*}" resolved
-    if [[ "$dir" != "$path" && -d "$dir" ]] && resolved="$(CDPATH= cd -P "$dir" 2>/dev/null && pwd -P)"; then
-        path="$resolved/${path##*/}"
-    fi
-    echo "$path" | sed -e 's|//*|/|g' -e 's|/$||'
-}
-
-requested_toolchain_file="${CMAKE_TOOLCHAIN_FILE:-}"
-if [[ -z "$requested_toolchain_file" && "$host_arch" == "wasm" && "$target_os" == "browser" ]]; then
-    # emcmake injects its own toolchain file when none is specified.
-    if emcmake_path="$(command -v emcmake)"; then
-        requested_toolchain_file="$(dirname "$emcmake_path")/cmake/Modules/Platform/Emscripten.cmake"
-    fi
-fi
+# CMake detects the compiler only on a build directory's first configure. Later configures keep the
+# cached compiler even when the toolchain file, CC/CXX or a cmake wrapper such as emcmake now select a
+# different one, for example a new SDK version in the versioned wasm tool cache. Record those inputs
+# next to the cache and reconfigure from scratch when they change.
+compiler_inputs="CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE:-}"$'\n'"CC=${CC:-}"$'\n'"CXX=${CXX:-}"
 for arg in $cmake_extra_defines "${__UnprocessedCMakeArgs[@]}" "${cmake_extra_defines_wasm[@]}"; do
     case "$arg" in
-        -DCMAKE_TOOLCHAIN_FILE=*|-DCMAKE_TOOLCHAIN_FILE:*=*) requested_toolchain_file="${arg#*=}" ;;
+        -DCMAKE_TOOLCHAIN_FILE=*|-DCMAKE_TOOLCHAIN_FILE:*=*) compiler_inputs+=$'\n'"$arg" ;;
     esac
 done
+for tool in $cmake_command; do
+    compiler_inputs+=$'\n'"$(command -v "$tool" || echo "$tool")"
+done
 
+compiler_inputs_file="$2/cmake_compiler_inputs.txt"
 cmake_fresh=()
-if [[ -n "$requested_toolchain_file" && -f "$2/CMakeCache.txt" ]]; then
-    cached_toolchain_file="$(sed -n 's/^CMAKE_TOOLCHAIN_FILE:[A-Za-z]*=//p' "$2/CMakeCache.txt" | head -n 1)"
-    if [[ -n "$cached_toolchain_file" && "$(normalize_toolchain_path "$cached_toolchain_file")" != "$(normalize_toolchain_path "$requested_toolchain_file")" ]]; then
-        echo "CMake toolchain changed from $cached_toolchain_file to $requested_toolchain_file; reconfiguring from scratch."
+if [[ -f "$2/CMakeCache.txt" ]]; then
+    if [[ ! -f "$compiler_inputs_file" ]]; then
+        echo "No record of the compiler inputs used to configure $2; reconfiguring from scratch."
+        cmake_fresh=("--fresh")
+    elif [[ "$(cat "$compiler_inputs_file")" != "$compiler_inputs" ]]; then
+        echo "CMake compiler inputs changed since $2 was last configured; reconfiguring from scratch."
+        diff "$compiler_inputs_file" - <<< "$compiler_inputs" | sed -n -e 's/^< /  was: /p' -e 's/^> /  now: /p'
         cmake_fresh=("--fresh")
     fi
 fi
@@ -169,5 +161,10 @@ $cmake_command \
   "${cmake_extra_defines_wasm[@]}" \
   -S "$1" \
   -B "$2"
+cmake_exit_code=$?
 
-# don't add anything after this line so the cmake exit code gets propagated correctly
+if [[ "$cmake_exit_code" == 0 ]]; then
+    printf '%s\n' "$compiler_inputs" > "$compiler_inputs_file"
+fi
+
+exit "$cmake_exit_code"
