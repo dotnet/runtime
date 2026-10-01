@@ -158,6 +158,8 @@ static bool fgIsCheapReorderableAddressTree(Compiler* compiler, GenTree* tree)
 //
 bool Compiler::fgForwardSubMultiUse(Statement* nextStmt, unsigned lclNum, GenTree* fwdSubNode)
 {
+    assert(fgIsCheapReorderableAddressTree(this, fwdSubNode));
+
     // Cap the number of clones we'll make. The targeted patterns (e.g. the
     // C# compiler's `obj.struct.field op= rhs` lowering) hit exactly two uses.
     // Anything beyond a handful starts to look more like a code-size hazard
@@ -1025,6 +1027,15 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     if (varTypeIsSmall(varDsc) && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))
     {
+        // 32 bit targets can require a cast on trees that look like cheap address
+        // trees, since TYP_INT is used both for address expressions and upcasts
+        // from small types. Bail here instead of passing a CAST node to fgForwardSubMultiUse
+        if (multiUse)
+        {
+            JITDUMP(" multi-use sub needs a cast for small-typed local\n");
+            return false;
+        }
+
         JITDUMP(" [adding cast for small-typed local]");
         fwdSubNode = gtNewCastNode(TYP_INT, fwdSubNode, false, varDsc->TypeGet());
     }
