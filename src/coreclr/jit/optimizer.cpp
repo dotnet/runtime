@@ -4812,6 +4812,10 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                         {
                             m_canHoistSideEffects = false;
                         }
+                        else if ((call->gtCallMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) != 0)
+                        {
+                            m_canHoistSideEffects = false;
+                        }
                         else if (s_helperCallProperties.MayRunCctor(helpFunc) &&
                                  (call->gtFlags & GTF_CALL_HOISTABLE) == 0)
                         {

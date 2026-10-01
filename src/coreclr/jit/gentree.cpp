@@ -561,7 +561,7 @@ LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 {
     GenTree* first = m_stmt->GetTreeList();
     assert((first == nullptr) || first->OperIsAnyLocal());
-    return iterator(static_cast<GenTreeLclVarCommon*>(first));
+    return iterator(first);
 }
 
 //-----------------------------------------------------------
@@ -573,7 +573,7 @@ LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 // Return Value:
 //     The edge, such that *edge == node.
 //
-GenTree** LocalsGenTreeList::GetForwardEdge(GenTreeLclVarCommon* node)
+GenTree** LocalsGenTreeList::GetForwardEdge(GenTree* node)
 {
     if (node->gtPrev == nullptr)
     {
@@ -596,7 +596,7 @@ GenTree** LocalsGenTreeList::GetForwardEdge(GenTreeLclVarCommon* node)
 // Return Value:
 //     The edge, such that *edge == node.
 //
-GenTree** LocalsGenTreeList::GetBackwardEdge(GenTreeLclVarCommon* node)
+GenTree** LocalsGenTreeList::GetBackwardEdge(GenTree* node)
 {
     if (node->gtNext == nullptr)
     {
@@ -616,7 +616,7 @@ GenTree** LocalsGenTreeList::GetBackwardEdge(GenTreeLclVarCommon* node)
 // Arguments:
 //     node - the local node that should be part of this list.
 //
-void LocalsGenTreeList::Remove(GenTreeLclVarCommon* node)
+void LocalsGenTreeList::Remove(GenTree* node)
 {
     GenTree** forwardEdge  = GetForwardEdge(node);
     GenTree** backwardEdge = GetBackwardEdge(node);
@@ -634,10 +634,7 @@ void LocalsGenTreeList::Remove(GenTreeLclVarCommon* node)
 //     newFirstNode - The start of the replacement sub list.
 //     newLastNode - The last node of the replacement sub list.
 //
-void LocalsGenTreeList::Replace(GenTreeLclVarCommon* firstNode,
-                                GenTreeLclVarCommon* lastNode,
-                                GenTreeLclVarCommon* newFirstNode,
-                                GenTreeLclVarCommon* newLastNode)
+void LocalsGenTreeList::Replace(GenTree* firstNode, GenTree* lastNode, GenTree* newFirstNode, GenTree* newLastNode)
 {
     assert((newFirstNode != nullptr) && (newLastNode != nullptr));
 
@@ -651,6 +648,22 @@ void LocalsGenTreeList::Replace(GenTreeLclVarCommon* firstNode,
     *backwardEdge        = newLastNode;
     newFirstNode->gtPrev = prev;
     newLastNode->gtNext  = next;
+}
+
+//------------------------------------------------------------------------
+// LocalOccurrence::GetAccessSize:
+//   Get the size of a direct local access.
+//
+// Arguments:
+//   compiler - The compiler instance.
+//
+// Return Value:
+//   The access size in bytes.
+//
+unsigned LocalOccurrence::GetAccessSize(Compiler* compiler) const
+{
+    assert(!m_node->OperIs(GT_LCL_ADDR));
+    return m_node->TypeIs(TYP_STRUCT) ? m_node->GetLayout(compiler)->GetSize() : genTypeSize(m_node->TypeGet());
 }
 
 //-----------------------------------------------------------
@@ -15797,7 +15810,9 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
             CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isArg0NonNull);
             CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isArg1NonNull);
             // A null receiver should throw, but a null argument must return false.
-            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull)
+            // Shared enum types may have the same canonical handle but different runtime types.
+            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull ||
+                eeIsSharedInst(cls0))
             {
                 break;
             }
@@ -37527,8 +37542,9 @@ bool Compiler::gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     bool                 valueIsNonNull = false;
     CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(value, &valueIsExact, &valueIsNonNull);
 
-    // Array's type is sealed and equals to value's type
-    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
+    // Array's type is sealed and equals to value's type.
+    // Shared handles (e.g. G<__Canon>) may represent different runtime types, so they don't qualify.
+    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle) && !eeIsSharedInst(arrayElementHandle))
     {
         JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
         return true;

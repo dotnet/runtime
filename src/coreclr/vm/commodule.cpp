@@ -36,8 +36,8 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    IMetaDataEmit * pEmit = pRCW->GetEmitter();
-    IMetaDataImport * pImport = pRCW->GetRWImporter();
+    IMDInternalEmit * pEmit = pRCW->GetEmitter();
+    IMDInternalImport * pImport = pRCW->GetMDImport();
 
     if (wszFullName == NULL) {
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
@@ -69,8 +69,14 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
     if (pModule == pRefedModule)
     {
         // referenced type is from the same module so we must be able to find a TypeDef.
-        IfFailThrow(pImport->FindTypeDefByName(
-            wszFullNameUnescaped,
+        MAKE_UTF8PTR_FROMWIDE(szFullNameUnescaped, wszFullNameUnescaped);
+        LPCSTR szNamespace;
+        LPCSTR szName;
+        ns::SplitInline(szFullNameUnescaped, szNamespace, szName);
+
+        IfFailThrow(pImport->FindTypeDef(
+            szNamespace,
+            szName,
             RidFromToken(tkResolutionArg) ? tkResolutionArg : mdTypeDefNil,
             &tr));
     }
@@ -86,11 +92,8 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
         {
             // reference to top level type
 
-            ReleaseHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
-
             // Generate AssemblyRef
-            IfFailThrow( pEmit->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
-            tkResolution = pThisAssembly->AddAssemblyRef(pRefedAssembly, pAssemblyEmit);
+            tkResolution = pThisAssembly->AddAssemblyRef(pRefedAssembly, pEmit);
 
             // Add the assembly ref token and the manifest module it is referring to this module's rid map.
             // This is needed regardless of whether the dynamic assembly has run access. Even in Save-only
@@ -166,36 +169,44 @@ namespace
     //
     //******************************************************************************
     void DefineTypeRefHelper(
-        IMetaDataEmit       *pEmit,         // given emit scope
+        IMDInternalImport  *pImport,       // given import scope
+        IMDInternalEmit     *pEmit,         // given emit scope
         mdTypeDef           td,             // given typedef in the emit scope
         mdTypeRef           *ptr)           // return typeref
     {
         CONTRACTL  {
             STANDARD_VM_CHECK;
 
+            PRECONDITION(CheckPointer(pImport));
             PRECONDITION(CheckPointer(pEmit));
             PRECONDITION(CheckPointer(ptr));
         }
         CONTRACTL_END;
 
-        CQuickBytes qb;
-        WCHAR* szTypeDef = (WCHAR*) qb.AllocThrows((MAX_CLASSNAME_LENGTH+1) * sizeof(WCHAR));
-        mdToken             rs;             // resolution scope
-        DWORD               dwFlags;
+        LPCSTR szName;
+        LPCSTR szNamespace;
+        IfFailThrow(pImport->GetNameOfTypeDef(td, &szName, &szNamespace));
 
-        ReleaseHolderAnyMode<IMetaDataImport> pImport;
-        IfFailThrow( pEmit->QueryInterface(IID_IMetaDataImport, (void **)&pImport) );
-        IfFailThrow( pImport->GetTypeDefProps(td, szTypeDef, MAX_CLASSNAME_LENGTH, NULL, &dwFlags, NULL) );
+        DWORD dwFlags;
+        mdToken extends;
+        IfFailThrow(pImport->GetTypeDefProps(td, &dwFlags, &extends));
+
+        mdToken rs;
         if ( IsTdNested(dwFlags) )
         {
             mdToken         tdNested;
             IfFailThrow( pImport->GetNestedClassProps(td, &tdNested) );
-            DefineTypeRefHelper( pEmit, tdNested, &rs);
+            DefineTypeRefHelper(pImport, pEmit, tdNested, &rs);
         }
         else
             rs = TokenFromRid( 1, mdtModule );
 
-        IfFailThrow( pEmit->DefineTypeRefByName( rs, szTypeDef, ptr) );
+        SString typeNamespace(SString::Utf8, szNamespace);
+        SString typeName(SString::Utf8, szName);
+        StackSString fullName;
+        fullName.MakeFullNamespacePath(typeNamespace, typeName);
+
+        IfFailThrow(pEmit->DefineTypeRefByName(rs, fullName.GetUnicode(), ptr));
     }   // DefineTypeRefHelper
 }
 
@@ -246,9 +257,6 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModul
             COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
     }
 
-    ReleaseHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
-    IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
-
     CQuickBytes             qbNewSig;
     ULONG                   cbNewSig;
 
@@ -257,7 +265,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModul
         NULL, 0,        // hash value
         pvComSig,
         cbComSig,
-        pAssemblyEmit,  // Emit assembly scope.
+        pRCW->GetEmitter(),
         pRCW->GetEmitter(),
         &qbNewSig,
         &cbNewSig) );
@@ -267,7 +275,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModul
     if (TypeFromToken(tr) == mdtTypeDef)
     {
         // define a TypeRef using the TypeDef
-        DefineTypeRefHelper(pRCW->GetEmitter(), tr, &tref);
+        DefineTypeRefHelper(pRCW->GetMDImport(), pRCW->GetEmitter(), tr, &tref);
     }
     else
         tref = tr;
@@ -323,9 +331,6 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         Assembly * pRefedAssembly = pMeth->GetModule()->GetAssembly();
         Assembly * pRefingAssembly = pModule->GetAssembly();
 
-        ReleaseHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
-        IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
-
         CQuickBytes     qbNewSig;
         ULONG           cbNewSig;
 
@@ -342,7 +347,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
             NULL, 0,        // hash blob value
             pvComSig,
             cbComSig,
-            pAssemblyEmit,  // Emit assembly scope.
+            pRCW->GetEmitter(),
             pRCW->GetEmitter(),
             &qbNewSig,
             &cbNewSig) );
@@ -409,9 +414,6 @@ extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::Mo
             else
                 COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
         }
-        ReleaseHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
-        IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
-
         // Translate the field signature this scope
         CQuickBytes     qbNewSig;
         ULONG           cbNewSig;
@@ -421,7 +423,7 @@ extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::Mo
         NULL, 0,            // hash value
         pvComSig,
         cbComSig,
-        pAssemblyEmit,      // Emit assembly scope.
+        pRCW->GetEmitter(),
         pRCW->GetEmitter(),
         &qbNewSig,
         &cbNewSig) );

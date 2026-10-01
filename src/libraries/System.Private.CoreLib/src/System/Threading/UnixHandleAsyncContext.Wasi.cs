@@ -123,11 +123,13 @@ namespace System.Threading
     }
 
     // Layout mirrors wasi-libc (WASIp2) tcp_socket_t from
-    // https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/tcp.h
+    // https://github.com/WebAssembly/wasi-libc/blob/2e6fb9d8ee0c/libc-bottom-half/headers/private/wasi/tcp.h
     // Only `socket`, `state` and `socket_pollable` are read; trailing fields are modelled for completeness.
+    // The `lock` field that follows `refcnt` is empty in the single-threaded wasm32-wasip2 libc.
     [StructLayout(LayoutKind.Sequential)]
     internal struct tcp_socket_t
     {
+        public uint refcnt;
         public tcp_own_tcp_socket_t socket;
         public tcp_socket_state_t state;
         public poll_own_pollable_t socket_pollable;
@@ -197,15 +199,19 @@ namespace System.Threading
     }
 
     // Layout mirrors wasi-libc (WASIp2) udp_socket_t from
-    // https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/sources/udp.c
+    // https://github.com/WebAssembly/wasi-libc/blob/2e6fb9d8ee0c/libc-bottom-half/sources/udp.c
+    // The `lock` field that follows `refcnt` is empty in the single-threaded wasm32-wasip2 libc.
     [StructLayout(LayoutKind.Sequential)]
     internal struct udp_socket_t
     {
+        public uint refcnt;
         public udp_own_udp_socket_t socket;
         public poll_own_pollable_t socket_pollable;
         public byte blocking;
         public byte family;
         public udp_socket_state_t state;
+        public ulong send_timeout;
+        public ulong recv_timeout;
     }
 
     public sealed partial class UnixHandleAsyncContext

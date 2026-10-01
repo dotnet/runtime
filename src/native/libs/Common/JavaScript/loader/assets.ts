@@ -565,7 +565,11 @@ export function verifyAllAssetsDownloaded(): void {
 
 function normalizeVirtualPath(asset: AssetEntryInternal): void {
     dotnetAssert.check(asset.virtualPath, "Asset must have virtualPath");
-    asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    // Component stubs probe for the composite owner by its crossgen2 name (<entry>.r2r.wasm), so it keeps
+    // its .wasm virtual path; it is not a managed assembly (see initializeCoreCLR's TPA).
+    if (!asset.isCompositeImage) {
+        asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    }
     asset.virtualPath = asset.virtualPath.startsWith("/")
         ? asset.virtualPath
         : asset.culture
