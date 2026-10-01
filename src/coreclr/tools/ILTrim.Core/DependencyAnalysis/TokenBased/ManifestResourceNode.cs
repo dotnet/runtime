@@ -10,6 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 using Internal.TypeSystem.Ecma;
 
@@ -40,9 +41,9 @@ namespace ILCompiler.DependencyAnalysis
                 if (resourceName == "ILLink.Descriptors.xml")
                 {
                     string assemblyName = _module.Assembly.GetName().Name;
-                    _skipWritingResource = factory.Settings.Optimizations.IsEnabled(CodeOptimizations.RemoveDescriptors, assemblyName);
+                    bool removeDescriptors = factory.Settings.Optimizations.IsEnabled(CodeOptimizations.RemoveDescriptors, assemblyName);
 
-                    if (!factory.Settings.IgnoreDescriptors)
+                    if (removeDescriptors || !factory.Settings.IgnoreDescriptors)
                     {
                         PEMemoryBlock resourceDirectory = _module.PEReader.GetSectionData(_module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
                         BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
@@ -54,7 +55,14 @@ namespace ILCompiler.DependencyAnalysis
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        dependencies = DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
+                        bool isLinkerDescriptor = IsLinkerDescriptor(ms);
+                        _skipWritingResource = removeDescriptors && isLinkerDescriptor;
+
+                        if (isLinkerDescriptor && !factory.Settings.IgnoreDescriptors)
+                        {
+                            ms.Position = 0;
+                            dependencies = DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
+                        }
                     }
                 }
             }
@@ -125,6 +133,26 @@ namespace ILCompiler.DependencyAnalysis
                 builder.GetOrAddString(reader.GetString(resource.Name)),
                 implementation,
                 offset);
+        }
+
+        private static bool IsLinkerDescriptor(Stream resourceStream)
+        {
+            using XmlReader xmlReader = XmlReader.Create(resourceStream, new XmlReaderSettings
+            {
+                CloseInput = false,
+                DtdProcessing = DtdProcessing.Parse,
+                XmlResolver = null
+            });
+            XmlNodeType contentNodeType = xmlReader.MoveToContent();
+            if (contentNodeType != XmlNodeType.Element)
+                throw new XmlException("The XML document does not contain a root element.");
+
+            bool isLinkerDescriptor = xmlReader.Name == "linker" && xmlReader.NamespaceURI.Length == 0;
+            while (xmlReader.Read())
+            {
+            }
+
+            return isLinkerDescriptor;
         }
 
         public override string ToString()
