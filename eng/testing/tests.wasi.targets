@@ -27,6 +27,13 @@
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
 
+  <!-- Same opt-in as Apple mobile (tests.mobile.targets). These switches are substituted at trim
+       time, so they apply even though wasihost doesn't read runtimeconfig yet. -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">
+    <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport>true</_DesignerHostSupport>
+  </PropertyGroup>
+
   <PropertyGroup>
     <_AppArgs Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_AppArgs>
     <!-- Mono launches dotnet.wasm with the entry assembly name; CoreCLR launches the
