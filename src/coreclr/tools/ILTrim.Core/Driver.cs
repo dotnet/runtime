@@ -66,9 +66,13 @@ namespace Mono.Linker
             foreach (var input in context.Inputs)
                 analyzer.AddRoot(input, "Command line root");
 
-            analyzer.AddRoot(factory.VirtualMethodUse(
-                (EcmaMethod)tsContext.GetWellKnownType(WellKnownType.Object).GetMethod("Finalize"u8, null)),
-                "Finalizer");
+            EcmaType objectType = (EcmaType)tsContext.GetWellKnownType(WellKnownType.Object);
+            foreach (MethodDesc method in objectType.GetVirtualMethods())
+            {
+                analyzer.AddRoot(
+                    factory.VirtualMethodUse((EcmaMethod)method),
+                    method.Name == "Finalize"u8 ? "Finalizer" : "Object virtual method");
+            }
 
             analyzer.ComputeMarkedNodes();
 
