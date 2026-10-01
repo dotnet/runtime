@@ -30,26 +30,6 @@ parameters:
   displayName: Build Coreclr Arm64 Android
   type: boolean
   default: true
-- name: wasm
-  displayName: Build WebAssembly (wasm)
-  type: boolean
-  default: true
-- name: monoAot_arm64_linux
-  displayName: Build Mono AOT Arm64 Linux
-  type: boolean
-  default: true
-- name: monoAot_x64_linux
-  displayName: Build Mono AOT x64 Linux
-  type: boolean
-  default: true
-- name: mono_x64_linux
-  displayName: Build Mono x64 Linux
-  type: boolean
-  default: true
-- name: mono_arm64_linux
-  displayName: Build Mono Arm64 Linux
-  type: boolean
-  default: true
 - name: nativeAot_arm64_ios
   displayName: Build native AOT Arm64 iOS
   type: boolean
@@ -112,16 +92,6 @@ extends:
                 - coreclr_x86_windows
               - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
                 - coreclr_arm64_android
-              - ${{ if eq(parameters.wasm, true) }}:
-                - wasm
-              - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:
-                - monoAot_arm64_linux
-              - ${{ if eq(parameters.monoAot_x64_linux, true) }}:
-                - monoAot_x64_linux
-              - ${{ if eq(parameters.mono_x64_linux, true) }}:
-                - mono_x64_linux
-              - ${{ if eq(parameters.mono_arm64_linux, true) }}:
-                - mono_arm64_linux
               - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
                 - nativeAot_arm64_ios
               - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
@@ -152,16 +122,6 @@ extends:
               - coreclr_x86_windows
             - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
               - coreclr_arm64_android
-            - ${{ if eq(parameters.wasm, true) }}:
-              - wasm
-            - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:
-              - monoAot_arm64_linux
-            - ${{ if eq(parameters.monoAot_x64_linux, true) }}:
-              - monoAot_x64_linux
-            - ${{ if eq(parameters.mono_x64_linux, true) }}:
-              - mono_x64_linux
-            - ${{ if eq(parameters.mono_arm64_linux, true) }}:
-              - mono_arm64_linux
             - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
               - nativeAot_arm64_ios
             - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
@@ -198,16 +158,6 @@ extends:
                 - coreclr_x86_windows
               - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
                 - coreclr_arm64_android
-              - ${{ if eq(parameters.wasm, true) }}:
-                - wasm
-              - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:
-                - monoAot_arm64_linux
-              - ${{ if eq(parameters.monoAot_x64_linux, true) }}:
-                - monoAot_x64_linux
-              - ${{ if eq(parameters.mono_x64_linux, true) }}:
-                - mono_x64_linux
-              - ${{ if eq(parameters.mono_arm64_linux, true) }}:
-                - mono_arm64_linux
               - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
                 - nativeAot_arm64_ios
               - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
