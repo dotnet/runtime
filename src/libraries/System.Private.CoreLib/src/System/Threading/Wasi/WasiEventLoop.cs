@@ -56,11 +56,12 @@ namespace System.Threading
                 s_mainTask = mainTask;
                 while (!mainTask.IsCompleted)
                 {
-                    ThreadPoolWorkQueue.Dispatch();
-                    WasiFinalizerScheduler.DrainIfPending();
-#if FEATURE_PERFTRACING && CORECLR
+#if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
+                    // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
                     WasiEventPipeJobs.EnsurePumpIfPending();
 #endif
+                    ThreadPoolWorkQueue.Dispatch();
+                    WasiFinalizerScheduler.DrainIfPending();
                 }
             }
             finally
@@ -81,11 +82,12 @@ namespace System.Threading
                 s_mainTask = mainTask;
                 while (!mainTask.IsCompleted)
                 {
-                    ThreadPoolWorkQueue.Dispatch();
-                    WasiFinalizerScheduler.DrainIfPending();
-#if FEATURE_PERFTRACING && CORECLR
+#if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
+                    // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
                     WasiEventPipeJobs.EnsurePumpIfPending();
 #endif
+                    ThreadPoolWorkQueue.Dispatch();
+                    WasiFinalizerScheduler.DrainIfPending();
                 }
             }
             finally

@@ -348,12 +348,8 @@ extern "C" CLR_BOOL QCALLTYPE EventPipeInternal_WasiHasPendingJobs(QCallExceptio
     return pending;
 }
 
-extern "C" void QCALLTYPE EventPipeInternal_WasiRunJobs(QCallExceptionStatus* qcallError)
+void ep_rt_coreclr_wasi_run_jobs()
 {
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
     // Detach the current list so jobs queued while running are picked up on the next pump.
     WasiEventPipeJob *job = s_wasiJobsHead;
     s_wasiJobsHead = nullptr;
@@ -368,6 +364,15 @@ extern "C" void QCALLTYPE EventPipeInternal_WasiRunJobs(QCallExceptionStatus* qc
             WasiAppendJob(job);
         job = next;
     }
+}
+
+extern "C" void QCALLTYPE EventPipeInternal_WasiRunJobs(QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ep_rt_coreclr_wasi_run_jobs();
 
     END_QCALL;
 }

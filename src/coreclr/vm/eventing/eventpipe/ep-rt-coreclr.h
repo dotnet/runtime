@@ -314,12 +314,24 @@ ep_rt_init_finish (void)
 	STATIC_CONTRACT_NOTHROW;
 }
 
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+// WASI has no host event loop, so jobs are kept on a native list that the managed
+// WASI event loop drains (see eventpipeinternal.cpp).
+bool ep_rt_coreclr_wasi_queue_job (size_t (*cb)(void *data), void *data);
+void ep_rt_coreclr_wasi_run_jobs (void);
+#endif
+
 static
 inline
 void
 ep_rt_shutdown (void)
 {
 	STATIC_CONTRACT_NOTHROW;
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+	// The event loop no longer runs, so run the queued jobs once to let the now-disabled streaming
+	// sessions release their references; freeing a session ends its trace file.
+	ep_rt_coreclr_wasi_run_jobs ();
+#endif
 }
 
 static
@@ -1094,9 +1106,6 @@ ep_rt_thread_create (
 #ifdef HOST_BROWSER
 #include "wasm/entrypoints.h"
 typedef size_t (*ep_rt_job_cb_t)(void *data);
-#elif defined(TARGET_WASI)
-// Queues a job on the native list drained by the managed WASI event loop (see eventpipeinternal.cpp).
-bool ep_rt_coreclr_wasi_queue_job (size_t (*cb)(void *data), void *data);
 #endif
 
 static
@@ -1117,8 +1126,7 @@ ep_rt_queue_job (
 #elif defined(TARGET_WASI)
 	return ep_rt_coreclr_wasi_queue_job ((size_t (*)(void *))job_func, params);
 #else
-	// No host event loop to run jobs on. Callers handle the failure; streaming sessions
-	// are flushed when they are disabled.
+	EP_UNREACHABLE ("Not implemented on this platform");
 	return false;
 #endif
 }

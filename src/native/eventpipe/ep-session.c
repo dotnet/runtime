@@ -161,8 +161,8 @@ static size_t streaming_loop_tick(EventPipeSession *const session) {
 	ok = ep_session_write_all_buffers_to_file (session, &events_written);
 	EP_GCX_PREEMP_EXIT
 	if (!ok) {
+		// Keep the job so the next tick sees streaming disabled and releases its reference.
 		ep_disable ((EventPipeSessionID)session);
-		return 1; // done
 	}
 	return 0; // continue
 }
@@ -191,8 +191,8 @@ session_create_streaming_thread (EventPipeSession *session)
 	ep_session_inc_ref (session);
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
 	if (!ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session)) {
-		// The host can't run jobs, so drop the job's reference. Buffered events are
-		// flushed when the session is disabled.
+		// Release the job's reference directly; ep_session_dec_ref asserts streaming is
+		// disabled, and the session's own reference keeps it alive.
 		ep_rt_atomic_dec_uint32_t (&session->ref_count);
 	}
 #endif
