@@ -4953,6 +4953,10 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     assert(varNum < m_compiler->lvaCount);
 
     instruction loadIns = tree->DontExtend() ? INS_mov : ins_Load(targetType);
+    if ((loadIns == INS_movsx32) && genIsSignedWideningUse(tree))
+    {
+        loadIns = INS_movsx;
+    }
     GetEmitter()->emitIns_R_S(loadIns, size, targetReg, varNum, offs);
 
     genProduceReg(tree);
@@ -5300,6 +5304,10 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     {
         genConsumeAddress(addr);
         instruction loadIns = tree->DontExtend() ? INS_mov : ins_Load(targetType);
+        if ((loadIns == INS_movsx32) && genIsSignedWideningUse(tree))
+        {
+            loadIns = INS_movsx;
+        }
         emit->emitInsLoadInd(loadIns, emitTypeSize(tree), tree->GetRegNum(), tree);
     }
 
@@ -6763,6 +6771,53 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 }
 
 //------------------------------------------------------------------------
+// genIsSignedWideningUse: Check whether a value feeds a signed cast to long.
+//
+// Arguments:
+//    node - The value producing node.
+//
+// Returns:
+//    True when preserving native-width sign bits can eliminate the consuming cast.
+//
+bool CodeGen::genIsSignedWideningUse(GenTree* node)
+{
+    // Bound the entire search, including a possible temporary, independently of
+    // block size. Missing a distant widening only costs a separate extension.
+    // Use the same lookahead length as the emitter's backward peephole window.
+    unsigned remaining   = EMIT_MAX_PEEPHOLE_INS_COUNT;
+    bool     followStore = true;
+    for (GenTree* next = node->gtNext; (next != nullptr) && (remaining != 0); next = next->gtNext, remaining--)
+    {
+        if (node->OperIs(GT_STORE_LCL_VAR))
+        {
+            // Follow only the first access; a redefinition or address use ends the search.
+            if (next->OperIsAnyLocal() && (next->AsLclVarCommon()->GetLclNum() == node->AsLclVar()->GetLclNum()))
+            {
+                if (!next->OperIs(GT_LCL_VAR))
+                {
+                    return false;
+                }
+                node = next;
+            }
+            continue;
+        }
+
+        if (next->TryGetUse(node))
+        {
+            if (next->OperIs(GT_STORE_LCL_VAR) && followStore)
+            {
+                node        = next;
+                followStore = false;
+                continue;
+            }
+            return next->OperIs(GT_CAST) && next->TypeIs(TYP_LONG) && !next->AsCast()->IsUnsigned();
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // genIntToIntCast: Generate code for an integer cast, with or without overflow check.
 //
 // Arguments:
@@ -6831,6 +6886,11 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
         default:
             unreached();
+    }
+
+    if ((ins == INS_movsx) && cast->TypeIs(TYP_INT) && !genIsSignedWideningUse(cast))
+    {
+        ins = INS_movsx32;
     }
 
     if (srcReg != REG_NA)
