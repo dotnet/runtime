@@ -106,7 +106,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134957", TestPlatforms.Wasi)]
         public void InconsistentFileAccessThrows()
         {
             string fileName = GetTestFilePath();
