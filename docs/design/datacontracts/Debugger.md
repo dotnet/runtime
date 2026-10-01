@@ -2,6 +2,8 @@
 
 This contract is for reading debugger state from the target process, including initialization status, metadata update state, and JIT attach state.
 
+The contract is not advertised on WebAssembly targets. The in-process debugger is not built there, and WebAssembly has no return-address hijacking or patchable code, so readers must not require this contract on WebAssembly. For example, the `StackWalk` contract treats every frame as `HijackKind.None` on WebAssembly instead of calling `GetHijackKind`.
+
 ## APIs of contract
 
 ```csharp
