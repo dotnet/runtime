@@ -9,11 +9,11 @@ using Xunit;
 public class Async2Delegates
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
         var p = new Async2Delegates();
-        Assert.Equal(30, RunAsync(p.AddCompilerAsync).Result);
-        Assert.Equal(30, RunAsync(p.AddRuntimeAsync).Result);
+        Assert.Equal(30, await RunAsync(p.AddCompilerAsync));
+        Assert.Equal(30, await RunAsync(p.AddRuntimeAsync));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

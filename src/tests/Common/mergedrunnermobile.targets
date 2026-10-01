@@ -31,6 +31,20 @@
     <RuntimePackAsset Include="$(TargetingPackPath)/*.dll" AssetType="runtime" />
   </ItemGroup>
 
+  <!-- F# tests load FSharp.Core from CORE_ROOT elsewhere; the app bundle has to carry it. -->
+  <Target Name="_AddFSharpCoreToMobileRunner"
+          AfterTargets="ResolveAssemblyReferences"
+          Condition="'@(ProjectReference->AnyHaveMetadataValue('Extension', '.fsproj'))' == 'true'">
+    <MSBuild Projects="$(RepoRoot)src/tests/Common/test_dependencies_fs/test_dependencies.fsproj"
+             Targets="GetFSharpCoreRuntimeAssets"
+             Properties="Language=C#;RuntimeIdentifier=$(TargetRid)">
+      <Output TaskParameter="TargetOutputs" ItemName="_FSharpCoreRuntimeAsset" />
+    </MSBuild>
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(_FSharpCoreRuntimeAsset)" DestinationSubDirectory="" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <ProjectReference Include="$(RepoRoot)/src/tests/Common/XHarnessRunnerLibrary/XHarnessRunnerLibrary.csproj" />
   </ItemGroup>

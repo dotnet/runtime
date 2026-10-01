@@ -144,6 +144,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public async Task AuthenticationException_Propagates()
         {
+            Server.SslOptions.AllowTlsResume = false;
             _serverCertValidationCallback = (cert, chain, errors) =>
             {
                 return false; // force auth errors

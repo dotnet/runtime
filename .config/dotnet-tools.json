@@ -15,7 +15,7 @@
       ]
     },
     "microsoft.dotnet.xharness.cli": {
-      "version": "11.0.0-prerelease.26413.1",
+      "version": "11.0.0-prerelease.26474.1",
       "commands": [
         "xharness"
       ]
@@ -27,7 +27,7 @@
       ]
     },
     "microsoft.dotnet.helix.jobmonitor": {
-      "version": "12.0.0-beta.26463.105",
+      "version": "12.0.0-beta.26471.108",
       "commands": [
         "dotnet-helix-job-monitor"
       ]

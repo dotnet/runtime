@@ -129,6 +129,13 @@
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+      <XHarnessAppBundleToTest Update="@(XHarnessAppBundleToTest)"
+                              Condition="$([System.String]::Copy('%(Filename)').StartsWith('iOS.InProcCrashReport.'))">
+        <ExpectedExitCode>100</ExpectedExitCode>
+      </XHarnessAppBundleToTest>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'android'">
       <_apks Include="$(TestArchiveTestsRoot)**/*.apk" />
       <XHarnessApkToTest Include="@(_apks)">
@@ -139,6 +146,11 @@
         <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
         <!-- The android sample returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
+      </XHarnessApkToTest>
+      <XHarnessApkToTest Update="@(XHarnessApkToTest)"
+                        Condition="$([System.String]::Copy('%(Filename)').StartsWith('Android.Device_Emulator.InProcCrashReport.'))">
+        <ExpectedExitCode>100</ExpectedExitCode>
+        <DeviceOutputPath>/sdcard/Android/data/%(AndroidPackageName)/files/inproccrashreport.zip</DeviceOutputPath>
       </XHarnessApkToTest>
     </ItemGroup>
   </Target>

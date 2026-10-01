@@ -19,8 +19,8 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 29
-#define READYTORUN_MINOR_VERSION 0x0003
+#define READYTORUN_MAJOR_VERSION 30
+#define READYTORUN_MINOR_VERSION 0x0000
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -77,6 +77,7 @@
 // READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
 // consumes the scaffolding, so the flag is only ever set on WebAssembly images.
 // R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
+// R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
 
 struct READYTORUN_CORE_HEADER
 {

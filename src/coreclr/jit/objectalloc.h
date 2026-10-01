@@ -109,9 +109,10 @@ struct CloneInfo : public GuardInfo
     weight_t m_profileScale = 0.0;
 
     // Status of this candidate
-    bool m_checkedCanClone = false;
-    bool m_canClone        = false;
-    bool m_willClone       = false;
+    bool m_hasConflictingRedefinition = false;
+    bool m_checkedCanClone            = false;
+    bool m_canClone                   = false;
+    bool m_willClone                  = false;
 };
 
 struct StoreInfo
@@ -267,6 +268,7 @@ private:
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
     void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
+    void UpdateStoreType(GenTree* store, var_types newType);
     void UpdateAncestorTypes(
         GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
@@ -301,6 +303,7 @@ private:
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 
     ClassLayout* GetBoxedLayout(ClassLayout* structLayout);
+    ClassLayout* GetRetypedLayout(ClassLayout* oldLayout, ClassLayout* newLayout);
     ClassLayout* GetNonGCLayout(ClassLayout* existingLayout);
     ClassLayout* GetByrefLayout(ClassLayout* existingLayout);
 

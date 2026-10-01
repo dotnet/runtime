@@ -28,7 +28,7 @@ public:
     __checkReturn
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
     STDMETHODIMP_(ULONG) AddRef(void);
-    STDMETHODIMP_(ULONG) Release(void);
+    STDMETHODIMP_(ULONG) Release(void) noexcept;
 
     __checkReturn
     STDMETHODIMP TranslateSigWithScope(

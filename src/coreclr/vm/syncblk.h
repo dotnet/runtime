@@ -82,11 +82,14 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 // to zero out the ObjHeader for the current allocation.  And the limits of the
 // GC space are initialized to respect this "off by one" error.
 
-// m_SyncBlockValue is carved up into an index and a set of bits.  Steal bits by
-// reducing the mask.  We use the very high bit, in _DEBUG, to be sure we never forget
-// to mask the Value to obtain the Index
+// m_SyncBlockValue is carved up into an index and a set of bits. Steal bits by
+// reducing the mask.
 
+#ifdef FEATURE_JAVAMARSHAL
+#define BIT_SBLK_BRIDGE_PENDING             0x80000000
+#else
 #define BIT_SBLK_UNUSED                     0x80000000
+#endif // FEATURE_JAVAMARSHAL
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 
@@ -859,6 +862,14 @@ class ObjHeader
 #endif // HOST_64BIT && _DEBUG && !DACCESS_COMPILE
 
         return m_SyncBlockValue.LoadWithoutBarrier();
+    }
+
+    DWORD GetBitsAcquire()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return m_SyncBlockValue.Load();
     }
 
 

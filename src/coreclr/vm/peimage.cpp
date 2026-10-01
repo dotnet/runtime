@@ -126,7 +126,7 @@ BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
     return (BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase();
 }
 
-ULONG PEImage::Release()
+ULONG PEImage::Release() noexcept
 {
     CONTRACTL
     {

@@ -8,11 +8,8 @@ using Xunit;
 
 public class Async2Returns
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
-    {
-        Returns(new C()).Wait();
-    }
+    [Fact]
+    public static Task TestEntryPoint() => Returns(new C());
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task Returns(C c)

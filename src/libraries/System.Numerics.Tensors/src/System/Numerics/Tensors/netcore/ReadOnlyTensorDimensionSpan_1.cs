@@ -25,7 +25,7 @@ namespace System.Numerics.Tensors
             dimension += 1;
 
             _tensor = tensor;
-            _length = TensorPrimitives.Product(tensor.Lengths[..dimension]);
+            _length = TensorShape.GetProduct(tensor.Lengths[..dimension]);
             _dimension = dimension;
             _sliceShape = TensorShape.Create((dimension != tensor.Rank) ? tensor.Lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
         }
