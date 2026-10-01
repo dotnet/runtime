@@ -71,7 +71,6 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_R15:
             dwarfReg = 15;
             break;
-        // The x86-64 psABI assigns the APX eGPRs 130-145.
         case REG_R16:
             dwarfReg = 130;
             break;
