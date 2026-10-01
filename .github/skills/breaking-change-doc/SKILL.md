@@ -31,7 +31,8 @@ migration guidance. This skill automates that process:
 - **Interactive**: Ask Copilot (e.g. "Document the breaking change
   in PR #114929"). The skill prepares a docs issue draft and posts the
   documentation comment on the source PR without another approval step,
-  unless the user requests draft-only, dry-run, or review before publication.
+  unless the user requests draft-only, dry-run, or review before publication,
+  or unresolved uncertainty about the documentation requires review.
   Creating the docs issue is a separate publication decision.
 - **Automated**: The [GitHub Agentic Workflow](https://github.github.com/gh-aw/)
   at `.github/workflows/breaking-change-doc.md` triggers when a PR labeled
@@ -332,6 +333,14 @@ If the user requests draft-only, dry-run, or review before publication, or
 publication is otherwise unauthorized, skip posting — the two files under
 `artifacts/docs/breakingChanges/` are the outputs for review.
 
+Unresolved uncertainty about any aspect of the documentation also holds the
+source-PR comment, in both interactive and automated runs. Post it only after
+the uncertainty is resolved or the user has reviewed the proposed comment,
+been told what remains uncertain, and explicitly approved posting it. An
+initial workflow request or advance publication permission alone does not
+satisfy this content-review requirement. If confirmation cannot be obtained,
+keep the comment local and report the uncertainty without posting it.
+
 ### AI-generated content disclosure
 
 The `Build-IssueComment.ps1` script includes the standard AI disclosure note
@@ -345,14 +354,22 @@ generated comment. No additional action is needed.
 If the user asks for a draft or review before publishing, or if you are uncertain
 about any aspect of the documentation:
 
-1. Present the full issue content in chat for review.
-2. Ask the user to confirm before creating the issue.
-3. Only create the issue after explicit confirmation.
+1. Present the issue draft and proposed source-PR comment for review, explaining
+   any unresolved uncertainty.
+2. Obtain explicit approval before creating the docs issue or posting the
+   source-PR comment. Approval of one does not authorize the other.
+3. Publish only the approved artifacts. If approval cannot be obtained, keep
+   the unapproved outputs local and report the pending review.
 
 When the user has not explicitly asked to create the docs issue, keep that
 issue as a draft. This alone does not suppress an authorized source-PR
 documentation comment. A draft-only, dry-run, or review-before-publication
 request suppresses the comment as well.
+
+Unresolved uncertainty also holds the comment under the conditions in
+[Post the comment](#post-the-comment). Once the uncertainty is resolved, an
+otherwise authorized source-PR comment may be posted without another approval;
+creating the docs issue remains a separate publication decision.
 
 ---
 

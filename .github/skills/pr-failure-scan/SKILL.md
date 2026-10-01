@@ -261,9 +261,14 @@ In live mode:
    authorized actions and output limits. Invoking this skill or asking to
    analyze CI alone is not permission to publish.
 4. Process the proposed issues one by one. For each KBE:
-   - If explicit advance permission in an interactive session or the caller
-     workflow's documented publication contract covers this issue, create it
-     without asking again unless the contract requires additional approval.
+   - If the candidate is **draft-only** under Step 4, keep its draft local and
+     report the missing evidence. Do not publish it automatically using advance
+     permission or workflow authorization until the shared KBE verification
+     requirements are met.
+   - Otherwise, if explicit advance permission in an interactive session or
+     the caller workflow's documented publication contract covers this issue,
+     create it without asking again unless the contract requires additional
+     approval.
    - Otherwise, ask the user whether to create this specific issue.
    - The question must include:
      - the proposed issue title,
