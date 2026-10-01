@@ -1375,7 +1375,9 @@ namespace System.StubHelpers
 
         private static class SizeHolder
         {
-            public static readonly int UnmanagedSize = typeof(T).IsEnum ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))) : Marshal.SizeOf<T>();
+            public static readonly int UnmanagedSize = typeof(T).IsEnum
+                ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T)))
+                : Marshal.SizeOfHelper((RuntimeType)typeof(T), throwIfNotMarshalable: true);
         }
 
         private static int UnmanagedSize
