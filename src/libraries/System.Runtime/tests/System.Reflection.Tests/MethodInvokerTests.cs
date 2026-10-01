@@ -54,13 +54,15 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void SharedThunk_ObjectMethodOnBoxedValueReceiverFallsBack()
+        public void SharedThunk_ObjectMethodOnBoxedValueReceiverUsesSharedThunk()
         {
             MethodInfo method = typeof(object).GetMethod(nameof(object.ToString))!;
             MethodInvoker invoker = MethodInvoker.Create(method);
 
+            // The virtual dispatch resolves to the struct's own unboxing(-and-instantiating) stub,
+            // which is self-contained and call-compatible with the shared thunk.
             Assert.Equal("50", invoker.Invoke(new IntrinsicInvokeStructReceiver(50)));
-            IntrinsicInvokeSelectionAssertions.AssertFallback(invoker);
+            IntrinsicInvokeSelectionAssertions.AssertShared(invoker);
         }
 
         [Theory]

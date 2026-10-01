@@ -992,16 +992,6 @@ namespace System.Reflection.Tests
                 -1,
                 null
             };
-            yield return new object[]
-            {
-                typeof(IIntrinsicInvokeStructReceiver),
-                nameof(IIntrinsicInvokeStructReceiver.GetValue),
-                new IntrinsicInvokeStructReceiver(49),
-                Array.Empty<object?>(),
-                49,
-                -1,
-                null
-            };
         }
 
         [Theory]
@@ -1026,6 +1016,20 @@ namespace System.Reflection.Tests
             }
 
             IntrinsicInvokeSelectionAssertions.AssertFallback(method);
+        }
+
+        [Fact]
+        public void Invoke_InterfaceMethodOnBoxedValueReceiver_SharedThunk()
+        {
+            // The virtual dispatch for an interface method on a boxed value-type receiver resolves to
+            // the struct's own unboxing(-and-instantiating) stub, which is self-contained and
+            // call-compatible with the shared thunk's normal (this, args...) convention.
+            MethodInfo method = typeof(IIntrinsicInvokeStructReceiver).GetMethod(nameof(IIntrinsicInvokeStructReceiver.GetValue))!;
+
+            object? result = method.Invoke(new IntrinsicInvokeStructReceiver(49), Array.Empty<object?>());
+
+            Assert.Equal(49, result);
+            IntrinsicInvokeSelectionAssertions.AssertShared(method);
         }
 
         public static IEnumerable<object[]> Invoke_EnumResult_Fallback_TestData()
