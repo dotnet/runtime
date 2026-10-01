@@ -29,6 +29,7 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 | `InterpByteCodeStart` | `Method` | `pointer` | pointer to the InterpMethod associated with the bytecode |
 | `InterpMethod` | `MethodDesc` | `pointer` | pointer to the MethodDesc for the interpreted method |
 | `InterpreterPrecodeData` | `ByteCodeAddr` | `pointer` | pointer to the InterpByteCodeStart for the interpreter bytecode |
+| `PortableEntryPoint` | `MethodDesc` | `pointer` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `PrecodeMachineDescriptor` | `DynamicHelperPrecodeType` | `uint8` | Precode type byte for a dynamic helper precode |
 | `PrecodeMachineDescriptor` | `FixupBytes` | `uint8[]` | Assembly code of a FixupStub |
 | `PrecodeMachineDescriptor` | `FixupIgnoredBytes` | `uint8[]` | Bytes to ignore when comparing FixupBytes to an actual block of memory in the target process. |
@@ -54,6 +55,7 @@ _None._
 
 | Contract Name |
 | --- |
+| `FeatureFlags` |
 | `PlatformMetadata` |
 <!-- END GENERATED: usage contract=PrecodeStubs version=c1 -->
 
@@ -125,6 +127,8 @@ registers) into an address. On other architectures applying the mask is a no-op.
 ```
 
 ### `MethodDescFromStubAddress`
+
+When the `FeatureFlags` contract reports `PortableEntrypoints` (for example on WASM), the runtime has no precode stubs and does not describe `PrecodeMachineDescriptor`. Every entry point is a `PortableEntryPoint`, so `GetMethodDescFromStubAddress` returns its `MethodDesc` field, matching native `MethodDesc::GetMethodDescFromPrecode`. `GetInterpreterCodeFromInterpreterPrecodeIfPresent` returns the entry point unchanged, and `GetPrecodeEntryPointFromInteriorAddress` is not supported.
 
 ```csharp
     internal enum KnownPrecodeType
