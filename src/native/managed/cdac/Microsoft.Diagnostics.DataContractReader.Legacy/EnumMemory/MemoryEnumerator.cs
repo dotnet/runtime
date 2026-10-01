@@ -38,7 +38,7 @@ internal sealed class MemoryEnumerator
         _target = target;
         _dumpType = dumpType;
         _emitter = emitter;
-        _methods = new(target);
+        _methods = new(target, emitter);
         _objects = new(target, emitter, _methods, _dumpType);
         _peImageCollector = new(target);
     }

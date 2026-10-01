@@ -165,7 +165,7 @@ internal sealed class ObjectCollector(
             _pendingObjects.Push(data.Message);
 
         foreach (ExceptionStackFrameInfo frame in exceptions.GetExceptionStackFrames(exceptionObject))
-            _methods.CaptureMethod(frame.MethodDesc);
+            _methods.CaptureMethod(frame.MethodDesc, new TargetCodePointer(frame.Ip.Value));
     }
 
     private bool ExceptionTypeOverridesStackTraceGetter(TargetPointer exceptionObject)
