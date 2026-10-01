@@ -1471,10 +1471,10 @@ public:
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
 
-    // These are overridden by reflection modules
+    // This is overridden by reflection modules
     virtual TADDR GetIL(RVA il);
 
-    virtual PTR_VOID GetRvaField(RVA field);
+    PTR_VOID GetRvaField(RVA field);
     CHECK CheckRvaField(RVA field);
     CHECK CheckRvaField(RVA field, COUNT_T size);
 
