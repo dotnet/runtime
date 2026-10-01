@@ -927,7 +927,11 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsBoxedValue();
 
         case GT_LCL_VAR:
-            return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
+        {
+            // Implicit byrefs and return buffers always point to caller-allocated storage.
+            const unsigned lclNum = addr->AsLclVar()->GetLclNum();
+            return !lvaIsImplicitByRefLocal(lclNum) && (lclNum != impInlineRoot()->info.compRetBuffArg);
+        }
 
         case GT_COMMA:
             return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
@@ -1017,6 +1021,12 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
     {
         // RetBuf is known to be on the stack
+        return false;
+    }
+
+    if (op->OperIs(GT_LCL_VAR) && lvaIsImplicitByRefLocal(op->AsLclVar()->GetLclNum()))
+    {
+        // Implicit byrefs are known to not be on the heap
         return false;
     }
 
@@ -1121,7 +1131,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
+    // so ReadyToRun uses GetDelegateCtor below, like the JIT.
+    if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+#else
     if (IsAot())
+#endif
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1169,9 +1185,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
-                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
-                    // composing a helper
+#ifndef TARGET_WASM
         else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
@@ -1212,6 +1226,16 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             *ExactContextHnd = nullptr;
 
             call->gtCallMethHnd = alternateCtor;
+
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                // The importer computed the entry point for the original constructor.
+                CORINFO_CONST_LOOKUP entryPoint;
+                info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
+                call->setEntryPoint(entryPoint);
+            }
+#endif
 
             CallArg* lastArg = nullptr;
             if (ctorData.pArg3 != nullptr)

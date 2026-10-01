@@ -1358,6 +1358,21 @@ static void ShiftDelegateCallArgs(int8_t* stack, int32_t callArgsOffset, int32_t
     }
 }
 
+// Resolves the target of an open virtual delegate for the given 'this' argument.
+static MethodDesc* ResolveOpenVirtualDelegateTarget(DELEGATEREF delegateObj, OBJECTREF* pThisArg)
+{
+    MethodDesc* pDeclMD = COMDelegate::GetMethodDescForOpenVirtualDelegate(delegateObj);
+    return CallWithSEHWrapper(
+        [pDeclMD, pThisArg]() {
+            MethodTable* pMT = (*pThisArg)->GetMethodTable();
+            MethodDesc* pTarget;
+            GCX_PREEMP_REGION_BEGIN();
+            pTarget = pDeclMD->GetMethodDescOfVirtualizedCode(pThisArg, pMT, pDeclMD->GetMethodTable());
+            GCX_PREEMP_REGION_END();
+            return pTarget;
+        });
+}
+
 static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpByteCodeStart targetIp, int8_t *callArgsAddress)
 {
     InterpMethod *pTargetMethod = targetIp->Method;
@@ -2087,6 +2102,12 @@ SWITCH_OPCODE:
                     ip++;
                     INTOP_NEXT;
 #endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
+
+                INTOP_CASE(INTOP_PGO_COUNT)
+                    // Interlocked so concurrent executions of an instrumented method don't lose counts.
+                    InterlockedIncrement((LONG*)pMethod->pDataItems[ip[1]]);
+                    ip += 2;
+                    INTOP_NEXT;
 
                 INTOP_CASE(INTOP_BR)
                     ip += ip[1];
@@ -3370,6 +3391,24 @@ SWITCH_OPCODE:
                             InvokeUnmanagedCalliWithTransition(calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress);
                         }
                     }
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+                    else if (calliFunctionPointer == (PCODE)CID_VirtualOpenDelegateDispatch)
+                    {
+                        // For an open virtual delegate, _methodPtrAux is CID_VirtualOpenDelegateDispatch,
+                        // which expects the address of _methodPtrAux in a hidden argument that calli cannot
+                        // express; resolve the target as INTOP_CALLDELEGATE does.
+                        // Workaround for https://github.com/dotnet/runtime/issues/134733.
+
+                        // The shuffle thunk's 'this' is the delegate.
+                        DELEGATEREF delegateObj = LOCAL_VAR(0, DELEGATEREF);
+                        _ASSERTE(((MethodDesc*)pMethod->methodHnd)->IsILStub() && ((MethodDesc*)pMethod->methodHnd)->AsDynamicMethodDesc()->IsDelegateShuffleThunk());
+                        _ASSERTE(delegateObj != NULL && delegateObj->GetMethodPtrAux() == calliFunctionPointer);
+                        OBJECTREF *pThisArg = (OBJECTREF*)callArgsAddress;
+                        NULL_CHECK(*pThisArg);
+                        targetMethod = ResolveOpenVirtualDelegateTarget(delegateObj, pThisArg);
+                        goto CALL_INTERP_METHOD;
+                    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 // If we're not using portable entrypoints, we can use NonVirtualEntry2MethodDesc to figure out where tailcalls go. Since this is
 // somewhat expensive, we only do it for tailcalls which are relatively rare.
@@ -3494,18 +3533,9 @@ SWITCH_OPCODE:
 
                         if (isOpenVirtual)
                         {
-                            targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
                             OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF);
                             NULL_CHECK(*pThisArg);
-                            targetMethod = CallWithSEHWrapper(
-                                [&targetMethod, &pThisArg]() {
-                                    MethodTable* pMT = (*pThisArg)->GetMethodTable();
-                                    MethodDesc *pTarget;
-                                    GCX_PREEMP_REGION_BEGIN();
-                                    pTarget = targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
-                                    GCX_PREEMP_REGION_END();
-                                    return pTarget;
-                                });
+                            targetMethod = ResolveOpenVirtualDelegateTarget(*delegateObj, pThisArg);
                         }
                         else
                         {

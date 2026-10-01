@@ -222,7 +222,7 @@ protected:
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
     void                       genEmitLocalGet(regNumber reg, WasmValueType expectedType);
     void                       genEmitLocalGet(regNumber reg, var_types expectedType);
-    void                       genEmitNullCheck(regNumber reg);
+    void                       genEmitNullCheck(regNumber reg, var_types refType);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
@@ -674,10 +674,7 @@ protected:
     //
     //-------------------------------------------------------------------------
 
-    void      genSinglePush();
-    void      genSinglePop();
-    regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
-    void      genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
+    void genSinglePush();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1163,10 +1160,6 @@ protected:
     void      genTransferRegGCState(regNumber dst, regNumber src);
     void      genConsumeAddress(GenTree* addr);
     void      genConsumeAddrMode(GenTreeAddrMode* mode);
-    void      genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
-    void      genConsumeBlockSrc(GenTreeBlk* blkNode);
-    void      genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
-    void      genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
     void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode,
                                    regNumber         dstReg,

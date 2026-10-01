@@ -6259,7 +6259,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 // SpillStructCallResult: Spill call result to memory.
 //
 // Arguments:
-//     call - call with 3, 5, 6 or 7 return size that has to be spilled to memory.
+//     call - call returning a struct in a single register whose layout has no primitive register type.
 //
 // Return Value:
 //    load of the spilled variable.
@@ -6267,12 +6267,18 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
 {
     // TODO-1stClassStructs: we can support this in codegen for `GT_STORE_BLK` without new temps.
-    const unsigned spillNum = m_compiler->lvaGrabTemp(true DEBUGARG("Return value temp for an odd struct return size"));
+    const unsigned spillNum =
+        m_compiler->lvaGrabTemp(true DEBUGARG("Return value temp for a non-enregisterable struct return"));
     m_compiler->lvaSetVarDoNotEnregister(spillNum DEBUGARG(DoNotEnregisterReason::LocalField));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     m_compiler->lvaSetStruct(spillNum, retClsHnd, false);
-    unsigned       offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
-    GenTreeLclFld* spill  = m_compiler->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
+#if FEATURE_MULTIREG_RET
+    unsigned offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
+#else
+    // No ReturnTypeDesc without FEATURE_MULTIREG_RET.
+    unsigned offset = 0;
+#endif
+    GenTreeLclFld* spill = m_compiler->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
 
     BlockRange().InsertAfter(call, spill);
     ContainCheckStoreLoc(spill);
@@ -6502,7 +6508,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // [originalThis + firstTgtOffs]
 
     unsigned targetOffs = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
-    GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
+    GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_BYREF, base, nullptr, 0, targetOffs);
     GenTree* callTarget = Ind(result);
 
     // don't need to sequence and insert this tree, caller will do it
@@ -8900,6 +8906,12 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 #endif // FEATURE_SIMD
 }
 
+//------------------------------------------------------------------------
+// Lowering::DoPhase -- lower the IR
+//
+// Returns:
+//    suitable phase status
+//
 PhaseStatus Lowering::DoPhase()
 {
     // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
@@ -8956,54 +8968,62 @@ PhaseStatus Lowering::DoPhase()
 
     AfterLowerBlocks();
 
-#ifdef DEBUG
-    JITDUMP("Lower has completed modifying nodes.\n");
-    if (VERBOSE)
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        m_compiler->fgDispBasicBlocks(true);
+        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
+        // do this everywhere.
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
     }
-#endif
+
+    // Remove dead blocks before stack level setting analyzes throw helper usage.
+    //
+    m_compiler->fgRemoveBlocksOutsideDfsTree();
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgLateLiveness -- rerun liveness after lower / stacklevelsetter
+//
+// Returns:
+//    suitable phase status
+//
+PhaseStatus Compiler::fgLateLiveness()
+{
+    if (!backendRequiresLocalVarLifetimes())
+    {
+        fgInvalidateDfsTree();
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    assert(backendRequiresLocalVarLifetimes());
+    assert(m_dfsTree != nullptr);
 
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
     const bool setSlotNumbers = false;
-    m_compiler->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    if (m_compiler->m_dfsTree == nullptr)
+    assert(opts.OptimizationEnabled());
+
+    fgPostLowerLiveness();
+    // local var liveness can delete code, which may create empty blocks
+    bool modified = fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+
+    if (modified)
     {
-        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
-        // do this everywhere. The dead blocks are removed below, however, some of
-        // lowering may use the DFS tree, so we compute that here.
-        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
+        fgDfsBlocksAndRemove();
+        JITDUMP("had to run another liveness pass:\n");
+        fgPostLowerLiveness();
     }
 
-    // Remove dead blocks. We want to remove unreachable blocks even in
-    // MinOpts.
-    m_compiler->fgRemoveBlocksOutsideDfsTree();
+    // Recompute local var ref counts again after liveness to reflect
+    // impact of any dead code removal. Note this may leave us with
+    // tracked vars that have zero refs.
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    if (m_compiler->backendRequiresLocalVarLifetimes())
-    {
-        assert(m_compiler->opts.OptimizationEnabled());
-
-        m_compiler->fgPostLowerLiveness();
-        // local var liveness can delete code, which may create empty blocks
-        bool modified = m_compiler->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
-
-        if (modified)
-        {
-            m_compiler->fgDfsBlocksAndRemove();
-            JITDUMP("had to run another liveness pass:\n");
-            m_compiler->fgPostLowerLiveness();
-        }
-
-        // Recompute local var ref counts again after liveness to reflect
-        // impact of any dead code removal. Note this may leave us with
-        // tracked vars that have zero refs.
-        m_compiler->lvaComputeRefCounts(isRecompute, setSlotNumbers);
-    }
-
-    m_compiler->fgInvalidateDfsTree();
+    fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

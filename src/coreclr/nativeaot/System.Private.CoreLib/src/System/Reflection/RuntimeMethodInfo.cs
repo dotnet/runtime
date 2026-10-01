@@ -9,7 +9,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.BindingFlagSupport;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
 
@@ -279,7 +278,9 @@ namespace System.Reflection
         //
         internal abstract RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters { get; }
 
-        internal abstract RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter);
+        internal abstract RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod);
+
+        internal abstract RuntimeParameterInfo GetRuntimeReturnParameter(RuntimeMethodInfo contextMethod);
 
         //
         // The non-public version of MethodInfo.GetParameters() (does not array-copy.)
@@ -288,14 +289,7 @@ namespace System.Reflection
         {
             get
             {
-                RuntimeParameterInfo[] parameters = _lazyParameters;
-                if (parameters == null)
-                {
-                    RuntimeParameterInfo returnParameter;
-                    parameters = _lazyParameters = GetRuntimeParameters(this, out returnParameter);
-                    _lazyReturnParameter = returnParameter;  // Opportunistically initialize the _lazyReturnParameter latch as well.
-                }
-                return parameters;
+                return _lazyParameters ??= GetRuntimeParameters(this);
             }
         }
 
@@ -303,14 +297,7 @@ namespace System.Reflection
         {
             get
             {
-                RuntimeParameterInfo returnParameter = _lazyReturnParameter;
-                if (returnParameter == null)
-                {
-                    // Though the returnParameter is our primary objective, we can opportunistically initialize the _lazyParameters latch too.
-                    _lazyParameters = GetRuntimeParameters(this, out returnParameter);
-                    _lazyReturnParameter = returnParameter;
-                }
-                return returnParameter;
+                return _lazyReturnParameter ??= GetRuntimeReturnParameter(this);
             }
         }
 

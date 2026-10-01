@@ -359,7 +359,7 @@
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrCdacSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(_subset.Contains('+clr.nativeaotruntime+')) and '$(NativeAotSupported)' == 'true'">
+  <PropertyGroup Condition="$(_subset.Contains('+clr.nativeaotruntime+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrNativeAotSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 

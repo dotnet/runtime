@@ -367,6 +367,7 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineTypeRefByName
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Create a reference, in an emit scope, to a TypeDef in another scope.
 //*****************************************************************************
@@ -436,6 +437,7 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportType
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Create and set a MemberRef record.
@@ -521,6 +523,7 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineMemberRef
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Create a MemberRef record based on a member in an import scope.
 //*****************************************************************************
@@ -625,6 +628,7 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportMember
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Define and set a Event record.
@@ -2941,6 +2945,7 @@ HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
     return E_NOTIMPL;
 } // RegMeta::DefineSecurityAttributeSet
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Apply edit and continue changes to this metadata.
 //*****************************************************************************
@@ -2975,5 +2980,6 @@ ErrExit:
     return E_NOTIMPL;
 #endif //!FEATURE_METADATA_EMIT_ALL
 } // RegMeta::ApplyEditAndContinue
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 #endif //FEATURE_METADATA_EMIT

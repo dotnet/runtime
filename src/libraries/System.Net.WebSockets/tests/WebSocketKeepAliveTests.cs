@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Functional.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,7 +13,7 @@ namespace System.Net.WebSockets.Tests
 {
     public class WebSocketKeepAliveTests
     {
-        public static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
+        public static readonly TimeSpan TestTimeout = TestHelper.PassingTestTimeout;
         public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(100);
         public static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromSeconds(1);
         public const int FramesToTestCount = 5;

@@ -70,6 +70,10 @@ namespace NativeFormat
 #if !defined(DACCESS_COMPILE)
             // Failfast instead of throwing, to avoid violating NOTHROW contracts of callers
             EEPOLICY_HANDLE_FATAL_ERROR(COR_E_BADIMAGEFORMAT);
+#if defined(HOST_WASM)
+            // Native-host dump capture relies on the handler's returning signature.
+            UNREACHABLE();
+#endif // HOST_WASM
 #endif
         }
 

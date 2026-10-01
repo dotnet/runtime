@@ -269,6 +269,11 @@ export type WebcilAsset = AssemblyAsset & {
      * plain (non-R2R) webcil.
      */
     tableSize?: number;
+    /**
+     * Set on the composite ReadyToRun owner image. It carries native code for its component assemblies
+     * but is not itself a managed assembly: it keeps its .wasm virtual path and is not a trusted platform assembly.
+     */
+    isCompositeImage?: boolean;
 };
 export type PdbAsset = Asset & {
     virtualPath: string;
@@ -650,22 +655,28 @@ export type MemoryAPIType = {
 
 export type DiagnosticsAPIType = {
     /**
-     * creates diagnostic trace file. Default is 60 seconds.
+     * Creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      */
     collectCpuSamples: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
-     * creates diagnostic trace file. Default is 60 seconds.
+     * Creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
      */
     collectMetrics: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
-     * creates diagnostic trace file.
+     * Creates diagnostic trace file.
      * It could be opened in PerfView as is.
      * It could be converted for Visual Studio using `dotnet-gcdump convert`.
      */
     collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * Creates a startup PGO trace file (method list, and block counts when the interpreter is instrumented).
+     * The trace stops and downloads automatically after `durationSeconds` (default 10s).
+     * Convert it with `dotnet-pgo create-mibc --trace xxx.nettrace ...` to drive a profile-guided crossgen2 build.
+     */
+    collectPgoTrace: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
      */
