@@ -222,7 +222,7 @@ protected:
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
     void                       genEmitLocalGet(regNumber reg, WasmValueType expectedType);
     void                       genEmitLocalGet(regNumber reg, var_types expectedType);
-    void                       genEmitNullCheck(regNumber reg);
+    void                       genEmitNullCheck(regNumber reg, var_types refType);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
@@ -248,7 +248,7 @@ public:
 protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
 
-    void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
+    void genGCWriteBarrier(GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
 
@@ -357,7 +357,6 @@ protected:
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(
              unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& seg, class RegGraph* graph);
-    void genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void genEnregisterIncomingStackArgs();
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 
@@ -675,10 +674,7 @@ protected:
     //
     //-------------------------------------------------------------------------
 
-    void      genSinglePush();
-    void      genSinglePop();
-    regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
-    void      genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
+    void genSinglePush();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -957,7 +953,7 @@ protected:
     void genCompareFloat(GenTreeOp* treeNode);
     void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
-    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, emitAttr opSize);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
 #endif
 
@@ -1164,10 +1160,6 @@ protected:
     void      genTransferRegGCState(regNumber dst, regNumber src);
     void      genConsumeAddress(GenTree* addr);
     void      genConsumeAddrMode(GenTreeAddrMode* mode);
-    void      genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
-    void      genConsumeBlockSrc(GenTreeBlk* blkNode);
-    void      genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
-    void      genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
     void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode,
                                    regNumber         dstReg,

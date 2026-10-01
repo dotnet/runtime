@@ -2189,7 +2189,7 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     //
     if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !m_compiler->IsAot())
     {
-        for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER; i++)
+        for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER_SMALL; i++)
         {
             m_compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
@@ -3021,84 +3021,14 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall, GenTreeCall* t
 #endif // !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------
-// genGCWriteBarrier: Generate a write barrier for a node.
+// genGCWriteBarrier: Generate a write barrier.
 //
 // Arguments:
-//   store - the GT_STOREIND node
-//   wbf   - already computed write barrier form to use
+//   wbf - already computed write barrier form to use
 //
-void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf)
+void CodeGen::genGCWriteBarrier(GCInfo::WriteBarrierForm wbf)
 {
     CorInfoHelpFunc helper = genWriteBarrierHelperForWriteBarrierForm(wbf);
-
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    // Under FEATURE_COUNT_GC_WRITE_BARRIERS, we will add an extra argument to the
-    // checked write barrier call denoting the kind of address being written to.
-    //
-    if (helper == CORINFO_HELP_CHECKED_ASSIGN_REF)
-    {
-        CheckedWriteBarrierKinds wbKind  = CWBKind_Unclassified;
-        GenTree*                 tgtAddr = store->Addr();
-
-        while (tgtAddr->OperIs(GT_ADD, GT_LEA))
-        {
-            if (tgtAddr->OperIs(GT_LEA) && tgtAddr->AsAddrMode()->HasBase())
-            {
-                tgtAddr = tgtAddr->AsAddrMode()->Base();
-            }
-            else if (tgtAddr->OperIs(GT_ADD) && tgtAddr->AsOp()->gtGetOp2()->IsCnsIntOrI())
-            {
-                tgtAddr = tgtAddr->AsOp()->gtGetOp1();
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        if (tgtAddr->OperIs(GT_LCL_VAR))
-        {
-            unsigned   lclNum = tgtAddr->AsLclVar()->GetLclNum();
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-            if (lclNum == m_compiler->info.compRetBuffArg)
-            {
-                wbKind = CWBKind_RetBuf
-            }
-            else if (varDsc->TypeIs(TYP_BYREF))
-            {
-                wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
-            }
-        }
-        else if (tgtAddr->OperIs(GT_LCL_ADDR))
-        {
-            // Ideally, we should have eliminated the barrier for this case.
-            wbKind = CWBKind_AddrOfLocal;
-        }
-
-#if 0
-#ifdef DEBUG
-        // Enable this to sample the unclassified trees.
-        static int unclassifiedBarrierSite = 0;
-        if (wbKind == CWBKind_Unclassified)
-        {
-            unclassifiedBarrierSite++;
-            printf("unclassifiedBarrierSite = %d:\n", unclassifiedBarrierSite);
-            m_compiler->gtDispTree(store);
-            fflush(jitstdout());
-            printf("\n");
-        }
-#endif // DEBUG
-#endif // 0
-
-        AddStackLevel(4);
-        inst_IV(INS_push, wbKind);
-        genEmitHelperCall(helper,
-                          4,           // argSize
-                          EA_PTRSIZE); // retSize
-        SubtractStackLevel(4);
-        return;
-    }
-#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 
     genEmitHelperCall(helper,
                       0,           // argSize
@@ -3492,34 +3422,6 @@ void CodeGen::genSpillOrAddRegisterParam(
 }
 
 // -----------------------------------------------------------------------------
-// genSpillOrAddNonStandardRegisterParam: Handle a non-standard register parameter either
-// by homing it to stack immediately, or by adding it to the register graph.
-//
-// Parameters:
-//    lclNum    - Local that represents the non-standard parameter
-//    sourceReg - Register that the non-standard parameter is in on entry to the function
-//    graph     - The register graph to add to
-//
-void CodeGen::genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, RegGraph* graph)
-{
-    LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(varDsc->TypeGet()), emitActualTypeSize(varDsc), sourceReg, lclNum, 0);
-    }
-
-    if (varDsc->lvIsInReg())
-    {
-        RegNode* sourceRegNode = graph->GetOrAdd(sourceReg);
-        RegNode* destRegNode   = graph->GetOrAdd(varDsc->GetRegNum());
-        if (sourceRegNode != destRegNode)
-        {
-            graph->AddEdge(sourceRegNode, destRegNode, TYP_I_IMPL, 0);
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
 // genHomeRegisterParams: Move all register parameters to their initial
 // assigned location.
 //
@@ -3564,13 +3466,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                                               lclNum, seg.Offset);
                 }
             }
-        }
-
-        if (m_compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE) &&
-            m_compiler->lvaGetDesc(m_compiler->lvaStubArgumentVar)->lvOnFrame)
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
-                                      m_compiler->lvaStubArgumentVar, 0);
         }
 
         return;
@@ -3632,11 +3527,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 genSpillOrAddRegisterParam(lclNum, segment.Offset, lclNum, segment, &graph);
             }
         }
-    }
-
-    if (m_compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE))
-    {
-        genSpillOrAddNonStandardRegisterParam(m_compiler->lvaStubArgumentVar, REG_SECRET_STUB_PARAM, &graph);
     }
 
     DBEXEC(VERBOSE, graph.Dump());
@@ -3937,7 +3827,7 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             continue;
         }
@@ -4312,7 +4202,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             noway_assert(varDsc->lvOnFrame);
 
-            if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+            if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
             {
                 // This local will belong on the UnknownSizeFrame, which will handle zeroing instead.
                 continue;
@@ -5412,7 +5302,7 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             continue;
         }
@@ -6520,151 +6410,6 @@ void CodeGen::genSinglePush()
     AddStackLevel(REGSIZE_BYTES);
 }
 
-//------------------------------------------------------------------------
-// genSinglePop: Report a change in stack level caused by a single word-sized pop instruction
-//
-void CodeGen::genSinglePop()
-{
-    SubtractStackLevel(REGSIZE_BYTES);
-}
-
-//------------------------------------------------------------------------
-// genPushRegs: Push the given registers.
-//
-// Arguments:
-//    regs - mask or registers to push
-//    byrefRegs - OUT arg. Set to byref registers that were pushed.
-//    noRefRegs - OUT arg. Set to non-GC ref registers that were pushed.
-//
-// Return Value:
-//    Mask of registers pushed.
-//
-// Notes:
-//    This function does not check if the register is marked as used, etc.
-//
-regMaskTP CodeGen::genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs)
-{
-    *byrefRegs = RBM_NONE;
-    *noRefRegs = RBM_NONE;
-
-    if (regs == RBM_NONE)
-    {
-        return RBM_NONE;
-    }
-
-#if FEATURE_FIXED_OUT_ARGS
-
-    NYI("Don't call genPushRegs with real regs!");
-    return RBM_NONE;
-
-#else // FEATURE_FIXED_OUT_ARGS
-
-    noway_assert(genTypeStSz(TYP_REF) == genTypeStSz(TYP_I_IMPL));
-    noway_assert(genTypeStSz(TYP_BYREF) == genTypeStSz(TYP_I_IMPL));
-
-    regMaskTP pushedRegs = regs;
-    for (regNumber reg = REG_INT_FIRST; reg <= get_REG_INT_LAST(); reg = REG_NEXT(reg))
-    {
-        regMaskTP regMask = genRegMask(reg);
-
-        if ((regMask & pushedRegs) == RBM_NONE)
-            continue;
-
-        var_types type;
-        if (regMask & gcInfo.gcRegGCrefSetCur)
-        {
-            type = TYP_REF;
-        }
-        else if (regMask & gcInfo.gcRegByrefSetCur)
-        {
-            *byrefRegs |= regMask;
-            type = TYP_BYREF;
-        }
-        else if (noRefRegs != NULL)
-        {
-            *noRefRegs |= regMask;
-            type = TYP_I_IMPL;
-        }
-        else
-        {
-            continue;
-        }
-
-        inst_RV(INS_push, reg, type);
-
-        genSinglePush();
-        gcInfo.gcMarkRegSetNpt(regMask);
-    }
-
-    return pushedRegs;
-
-#endif // FEATURE_FIXED_OUT_ARGS
-}
-
-//------------------------------------------------------------------------
-// genPopRegs: Pop the registers that were pushed by genPushRegs().
-//
-// Arguments:
-//    regs - mask of registers to pop
-//    byrefRegs - The byref registers that were pushed by genPushRegs().
-//    noRefRegs - The non-GC ref registers that were pushed by genPushRegs().
-//
-// Return Value:
-//    None
-//
-void CodeGen::genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs)
-{
-    if (regs == RBM_NONE)
-    {
-        return;
-    }
-
-#if FEATURE_FIXED_OUT_ARGS
-
-    NYI("Don't call genPopRegs with real regs!");
-
-#else // FEATURE_FIXED_OUT_ARGS
-
-    noway_assert((regs & byrefRegs) == byrefRegs);
-    noway_assert((regs & noRefRegs) == noRefRegs);
-    noway_assert((regs & (gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur)) == RBM_NONE);
-
-    noway_assert(genTypeStSz(TYP_REF) == genTypeStSz(TYP_INT));
-    noway_assert(genTypeStSz(TYP_BYREF) == genTypeStSz(TYP_INT));
-
-    regMaskTP popedRegs = regs;
-
-    // Walk the registers in the reverse order as genPushRegs()
-    for (regNumber reg = get_REG_INT_LAST(); reg >= REG_INT_FIRST; reg = REG_PREV(reg))
-    {
-        regMaskTP regMask = genRegMask(reg);
-
-        if ((regMask & popedRegs) == RBM_NONE)
-            continue;
-
-        var_types type;
-        if (regMask & byrefRegs)
-        {
-            type = TYP_BYREF;
-        }
-        else if (regMask & noRefRegs)
-        {
-            type = TYP_INT;
-        }
-        else
-        {
-            type = TYP_REF;
-        }
-
-        inst_RV(INS_pop, reg, type);
-        genSinglePop();
-
-        if (type != TYP_INT)
-            gcInfo.gcMarkRegPtrVal(reg, type);
-    }
-
-#endif // FEATURE_FIXED_OUT_ARGS
-}
 #endif // !TARGET_WASM
 
 #ifdef DEBUG
@@ -8601,7 +8346,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         assert(varDsc->lvOnFrame);
 
 #ifdef TARGET_ARM64
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(varNum))
         {
             genPoisonUnknownSizeVariable(varNum, (char)poisonVal);
             continue;

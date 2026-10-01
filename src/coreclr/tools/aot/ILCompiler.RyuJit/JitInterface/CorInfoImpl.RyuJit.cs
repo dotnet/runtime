@@ -381,6 +381,11 @@ namespace Internal.JitInterface
             return true;
         }
 
+        private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
+        {
+            throw new NotImplementedException(nameof(GetDelegateCtor));
+        }
+
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP pLookup)
         {
 #if DEBUG
@@ -532,6 +537,9 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                    id = ReadyToRunHelper.BulkWriteBarrierSmall;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
@@ -2500,11 +2508,6 @@ namespace Internal.JitInterface
             pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
             pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
             pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("__tls_get_addr"u8)));
-        }
-
-        private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
-        {
-            throw new NotImplementedException();
         }
 
 #pragma warning disable CA1822 // Mark members as static

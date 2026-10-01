@@ -338,7 +338,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     BEGIN_QCALL;
 
     Thread * pThread = GetThread();
-    GCX_COOP();
+    GCX_COOP_REGION_BEGIN();
 
     struct
     {
@@ -426,6 +426,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
     callDescrData.nArgsSize = nStackBytes;
     callDescrData.hasThis = argit.HasThis();
+    callDescrData.pTransitionBlock = (TransitionBlock*)pTransitionBlock;
 
     TypeHandle thValueType;
     CorElementType type = argit.GetReturnType(&thValueType);
@@ -731,7 +732,7 @@ Done:
     result.Set(gc.retVal);
 
     GCPROTECT_END();
-
+    GCX_COOP_REGION_END();
     END_QCALL;
 }
 

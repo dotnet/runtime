@@ -335,7 +335,7 @@ void CordbModule::UpdateMetaDataCacheIfNeeded(mdToken token)
     }
 
     //
-    // 1) Check if in-range? Compare against tables, etc.
+    // 1) Check whether the token is in the cached metadata.
     //
     if(CheckIfTokenInMetaData(token))
     {
@@ -365,37 +365,7 @@ BOOL CordbModule::CheckIfTokenInMetaData(mdToken token)
     CONTRACTL_END;
     LOG((LF_CORDB,LL_INFO10000, "CM::CITIM token=0x%x\n", token));
     _ASSERTE(TypeFromToken(token) == mdtSignature);
-    RSExtSmartPtr<IMetaDataTables> pTable;
-
-    HRESULT hr = GetMetaDataImporter()->QueryInterface(IID_IMetaDataTables, (void**) &pTable);
-
-    _ASSERTE(SUCCEEDED(hr));
-    if (FAILED(hr))
-    {
-        ThrowHR(hr);
-    }
-
-    ULONG cbRowsAvailable; // number of rows in the table
-
-    hr = pTable->GetTableInfo(
-        mdtSignature >> 24,                      // [IN] Which table.
-        NULL,                    // [OUT] Size of a row, bytes.
-        &cbRowsAvailable,                    // [OUT] Number of rows.
-        NULL,                    // [OUT] Number of columns in each row.
-        NULL,                     // [OUT] Key column, or -1 if none.
-        NULL);          // [OUT] Name of the table.
-
-    _ASSERTE(SUCCEEDED(hr));
-    if (FAILED(hr))
-    {
-        ThrowHR(hr);
-    }
-
-
-    // Rows start counting with number 1.
-    ULONG rowRequested = RidFromToken(token);
-    LOG((LF_CORDB,LL_INFO10000, "CM::UMCIN requested=0x%x available=0x%x\n", rowRequested, cbRowsAvailable));
-    return (rowRequested <= cbRowsAvailable);
+    return GetMetaDataImporter()->IsValidToken(token);
 }
 
 // This helper class ensures the remote serailzied buffer gets deleted in the RefreshMetaData

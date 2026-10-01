@@ -15,7 +15,12 @@ namespace System.Runtime.CompilerServices
     /// </remarks>
     /// <seealso cref="IUnion" />
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-    public sealed class UnionAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class UnionAttribute : Attribute
     {
     }
 }

@@ -251,7 +251,7 @@ struct WasiExceptionRecords
 };
 
 extern "C" PALIMPORT VOID PALAPI
-PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord)
+PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord) noexcept
 {
     (void)exceptionRecord;
     // contextRecord is the start of the combined WasiExceptionRecords allocation.

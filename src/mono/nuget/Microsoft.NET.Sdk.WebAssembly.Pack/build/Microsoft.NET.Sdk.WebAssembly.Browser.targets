@@ -1024,6 +1024,18 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)"
         Condition="'%(ResolvedFileToPublish.CopyToPublishDirectory)' != 'Never'" />
     </ItemGroup>
+    <!-- When WasmAssembliesFinal contains only the project assembly on an incremental trimmed
+         publish, WasmAssembliesToBundle removes the linked closure from ResolvedFileToPublish.
+         Keep the R2R inputs as publish candidates so their staged images stay in boot. -->
+    <ItemGroup Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and @(WasmAssembliesFinal->Count()) > 0">
+      <_WasmResolvedFilesToPublish Include="@(_WasmCompositeR2RInput)"
+                                   Condition="'$(PublishReadyToRunComposite)' == 'true'" />
+      <_WasmResolvedFilesToPublish Include="@(_WasmReadyToRunCompileInput)"
+                                   RelativePath="%(FileName)%(Extension)"
+                                   Condition="'$(PublishReadyToRunComposite)' != 'true' and '$(PublishTrimmed)' == 'true'" />
+      <_WasmResolvedFilesToPublish Include="@(_ReadyToRunCompileList)"
+                                   Condition="'$(PublishReadyToRunComposite)' != 'true' and '$(PublishTrimmed)' != 'true'" />
+    </ItemGroup>
 
     <ComputeWasmPublishAssets
       ResolvedFilesToPublish="@(_WasmResolvedFilesToPublish)"
@@ -1046,7 +1058,37 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="PromotedAssets" ItemName="_PromotedWasmPublishStaticWebAssets" />
       <Output TaskParameter="FilesToRemove" ItemName="_PublishResolvedFilesToRemove" />
     </ComputeWasmPublishAssets>
-    
+
+    <ItemGroup Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'">
+      <_WasmCompositeCompilation Include="@(_ReadyToRunCompileList)"
+                                 Condition="'%(CreateCompositeImage)' == 'true'" />
+      <_WasmCompositePublishCandidate Include="@(_WasmCompositeCompilation->'%(OutputR2RImage)')" KeepMetadata="OutputR2RImage" />
+      <_WasmCompositePublishCandidate Update="@(_WasmCompositePublishCandidate)"
+                                      ContentRoot="%(RootDir)%(Directory)"
+                                      RelativePath="_framework/%(FileName)%(Extension)" />
+      <_WasmCompositeFingerprintPattern Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
+    </ItemGroup>
+    <Error Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '@(_WasmCompositePublishCandidate)' == ''"
+           Text="Composite ReadyToRun compilation did not produce a composite WebAssembly image." />
+    <!-- The composite owner is not a managed assembly, so it bypasses ComputeWasmPublishAssets/ConvertDllsToWebcil.
+         The readyToRunComposite trait routes it to coreAssembly with isCompositeImage set in the boot config. -->
+    <DefineStaticWebAssets Condition="'@(_WasmCompositePublishCandidate)' != ''"
+      CandidateAssets="@(_WasmCompositePublishCandidate)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      BasePath="$(StaticWebAssetBasePath)"
+      AssetKind="Publish"
+      AssetMode="All"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="readyToRunComposite"
+      CopyToOutputDirectory="Never"
+      CopyToPublishDirectory="PreserveNewest"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(_WasmCompositeFingerprintPattern)">
+      <Output TaskParameter="Assets" ItemName="_WasmCompositePublishStaticWebAsset" />
+    </DefineStaticWebAssets>
+
     <ItemGroup Condition="'$(_WasmInlineBootConfig)' == 'true'">
       <_WasmDotnetJsForPublish Include="@(ResolvedFileToPublish)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
     </ItemGroup>
@@ -1065,6 +1107,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishWebcilStampLine Include="_WasmEnableWebcil=$(_WasmEnableWebcil)" />
       <_WasmPublishWebcilStampLine Include="_WasmWebcilVersion=$(_WasmWebcilVersion)" />
       <_WasmPublishWebcilStampLine Include="PublishReadyToRun=$(PublishReadyToRun)" />
+      <_WasmPublishWebcilStampLine Include="PublishReadyToRunComposite=$(PublishReadyToRunComposite)" />
       <_WasmPublishWebcilStampLine Include="_WasmPublishPrebuiltR2RDirectory=$(_WasmPublishPrebuiltR2RDirectory)" />
       <_WasmPublishWebcilStampLine Include="PrebuiltR2R=%(_WasmPublishPrebuiltR2RInput.Identity)|%(_WasmPublishPrebuiltR2RInput.ModifiedTime)" />
       <_WasmPublishWebcilStampLine Include="Input=%(_WasmPublishWebcilStampInput.Identity)|%(_WasmPublishWebcilStampInput.ModifiedTime)" />
@@ -1111,7 +1154,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_NewWebcilPublishStaticWebAssets)"
+      CandidateAssets="@(_NewWebcilPublishStaticWebAssets);@(_WasmCompositePublishStaticWebAsset)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >
@@ -1120,7 +1163,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
-      <StaticWebAsset Include="@(_NewWebcilPublishStaticWebAssets)" />
+      <StaticWebAsset Include="@(_NewWebcilPublishStaticWebAssets);@(_WasmCompositePublishStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(_NewWebcilPublishStaticWebAssetsEndpoint)" />
 
       <!-- TODO: Probably doesn't do anything as of now, original https://github.com/dotnet/aspnetcore/pull/34798 -->
@@ -1273,7 +1316,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
     <PropertyGroup>
-      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
+      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(PublishReadyToRunComposite)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
