@@ -171,19 +171,9 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 //    reg1 - The first register being pushed/saved.
 //    reg2 - The second register being pushed/saved.
 //
-// Notes:
-//    PUSH2 moves RSP by 2 * REGSIZE_BYTES in one step, so it takes a single CFA
-//    adjustment of that full amount.
-//
-//    Intel PUSH2 reg1, reg2 stores [rsp] = reg2 and [rsp + 8] = reg1, so reg1 takes
-//    the higher slot. CFI_REL_OFFSET's operand is folded against the new CFA offset,
-//    hence REGSIZE_BYTES for reg1 and 0 for reg2.
-//
 void Compiler::unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
 {
     assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
-    assert(reg1 < REG_FP_FIRST);
-    assert(reg2 < REG_FP_FIRST);
 
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);

@@ -18,9 +18,7 @@ struct CFI_CODE
 {
     unsigned char CodeOffset;// Offset from the start of code the frame covers.
     unsigned char CfiOpCode;
-    short DwarfReg;          // Dwarf register number. For x64: 0-16 general purpose and the
-                             // return-address column, 17-32 XMM0-XMM15, and 130-145 for the
-                             // APX eGPRs r16-r31.
+    short DwarfReg;          // Dwarf register number.
     int Offset;
     CFI_CODE(unsigned char codeOffset, unsigned char cfiOpcode,
         short dwarfReg, int offset)
