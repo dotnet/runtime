@@ -87,7 +87,7 @@ namespace
             return false;
 
         // See docs/design/features/sharedfx-lookup.md#sdk-search
-        typedef int (__cdecl *dotnet_execute_fn)(
+        typedef int (__stdcall *dotnet_execute_fn)(
             const pal::char_t* host_path,
             const pal::char_t* dotnet_root,
             const pal::char_t* sdk_dir,
@@ -375,27 +375,8 @@ namespace
             return host_mode_t::apphost;
         }
 
-        if (coreclr_exists_in_dir(host_info.dotnet_root))
-        {
-            // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
-
-            pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
-            pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
-            append_path(&deps_in_dotnet_root, deps_filename.c_str());
-            bool deps_exists = pal::file_exists(deps_in_dotnet_root);
-
-            trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
-                host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
-
-            // Name of runtimeconfig file; since no path is included here the check is in the current working directory
-            pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
-
-            return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::split_fx;
-        }
-
         if (pal::file_exists(host_info.app_path))
         {
-            // Framework-dependent apphost
             return host_mode_t::apphost;
         }
 
@@ -522,19 +503,10 @@ namespace
                 pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
             }
 
-            // If invoking using FX dotnet.exe, use own directory.
-            if (mode == host_mode_t::split_fx)
+            rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
+            if (rc != StatusCode::Success)
             {
-                auto fx = new fx_definition_t(app_config.get_frameworks()[0].get_fx_name(), host_info.dotnet_root, pal::string_t(), pal::string_t());
-                fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
-            }
-            else
-            {
-                rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
-                if (rc != StatusCode::Success)
-                {
-                    return rc;
-                }
+                return rc;
             }
         }
 

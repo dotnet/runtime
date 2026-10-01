@@ -15,13 +15,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         string _instructionSetsSupport;
 
-        public static string ToInstructionSetSupportString(InstructionSetSupport instructionSetSupport)
+        public static string ToInstructionSetSupportString(InstructionSetSupport instructionSetSupport, bool emitExplicitlyUnsupported = true)
         {
             StringBuilder builder = new StringBuilder();
             InstructionSet[] supportedInstructionSets = instructionSetSupport.SupportedFlags.ToArray();
             Array.Sort(supportedInstructionSets);
-            InstructionSet[] explicitlyUnsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags.ToArray();
-            Array.Sort(explicitlyUnsupportedInstructionSets);
 
             bool addDelimiter = false;
             var r2rAlreadyEmitted = new HashSet<ReadyToRunInstructionSet>();
@@ -43,19 +41,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.Append(',');
             r2rAlreadyEmitted.Clear();
 
-            addDelimiter = false;
-            foreach (var instructionSetUnsupported in explicitlyUnsupportedInstructionSets)
+            if (emitExplicitlyUnsupported)
             {
-                var r2rInstructionSet = instructionSetUnsupported.R2RInstructionSet(instructionSetSupport.Architecture);
-                if (r2rInstructionSet == null)
-                    continue;
+                InstructionSet[] explicitlyUnsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags.ToArray();
+                Array.Sort(explicitlyUnsupportedInstructionSets);
 
-                if (r2rAlreadyEmitted.Add(r2rInstructionSet.Value))
+                addDelimiter = false;
+                foreach (var instructionSetUnsupported in explicitlyUnsupportedInstructionSets)
                 {
-                    if (addDelimiter)
-                        builder.Append('-');
-                    addDelimiter = true;
-                    builder.Append(r2rInstructionSet.Value.ToString());
+                    var r2rInstructionSet = instructionSetUnsupported.R2RInstructionSet(instructionSetSupport.Architecture);
+                    if (r2rInstructionSet == null)
+                        continue;
+
+                    if (r2rAlreadyEmitted.Add(r2rInstructionSet.Value))
+                    {
+                        if (addDelimiter)
+                            builder.Append('-');
+                        addDelimiter = true;
+                        builder.Append(r2rInstructionSet.Value.ToString());
+                    }
                 }
             }
 

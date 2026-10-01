@@ -12,7 +12,7 @@
 #include <limits.h>
 #include <minipal/utils.h>
 
-#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID) && !defined(TARGET_OPENHARMONY)
 #include <sys/syscall.h>
 #endif
 
@@ -21,7 +21,7 @@ int g_highestNumaNode = 0;
 // Is numa available
 bool g_numaAvailable = false;
 
-#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID) && !defined(TARGET_OPENHARMONY)
 static int GetNodeNum(const char* path, bool firstOnly)
 {
     DIR *dir;
@@ -56,7 +56,7 @@ static int GetNodeNum(const char* path, bool firstOnly)
 
 void NUMASupportInitialize()
 {
-#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID) && !defined(TARGET_OPENHARMONY)
     if (syscall(__NR_get_mempolicy, NULL, NULL, 0, 0, 0) < 0)
         return;
 
@@ -72,7 +72,7 @@ void NUMASupportInitialize()
 
 int GetNumaNodeNumByCpu(int cpu)
 {
-#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID) && !defined(TARGET_OPENHARMONY)
     char path[64];
     if (snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d", cpu) < 0)
         return -1;
@@ -85,7 +85,7 @@ int GetNumaNodeNumByCpu(int cpu)
 
 long BindMemoryPolicy(void* start, unsigned long len, const unsigned long* nodemask, unsigned long maxnode)
 {
-#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID) && !defined(TARGET_OPENHARMONY)
     return syscall(__NR_mbind, (long)start, len, 1, (long)nodemask, maxnode, 0);
 #else
     return -1;

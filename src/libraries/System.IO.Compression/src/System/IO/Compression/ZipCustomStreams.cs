@@ -621,17 +621,13 @@ namespace System.IO.Compression
 
             if (data.Length == 0)
             {
-                // EOF reached. Only validate CRC if we've read exactly the expected number of bytes.
-                // If _totalBytesRead < _expectedLength the declared size was larger than the actual
-                // data (e.g. a tampered-but-not-truncated entry);
-                // We don't throw here because the caller (decompressor) will surface that as an error!
-                // If _totalBytesRead == _expectedLength we can validate the CRC now, which covers
-                // zero-length entries and the final EOF read after all expected bytes were consumed.
-                if (_totalBytesRead == _expectedLength)
+                if (_totalBytesRead < _expectedLength)
                 {
-                    ValidateCrc();
+                    throw new InvalidDataException(SR.UnexpectedStreamLength);
                 }
 
+                // This covers zero-length entries and the final EOF read after all expected bytes were consumed.
+                ValidateCrc();
                 return;
             }
 

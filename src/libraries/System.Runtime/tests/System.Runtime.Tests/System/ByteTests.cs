@@ -431,34 +431,34 @@ namespace System.Tests
         public static void TryFormat(byte i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
-            yield return new object[] { "123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (byte)123, 3 };
-            yield return new object[] { "12xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (byte)12, 2 };
-            yield return new object[] { "0abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (byte)0, 1 };
-            yield return new object[] { "255abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (byte)255, 3 };
-            yield return new object[] { "FFxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, (byte)0xFF, 2 };
-            yield return new object[] { "ABGxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, (byte)0xAB, 2 };
+            yield return new object[] { "123abc", NumberStyles.Integer, null, (byte)123, 3 };
+            yield return new object[] { "12xyz", NumberStyles.Integer, null, (byte)12, 2 };
+            yield return new object[] { "0abc", NumberStyles.Integer, null, (byte)0, 1 };
+            yield return new object[] { "255abc", NumberStyles.Integer, null, (byte)255, 3 };
+            yield return new object[] { "FFxyz", NumberStyles.HexNumber, null, (byte)0xFF, 2 };
+            yield return new object[] { "ABGxyz", NumberStyles.HexNumber, null, (byte)0xAB, 2 };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, byte expectedValue, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, byte expectedValue, int expectedCharsConsumed)
         {
             byte result;
             int charsConsumed;
 
-            Assert.True(NumberBaseHelper<byte>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<byte>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
-            Assert.True(NumberBaseHelper<byte>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<byte>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(NumberBaseHelper<byte>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<byte>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(expectedValue, result);
             if (value.All(c => c < 128))
             {
@@ -466,41 +466,41 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
-            yield return new object[] { "", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
-            yield return new object[] { "   ", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
-            yield return new object[] { "abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
-            yield return new object[] { "!!!", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
-            yield return new object[] { ".123", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "", NumberStyles.Integer, null };
+            yield return new object[] { "   ", NumberStyles.Integer, null };
+            yield return new object[] { "abc", NumberStyles.Integer, null };
+            yield return new object[] { "!!!", NumberStyles.Integer, null };
+            yield return new object[] { ".123", NumberStyles.Integer, null };
 
             // Overflow of the leading valid digits
-            yield return new object[] { "256abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
-            yield return new object[] { "999abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "256abc", NumberStyles.Integer, null };
+            yield return new object[] { "999abc", NumberStyles.Integer, null };
 
             // Invalid hex/binary starting characters
-            yield return new object[] { "Gxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null };
-            yield return new object[] { "2abc", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "Gxyz", NumberStyles.HexNumber, null };
+            yield return new object[] { "2abc", NumberStyles.BinaryNumber, null };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
         {
             byte result;
             int charsConsumed;
 
-            Assert.False(NumberBaseHelper<byte>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<byte>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, charsConsumed);
 
-            Assert.False(NumberBaseHelper<byte>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<byte>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, charsConsumed);
 
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(NumberBaseHelper<byte>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<byte>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, bytesConsumed);
         }

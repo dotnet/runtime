@@ -211,7 +211,7 @@ namespace System.Net.Quic.Tests
             }
 
             QuicConnection clientConnection = null;
-            ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
+            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
             try
             {
                 while (retry > 0)
@@ -249,6 +249,10 @@ namespace System.Net.Quic.Tests
                 if (clientConnection is not null)
                 {
                     await clientConnection.DisposeAsync();
+                }
+                if (serverTask.IsCompleted)
+                {
+                    _output.WriteLine($"Server {(serverTask.IsCompletedSuccessfully ? "succeeded" : "failed with " + serverTask.Exception)}");
                 }
                 throw;
             }

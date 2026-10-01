@@ -225,13 +225,13 @@ namespace ILCompiler
             var stackTraceLineNumbersNode = new StackTraceLineNumbersNode(commonFixupsTableNode, stackTraceDocumentsNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceLineNumbers), stackTraceLineNumbersNode);
 
-            var interfaceDispatchCellInfoNode = new InterfaceDispatchCellInfoSectionNode();
+            var interfaceDispatchCellInfoNode = new InterfaceDispatchCellInfoSectionNode(nativeReferencesTableNode);
             header.Add(ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, interfaceDispatchCellInfoNode);
 
             var interfaceDispatchCellNode = new InterfaceDispatchCellSectionNode();
             header.Add(ReadyToRunSectionType.InterfaceDispatchCellRegion, interfaceDispatchCellNode);
 
-            var gvmDispatchCellInfoNode = new GvmDispatchCellInfoSectionNode();
+            var gvmDispatchCellInfoNode = new GvmDispatchCellInfoSectionNode(nativeReferencesTableNode);
             header.Add(ReadyToRunSectionType.GvmDispatchCellInfoRegion, gvmDispatchCellInfoNode);
 
             var gvmDispatchCellNode = new GvmDispatchCellSectionNode();

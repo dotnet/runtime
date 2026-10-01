@@ -611,6 +611,20 @@ namespace System.Numerics.Tests
             Assert.Equal(double.MinValue, (double)(-(overflowTie - 1)));
         }
 
+        [Fact]
+        public static void RunDoubleExplicitCastFromBigIntegerWideRoundingTests()
+        {
+            // Magnitudes above 64 bits no longer fit the ulong fast path and instead exercise the
+            // general limb scan; use a tie whose rounding bits straddle two limbs. At 2^64 the double
+            // ULP is 2^12, so 2^11 is the exact midpoint between 2^64 and 2^64 + 2^12.
+            BigInteger tie = (BigInteger.One << 64) + (BigInteger.One << 11);
+
+            Assert.Equal(Math.ScaleB(1.0, 64), (double)tie);                                   // ties to even (down)
+            Assert.Equal(-Math.ScaleB(1.0, 64), (double)(-tie));
+            Assert.Equal(Math.ScaleB(1.0, 64) + Math.ScaleB(1.0, 12), (double)(tie + 1));       // just above the midpoint rounds up
+            Assert.Equal(-(Math.ScaleB(1.0, 64) + Math.ScaleB(1.0, 12)), (double)(-(tie + 1)));
+        }
+
         [Theory]
         // Converting via double as an intermediate can double-round, so these must match a direct
         // correctly-rounded BigInteger -> float conversion. 9007199791611905 (2^53 + 536870913) sits
@@ -626,6 +640,20 @@ namespace System.Numerics.Tests
 
             Assert.Equal(expected, (float)bigInteger);
             Assert.Equal(-expected, (float)(-bigInteger));
+        }
+
+        [Fact]
+        public static void RunSingleExplicitCastFromBigIntegerWideRoundingTests()
+        {
+            // The same double-rounding case as above, scaled up past 64 bits so it no longer fits the
+            // ulong fast path and instead exercises the general limb scan rounding directly at float's
+            // 24-bit significand. Scaling by a power of two only shifts the exponent, so the correctly
+            // rounded float scales the same way.
+            BigInteger value = ((BigInteger.One << 53) + (BigInteger.One << 29) + 1) << 11; // 2^64 + 2^40 + 2^11
+            float expected = MathF.ScaleB(9007200328482816f, 11);
+
+            Assert.Equal(expected, (float)value);
+            Assert.Equal(-expected, (float)(-value));
         }
 
         [Theory]
@@ -663,6 +691,20 @@ namespace System.Numerics.Tests
 
             Assert.Equal((BFloat16)9077567998918656L, (BFloat16)value); // 2^53 + 2^46, rounds up
             Assert.Equal((BFloat16)(-9077567998918656L), (BFloat16)(-value));
+        }
+
+        [Fact]
+        public static void RunBFloat16ExplicitCastFromBigIntegerWideRoundingTests()
+        {
+            // The same double-rounding case as above, scaled up past 64 bits so it no longer fits the
+            // ulong fast path and instead exercises the general limb scan rounding directly at
+            // BFloat16's 8-bit significand. Scaling by a power of two only shifts the exponent, so the
+            // correctly rounded BFloat16 scales the same way.
+            BigInteger value = ((BigInteger.One << 53) + (BigInteger.One << 45) + 1) << 11; // 2^64 + 2^56 + 2^11
+            BFloat16 expected = BFloat16.ScaleB((BFloat16)9077567998918656L, 11);            // (2^53 + 2^46) << 11
+
+            Assert.Equal(expected, (BFloat16)value);
+            Assert.Equal(-expected, (BFloat16)(-value));
         }
 
         [Fact]

@@ -166,13 +166,19 @@
     <value>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</value>
   </data>
   <data name="BidirectionalMissingRequiredMarshaller" xml:space="preserve">
-    <value>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</value>
+    <value>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</value>
   </data>
   <data name="ManagedToUnmanagedMissingRequiredMarshaller" xml:space="preserve">
-    <value>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</value>
+    <value>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</value>
   </data>
   <data name="UnmanagedToManagedMissingRequiredMarshaller" xml:space="preserve">
-    <value>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</value>
+    <value>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</value>
+  </data>
+  <data name="ComObjectWrapperNotSpecifiedReason" xml:space="preserve">
+    <value> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</value>
+  </data>
+  <data name="ManagedObjectWrapperNotSpecifiedReason" xml:space="preserve">
+    <value> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</value>
   </data>
   <data name="MarshallerTypeMustBeStaticClassOrStruct" xml:space="preserve">
     <value>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</value>
@@ -699,6 +705,15 @@
   </data>
   <data name="RequiresAllowUnsafeBlocksTitleLibraryImport" xml:space="preserve">
     <value>LibraryImportAttribute requires unsafe code.</value>
+  </data>
+  <data name="RequiresExplicitSafetyModifierTitleLibraryImport" xml:space="preserve">
+    <value>Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</value>
+  </data>
+  <data name="RequiresExplicitSafetyModifierMessageLibraryImport" xml:space="preserve">
+    <value>Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</value>
+  </data>
+  <data name="RequiresExplicitSafetyModifierDescriptionLibraryImport" xml:space="preserve">
+    <value>Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</value>
   </data>
   <data name="RequiresAllowUnsafeBlocksTitleCom" xml:space="preserve">
     <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</value>

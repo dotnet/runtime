@@ -54,9 +54,8 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -78,7 +77,7 @@ ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -158,7 +157,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -247,7 +246,7 @@ BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -296,17 +295,15 @@ BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
 void *ExplicitControlLoaderHeap::AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs)
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(CONTRACT_RETURN NULL;);
+        GC_NOTRIGGER;
         PRECONDITION(0 == (dwCodeAlignment & (dwCodeAlignment - 1))); // require power of 2
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     // We don't know how much "extra" we need to satisfy the alignment until we know
     // which address will be handed out which in turn we don't know because we don't
@@ -317,14 +314,14 @@ void *ExplicitControlLoaderHeap::AllocMemForCode_NoThrow(size_t dwHeaderSize, si
     S_SIZE_T cbAllocSize = S_SIZE_T(dwHeaderSize) + S_SIZE_T(dwCodeSize) + S_SIZE_T(dwCodeAlignment - 1) + S_SIZE_T(dwReserveForJumpStubs);
     if( cbAllocSize.IsOverflow() )
     {
-        RETURN NULL;
+        return NULL;
     }
 
     if (cbAllocSize.Value() > GetBytesAvailCommittedRegion())
     {
         if (GetMoreCommittedPages(cbAllocSize.Value()) == FALSE)
         {
-            RETURN NULL;
+            return NULL;
         }
     }
 
@@ -332,7 +329,7 @@ void *ExplicitControlLoaderHeap::AllocMemForCode_NoThrow(size_t dwHeaderSize, si
     EtwAllocRequest(this, pResult, (pResult + dwCodeSize) - m_pAllocPtr);
     m_pAllocPtr = pResult + dwCodeSize;
 
-    RETURN pResult;
+    return pResult;
 }
 
 

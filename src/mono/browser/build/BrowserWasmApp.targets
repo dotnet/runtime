@@ -47,7 +47,7 @@
     <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
          producers: a linkable object carrying the .NET toolchain info is passed to wasm-ld, which
                     merges it into the relinked dotnet.native.wasm 'producers' section.
-         build_id:  emitted by wasm-ld via the --build-id linker flag, but only when $(WasmNativeBuildId)
+         build_id:  emitted by wasm-ld via its build-id linker flag, but only when $(WasmNativeBuildId)
                     is set to a hex value (which also forces a native build). The same value is baked into
                     the native footer (WASM_BUILD_ID) so it can be surfaced on runtimeBuildInfo.buildId. -->
     <WasmEmitProducersSection Condition="'$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
@@ -259,7 +259,7 @@
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
-      <!-- build_id value exposed on runtimeBuildInfo.buildId; kept in sync with the wasm-ld --build-id flag. -->
+      <!-- build_id value exposed on runtimeBuildInfo.buildId; kept in sync with wasm-ld's build-id flag. -->
       <EmscriptenEnvVars Include="WASM_BUILD_ID=$(_WasmNormalizedBuildId)" Condition="'$(_WasmNormalizedBuildId)' != ''" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EVENTPIPE=1" Condition="'$(EnableDiagnostics)' == 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EVENTPIPE=0" Condition="'$(EnableDiagnostics)' != 'true'" />
@@ -324,6 +324,8 @@
   <Target Name="_BrowserWasmWriteRspForLinking" BeforeTargets="_WasmWriteRspForLinking">
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
+      <!-- _EmccIncomingModuleJSAPI defaults (incl. wasmMemory when threads are enabled) come from wasm-props.json
+           via _ReadWasmProps, written by src/mono/browser/browser.proj. -->
     </ItemGroup>
     <PropertyGroup>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
@@ -336,6 +338,7 @@
       <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-nosimd.a</_WasmSIMDLibToExclude>
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
+      <_EmccIncomingModuleJSAPIs>"[@(_EmccIncomingModuleJSAPI -> '%27%(Identity)%27', ',')]"</_EmccIncomingModuleJSAPIs>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
 
       <!-- build_id: only emitted when $(WasmNativeBuildId) is set to a hex value; wasm-ld writes the
@@ -391,6 +394,8 @@
 
       <_EmccLinkStepArgs Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" Condition="'$(_EmccExportedLibraryFunction)' != ''" />
       <_EmccLinkStepArgs Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
+      <!-- INCOMING_MODULE_JS_API only matters with emscripten assertions (Debug); in Release let emscripten use its default list. -->
+      <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s INCOMING_MODULE_JS_API=$(_EmccIncomingModuleJSAPIs)" />
       <_EmccLinkStepArgs Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
 
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
@@ -429,8 +434,8 @@
   </Target>
 
   <!-- Emit a linkable object carrying the WebAssembly 'producers' custom section, so wasm-ld merges
-       .NET toolchain info into dotnet.native.wasm. The 'build_id' section is emitted by wasm-ld via
-       the --build-id link flag (only when $(WasmNativeBuildId) is set). -->
+       .NET toolchain info into dotnet.native.wasm. The 'build_id' section is emitted by wasm-ld's
+       build-id linker flag (only when $(WasmNativeBuildId) is set). -->
   <Target Name="_BrowserWasmEmitProducersObject"
           BeforeTargets="_BrowserWasmWriteRspForLinking"
           Condition="'$(WasmEmitProducersSection)' == 'true'">

@@ -36,7 +36,8 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
                                                       QCall::StackCrawlMarkHandle stackMark,
                                                       BOOL fThrowOnFileNotFound,
                                                       QCall::ObjectHandleOnStack assemblyLoadContext,
-                                                      QCall::ObjectHandleOnStack retAssembly)
+                                                      QCall::ObjectHandleOnStack retAssembly,
+                                                      QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -93,18 +94,10 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
         spec.SetParentAssembly(pRefAssembly);
 
     // Have we been passed the reference to the binder against which this load should be triggered?
-    // If so, then use it to set the fallback load context binder.
+    // If so, then bind against it instead of the requesting assembly's load context.
     if (pBinder != NULL)
     {
-        spec.SetFallbackBinderForRequestingAssembly(pBinder);
-        spec.SetPreferFallbackBinder();
-    }
-    else if (pRefAssembly != NULL)
-    {
-        // If the requesting assembly has Fallback LoadContext binder available,
-        // then set it up in the AssemblySpec.
-        PEAssembly *pRefAssemblyManifestFile = pRefAssembly->GetPEAssembly();
-        spec.SetFallbackBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackBinder());
+        spec.SetExplicitBinder(pBinder);
     }
 
     Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
@@ -121,14 +114,13 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 /* static */
 Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths)
 {
-    CONTRACT(Assembly*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pBinder));
         PRECONDITION(pImage != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Assembly *pLoadedAssembly = NULL;
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
@@ -190,13 +182,13 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         }
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
-    bindOperation.SetResult(pPEAssembly.GetValue());
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly));
+    bindOperation.SetResult(pPEAssembly);
 
-    RETURN pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
+    return pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
 }
 
-extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, QCall::ObjectHandleOnStack retLoadedAssembly)
+extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, QCall::ObjectHandleOnStack retLoadedAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -247,7 +239,8 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 /*static */
 extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssemblyBinder, INT_PTR ptrAssemblyArray,
                                               INT32 cbAssemblyArrayLength, INT_PTR ptrSymbolArray, INT32 cbSymbolArrayLength,
-                                              QCall::ObjectHandleOnStack retLoadedAssembly)
+                                              QCall::ObjectHandleOnStack retLoadedAssembly,
+                                              QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -311,7 +304,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
 
 #ifdef TARGET_WINDOWS
 /*static */
-extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyBinder, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly)
+extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyBinder, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -345,7 +338,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativ
 }
 #endif
 
-extern "C" void QCALLTYPE AssemblyNative_GetLocation(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE AssemblyNative_GetLocation(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -362,7 +355,8 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle pAsse
     LPCSTR szTypeName,
     LPCSTR * rgszNestedTypeNames,
     int32_t cNestedTypeNamesLength,
-    QCall::ObjectHandleOnStack retType)
+    QCall::ObjectHandleOnStack retType,
+    QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -430,7 +424,8 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
     LPCWSTR wszTypeName,
     LPCWSTR* rgwszNestedTypeNames,
     int32_t cNestedTypeNamesLength,
-    QCall::ObjectHandleOnStack retType)
+    QCall::ObjectHandleOnStack retType,
+    QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -505,7 +500,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle pAssembly, mdToken mdtExternalType, QCall::ObjectHandleOnStack retType)
+extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle pAssembly, mdToken mdtExternalType, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -548,7 +543,7 @@ FCIMPL1(FC_BOOL_RET, AssemblyNative::GetIsDynamic, Assembly* pAssembly)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE AssemblyNative_GetVersion(QCall::AssemblyHandle pAssembly, INT32* pMajorVersion, INT32* pMinorVersion, INT32*pBuildNumber, INT32* pRevisionNumber)
+extern "C" void QCALLTYPE AssemblyNative_GetVersion(QCall::AssemblyHandle pAssembly, INT32* pMajorVersion, INT32* pMinorVersion, INT32*pBuildNumber, INT32* pRevisionNumber, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -566,7 +561,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetVersion(QCall::AssemblyHandle pAssem
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetPublicKey(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retPublicKey)
+extern "C" void QCALLTYPE AssemblyNative_GetPublicKey(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retPublicKey, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -579,7 +574,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetPublicKey(QCall::AssemblyHandle pAss
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetSimpleName(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retSimpleName)
+extern "C" void QCALLTYPE AssemblyNative_GetSimpleName(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retSimpleName, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -588,7 +583,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetSimpleName(QCall::AssemblyHandle pAs
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetLocale(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE AssemblyNative_GetLocale(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -603,7 +598,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetLocale(QCall::AssemblyHandle pAssemb
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE AssemblyNative_GetCodeBase(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
+extern "C" BOOL QCALLTYPE AssemblyNative_GetCodeBase(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -623,29 +618,33 @@ extern "C" BOOL QCALLTYPE AssemblyNative_GetCodeBase(QCall::AssemblyHandle pAsse
     return ret;
 }
 
-extern "C" INT32 QCALLTYPE AssemblyNative_GetHashAlgorithm(QCall::AssemblyHandle pAssembly)
+extern "C" INT32 QCALLTYPE AssemblyNative_GetHashAlgorithm(QCall::AssemblyHandle pAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     INT32 retVal=0;
+
     BEGIN_QCALL;
+
     retVal = pAssembly->GetPEAssembly()->GetHashAlgId();
     END_QCALL;
     return retVal;
 }
 
-extern "C" INT32 QCALLTYPE AssemblyNative_GetFlags(QCall::AssemblyHandle pAssembly)
+extern "C" INT32 QCALLTYPE AssemblyNative_GetFlags(QCall::AssemblyHandle pAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     INT32 retVal=0;
+
     BEGIN_QCALL;
+
     retVal = pAssembly->GetPEAssembly()->GetFlags();
     END_QCALL;
     return retVal;
 }
 
-extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, DWORD * length)
+extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, DWORD * length, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -675,7 +674,7 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
     return pbInMemoryResource;
 }
 
-extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, QCall::ObjectHandleOnStack retAssembly, QCall::StringHandleOnStack retFileName)
+extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, QCall::ObjectHandleOnStack retAssembly, QCall::StringHandleOnStack retFileName, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -717,7 +716,7 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
     return rv;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssembly, BOOL fLoadIfNotFound, BOOL fGetResourceModules, QCall::ObjectHandleOnStack retModules)
+extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssembly, BOOL fLoadIfNotFound, BOOL fGetResourceModules, QCall::ObjectHandleOnStack retModules, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -788,7 +787,7 @@ extern "C" uint32_t QCALLTYPE AssemblyNative_GetAssemblyCount()
     return g_cAssemblies;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssembly, LPCWSTR wszFileName, QCall::ObjectHandleOnStack retModule)
+extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssembly, LPCWSTR wszFileName, QCall::ObjectHandleOnStack retModule, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -825,7 +824,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssemb
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retTypes)
+extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retTypes, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -942,7 +941,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retTypes)
+extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retTypes, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1010,7 +1009,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetManifestResourceNames(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retResourceNames)
+extern "C" void QCALLTYPE AssemblyNative_GetManifestResourceNames(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retResourceNames, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1052,7 +1051,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetManifestResourceNames(QCall::Assembl
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retReferencedAssemblies)
+extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retReferencedAssemblies, QCallExceptionStatus* qcallError)
 {
     BEGIN_QCALL;
 
@@ -1098,7 +1097,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::Assembly
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retMethod)
+extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retMethod, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1122,7 +1121,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAs
 //
 //
 
-extern "C" void QCALLTYPE AssemblyNative_GetFullName(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE AssemblyNative_GetFullName(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1135,7 +1134,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetFullName(QCall::AssemblyHandle pAsse
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly)
+extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1151,7 +1150,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlM
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnStack retAssembly)
+extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnStack retAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1167,7 +1166,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1190,7 +1189,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyH
 
 /*static*/
 
-extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PTR ptrAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible)
+extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PTR ptrAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1262,14 +1261,13 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
 }
 
 /*static*/
-extern "C" void QCALLTYPE AssemblyNative_PrepareForAssemblyLoadContextRelease(INT_PTR ptrNativeAssemblyBinder, INT_PTR ptrManagedStrongAssemblyLoadContext)
+extern "C" void QCALLTYPE AssemblyNative_PrepareForAssemblyLoadContextRelease(INT_PTR ptrNativeAssemblyBinder, INT_PTR ptrManagedStrongAssemblyLoadContext, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     BOOL fDestroyed = FALSE;
 
     BEGIN_QCALL;
-
 
     {
         GCX_COOP();
@@ -1280,7 +1278,7 @@ extern "C" void QCALLTYPE AssemblyNative_PrepareForAssemblyLoadContextRelease(IN
 }
 
 /*static*/
-extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::AssemblyHandle pAssembly)
+extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::AssemblyHandle pAssembly, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1308,7 +1306,8 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
 extern "C" BOOL QCALLTYPE AssemblyNative_InternalTryGetRawMetadata(
     QCall::AssemblyHandle assembly,
     UINT8 **blobRef,
-    INT32 *lengthRef)
+    INT32 *lengthRef,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1340,7 +1339,7 @@ FCIMPL0(FC_BOOL_RET, AssemblyNative::IsTracingEnabled)
 FCIMPLEND
 
 // static
-extern "C" void QCALLTYPE AssemblyNative_TraceResolvingHandlerInvoked(LPCWSTR assemblyName, LPCWSTR handlerName, LPCWSTR alcName, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath)
+extern "C" void QCALLTYPE AssemblyNative_TraceResolvingHandlerInvoked(LPCWSTR assemblyName, LPCWSTR handlerName, LPCWSTR alcName, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1352,7 +1351,7 @@ extern "C" void QCALLTYPE AssemblyNative_TraceResolvingHandlerInvoked(LPCWSTR as
 }
 
 // static
-extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyResolveHandlerInvoked(LPCWSTR assemblyName, LPCWSTR handlerName, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath)
+extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyResolveHandlerInvoked(LPCWSTR assemblyName, LPCWSTR handlerName, LPCWSTR resultAssemblyName, LPCWSTR resultAssemblyPath, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1364,7 +1363,7 @@ extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyResolveHandlerInvoked(LPCW
 }
 
 // static
-extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, bool isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath)
+extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked(LPCWSTR assemblyName, BOOL isTrackedAssembly, LPCWSTR requestingAssemblyPath, LPCWSTR requestedAssemblyPath, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1376,7 +1375,7 @@ extern "C" void QCALLTYPE AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvo
 }
 
 // static
-extern "C" void QCALLTYPE AssemblyNative_TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr)
+extern "C" void QCALLTYPE AssemblyNative_TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1395,7 +1394,8 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
     UINT8* ilDelta,
     INT32 ilDeltaLength,
     UINT8* pdbDelta,
-    INT32 pdbDeltaLength)
+    INT32 pdbDeltaLength,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1408,7 +1408,6 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
     _ASSERTE(ilDeltaLength > 0);
 
 #ifdef FEATURE_METADATA_UPDATER
-    GCX_COOP();
     {
         if (CORDebuggerAttached())
         {
@@ -1434,7 +1433,7 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
 }
 
 // static
-extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
+extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1584,6 +1583,49 @@ namespace
         }
         return false;
     }
+
+    bool ProcessPrecachedTypeMapNamedEntries(
+        NativeFormat::NativeParser namedEntries,
+        BOOL (*callback)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+        CallbackContext* context)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (namedEntries.IsNull())
+        {
+            return true;
+        }
+
+        uint32_t count = namedEntries.GetUnsigned();
+        for (uint32_t i = 0; i < count; i++)
+        {
+            PTR_CBYTE string1;
+            uint32_t stringLength1;
+            namedEntries.GetString(&string1, &stringLength1);
+
+            PTR_CBYTE string2;
+            uint32_t stringLength2;
+            namedEntries.GetString(&string2, &stringLength2);
+
+            if (stringLength1 > INT32_MAX || stringLength2 > INT32_MAX)
+            {
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            }
+
+            ProcessAttributesCallbackArg arg;
+            arg.Utf8String1 = reinterpret_cast<LPCUTF8>(string1);
+            arg.Utf8String2 = reinterpret_cast<LPCUTF8>(string2);
+            arg.StringLen1 = static_cast<int32_t>(stringLength1);
+            arg.StringLen2 = static_cast<int32_t>(stringLength2);
+
+            if (!callback(context, &arg))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 #endif
 
     class AssemblyPtrCollectionTraits : public DefaultSHashTraits<Assembly*>
@@ -1714,7 +1756,8 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
     BOOL (*newPrecachedExternalTypeMap)(CallbackContext* context),
     BOOL (*newPrecachedProxyTypeMap)(CallbackContext* context),
-    CallbackContext* context)
+    CallbackContext* context,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     _ASSERTE(pAssembly != NULL);
@@ -1755,6 +1798,16 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                     {
                         return FALSE;
                     }
+
+                    NativeFormat::NativeHashtable typeMap;
+                    NativeFormat::NativeParser namedEntries;
+                    bool found = pR2RInfo->TryGetPrecachedExternalTypeMap(groupTypeMT, &typeMap, &namedEntries);
+                    _ASSERTE(found);
+                    if (!ProcessPrecachedTypeMapNamedEntries(namedEntries, newExternalTypeEntry, context))
+                    {
+                        return FALSE;
+                    }
+
                     return newPrecachedExternalTypeMap(context);
                 },
                 currAssembly);
@@ -1765,7 +1818,19 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         {
             hasPrecachedProxy = ProcessPrecachedTypeMapInfo(
                 [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedProxyTypeMap(groupTypeMT); },
-                [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedProxyTypeMap(context); },
+                [=](PTR_ReadyToRunInfo pR2RInfo)
+                {
+                    NativeFormat::NativeHashtable typeMap;
+                    NativeFormat::NativeParser namedEntries;
+                    bool found = pR2RInfo->TryGetPrecachedProxyTypeMap(groupTypeMT, &typeMap, &namedEntries);
+                    _ASSERTE(found);
+                    if (!ProcessPrecachedTypeMapNamedEntries(namedEntries, newProxyTypeEntry, context))
+                    {
+                        return FALSE;
+                    }
+
+                    return newPrecachedProxyTypeMap(context);
+                },
                 currAssembly);
         }
 
@@ -1841,7 +1906,8 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
 extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry(
     QCall::ModuleHandle pModule,
     QCall::TypeHandle pGroupType,
-    LPCUTF8 key)
+    LPCUTF8 key,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     _ASSERTE(pModule != NULL);
@@ -1874,7 +1940,8 @@ extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedExternalTypeMapEnt
 extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
     QCall::ModuleHandle pModule,
     QCall::TypeHandle pGroupType,
-    QCall::TypeHandle pType)
+    QCall::TypeHandle pType,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     _ASSERTE(pModule != NULL);

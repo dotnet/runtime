@@ -31,35 +31,49 @@ IEnumerable<ExceptionStackFrameInfo> GetExceptionStackFrames(TargetPointer excep
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Type | Purpose |
-| --- | --- | --- | --- |
-| `ExceptionInfo` | `PreviousNestedInfo` | nuint | Pointer to the previous nested `ExInfo` on the thread's exception chain |
-| `ExceptionInfo` | `ThrownObject` | nuint | Object pointer of the exception currently being handled by this `ExInfo` |
-| `Exception` | `_message` | nuint | `System.Exception._message` field (managed string) |
-| `Exception` | `_innerException` | nuint | `System.Exception._innerException` field |
-| `Exception` | `_stackTrace` | nuint | Either an `I1Array` of `StackTraceElement` entries or a combined `object[]` whose slot 0 is that `I1Array` |
-| `Exception` | `_watsonBuckets` | nuint | `System.Exception._watsonBuckets` field |
-| `Exception` | `_stackTraceString` | nuint | `System.Exception._stackTraceString` field |
-| `Exception` | `_remoteStackTraceString` | nuint | `System.Exception._remoteStackTraceString` field |
-| `Exception` | `_HResult` | int32 | `System.Exception._HResult` field |
-| `Exception` | `_xcode` | int32 | Native exception code captured at throw |
-| `Array` | `m_NumComponents` | uint32 | Number of components (bytes for `I1Array`, slots for `object[]`); array byte payload starts immediately after this descriptor |
-| `StackTraceArrayHeader` | `Size` | uint32 | Number of `StackTraceElement` entries that follow this header in the `I1Array` payload |
-| `StackTraceElement` | `Ip` | nuint | Captured native instruction pointer for the frame |
-| `StackTraceElement` | `MethodDesc` | nuint | Pointer to the frame method's `MethodDesc` |
-| `StackTraceElement` | `Flags` | int32 | `StackTraceElementFlags` bitmask (see Contract Constants below) |
+<!-- BEGIN GENERATED: usage contract=Exception version=c1 -->
+### Data descriptors used
 
-Contracts used:
-| Contract Name | Purpose |
-| --- | --- |
-| `Object` | Resolves the `MethodTable` address of the `_stackTrace` object |
-| `RuntimeTypeSystem` | Tests `ContainsGCPointers` on that `MethodTable` to distinguish the combined `object[]` shape from the bare `I1Array` shape |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Array` | *(type size)* | `uint32` | Size of the fixed portion of an array object |
+| `Exception` | `_HResult` | `int32` | System.Exception._HResult field |
+| `Exception` | `_innerException` | `pointer` | System.Exception._innerException field |
+| `Exception` | `_message` | `pointer` | System.Exception._message field (managed string) |
+| `Exception` | `_remoteStackTraceString` | `pointer` | System.Exception._remoteStackTraceString field |
+| `Exception` | `_stackTrace` | `pointer` | Either an I1Array of StackTraceElement entries or a combined object[] whose slot 0 is that I1Array |
+| `Exception` | `_stackTraceString` | `pointer` | System.Exception._stackTraceString field |
+| `Exception` | `_watsonBuckets` | `pointer` | Pointer to exception Watson buckets |
+| `Exception` | `_xcode` | `int32` | Native exception code captured at throw |
+| `ExceptionInfo` | `PreviousNestedInfo` | `pointer` | Pointer to previous nested exception info |
+| `ExceptionInfo` | `ThrownObject` | `pointer` | Handle to the thrown exception object |
+| `StackTraceArrayHeader` | *(type size)* | `uint32` | Size of the data descriptor layout |
+| `StackTraceArrayHeader` | `Size` | `uint32` | Number of StackTraceElement entries that follow this header in the I1Array payload |
+| `StackTraceElement` | *(type size)* | `uint32` | Size in bytes of each element in the exception stack trace array |
+| `StackTraceElement` | `Flags` | `int32` | StackTraceElementFlags bitmask (see Contract Constants below) |
+| `StackTraceElement` | `Ip` | `pointer` | Captured native instruction pointer for the frame |
+| `StackTraceElement` | `MethodDesc` | `pointer` | Pointer to the frame method's MethodDesc |
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `Object` |
+| `RuntimeInfo` |
+| `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=Exception version=c1 -->
+
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE` | int | Bit in `StackTraceElement::Flags` marking the last frame copied from a foreign (rethrown) stack trace. | `0x0001` |
+| `STEF_IP_ADJUSTED` | int | Bit in `StackTraceElement::Flags` indicating that the captured IP has already been decremented. | `0x0002` |
+| `STEF_CONTINUATION` | int | Bit in `StackTraceElement::Flags` indicating a continuation frame whose IP must not be adjusted. | `0x0008` |
 
 ``` csharp
 TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo, out TargetPointer thrownObjectHandle)
@@ -127,12 +141,19 @@ IEnumerable<ExceptionStackFrameInfo> GetExceptionStackFrames(TargetPointer excep
 
     ulong headerSize = /* StackTraceArrayHeader type size */;
     ulong elementSize = /* StackTraceElement type size */;
+    bool compensateForOldEhIp = RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X64;
     TargetPointer cursor = payload + headerSize;
     for (uint i = 0; i < frameCount; i++)
     {
         TargetPointer ip = target.ReadPointer(cursor + /* StackTraceElement::Ip offset */);
         TargetPointer md = target.ReadPointer(cursor + /* StackTraceElement::MethodDesc offset */);
         int flags = target.Read<int>(cursor + /* StackTraceElement::Flags offset */);
+        if (compensateForOldEhIp
+            && i == 0
+            && (flags & (STEF_IP_ADJUSTED | STEF_CONTINUATION)) == 0)
+        {
+            ip--;
+        }
         yield return new ExceptionStackFrameInfo(
             ip,
             md,

@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.HandleTable))]
 internal sealed partial class HandleTable : IData<HandleTable>
 {
-    [Field] public TargetPointer SegmentList { get; }
+    [Field] public partial TargetPointer SegmentList { get; }
 }

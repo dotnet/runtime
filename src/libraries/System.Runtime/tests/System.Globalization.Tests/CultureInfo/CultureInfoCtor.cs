@@ -231,6 +231,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "nb-NO", new [] { "nb-NO" } };
             yield return new object[] { "ne", new [] { "ne" }};
             yield return new object[] { "ne-NP", new [] { "ne-NP" }};
+            yield return new object[] { "no", new [] { "no" } };
             yield return new object[] { "nl", new [] { "nl" } };
             yield return new object[] { "nl-BE", new [] { "nl-BE" } };
             yield return new object[] { "nl-NL", new [] { "nl-NL" } };
@@ -366,7 +367,6 @@ namespace System.Globalization.Tests
                 yield return new object[] { "ha-Latn", new [] { "ha-Latn" }};
                 yield return new object[] { "ha-Latn-NG", new [] { "ha-Latn-NG" }};
                 yield return new object[] { "mn-Cyrl", new [] { "mn-Cyrl" }};
-                yield return new object[] { "no", new [] { "no" } };
                 yield return new object[] { "sr-Cyrl", new [] { "sr-Cyrl" } };
                 yield return new object[] { "sr-Cyrl-BA", new [] { "sr-Cyrl-BA" }};
                 yield return new object[] { "sr-Cyrl-CS", new [] { "sr-Cyrl-CS" }};
@@ -439,6 +439,19 @@ namespace System.Globalization.Tests
 
             culture = new CultureInfo(cultureName);
             Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [InlineData("no", "no", "no", "nor", "")]
+        [InlineData("no-NO", "no-NO", "no", "nor", "no")]
+        public void Ctor_String_NorwegianLanguageNames(string name, string expectedName, string expectedTwoLetterName, string expectedThreeLetterName, string expectedParentName)
+        {
+            CultureInfo culture = new CultureInfo(name);
+
+            Assert.Equal(expectedName, culture.Name);
+            Assert.Equal(expectedTwoLetterName, culture.TwoLetterISOLanguageName);
+            Assert.Equal(expectedThreeLetterName, culture.ThreeLetterISOLanguageName);
+            Assert.Equal(expectedParentName, culture.Parent.Name);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]

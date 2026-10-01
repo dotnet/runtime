@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public class DataDescriptorModel
 {
-    public int Version => 1;
+    public int Version => 2;
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string Baseline { get; }
     public IReadOnlyDictionary<string, TypeModel> Types { get; }

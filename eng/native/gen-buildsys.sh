@@ -92,10 +92,11 @@ fi
 
 cmake_extra_defines_wasm=()
 if [[ "$host_arch" == "wasm" ]]; then
+    . "$scriptroot"/../wasm/wasm-tool-cache.sh
     if [[ "$target_os" == "browser" ]]; then
         if [[ -z "$EMSDK_PATH" ]]; then
-            if [[ -d "$reporoot"/src/mono/browser/emsdk/ ]]; then
-                export EMSDK_PATH="$reporoot"/src/mono/browser/emsdk/
+            if EMSDK_PATH="$(wasm_tool_cache_dir emscripten "$reporoot"/src/mono/browser/emscripten-version.txt "$reporoot")"; then
+                export EMSDK_PATH
             else
                 echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
                 exit 1
@@ -108,8 +109,8 @@ if [[ "$host_arch" == "wasm" ]]; then
         cmake_extra_defines="-C $scriptroot/tryrun.browser.cmake $cmake_extra_defines"
     elif [[ "$target_os" == "wasi" ]]; then
         if [[ -z "$WASI_SDK_PATH" ]]; then
-            if [[ -d "$reporoot"/artifacts/wasi-sdk ]]; then
-                export WASI_SDK_PATH="$reporoot"/artifacts/wasi-sdk
+            if WASI_SDK_PATH="$(wasm_tool_cache_dir wasi-sdk "$reporoot"/eng/wasm/wasi-sdk-version.txt "$reporoot")"; then
+                export WASI_SDK_PATH
             else
                 echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
                 exit 1

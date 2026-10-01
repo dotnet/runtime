@@ -9,8 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
-    private readonly TargetPointer _threadStoreAddr;
-    private readonly Target.TypeInfo _threadTypeInfo;
+    private readonly CachedValue<TargetPointer> _threadStore;
 
     [Flags]
     private enum TLSIndexType
@@ -50,8 +49,12 @@ internal readonly struct Thread_1 : IThread
     internal Thread_1(Target target)
     {
         _target = target;
-        _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
-        _threadTypeInfo = target.GetTypeInfo(DataType.Thread);
+        _threadStore = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore)));
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _threadStore.Clear();
     }
 
     void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
@@ -68,7 +71,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadStoreData IThread.GetThreadStoreData()
     {
-        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
+        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStore);
         return new ThreadStoreData(
             threadStore.ThreadCount,
             threadStore.FirstThreadLink,
@@ -78,7 +81,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadStoreCounts IThread.GetThreadCounts()
     {
-        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
+        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStore);
         return new ThreadStoreCounts(
             threadStore.UnstartedCount,
             threadStore.BackgroundCount,
@@ -195,7 +198,7 @@ internal readonly struct Thread_1 : IThread
 
         stackBase = thread.CachedStackBase;
         stackLimit = thread.CachedStackLimit;
-        frameAddress = threadPointer + (ulong)_threadTypeInfo.Fields[nameof(Data.Thread.Frame)].Offset;
+        frameAddress = threadPointer + (ulong)Data.Thread.GetFrameOffset(_target);
     }
 
     // happens inside critical section
@@ -205,7 +208,7 @@ internal readonly struct Thread_1 : IThread
         TargetPointer idDispenser = _target.ReadPointer(idDispenserPtr);
         Data.IdDispenser idDispenserObj = _target.ProcessedData.GetOrAdd<Data.IdDispenser>(idDispenser);
         TargetPointer threadPtr = TargetPointer.Null;
-        if (id < idDispenserObj.HighestId)
+        if (id <= idDispenserObj.HighestId)
             threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
         return threadPtr;
     }
@@ -288,8 +291,7 @@ internal readonly struct Thread_1 : IThread
         if (exceptionInfo is null || exceptionInfo.ThrownObject == TargetPointer.Null)
             return TargetPointer.Null;
 
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.ExceptionInfo);
-        return exceptionTrackerAddr + (ulong)type.Fields[nameof(Data.ExceptionInfo.ThrownObject)].Offset;
+        return exceptionTrackerAddr + (ulong)Data.ExceptionInfo.GetThrownObjectOffset(_target);
     }
 
     TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)

@@ -64,6 +64,7 @@ class Generics
         TestGenericInliningTypeGenericsOnly.Run();
         Test99198Regression.Run();
         Test102259Regression.Run();
+        Test129093Regression.Run();
         Test104913Regression.Run();
         Test105397Regression.Run();
         Test105880Regression.Run();
@@ -77,6 +78,7 @@ class Generics
         TestVariantDispatchUnconstructedTypes.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
+        TestInterfaceDispatchTemplateDependencies.Run();
         TestByRefLikeVTables.Run();
         TestFunctionPointerLoading.Run();
 
@@ -2425,6 +2427,49 @@ class Generics
         }
     }
 
+    class TestInterfaceDispatchTemplateDependencies
+    {
+        static Type s_atomType = typeof(Atom);
+
+        class Atom { }
+        class Bar<T> { }
+
+        interface IFoo<in T>
+        {
+            int Method();
+        }
+
+        class Foo : IFoo<object>
+        {
+            public int Method() => 42;
+        }
+
+        interface ITest
+        {
+            int Method();
+        }
+
+        class Gen<T> : ITest
+        {
+            public int Method()
+            {
+                // Use variance so only the interface dispatch cell requires the Bar<T> template.
+                IFoo<Bar<T>> foo = GetFoo();
+                return foo.Method();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IFoo<object> GetFoo() => new Foo();
+
+        public static void Run()
+        {
+            var instance = (ITest)Activator.CreateInstance(typeof(Gen<>).MakeGenericType(s_atomType));
+            if (instance.Method() != 42)
+                throw new Exception("Unexpected interface dispatch result.");
+        }
+    }
+
     class TestInterfaceVTableTracking
     {
         class Gen<T> { }
@@ -2485,11 +2530,25 @@ class Generics
     {
         struct Mine<T> { }
 
+        struct BranchMine<T> { }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CallWithNullable<T>(object m)
         {
             return m is T;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CallWithNullableBranch<T>(object m)
+        {
+            if (m is T)
+                return Matched();
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Matched() => true;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CallWithReferenceType<T>(object m)
@@ -2503,6 +2562,15 @@ class Generics
                 throw new Exception();
 
             if (CallWithNullable<Nullable<Mine<object>>>(new Mine<string>()))
+                throw new Exception();
+
+            if (!CallWithNullableBranch<Nullable<BranchMine<object>>>(new BranchMine<object>()))
+                throw new Exception();
+
+            if (CallWithNullableBranch<Nullable<BranchMine<object>>>(new BranchMine<string>()))
+                throw new Exception();
+
+            if (CallWithNullableBranch<Nullable<BranchMine<object>>>(null))
                 throw new Exception();
 
             if (!CallWithReferenceType<object>(new Mine<object>()))
@@ -3787,6 +3855,33 @@ class Generics
         public static void Run()
         {
             new Gen<object>();
+        }
+    }
+
+    class Test129093Regression
+    {
+        class Gen<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static Type Method() => typeof(T);
+        }
+
+        // Inlineable generic method taking the address of a method that needs a generic context.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static unsafe nint GetPtr<U>() => (nint)(delegate*<Type>)&Gen<U>.Method;
+
+        class Caller<X>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static nint Run() => GetPtr<X>();
+        }
+
+        public static unsafe void Run()
+        {
+            if (((delegate*<Type>)Caller<object>.Run())() != typeof(object))
+                throw new Exception();
+            if (((delegate*<Type>)Caller<string>.Run())() != typeof(string))
+                throw new Exception();
         }
     }
 

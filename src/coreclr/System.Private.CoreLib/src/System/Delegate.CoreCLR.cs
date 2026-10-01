@@ -12,45 +12,41 @@ using System.Runtime.Versioning;
 
 namespace System
 {
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComVisible(true)]
     [NonVersionable]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
         private const nint UnmanagedMarker = -1;
 
         // This is set under 3 circumstances
-        // 1. Multicast delegates - object[]
+        // 1. Multicast delegates - Wrapper[]
         // 2. Method cache - MethodInfo
         // 3. Collectible delegates - LoaderAllocator and such
-        internal object? _helperObject;
+        private object? _helperObject;
 
         // _target is the object we will invoke on
         // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
-        internal object? _target;
+        private object? _target;
 
         // _methodPtr is a pointer to the method we will invoke
         // It could be a small thunk if this is a static or UM call
-        internal IntPtr _methodPtr;
+        private IntPtr _methodPtr;
 
         // In the case of a static method passed to a delegate, this field stores
         // whatever _methodPtr would have stored: and _methodPtr points to a
         // small thunk which removes the "this" pointer before going on
         // to _methodPtrAux.
-        internal IntPtr _methodPtrAux;
+        private IntPtr _methodPtrAux;
 
         // this stores the multicast count, UnmanagedMarker or target MethodDesc
-        internal nint _extraData;
+        private nint _extraData;
 
         private bool IsUnmanagedFunctionPtr => _extraData == UnmanagedMarker;
 
         private bool IsClosed => _methodPtrAux == 0;
 
-        public partial bool HasSingleTarget => _helperObject is null || _helperObject.GetType() != typeof(object[]);
-
         public object? Target =>
-            TryGetInvocations(out ReadOnlySpan<object> invocations)
-                ? ((Delegate)invocations[^1]).Target
+            TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
+                ? invocations[^1].Value!.Target
                 : IsClosed ? _target : null;
 
         private unsafe MethodDesc* MethodDesc
@@ -110,24 +106,8 @@ namespace System
                              DelegateBindingFlags.CaselessMatching);
         }
 
-        // This method returns the Invocation list of this multicast delegate.
-        public Delegate[] GetInvocationList()
-        {
-            if (!TryGetInvocations(out ReadOnlySpan<object> invocations))
-            {
-                return [this];
-            }
-
-            Delegate[] invocationList = new Delegate[invocations.Length];
-            for (int i = 0; i < invocations.Length; i++)
-            {
-                invocationList[i] = (Delegate)invocations[i];
-            }
-            return invocationList;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetInvocations(out ReadOnlySpan<object> invocations)
+        private bool TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
         {
             if (HasSingleTarget)
             {
@@ -135,31 +115,15 @@ namespace System
                 return false;
             }
 
-            Debug.Assert(_helperObject is object[]);
-            object[] invocationList = (object[])_helperObject;
+            Debug.Assert(_helperObject is Wrapper[]);
+            Wrapper[] invocationList = (Wrapper[])_helperObject;
 
             Debug.Assert(invocationList.Length > 1);
             Debug.Assert((uint)invocationList.Length >= (nuint)_extraData);
-            Debug.Assert(invocationList[0] is MulticastDelegate);
+            Debug.Assert(invocationList[0].Value is not null);
 
-            invocations = new ReadOnlySpan<object>(invocationList, 0, (int)_extraData);
+            invocations = new ReadOnlySpan<Wrapper>(invocationList, 0, (int)_extraData);
             return true;
-        }
-
-        // Used by delegate invocation list enumerator
-        private Delegate? TryGetAt(int index)
-        {
-            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
-            {
-                if ((uint)index < (uint)invocations.Length)
-                    return (Delegate)invocations[index];
-            }
-            else if (index == 0)
-            {
-                return this;
-            }
-
-            return null;
         }
 
         protected virtual object? DynamicInvokeImpl(object?[]? args)
@@ -170,20 +134,9 @@ namespace System
             return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
 
-        // Equals returns true IIF the delegate is not null and has the
-        // same target, method and invocation list as this object.
-        public sealed override unsafe bool Equals([NotNullWhen(true)] object? obj)
+        private unsafe bool EqualsCore(Delegate other)
         {
-            if (obj == null)
-                return false;
-            if (ReferenceEquals(this, obj))
-                return true;
-            if (!InternalEqualTypes(this, obj))
-                return false;
-
-            // Since this is a Delegate, and we know the types are the same, obj should also be a Delegate
-            Debug.Assert(obj is Delegate, "Shouldn't have failed here since we already checked the types are the same!");
-            Delegate other = Unsafe.As<Delegate>(obj);
+            Debug.Assert(RuntimeHelpers.AreTypesEquivalent(this, other));
 
             // Check closed delegates first
             if (IsClosed)
@@ -206,34 +159,12 @@ namespace System
                     return false;
 
                 // multicast
-                if (TryGetInvocations(out ReadOnlySpan<object> invocations))
-                {
-                    if (!other.TryGetInvocations(out ReadOnlySpan<object> otherInvocations) || invocations.Length != otherInvocations.Length)
-                        return false;
-
-                    for (int i = 0; i < invocations.Length; i++)
-                    {
-                        if (!invocations[i].Equals(otherInvocations[i]))
-                            return false;
-                    }
-
-                    return true;
-                }
+                if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
+                    return other.TryGetInvocations(out ReadOnlySpan<Wrapper> otherInvocations) && invocations.SequenceEqual(otherInvocations);
 
                 // unmanaged
                 if (IsUnmanagedFunctionPtr)
-                {
-                    return other.IsUnmanagedFunctionPtr &&
-                           _methodPtrAux == other._methodPtrAux;
-                }
-
-                // Under cached interface dispatch we might see the shared CID_VirtualOpenDelegateDispatch stub.
-                // Fallback to desc comparison in such case for correctness.
-#if !FEATURE_CACHED_INTERFACE_DISPATCH
-                // both delegates are open
-                if (_methodPtrAux == other._methodPtrAux)
-                    return true;
-#endif
+                    return other.IsUnmanagedFunctionPtr && _methodPtrAux == other._methodPtrAux;
             }
 
             // It's possible that the method pointer was JITted in one delegate but not the other.
@@ -243,12 +174,12 @@ namespace System
 
         public sealed override unsafe int GetHashCode()
         {
-            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 int hash = 0;
-                foreach (MulticastDelegate multicastDelegate in invocations)
+                foreach (ref readonly Wrapper wrapper in invocations)
                 {
-                    hash = hash * 33 + multicastDelegate.GetHashCode();
+                    hash = hash * 33 + wrapper.GetHashCode();
                 }
                 return hash;
             }
@@ -272,8 +203,8 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return TryGetInvocations(out ReadOnlySpan<object> invocations)
-                ? ((Delegate)invocations[^1]).Method
+            return TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
+                ? invocations[^1].Value!.Method
                 : _helperObject as MethodInfo ?? GetMethodImplUncached();
         }
 
@@ -329,7 +260,7 @@ namespace System
                     else
                     {
                         // it's an open one, need to fetch the first arg of the instantiation
-                        MethodInfo invoke = GetType().GetMethod("Invoke")!;
+                        MethodInfo invoke = GetInvokeMethod(GetType());
                         declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
                     }
                 }
@@ -508,64 +439,95 @@ namespace System
             Justification = "The parameter 'methodType' is passed by ref to QCallTypeHandle")]
         private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] RuntimeType methodType, string method, DelegateBindingFlags flags)
         {
-            Delegate d = this;
-            return BindToMethodName(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
-                new QCallTypeHandle(ref methodType), method, flags);
+            bool ret;
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                ret = BindToMethodName(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                new QCallTypeHandle(ref methodType), method, flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+            }
+
+            if (ret)
+            {
+                // Apply the results of the QCall to the delegate instance.
+                _methodPtr = bindToMethodDetails.methodPtr;
+                _methodPtrAux = bindToMethodDetails.methodPtrAux;
+                _extraData = bindToMethodDetails.extraData;
+                if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+                {
+                    _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                    GC.KeepAlive(methodType);
+                }
+
+                if (bindToMethodDetails.selfReferentialTarget != 0)
+                    _target = this;
+                else
+                    _target = target;
+            }
+            return ret;
         }
 
+        private struct BindToMethodDetails
+        {
+            public int selfReferentialTarget; // Whether the delegate's target object is the same as the first argument of the method to bind to. Only meaningful for open instance delegates.
+            public IntPtr methodPtr;
+            public IntPtr methodPtrAux;
+            public IntPtr extraData;
+            public GCHandle loaderAllocatorGCHandle; // The loader allocator needed if the delegate needs to keep it alive
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodName(ObjectHandleOnStack d, ObjectHandleOnStack target, QCallTypeHandle methodType, string method, DelegateBindingFlags flags);
+        private static partial bool BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT, QCallTypeHandle methodType, string method, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
         private bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags)
         {
-            Delegate d = this;
-            bool ret = BindToMethodInfo(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
-                method.Value, new QCallTypeHandle(ref methodType), flags);
-            GC.KeepAlive(method);
+            bool ret;
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                ret = BindToMethodInfo(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                    IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+            }
+
+            if (ret)
+            {
+                // Apply the results of the QCall to the delegate instance.
+                _methodPtr = bindToMethodDetails.methodPtr;
+                _methodPtrAux = bindToMethodDetails.methodPtrAux;
+                _extraData = bindToMethodDetails.extraData;
+                if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+                {
+                    _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                    GC.KeepAlive(method);
+                }
+
+                if (bindToMethodDetails.selfReferentialTarget != 0)
+                    _target = this;
+                else
+                    _target = target;
+            }
             return ret;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodInfo(ObjectHandleOnStack d, ObjectHandleOnStack target, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
+        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
-        private static MulticastDelegate InternalAlloc(RuntimeType type)
+        private static Delegate InternalAlloc(RuntimeType type)
         {
-            Debug.Assert(type.IsAssignableTo(typeof(MulticastDelegate)));
-            return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAlloc(type));
+            Debug.Assert(type.IsAssignableTo(typeof(Delegate)));
+            return Unsafe.As<Delegate>(RuntimeTypeHandle.InternalAlloc(type));
         }
 
-        internal static unsafe MulticastDelegate InternalAlloc(MethodTable* type)
+        private static unsafe Delegate InternalAlloc(MethodTable* type)
         {
-            Debug.Assert(RuntimeTypeHandle.GetRuntimeType(type).IsAssignableTo(typeof(MulticastDelegate)));
-            return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(type));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool InternalEqualTypes(object a, object b)
-        {
-            if (a.GetType() == b.GetType())
-                return true;
-#if FEATURE_TYPEEQUIVALENCE
-            MethodTable* pMTa = RuntimeHelpers.GetMethodTable(a);
-            MethodTable* pMTb = RuntimeHelpers.GetMethodTable(b);
-
-            bool ret;
-
-            // only use QCall to check the type equivalence scenario
-            if (pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence)
-                ret = RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
-            else
-                ret = false;
-
-            GC.KeepAlive(a);
-            GC.KeepAlive(b);
-
-            return ret;
-#else
-            return false;
-#endif // FEATURE_TYPEEQUIVALENCE
+            Debug.Assert(RuntimeTypeHandle.GetRuntimeType(type).IsAssignableTo(typeof(Delegate)));
+            return Unsafe.As<Delegate>(RuntimeTypeHandle.InternalAllocNoChecks(type));
         }
 
         // Used by the ctor. Do not call directly.
@@ -579,20 +541,41 @@ namespace System
                 throw new ArgumentNullException(nameof(method));
             }
 
-            Delegate _this = this;
-            Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                Construct(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                    method, out bindToMethodDetails);
+            }
+
+            // Apply the results of the QCall to the delegate instance.
+            _methodPtr = bindToMethodDetails.methodPtr;
+            _methodPtrAux = bindToMethodDetails.methodPtrAux;
+            _extraData = bindToMethodDetails.extraData;
+            if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+            {
+                _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+            }
+
+            if (bindToMethodDetails.selfReferentialTarget != 0)
+                _target = this;
+            else
+                _target = target;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
-        private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
+        private static partial void Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, IntPtr method, out BindToMethodDetails bindToMethodDetails);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
-        internal unsafe IntPtr GetMulticastInvoke()
+        private unsafe IntPtr GetMulticastInvoke()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             void* ptr = GetMulticastInvoke(pMT);
@@ -609,7 +592,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetInvokeMethod(MethodTable* pMT);
 
-        internal unsafe IntPtr GetInvokeMethod()
+        private unsafe IntPtr GetInvokeMethod()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             void* ptr = GetInvokeMethod(pMT);
@@ -617,13 +600,14 @@ namespace System
             return (IntPtr)ptr;
         }
 
-        internal static unsafe IRuntimeMethodInfo CreateMethodInfo(MethodDesc* methodDesc)
+        private static unsafe IRuntimeMethodInfo CreateMethodInfo(MethodDesc* methodDesc)
         {
             IRuntimeMethodInfo? methodInfo = null;
             CreateMethodInfo(methodDesc, ObjectHandleOnStack.Create(ref methodInfo));
             return methodInfo!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_CreateMethodInfo")]
         private static unsafe partial void CreateMethodInfo(MethodDesc* methodDesc, ObjectHandleOnStack retMethodInfo);
 
@@ -634,16 +618,53 @@ namespace System
             return GetMethodDesc(ObjectHandleOnStack.Create(ref instance));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
         private static unsafe partial MethodDesc* GetMethodDesc(ObjectHandleOnStack instance);
 
-        internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
+        private unsafe Delegate NewMulticastDelegate(Wrapper[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
         {
-            return AdjustTarget(ObjectHandleOnStack.Create(ref target), methodPtr);
+            // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
+            Delegate result = InternalAlloc(RuntimeHelpers.GetMethodTable(this));
+
+            // Performance optimization - if this already points to a true multicast delegate,
+            // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
+            if (thisIsMultiCastAlready)
+            {
+                result._methodPtr = _methodPtr;
+                result._methodPtrAux = _methodPtrAux;
+            }
+            else
+            {
+                result._methodPtr = GetMulticastInvoke();
+                result._methodPtrAux = GetInvokeMethod();
+            }
+            result._target = result;
+            result._helperObject = invocationList;
+            result._extraData = invocationCount;
+
+            return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool SlotEquals(Delegate previous, Delegate o) =>
+            previous._methodPtr == o._methodPtr &&
+            previous._methodPtrAux == o._methodPtrAux &&
+            previous._target == o._target;
+
+        internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
+        {
+            unsafe
+            {
+                IntPtr result = AdjustTarget(RuntimeHelpers.GetMethodTable(target), methodPtr);
+                GC.KeepAlive(target);
+                return result;
+            }
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
-        private static partial IntPtr AdjustTarget(ObjectHandleOnStack target, IntPtr methodPtr);
+        private static partial IntPtr AdjustTarget(MethodTable* targetMT, IntPtr methodPtr);
 
         internal void InitializeVirtualCallStub(IntPtr methodPtr)
         {
@@ -651,8 +672,94 @@ namespace System
             InitializeVirtualCallStub(ObjectHandleOnStack.Create(ref d), methodPtr);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
+
+        [DoesNotReturn]
+        [DebuggerNonUserCode]
+        private static void ThrowNullThisInDelegateToInstance() =>
+            throw new ArgumentException(SR.Arg_DlgtNullInst);
+
+#pragma warning disable IDE0060
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorClosed(object target, IntPtr methodPtr)
+        {
+            if (target == null)
+                ThrowNullThisInDelegateToInstance();
+            _target = target;
+            _methodPtr = methodPtr;
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorClosedStatic(object target, IntPtr methodPtr)
+        {
+            _target = target;
+            _methodPtr = methodPtr;
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorRTClosed(object target, IntPtr methodPtr)
+        {
+            if (target == null)
+                ThrowNullThisInDelegateToInstance();
+            _target = target;
+            _methodPtr = AdjustTarget(target, methodPtr);
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorOpen(object target, IntPtr methodPtr, IntPtr shuffleThunk)
+        {
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _methodPtrAux = methodPtr;
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
+        {
+            _target = this;
+            _methodPtr = shuffleThunk;
+            InitializeVirtualCallStub(methodPtr);
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
+        {
+            _target = target;
+            _methodPtr = methodPtr;
+            _helperObject = GCHandle.InternalGet(gchandle);
+            Debug.Assert(HasSingleTarget);
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorCollectibleOpen(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
+        {
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _methodPtrAux = methodPtr;
+            _helperObject = GCHandle.InternalGet(gchandle);
+            Debug.Assert(HasSingleTarget);
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
+        {
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _helperObject = GCHandle.InternalGet(gchandle);
+            Debug.Assert(HasSingleTarget);
+            InitializeVirtualCallStub(methodPtr);
+        }
+#pragma warning restore IDE0060
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their

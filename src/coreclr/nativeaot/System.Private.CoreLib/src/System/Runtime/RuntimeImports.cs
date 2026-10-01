@@ -296,10 +296,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhHandleTryGetCrossReferenceContext")]
         internal static extern bool RhHandleTryGetCrossReferenceContext(IntPtr handle, out IntPtr context);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsGCBridgeActive")]
-        internal static extern bool RhIsGCBridgeActive();
-
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]
@@ -582,14 +578,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCheckAndClearPendingInterrupt")]
         internal static extern bool RhCheckAndClearPendingInterrupt();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport("*", "RhGetCurrentThunkContext")]
-        internal static extern IntPtr GetCurrentInteropThunkContext();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport("*", "RhGetCommonStubAddress")]
-        internal static extern IntPtr GetInteropCommonStubAddress();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]

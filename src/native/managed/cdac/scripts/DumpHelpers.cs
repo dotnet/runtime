@@ -48,19 +48,14 @@ internal static class DumpHelpers
     {
         ulong contractAddr = FindContractDescriptor(dt);
 
-        if (!ContractDescriptorTarget.TryCreate(
-                contractAddr,
-                (ulong address, Span<byte> buffer) => dt.DataReader.Read(address, buffer) == buffer.Length ? 0 : -1,
-                (ulong address, Span<byte> buffer) => -1,
-                (uint threadId, uint contextFlags, Span<byte> buffer) =>
-                    dt.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1,
-                (uint threadId, ReadOnlySpan<byte> context) => -1,
-                [CoreCLRContracts.Register],
-                out ContractDescriptorTarget? target))
-        {
-            throw new InvalidOperationException("Failed to create cDAC target.");
-        }
-
-        return target;
+        return ContractDescriptorTarget.Create(
+            contractAddr,
+            (ulong address, Span<byte> buffer) => dt.DataReader.Read(address, buffer) == buffer.Length ? 0 : -1,
+            (ulong address, Span<byte> buffer) => -1,
+            (uint threadId, uint contextFlags, Span<byte> buffer) =>
+                dt.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1,
+            (uint threadId, ReadOnlySpan<byte> context) => -1,
+            (ulong _, out ulong _) => throw new NotImplementedException("Scripts do not provide AllocVirtual"),
+            [CoreCLRContracts.Register]);
     }
 }

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Web;
@@ -111,23 +110,6 @@ internal sealed class WebServerStartup
         }
         app.UseRouting();
         app.UseWebSockets();
-        if (options.OnConsoleConnected is not null)
-        {
-            app.UseRouter(router =>
-            {
-                router.MapGet("/console", async context =>
-                {
-                    if (!context.WebSockets.IsWebSocketRequest)
-                    {
-                        context.Response.StatusCode = 400;
-                        return;
-                    }
-
-                    using WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
-                    await options.OnConsoleConnected(socket);
-                });
-            });
-        }
 
         app.Map("/debug", app =>
         {

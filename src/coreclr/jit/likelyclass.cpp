@@ -287,9 +287,8 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 
                     assert(totalLikelihood <= 100);
 
-                    // Distribute the rounding error and just apply it to the first entry.
-                    // Assume that there is no error If we have unknown handles.
-                    if (!containsUnknownHandles)
+                    // Distribute the rounding error only if the returned entries represent the entire histogram.
+                    if ((numberOfClasses == knownHandles) && !containsUnknownHandles)
                     {
                         assert(numberOfClasses > 0);
                         assert(totalLikelihood > 0);
@@ -326,10 +325,11 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 //    ilOffset - il offset of the callvirt
 //
 // Returns:
-//    Estimated number of classes seen at runtime
+//    Number of likely class records written to pLikelyClasses
 //
 // Notes:
 //    A "monomorphic" call site will return likelihood 100 and number of entries = 1.
+//    Returned likelihoods reflect the observed proportions and are not guaranteed to sum to 100.
 //
 //   This is used by the devirtualization logic below, and by crossgen2 when producing
 //   the R2R image (to reduce the sizecost of carrying the type histogram)
@@ -372,14 +372,17 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*    
 //                           at least of 'maxLikelyValues' (next argument) length.
 //                           The array consists of pairs "value - likelihood" ordered by likelihood
 //                           (descending) where likelihood can be any value in [0..100] range.
-//    maxLikelyValues      - limit for likely classes to output
+//    maxLikelyValues      - limit for likely values to output
 //    schema               - profile schema
 //    countSchemaItems     - number of items in the schema
 //    pInstrumentationData - associated data
 //    ilOffset             - il offset of the node of interest
 //
 // Returns:
-//    Estimated number of different constants seen at runtime
+//    Number of likely value records written to pLikelyValues
+//
+// Notes:
+//    Returned likelihoods reflect the observed proportions and are not guaranteed to sum to 100.
 //
 extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*                     pLikelyValues,
                                                    UINT32                                 maxLikelyValues,
@@ -446,11 +449,15 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*           
 
             assert(totalLikelihood <= 100);
 
-            // Distribute the rounding error and just apply it to the first entry.
-            assert(numberOfLikelyConst > 0);
-            assert(totalLikelihood > 0);
-            pLikelyValues[0].likelihood += 100 - totalLikelihood;
-            assert(pLikelyValues[0].likelihood <= 100);
+            // Distribute the rounding error only if the returned entries represent the entire histogram.
+            if (numberOfLikelyConst == h.countHistogramElements)
+            {
+                assert(numberOfLikelyConst > 0);
+                assert(totalLikelihood > 0);
+                pLikelyValues[0].likelihood += 100 - totalLikelihood;
+                assert(pLikelyValues[0].likelihood <= 100);
+            }
+
             return numberOfLikelyConst;
         }
     }

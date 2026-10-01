@@ -33,7 +33,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return false;
 
             Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
-            TargetNUInt relativeOffset = new TargetNUInt(jittedCodeAddress.Value - codeStart.Value);
+            TargetPointer instrPointer = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
+            TargetNUInt relativeOffset = new TargetNUInt(instrPointer.Value - codeStart.Value);
 
             if (!GetInterpreterRealCodeHeader(codeStart, out Data.InterpreterRealCodeHeader? realCodeHeader))
                 return false;
@@ -122,7 +123,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             TargetNUInt numEHInfos = Target.ReadNUInt(realCodeHeader.JitEHInfo.Address - (ulong)Target.PointerSize);
             startAddr = realCodeHeader.JitEHInfo.Clauses;
-            endAddr = startAddr + numEHInfos.Value * Target.GetTypeInfo(DataType.EEExceptionClause).Size!.Value;
+            endAddr = startAddr + numEHInfos.Value * Data.EEExceptionClause.GetSize(Target);
         }
 
         private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)

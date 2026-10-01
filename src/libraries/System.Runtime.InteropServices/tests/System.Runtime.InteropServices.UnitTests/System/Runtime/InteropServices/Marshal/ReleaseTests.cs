@@ -10,8 +10,8 @@ namespace System.Runtime.InteropServices.Tests
     {
         [Fact]
         [SkipOnMono("ComWrappers are not supported on Mono")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Built-in COM / ComWrappers is not supported on WebAssembly")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/76005", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsNotWindows))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Release_ValidPointer_Success()
         {
             var cw = new ComWrappersImpl();

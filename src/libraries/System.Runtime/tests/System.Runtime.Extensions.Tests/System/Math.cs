@@ -1035,6 +1035,7 @@ namespace System.Tests
                 yield return new object[] { 0.0, 2.0, 0.0, 0.0 };
                 yield return new object[] { 0.0, 3.0, 0.0, 0.0 };
                 yield return new object[] { 0.0, double.PositiveInfinity, 0.0, 0.0 };
+                yield return new object[] { double.Epsilon, 1.0, double.Epsilon, 0.0 };
                 yield return new object[] { 1.0, double.NegativeInfinity, 1.0, CrossPlatformMachineEpsilon * 10 };
                 yield return new object[] { 1.0, -1.0, 1.0, CrossPlatformMachineEpsilon * 10 };
                 yield return new object[] { 1.0, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };

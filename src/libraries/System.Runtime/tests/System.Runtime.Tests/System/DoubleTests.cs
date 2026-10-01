@@ -282,6 +282,10 @@ namespace System.Tests
             yield return new object[] { "0", defaultStyle, null, 0.0 };
             yield return new object[] { "123", defaultStyle, null, 123.0 };
             yield return new object[] { "  123  ", defaultStyle, null, 123.0 };
+
+            // Whitespace between a leading sign and the digits (mirrors trailing sign + AllowTrailingWhite)
+            yield return new object[] { "- 123", NumberStyles.AllowLeadingWhite | NumberStyles.AllowLeadingSign, invariantFormat, -123.0 };
+            yield return new object[] { "  -  123  ", NumberStyles.Float, invariantFormat, -123.0 };
             yield return new object[] { (567.89).ToString(), defaultStyle, null, 567.89 };
             yield return new object[] { (-567.89).ToString(), defaultStyle, null, -567.89 };
             yield return new object[] { "1E23", defaultStyle, null, 1E23 };
@@ -467,6 +471,11 @@ namespace System.Tests
             yield return new object[] { "0xFFp0", NumberStyles.HexFloat, invariantFormat, 255.0 };
             yield return new object[] { "0x1p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
             yield return new object[] { "0x100p0", NumberStyles.HexFloat, invariantFormat, 256.0 };
+
+            // Whitespace between a leading sign and the "0x" prefix (AllowLeadingWhite)
+            yield return new object[] { "- 0x1p0", NumberStyles.HexFloat, invariantFormat, -1.0 };
+            yield return new object[] { "  -  0x1p0  ", NumberStyles.HexFloat, invariantFormat, -1.0 };
+            yield return new object[] { "+ 0x1p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
 
             // Large significand (many hex digits)
             yield return new object[] { "0xFFFFFFFFFFFFFFp0", NumberStyles.HexFloat, invariantFormat, (double)0xFFFFFFFFFFFFFF };
@@ -1013,6 +1022,25 @@ namespace System.Tests
             Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant(), provider));
         }
 
+        [Theory]
+        [InlineData(3.141592653589793E-07, "F16", "0.0000003141592654")]
+        [InlineData(3.141592653589793E-07, "F17", "0.00000031415926536")]
+        [InlineData(3.141592653589793E-07, "F18", "0.000000314159265359")]
+        [InlineData(-3.141592653589793E-07, "F17", "-0.00000031415926536")]
+        [InlineData(3.141592653589793E-07, "C17", "\u00A40.00000031415926536")]
+        [InlineData(3.141592653589793E-07, "N17", "0.00000031415926536")]
+        [InlineData(3.141592653589793E-07, "P15", "0.000031415926536 %")]
+        [InlineData(3.141592653589793E-07, "P17", "0.00003141592653590 %")]
+        [InlineData(double.Epsilon, "F17", "0.00000000000000000")]
+        [InlineData(-double.Epsilon, "F17", "-0.00000000000000000")]
+        [InlineData(0.0, "F17", "0.00000000000000000")]
+        [InlineData(-0.0, "F17", "-0.00000000000000000")]
+        public static void ToString_FractionalPrecision(double value, string format, string expected)
+        {
+            Assert.Equal(expected, value.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, NumberFormatInfo.InvariantInfo, expected);
+        }
+
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
@@ -1049,6 +1077,23 @@ namespace System.Tests
         public static void ToString_SectionSeparator(double d, string format, string expected)
         {
             Assert.Equal(expected, d.ToString(format, NumberFormatInfo.InvariantInfo));
+        }
+
+        [Theory]
+        // These exact powers of two have unequal rounding margins; their shortest round-trippable
+        // string needs all 17 significant digits, and dropping the last one parses back to the
+        // adjacent lower value.
+        [InlineData(0x3E60000000000000, "2.9802322387695312E-08")]   // +2^-25
+        [InlineData(0xBE60000000000000, "-2.9802322387695312E-08")]  // -2^-25
+        [InlineData(0x0410000000000000, "4.1045368012983762E-289")]  // +2^-958
+        [InlineData(0x8410000000000000, "-4.1045368012983762E-289")] // -2^-958
+        public static void ToString_ExactPowerOfTwo_Roundtrips(ulong bits, string expected)
+        {
+            double d = BitConverter.UInt64BitsToDouble(bits);
+
+            Assert.Equal(expected, d.ToString("R", CultureInfo.InvariantCulture));
+            Assert.Equal(expected, d.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(d, double.Parse(expected, CultureInfo.InvariantCulture));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
@@ -1180,6 +1225,30 @@ namespace System.Tests
             Assert.False(double.TryParse("0x1.8p0", NumberStyles.HexFloat, multiSep, out _));
             Assert.Equal("0x1::8p+0", 1.5.ToString("x", multiSep));
             NumberFormatTestHelper.TryFormatNumberTest(1.5, "x", multiSep, "0x1::8p+0", formatCasingMatchesOutput: false);
+        }
+
+        [Theory]
+        [InlineData(" ", "\u00A0")]
+        [InlineData(" ", "\u202F")]
+        [InlineData("\u00A0", " ")]
+        [InlineData("\u202F", " ")]
+        public static void ParseHexFloat_SpaceReplacingDecimalSeparator(string inputSeparator, string formatSeparator)
+        {
+            NumberFormatInfo nfi = new() { NumberDecimalSeparator = formatSeparator };
+            string value = $"0x1{inputSeparator}8p0";
+
+            Assert.Equal(1.5, double.Parse(value, NumberStyles.HexFloat, nfi));
+            Assert.Equal(1.5, double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.HexFloat, nfi));
+        }
+
+        [Fact]
+        public static void ParseHexFloat_SupplementaryDecimalSeparator()
+        {
+            NumberFormatInfo nfi = new() { NumberDecimalSeparator = "\U0001F600" };
+            const string Value = "0x1\U0001F6008p0";
+
+            Assert.Equal(1.5, double.Parse(Value, NumberStyles.HexFloat, nfi));
+            Assert.Equal(1.5, double.Parse(Encoding.UTF8.GetBytes(Value), NumberStyles.HexFloat, nfi));
         }
 
         [Theory]
@@ -1325,6 +1394,60 @@ namespace System.Tests
             CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
             string s = string.Format(ci, "{0}", 158.68);
             Assert.Equal(-158.68, double.Parse("-" + s, NumberStyles.Number, ci));
+        }
+
+        [Fact]
+        public static void TestSpecialValueParsingWithHyphen()
+        {
+            NumberFormatInfo format = new() { NegativeSign = "\u2212" };
+
+            Assert.True(double.IsNaN(double.Parse("-NaN", NumberStyles.Float, format)));
+            Assert.True(double.IsNaN(double.Parse("-NaN"u8, NumberStyles.Float, format)));
+
+            format = CultureInfo.GetCultureInfo("sv-SE").NumberFormat;
+            string value = "-" + format.NaNSymbol;
+
+            Assert.True(double.IsNaN(double.Parse(value, NumberStyles.Float, format)));
+            Assert.True(double.IsNaN(double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format)));
+        }
+
+        public static IEnumerable<object[]> Parse_CustomSigns_TestData()
+        {
+            // Non-ASCII signs that are 3 bytes in UTF-8, e.g. U+2212 MINUS SIGN (sv-SE) and U+061C ARABIC LETTER MARK + '-' (ar)
+            yield return new object[] { "\u2212NaN", "+", "\u2212", true, double.NaN };
+            yield return new object[] { "\u2212nan", "+", "\u2212", true, double.NaN };
+            yield return new object[] { "\u061C-NaN", "+", "\u061C-", true, double.NaN };
+            yield return new object[] { "A\u00C9Infinity", "a\u00E9", "-", true, double.PositiveInfinity };
+            yield return new object[] { "B\u00C9Infinity", "a\u00E9", "-", false, 0.0 };
+
+            // Non-ASCII and supplementary signs are matched ignoring case
+            yield return new object[] { "\u00C9Infinity", "\u00E9", "-", true, double.PositiveInfinity };
+            yield return new object[] { "\U00010400Infinity", "\U00010428", "-", true, double.PositiveInfinity };
+            yield return new object[] { "\u200E+\u200EInfinity", "\u200E+\u200E", "\u200E-\u200E", true, double.PositiveInfinity };
+            yield return new object[] { "\u200E-\u200ENaN", "\u200E+\u200E", "\u200E-\u200E", true, double.NaN };
+
+            // A sign longer than the input
+            yield return new object[] { "CONTENT-LENGTH: 1234", "content-length: 1234x", "-", false, 0.0 };
+
+            // U+017F LATIN SMALL LETTER LONG S doesn't match 's' under ordinal casing, for short and 16+ byte signs.
+            // The last two signs end with 'i', so a wrong match would parse the remaining "Infinity".
+            yield return new object[] { "\u017FInfinity", "s", "-", false, 0.0 };
+            yield return new object[] { "SInfinity", "\u017F", "-", false, 0.0 };
+            yield return new object[] { "\u017F\u00C9Infinity", "s\u00E9i", "-", false, 0.0 };
+            yield return new object[] { "\u017F\u00C9ABCDEFGHIJKLMInfinity", "s\u00E9abcdefghijklmi", "-", false, 0.0 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_CustomSigns_TestData))]
+        public static void Parse_CustomSigns(string value, string positiveSign, string negativeSign, bool expectedSuccess, double expected)
+        {
+            NumberFormatInfo format = new() { PositiveSign = positiveSign, NegativeSign = negativeSign };
+
+            Assert.Equal(expectedSuccess, double.TryParse(value, NumberStyles.Float, format, out double result));
+            Assert.Equal(expected, result);
+
+            Assert.Equal(expectedSuccess, double.TryParse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format, out result));
+            Assert.Equal(expected, result);
         }
 
         [Theory]
@@ -1889,70 +2012,112 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, double.RadiansToDegrees(+value), allowedVariance);
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones that pick a path or a sign the bulk data cannot reach:
+        // zero, the subnormal range where the middle term underflows, the cutoffs at either end,
+        // and an overflow. The last two are the inputs whose exact product lands closest to a
+        // rounding midpoint anywhere in the domain, at 2^-55.58 and 2^-55.99 ulp, so they are what
+        // a form carrying too few bits gets wrong first.
+        [Theory]
+        [InlineData(0x0000_0000_0000_0000, 0x0000_0000_0000_0000, 0x0000_0000_0000_0000)] // 0
+        [InlineData(0x0000_0000_0000_0001, 0x0000_0000_0000_0000, 0x0000_0000_0000_0039)] // Epsilon
+        [InlineData(0x0010_0000_0000_0000, 0x0000_477D_1A89_4A75, 0x006C_A5DC_1A63_C1F8)] // MinNormal
+        [InlineData(0x031F_FFFF_FFFF_FFFF, 0x02C1_DF46_A252_9D39, 0x037C_A5DC_1A63_C1F7)] // RadiansToDegreesMin - 1 ulp
+        [InlineData(0x0320_0000_0000_0000, 0x02C1_DF46_A252_9D39, 0x037C_A5DC_1A63_C1F8)] // RadiansToDegreesMin
+        [InlineData(0x03EF_FFFF_FFFF_FFFF, 0x0391_DF46_A252_9D39, 0x044C_A5DC_1A63_C1F7)] // DegreesToRadiansMin - 1 ulp
+        [InlineData(0x03F0_0000_0000_0000, 0x0391_DF46_A252_9D39, 0x044C_A5DC_1A63_C1F8)] // DegreesToRadiansMin
+        [InlineData(0x7F91_DF46_A252_9D38, 0x7F33_F6A1_DB14_1FB8, 0x7FEF_FFFF_FFFF_FFFE)] // RadiansToDegreesMax - 1 ulp
+        [InlineData(0x7F91_DF46_A252_9D39, 0x7F33_F6A1_DB14_1FB9, 0x7FF0_0000_0000_0000)] // RadiansToDegreesMax
+        [InlineData(0x7FEF_FFFF_FFFF_FFFF, 0x7F91_DF46_A252_9D39, 0x7FF0_0000_0000_0000)] // MaxValue
+        [InlineData(0x7FF0_0000_0000_0000, 0x7FF0_0000_0000_0000, 0x7FF0_0000_0000_0000)] // PositiveInfinity
+        [InlineData(0x3FF9_6BDF_4AA9_CD3B, 0x3F9C_655C_F14D_66CB, 0x4056_C226_7343_95AC)] // closest to a midpoint anywhere for DegreesToRadians
+        [InlineData(0x3FFD_B0FB_3010_78BE, 0x3FA0_9530_51C1_CB1B, 0x405A_94C0_9279_849F)] // closest to a midpoint anywhere for RadiansToDegrees
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ulong valueBits, ulong degreesToRadiansBits, ulong radiansToDegreesBits)
+        {
+            const ulong SignMask = 0x8000_0000_0000_0000;
+
+            double value = BitConverter.UInt64BitsToDouble(valueBits);
+            double degreesToRadians = BitConverter.UInt64BitsToDouble(degreesToRadiansBits);
+            double radiansToDegrees = BitConverter.UInt64BitsToDouble(radiansToDegreesBits);
+
+            AssertExtensions.Equal(degreesToRadians, double.DegreesToRadians(value));
+            AssertExtensions.Equal(radiansToDegrees, double.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            double negativeValue = BitConverter.UInt64BitsToDouble(valueBits ^ SignMask);
+            double negativeDegreesToRadians = BitConverter.UInt64BitsToDouble(degreesToRadiansBits ^ SignMask);
+            double negativeRadiansToDegrees = BitConverter.UInt64BitsToDouble(radiansToDegreesBits ^ SignMask);
+
+            AssertExtensions.Equal(negativeDegreesToRadians, double.DegreesToRadians(negativeValue));
+            AssertExtensions.Equal(negativeRadiansToDegrees, double.RadiansToDegrees(negativeValue));
+        }
+
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
             // Basic floating point parsing with trailing invalid characters
-            yield return new object[] { "123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45, 6 };
-            yield return new object[] { "456.78xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 456.78, 6 };
-            yield return new object[] { "0.123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 0.123, 5 };
+            yield return new object[] { "123.45abc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45, 6 };
+            yield return new object[] { "456.78xyz", NumberStyles.Float, CultureInfo.InvariantCulture, 456.78, 6 };
+            yield return new object[] { "0.123abc", NumberStyles.Float, CultureInfo.InvariantCulture, 0.123, 5 };
 
             // With leading whitespace
-            yield return new object[] { "  123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45, 8 };
+            yield return new object[] { "  123.45abc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45, 8 };
 
             // With signs
-            yield return new object[] { "+123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45, 7 };
-            yield return new object[] { "-456.78xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, -456.78, 7 };
+            yield return new object[] { "+123.45abc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45, 7 };
+            yield return new object[] { "-456.78xyz", NumberStyles.Float, CultureInfo.InvariantCulture, -456.78, 7 };
+            yield return new object[] { "  -  123.5xyz", NumberStyles.Float, CultureInfo.InvariantCulture, -123.5, 10 };
 
             // With exponent
-            yield return new object[] { "1.23e10abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1.23e10, 7 };
-            yield return new object[] { "4.56E-5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 4.56E-5, 7 };
-            yield return new object[] { "1E10abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1E10, 4 };
+            yield return new object[] { "1.23e10abc", NumberStyles.Float, CultureInfo.InvariantCulture, 1.23e10, 7 };
+            yield return new object[] { "4.56E-5xyz", NumberStyles.Float, CultureInfo.InvariantCulture, 4.56E-5, 7 };
+            yield return new object[] { "1E10abc", NumberStyles.Float, CultureInfo.InvariantCulture, 1E10, 4 };
 
             // Integer without decimal point
-            yield return new object[] { "123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.0, 3 };
-            yield return new object[] { "456xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 456.0, 3 };
+            yield return new object[] { "123abc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.0, 3 };
+            yield return new object[] { "456xyz", NumberStyles.Float, CultureInfo.InvariantCulture, 456.0, 3 };
 
             // Special values
-            yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 8 };
-            yield return new object[] { "-Infinityxyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NegativeInfinity, 9 };
-            yield return new object[] { "NaNabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NaN, 3 };
+            yield return new object[] { "Infinityabc", NumberStyles.Float, CultureInfo.InvariantCulture, double.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinityxyz", NumberStyles.Float, CultureInfo.InvariantCulture, double.NegativeInfinity, 9 };
+            yield return new object[] { "NaNabc", NumberStyles.Float, CultureInfo.InvariantCulture, double.NaN, 3 };
 
             // Special values always consume surrounding whitespace (independent of AllowLeadingWhite/AllowTrailingWhite) before stopping on the first non-whitespace invalid character
-            yield return new object[] { "Infinity   ", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 11 };
-            yield return new object[] { "Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 10 };
-            yield return new object[] { "+Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 11 };
-            yield return new object[] { "-Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NegativeInfinity, 11 };
-            yield return new object[] { "NaN  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NaN, 5 };
+            yield return new object[] { "Infinity   ", NumberStyles.Float, CultureInfo.InvariantCulture, double.PositiveInfinity, 11 };
+            yield return new object[] { "Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, double.PositiveInfinity, 10 };
+            yield return new object[] { "+Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, double.PositiveInfinity, 11 };
+            yield return new object[] { "-Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, double.NegativeInfinity, 11 };
+            yield return new object[] { "NaN  x", NumberStyles.Float, CultureInfo.InvariantCulture, double.NaN, 5 };
 
             // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
-            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 10 };
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite), CultureInfo.InvariantCulture, double.PositiveInfinity, 10 };
 
-            // Hex-float (AllowTrailingInvalidCharacters combined with HexFloat)
-            yield return new object[] { "0x1.8p0xyz", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1.5, 7 };
-            yield return new object[] { "0x1.0p10!!", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1024.0, 8 };
-            yield return new object[] { "0x1.8p0  x", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1.5, 9 };
+            // Hex-float (partial parsing combined with HexFloat)
+            yield return new object[] { "0x1.8p0xyz", NumberStyles.HexFloat, CultureInfo.InvariantCulture, 1.5, 7 };
+            yield return new object[] { "0x1.0p10!!", NumberStyles.HexFloat, CultureInfo.InvariantCulture, 1024.0, 8 };
+            yield return new object[] { "0x1.8p0  x", NumberStyles.HexFloat, CultureInfo.InvariantCulture, 1.5, 9 };
+            yield return new object[] { "- 0x1.8p0xyz", NumberStyles.HexFloat, CultureInfo.InvariantCulture, -1.5, 9 };
 
             // Hex-float special values (Infinity/NaN) with trailing invalid characters
-            yield return new object[] { "Infinityxyz", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 8 };
-            yield return new object[] { "-Infinity!!", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NegativeInfinity, 9 };
-            yield return new object[] { "NaN  x", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NaN, 5 };
+            yield return new object[] { "Infinityxyz", NumberStyles.HexFloat, CultureInfo.InvariantCulture, double.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinity!!", NumberStyles.HexFloat, CultureInfo.InvariantCulture, double.NegativeInfinity, 9 };
+            yield return new object[] { "NaN  x", NumberStyles.HexFloat, CultureInfo.InvariantCulture, double.NaN, 5 };
 
             // Valid number without trailing characters
-            yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45, 6 };
+            yield return new object[] { "123.45", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45, 6 };
 
             // Stop at invalid exponent
-            yield return new object[] { "123eabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.0, 3 };
+            yield return new object[] { "123eabc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.0, 3 };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, double expectedValue, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, double expectedValue, int expectedCharsConsumed)
         {
             double result;
             int charsConsumed;
 
             // Test string overload with charsConsumed
-            Assert.True(NumberBaseHelper<double>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<double>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             if (double.IsNaN(expectedValue))
             {
                 Assert.True(double.IsNaN(result));
@@ -1964,7 +2129,7 @@ namespace System.Tests
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.True(NumberBaseHelper<double>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<double>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             if (double.IsNaN(expectedValue))
             {
                 Assert.True(double.IsNaN(result));
@@ -1978,7 +2143,7 @@ namespace System.Tests
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(NumberBaseHelper<double>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<double>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             if (double.IsNaN(expectedValue))
             {
                 Assert.True(double.IsNaN(result));
@@ -1994,39 +2159,39 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
             // Empty string
-            yield return new object[] { "", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+            yield return new object[] { "", NumberStyles.Float, CultureInfo.InvariantCulture };
 
             // Only invalid characters (no valid number)
-            yield return new object[] { "abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+            yield return new object[] { "abc", NumberStyles.Float, CultureInfo.InvariantCulture };
 
             // Invalid start characters
-            yield return new object[] { ".abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+            yield return new object[] { ".abc", NumberStyles.Float, CultureInfo.InvariantCulture };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
         {
             double result;
             int charsConsumed;
 
             // Test string overload with charsConsumed
-            Assert.False(NumberBaseHelper<double>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<double>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             Assert.Equal(0.0, result);
             Assert.Equal(0, charsConsumed);
 
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.False(NumberBaseHelper<double>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<double>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0.0, result);
             Assert.Equal(0, charsConsumed);
 
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(NumberBaseHelper<double>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<double>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(0.0, result);
             Assert.Equal(0, bytesConsumed);
         }

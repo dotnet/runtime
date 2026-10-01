@@ -32,6 +32,7 @@ internal sealed class MockEnCModule : TypedView
             .AddPointerField(nameof(Data.Module.Base))
             .AddPointerField(nameof(Data.Module.LoaderAllocator))
             .AddPointerField(nameof(Data.Module.DynamicMetadata))
+            .AddUInt32Field(nameof(Data.Module.MetadataGeneration))
             .AddPointerField(nameof(Data.Module.SimpleName))
             .AddPointerField(nameof(Data.Module.Path))
             .AddPointerField(nameof(Data.Module.FileName))

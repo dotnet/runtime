@@ -92,8 +92,8 @@ namespace {Namespace}
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector<{Op1BaseType}>>() / sizeof({Op1BaseType});
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int Op1ElementCount = sizeof(Vector<{Op1BaseType}>) / sizeof({Op1BaseType});
+        private static readonly int RetElementCount = sizeof(Vector<{RetBaseType}>) / sizeof({RetBaseType});
 
         private Vector<{Op1BaseType}> _mask;
         private Vector<{Op1BaseType}> _fld1;
@@ -306,11 +306,11 @@ namespace {Namespace}
             {
                 if (trueMode)
                 {
-                    expected[i] = (mask[i] != 0) ? {GetIterResult} : condVal[i];
+                    expected[i] = (Helpers.IsMaskActive(mask[i])) ? {GetIterResult} : condVal[i];
                 }
                 else
                 {
-                    expected[i] = (mask[i] == 0) ? {GetIterResult} : condVal[i];
+                    expected[i] = (Helpers.IsMaskInactive(mask[i])) ? {GetIterResult} : condVal[i];
                 }
             }
 

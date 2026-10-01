@@ -22,9 +22,15 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
     private readonly InterpreterJitManager _interpreterJitManager;
+    private readonly CachedValue<TargetPointer> _thePreStub;
+    private readonly TargetPointer _virtualIPRangeListAddress;
+    private WasmFunctionTableIndexLookup? _wasmFunctionTableIndexLookup;
 
-    private Data.RangeSectionMap _topRangeSectionMap
-        => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
+    // Mirrors PortableEntryPoint::kPrefersInterpreterEntryPoint in src/coreclr/vm/precode_portable.hpp.
+    private const int PortableEntryPointPrefersInterpreterEntryPoint = 0x4;
+
+    // Mirrors INTERPRETER_CODE_POISON in src/coreclr/vm/method.hpp.
+    private const ulong InterpreterCodePoison = 1;
 
     public ExecutionManagerCore(Target target, TargetPointer topRangeSectionMapAddress)
     {
@@ -35,10 +41,17 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
         _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
+        _thePreStub = new(() => target.TryReadGlobalPointer(Constants.Globals.ThePreStub, out TargetPointer? thePreStubPtr)
+            ? target.ReadPointer(thePreStubPtr.Value)
+            : TargetPointer.Null);
+        _virtualIPRangeListAddress = _target.TryReadGlobalPointer(Constants.Globals.VirtualIPRangeList, out TargetPointer? virtualIPRangeListAddress)
+            ? virtualIPRangeListAddress.Value
+            : TargetPointer.Null;
     }
 
     public void Flush(FlushScope scope)
     {
+        _thePreStub.Clear();
         _codeInfos.Clear();
     }
 
@@ -66,6 +79,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         CodeHeap = 0x02,
         RangeList = 0x04,
         Interpreter = 0x08,
+        VirtualIP = 0x10,
     }
 
     // Mirrors the native CodeHeap::CodeHeapType enum in codeman.h.
@@ -90,14 +104,16 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         Unknown = 0,
         JumpStub = 1,
-        DynamicHelper = 3,
-        StubPrecode = 4,
-        FixupPrecode = 5,
-        VSDDispatchStub = 6,
-        VSDResolveStub = 7,
-        VSDLookupStub = 8,
-        VSDVTableStub = 9,
-        CallCountingStub = 10,
+        DynamicHelper = 2,
+        StubPrecode = 3,
+        FixupPrecode = 4,
+        VSDDispatchStub = 5,
+        VSDResolveStub = 6,
+        VSDLookupStub = 7,
+        VSDVTableStub = 8,
+        CallCountingStub = 9,
+        WrapperStub = 10,
+        ShuffleThunk = 11,
     }
 
     private abstract class JitManager
@@ -140,6 +156,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         internal bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
         internal bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
         internal bool IsInterpreter => HasFlags(RangeSectionFlags.Interpreter);
+        internal bool IsVirtualIP => HasFlags(RangeSectionFlags.VirtualIP);
 
         internal bool HasR2RModule => Data!.R2RModule != TargetPointer.Null;
 
@@ -149,8 +166,17 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             return codeHeaderIndirect.Value <= stubCodeBlockLast;
         }
 
-        internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, ExecutionManagerHelpers.RangeSectionMap rangeSectionLookup, TargetCodePointer jittedCodeAddress)
+        internal static RangeSection Find(
+            Target target,
+            TargetPointer topRangeSectionMapAddress,
+            ExecutionManagerHelpers.RangeSectionMap rangeSectionLookup,
+            TargetPointer virtualIPRangeListAddress,
+            TargetCodePointer jittedCodeAddress)
         {
+            if (IsVirtualIPAddress(target, jittedCodeAddress))
+                return FindVirtualIPRangeSection(target, virtualIPRangeListAddress, jittedCodeAddress);
+
+            Data.RangeSectionMap topRangeSectionMap = target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(topRangeSectionMapAddress);
             TargetPointer rangeSectionFragmentPtr = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
             // The lowest level of the range section map covers a large address space which may contain multiple small fragments.
             // Iterate over them to find the one that contains the jitted code address.
@@ -174,6 +200,82 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
                 return new RangeSection();
             }
             return new RangeSection(rangeSection);
+        }
+
+        private static RangeSection FindVirtualIPRangeSection(
+            Target target,
+            TargetPointer virtualIPRangeListAddress,
+            TargetCodePointer virtualIP)
+        {
+            // Reader resource budget, not a limit imposed by native range registration.
+            const int MaxVirtualIPRangeNodes = 65_536;
+
+            if (virtualIPRangeListAddress == TargetPointer.Null)
+                return new RangeSection();
+
+            try
+            {
+                TargetPointer current = target.ReadPointer(virtualIPRangeListAddress);
+                HashSet<TargetPointer> visited = new();
+                Data.RangeSection? matchingRange = null;
+                while (current != TargetPointer.Null)
+                {
+                    if (visited.Count == MaxVirtualIPRangeNodes || !visited.Add(current))
+                        return new RangeSection();
+
+                    Data.VirtualIPRangeSection node = target.ProcessedData.GetOrAdd<Data.VirtualIPRangeSection>(current);
+                    Data.RangeSection range = target.ProcessedData.GetOrAdd<Data.RangeSection>(node.RangeSection);
+                    if (range.RangeBegin >= range.RangeEndOpen
+                        || range.R2RModule == TargetPointer.Null
+                        || range.JitManager == TargetPointer.Null
+                        || range.NextForDelete != TargetPointer.Null
+                        || (range.Flags & (int)RangeSectionFlags.VirtualIP) == 0)
+                    {
+                        return new RangeSection();
+                    }
+
+                    if (range.RangeBegin <= virtualIP.Value && virtualIP.Value < range.RangeEndOpen)
+                    {
+                        if (matchingRange is not null)
+                            return new RangeSection();
+
+                        // Registration publishes the node before setting MinVirtualIP. Only
+                        // the candidate module must be initialized for this lookup to succeed.
+                        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(range.R2RModule);
+                        if (module.ReadyToRunInfo == TargetPointer.Null)
+                            return new RangeSection();
+
+                        Data.ReadyToRunInfo r2rInfo = target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
+                        if (r2rInfo.MinVirtualIP is not TargetPointer minVirtualIP
+                            || minVirtualIP != range.RangeBegin
+                            || r2rInfo.LoadedImageBase == TargetPointer.Null)
+                        {
+                            return new RangeSection();
+                        }
+
+                        matchingRange = range;
+                    }
+
+                    current = node.Next;
+                }
+
+                return matchingRange is null ? new RangeSection() : new RangeSection(matchingRange);
+            }
+            catch (VirtualReadException)
+            {
+                return new RangeSection();
+            }
+        }
+
+        private static bool IsVirtualIPAddress(Target target, TargetCodePointer codeAddress)
+        {
+            if (target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.Wasm)
+                return false;
+
+            ulong mask = target.PointerSize == sizeof(uint)
+                ? 0x80000001u
+                : 0x8000000000000001ul;
+            return (codeAddress.Value & mask) == mask;
         }
     }
 
@@ -199,7 +301,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     private CodeBlock? GetCodeBlock(TargetCodePointer jittedCodeAddress)
     {
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, jittedCodeAddress);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, jittedCodeAddress);
         if (range.Data == null)
         {
             return null;
@@ -263,8 +365,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         // TODO(cdac): EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS, implement iterating over fragments until finding
         // non-fragment RuntimeFunction
 
+        uint beginAddress = range.IsVirtualIP
+            ? runtimeFunction.BeginAddress & 0x7fff_ffff
+            : runtimeFunction.BeginAddress;
         return CodePointerUtils.AddressFromCodePointer(
-            new TargetCodePointer(range.Data.RangeBegin + runtimeFunction.BeginAddress), _target);
+            new TargetCodePointer(range.Data.RangeBegin + beginAddress), _target);
     }
 
     void IExecutionManager.GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
@@ -289,7 +394,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entrypoint.AsTargetPointer);
             return portableEntryPoint.MethodDesc;
         }
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, entrypoint);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, entrypoint);
         if (range.Data == null)
             return TargetPointer.Null;
         if (range.IsRangeList)
@@ -320,6 +425,64 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return TargetPointer.Null;
     }
 
+    TargetCodePointer IExecutionManager.GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint)
+    {
+        if (entryPoint == TargetCodePointer.Null)
+            return entryPoint;
+
+        if (!_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
+            return _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(entryPoint);
+
+        try
+        {
+            return GetDiagnosticCodeStartFromPortableEntryPoint(entryPoint);
+        }
+        catch (VirtualReadException)
+        {
+            return entryPoint;
+        }
+    }
+
+    // Mirrors the FEATURE_PORTABLE_ENTRYPOINTS paths of GetInterpreterCodeFromEntryPointIfPresent and
+    // GetDiagnosticCodeStartFromEntryPoint in src/coreclr/vm/precode.cpp.
+    private TargetCodePointer GetDiagnosticCodeStartFromPortableEntryPoint(TargetCodePointer entryPoint)
+    {
+        // An address in a code range (including a Wasm R2R virtual IP) is already a code start.
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, entryPoint);
+        if (range.Data != null)
+            return entryPoint;
+
+        Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entryPoint.AsTargetPointer);
+        if (portableEntryPoint.MethodDesc == TargetPointer.Null)
+            return entryPoint;
+
+        Data.MethodDesc methodDesc = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(portableEntryPoint.MethodDesc);
+        if (methodDesc.InterpreterCode is TargetPointer interpreterCode
+            && interpreterCode != TargetPointer.Null
+            && interpreterCode.Value != InterpreterCodePoison)
+        {
+            return new TargetCodePointer(interpreterCode);
+        }
+
+        // Native R2R portable entry points store a Wasm function-table index rather than an address
+        // registered with the ExecutionManager. Map it to the corresponding synthetic virtual IP. As in
+        // native code, this applies only to the method's own portable entry point, which is currently
+        // its temporary entry point.
+        if (portableEntryPoint.ActualCode == TargetPointer.Null
+            || (portableEntryPoint.Flags & PortableEntryPointPrefersInterpreterEntryPoint) != 0
+            || methodDesc.CodeData == TargetPointer.Null
+            || _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(methodDesc.CodeData).TemporaryEntryPoint != entryPoint)
+        {
+            return entryPoint;
+        }
+
+        _wasmFunctionTableIndexLookup ??= new WasmFunctionTableIndexLookup(_target);
+        uint functionTableIndex = (uint)portableEntryPoint.ActualCode.Value;
+        return _wasmFunctionTableIndexLookup.TryGetVirtualIPBase(functionTableIndex, out ulong virtualIP)
+            ? new TargetCodePointer(virtualIP)
+            : entryPoint;
+    }
+
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
     {
         // Interpreter code has no native unwind info and therefore no funclets.
@@ -346,8 +509,25 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);
         foreach (ExceptionClauseInfo clause in clauses)
         {
-            if (clause.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Filter && clause.FilterOffset == funcletStartOffset)
+            if (clause.ClauseType != ExceptionClauseInfo.ExceptionClauseFlags.Filter
+                || clause.FilterOffset is not uint filterOffset)
+            {
+                continue;
+            }
+
+            if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm)
+            {
+                TargetCodePointer filterAddress = new(info.StartAddress.Value + filterOffset);
+                if (eman.GetCodeBlockHandle(filterAddress) is CodeBlockHandle filterCodeInfoHandle
+                    && eman.GetFuncletStartAddress(filterCodeInfoHandle) == funcletStartAddress)
+                {
+                    return true;
+                }
+            }
+            else if (filterOffset == funcletStartOffset)
+            {
                 return true;
+            }
         }
 
         return false;
@@ -370,7 +550,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (range.Data == null)
             throw new InvalidOperationException($"{nameof(RangeSection)} not found for {codeInfoHandle.Address}");
 
-        return range.Data.RangeBegin;
+        if (!range.IsVirtualIP)
+            return range.Data.RangeBegin;
+
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(range.Data.R2RModule);
+        Data.ReadyToRunInfo r2rInfo = _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
+        return r2rInfo.LoadedImageBase;
     }
 
     TargetPointer IExecutionManager.GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte)
@@ -444,24 +629,50 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         // The R2R range section covers the entire PE image (code + data), so this
         // works for import section addresses used by FindGCRefMap.
         TargetCodePointer codeAddr = CodePointerUtils.CodePointerFromAddress(address, _target);
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddr);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, codeAddr);
         if (range.Data is null)
             return TargetPointer.Null;
 
         return range.Data.R2RModule;
     }
 
-    JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
+    JitManagerInfo? IExecutionManager.GetJitManagerInfo(JitManagerKind kind)
     {
-        TargetPointer eeJitManagerPtr = _target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress);
-        TargetPointer eeJitManagerAddr = _target.ReadPointer(eeJitManagerPtr);
+        return kind switch
+        {
+            JitManagerKind.EE => GetJitManagerInfo(
+                _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress)),
+                codeType: 0), // miManaged | miIL
+            JitManagerKind.Interpreter => GetInterpreterJitManagerInfo(),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+    }
 
-        Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(eeJitManagerAddr);
+    private JitManagerInfo? GetInterpreterJitManagerInfo()
+    {
+        if (!_target.TryReadGlobalPointer(
+                Constants.Globals.InterpreterJitManagerAddress,
+                out TargetPointer? interpreterJitManagerPointer)
+            || interpreterJitManagerPointer is not TargetPointer interpreterJitManagerPointerAddress)
+        {
+            return null;
+        }
 
+        TargetPointer interpreterJitManagerAddress = _target.ReadPointer(interpreterJitManagerPointerAddress);
+        return interpreterJitManagerAddress == TargetPointer.Null
+            ? null
+            : GetJitManagerInfo(
+                interpreterJitManagerAddress,
+                codeType: 2); // miManaged | miIL | miOPTIL
+    }
+
+    private JitManagerInfo GetJitManagerInfo(TargetPointer jitManagerAddress, uint codeType)
+    {
+        Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(jitManagerAddress);
         return new JitManagerInfo
         {
-            ManagerAddress = eeJitManagerAddr,
-            CodeType = 0, // miManaged | miIL
+            ManagerAddress = jitManagerAddress,
+            CodeType = codeType,
             HeapListAddress = jitManager.AllCodeHeaps,
         };
     }
@@ -480,10 +691,15 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         };
     }
 
-    IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
+    IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos(JitManagerKind kind)
     {
-        TargetPointer heapListAddress = ((IExecutionManager)this).GetEEJitManagerInfo().HeapListAddress;
-        TargetPointer nodeAddr = heapListAddress;
+        JitManagerInfo? jitManagerInfo = ((IExecutionManager)this).GetJitManagerInfo(kind);
+        if (jitManagerInfo is not JitManagerInfo info)
+        {
+            yield break;
+        }
+
+        TargetPointer nodeAddr = info.HeapListAddress;
         while (nodeAddr != TargetPointer.Null)
         {
             Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
@@ -492,12 +708,51 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
     }
 
+    IReadOnlyList<TargetPointer> IExecutionManager.GetDynamicFunctionTableEntries(TargetPointer tableAddress)
+    {
+        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+        if (runtimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows ||
+            runtimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86)
+        {
+            return [];
+        }
+
+        // Port of the DAC's OutOfProcessFunctionTableCallbackEx (see vm/../debug/daccess/fntableaccess.cpp).
+        // The dynamic-function-table header identifies both the owning JIT manager (via its Context) and
+        // the module base (via MinimumAddress) of the code heap whose function table is requested.
+        Data.DynamicFunctionTable table = _target.ProcessedData.GetOrAdd<Data.DynamicFunctionTable>(tableAddress);
+
+        // The low bits of Context are flags; the remaining bits point at the owning EEJitManager.
+        TargetPointer jitManagerAddress = new(table.Context.Value & ~(ulong)3);
+        TargetPointer minimumAddress = table.MinimumAddress;
+
+        Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(jitManagerAddress);
+
+        TargetPointer nodeAddr = jitManager.AllCodeHeaps;
+        while (nodeAddr != TargetPointer.Null)
+        {
+            Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
+
+            // HeapList::GetModuleBase - the personality routine on 64-bit targets when set,
+            // otherwise the map base. This matches the value used to register the function table.
+            TargetPointer moduleBase = node.CLRPersonalityRoutine is { } personalityRoutine && personalityRoutine != TargetPointer.Null
+                ? personalityRoutine
+                : node.MapBase;
+            if (moduleBase == minimumAddress)
+                return _eeJitManager.EnumerateFunctionTableEntries(node);
+
+            nodeAddr = node.Next;
+        }
+
+        return [];
+    }
+
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, codeInfoHandle.Address.Value);
         return range;
     }
 
@@ -517,12 +772,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle module = loader.GetModuleHandleFromModulePtr(moduleAddr);
-        ModuleLookupTables tables = loader.GetLookupTables(module);
 
         TargetPointer resolvedMethodTable = (EcmaMetadataUtils.TokenType)(classToken & EcmaMetadataUtils.TokenTypeMask) switch
         {
-            EcmaMetadataUtils.TokenType.mdtTypeDef => loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, classToken, out _),
-            EcmaMetadataUtils.TokenType.mdtTypeRef => loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, classToken, out _),
+            EcmaMetadataUtils.TokenType.mdtTypeDef => loader.GetModuleLookupMapElement(module, ModuleLookupMapKind.TypeDefToMethodTable, classToken, out _),
+            EcmaMetadataUtils.TokenType.mdtTypeRef => loader.GetModuleLookupMapElement(module, ModuleLookupMapKind.TypeRefToMethodTable, classToken, out _),
             _ => TargetPointer.Null,
         };
 
@@ -546,13 +800,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             return new List<ExceptionClauseInfo>();
         jitManager.GetExceptionClauses(range, codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
         bool isR2R = jitManager is ReadyToRunJitManager;
-        DataType clauseType = isR2R ? DataType.R2RExceptionClause : DataType.EEExceptionClause;
-        uint clauseSize = _target.GetTypeInfo(clauseType).Size!.Value;
+        uint clauseSize = isR2R
+            ? Data.R2RExceptionClause.GetSize(_target)
+            : Data.EEExceptionClause.GetSize(_target);
         TargetPointer methodDescPtr = ((IExecutionManager)this).GetMethodDesc(codeInfoHandle);
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
         TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-        TypeHandle th = rts.GetTypeHandle(mtPtr);
+        ITypeHandle th = rts.GetTypeHandle(mtPtr);
         TargetPointer handleModuleAddr = rts.GetModule(th);
 
         List<ExceptionClauseInfo> exceptionClauses = new List<ExceptionClauseInfo>();
@@ -616,15 +871,23 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             StubKind.VSDLookupStub => CodeKind.VSD_LookupStub,
             StubKind.VSDVTableStub => CodeKind.VSD_VTableStub,
             StubKind.CallCountingStub => CodeKind.CallCountingStub,
+            StubKind.WrapperStub => CodeKind.WrapperStub,
+            StubKind.ShuffleThunk => CodeKind.ShuffleThunk,
             _ => CodeKind.Unknown,
         };
     }
 
     public CodeKind GetCodeKind(TargetCodePointer codeAddress)
     {
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddress);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMapAddress, _rangeSectionMapLookup, _virtualIPRangeListAddress, codeAddress);
         if (range.Data == null)
+        {
+            TargetPointer address = new(codeAddress.Value);
+            if (address == _thePreStub && _thePreStub != TargetPointer.Null)
+                return CodeKind.ThePreStub;
+
             return CodeKind.Unknown;
+        }
 
         // check if this is a stub
         JitManager? jitManager = GetJitManager(range);

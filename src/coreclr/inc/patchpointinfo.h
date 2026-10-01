@@ -47,6 +47,7 @@ struct PatchpointInfo
         m_keptAliveThisOffset               = -1;
         m_securityCookieOffset              = -1;
         m_monitorAcquiredOffset             = -1;
+        m_resumedIndicatorOffset            = -1;
         m_asyncThreadObjectOffset           = -1;
         m_asyncExecutionContextOffset       = -1;
         m_asyncSynchronizationContextOffset = -1;
@@ -61,6 +62,7 @@ struct PatchpointInfo
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
         m_monitorAcquiredOffset = original->m_monitorAcquiredOffset;
+        m_resumedIndicatorOffset = original->m_resumedIndicatorOffset;
         m_asyncThreadObjectOffset = original->m_asyncThreadObjectOffset;
         m_asyncExecutionContextOffset = original->m_asyncExecutionContextOffset;
         m_asyncSynchronizationContextOffset = original->m_asyncSynchronizationContextOffset;
@@ -151,6 +153,22 @@ struct PatchpointInfo
     void SetMonitorAcquiredOffset(int32_t offset)
     {
         m_monitorAcquiredOffset = offset;
+    }
+
+    // Original method FP relative offset for resumed indicator
+    int32_t ResumedIndicatorOffset() const
+    {
+        return m_resumedIndicatorOffset;
+    }
+
+    bool HasResumedIndicator() const
+    {
+        return m_resumedIndicatorOffset != -1;
+    }
+
+    void SetResumedIndicatorOffset(int32_t offset)
+    {
+        m_resumedIndicatorOffset = offset;
     }
 
     // Original method FP relative offset for async thread/contexts
@@ -251,15 +269,16 @@ private:
     uint64_t m_calleeSaveRegisters;
     PCODE    m_tier0Version;
     uint32_t m_numberOfLocals;
-    int32_t      m_totalFrameSize;
-    int32_t      m_genericContextArgOffset;
-    int32_t      m_keptAliveThisOffset;
-    int32_t      m_securityCookieOffset;
-    int32_t      m_monitorAcquiredOffset;
-    int32_t      m_asyncThreadObjectOffset;
-    int32_t      m_asyncExecutionContextOffset;
-    int32_t      m_asyncSynchronizationContextOffset;
-    int32_t      m_offsetAndExposureData[];
+    int32_t  m_totalFrameSize;
+    int32_t  m_genericContextArgOffset;
+    int32_t  m_keptAliveThisOffset;
+    int32_t  m_securityCookieOffset;
+    int32_t  m_monitorAcquiredOffset;
+    int32_t  m_resumedIndicatorOffset;
+    int32_t  m_asyncThreadObjectOffset;
+    int32_t  m_asyncExecutionContextOffset;
+    int32_t  m_asyncSynchronizationContextOffset;
+    int32_t  m_offsetAndExposureData[];
 };
 
 typedef DPTR(struct PatchpointInfo) PTR_PatchpointInfo;

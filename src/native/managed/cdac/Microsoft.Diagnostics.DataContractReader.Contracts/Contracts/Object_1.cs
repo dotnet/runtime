@@ -14,7 +14,7 @@ internal readonly struct Object_1 : IObject
     private readonly Target _target;
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
-    private readonly TargetPointer _stringMethodTable;
+    private readonly CachedValue<TargetPointer> _stringMethodTable;
     private readonly uint _syncBlockIsHashOrSyncBlockIndex;
     private readonly uint _syncBlockIsHashCode;
     private readonly uint _syncBlockHashCodeMask;
@@ -23,13 +23,18 @@ internal readonly struct Object_1 : IObject
     internal Object_1(Target target)
     {
         _target = target;
-        _methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+        _methodTableOffset = (ulong)Data.Object.GetMethodTableOffset(target);
         _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
-        _stringMethodTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+        _stringMethodTable = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable)));
         _syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
         _syncBlockIsHashCode = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode);
         _syncBlockHashCodeMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockHashCodeMask);
         _syncBlockIndexMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _stringMethodTable.Clear();
     }
 
     public TargetPointer GetMethodTableAddress(TargetPointer address)
@@ -50,7 +55,8 @@ internal readonly struct Object_1 : IObject
         if (str.StringLength == 0)
             return string.Empty;
 
-        Span<byte> span = stackalloc byte[(int)str.StringLength * sizeof(char)];
+        byte[] bytes = new byte[checked((int)str.StringLength * sizeof(char))];
+        Span<byte> span = bytes;
         _target.ReadBuffer(str.FirstChar, span);
         return new string(MemoryMarshal.Cast<byte, char>(span));
     }
@@ -68,13 +74,13 @@ internal readonly struct Object_1 : IObject
         offsetToFirstChar = (uint)(str.FirstChar.Value - address.Value);
     }
 
-    public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
+    public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues)
     {
         TargetPointer mt = GetMethodTableAddress(address);
         if (mt == TargetPointer.Null)
             throw new ArgumentException("Address represents a set-free object");
         Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+        ITypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
         uint rank;
         if (!typeSystemContract.IsArray(typeHandle, out rank))
             throw new ArgumentException("Address does not represent an array object", nameof(address));
@@ -82,7 +88,6 @@ internal readonly struct Object_1 : IObject
         Data.Array array = _target.ProcessedData.GetOrAdd<Data.Array>(address);
         count = array.NumComponents;
 
-        Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
         CorElementType corType = typeSystemContract.GetSignatureCorElementType(typeHandle);
         Debug.Assert(corType is CorElementType.Array or CorElementType.SzArray);
         if (corType == CorElementType.Array)
@@ -92,18 +97,36 @@ internal readonly struct Object_1 : IObject
             //   << fields that are part of the array type info >>
             //   int32_t bounds[rank];
             //   int32_t lowerBounds[rank];
-            boundsStart = address + (ulong)arrayTypeInfo.Size!;
+            boundsStart = address + Data.Array.GetSize(_target);
             lowerBounds = boundsStart + (rank * sizeof(int));
         }
         else
         {
             // Single-dimensional, zero-based - doesn't have bounds
-            boundsStart = address + (ulong)arrayTypeInfo.Fields[Constants.FieldNames.Array.NumComponents].Offset;
+            boundsStart = address + (ulong)Data.Array.GetNumComponentsOffset(_target);
             lowerBounds = _target.ReadGlobalPointer(Constants.Globals.ArrayBoundsZero);
         }
 
+        int rankValue = checked((int)rank);
+        dimensionLengths = new uint[rankValue];
+        lowerBoundsValues = new int[rankValue];
+        if (corType == CorElementType.Array)
+        {
+            for (int i = 0; i < rankValue; i++)
+            {
+                ulong offset = (ulong)(i * sizeof(int));
+                dimensionLengths[i] = _target.Read<uint>(boundsStart + offset);
+                lowerBoundsValues[i] = _target.Read<int>(lowerBounds + offset);
+            }
+        }
+        else
+        {
+            Debug.Assert(rankValue == 1);
+            dimensionLengths[0] = count;
+        }
+
         // Sync block is before `this` pointer, so substract the object header size
-        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - Data.ObjectHeader.GetSize(_target);
         return address + dataOffset;
     }
 
@@ -122,7 +145,7 @@ internal readonly struct Object_1 : IObject
 
     int IObject.TryGetHashCode(TargetPointer address)
     {
-        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong objectHeaderSize = Data.ObjectHeader.GetSize(_target);
         Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
         uint syncBlockValue = header.SyncBlockValue;
 
@@ -148,7 +171,7 @@ internal readonly struct Object_1 : IObject
 
     public TargetPointer GetSyncBlockAddress(TargetPointer address)
     {
-        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong objectHeaderSize = Data.ObjectHeader.GetSize(_target);
         Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
         uint syncBlockValue = header.SyncBlockValue;
 
@@ -214,7 +237,7 @@ internal readonly struct Object_1 : IObject
         if (mt == TargetPointer.Null)
             throw new ArgumentException("Address represents a free object");
         Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+        ITypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
 
         ulong size = typeSystemContract.GetBaseSize(typeHandle);
         uint componentSize = typeSystemContract.GetComponentSize(typeHandle);

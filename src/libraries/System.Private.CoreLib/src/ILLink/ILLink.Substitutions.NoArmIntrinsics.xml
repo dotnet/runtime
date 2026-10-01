@@ -69,10 +69,22 @@
     <type fullname="System.Runtime.Intrinsics.Arm.Sha3/Arm64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Sm4">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Sm4/Arm64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.Arm.SveSha3">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
     <type fullname="System.Runtime.Intrinsics.Arm.SveSha3/Arm64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.SveSm4">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.SveSm4/Arm64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
   </assembly>

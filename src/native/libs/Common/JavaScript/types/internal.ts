@@ -51,9 +51,9 @@ export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
     instantiateWasm?: InstantiateWasmCallBack;
     onAbort?: (reason: any, extraJson?: string) => void;
     onExit?: (code: number) => void;
-    preInit?: (() => any)[];
-    preRun?: (() => any)[];
-    postRun?: (() => any)[];
+    preInit?: (() => any)[] | (() => any);
+    preRun?: (() => any)[] | (() => any);
+    postRun?: (() => any)[] | (() => any);
 }
 
 export interface AssetEntryInternal extends AssetEntry {
@@ -63,6 +63,8 @@ export interface AssetEntryInternal extends AssetEntry {
     priority?: boolean
     shortName?: string
     inprogress?: boolean
+    tableSize?: number
+    payloadSize?: number
 }
 
 export type LoaderConfigInternal = LoaderConfig & {

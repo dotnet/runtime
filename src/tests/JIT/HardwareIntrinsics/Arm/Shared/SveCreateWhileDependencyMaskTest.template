@@ -86,7 +86,7 @@ namespace {Namespace}
             {Op1BaseType}* ptr = stackalloc {Op1BaseType}[{RetVectorType}<{RetBaseType}>.Count + 1];
             {RetVectorType}<{RetBaseType}> mask = {Isa}.{Method}(ptr, ptr + 1);
 
-            if (mask.GetElement(0) == 0)
+            if (!Helpers.BitwiseEqual(mask.GetElement(0), {RetVectorType}<{RetBaseType}>.AllBitsSet.GetElement(0)))
             {
                 TestLibrary.TestFramework.LogInformation(
                     $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr, ptr+1): Expected element 0 to be true.");
@@ -123,7 +123,7 @@ namespace {Namespace}
             }
             else
             {
-                if (mask.GetElement(0) == 0)
+                if (!Helpers.BitwiseEqual(mask.GetElement(0), {RetVectorType}<{RetBaseType}>.AllBitsSet.GetElement(0)))
                 {
                     TestLibrary.TestFramework.LogInformation(
                         $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr+1, ptr): Expected element 0 to be true.");
@@ -141,9 +141,11 @@ namespace {Namespace}
 
             for (int i = startIndex; i < count; i++)
             {
-                bool actualVal = mask.GetElement(i) != 0;
+                {RetBaseType} expected = expectedVal
+                    ? {RetVectorType}<{RetBaseType}>.AllBitsSet.GetElement(i)
+                    : default;
 
-                if (actualVal != expectedVal)
+                if (!Helpers.BitwiseEqual(mask.GetElement(i), expected))
                 {
                     TestLibrary.TestFramework.LogInformation(
                         $"{nameof({Isa})}.{nameof({Isa}.{Method})}: {method} failed at element {i}: expected {(expectedVal ? "true" : "false")}.");

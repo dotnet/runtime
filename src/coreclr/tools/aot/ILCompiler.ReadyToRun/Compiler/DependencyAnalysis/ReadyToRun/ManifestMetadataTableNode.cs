@@ -294,7 +294,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             if (relocsOnly)
             {
-                return new ObjectData(Array.Empty<byte>(), null, 1, null);
+                return new ObjectData(Array.Empty<byte>(), null, 4, null);
             }
 
             ComputeLastSetOfModuleIndices();
@@ -313,7 +313,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return new ObjectData(
                 data: _mutableModule.MetadataBlob,
                 relocs: Array.Empty<Relocation>(),
-                alignment: 1,
+                // Metadata stream headers contain DWORD fields and require 4-byte alignment.
+                alignment: 4,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 

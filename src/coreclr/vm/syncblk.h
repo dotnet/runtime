@@ -82,11 +82,14 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 // to zero out the ObjHeader for the current allocation.  And the limits of the
 // GC space are initialized to respect this "off by one" error.
 
-// m_SyncBlockValue is carved up into an index and a set of bits.  Steal bits by
-// reducing the mask.  We use the very high bit, in _DEBUG, to be sure we never forget
-// to mask the Value to obtain the Index
+// m_SyncBlockValue is carved up into an index and a set of bits. Steal bits by
+// reducing the mask.
 
+#ifdef FEATURE_JAVAMARSHAL
+#define BIT_SBLK_BRIDGE_PENDING             0x80000000
+#else
 #define BIT_SBLK_UNUSED                     0x80000000
+#endif // FEATURE_JAVAMARSHAL
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 
@@ -199,7 +202,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_pRCW != NULL);
+        return m_pRCW != NULL;
     }
 #else // !DACCESS_COMPILE
     TADDR DacGetRawRCW()
@@ -450,14 +453,13 @@ class SyncBlock
     // Gets the InteropInfo block, creates a new one if none is present.
     InteropSyncBlockInfo* GetInteropInfo()
     {
-        CONTRACT (InteropSyncBlockInfo*)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         if (!m_pInteropInfo)
         {
@@ -467,22 +469,22 @@ class SyncBlock
                 pInteropInfo.SuppressRelease();
         }
 
-        RETURN m_pInteropInfo;
+        _ASSERTE(m_pInteropInfo != NULL);
+        return m_pInteropInfo;
     }
 
     PTR_InteropSyncBlockInfo GetInteropInfoNoCreate()
     {
-        CONTRACT (PTR_InteropSyncBlockInfo)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             SUPPORTS_DAC;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pInteropInfo;
+        return m_pInteropInfo;
     }
 
     // Returns false if the InteropInfo block was already set - does not overwrite the previous value.
@@ -772,7 +774,6 @@ class ObjHeader
             INSTANCE_CHECK;
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             MODE_ANY;
             PRECONDITION(GetHeaderSyncBlockIndex() == 0);
             PRECONDITION(m_SyncBlockValue & BIT_SBLK_SPIN_LOCK);
@@ -863,6 +864,14 @@ class ObjHeader
         return m_SyncBlockValue.LoadWithoutBarrier();
     }
 
+    DWORD GetBitsAcquire()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return m_SyncBlockValue.Load();
+    }
+
 
     DWORD SetBits(DWORD newBits, DWORD oldBits)
     {
@@ -886,7 +895,7 @@ class ObjHeader
     BOOL HasSyncBlockIndex()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetHeaderSyncBlockIndex() != 0);
+        return GetHeaderSyncBlockIndex() != 0;
     }
 
     // retrieve or allocate a sync block for this object
@@ -928,5 +937,3 @@ typedef DPTR(class ObjHeader) PTR_ObjHeader;
 #endif // TARGET_X86
 
 #endif // _SYNCBLK_H_
-
-

@@ -69,7 +69,7 @@
 
       - $(WasmNativeBuildId)                - Hex string (e.g. `a1b2c3...`, optional `0x` prefix) used to stamp a
                                               WebAssembly tool-conventions `build_id` custom section into
-                                              `dotnet.native.wasm` via the `wasm-ld --build-id` linker flag.
+                                              `dotnet.native.wasm` via wasm-ld's build-id linker flag.
                                               Setting it forces a native (re)link. When empty (the default),
                                               no `build_id` section is emitted by the app build.
                                               See https://github.com/WebAssembly/tool-conventions/blob/main/BuildId.md
@@ -100,7 +100,7 @@
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
       - $(WasmStripILAfterAOT)              - Set to true to enable trimming away AOT compiled methods body (IL code)
                                               Defaults to true.
-      - $(WasmEmitTypeScriptDefinitions)    - Controls whether TypeScript definitions (dotnet.d.ts) should be copied to the project's `wwwroot`. 
+      - $(WasmEmitTypeScriptDefinitions)    - Controls whether TypeScript definitions (dotnet.d.ts) should be copied to `wwwroot/_framework/dotnet.d.ts` beside `dotnet.js`.
                                               Defaults to false.
 
       Public items:
@@ -125,7 +125,6 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" Condition="'$(WasmAppRuntimeFlavor)' == 'Mono'" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" Condition="'$(WasmAppRuntimeFlavor)' == 'CoreCLR'" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmCalculateInitialHeapSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersObject" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
@@ -408,6 +407,7 @@
       <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccDefaultIncomingModuleJSAPI ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <PropertiesThatTriggerRelinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
@@ -417,6 +417,7 @@
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
       <Output TaskParameter="EmccDefaultExportedFunctions" ItemName="EmccExportedFunction" />
       <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName="EmccExportedRuntimeMethod" />
+      <Output TaskParameter="EmccDefaultIncomingModuleJSAPI" ItemName="_EmccIncomingModuleJSAPI" />
 
       <!-- shared by browser/wasi -->
       <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_DefaulWasmOptConfigurationFlags" />
@@ -537,8 +538,8 @@
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
 
-      <!-- default to relinking in Release config -->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+      <!-- default to relinking in Release config (unless the in-tree defaults are disabled) -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release' and '$(WasmBuildNativeImplicitInReleaseConfiguration)' != 'false'">true</WasmBuildNative>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -805,6 +806,7 @@
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
       CacheFilePath="$(_WasmM2NCachePath)"
+      TargetOS="$(TargetOS)"
       IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>

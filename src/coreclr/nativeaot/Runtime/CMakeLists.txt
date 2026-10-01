@@ -25,10 +25,10 @@ set(GC_WKS_SVR_SOURCES
 )
 
 set(COMMON_RUNTIME_SOURCES
+    AsmOffsetsVerify.cpp
     rhassert.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
-    DebugHeader.cpp
     MethodTable.cpp
     EHHelpers.cpp
     event.cpp
@@ -90,7 +90,6 @@ set(STANDALONEGC_ENABLED_SOURCES
 )
 
 set(FULL_RUNTIME_SOURCES
-    AsmOffsetsVerify.cpp
     ThunksMapping.cpp
 )
 
@@ -142,6 +141,7 @@ if (WIN32)
   include_directories(windows)
 
   list(APPEND COMMON_RUNTIME_SOURCES
+    ${RUNTIME_DIR}/windows/CLREventBase.cpp
     windows/PalCommon.cpp
     windows/PalMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
@@ -181,18 +181,40 @@ else()
   # Compile unwinding only for the current compilation target architecture
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
 
+  include(CheckSymbolExists)
+  check_symbol_exists(getauxval "sys/auxv.h" HAVE_GETAUXVAL)
+  if (HAVE_GETAUXVAL)
+    add_definitions(-D_LIBUNWIND_HAVE_GETAUXVAL)
+  endif()
+
+  check_symbol_exists(elf_aux_info "sys/auxv.h" HAVE_ELF_AUX_INFO)
+  if (HAVE_ELF_AUX_INFO)
+    add_definitions(-D_LIBUNWIND_HAVE_ELF_AUX_INFO)
+  endif()
+
   if(CLR_CMAKE_TARGET_HAIKU)
     add_definitions(-DPT_GNU_EH_FRAME=PT_EH_FRAME)
   endif()
 
   list(APPEND COMMON_RUNTIME_SOURCES
+    ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
-    ${GC_DIR}/unix/gcenv.unix.cpp
-    ${GC_DIR}/unix/numasupport.cpp
     ${GC_DIR}/unix/events.cpp
-    ${GC_DIR}/unix/cgroup.cpp
   )
+
+  if(CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND COMMON_RUNTIME_SOURCES
+      ${GC_DIR}/wasm/gcenv.cpp
+    )
+    include_directories(${GC_DIR}/unix)
+  else()
+    list(APPEND COMMON_RUNTIME_SOURCES
+      ${GC_DIR}/unix/gcenv.unix.cpp
+      ${GC_DIR}/unix/numasupport.cpp
+      ${GC_DIR}/unix/cgroup.cpp
+    )
+  endif()
 
   list(APPEND FULL_RUNTIME_SOURCES
     unix/cgroupcpu.cpp
@@ -272,7 +294,6 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}

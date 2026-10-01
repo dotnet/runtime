@@ -166,6 +166,68 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        public void UserBuffer_WriteBeyondCapacityThrows()
+        {
+            byte[] buffer = new byte[10];
+            using MemoryStream stream = new MemoryStream(buffer);
+
+            byte[] data = new byte[15];
+            Assert.Throws<NotSupportedException>(() => stream.Write(data, 0, data.Length));
+        }
+
+        [Fact]
+        public void UserBuffer_WriteUpToExactCapacitySucceeds()
+        {
+            byte[] buffer = new byte[10];
+            using MemoryStream stream = new MemoryStream(buffer);
+
+            byte[] data = new byte[10];
+            for (int i = 0; i < data.Length; i++) data[i] = (byte)i;
+
+            stream.Write(data, 0, data.Length);
+
+            Assert.Equal(10, stream.Position);
+            Assert.Equal(10, stream.Length);
+
+            stream.Position = 0;
+            byte[] readBack = new byte[10];
+            int bytesRead = stream.Read(readBack, 0, 10);
+            Assert.Equal(10, bytesRead);
+            Assert.Equal(data, readBack);
+        }
+
+        [Fact]
+        public void UserBuffer_SetLengthBeyondCapacityThrows()
+        {
+            byte[] buffer = new byte[8];
+            using MemoryStream stream = new MemoryStream(buffer);
+
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(9));
+            Assert.Equal(8, stream.Length);
+        }
+
+        [Fact]
+        public void UserBuffer_WritePastShrunkenLengthExtendsAndZeroesGap()
+        {
+            byte[] buffer = { 1, 2, 3, 4, 5, 6, 7, 8 };
+            using MemoryStream stream = new MemoryStream(buffer);
+
+            stream.SetLength(2);
+            Assert.Equal(2, stream.Length);
+
+            stream.Position = 5;
+            stream.WriteByte(42);
+
+            Assert.Equal(6, stream.Length);
+            Assert.Equal(6, stream.Position);
+
+            stream.Position = 0;
+            byte[] readBack = new byte[6];
+            Assert.Equal(6, stream.Read(readBack, 0, readBack.Length));
+            Assert.Equal(new byte[] { 1, 2, 0, 0, 0, 42 }, readBack);
+        }
+
         private class ReadWriteOverridingMemoryStream : MemoryStream
         {
             public bool ReadArrayInvoked, WriteArrayInvoked;

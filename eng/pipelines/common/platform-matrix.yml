@@ -577,6 +577,26 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# OpenBSD
+- ${{ if containsValue(parameters.platforms, 'openbsd_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: openbsd
+      archType: x64
+      targetRid: openbsd-x64
+      platform: openbsd_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: openbsd_x64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Android x64
 
 - ${{ if containsValue(parameters.platforms, 'android_x64') }}:

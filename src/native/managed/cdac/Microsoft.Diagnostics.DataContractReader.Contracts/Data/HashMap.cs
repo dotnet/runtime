@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.HashMap))]
 internal sealed partial class HashMap : IData<HashMap>
 {
-    [Field] public TargetPointer Buckets { get; }
+    [Field] public partial TargetPointer Buckets { get; }
 }

@@ -28,7 +28,7 @@ public:
     __checkReturn
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
     STDMETHODIMP_(ULONG) AddRef(void);
-    STDMETHODIMP_(ULONG) Release(void);
+    STDMETHODIMP_(ULONG) Release(void) noexcept;
 
     __checkReturn
     STDMETHODIMP TranslateSigWithScope(
@@ -693,9 +693,9 @@ public:
     STDMETHODIMP_(IUnknown *) GetCachedPublicInterface(BOOL fWithLock) { return NULL;}  // return the cached public interface
     __checkReturn
     STDMETHODIMP SetCachedPublicInterface(IUnknown *pUnk) { return E_FAIL;} ;// return hresult
-    STDMETHODIMP_(UTSemReadWrite*) GetReaderWriterLock() {return NULL;}   // return the reader writer lock
+    STDMETHODIMP_(minipal_rwlock*) GetReaderWriterLock() {return NULL;}   // return the reader writer lock
     __checkReturn
-    STDMETHODIMP SetReaderWriterLock(UTSemReadWrite *pSem) { return NOERROR; }
+    STDMETHODIMP SetReaderWriterLock(minipal_rwlock *pLock) { return NOERROR; }
     STDMETHODIMP_(mdModule) GetModuleFromScope(void);
 
     // Find a paticular method and pass in the signature comparison routine. Very

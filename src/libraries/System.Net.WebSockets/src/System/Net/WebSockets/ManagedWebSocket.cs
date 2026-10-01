@@ -599,40 +599,53 @@ namespace System.Net.WebSockets
 
         private async ValueTask SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlyMemory<byte> payloadBuffer, Task lockTask, CancellationToken cancellationToken)
         {
-            await lockTask.ConfigureAwait(false);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_sendMutex);
-
-            try
+            // Register for cancellation before waiting on the lock so that if cancellation races with
+            // acquiring the mutex, we still abort the connection, just as we would if cancellation raced
+            // with the write itself. Without this, a cancellation that fires while we're waiting to enter
+            // the mutex would propagate out without transitioning the WebSocket to the Aborted state.
+            using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
             {
-                int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, disableCompression, payloadBuffer.Span);
-                using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
+                try
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
-                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await lockTask.ConfigureAwait(false);
                 }
-            }
-            catch (Exception exc)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
-
-                if (exc is OperationCanceledException)
+                catch (Exception exc)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
                     throw;
                 }
 
-                throw _state == WebSocketState.Aborted ?
-                    CreateOperationCanceledException(exc, cancellationToken) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
-            }
-            finally
-            {
-                ReleaseSendBuffer();
-                _sendMutex.Exit();
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_sendMutex);
 
-                if (NetEventSource.Log.IsEnabled())
+                try
                 {
-                    NetEventSource.MutexExited(_sendMutex);
-                    NetEventSource.SendFrameAsyncCompleted(this);
+                    int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, disableCompression, payloadBuffer.Span);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception exc)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
+
+                    if (exc is OperationCanceledException)
+                    {
+                        throw;
+                    }
+
+                    throw _state == WebSocketState.Aborted ?
+                        CreateOperationCanceledException(exc, cancellationToken) :
+                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
+                }
+                finally
+                {
+                    ReleaseSendBuffer();
+                    _sendMutex.Exit();
+
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.MutexExited(_sendMutex);
+                        NetEventSource.SendFrameAsyncCompleted(this);
+                    }
                 }
             }
         }
@@ -922,7 +935,6 @@ namespace System.Net.WebSockets
                             if (_receiveBufferCount > 0)
                             {
                                 int receiveBufferBytesToCopy = Math.Min(limit, _receiveBufferCount);
-                                Debug.Assert(receiveBufferBytesToCopy > 0);
 
                                 _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(
                                     header.Compressed ? _inflater!.Span : payloadBuffer.Span);
@@ -1679,48 +1691,41 @@ namespace System.Net.WebSockets
         /// <param name="mask">The four-byte mask, stored as an Int32.</param>
         /// <param name="maskIndex">The index into the mask.</param>
         /// <returns>The next index into the mask to be used for future applications of the mask.</returns>
-        private static unsafe int ApplyMask(Span<byte> toMask, int mask, int maskIndex)
+        private static int ApplyMask(Span<byte> toMask, int mask, int maskIndex)
         {
             Debug.Assert(maskIndex < sizeof(int));
 
-            fixed (byte* toMaskBeg = &MemoryMarshal.GetReference(toMask))
+            if (toMask.Length >= sizeof(int))
             {
-                byte* toMaskPtr = toMaskBeg;
-                byte* toMaskEnd = toMaskBeg + toMask.Length;
+                int rolledMask = BitConverter.IsLittleEndian ?
+                    (int)BitOperations.RotateRight((uint)mask, maskIndex * 8) :
+                    (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
 
-                if (toMaskEnd - toMaskPtr >= sizeof(int))
+                // Process Vector<byte>.Count bytes at a time.
+                if (Vector.IsHardwareAccelerated && toMask.Length >= Vector<byte>.Count)
                 {
-                    int rolledMask = BitConverter.IsLittleEndian ?
-                        (int)BitOperations.RotateRight((uint)mask, maskIndex * 8) :
-                        (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
-
-                    // Process Vector<byte>.Count bytes at a time.
-                    if (Vector.IsHardwareAccelerated && (toMaskEnd - toMaskPtr) >= Vector<byte>.Count)
+                    Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(rolledMask));
+                    do
                     {
-                        Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(rolledMask));
-                        do
-                        {
-                            *(Vector<byte>*)toMaskPtr ^= maskVector;
-                            toMaskPtr += Vector<byte>.Count;
-                        }
-                        while (toMaskEnd - toMaskPtr >= Vector<byte>.Count);
+                        (new Vector<byte>(toMask) ^ maskVector).CopyTo(toMask);
+                        toMask = toMask.Slice(Vector<byte>.Count);
                     }
-
-                    // Process 4 bytes at a time.
-                    while (toMaskEnd - toMaskPtr >= sizeof(int))
-                    {
-                        *(int*)toMaskPtr ^= rolledMask;
-                        toMaskPtr += sizeof(int);
-                    }
+                    while (toMask.Length >= Vector<byte>.Count);
                 }
 
-                // Process 1 byte at a time.
-                byte* maskPtr = (byte*)&mask;
-                while (toMaskPtr != toMaskEnd)
+                // Process 4 bytes at a time.
+                while (toMask.Length >= sizeof(int))
                 {
-                    *toMaskPtr++ ^= maskPtr[maskIndex];
-                    maskIndex = (maskIndex + 1) & 3;
+                    BitConverter.TryWriteBytes(toMask, BitConverter.ToInt32(toMask) ^ rolledMask);
+                    toMask = toMask.Slice(sizeof(int));
                 }
+            }
+
+            // Process 1 byte at a time, using the mask byte at native memory offset maskIndex.
+            for (int i = 0; i < toMask.Length; i++)
+            {
+                toMask[i] ^= (byte)(mask >> ((BitConverter.IsLittleEndian ? maskIndex : 3 - maskIndex) * 8));
+                maskIndex = (maskIndex + 1) & 3;
             }
 
             return maskIndex;

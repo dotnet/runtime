@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ReadyToRunSection))]
 internal sealed partial class ReadyToRunSection : IData<ReadyToRunSection>
 {
-    [Field] public uint Type { get; }
-    [Field] public ImageDataDirectory Section { get; }
+    [Field] public partial uint Type { get; }
+    [Field] public partial ImageDataDirectory Section { get; }
 }

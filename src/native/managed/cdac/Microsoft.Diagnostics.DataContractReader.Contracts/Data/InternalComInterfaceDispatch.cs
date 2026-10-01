@@ -7,5 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class InternalComInterfaceDispatch : IData<InternalComInterfaceDispatch>
 {
     [FieldAddress]
-    public TargetPointer Entries { get; }
+    public partial TargetPointer Entries { get; }
 }

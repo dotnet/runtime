@@ -7,6 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal interface IGCInfoTraits
 {
+    static virtual bool IsInterpreter => false;
+    static virtual bool UsesStackPointerAsAmbientSP => false;
     static virtual int NO_GS_COOKIE { get; } = -1;
     static virtual uint NO_STACK_BASE_REGISTER { get; } = 0xFFFFFFFF;
     static virtual uint NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA { get; } = 0xFFFFFFFF;
@@ -47,6 +49,9 @@ internal interface IGCInfoTraits
     static abstract int NUM_INTERRUPTIBLE_RANGES_ENCBASE { get; }
 
     static abstract bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; }
+
+    // False for encodings whose code is never interruptible (Wasm R2R).
+    static virtual bool HAS_INTERRUPTIBLE_RANGES => true;
 
     /// <summary>
     /// Returns true if the given register is a scratch (volatile) register.

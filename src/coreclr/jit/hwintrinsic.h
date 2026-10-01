@@ -264,6 +264,8 @@ enum HWIntrinsicFlag : uint64_t
     // The intrinsic supports some sort of containment analysis
     HW_Flag_SupportsContainment   = 0x400,
     HW_Flag_ReturnsPerElementMask = 0x800,
+    // The intrinsic has a required immediate operand
+    HW_Flag_HasImmediateOperand = 0x1000,
 #else
 #error Unsupported platform
 #endif
@@ -559,13 +561,14 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*         comp,
-                                   CORINFO_SIG_INFO* sig,
-                                   const char*       className,
-                                   const char*       methodName,
-                                   const char*       innerEnclosingClassName,
-                                   const char*       outerEnclosingClassName,
-                                   bool              isXplatIntrinsic);
+    static NamedIntrinsic lookupId(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, const char* methodName);
+
+    static CORINFO_InstructionSet lookupVectorIsa(uint32_t size);
+
+    static NamedIntrinsic resolveId(Compiler*              comp,
+                                    NamedIntrinsic         id,
+                                    CORINFO_InstructionSet isa,
+                                    bool                   isXplatIntrinsic);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
@@ -1003,10 +1006,10 @@ struct HWIntrinsicInfo
 
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
         const HWIntrinsicFlag flags = lookupFlags(id);
         return ((flags & HW_Flag_HasImmediateOperand) != 0);
-#elif defined(TARGET_XARCH) || defined(TARGET_WASM)
+#elif defined(TARGET_XARCH)
         return lookupCategory(id) == HW_Category_IMM;
 #else
         return false;
@@ -1181,6 +1184,20 @@ struct HWIntrinsicInfo
         }
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
+
+    // IsSveConditionalSelect: Is this intrinsic a ConditionalSelect intrinsic?
+    //
+    // Arguments:
+    //     id       -- Intrinsic ID to test
+    //
+    // Return value:
+    //     Returns true if the ID is either of the vector or mask variant of
+    //     ConditionalSelect.
+    //
+    static bool IsSveConditionalSelect(NamedIntrinsic id)
+    {
+        return (id == NI_Sve_ConditionalSelect) || (id == NI_Sve_ConditionalSelect_Predicates);
+    }
 
 #endif // TARGET_ARM64
 
@@ -1472,7 +1489,12 @@ struct HWIntrinsic final
 
     inline bool needsJumpTableFallback() const
     {
-        return !m_node->GetImmOp()->IsCnsIntOrI();
+        if (HWIntrinsicInfo::HasImmediateOperand(id))
+        {
+            return !m_node->GetImmOp()->IsCnsIntOrI();
+        }
+
+        return false;
     }
 
     uint8_t GetImmediateLaneOperand() const

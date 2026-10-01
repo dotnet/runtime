@@ -81,13 +81,16 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/127786", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
         public void FullyQualifiedName()
         {
 #if SINGLE_FILE_TEST_RUNNER
             Assert.Equal("<Unknown>", Module.FullyQualifiedName);
 #else
+            if (Assembly.GetExecutingAssembly().Location == "")
+            {
+                return;
+            }
+
             var loc = AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly());
 
             // Browser will include the path (/), so strip it
@@ -105,13 +108,16 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/127786", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
         public void Name()
         {
 #if SINGLE_FILE_TEST_RUNNER
             Assert.Equal("<Unknown>", Module.Name, ignoreCase: true);
 #else
+            if (Assembly.GetExecutingAssembly().Location == "")
+            {
+                return;
+            }
+
             Assert.Equal("system.runtime.tests.dll", Module.Name, ignoreCase: true);
 #endif
         }

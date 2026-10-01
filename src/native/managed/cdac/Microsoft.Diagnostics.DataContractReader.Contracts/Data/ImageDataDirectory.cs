@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ImageDataDirectory))]
 internal sealed partial class ImageDataDirectory : IData<ImageDataDirectory>
 {
-    [Field] public uint VirtualAddress { get; }
-    [Field] public uint Size { get; }
+    [Field] public partial uint VirtualAddress { get; }
+    [Field] public partial uint Size { get; }
 }

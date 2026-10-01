@@ -122,7 +122,6 @@ namespace System.Net.Security
 
             var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation, allowTlsResume, allowRsaPssPadding, allowRsaPkcs1Padding);
 
-            //SafeCredentialReference? cached;
             SafeFreeCredentials? credentials = GetCachedCredential(key);
             if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < DateTime.UtcNow)
             {

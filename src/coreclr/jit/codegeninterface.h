@@ -149,11 +149,13 @@ public:
     }
 #endif // TARGET_XARCH
 
+#if HAS_FIXED_REGISTER_SET
     // genSpillVar is called by compUpdateLifeVar.
     // TODO-Cleanup: We should handle the spill directly in CodeGen, rather than
     // calling it from compUpdateLifeVar.  Then this can be non-virtual.
 
     virtual void genSpillVar(GenTree* tree) = 0;
+#endif // HAS_FIXED_REGISTER_SET
 
     //-------------------------------------------------------------------------
     //  The following property indicates whether to align loops.
@@ -246,7 +248,7 @@ public:
     bool genWriteBarrierUsed;
 #endif
 
-    regMaskTP genGetGSCookieTempRegs(bool tailCall);
+    regMaskTP genGetGSCookieTempRegs(bool tailCall, GenTreeCall* tailCallNode = nullptr);
 
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.
@@ -621,6 +623,8 @@ public:
         bool vlIsInReg(regNumber reg) const;
         bool vlIsOnStack(regNumber reg, signed offset) const;
         bool vlIsOnStack() const;
+
+        static ICorDebugInfo::RegNum mapRegNumToDebugRegNum(regNumber reg);
 
         void storeVariableInRegisters(regNumber reg, regNumber otherReg);
         void storeVariableOnStack(regNumber stackBaseReg, NATIVE_OFFSET variableStackOffset);

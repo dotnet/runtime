@@ -24,8 +24,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public SimpleUnaryOpTest__DataTable(TOp1[] inArray, TResult[] outArray, int alignment)
         {
-            int sizeOfinArray = inArray.Length * Unsafe.SizeOf<TOp1>();
-            int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<TResult>();
+            int sizeOfinArray = inArray.Length * sizeof(TOp1);
+            int sizeOfoutArray = outArray.Length * sizeof(TResult);
             if (((alignment != 64) && (alignment != 32) && (alignment != 16)) || (alignment * 2) < sizeOfinArray || (alignment * 2) < sizeOfoutArray)
             {
                 throw new ArgumentException("Invalid value of alignment");

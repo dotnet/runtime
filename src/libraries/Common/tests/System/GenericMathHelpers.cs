@@ -433,11 +433,11 @@ namespace System
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, style, provider, out result);
 
-        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out TSelf result, out int charsConsumed) => TSelf.TryParse(s, style, provider, out result, out charsConsumed);
+        public static bool TryParsePartial(string s, NumberStyles style, IFormatProvider provider, out TSelf result, out int charsConsumed) => TSelf.TryParsePartial(s, style, provider, out result, out charsConsumed);
 
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider provider, out TSelf result, out int bytesConsumed) => TSelf.TryParse(utf8Text, style, provider, out result, out bytesConsumed);
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider provider, out TSelf result, out int bytesConsumed) => TSelf.TryParsePartial(utf8Text, style, provider, out result, out bytesConsumed);
 
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out TSelf result, out int charsConsumed) => TSelf.TryParse(s, style, provider, out result, out charsConsumed);
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out TSelf result, out int charsConsumed) => TSelf.TryParsePartial(s, style, provider, out result, out charsConsumed);
     }
 
     public static class NumberHelper<TSelf>

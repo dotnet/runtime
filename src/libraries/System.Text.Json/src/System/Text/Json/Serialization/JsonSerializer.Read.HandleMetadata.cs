@@ -178,7 +178,7 @@ namespace System.Text.Json
                                 // Found a $type property in a type that doesn't support polymorphism
                                 ThrowHelper.ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
                             }
-                            if (state.PolymorphicTypeDiscriminator != null)
+                            if (state.PolymorphicTypeDiscriminator is not null)
                             {
                                 // Found a duplicate $type property.
                                 ThrowHelper.ThrowJsonException_DuplicateMetadataProperty(state.Current.JsonPropertyName);
@@ -262,7 +262,7 @@ namespace System.Text.Json
                             ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
                         }
 
-                        if (state.ReferenceId != null)
+                        if (state.ReferenceId is not null)
                         {
                             ThrowHelper.ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotSupported(s_refPropertyName, ref reader, ref state);
                         }
@@ -276,7 +276,7 @@ namespace System.Text.Json
                             ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
                         }
 
-                        if (state.ReferenceId != null)
+                        if (state.ReferenceId is not null)
                         {
                             ThrowHelper.ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotSupported(s_refPropertyName, ref reader, ref state);
                         }
@@ -285,7 +285,7 @@ namespace System.Text.Json
                         break;
 
                     case MetadataPropertyName.Type:
-                        Debug.Assert(state.PolymorphicTypeDiscriminator == null);
+                        Debug.Assert(state.PolymorphicTypeDiscriminator is null);
 
                         switch (reader.TokenType)
                         {
@@ -414,7 +414,7 @@ namespace System.Text.Json
                     }
                     else if (property.EscapedNameEquals(s_idPropertyName))
                     {
-                        if (state.ReferenceId != null)
+                        if (state.ReferenceId is not null)
                         {
                             ThrowHelper.ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotSupported(s_refPropertyName, ref reader, ref state);
                         }
@@ -431,7 +431,7 @@ namespace System.Text.Json
                     }
                     else if (property.EscapedNameEquals(s_refPropertyName))
                     {
-                        if (state.ReferenceId != null)
+                        if (state.ReferenceId is not null)
                         {
                             ThrowHelper.ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotSupported(s_refPropertyName, ref reader, ref state);
                         }
@@ -478,7 +478,7 @@ namespace System.Text.Json
                     }
                     else if (property.Key == "$id")
                     {
-                        if (state.ReferenceId != null)
+                        if (state.ReferenceId is not null)
                         {
                             ThrowHelper.ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotSupported(s_refPropertyName, ref reader, ref state);
                         }
@@ -490,7 +490,7 @@ namespace System.Text.Json
                     }
                     else if (property.Key == "$ref")
                     {
-                        if (state.ReferenceId != null)
+                        if (state.ReferenceId is not null)
                         {
                             ThrowHelper.ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotSupported(s_refPropertyName, ref reader, ref state);
                         }
@@ -562,7 +562,7 @@ namespace System.Text.Json
         internal static T ResolveReferenceId<T>(ref ReadStack state)
         {
             Debug.Assert(!typeof(T).IsValueType);
-            Debug.Assert(state.ReferenceId != null);
+            Debug.Assert(state.ReferenceId is not null);
 
             string referenceId = state.ReferenceId;
             object value = state.ReferenceResolver.ResolveReference(referenceId);

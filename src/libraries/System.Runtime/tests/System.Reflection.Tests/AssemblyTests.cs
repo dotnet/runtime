@@ -154,7 +154,11 @@ namespace System.Reflection.Tests
             string assembly = Assembly.GetEntryAssembly().ToString();
 
             bool correct;
-            if (PlatformDetection.IsNativeAot)
+            if (PlatformDetection.IsWasmReadyToRun)
+            {
+                correct = assembly.IndexOf("WasmTestRunner", StringComparison.OrdinalIgnoreCase) != -1;
+            }
+            else if (PlatformDetection.IsNativeAot || (PlatformDetection.IsReadyToRunCompiled && !PlatformDetection.IsAppleMobile))
             {
                 // The single file test runner is not 'xunit.console'.
                 correct = assembly.IndexOf("System.Reflection.Tests", StringComparison.OrdinalIgnoreCase) != -1;
@@ -954,8 +958,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77821", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;

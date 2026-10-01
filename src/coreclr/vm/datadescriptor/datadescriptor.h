@@ -11,6 +11,7 @@
 #include <stddef.h>
 
 #include <sospriv.h>
+#include <runtime_version.h>
 #include "cdacplatformmetadata.hpp"
 #include "interoplibinterface_comwrappers.h"
 #include "comcallablewrapper.h"
@@ -21,6 +22,7 @@
 #include "threads.h"
 #include "vars.hpp"
 #include "exinfo.h"
+#include "externalmemoryhandle.h"
 
 #include "configure.h"
 
@@ -30,8 +32,14 @@
 
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
+#include "../debug/ee/walker.h"
+#include "../debug/ee/controller.h"
 #include "patchpointinfo.h"
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
+
+#include "stgpool.h"
+#include "liteweightstgdb.h"
+#include "mdinternalrw.h"

@@ -56,27 +56,65 @@ namespace System.Net
         public static string GetHostName() { throw null; }
         [System.ObsoleteAttribute("Resolve has been deprecated. Use GetHostEntry instead.")]
         public static System.Net.IPHostEntry Resolve(string hostName) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.AddressRecord> ResolveAddresses(string name) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.AddressRecord> ResolveAddresses(string name, System.Net.Sockets.AddressFamily addressFamily) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.AddressRecord>> ResolveAddressesAsync(string name, System.Net.Sockets.AddressFamily addressFamily, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.AddressRecord>> ResolveAddressesAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.CNameRecord> ResolveCName(string name) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.CNameRecord>> ResolveCNameAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.MxRecord> ResolveMx(string name) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.MxRecord>> ResolveMxAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.NsRecord> ResolveNs(string name) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.NsRecord>> ResolveNsAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.PtrRecord> ResolvePtr(System.Net.IPAddress address) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.PtrRecord> ResolvePtr(string name) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.PtrRecord>> ResolvePtrAsync(System.Net.IPAddress address, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.PtrRecord>> ResolvePtrAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.SrvRecord> ResolveSrv(string name) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.SrvRecord>> ResolveSrvAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Net.DnsResult<System.Net.TxtRecord> ResolveTxt(string name) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
         public static System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.TxtRecord>> ResolveTxtAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class DnsResolver : System.IAsyncDisposable, System.IDisposable
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public DnsResolver() { }
         public DnsResolver(System.Net.DnsResolverOptions options) { }
         public void Dispose() { }

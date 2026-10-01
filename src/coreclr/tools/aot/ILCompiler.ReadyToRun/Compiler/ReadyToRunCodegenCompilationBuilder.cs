@@ -22,6 +22,7 @@ namespace ILCompiler
     {
         private static bool _isJitInitialized = false;
 
+        private readonly ReadyToRunCompilerContext _r2rContext;
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
         private bool _generateMapFile;
@@ -41,6 +42,7 @@ namespace ILCompiler
         private string _wasmNativeBuildId;
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
+        private bool _verifyGCModeTransitions;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
@@ -57,12 +59,13 @@ namespace ILCompiler
         private ILProvider _ilProvider;
 
         public ReadyToRunCodegenCompilationBuilder(
-            CompilerTypeSystemContext context,
+            ReadyToRunCompilerContext context,
             ReadyToRunCompilationModuleGroupBase group,
             IEnumerable<string> inputFiles,
             string compositeRootPath)
             : base(context, group, new NativeAotNameMangler())
         {
+            _r2rContext = context;
             _ilProvider = new ReadyToRunILProvider(group);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
@@ -197,6 +200,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseVerifyGCModeTransitions(bool verifyGCModeTransitions)
+        {
+            _verifyGCModeTransitions = verifyGCModeTransitions;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseHotColdSplitting(bool hotColdSplitting)
         {
             _hotColdSplitting = hotColdSplitting;
@@ -271,6 +280,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
+            if (_verifyGCModeTransitions)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(
@@ -300,6 +313,11 @@ namespace ILCompiler
             if (_hotColdSplitting)
             {
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
+            }
+
+            if (_verifyGCModeTransitions)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
             }
 
             switch (_optimizationMode)
@@ -334,10 +352,16 @@ namespace ILCompiler
                 _isJitInitialized = true;
             }
 
+            List<ICompilationRootProvider> compilationRoots = new(_compilationRoots);
+            if (_r2rContext.BubbleIncludesCoreModule)
+            {
+                compilationRoots.Add(new ReadyToRunJitHelperRootProvider(_r2rContext));
+            }
+
             return new ReadyToRunCodegenCompilation(
                 graph,
                 factory,
-                _compilationRoots,
+                compilationRoots,
                 _ilProvider,
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),

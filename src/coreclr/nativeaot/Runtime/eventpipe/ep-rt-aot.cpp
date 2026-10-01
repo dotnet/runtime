@@ -408,7 +408,7 @@ ep_rt_aot_wait_event_wait (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-    return wait_event->event->Wait (timeout, alertable);
+    return wait_event->event->Wait (timeout, alertable, false);
 }
 
 bool
@@ -483,7 +483,7 @@ void
 ep_rt_aot_thread_sleep (uint64_t ns)
 {
     STATIC_CONTRACT_NOTHROW;
-    PalSleep(static_cast<uint32_t>(ns/1000000));
+    minipal_sleep(static_cast<uint32_t>(ns/1000000));
 }
 
 uint32_t
@@ -627,7 +627,7 @@ ep_rt_aot_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
     // EventPipe library will intialize using thread, EventPipeBufferManager instances and will maintain these on the EventPipe library side
 
     spin_lock->lock = new (nothrow) CrstStatic ();
-    spin_lock->lock->InitNoThrow (CrstType::CrstEventPipe);
+    spin_lock->lock->Init (CrstType::CrstEventPipe);
 }
 
 void
@@ -792,7 +792,7 @@ void ep_rt_aot_init (void)
     extern CrstStatic _ep_rt_aot_config_lock;
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
-    _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
+    _ep_rt_aot_config_lock_handle.lock->Init (CrstType::CrstEventPipeConfig);
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)

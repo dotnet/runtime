@@ -110,7 +110,7 @@ public:
     BOOL Equals(PEImage* pImage);
 
     ULONG AddRef();
-    ULONG Release();
+    ULONG Release() noexcept;
 
 #ifndef DACCESS_COMPILE
     static PTR_PEImage CreateFromByteArray(const BYTE* array, COUNT_T size);
@@ -326,7 +326,8 @@ private:
 template<>
 struct cdac_data<PEImage>
 {
-    // The loaded PEImageLayout is m_pLayouts[IMAGE_LOADED]
+    // Layouts are stored in m_pLayouts[], indexed by IMAGE_FLAT (0) and IMAGE_LOADED (1).
+    static constexpr size_t FlatImageLayout = offsetof(PEImage, m_pLayouts);
     static constexpr size_t LoadedImageLayout = offsetof(PEImage, m_pLayouts) + sizeof(PTR_PEImageLayout);
     static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
 };
@@ -335,7 +336,7 @@ struct PEImageHolderTraits final
 {
     using Type = PEImage*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type i)
+    static void Free(Type i) noexcept
     {
         WRAPPER_NO_CONTRACT;
         if (i != NULL)

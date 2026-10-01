@@ -147,7 +147,7 @@ namespace ILCompiler
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
-                type.Instantiation[0].IsPrimitiveNumeric)
+                IsSupportedVectorBaseType(type.Instantiation[0]))
             {
                 return type.InstanceFieldSize.AsInt switch
                 {
@@ -169,6 +169,15 @@ namespace ILCompiler
                  type.Name == "Vector128`1"u8 ||
                  type.Name == "Vector256`1"u8 ||
                  type.Name == "Vector512`1"u8);
+        }
+
+        /// <summary>
+        /// Determines whether <paramref name="elementType"/> is supported as the base (element)
+        /// type of an intrinsic vector, mirroring the set the JIT recognizes as a SIMD base type.
+        /// </summary>
+        public static bool IsSupportedVectorBaseType(TypeDesc elementType)
+        {
+            return elementType.IsPrimitiveNumeric;
         }
     }
 }

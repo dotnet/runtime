@@ -19,7 +19,6 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicCode()
         {
             Assert.Equal(RuntimeFeature.IsDynamicCodeSupported, RuntimeFeature.IsSupported("IsDynamicCodeSupported"));
@@ -33,8 +32,6 @@ namespace System.Runtime.CompilerServices.Tests
 
         [Fact]
         [SkipOnMono("IsDynamicCodeCompiled returns false in cases where mono doesn't support these features")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicCode_Jit()
         {
             if (PlatformDetection.IsNativeAot)
@@ -42,7 +39,7 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.False(RuntimeFeature.IsDynamicCodeSupported);
                 Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
             }
-            else if (PlatformDetection.IsAppleMobile)
+            else if (PlatformDetection.IsAppleMobile || PlatformDetection.IsWasm)
             {
                 Assert.True(RuntimeFeature.IsDynamicCodeSupported);
                 Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
@@ -88,8 +85,8 @@ namespace System.Runtime.CompilerServices.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
 
-            // IsDynamicCodeCompiled on Mono interpreter always returns false
-            bool isDynamicCodeCompiled = PlatformDetection.IsMonoInterpreter ? false : isDynamicCodeSupported;
+            // The switch can disable dynamic code support, but it cannot enable compilation when the runtime does not provide it.
+            bool isDynamicCodeCompiled = RuntimeFeature.IsDynamicCodeCompiled && isDynamicCodeSupported;
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (isDynamicCodeSupportedString, isDynamicCodeCompiledString) =>
             {

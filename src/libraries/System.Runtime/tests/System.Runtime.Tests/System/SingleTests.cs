@@ -755,6 +755,10 @@ namespace System.Tests
         [InlineData( float.PositiveInfinity,  3,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  4,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  5,  float.PositiveInfinity, 0.0f)]
+        [InlineData(-1.0f,                    -16777217,   -1.0f,                   0.0f)]
+        [InlineData(-1.0f,                     16777217,   -1.0f,                   0.0f)]
+        [InlineData(-0.0f,                    -16777217,    float.NegativeInfinity, 0.0f)]
+        [InlineData(-0.0f,                     16777217,   -0.0f,                   0.0f)]
         public static void RootN(float x, int n, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, float.RootN(x, n), allowedVariance);
@@ -854,6 +858,25 @@ namespace System.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        [Theory]
+        [InlineData(3.1415927E-07f, "F8", "0.00000031")]
+        [InlineData(3.1415927E-07f, "F9", "0.000000314")]
+        [InlineData(3.1415927E-07f, "F10", "0.0000003142")]
+        [InlineData(-3.1415927E-07f, "F9", "-0.000000314")]
+        [InlineData(3.1415927E-07f, "C9", "\u00A40.000000314")]
+        [InlineData(3.1415927E-07f, "N9", "0.000000314")]
+        [InlineData(3.1415927E-07f, "P7", "0.0000314 %")]
+        [InlineData(3.1415927E-07f, "P9", "0.000031416 %")]
+        [InlineData(float.Epsilon, "F9", "0.000000000")]
+        [InlineData(-float.Epsilon, "F9", "-0.000000000")]
+        [InlineData(0.0f, "F9", "0.000000000")]
+        [InlineData(-0.0f, "F9", "-0.000000000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            Assert.Equal(expected, value.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, NumberFormatInfo.InvariantInfo, expected);
         }
 
         [Theory]
@@ -1656,52 +1679,78 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, float.RadiansToDegrees(+value), allowedVariance);
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones the bulk data cannot reach: zero, the subnormal range
+        // on either side of the conversion, and an overflow.
+        [Theory]
+        [InlineData(0x0000_0000, 0x0000_0000, 0x0000_0000)] // 0
+        [InlineData(0x0000_0001, 0x0000_0000, 0x0000_0039)] // Epsilon
+        [InlineData(0x0040_0000, 0x0001_1DF4, 0x02E5_2EE1)] // 0x1p-127
+        [InlineData(0x0080_0000, 0x0002_3BE9, 0x0365_2EE1)] // MinNormal
+        [InlineData(0x7F7F_FFFF, 0x7C8E_FA35, 0x7F80_0000)] // MaxValue, overflows for RadiansToDegrees
+        [InlineData(0x7F80_0000, 0x7F80_0000, 0x7F80_0000)] // PositiveInfinity
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(uint valueBits, uint degreesToRadiansBits, uint radiansToDegreesBits)
+        {
+            const uint SignMask = 0x8000_0000;
+
+            float value = BitConverter.UInt32BitsToSingle(valueBits);
+
+            AssertExtensions.Equal(BitConverter.UInt32BitsToSingle(degreesToRadiansBits), float.DegreesToRadians(value));
+            AssertExtensions.Equal(BitConverter.UInt32BitsToSingle(radiansToDegreesBits), float.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            float negativeValue = BitConverter.UInt32BitsToSingle(valueBits ^ SignMask);
+
+            AssertExtensions.Equal(BitConverter.UInt32BitsToSingle(degreesToRadiansBits ^ SignMask), float.DegreesToRadians(negativeValue));
+            AssertExtensions.Equal(BitConverter.UInt32BitsToSingle(radiansToDegreesBits ^ SignMask), float.RadiansToDegrees(negativeValue));
+        }
+
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
             // Basic floating point parsing with trailing invalid characters
-            yield return new object[] { "123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45f, 6 };
-            yield return new object[] { "456.78xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 456.78f, 6 };
-            yield return new object[] { "0.123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 0.123f, 5 };
+            yield return new object[] { "123.45abc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45f, 6 };
+            yield return new object[] { "456.78xyz", NumberStyles.Float, CultureInfo.InvariantCulture, 456.78f, 6 };
+            yield return new object[] { "0.123abc", NumberStyles.Float, CultureInfo.InvariantCulture, 0.123f, 5 };
 
             // With leading whitespace
-            yield return new object[] { "  123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45f, 8 };
+            yield return new object[] { "  123.45abc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45f, 8 };
 
             // With signs
-            yield return new object[] { "+123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45f, 7 };
-            yield return new object[] { "-456.78xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, -456.78f, 7 };
+            yield return new object[] { "+123.45abc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45f, 7 };
+            yield return new object[] { "-456.78xyz", NumberStyles.Float, CultureInfo.InvariantCulture, -456.78f, 7 };
 
             // With exponent
-            yield return new object[] { "1.23e10abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1.23e10f, 7 };
-            yield return new object[] { "4.56E-5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 4.56E-5f, 7 };
+            yield return new object[] { "1.23e10abc", NumberStyles.Float, CultureInfo.InvariantCulture, 1.23e10f, 7 };
+            yield return new object[] { "4.56E-5xyz", NumberStyles.Float, CultureInfo.InvariantCulture, 4.56E-5f, 7 };
 
             // Special values
-            yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.PositiveInfinity, 8 };
-            yield return new object[] { "-Infinityxyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.NegativeInfinity, 9 };
-            yield return new object[] { "NaNabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.NaN, 3 };
+            yield return new object[] { "Infinityabc", NumberStyles.Float, CultureInfo.InvariantCulture, float.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinityxyz", NumberStyles.Float, CultureInfo.InvariantCulture, float.NegativeInfinity, 9 };
+            yield return new object[] { "NaNabc", NumberStyles.Float, CultureInfo.InvariantCulture, float.NaN, 3 };
 
             // Special values always consume surrounding whitespace (independent of AllowLeadingWhite/AllowTrailingWhite) before stopping on the first non-whitespace invalid character
-            yield return new object[] { "Infinity   ", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.PositiveInfinity, 11 };
-            yield return new object[] { "Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.PositiveInfinity, 10 };
-            yield return new object[] { "+Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.PositiveInfinity, 11 };
-            yield return new object[] { "-Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.NegativeInfinity, 11 };
-            yield return new object[] { "NaN  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.NaN, 5 };
+            yield return new object[] { "Infinity   ", NumberStyles.Float, CultureInfo.InvariantCulture, float.PositiveInfinity, 11 };
+            yield return new object[] { "Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, float.PositiveInfinity, 10 };
+            yield return new object[] { "+Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, float.PositiveInfinity, 11 };
+            yield return new object[] { "-Infinity  x", NumberStyles.Float, CultureInfo.InvariantCulture, float.NegativeInfinity, 11 };
+            yield return new object[] { "NaN  x", NumberStyles.Float, CultureInfo.InvariantCulture, float.NaN, 5 };
 
             // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
-            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, float.PositiveInfinity, 10 };
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite), CultureInfo.InvariantCulture, float.PositiveInfinity, 10 };
 
             // Valid number without trailing characters
-            yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45f, 6 };
+            yield return new object[] { "123.45", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45f, 6 };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, float expectedValue, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, float expectedValue, int expectedCharsConsumed)
         {
             float result;
             int charsConsumed;
 
             // Test string overload with charsConsumed
-            Assert.True(NumberBaseHelper<float>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<float>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             if (float.IsNaN(expectedValue))
             {
                 Assert.True(float.IsNaN(result));
@@ -1713,7 +1762,7 @@ namespace System.Tests
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.True(NumberBaseHelper<float>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<float>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             if (float.IsNaN(expectedValue))
             {
                 Assert.True(float.IsNaN(result));
@@ -1727,7 +1776,7 @@ namespace System.Tests
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(NumberBaseHelper<float>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<float>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             if (float.IsNaN(expectedValue))
             {
                 Assert.True(float.IsNaN(result));
@@ -1743,36 +1792,36 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
             // Empty string
-            yield return new object[] { "", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+            yield return new object[] { "", NumberStyles.Float, CultureInfo.InvariantCulture };
 
             // Only invalid characters (no valid number)
-            yield return new object[] { "abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+            yield return new object[] { "abc", NumberStyles.Float, CultureInfo.InvariantCulture };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
         {
             float result;
             int charsConsumed;
 
             // Test string overload with charsConsumed
-            Assert.False(NumberBaseHelper<float>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<float>.TryParsePartial(value, style, provider, out result, out charsConsumed));
             Assert.Equal(0.0f, result);
             Assert.Equal(0, charsConsumed);
 
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.False(NumberBaseHelper<float>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<float>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0.0f, result);
             Assert.Equal(0, charsConsumed);
 
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(NumberBaseHelper<float>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<float>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(0.0f, result);
             Assert.Equal(0, bytesConsumed);
         }

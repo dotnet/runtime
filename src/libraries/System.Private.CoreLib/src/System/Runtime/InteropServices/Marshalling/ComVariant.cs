@@ -424,11 +424,11 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         public static ComVariant Null { get; } = new() { VarType = VarEnum.VT_NULL };
 
-        private readonly void ThrowIfNotVarType(params VarEnum[] requiredType)
+        private readonly void ThrowIfNotVarType(params ReadOnlySpan<VarEnum> requiredType)
         {
-            if (Array.IndexOf(requiredType, VarType) < 0)
+            if (!requiredType.Contains(VarType))
             {
-                throw new InvalidOperationException(SR.Format(SR.ComVariant_TypeIsNotSupportedType, VarType, string.Join(", ", requiredType)));
+                throw new InvalidOperationException(SR.Format(SR.ComVariant_TypeIsNotSupportedType, VarType, string.Join(", ", requiredType.ToArray())));
             }
         }
 

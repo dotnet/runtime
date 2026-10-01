@@ -147,13 +147,6 @@ namespace System.Text.Json.SourceGeneration
         public string? OpenDeclaringTypeFQN { get; init; }
 
         /// <summary>
-        /// When <see cref="CanUseUnsafeAccessors"/> is true and the declaring type is generic,
-        /// contains the FQN of the property type using open type parameters
-        /// (e.g., "T" for a generic property, "string" for a concrete one).
-        /// </summary>
-        public string? OpenPropertyTypeFQN { get; init; }
-
-        /// <summary>
         /// The type parameter names of the generic declaring type (e.g., ["T"]).
         /// Null when the declaring type is not generic.
         /// </summary>
@@ -182,9 +175,25 @@ namespace System.Text.Json.SourceGeneration
         public required TypeRef DeclaringType { get; init; }
 
         /// <summary>
+        /// The zero-based position of <see cref="DeclaringType"/> in the inheritance hierarchy
+        /// of the containing <see cref="TypeGenerationSpec"/>.
+        /// The contract type comes first, followed by its base types in most-derived-first order.
+        /// </summary>
+        public required int DeclaringTypeIndex { get; init; }
+
+        /// <summary>
         /// Design-time specified custom converter type.
         /// </summary>
         public required TypeRef? ConverterType { get; init; }
+
+        /// <summary>
+        /// When <see cref="CanUseUnsafeAccessors"/> is true and the declaring type is generic,
+        /// contains the FQN of the property or field type using the open type parameters
+        /// described by <see cref="DeclaringTypeParameterNames"/>
+        /// (e.g., "global::System.Collections.Generic.List&lt;T[]&gt;").
+        /// Null when the member type does not contain generic parameters.
+        /// </summary>
+        public string? OpenPropertyTypeFQN { get; init; }
 
         /// <summary>
         /// Determines if the specified property should be included in the fast-path method body.

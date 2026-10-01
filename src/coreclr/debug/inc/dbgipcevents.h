@@ -779,6 +779,7 @@ DEFINE_VMPTR(class FieldDesc,       PTR_FieldDesc,      VMPTR_FieldDesc);
 // ObjectHandle is a safe way to represent an object into the GC heap. It gets updated
 // when a GC occurs.
 DEFINE_VMPTR(struct OBJECTHANDLE__, TADDR,              VMPTR_OBJECTHANDLE);
+DEFINE_VMPTR(class DebuggerExternalMemoryOwner, TADDR, VMPTR_DebuggerExternalMemoryOwner);
 
 DEFINE_VMPTR(class TypeHandle,      PTR_TypeHandle,     VMPTR_TypeHandle);
 
@@ -1435,7 +1436,7 @@ static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_X86
 #elif defined(TARGET_AMD64)
 #define DBG_TARGET_REGNUM_SP 4
-#define DBG_TARGET_REGNUM_AMBIENT_SP 17
+#define DBG_TARGET_REGNUM_AMBIENT_SP 33
 #ifdef TARGET_AMD64
 static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
@@ -1449,7 +1450,7 @@ static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_ARM
 #elif defined(TARGET_ARM64)
 #define DBG_TARGET_REGNUM_SP 31
-#define DBG_TARGET_REGNUM_AMBIENT_SP 34
+#define DBG_TARGET_REGNUM_AMBIENT_SP 66
 #ifdef TARGET_ARM64
 static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
@@ -1741,6 +1742,7 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<VMPTR_AppDomain> vmAppDomain;
 
             Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
+            Portable<VMPTR_DebuggerExternalMemoryOwner> vmExternalMemoryOwner;
             DebuggerIPCE_ExpandedTypeData resultType;
         } FuncEvalComplete;
 
@@ -1839,6 +1841,11 @@ struct MSLAYOUT DebuggerIPCEvent
             Portable<VMPTR_OBJECTHANDLE> vmObjectHandle;
             Portable<CorDebugHandleType> handleType;
         } DisposeHandle;
+
+        struct MSLAYOUT
+        {
+            Portable<VMPTR_DebuggerExternalMemoryOwner> vmExternalMemoryOwner;
+        } DisposeExternalMemoryOwner;
 
         struct MSLAYOUT
         {

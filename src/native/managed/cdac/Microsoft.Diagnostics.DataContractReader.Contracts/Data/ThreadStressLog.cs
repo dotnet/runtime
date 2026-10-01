@@ -6,11 +6,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ThreadStressLog))]
 internal sealed partial class ThreadStressLog : IData<ThreadStressLog>
 {
-    [Field] public TargetPointer Next { get; }
-    [Field] public ulong ThreadId { get; }
-    [Field] public bool WriteHasWrapped { get; }
-    [Field] public TargetPointer CurrentPtr { get; }
-    [Field] public TargetPointer ChunkListHead { get; }
-    [Field] public TargetPointer ChunkListTail { get; }
-    [Field] public TargetPointer CurrentWriteChunk { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial ulong ThreadId { get; }
+    [Field] public partial bool WriteHasWrapped { get; }
+    [Field] public partial TargetPointer CurrentPtr { get; }
+    [Field] public partial TargetPointer ChunkListHead { get; }
+    [Field] public partial TargetPointer ChunkListTail { get; }
+    [Field] public partial TargetPointer CurrentWriteChunk { get; }
 }

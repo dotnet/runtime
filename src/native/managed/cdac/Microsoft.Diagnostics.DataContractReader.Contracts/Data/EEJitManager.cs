@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EEJitManager))]
 internal sealed partial class EEJitManager : IData<EEJitManager>
 {
-    [Field] public bool StoreRichDebugInfo { get; }
-    [Field] public TargetPointer AllCodeHeaps { get; }
+    [Field] public partial bool StoreRichDebugInfo { get; }
+    [Field] public partial TargetPointer AllCodeHeaps { get; }
 }

@@ -204,9 +204,9 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
-            onefuzzDropDirectory: $(fuzzerProject)/deployment/WinZipAesStreamFuzzer
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/WebSocketFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-          displayName: Send WinZipAesStreamFuzzer to OneFuzz
+          displayName: Send WebSocketFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:
@@ -220,7 +220,7 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
-            onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipCryptoStreamFuzzer
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipEncryptionStreamFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-          displayName: Send ZipCryptoStreamFuzzer to OneFuzz
+          displayName: Send ZipEncryptionStreamFuzzer to OneFuzz
 # ONEFUZZ_TASK_WORKAROUND_END

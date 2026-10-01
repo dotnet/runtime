@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <errno.h>
 #include <signal.h>
 
@@ -85,7 +86,6 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
 #else // !TARGET_WINDOWS
 
     const int check_interval_ms = 25;
-    int check_count = 0;
     std::vector<const char*> args;
 
     pid_t child_pid;
@@ -113,24 +113,49 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
     }
     else
     {
+        const std::chrono::steady_clock::time_point timeout_time =
+            std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+
         do
         {
             // Instructions for the parent process!
             wait_code = waitpid(child_pid, &child_status, WNOHANG);
 
             if (wait_code == -1)
-                return EINVAL;
+            {
+                int err = errno;
+                if (err != EINTR)
+                {
+                    printf("waitpid failed: errno=%d (%s)\n", err, std::strerror(err));
+                    return err;
+                }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(check_interval_ms));
+                // Retry on interrupt.
+                wait_code = 0;
+            }
 
             if (wait_code)
             {
                 if (WIFEXITED(child_status))
                     return WEXITSTATUS(child_status);
-            }
-            check_count++;
 
-        } while (check_count < (timeout_ms / check_interval_ms));
+                if (WIFSIGNALED(child_status))
+                {
+                    int sig = WTERMSIG(child_status);
+                    printf("Child killed by signal %d\n", sig);
+                    return 128 + sig;  // Convention: 128 + signal number
+                }
+            }
+
+            std::chrono::steady_clock::time_point next_check_time =
+                std::chrono::steady_clock::now() + std::chrono::milliseconds(check_interval_ms);
+            if (next_check_time > timeout_time)
+            {
+                next_check_time = timeout_time;
+            }
+            std::this_thread::sleep_until(next_check_time);
+
+        } while (std::chrono::steady_clock::now() < timeout_time);
     }
 
     printf("Child process took too long. Timed out... Exiting...\n");
@@ -139,4 +164,3 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
 #endif // TARGET_WINDOWS
     return ETIMEDOUT;
 }
-

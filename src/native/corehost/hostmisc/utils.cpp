@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "trace.h"
 #include "bundle/info.h"
+#include <minipal/strings.h>
+
 #if defined(TARGET_WINDOWS)
 #include <_version.h>
 #else
@@ -32,20 +34,12 @@ bool coreclr_exists_in_dir(const pal::string_t& candidate)
 
 bool utils::starts_with(const pal::string_t& value, const pal::char_t* prefix, size_t prefix_len, bool match_case)
 {
-    // Cannot start with an empty string.
-    if (prefix_len == 0)
-        return false;
-
-    auto cmp = match_case ? pal::strncmp : pal::strncasecmp;
-    return (value.size() >= prefix_len) &&
-        cmp(value.c_str(), prefix, prefix_len) == 0;
+    return utils_starts_with(value.c_str(), value.size(), prefix, prefix_len, match_case);
 }
 
 bool utils::ends_with(const pal::string_t& value, const pal::char_t* suffix, size_t suffix_len, bool match_case)
 {
-    auto cmp = match_case ? pal::strcmp : pal::strcasecmp;
-    return (value.size() >= suffix_len) &&
-        cmp(value.c_str() + value.size() - suffix_len, suffix) == 0;
+    return utils_ends_with(value.c_str(), value.size(), suffix, suffix_len, match_case);
 }
 
 void append_path(pal::string_t* path1, const pal::char_t* path2)
@@ -252,62 +246,6 @@ bool try_get_runtime_id_from_env(pal::string_t& out_rid)
     return pal::getenv(_X("DOTNET_RUNTIME_ID"), &out_rid);
 }
 
-/**
-* Multilevel Lookup is enabled by default
-*  It can be disabled by setting DOTNET_MULTILEVEL_LOOKUP env var to a value that is not 1
-*/
-bool multilevel_lookup_enabled()
-{
-    pal::string_t env_lookup;
-    bool multilevel_lookup = true;
-
-    if (pal::getenv(_X("DOTNET_MULTILEVEL_LOOKUP"), &env_lookup))
-    {
-        auto env_val = pal::xtoi(env_lookup.c_str());
-        multilevel_lookup = (env_val == 1);
-        trace::verbose(_X("DOTNET_MULTILEVEL_LOOKUP is set to %s"), env_lookup.c_str());
-    }
-    trace::info(_X("Multilevel lookup is %s"), multilevel_lookup ? _X("true") : _X("false"));
-    return multilevel_lookup;
-}
-
-void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
-{
-    bool multilevel_lookup = disable_multilevel_lookup ? false : multilevel_lookup_enabled();
-
-    // Multi-level lookup will look for the most appropriate version in several locations
-    // by following the priority rank below:
-    //  .exe directory
-    //  Global .NET directories
-    // If it is not activated, then only .exe directory will be considered
-
-    pal::string_t dotnet_dir_temp;
-    if (!dotnet_dir.empty())
-    {
-        // own_dir contains DIR_SEPARATOR appended that we need to remove.
-        dotnet_dir_temp = dotnet_dir;
-        remove_trailing_dir_separator(&dotnet_dir_temp);
-
-        locations->push_back(dotnet_dir_temp);
-    }
-
-    if (!multilevel_lookup)
-        return;
-
-    std::vector<pal::string_t> global_dirs;
-    if (pal::get_global_dotnet_dirs(&global_dirs))
-    {
-        for (pal::string_t dir : global_dirs)
-        {
-            // avoid duplicate paths
-            if (!pal::are_paths_equal_with_normalized_casing(dir, dotnet_dir_temp))
-            {
-                locations->push_back(dir);
-            }
-        }
-    }
-}
-
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
     recv->clear();
@@ -336,27 +274,6 @@ bool try_stou(const pal::string_t& str, unsigned* num)
         return false;
     }
     *num = std::stoul(str);
-    return true;
-}
-
-pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
-{
-    return DOTNET_ROOT_ENV_VAR _X("_") + to_upper(get_arch_name(arch));
-}
-
-bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
-{
-    const pal_char_t* env_var_name = nullptr;
-    pal_char_t* dotnet_root = nullptr;
-    if (!utils_get_dotnet_root_from_env(&env_var_name, &dotnet_root))
-    {
-        recv->clear();
-        return false;
-    }
-
-    dotnet_root_env_var_name->assign(env_var_name);
-    recv->assign(dotnet_root);
-    free(dotnet_root);
     return true;
 }
 
@@ -446,14 +363,7 @@ pal::string_t get_host_version_description()
 pal::string_t to_lower(const pal::char_t* in) {
     pal::string_t ret = in;
     std::transform(ret.begin(), ret.end(), ret.begin(),
-        [](pal::char_t c) { return static_cast<pal::char_t>(::tolower(c)); });
-    return ret;
-}
-
-pal::string_t to_upper(const pal::char_t* in) {
-    pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(),
-        [](pal::char_t c) { return static_cast<pal::char_t>(::toupper(c)); });
+        [](pal::char_t c) { return static_cast<pal::char_t>(minipal_tolower_invariant(static_cast<CHAR16_T>(c))); });
     return ret;
 }
 

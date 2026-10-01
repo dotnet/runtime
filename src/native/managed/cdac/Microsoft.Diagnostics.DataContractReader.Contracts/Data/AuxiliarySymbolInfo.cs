@@ -11,6 +11,6 @@ internal sealed partial class AuxiliarySymbolInfo : IData<AuxiliarySymbolInfo>
     /// side to avoid colliding with the generator-emitted <c>Address</c>
     /// instance property; aliased to the descriptor field <c>Address</c>.
     /// </summary>
-    [Field("Address")] public TargetCodePointer CodeAddress { get; }
-    [Field] public TargetPointer Name { get; }
+    [Field("Address")] public partial TargetCodePointer CodeAddress { get; }
+    [Field] public partial TargetPointer Name { get; }
 }

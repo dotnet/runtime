@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -20,6 +21,8 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class CompositeMLDsaCng : CompositeMLDsa
     {
+        private CngKey _key;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="CompositeMLDsaCng"/> class by using the specified <see cref="CngKey"/>.
         /// </summary>
@@ -37,13 +40,22 @@ namespace System.Security.Cryptography
         /// </exception>
         [SupportedOSPlatform("windows")]
         public CompositeMLDsaCng(CngKey key)
-            : base(AlgorithmFromHandle(key))
+            : base(AlgorithmFromHandleWithPlatformCheck(key, out CngKey duplicateKey))
         {
-            throw new PlatformNotSupportedException();
+            _key = duplicateKey;
         }
 
-        private static CompositeMLDsaAlgorithm AlgorithmFromHandle(CngKey key) =>
-            throw new PlatformNotSupportedException();
+        private static CompositeMLDsaAlgorithm AlgorithmFromHandleWithPlatformCheck(CngKey key, out CngKey duplicateKey)
+        {
+            if (!Helpers.IsOSPlatformWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            return AlgorithmFromHandle(key, out duplicateKey);
+        }
+
+        private static partial CompositeMLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey);
 
         /// <summary>
         ///   Gets a new <see cref="CngKey" /> representing the key used by the current instance.

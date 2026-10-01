@@ -209,6 +209,21 @@ namespace System.Xml.Serialization
 
     internal sealed class TextAccessor : Accessor
     {
+        private bool _isList;
+
+        // Per-accessor decision to serialize this [XmlText] array-like member as a whitespace-separated
+        // list of values (space-separated on write, split on read), analogous to AttributeAccessor.IsList.
+        // Unlike AttributeAccessor, which keeps an independently computed flag, this value is snapshotted
+        // from the type-level Mapping.IsList at import time (as XmlSchemaImporter does for its accessors),
+        // then narrowed further: it is only true when the mapping is itself a list (Mapping.IsList), the
+        // member is pure text (no mixed element content), and the UseLegacyXmlListSeparation opt-out switch
+        // is off. It is therefore a strict refinement of Mapping.IsList, not a second independent source of
+        // truth: because it is derived from Mapping.IsList it can never mark a non-list mapping as a list.
+        internal bool IsList
+        {
+            get { return _isList; }
+            set { _isList = value; }
+        }
     }
 
     internal sealed class XmlnsAccessor : Accessor

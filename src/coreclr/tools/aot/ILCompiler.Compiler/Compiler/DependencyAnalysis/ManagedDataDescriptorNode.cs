@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
             using (var writer = new Utf8JsonWriter(stream))
             {
                 writer.WriteStartObject();
-                writer.WriteNumber("version", 0);
+                writer.WriteNumber("version", 2);
                 writer.WriteString("baseline", "empty");
 
                 writer.WriteStartObject("types");

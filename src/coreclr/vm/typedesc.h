@@ -418,6 +418,7 @@ struct cdac_data<TypeVarTypeDesc>
 {
     static constexpr size_t Module = offsetof(TypeVarTypeDesc, m_pModule);
     static constexpr size_t Token = offsetof(TypeVarTypeDesc, m_token);
+    static constexpr size_t Index = offsetof(TypeVarTypeDesc, m_index);
 };
 
 /*************************************************************************/

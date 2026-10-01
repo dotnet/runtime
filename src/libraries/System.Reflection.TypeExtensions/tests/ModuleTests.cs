@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -22,11 +23,10 @@ namespace System.Reflection.Tests
             }
         }
 
-        // This calls Assembly.Load, but xUnit turn is into a LoadFrom because TinyAssembly is just a Content item in the project.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void GetModuleVersionId_KnownAssembly_ReturnsExpected()
         {
-            Module module = Assembly.Load(new AssemblyName("TinyAssembly")).ManifestModule;
+            Module module = Assembly.LoadFrom(Path.Combine(AppContext.BaseDirectory, "TinyAssembly.dll")).ManifestModule;
             Assert.True(module.HasModuleVersionId());
             if (!(PlatformDetection.IsMonoRuntime && PlatformDetection.IsAppleMobile && PlatformDetection.IsBuiltWithAggressiveTrimming))
             {

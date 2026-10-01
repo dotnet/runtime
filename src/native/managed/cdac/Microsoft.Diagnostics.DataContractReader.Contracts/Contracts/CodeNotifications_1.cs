@@ -207,9 +207,7 @@ internal readonly struct CodeNotifications_1 : ICodeNotifications
     /// </summary>
     private TableView? PrepareTable(bool allocateIfMissing)
     {
-        Target.TypeInfo jitNotifType = _target.GetTypeInfo(DataType.JITNotification);
-        uint entrySize = (uint)(jitNotifType.Size
-            ?? throw new InvalidOperationException("JITNotification has no declared size"));
+        uint entrySize = Data.JITNotification.GetSize(_target);
 
         TargetPointer globalAddr = _target.ReadGlobalPointer(Constants.Globals.JITNotificationTable);
         TargetPointer tablePointer = _target.ReadPointer(globalAddr);
