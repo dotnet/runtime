@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
         MethodSignature Signature,
         bool IsUnmanagedCallersOnly,
         bool IsAsyncCall,
-        bool HasGenericContextArg) : IHasTypeSignature
+        bool HasGenericContextArg)
     {
         /// <summary>
         /// Signature for a native target, such as a direct P/Invoke or a native runtime helper.
@@ -110,10 +110,10 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public ExternalTypeSignature? TypeSignature => _typeSignature;
 
-        MethodSignature IHasTypeSignature.Signature => _typeSignature.Value.Signature;
-        bool IHasTypeSignature.IsUnmanagedCallersOnly => _typeSignature.Value.IsUnmanagedCallersOnly;
-        bool IHasTypeSignature.IsAsyncCall => _typeSignature.Value.IsAsyncCall;
-        bool IHasTypeSignature.HasGenericContextArg => _typeSignature.Value.HasGenericContextArg;
+        MethodSignature INodeWithTypeSignature.Signature => _typeSignature.Value.Signature;
+        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => _typeSignature.Value.IsUnmanagedCallersOnly;
+        bool INodeWithTypeSignature.IsAsyncCall => _typeSignature.Value.IsAsyncCall;
+        bool INodeWithTypeSignature.HasGenericContextArg => _typeSignature.Value.HasGenericContextArg;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {

@@ -4,7 +4,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface IHasTypeSignature
+    public interface INodeWithTypeSignature : ISymbolDefinitionNode
     {
         MethodSignature Signature { get; }
         bool IsUnmanagedCallersOnly { get; }
@@ -12,16 +12,12 @@ namespace ILCompiler.DependencyAnalysis
         bool HasGenericContextArg { get; }
     }
 
-    public interface INodeWithTypeSignature : ISymbolDefinitionNode, IHasTypeSignature
-    {
-    }
-
     public interface IMethodCodeNodeWithTypeSignature : IMethodNode, INodeWithTypeSignature
     {
         // Keep methods aligned with WasmLowering.GetSignature(MethodDesc)
-        MethodSignature IHasTypeSignature.Signature => Method.Signature;
-        bool IHasTypeSignature.IsUnmanagedCallersOnly => Method.IsUnmanagedCallersOnly;
-        bool IHasTypeSignature.IsAsyncCall => Method.IsAsyncCall();
-        bool IHasTypeSignature.HasGenericContextArg => Method.RequiresInstMethodDescArg() || Method.RequiresInstMethodTableArg() || Method.IsArrayAddressMethod();
+        MethodSignature INodeWithTypeSignature.Signature => Method.Signature;
+        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => Method.IsUnmanagedCallersOnly;
+        bool INodeWithTypeSignature.IsAsyncCall => Method.IsAsyncCall();
+        bool INodeWithTypeSignature.HasGenericContextArg => Method.RequiresInstMethodDescArg() || Method.RequiresInstMethodTableArg() || Method.IsArrayAddressMethod();
     }
 }

@@ -603,7 +603,7 @@ namespace Internal.JitInterface
             return GetSignature(method.Signature, GetLoweringFlags(method));
         }
 
-        public static WasmSignature GetSignature(IHasTypeSignature node)
+        public static WasmSignature GetSignature(INodeWithTypeSignature node)
         {
             return GetSignature(node.Signature, GetLoweringFlags(node));
         }
@@ -611,6 +611,29 @@ namespace Internal.JitInterface
         public static unsafe WasmSignature GetSignature(MethodSignature signature, CORINFO_SIG_INFO* callSig)
         {
             return GetSignature(signature, GetLoweringFlags(callSig));
+        }
+
+        public static WasmSignature GetSignature(MethodSignature signature, bool hasGenericContextArg, bool isAsyncCall, bool isUnmanagedCallersOnly)
+        {
+            return GetSignature(signature, GetLoweringFlags(hasGenericContextArg, isAsyncCall, isUnmanagedCallersOnly));
+        }
+
+        public static LoweringFlags GetLoweringFlags(bool hasGenericContextArg, bool isAsyncCall, bool isUnmanagedCallersOnly)
+        {
+            LoweringFlags flags = 0;
+            if (hasGenericContextArg)
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (isAsyncCall)
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if (isUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
         }
 
         public static LoweringFlags GetLoweringFlags(MethodDesc method)
@@ -631,7 +654,7 @@ namespace Internal.JitInterface
             return flags;
         }
 
-        public static LoweringFlags GetLoweringFlags(IHasTypeSignature node)
+        public static LoweringFlags GetLoweringFlags(INodeWithTypeSignature node)
         {
             LoweringFlags flags = 0;
             if (node.HasGenericContextArg)

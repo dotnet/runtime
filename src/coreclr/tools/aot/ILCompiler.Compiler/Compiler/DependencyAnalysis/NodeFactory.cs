@@ -1010,7 +1010,14 @@ namespace ILCompiler.DependencyAnalysis
             // Distinct managed types can describe the same native ABI. In the a case like shared pinvoke source with
             // different managed enum types, fall back to checking the lowered ABI is at least the same.
             Debug.Assert(!Target.IsWasm || node.TypeSignature == typeSignature ||
-                Nullable.Equals(WasmLowering.GetSignature(node), WasmLowering.GetSignature(typeSignature)),
+                Equals(
+                    WasmLowering.GetSignature(node),
+                    typeSignature.HasValue ?
+                        WasmLowering.GetSignature(typeSignature.Value.Signature,
+                                                  typeSignature.Value.HasGenericContextArg,
+                                                  typeSignature.Value.IsAsyncCall,
+                                                  typeSignature.Value.IsUnmanagedCallersOnly)
+                        : null),
                 $"Conflicting signatures for extern function '{name}'");
             return node;
         }
