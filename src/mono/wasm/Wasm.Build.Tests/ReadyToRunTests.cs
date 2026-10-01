@@ -270,6 +270,7 @@ namespace Wasm.Build.Tests
         // that path stays covered. Each is passed only when present under BASE_DIR: the no-workload leg resolves
         // crossgen2 itself from the SDK pack (the SDK restores it when PublishReadyToRun is set), so passing a
         // non-existent Crossgen2InBuildDir there would break the call-helpers generator. All inert if BASE_DIR is unset.
+        // TODO-WASM https://github.com/dotnet/runtime/issues/135023: drop the composite-only shim once the SDK names wasm R2R outputs.
         private static string GetR2RBuildArgs(Configuration config, bool composite)
         {
             string? baseDir = EnvironmentVariables.BaseDir;
@@ -313,16 +314,19 @@ namespace Wasm.Build.Tests
 
         // Component stubs share the per-assembly <name>.wasm output names, so a mode switch must recompile them
         // instead of treating them as up-to-date per-assembly images that probe for a pruned composite owner.
-        // Switch back afterwards so the caller still runs the composite app.
+        // Switch back afterwards so the caller still runs the composite app. Only obj is incremental here: clear the
+        // published _framework so each mode's fingerprinted assets don't accumulate beside the other's.
         private void AssertSwitchingCompositeModeRecompiles(ProjectInfo info, Configuration config, string extraArgs, string frameworkDir)
         {
             string coreLibImage = Path.Combine(GetObjSubDir(config, "R2R"), "System.Private.CoreLib.wasm");
             System.DateTime compositeStubTime = File.GetLastWriteTimeUtc(coreLibImage);
 
+            Directory.Delete(frameworkDir, recursive: true);
             BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: $"{extraArgs} -p:PublishReadyToRunComposite=false"));
             Assert.True(File.GetLastWriteTimeUtc(coreLibImage) > compositeStubTime,
                 $"'{coreLibImage}' was not recompiled after switching from composite to per-assembly ReadyToRun.");
 
+            Directory.Delete(frameworkDir, recursive: true);
             BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs));
             AssertCompositeReadyToRun(frameworkDir);
         }

@@ -297,6 +297,7 @@
          whenever it is built - it is gated on its own path, not on the crossgen2 bin dir, which the WBT test leg
          does not carry. Wasm.Build.Tests (BuildWasmApps) need it for PublishReadyToRunComposite, whose output
          naming the base SDK's ReadyToRun tasks don't implement yet. -->
+    <!-- TODO-WASM https://github.com/dotnet/runtime/issues/135023: drop the BuildWasmApps clause once the SDK names wasm R2R outputs. -->
     <ItemGroup Condition="('$(NeedsEMSDK)' == 'true' or '$(Scenario)' == 'BuildWasmApps') and '$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\')">
       <HelixCorrelationPayload Include="$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\"
                                Destination="Crossgen2Tasks/$(Configuration)" />

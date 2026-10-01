@@ -70,7 +70,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Composite needs wasm-aware ReadyToRun tasks: the component stubs probe for the owner as <entry>.r2r.wasm,
        and crossgen2 writes each component stub as <name>.wasm. Tasks without wasm naming plan <entry>.r2r.dll
-       and <name>.dll outputs that are never produced, so fail before the (long) composite compile. -->
+       and <name>.dll outputs that are never produced, so fail before the (long) composite compile.
+       TODO-WASM https://github.com/dotnet/runtime/issues/135023: revisit once the SDK names wasm R2R outputs. -->
   <Target Name="_WasmCoreClrValidateCompositeTasks"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
           BeforeTargets="_CreateR2RImages">
