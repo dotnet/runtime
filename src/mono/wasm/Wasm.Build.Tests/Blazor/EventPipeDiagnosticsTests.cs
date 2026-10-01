@@ -36,53 +36,66 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
     [Fact]
     [TestCategory("native"), TestCategory("mono")]
-    public Task BlazorEventPipeTestWithCpuSamplesAOT() => BlazorEventPipeTestWithCpuSamples(Configuration.Release, aot: true);
+    public Task BlazorEventPipeTestWithCpuSamplesAOT() => BlazorEventPipeTestWithCpuSamplesCore(Configuration.Release, aot: true, readyToRun: false);
 
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
-    public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
+    public Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
+        => BlazorEventPipeTestWithCpuSamplesCore(config, aot, readyToRun: false);
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    [TestCategory("no-workload")]
+    public Task BlazorEventPipeTestWithCpuSamplesReadyToRun(Configuration config)
+        => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: true);
+
+    private async Task BlazorEventPipeTestWithCpuSamplesCore(Configuration config, bool aot, bool readyToRun)
     {
-        // force no R2R until https://github.com/dotnet/runtime/issues/130521
-        string extraProperties = @"
+        string extraProperties = $@"
                 <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
                 <EnableDiagnostics>true</EnableDiagnostics>
                 <WasmDebugLevel>0</WasmDebugLevel>
-                <PublishReadyToRun>false</PublishReadyToRun>
+                <PublishReadyToRun>{(readyToRun ? "true" : "false")}</PublishReadyToRun>
+                <PublishTrimmed>false</PublishTrimmed>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
-        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_cpu_samples", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp,
+            readyToRun ? "blazor_cpu_samples_r2r" : "blazor_cpu_samples_interp", extraProperties: extraProperties);
 
-        UpdateCounterPage();
+        UpdateCounterPage(useCpuSamplingTarget: true);
 
-        BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+        string extraBuildArgs = readyToRun
+            ? $"{GetR2RBuildArgs(config)} -p:UsingBrowserRuntimeWorkload=false"
+            : string.Empty;
+        BlazorPublish(info, config, new PublishOptions(
+            UseCache: false,
+            AssertAppBundle: false,
+            ExtraMSBuildArgs: extraBuildArgs));
 
         async Task CollectCpuSamplesTest(IPage page)
         {
-            await SetupCounterPage(page, "cpuprofile.nettrace", "globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 5.0, skipDownload: true })");
-            await ClickAndCollect(page);
+            await SetupCounterPage(page, "cpuprofile.nettrace", "globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 5.0 })", uploadTrace: false);
+            await ClickAndCollect(page, Path.Combine(info.LogPath, "cpuprofile.nettrace"));
         }
 
-        // Run the test using the custom handler
-        await RunForBuildWithDotnetRun(new BlazorRunOptions(
+        var runOptions = new BlazorRunOptions(
             Configuration: config,
             Test: CollectCpuSamplesTest,
             TimeoutSeconds: 60,
-            CheckCounter: false,
-            ServerEnvironment: new Dictionary<string, string>
-            {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
-                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
-            }
-        ));
+            CheckCounter: false);
 
-        bool appMethodFound = false;
+        await RunForPublishWithWebServer(runOptions);
+
+        bool sampledMethodFound = false;
         bool readyToRunMethodFound = false;
         using (var source = TraceLog.OpenOrConvert(ConvertTrace(info, "cpuprofile.nettrace")))
         {
-            appMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName == "BlazorBasicTestApp.Pages.Counter.IncrementCount()");
-            if (!appMethodFound)
+            sampledMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName.StartsWith(
+                "BlazorBasicTestApp.Pages.Counter.CpuSamplingTarget(", StringComparison.Ordinal));
+            if (!sampledMethodFound)
             {
                 foreach (var stack in source.CallStacks)
                 {
@@ -93,8 +106,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             readyToRunMethodFound = source.CodeAddresses.Any(address => address.FullMethodName.StartsWith("System.Buffer.Memmove(", StringComparison.Ordinal));
         }
 
-        Assert.True(appMethodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.IncrementCount' method");
-        if (BuildTestBase.IsCoreClrRuntime)
+        Assert.True(sampledMethodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.CpuSamplingTarget' method");
+        if (BuildTestBase.IsCoreClrRuntime && !readyToRun)
         {
             Assert.True(readyToRunMethodFound, "The cpuprofile.nettrace should contain rundown information for the ReadyToRun 'System.Buffer.Memmove' method");
         }
@@ -362,9 +375,9 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         return dictionary;
     }
 
-    private void UpdateCounterPage()
+    private void UpdateCounterPage(bool useCpuSamplingTarget = false)
     {
-        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string> {
+        var replacements = new Dictionary<string, string> {
                 {
                     @"currentCount++;",
                     """
@@ -380,13 +393,34 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                             Console.WriteLine(sb.ToString());
                         }
                     }
-                    currentCount++;
-                    """
+                    ${increment}
+                    """.Replace("${increment}", useCpuSamplingTarget ? "currentCount = CpuSamplingTarget(currentCount);" : "currentCount++;")
                 }
-            });
+            };
+
+        if (useCpuSamplingTarget)
+        {
+            replacements.Add(
+                @"private async Task IncrementCount()",
+                """
+                [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                private static int CpuSamplingTarget(int value)
+                {
+                    for (int i = 0; i < 100_000; i++)
+                    {
+                        value = unchecked((value * 31) + i);
+                    }
+                    return value;
+                }
+
+                private async Task IncrementCount()
+                """);
+        }
+
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), replacements);
     }
 
-    private async Task SetupCounterPage(IPage page, string fileName, string traceCommand)
+    private async Task SetupCounterPage(IPage page, string fileName, string traceCommand, bool uploadTrace = true)
     {
         await Task.Delay(500);
         // Navigate to the Counter page
@@ -403,7 +437,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             const traces = await ${traceCommand};
 
             console.log(`Tracing done ${new Date().toISOString()}`);
-                    
+
+            if (!${uploadTrace}) {
+                console.log(`WASM EXIT 0`);
+                return;
+            }
+
             // concatenate the buffers into a single Uint8Array
             const concatenated = new Uint8Array(traces.reduce((acc, curr) => acc + curr.byteLength, 0));
             let offset = 0;
@@ -427,11 +466,13 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         };
         console.log(`globalThis.collectAndUpload method created ${new Date().toISOString()}`);
         """;
-        up = up.Replace("${traceCommand}", traceCommand).Replace("${filename}", fileName);
+        up = up.Replace("${traceCommand}", traceCommand)
+            .Replace("${filename}", fileName)
+            .Replace("${uploadTrace}", uploadTrace ? "true" : "false");
         await page.EvaluateAsync(up);
     }
 
-    private async Task ClickAndCollect(IPage page)
+    private async Task ClickAndCollect(IPage page, string? downloadPath = null)
     {
         // A runtime trap never rejects donePromise: the runtime catches it, reports it as a console
         // error and exits non-zero, leaving the promise unsettled forever.
@@ -454,6 +495,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         try
         {
+            Task<IDownload>? downloadTask = downloadPath is null ? null : page.WaitForDownloadAsync();
+
             // Use void to prevent Playwright from awaiting the returned Promise,
             // so tracing runs in parallel with button clicks below.
             await page.EvaluateAsync(@"void (globalThis.donePromise = globalThis.collectAndUpload())");
@@ -486,6 +529,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }
 
             await collected;
+            if (downloadTask is not null && downloadPath is not null)
+                await (await downloadTask).SaveAsAsync(downloadPath);
         }
         finally
         {

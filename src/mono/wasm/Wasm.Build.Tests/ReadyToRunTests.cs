@@ -110,6 +110,30 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void PerformanceInstrumentationIsRejectedForBuild(bool readyToRun)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.BlazorBasicTestApp,
+                $"profiling_build_r2r_{readyToRun}",
+                extraProperties: $"""
+                    <EnableDiagnostics>true</EnableDiagnostics>
+                    <PublishReadyToRun>{readyToRun}</PublishReadyToRun>
+                    <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
+                    """);
+
+            (string _, string output) = BlazorBuild(
+                info,
+                Configuration.Debug,
+                new BuildOptions(ExpectSuccess: false, AssertAppBundle: false));
+
+            Assert.Contains("Only published applications are supported for CPU profiling", output);
+        }
+
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content
         // at each step. DetectRuntimeFailures (default) fails the run on any unhandled managed/JS exception.
         private static async Task InteractAllPagesAsync(IPage page)
@@ -217,33 +241,6 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount > 0, $"Expected per-app ReadyToRun images under '{r2rDir}'.");
             else
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
-        }
-
-        // Wire the wasm-aware Crossgen2Tasks shim (the wasm-container crossgen tasks) so R2R images use the
-        // right container, and the in-build crossgen2 when this leg shipped it. Each is passed only when present
-        // under BASE_DIR: the no-workload leg ships the shim but resolves crossgen2 itself from the SDK pack (the
-        // SDK restores it when PublishReadyToRun is set), so passing a non-existent Crossgen2InBuildDir there
-        // would break the call-helpers generator. All inert if BASE_DIR is unset.
-        private static string GetR2RBuildArgs(Configuration config)
-        {
-            string? baseDir = EnvironmentVariables.BaseDir;
-            if (string.IsNullOrEmpty(baseDir))
-                return string.Empty;
-
-            string hostArch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-            string crossgenDir = Path.Combine(baseDir, "coreclr", $"browser.wasm.{config}", hostArch, "crossgen2");
-            string shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config.ToString());
-            string shimProps = Path.Combine(shimDir, "Microsoft.NET.CrossGen.props");
-            string shimTargets = Path.Combine(shimDir, "Microsoft.NET.CrossGen.targets");
-
-            var args = new List<string>();
-            if (Directory.Exists(crossgenDir))
-                args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
-            if (File.Exists(shimProps))
-                args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
-            if (File.Exists(shimTargets))
-                args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
-            return string.Join(" ", args);
         }
 
         private static void AssertCoreLibReadyToRun(string frameworkDir, bool expectReadyToRun)

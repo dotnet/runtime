@@ -140,6 +140,14 @@ void ep_rt_coreclr_sample_profiler_disabled(void)
     s_skipsPerPeriod = 1;
 }
 
+// True only while an EventPipe CPU-sampling session is active. R2R samplepoints use this to
+// skip the InlinedCallFrame anchor push on the overwhelmingly common no-session path.
+extern "C" bool SamplingProfiler_IsActive()
+{
+    LIMITED_METHOD_CONTRACT;
+    return s_currentSamplingEvent != nullptr && s_currentSamplingThread != nullptr;
+}
+
 // Called from the interpreter's INTOP_PROF_SAMPLEPOINT handler.
 // On single-threaded WASM this is the cooperative sampling entry point.
 // On multi-threaded platforms the opcode is never emitted.

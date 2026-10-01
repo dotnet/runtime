@@ -1809,6 +1809,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("GCPOLL");
                     break;
 
+                case ReadyToRunHelper.WasmProfSamplepoint:
+                    builder.Append("WASM_PROF_SAMPLEPOINT");
+                    break;
+
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
                     builder.Append("GET_CURRENT_MANAGED_THREAD_ID");
                     break;

@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 30
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -78,6 +78,7 @@
 // consumes the scaffolding, so the flag is only ever set on WebAssembly images.
 // R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
 // R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
+// R2R Version 30.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
 
 struct READYTORUN_CORE_HEADER
 {
@@ -521,6 +522,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
     READYTORUN_HELPER_R2RToInterpreter          = 0x118,
+    READYTORUN_HELPER_WasmProfSamplepoint       = 0x119,
 };
 
 #include "readytoruninstructionset.h"

@@ -5018,6 +5018,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Transform any strongly connected components into reducible flow.
     //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
+
+    // Insert EventPipe CPU-sampling samplepoints before lowering.
+    //
+    DoPhase(this, PHASE_WASM_PROF_INSTRUMENT, &Compiler::fgWasmProfInstrument);
 #endif
 
     // Assign registers to variables, etc.

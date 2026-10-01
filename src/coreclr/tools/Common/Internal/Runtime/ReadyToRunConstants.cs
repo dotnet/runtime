@@ -380,6 +380,7 @@ namespace Internal.ReadyToRunConstants
         InitClass                   = 0x116,
         InitInstClass               = 0x117,
         R2RToInterpreter            = 0x118,
+        WasmProfSamplepoint         = 0x119,
 
         // **********************************************************************************************
         //
