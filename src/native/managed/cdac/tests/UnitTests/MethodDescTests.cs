@@ -78,7 +78,8 @@ public class MethodDescTests
         MockTarget.Architecture arch,
         Action<MockDescriptors.MockMethodDescriptorsBuilder> configure,
         Mock<IExecutionManager>? mockExecutionManager = null,
-        Mock<IPrecodeStubs>? mockPrecodeStubs = null)
+        Mock<IPrecodeStubs>? mockPrecodeStubs = null,
+        Action<TestPlaceholderTarget.Builder>? configureTarget = null)
     {
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         MockDescriptors.RuntimeTypeSystem rtsBuilder = new(targetBuilder.MemoryBuilder);
@@ -86,6 +87,7 @@ public class MethodDescTests
         MockDescriptors.MockMethodDescriptorsBuilder methodDescBuilder = new(rtsBuilder, loaderBuilder);
 
         configure(methodDescBuilder);
+        configureTarget?.Invoke(targetBuilder);
 
         mockExecutionManager ??= new Mock<IExecutionManager>();
         mockPrecodeStubs ??= new Mock<IPrecodeStubs>();
@@ -99,6 +101,82 @@ public class MethodDescTests
             .AddMockContract(mockPrecodeStubs)
             .Build();
         return target.Contracts.RuntimeTypeSystem;
+    }
+
+    private static (IRuntimeTypeSystem Contract, MethodDescHandle Method) CreateMethodForVersioning(
+        MockTarget.Architecture arch,
+        bool tiered,
+        Action<TestPlaceholderTarget.Builder> configureTarget)
+    {
+        TargetPointer address = TargetPointer.Null;
+        IRuntimeTypeSystem contract = CreateRuntimeTypeSystemContract(arch, builder =>
+        {
+            byte size = (byte)(builder.MethodDescLayout.Size / builder.MethodDescAlignment);
+            MockMethodDescChunk chunk = builder.AddMethodDescChunk("versioning", size);
+            chunk.MethodTable = builder.RTSBuilder.SystemObjectMethodTable.Address;
+            chunk.Size = size;
+            chunk.Count = 1;
+            MockMethodDesc method = chunk.GetMethodDescAtChunkIndex(0, builder.MethodDescLayout);
+            method.Flags3AndTokenRemainder = tiered
+                ? (ushort)MethodDescFlags_1.MethodDescFlags3.IsEligibleForTieredCompilation
+                : (ushort)0;
+            address = new TargetPointer(method.Address);
+        }, configureTarget: configureTarget);
+        return (contract, contract.GetMethodDescHandle(address));
+    }
+
+    public static IEnumerable<object?[]> IsVersionableData()
+    {
+        foreach (object[] data in new MockTarget.StdArch())
+        {
+            MockTarget.Architecture arch = (MockTarget.Architecture)data[0];
+            yield return [arch, false, null, false, false];
+            yield return [arch, true, null, false, true];
+            yield return [arch, false, false, false, false];
+            yield return [arch, false, true, false, false];
+            yield return [arch, false, true, true, true];
+            yield return [arch, true, true, false, true];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(IsVersionableData))]
+    public void IsVersionable_RespectsReJITAvailability(
+        MockTarget.Architecture arch, bool tiered, bool? reJitEnabled, bool supportsVersions, bool expected)
+    {
+        Mock<IReJIT> reJit = new(MockBehavior.Strict);
+        Mock<ICodeVersions> codeVersions = new(MockBehavior.Strict);
+        codeVersions.Setup(c => c.CodeVersionManagerSupportsMethod(It.IsAny<TargetPointer>())).Returns(supportsVersions);
+        if (reJitEnabled is bool enabled)
+            reJit.Setup(r => r.IsEnabled()).Returns(enabled);
+
+        (IRuntimeTypeSystem contract, MethodDescHandle method) = CreateMethodForVersioning(arch, tiered, builder =>
+        {
+            builder.AddMockContract(codeVersions);
+            if (reJitEnabled is not null)
+                builder.AddMockContract(reJit);
+        });
+
+        Assert.Equal(expected, contract.IsVersionable(method));
+        reJit.Verify(r => r.IsEnabled(), Times.Exactly(!tiered && reJitEnabled is not null ? 1 : 0));
+        codeVersions.Verify(c => c.CodeVersionManagerSupportsMethod(method.Address),
+            Times.Exactly(!tiered && reJitEnabled == true ? 1 : 0));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsVersionable_AdvertisedReJITFailuresPropagate(MockTarget.Architecture arch)
+    {
+        (IRuntimeTypeSystem contract, MethodDescHandle method) = CreateMethodForVersioning(
+            arch, tiered: false, builder => builder.AddContract<IReJIT>("c999"));
+        Assert.Throws<ContractUnrecognizedException>(() => contract.IsVersionable(method));
+
+        InvalidOperationException failure = new("Injected ReJIT target-read failure.");
+        Mock<IReJIT> reJit = new(MockBehavior.Strict);
+        reJit.Setup(r => r.IsEnabled()).Throws(failure);
+        (contract, method) = CreateMethodForVersioning(
+            arch, tiered: false, builder => builder.AddMockContract(reJit));
+        Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => contract.IsVersionable(method)));
     }
 
     [Theory]

@@ -1998,7 +1998,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (md.IsEligibleForTieredCompilation)
             return true;
         // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        if (!_target.Contracts.TryGetContract(out IReJIT reJit, out System.Exception? failure))
+        {
+            if (failure is ContractMissingException)
+                return false;
+            throw failure;
+        }
+        if (reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;
