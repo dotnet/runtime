@@ -166,6 +166,28 @@ namespace System.Text.Unicode
             return value ^ mask; // bit flip uppercase letters [A-Z] => [a-z]
         }
 
+        /// <summary>
+        /// Given two UInt64s that represent eight ASCII UTF-8 characters each, returns true iff
+        /// the two inputs are equal using an ordinal case-insensitive comparison.
+        /// </summary>
+        /// <remarks>
+        /// This is a branchless implementation.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool UInt64OrdinalIgnoreCaseAscii(ulong valueA, ulong valueB)
+        {
+            // ASSUMPTION: Caller has validated that input values are ASCII.
+            Debug.Assert(AllBytesInUInt64AreAscii(valueA));
+            Debug.Assert(AllBytesInUInt64AreAscii(valueB));
+
+            // The 0x80 bit of each byte is set iff 'A' <= byte <= 'Z'; shifting it right by 2
+            // gives 0x20, which lowercases those bytes before comparing.
+            ulong letterMaskA = (((valueA + 0x3F3F3F3F3F3F3F3F) ^ (valueA + 0x2525252525252525)) & 0x8080808080808080) >> 2;
+            ulong letterMaskB = (((valueB + 0x3F3F3F3F3F3F3F3F) ^ (valueB + 0x2525252525252525)) & 0x8080808080808080) >> 2;
+
+            return (valueA | letterMaskA) == (valueB | letterMaskB);
+        }
+
 #if NET
         /// <summary>
         /// Returns true iff the Vector128 represents 16 ASCII UTF-8 characters in machine endianness.

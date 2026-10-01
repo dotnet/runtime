@@ -2,36 +2,53 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System.Globalization
 {
     internal static partial class Ordinal
     {
         // Not optimized for large inputs: the only callers (number parsing) pass short sign/NaN/Infinity symbols.
-        internal static bool EqualsIgnoreCaseUtf8(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right) =>
-            MatchIgnoreCaseUtf8(left, right, prefixOnly: false);
-
-        internal static bool StartsWithIgnoreCaseUtf8(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix) =>
-            MatchIgnoreCaseUtf8(source, prefix, prefixOnly: true);
-
-        private static bool MatchIgnoreCaseUtf8(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix, bool prefixOnly)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool EqualsIgnoreCaseUtf8(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
         {
-            // ASCII-only loop without calls, so it stays cheap when inlined into callers
-            for (int i = 0; i < prefix.Length; i++)
+            // ASCII-only loops without calls, so they stay cheap when inlined into callers
+            while ((left.Length >= sizeof(ulong)) && (right.Length >= sizeof(ulong)))
             {
-                if (i >= source.Length)
+                ulong a = BinaryPrimitives.ReadUInt64LittleEndian(left);
+                ulong b = BinaryPrimitives.ReadUInt64LittleEndian(right);
+
+                if (!Utf8Utility.AllBytesInUInt64AreAscii(a | b))
                 {
-                    // The source ended before the prefix
+                    break;
+                }
+
+                if (!Utf8Utility.UInt64OrdinalIgnoreCaseAscii(a, b))
+                {
                     return false;
                 }
 
-                uint a = source[i];
-                uint b = prefix[i];
+                left = left.Slice(sizeof(ulong));
+                right = right.Slice(sizeof(ulong));
+            }
+
+            for (int i = 0; i < right.Length; i++)
+            {
+                if (i >= left.Length)
+                {
+                    return false;
+                }
+
+                uint a = left[i];
+                uint b = right[i];
 
                 if ((a | b) > 0x7F)
                 {
-                    return MatchIgnoreCaseNonAsciiUtf8(source.Slice(i), prefix.Slice(i), prefixOnly);
+                    // No non-ASCII scalar is equal to an ASCII one under ordinal casing
+                    return ((a ^ b) <= 0x7F) && MatchIgnoreCaseUtf8(left.Slice(i), right.Slice(i), prefixOnly: false);
                 }
 
                 // Ordinal equals or lowercase equals if the result ends up in the a-z range
@@ -41,10 +58,13 @@ namespace System.Globalization
                 }
             }
 
-            return prefixOnly || (source.Length == prefix.Length);
+            return left.Length == right.Length;
         }
 
-        private static bool MatchIgnoreCaseNonAsciiUtf8(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix, bool prefixOnly)
+        internal static bool StartsWithIgnoreCaseUtf8(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix) =>
+            MatchIgnoreCaseUtf8(source, prefix, prefixOnly: true);
+
+        private static bool MatchIgnoreCaseUtf8(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix, bool prefixOnly)
         {
             // NOTE: Two UTF-8 inputs of different length might compare as equal under
             // the OrdinalIgnoreCase comparer. This is distinct from UTF-16, where the
