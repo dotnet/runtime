@@ -515,20 +515,13 @@ static bool set_column_as_end_of_table_cursor(mdcursor_t c, col_index_t col_idx)
     mdtable_id_t target_table_id = ExtractTable(table->column_details[col_to_index(col_idx, table)]);
     mdtable_t* target_table = &table->cxt->tables[target_table_id];
 
-    mdcursor_t end_of_table;
-    if (target_table->cxt == NULL)
+    if (target_table->cxt == NULL &&
+        !initialize_new_table_details(table->cxt, target_table_id, target_table))
     {
-        if (!initialize_new_table_details(table->cxt, target_table_id, target_table))
-        {
-            return false;
-        }
-        end_of_table = create_cursor(target_table, 0);
-    }
-    else
-    {
-        end_of_table = create_cursor(target_table, target_table->row_count + 1);
+        return false;
     }
 
+    mdcursor_t end_of_table = create_cursor(target_table, target_table->row_count + 1);
     return md_set_column_value_as_cursor(c, col_idx, end_of_table);
 }
 

@@ -19,7 +19,7 @@ using mdhandle_ptr = std::unique_ptr<mdhandle_t, mdhandle_deleter_t>;
 struct md_added_row_t final
 {
 private:
-    mdcursor_t new_row;
+    mdcursor_t new_row{};
 public:
     md_added_row_t() = default;
     explicit md_added_row_t(mdcursor_t row) : new_row{ row } {}

@@ -1,4 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "emit.hpp"
+#include <vector>
 
 TEST(Param, Define)
 {
@@ -147,4 +151,93 @@ TEST(Param, DefineOutOfOrder)
     EXPECT_EQ(2, readParamsCount);
     EXPECT_EQ(param, readParams[0]);
     EXPECT_EQ(param1, readParams[1]);
+}
+
+TEST(Param, DefineAcrossMethodsInEitherOrder)
+{
+    for (bool earlierFirst : { true, false })
+    {
+        minipal::com_ptr<IMetaDataEmit> emit;
+        ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+
+        mdTypeDef type;
+        ASSERT_EQ(S_OK, emit->DefineTypeDef(W("ParamOrdering"), tdPublic, mdTypeDefNil, nullptr, &type));
+
+        std::array<uint8_t, 3> getterSignature = { IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_I4 };
+        std::array<uint8_t, 4> setterSignature = { IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I4 };
+        mdMethodDef getter, setter;
+        ASSERT_EQ(S_OK, emit->DefineMethod(type, W("get_Value"), mdPublic, getterSignature.data(),
+                                          (ULONG)getterSignature.size(), 0, 0, &getter));
+        ASSERT_EQ(S_OK, emit->DefineMethod(type, W("set_Value"), mdPublic, setterSignature.data(),
+                                          (ULONG)setterSignature.size(), 0, 0, &setter));
+
+        mdParamDef setterParam, getterReturn;
+        if (earlierFirst)
+        {
+            ASSERT_EQ(S_OK, emit->DefineParam(getter, 0, W("return"), pdOut, ELEMENT_TYPE_VOID, nullptr, 0, &getterReturn));
+            ASSERT_EQ(S_OK, emit->DefineParam(setter, 1, W("value"), pdIn, ELEMENT_TYPE_VOID, nullptr, 0, &setterParam));
+        }
+        else
+        {
+            ASSERT_EQ(S_OK, emit->DefineParam(setter, 1, W("value"), pdIn, ELEMENT_TYPE_VOID, nullptr, 0, &setterParam));
+            ASSERT_EQ(S_OK, emit->DefineParam(getter, 0, W("return"), pdOut, ELEMENT_TYPE_VOID, nullptr, 0, &getterReturn));
+        }
+
+        EXPECT_EQ(earlierFirst ? 1u : 2u, RidFromToken(getterReturn));
+        EXPECT_EQ(earlierFirst ? 2u : 1u, RidFromToken(setterParam));
+
+        minipal::com_ptr<IMetaDataImport> import;
+        ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
+
+        DWORD size;
+        ASSERT_EQ(S_OK, emit->GetSaveSize(cssAccurate, &size));
+        std::vector<uint8_t> metadata(size);
+        ASSERT_EQ(S_OK, emit->SaveToMemory(metadata.data(), size));
+        minipal::com_ptr<IMetaDataDispenser> dispenser;
+        ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+        minipal::com_ptr<IMetaDataImport> reopened;
+        ASSERT_EQ(S_OK, dispenser->OpenScopeOnMemory(metadata.data(), size, ofReadOnly | ofCopyMemory,
+            IID_IMetaDataImport, (IUnknown**)&reopened));
+
+        for (IMetaDataImport* scope : { import.p, reopened.p })
+        {
+            mdParamDef tokens[] = { getterReturn, setterParam };
+            mdMethodDef methods[] = { getter, setter };
+            ULONG sequences[] = { 0, 1 };
+            for (size_t i = 0; i < 2; ++i)
+            {
+                HCORENUM enumeration = nullptr;
+                mdParamDef parameters[2];
+                ULONG count;
+                ASSERT_EQ(S_OK, scope->EnumParams(&enumeration, methods[i], parameters, 2, &count));
+                scope->CloseEnum(enumeration);
+                ASSERT_EQ(1u, count);
+                EXPECT_EQ(tokens[i], parameters[0]);
+
+                mdMethodDef owner;
+                ULONG sequence, nameLength, flags, constantLength;
+                DWORD constantType;
+                UVCP_CONSTANT constant;
+                WCHAR name[16];
+                ASSERT_EQ(S_OK, scope->GetParamProps(tokens[i], &owner, &sequence, name, 16, &nameLength,
+                    &flags, &constantType, &constant, &constantLength));
+                EXPECT_EQ(methods[i], owner);
+                EXPECT_EQ(sequences[i], sequence);
+                EXPECT_EQ(i == 0 ? pdOut : pdIn, flags);
+            }
+        }
+    }
+}
+
+TEST(Param, RejectsWrongMethodToken)
+{
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
+
+    mdTypeDef type;
+    ASSERT_EQ(S_OK, emit->DefineTypeDef(W("InvalidParamOwner"), tdPublic, mdTypeDefNil, nullptr, &type));
+
+    mdParamDef param = mdParamDefNil;
+    EXPECT_EQ(E_FAIL, emit->DefineParam(type, 0, W("result"), pdOut, ELEMENT_TYPE_VOID, nullptr, 0, &param));
+    EXPECT_EQ(mdParamDefNil, param);
 }
