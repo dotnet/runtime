@@ -26,6 +26,116 @@ alternatively you can edit your .csproj file to include
 
 The output will include only necessary code to run your application. The framework libraries size will be reduced noticeably.
 
+## Experimental task cache
+
+> [!WARNING]
+> This feature is experimental. Its configuration and behavior may change or be removed without notice.
+> Neither the configuration nor the on-disk format is a supported compatibility surface.
+
+Set `ILLINK_EXPERIMENTAL_CACHE=true` in the environment before starting MSBuild to enable caching.
+The boolean value is case-insensitive; unset, empty, or `false` disables caching. Invalid boolean
+values disable caching with a diagnostic. Set `ILLINK_EXPERIMENTAL_CACHE_PATH` to override the
+cache directory. Setting a path alone does not enable caching, and path values are never
+interpreted as booleans. These settings apply only to the ILLink task, not the linker CLI or ILC.
+
+For example, in a POSIX shell:
+
+```sh
+ILLINK_EXPERIMENTAL_CACHE=true ILLINK_EXPERIMENTAL_CACHE_PATH=/path/to/cache \
+  dotnet publish -r <rid> -c Release -p:PublishTrimmed=true
+```
+
+These are environment variables, not MSBuild properties or task parameters. The task reads
+its process environment on each invocation; do not change it during parallel builds, and ensure
+reused build processes receive the intended environment.
+
+The cache helper resolves an unset or empty directory override to `$XDG_CACHE_HOME/illink` (or
+`$HOME/.cache/illink`) on Linux/other XDG Unix, `$HOME/Library/Caches/illink` on macOS,
+and `LocalApplicationData/illink` on Windows. Relative `XDG_CACHE_HOME` values are ignored;
+explicit relative cache directories are resolved against the working directory.
+
+Eligible invocations use a key covering arguments, input-file and sidecar contents, the task
+assembly, the selected dotnet host executable, and the entire ILLink assembly.
+File contents are hashed on every invocation. Linker changes invalidate the cache even when
+the module version ID (MVID), file length, and timestamp are unchanged.
+Bundled dependencies and configuration are not fingerprinted. Changes to those files require
+a cleared/isolated cache or disabled caching unless the linker binary also changes.
+
+The key does not cover the host's installed runtime directories or the version of the runtime
+executing ILLink. Runtime installation changes alone are not guaranteed to invalidate entries;
+clear or isolate the cache when that distinction is required.
+Cache hits replace the output directory without running ILLink.
+Directories are created in the cache only when storing a successful result. Hits do not replay warnings or other linker diagnostics.
+
+Caching is bypassed with a diagnostic for non-whitespace `ExtraArgs`, custom steps/data,
+dependency-dump options, and explicit task environment overrides. Options supplied through
+`ExtraArgs` remain unsupported for caching; these invocations still run the linker normally.
+Inherited environment variables are not tracked; disable caching
+when they affect outputs or dependencies beyond the keyed inputs, or require tool-execution
+side effects such as startup hooks or profiling. Unreadable inputs or linker files also
+fall back to normal linking. See the
+[cache design](../../design/tools/illink/task-cache.md) for identity and eligibility details.
+
+### Cache maintenance
+
+The experimental `dotnet-illink-cache` .NET tool can purge entries that were not used recently:
+
+```sh
+dotnet illink-cache purge --cache-directory /path/to/cache --before 2026-10-01T12:00:00Z
+```
+
+The directory and UTC cutoff are required; maintenance does not use the task's opt-in or
+directory environment variables. Use the tool built from the same revision as the task.
+See the [tool README](../../../src/tools/illink/src/ILLink.CacheTool/README.md) for local
+packaging and installation.
+
+Each entry has a `last-used` timestamp, initialized during publication and refreshed after
+a successful cache hit. Only entries strictly older than the cutoff are deleted. Staging
+directories, unrelated directories, and other layout versions are not purged. There is no
+size limit or automatic eviction during linking.
+
+**Run purge only when no build is using that cache.** Purge and manual deletion are not
+coordinated with readers or writers. Clear old caches before adopting usage markers; no
+migration or fallback age is provided. Missing, malformed, or unreadable markers are reported
+as errors and their entries are retained. The tool reports deleted/kept/error counts and
+returns nonzero for argument or maintenance failures. Usage-marker update failures in the
+task are logged without failing linking.
+
+### CI purge ordering
+
+For a CI cache snapshot, use the build-start timestamp as the cutoff to retain entries used
+or created by that build:
+
+1. Restore the cache into a job-private directory and set `ILLINK_EXPERIMENTAL_CACHE=true`
+   and `ILLINK_EXPERIMENTAL_CACHE_PATH` to that explicit directory.
+2. Record the UTC timestamp before starting any linking. In a POSIX shell:
+   ```sh
+   export ILLINK_CACHE_BUILD_START="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+   ```
+3. Run the build and wait for all processes using the cache to finish.
+4. Run the tool from the same revision, with maintenance failures reported but nonfatal:
+   ```sh
+   if ! dotnet illink-cache purge \
+       --cache-directory "$ILLINK_EXPERIMENTAL_CACHE_PATH" \
+       --before "$ILLINK_CACHE_BUILD_START"; then
+     echo "Warning: ILLink cache purge failed; see the tool diagnostics above." >&2
+   fi
+   ```
+5. Save/upload the resulting cache directory only after purge finishes. For Azure Pipelines
+   `Cache@2`, the purge step must precede its post-job save.
+
+If the build and purge run in different CI steps, persist `ILLINK_CACHE_BUILD_START` as a
+pipeline variable; a shell export alone does not carry it across steps. This variable is
+only for the CI recipe, not another task configuration setting.
+
+A failed build can still be followed by purge once all linking has stopped, but entries for
+work that was never reached will count as unused. Likewise, incremental builds that skip
+linking do not refresh cache usage. Skip purge if the cache may still be in use, including
+during cancellation. Do not share a live directory with another job while purging.
+
+This is usage guidance, not automatic CI enablement. ILLink cache restore/upload wiring
+is separate from runtime's Roslyn/csc cache maintenance.
+
 ## ILLink Task Properties
 
 ### ExtraArgs
