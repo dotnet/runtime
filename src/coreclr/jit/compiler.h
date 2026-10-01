@@ -7837,7 +7837,6 @@ protected:
 
     void optScaleLoopBlocks(FlowGraphNaturalLoop* loop);
 
-    bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
     bool optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** ppIncr);
 

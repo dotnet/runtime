@@ -272,65 +272,6 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 }
 
 //----------------------------------------------------------------------------------
-// optIsLoopTestEvalIntoTemp:
-//      Pattern match if the test tree is computed into a tmp
-//      and the "tmp" is used as jump condition for loop termination.
-//
-// Arguments:
-//      testStmt    - is the JTRUE statement that is of the form: jmpTrue (Vtmp != 0)
-//                    where Vtmp contains the actual loop test result.
-//      newTestStmt - contains the statement that is the actual test stmt involving
-//                    the loop iterator.
-//
-//  Return Value:
-//      Returns true if a new test tree can be obtained.
-//
-//  Operation:
-//      Scan if the current stmt is a jtrue with (Vtmp != 0) as condition
-//      Then returns the rhs for def of Vtmp as the "test" node.
-//
-//  Note:
-//      This method just retrieves what it thinks is the "test" node,
-//      the callers are expected to verify that "iterVar" is used in the test.
-//
-bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt)
-{
-    GenTree* test = testStmt->GetRootNode();
-
-    if (!test->OperIs(GT_JTRUE))
-    {
-        return false;
-    }
-
-    GenTree* relop = test->gtGetOp1();
-    noway_assert(relop->OperIsCompare());
-
-    GenTree* opr1 = relop->AsOp()->gtOp1;
-    GenTree* opr2 = relop->AsOp()->gtOp2;
-
-    // Make sure we have jtrue (vtmp != 0)
-    if (relop->OperIs(GT_NE) && opr1->OperIs(GT_LCL_VAR) && opr2->OperIs(GT_CNS_INT) && opr2->IsIntegralConst(0))
-    {
-        // Get the previous statement to get the def (rhs) of Vtmp to see
-        // if the "test" is evaluated into Vtmp.
-        Statement* prevStmt = testStmt->GetPrevStmt();
-        if (prevStmt == nullptr)
-        {
-            return false;
-        }
-
-        GenTree* tree = prevStmt->GetRootNode();
-        if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == opr1->AsLclVar()->GetLclNum()) &&
-            tree->AsLclVar()->Data()->OperIsCompare())
-        {
-            *newTestStmt = prevStmt;
-            return true;
-        }
-    }
-    return false;
-}
-
-//----------------------------------------------------------------------------------
 // optExtractTestIncr:
 //      Extract the "test" and "incr" nodes of the loop.
 //
@@ -362,12 +303,6 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
-
-    Statement* newTestStmt;
-    if (optIsLoopTestEvalIntoTemp(testStmt, &newTestStmt))
-    {
-        testStmt = newTestStmt;
-    }
 
     // Walk backward from the test statement looking for a candidate IV increment
     // of the form 'v = v op c'. For each such candidate, verify it is suitable:
@@ -1438,18 +1373,14 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     // Make sure everything looks ok.
     assert((iterInfo.TestBlock != nullptr) && iterInfo.TestBlock->KindIs(BBJ_COND));
 
-    if (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree)
-    {
-        JITDUMP("Failed to unroll loop " FMT_LP ": loop test is not the branch condition\n", loop->GetIndex());
-        return false;
-    }
-
     // clang-format off
     if (!incr->OperIs(GT_ADD, GT_SUB) ||
         !incr->AsOp()->gtOp1->OperIs(GT_LCL_VAR) ||
         (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
         !incr->AsOp()->gtOp2->OperIs(GT_CNS_INT) ||
-        (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc))
+        (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc) ||
+
+        (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
     {
         noway_assert(!"Bad precondition in Compiler::optUnrollLoops()");
         return false;
