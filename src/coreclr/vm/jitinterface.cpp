@@ -14457,9 +14457,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             if (!th.IsTypeDesc())
             {
-                if (currentModule->IsReadyToRun() && g_fEEStarted)
+                if (g_fEEStarted)
                 {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                    // Activate the target explicitly.
                     th.AsMethodTable()->EnsureInstanceActive();
                 }
             }
@@ -14473,9 +14473,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             MethodDesc * pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            if (currentModule->IsReadyToRun() && g_fEEStarted)
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14505,9 +14505,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     COMPlusThrowHR(COR_E_TYPELOAD);
             }
 
-            if (currentModule->IsReadyToRun() && g_fEEStarted)
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pDeclaringMT->EnsureInstanceActive();
             }
 
@@ -14551,9 +14551,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             pMD->PrepareForUseAsADependencyOfANativeImage();
 
-            if (currentModule->IsReadyToRun() && g_fEEStarted)
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14572,9 +14572,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             pMD->PrepareForUseAsADependencyOfANativeImage();
 
-            if (currentModule->IsReadyToRun() && g_fEEStarted)
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14585,9 +14585,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            if (currentModule->IsReadyToRun() && g_fEEStarted)
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 

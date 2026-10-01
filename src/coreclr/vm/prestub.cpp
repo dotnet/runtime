@@ -2930,11 +2930,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                 _ASSERTE(!pMD->GetMethodTable()->IsGenericTypeDefinition() || pMD->GetMethodTable()->GetNumGenericArgs() == 0);
 
-                if (pModule->IsReadyToRun())
-                {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-                }
+                // Activate the target explicitly.
+                pMD->EnsureActive();
 
                 break;
             }
@@ -2947,11 +2944,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                 pMD->PrepareForUseAsADependencyOfANativeImage();
 
-                if (pModule->IsReadyToRun())
-                {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-                }
+                // Activate the target explicitly.
+                pMD->EnsureActive();
 
                 break;
             }
@@ -2967,11 +2961,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                 pMD->PrepareForUseAsADependencyOfANativeImage();
 
-                if (pModule->IsReadyToRun())
-                {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-                }
+                // Activate the target explicitly.
+                pMD->EnsureActive();
 
                 break;
             }
@@ -2991,12 +2982,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                     fVirtual = true;
                 }
-                else
-                if (pModule->IsReadyToRun())
-                {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-                }
+
+                // Activate the target explicitly.
+                pMD->EnsureActive();
                 break;
             }
 
