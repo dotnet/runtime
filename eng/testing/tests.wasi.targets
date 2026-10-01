@@ -195,4 +195,14 @@
       <RunScriptCommand>$(RunScriptCommand.Replace(' -- ', ' $(_WasiEngineEnvironmentArgs) -- '))</RunScriptCommand>
     </PropertyGroup>
   </Target>
+
+  <!-- Like ZipTestArchive does for the bundle and publish dirs: once the AppBundle is zipped for Helix, delete the
+       per-suite ReadyToRun output and the relink/composition stages (relinked host, composite, merged modules).
+       Each suite keeps several whole-program modules there, and the full library test set doesn't fit on a
+       build agent otherwise. The zip still has the composed module that runs. -->
+  <Target Name="_RemoveWasiIntermediatesAfterArchive"
+          AfterTargets="ZipTestArchive"
+          Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <RemoveDir Directories="$(IntermediateOutputPath)R2R;$(IntermediateOutputPath)wasm" ContinueOnError="WarnAndContinue" />
+  </Target>
 </Project>
