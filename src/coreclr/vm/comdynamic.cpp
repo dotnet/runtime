@@ -148,7 +148,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetParentType(QCall::ModuleHandle pModule,
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    IfFailThrow( pRCW->GetEmitHelper()->SetTypeParent(tdType, tkParent) );
+    IfFailThrow( pRCW->GetEmitter()->SetTypeParent(tdType, tkParent) );
 
     END_QCALL;
 }
@@ -163,7 +163,7 @@ extern "C" void QCALLTYPE TypeBuilder_AddInterfaceImpl(QCall::ModuleHandle pModu
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    IfFailThrow( pRCW->GetEmitHelper()->AddInterfaceImpl(tdType, tkInterface) );
+    IfFailThrow( pRCW->GetEmitter()->AddInterfaceImpl(tdType, tkInterface) );
 
     END_QCALL;
 }
@@ -547,7 +547,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineEvent(QCall::ModuleHandle pModule, 
     _ASSERTE(pRCW);
 
     // Define the Event
-    IfFailThrow(pRCW->GetEmitHelper()->DefineEventHelper(
+    IfFailThrow(pRCW->GetEmitter()->DefineEventHelper(
             tkParent,               // ParentTypeDef
             wszName,                // Name of Member
             attr,                       // property Attributes (prDefaultProperty, etc);
@@ -575,7 +575,7 @@ extern "C" void QCALLTYPE TypeBuilder_DefineMethodSemantics(QCall::ModuleHandle 
     _ASSERTE(pRCW);
 
     // Define the MethodSemantics
-    IfFailThrow(pRCW->GetEmitHelper()->DefineMethodSemanticsHelper(
+    IfFailThrow(pRCW->GetEmitter()->DefineMethodSemanticsHelper(
             tkAssociation,
             attr,
             tkMethod));
@@ -760,7 +760,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetFieldLayoutOffset(QCall::ModuleHandle p
     _ASSERTE(pRCW);
 
     // Set the field layout
-    IfFailThrow(pRCW->GetEmitHelper()->SetFieldLayoutHelper(
+    IfFailThrow(pRCW->GetEmitter()->SetFieldLayoutHelper(
             tkField,                  // field
             iOffset));                // layout offset
 

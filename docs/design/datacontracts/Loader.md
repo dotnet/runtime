@@ -666,6 +666,10 @@ string GetSimpleName(ModuleHandle handle)
 
 string GetPath(ModuleHandle handle)
 {
+    ModuleFlags flags = GetFlags(handle);
+    if (flags.HasFlag(ModuleFlags.ReflectionEmit) || IsProbeExtensionResultValid(handle))
+        return string.Empty;
+
     TargetPointer pathStart = target.ReadPointer(handle.Address + /* Module::Path offset */);
     char[] path = // Read<char> from target starting at pathStart until null terminator
     return new string(path);

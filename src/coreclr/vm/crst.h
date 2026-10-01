@@ -110,7 +110,7 @@ class CrstBase
     friend class ListLockEntryBase;
     friend struct SavedExceptionInfo;
     friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
-    friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
+    friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept;
     friend class CodeVersionManager;
 
     friend class Debugger;
@@ -151,20 +151,24 @@ private:
 #if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
     // There is no wait to make GC-safe, no other thread to orphan a shutdown lock,
     // and no debugger helper thread to exclude. Keep these inline so holders disappear too.
-    void Enter() { LIMITED_METHOD_CONTRACT; }
-    void Leave() { LIMITED_METHOD_CONTRACT; }
+    void Enter() noexcept { LIMITED_METHOD_CONTRACT; }
+    void Leave() noexcept { LIMITED_METHOD_CONTRACT; }
 #else
+#ifdef DACCESS_COMPILE
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
-    void Leave();
+#else
+    void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK)) noexcept;
+#endif
+    void Leave() noexcept;
 #endif
 
 #ifndef DACCESS_COMPILE
-    DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
+    DEBUG_NOINLINE static void AcquireLock(CrstBase *c) noexcept {
         WRAPPER_NO_CONTRACT;
         c->Enter();
     }
 
-    DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
+    DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) noexcept {
         WRAPPER_NO_CONTRACT;
         c->Leave();
     }
@@ -185,7 +189,7 @@ private:
         }
     };
 
-    static void ReleaseLock(CrstBase *c)
+    static void ReleaseLock(CrstBase *c) noexcept
     {
         SUPPORTS_DAC;
     };
@@ -339,7 +343,11 @@ public:
         CrstBase * m_pCrst;
 
     public:
+#ifdef DACCESS_COMPILE
         CrstHolder(CrstBase* pCrst)
+#else
+        CrstHolder(CrstBase* pCrst) noexcept
+#endif
             : m_pCrst{ pCrst }
         {
             WRAPPER_NO_CONTRACT;

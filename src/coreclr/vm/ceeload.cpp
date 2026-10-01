@@ -1621,6 +1621,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 #endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
+#ifdef PROFILING_SUPPORTED
 //
 // Wrapper for Module::GetRWImporter + QI when writing is not needed.
 //
@@ -1670,6 +1671,7 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
 
     return hr;
 }
+#endif // PROFILING_SUPPORTED
 
 // a special token that indicates no reader could be created - don't try again
 static ISymUnmanagedReader* const k_pInvalidSymReader = (ISymUnmanagedReader*)0x1;
@@ -2910,6 +2912,7 @@ void Module::SetJMCStatus(bool fStatus)
     m_debuggerSpecificData.m_fDefaultJMCStatus = fStatus;
 }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Update the dynamic metadata if needed. Nop for non-dynamic modules
 void Module::UpdateDynamicMetadataIfNeeded()
 {
@@ -2942,6 +2945,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
     }
 
 }
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
 
@@ -2952,12 +2956,14 @@ BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
         Module * pModule = pAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
+#endif
 
     //
     // Remaining work is only needed if a debugger is attached
@@ -3855,7 +3861,10 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     m_pInMemoryWriter = new RefClassWriter();
 
-    IfFailThrow(m_pInMemoryWriter->Init(GetEmitter(), szName));
+    IfFailThrow(m_pInMemoryWriter->Init(
+        GetPEAssembly()->GetMDInternalEmit(),
+        GetMDImport(),
+        szName));
 
     m_CrstLeafLock.Init(CrstLeafLock);
 }
@@ -3897,15 +3906,15 @@ public:
         WRAPPER_NO_CONTRACT;
         (void)Release();
     }
-    HRESULT SetMDUpdateMode(IMetaDataEmit *pEmitter, ULONG updateMode)
+    HRESULT SetMDUpdateMode(IMDInternalEmit *pEmitter, ULONG updateMode)
     {
         LIMITED_METHOD_CONTRACT;
         HRESULT hr = S_OK;
 
         _ASSERTE(updateMode != UINT32_MAX);
 
-        IfFailRet(pEmitter->QueryInterface(IID_IMDInternalEmit, (void **)&m_pInternalEmitter));
-        _ASSERTE(m_pInternalEmitter != NULL);
+        m_pInternalEmitter = pEmitter;
+        m_pInternalEmitter->AddRef();
 
         IfFailRet(m_pInternalEmitter->SetMDUpdateMode(updateMode, &m_OriginalMDUpdateMode));
         _ASSERTE(m_OriginalMDUpdateMode != UINT32_MAX);
@@ -3950,6 +3959,7 @@ private:
     ULONG            m_OriginalMDUpdateMode;
 };
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Called in live paths to fetch metadata for dynamic modules. This makes the metadata available to the
 // debugger from out-of-process.
 //
@@ -3977,7 +3987,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     CONTRACTL_END;
 
     // Do not release the emitter. This is a weak reference.
-    IMetaDataEmit *pEmitter = this->GetEmitter();
+    IMDInternalEmit *pEmitter = m_pInMemoryWriter->GetEmitter();
     _ASSERTE(pEmitter != NULL);
 
     HRESULT hr;
@@ -4023,6 +4033,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     // Will be S_FALSE if someone changed the MDUpdateMode (from MDUpdateExtension) meanwhile
     _ASSERTE(hr == S_OK);
 }
+#endif
 
 
 #endif // !DACCESS_COMPILE
