@@ -71,32 +71,32 @@ stimuli:
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?ims)^(?:\s*Result:\s*No new Known Build Error\s*$|Title:\s*\[ci-scan\]\s+\S)'
+          pattern: '(?ims)(?:(?<![\s\S])\s*Result:\s*No new Known Build Error\s*(?![\s\S])|Title:\s*\[ci-scan\]\s+\S)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?ims)^(?:\s*Result:\s*No new Known Build Error\s*$|Labels:\s*Known Build Error,\s*blocking-clean-ci(-optional)?\s*$)'
+          pattern: '(?ims)(?:(?<![\s\S])\s*Result:\s*No new Known Build Error\s*(?![\s\S])|Labels:\s*Known Build Error,\s*blocking-clean-ci(-optional)?\s*$)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?ims)(?:^\s*Result:\s*No new Known Build Error\s*$|##\s+Build Information.*##\s+Error Details.*##\s+Error Message)'
+          pattern: '(?ims)(?:(?<![\s\S])\s*Result:\s*No new Known Build Error\s*(?![\s\S])|##\s+Build Information.*##\s+Error Details.*##\s+Error Message)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?ims)(?:^\s*Result:\s*No new Known Build Error\s*$|```json\s*\{.*"ErrorMessage".*"ErrorPattern".*"BuildRetry".*"ExcludeConsoleLog".*\}\s*```)'
+          pattern: '(?ims)(?:(?<![\s\S])\s*Result:\s*No new Known Build Error\s*(?![\s\S])|```json\s*\{.*"ErrorMessage".*"ErrorPattern".*"BuildRetry".*"ExcludeConsoleLog".*\}\s*```)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?ims)(?:^\s*Result:\s*No new Known Build Error\s*$|<details>\s*<summary>KBE authoring guidance \(ci-failure-scan\)</summary>.*?</details>)'
+          pattern: '(?ims)(?:(?<![\s\S])\s*Result:\s*No new Known Build Error\s*(?![\s\S])|<details>\s*<summary>KBE authoring guidance \(ci-failure-scan\)</summary>.*?</details>)'
 
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?ims)(?:^\s*Result:\s*No new Known Build Error\s*$|<details>\s*<summary>Agentic workflow metadata \(ci-failure-scan\)</summary>\s*Workflow artifact:\s*ci-failure-scan\s*Artifact kind:\s*kbe-verification\s*Verified match count:\s*[1-9]\d*\s+hits in failure\.log\s*</details>)'
+          pattern: '(?ims)(?:(?<![\s\S])\s*Result:\s*No new Known Build Error\s*(?![\s\S])|<details>\s*<summary>Agentic workflow metadata \(ci-failure-scan\)</summary>\s*Workflow artifact:\s*ci-failure-scan\s*Artifact kind:\s*kbe-verification\s*Verified match count:\s*[1-9]\d*\s+hits in failure\.log\s*</details>)'
 
       - type: file-not-matches
         config:

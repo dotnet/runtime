@@ -35,6 +35,18 @@ async function productionScript() {
     return script;
 }
 
+async function noOpOutputPatterns() {
+    const spec = await readFile(new URL("./ci-failure-scan.eval.yaml", import.meta.url), "utf8");
+    return [...spec.matchAll(/^\s*pattern:\s*'([^']*)'/gm)]
+        .map((match) => match[1])
+        .filter((pattern) => pattern.includes("No new Known Build Error"))
+        .map((pattern) => {
+            const flags = pattern.match(/^\(\?([ims]+)\)/);
+            assert.ok(flags, "eval pattern flags were not found");
+            return new RegExp(pattern.slice(flags[0].length), flags[1]);
+        });
+}
+
 async function runProductionSearch(result, query = "query") {
     const script = await productionScript();
     const directory = await mkdtemp(join(tmpdir(), "kbe-search-test-"));
@@ -210,6 +222,38 @@ test("candidate-read grader requires successful unfiltered reads for every candi
 
     const gradeResult = await grade(events);
     assert.equal(gradeResult.passed, true);
+});
+
+test("candidate-read grader accepts an indented helper command", async () => {
+    const events = [
+        call("bash", "search", {
+            command: `  ${trustedSearchCommand}`,
+        }),
+        result("bash", "search", "[]"),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, true);
+});
+
+test("no-op output is accepted only as the complete document", async () => {
+    const patterns = await noOpOutputPatterns();
+    assert.equal(patterns.length, 6);
+
+    const exactOutput = "Result: No new Known Build Error\n";
+    const markerInsideInvalidOutput = [
+        "Title: malformed",
+        "```text",
+        "Result: No new Known Build Error",
+        "```",
+        "Labels: not-a-kbe",
+        "",
+    ].join("\n");
+
+    for (const pattern of patterns) {
+        assert.match(exactOutput, pattern);
+        assert.doesNotMatch(markerInsideInvalidOutput, pattern);
+    }
 });
 
 test("candidate-read grader fails for filtered or missing candidate reads", async () => {

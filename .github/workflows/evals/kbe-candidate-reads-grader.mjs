@@ -105,7 +105,7 @@ function isSearchHarnessCall(event) {
         .replaceAll("\r", "\n");
     const normalizedPath = (process.env.KBE_SEARCH_HELPER ?? trustedHelperPath).replaceAll("\\", "/");
     const escapedPath = normalizedPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const commandBoundary = String.raw`(?:^|(?:&&|\|\||[;\n])\s*)`;
+    const commandBoundary = String.raw`(?:^\s*|(?:&&|\|\||[;\n])\s*)`;
     const invocation = new RegExp(
         `${commandBoundary}node(?:\\.exe)?\\s+(?:"${escapedPath}"|'${escapedPath}'|${escapedPath})(?:\\s|$)`,
     );
