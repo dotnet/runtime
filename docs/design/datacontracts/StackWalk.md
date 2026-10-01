@@ -290,7 +290,9 @@ InterpreterFrame
 
 This produces three frames in order: C, B, A (innermost to outermost).
 
-When the stack walk starts with an explicit context in interpreted code (e.g., from a debugger breakpoint), the interpreted frames are already yielded from the initial context as frameless frames. When the walker subsequently encounters the corresponding `InterpreterFrame`, it skips expanding it to prevent the same frames from being walked twice.
+When the stack walk starts with a context in interpreted code (e.g., from a debugger breakpoint, or a context seeded from an interpreted P/Invoke's `InlinedCallFrame`), the interpreted frames are already yielded from the initial context as frameless frames. Like native `StackFrameIterator::Init`, the walker reads the owning `InterpreterFrame` from the context's first-argument register and moves the Frame iterator past it, skipping any Frames before it, so the same frames are not walked twice. If the context does not record its owner, a head `InterpreterFrame` is skipped instead.
+
+An interpreted P/Invoke pushes an active `InlinedCallFrame` whose `CallSiteSP` is the top `InterpMethodContextFrame` of the `InterpreterFrame` that immediately follows it (native `InlinedCallFrame::IsInInterpreter`). When the walker reaches such a Frame, it moves to that `InterpreterFrame` without updating the context; the `InterpreterFrame` then switches into the interpreted chain.
 
 
 #### Simple Example

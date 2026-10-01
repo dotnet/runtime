@@ -221,18 +221,7 @@ internal partial class StackWalk_1 : IStackWalk
         bool isInterrupted = false,
         bool hasFaulted = false)
     {
-        // Skip the head InterpreterFrame when entering with a context already
-        // inside an interpreter execution (e.g. a managed-debugger breakpoint
-        // synthesized callback context). Without this, Frame would later
-        // re-process it and re-walk the same InterpMethodContextFrame chain.
-        // Mirrors the native walker fix in dotnet/runtime#126953.
-        if (state == StackWalkState.Frameless
-            && IsInterpreterCode(context.InstructionPointer)
-            && frameIterator.IsValid()
-            && frameIterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
-        {
-            frameIterator.Next();
-        }
+        SkipOwningInterpreterFrame(context, state, frameIterator);
 
         StackWalkData stackWalkData = new(context, state, frameIterator, threadData)
         {
@@ -260,6 +249,30 @@ internal partial class StackWalk_1 : IStackWalk
         }
     }
 
+    // When the walk starts inside interpreted code, move the frame iterator past the
+    // InterpreterFrame that owns the current InterpMethodContextFrame chain; otherwise a later
+    // Frame step would re-walk the same chain. Mirrors native StackFrameIterator::Init/ResetRegDisp,
+    // which read the owning InterpreterFrame from the first-argument register. Explicit Frames
+    // between the iterator and the owner (e.g. an interpreted P/Invoke's InlinedCallFrame) belong
+    // to the same chain and are skipped with it. Falls back to skipping a head InterpreterFrame when
+    // the context does not record its owner (see dotnet/runtime#126953).
+    private void SkipOwningInterpreterFrame(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIterator)
+    {
+        if (state != StackWalkState.Frameless
+            || !frameIterator.IsValid()
+            || !IsInterpreterCode(context.InstructionPointer))
+        {
+            return;
+        }
+
+        TargetPointer owningFrame = _frameHelpers.GetOwningInterpreterFrame(context);
+        if (owningFrame != TargetPointer.Null && frameIterator.TryMovePast(owningFrame))
+            return;
+
+        if (frameIterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
+            frameIterator.Next();
+    }
+
     IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers)
     {
         // Initialize the walk data directly
@@ -268,15 +281,7 @@ internal partial class StackWalk_1 : IStackWalk
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.Frameless : StackWalkState.InitialNativeContext;
         FrameIterator frameIterator = new(_target, threadData);
 
-        // See CreateStackWalk: skip the head InterpreterFrame when entering
-        // already inside an interpreter execution to avoid double-walking.
-        if (state == StackWalkState.Frameless
-            && IsInterpreterCode(context.InstructionPointer)
-            && frameIterator.IsValid()
-            && frameIterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
-        {
-            frameIterator.Next();
-        }
+        SkipOwningInterpreterFrame(context, state, frameIterator);
 
         StackWalkData walkData = new(context, state, frameIterator, threadData);
 
@@ -894,6 +899,17 @@ internal partial class StackWalk_1 : IStackWalk
                     TargetCodePointer returnAddress = handle.FrameIter.GetCurrentReturnAddress();
                     bool isActiveICF = frameType == FrameType.InlinedCallFrame
                                        && returnAddress != TargetCodePointer.Null;
+
+                    // Native SFITER_FRAME_FUNCTION: an active ICF for an interpreted P/Invoke
+                    // moves straight to the owning InterpreterFrame without touching the context.
+                    // That InterpreterFrame then switches into the interpreted chain and is
+                    // consumed; applying the ICF context instead would leave the iterator on the
+                    // ICF and re-walk the outer chain once it is exhausted.
+                    if (isActiveICF && handle.FrameIter.IsCurrentInlinedCallFrameInInterpreter())
+                    {
+                        handle.FrameIter.Next();
+                        break;
+                    }
 
                     // Record the frame type so UpdateState can detect exception frames
                     // and set IsInterrupted when transitioning to the managed frame.

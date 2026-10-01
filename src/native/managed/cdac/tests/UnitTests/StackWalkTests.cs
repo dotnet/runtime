@@ -474,7 +474,8 @@ public unsafe class StackWalkTests
         Action<MockThreadBuilder> configure,
         Action<MockFrameBuilder>? configureFrames = null,
         RuntimeInfoArchitecture? runtimeArchitecture = null,
-        Action<TestPlaceholderTarget.Builder>? configureTarget = null)
+        Action<TestPlaceholderTarget.Builder>? configureTarget = null,
+        IExecutionManager? executionManager = null)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
@@ -531,7 +532,7 @@ public unsafe class StackWalkTests
             // when constructing its GcScanner. Our tests only exercise GetFrames /
             // IsExceptionHandlingHelperInlinedCallFrame / GetDebuggerEvalData, none of which
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
-            .AddMockContract(Mock.Of<IExecutionManager>())
+            .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
             .AddMockContract(Mock.Of<IGCInfo>())
             .Build();
     }
@@ -917,6 +918,139 @@ public unsafe class StackWalkTests
 
         Assert.InRange(frames.Length, 1, 2);
         Assert.Equal(icfAddr, stackWalk.GetFrameAddress(frames[^1]).Value);
+    }
+
+    // An interpreted P/Invoke pushes an active InlinedCallFrame whose CallSiteSP is the top
+    // InterpMethodContextFrame of the owning InterpreterFrame that follows it. Like native
+    // InlinedCallFrame::IsInInterpreter handling, the walk must move from that ICF to the
+    // InterpreterFrame and walk its interpreted chain exactly once, whether it is seeded from a
+    // native context below the ICF or from the Frame chain (which yields the ICF's context).
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CreateStackWalk_WasmInterpretedPInvoke_WalksInterpretedChainOnce(bool seedFromNativeContext)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong InterpIp1 = 0x0005_1000;
+        const ulong InterpIp2 = 0x0005_2000;
+        const ulong NativeCallerIp = 0x0009_0000;
+
+        MockThread? thread = null;
+        MockFrameBuilder? frames = null;
+        ulong imcfLeaf = 0;
+        ulong icfAddr = 0;
+        ulong interpreterFrameAddr = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                frames = frameBuilder;
+                ulong imcfRoot = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: InterpIp2, stack: 0x0006_2000).Address;
+                imcfLeaf = frameBuilder.AddInterpMethodContextFrame(parentPtr: imcfRoot, ip: InterpIp1, stack: 0x0006_1000).Address;
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                ulong terminator = uint.MaxValue;
+                AddWasmR2RFunction(targetBuilder, allocator, functionTableIndex: 5, minVirtualIP: 0x0005_0000, functionBeginAddress: 0x100);
+
+                // TransitionBlock: ReturnAddress followed by the (empty) callee-saved register area.
+                MockMemorySpace.HeapFragment transitionBlock = allocator.Allocate((ulong)pointerSize, "TransitionBlock");
+                helpers.WritePointer(transitionBlock.Data.AsSpan(0, pointerSize), NativeCallerIp);
+
+                // InterpreterFrame derives from FramedMethodFrame.
+                Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
+                int topOffset = fmfLayout.Size;
+                int isFaultingOffset = topOffset + pointerSize;
+                Dictionary<string, Target.FieldInfo> interpreterFrameFields = new(TargetTestHelpers.CreateTypeInfo(fmfLayout).Fields)
+                {
+                    [nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)] = new() { Offset = topOffset },
+                    [nameof(Data.InterpreterFrame.IsFaulting)] = new() { Offset = isFaultingOffset },
+                };
+                MockMemorySpace.HeapFragment interpreterFrame = allocator.Allocate((ulong)(isFaultingOffset + pointerSize), "InterpreterFrame");
+                MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
+                fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
+                fmf.Next = terminator;
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(fmfLayout.Fields.Single(f => f.Name == nameof(Data.FramedMethodFrame.TransitionBlockPtr)).Offset, pointerSize), transitionBlock.Address);
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(topOffset, pointerSize), imcfLeaf);
+                interpreterFrameAddr = interpreterFrame.Address;
+
+                // The ICF is pushed below (at a lower address than) the owning InterpreterFrame.
+                Layout<MockInlinedCallFrame> icfLayout = frames.InlinedCallFrameLayout;
+                MockMemorySpace.HeapFragment icfFragment = targetBuilder.MemoryBuilder.CreateAllocator(0x001F_0000, 0x001F_1000).Allocate((ulong)icfLayout.Size, "InlinedCallFrame");
+                MockInlinedCallFrame icf = icfLayout.Create(icfFragment);
+                icf.Identifier = MockFrameBuilder.InlinedCallFrameIdentifierValue;
+                icf.Next = interpreterFrameAddr;
+                icf.CallerReturnAddress = InterpIp1;
+                icf.CallSiteSP = imcfLeaf;
+                icfAddr = icf.Address;
+                thread!.Frame = icfAddr;
+
+                targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = (uint)(isFaultingOffset + pointerSize) },
+                    [DataType.TransitionBlock] = new()
+                    {
+                        Fields = new Dictionary<string, Target.FieldInfo>
+                        {
+                            [nameof(Data.TransitionBlock.ReturnAddress)] = new() { Offset = 0 },
+                            [nameof(Data.TransitionBlock.CalleeSavedRegisters)] = new() { Offset = pointerSize },
+                            [nameof(Data.TransitionBlock.ArgumentRegisters)] = new() { Offset = pointerSize },
+                            [nameof(Data.TransitionBlock.FirstGCRefMapSlot)] = new() { Offset = pointerSize },
+                        },
+                        Size = (uint)pointerSize,
+                    },
+                    [DataType.CalleeSavedRegisters] = new() { Fields = new Dictionary<string, Target.FieldInfo>(), Size = 0 },
+                });
+            },
+            executionManager: CreateInterpreterExecutionManager(InterpIp1, InterpIp2));
+
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
+        IEnumerable<IStackDataFrameHandle> walk;
+        if (seedFromNativeContext)
+        {
+            ContextHolder<WasmContext> nativeContext = new() { InstructionPointer = new TargetCodePointer(0x0009_9000) };
+            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes());
+        }
+        else
+        {
+            walk = stackWalk.CreateStackWalk(threadData);
+        }
+
+        IStackDataFrameHandle[] walked = walk.Take(32).ToArray();
+        ulong[] interpretedIps = walked
+            .Select(f => stackWalk.GetInstructionPointer(f).Value)
+            .Where(ip => ip is InterpIp1 or InterpIp2)
+            .ToArray();
+        ulong[] explicitFrames = walked
+            .Select(f => stackWalk.GetFrameAddress(f).Value)
+            .Where(a => a != 0)
+            .ToArray();
+
+        Assert.Equal([InterpIp1, InterpIp2], interpretedIps);
+        Assert.Equal(NativeCallerIp, stackWalk.GetInstructionPointer(walked[^1]).Value);
+        if (seedFromNativeContext)
+        {
+            Assert.Equal([icfAddr, interpreterFrameAddr], explicitFrames.Distinct());
+        }
+        Assert.True(walked.Length <= 8, $"Walk did not terminate: {walked.Length} frames");
+    }
+
+    private static IExecutionManager CreateInterpreterExecutionManager(params ulong[] interpreterIps)
+    {
+        Mock<IExecutionManager> executionManager = new();
+        executionManager
+            .Setup(em => em.GetCodeBlockHandle(It.IsAny<TargetCodePointer>()))
+            .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value) ? new CodeBlockHandle(new TargetPointer(ip.Value)) : null);
+        executionManager
+            .Setup(em => em.GetCodeKind(It.IsAny<TargetCodePointer>()))
+            .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value) ? CodeKind.Interpreter : default);
+        return executionManager.Object;
     }
 
     private static void AddWasmR2RFunction(
