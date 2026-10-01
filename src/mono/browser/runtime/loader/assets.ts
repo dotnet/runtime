@@ -89,11 +89,11 @@ const loadIntoWorker: {
     "symbols": true,
 };
 
-export function shouldLoadIcuAsset (asset: AssetEntryInternal): boolean {
+export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
-function convert_single_asset (assetsCollection: AssetEntryInternal[], resource: Asset[] | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
+function convert_single_asset(assetsCollection: AssetEntryInternal[], resource: Asset[] | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
     resource ??= [];
     mono_assert(resource.length == 1, `Expect to have one ${behavior} asset in resources`);
 
@@ -107,13 +107,13 @@ function convert_single_asset (assetsCollection: AssetEntryInternal[], resource:
     return assetEntry;
 }
 
-function set_single_asset (asset: AssetEntryInternal) {
+function set_single_asset(asset: AssetEntryInternal) {
     if (singleAssetTypes[asset.behavior]) {
         singleAssets.set(asset.behavior, asset);
     }
 }
 
-export function try_resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal|undefined {
+export function try_resolve_single_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal | undefined {
     mono_assert(singleAssetTypes[behavior], `Unknown single asset behavior ${behavior}`);
     const asset = singleAssets.get(behavior);
     if (asset && !asset.resolvedUrl) {
@@ -135,14 +135,14 @@ export function try_resolve_single_asset_path (behavior: SingleAssetBehaviors): 
     return asset;
 }
 
-export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
+export function resolve_single_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
     const asset = try_resolve_single_asset_path(behavior);
     mono_assert(asset, `Single asset for ${behavior} not found`);
     return asset;
 }
 
 let downloadAssetsStarted = false;
-export async function mono_download_assets (): Promise<void> {
+export async function mono_download_assets(): Promise<void> {
     if (downloadAssetsStarted) {
         return;
     }
@@ -263,7 +263,7 @@ export async function mono_download_assets (): Promise<void> {
 }
 
 let assetsPrepared = false;
-export function prepareAssets () {
+export function prepareAssets() {
     if (assetsPrepared) {
         return;
     }
@@ -405,7 +405,7 @@ export function prepareAssets () {
     config.assets = [...coreAssetsToLoad, ...assetsToLoad, ...modulesAssets];
 }
 
-export function prepareAssetsWorker () {
+export function prepareAssetsWorker() {
     const config = loaderHelpers.config;
     mono_assert(config.assets, "config.assets must be defined");
 
@@ -417,18 +417,18 @@ export function prepareAssetsWorker () {
     }
 }
 
-export function delay (ms: number): Promise<void> {
+export function delay(ms: number): Promise<void> {
     return new Promise(resolve => globalThis.setTimeout(resolve, ms));
 }
 
-export async function retrieve_asset_download (asset: AssetEntry): Promise<ArrayBuffer> {
+export async function retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer> {
     const pendingAsset = await start_asset_download(asset);
     await pendingAsset.pendingDownloadInternal!.response;
     return pendingAsset.buffer!;
 }
 
 // FIXME: Connection reset is probably the only good one for which we should retry
-export async function start_asset_download (asset: AssetEntryInternal): Promise<AssetEntryInternal> {
+export async function start_asset_download(asset: AssetEntryInternal): Promise<AssetEntryInternal> {
     try {
         return await start_asset_download_with_throttle(asset);
     } catch (err: any) {
@@ -469,7 +469,7 @@ export async function start_asset_download (asset: AssetEntryInternal): Promise<
     }
 }
 
-async function start_asset_download_with_throttle (asset: AssetEntryInternal): Promise<AssetEntryInternal> {
+async function start_asset_download_with_throttle(asset: AssetEntryInternal): Promise<AssetEntryInternal> {
     // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
     while (throttlingPromise) {
         await throttlingPromise.promise;
@@ -503,7 +503,7 @@ async function start_asset_download_with_throttle (asset: AssetEntryInternal): P
     }
 }
 
-async function start_asset_download_sources (asset: AssetEntryInternal): Promise<Response | undefined> {
+async function start_asset_download_sources(asset: AssetEntryInternal): Promise<Response | undefined> {
     // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
     if (asset.pendingDownload) {
         asset.pendingDownloadInternal = asset.pendingDownload;
@@ -579,7 +579,7 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
     }
 }
 
-function resolve_path (asset: AssetEntry, sourcePrefix: string): string {
+function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
     mono_assert(sourcePrefix !== null && sourcePrefix !== undefined, () => `sourcePrefix must be provided for ${asset.name}`);
     let attemptUrl;
     if (!asset.resolvedUrl) {
@@ -603,7 +603,7 @@ function resolve_path (asset: AssetEntry, sourcePrefix: string): string {
     return attemptUrl;
 }
 
-export function appendUniqueQuery (attemptUrl: string, behavior: AssetBehaviors): string {
+export function appendUniqueQuery(attemptUrl: string, behavior: AssetBehaviors): string {
     // apply unique query to js modules to make the module state independent of the other runtime instances
     if (loaderHelpers.modulesUniqueQuery && appendQueryAssetTypes[behavior]) {
         attemptUrl = attemptUrl + loaderHelpers.modulesUniqueQuery;
@@ -615,7 +615,7 @@ export function appendUniqueQuery (attemptUrl: string, behavior: AssetBehaviors)
 let resourcesLoaded = 0;
 const totalResources = new Set<string>();
 
-function download_resource (asset: AssetEntryInternal): LoadingResource {
+function download_resource(asset: AssetEntryInternal): LoadingResource {
     try {
         mono_assert(asset.resolvedUrl, "Request's resolvedUrl must be set");
         const fetchResponse = fetchResource(asset);
@@ -651,7 +651,7 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
     }
 }
 
-function fetchResource (asset: AssetEntryInternal): Promise<Response> {
+function fetchResource(asset: AssetEntryInternal): Promise<Response> {
     // Allow developers to override how the resource is loaded
     let url = asset.resolvedUrl!;
     if (loaderHelpers.loadBootResource) {
@@ -702,7 +702,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "js-module-runtime": "dotnetjs"
 };
 
-function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | Promise<BootModule> | null | undefined {
+function invokeLoadBootResource(asset: AssetEntryInternal): string | Promise<Response> | Promise<BootModule> | null | undefined {
     if (loaderHelpers.loadBootResource) {
         const requestHash = asset.hash ?? "";
         const url = asset.resolvedUrl!;
@@ -720,7 +720,7 @@ function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Re
     return undefined;
 }
 
-export function cleanupAsset (asset: AssetEntryInternal) {
+export function cleanupAsset(asset: AssetEntryInternal) {
     // give GC chance to collect resources
     asset.pendingDownloadInternal = null as any; // GC
     asset.pendingDownload = null as any; // GC
@@ -728,7 +728,7 @@ export function cleanupAsset (asset: AssetEntryInternal) {
     asset.moduleExports = null as any; // GC
 }
 
-function fileName (name: string) {
+function fileName(name: string) {
     let lastIndexOfSlash = name.lastIndexOf("/");
     if (lastIndexOfSlash >= 0) {
         lastIndexOfSlash++;
@@ -736,7 +736,7 @@ function fileName (name: string) {
     return name.substring(lastIndexOfSlash);
 }
 
-export async function streamingCompileWasm () {
+export async function streamingCompileWasm() {
     try {
         const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
         await start_asset_download(wasmModuleAsset);
@@ -769,7 +769,7 @@ export async function streamingCompileWasm () {
     }
 }
 
-export function preloadWorkers () {
+export function preloadWorkers() {
     if (!WasmEnableThreads) return;
     const loadingWorkers = [];
     for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {

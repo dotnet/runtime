@@ -17,6 +17,7 @@
     <!-- enable reporting to profiler in browser dev tools -->
     <!-- for callspec see diagnostics-tracing.md -->
     <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
+    <WasmNativeBuildId>Advanced-1a2b3c4d5e6f7788-ID</WasmNativeBuildId>
 
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
 

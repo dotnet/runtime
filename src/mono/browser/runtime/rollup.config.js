@@ -21,6 +21,7 @@ const wasmObjDir = process.env.WasmObjDir ? process.env.WasmObjDir.replace(/"/g,
 const wasmEnableThreads = process.env.WasmEnableThreads === "true" ? true : false;
 const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
+const buildId = process.env.WASM_BUILD_ID || "";
 const wasmEnableJsInteropByValue = process.env.ENABLE_JS_INTEROP_BY_VALUE == "1" ? true : false;
 // because of stack walk at src/mono/browser/debugger/BrowserDebugProxy/MonoProxy.cs
 // and unit test at with timers.mjs
@@ -115,12 +116,13 @@ const envConstants = {
     wasmEnableSIMD,
     wasmEnableExceptionHandling,
     gitHash,
+    buildId,
     wasmEnableJsInteropByValue,
     isContinuousIntegrationBuild,
 };
 
 const locationCache = {};
-function sourcemapPathTransform (relativeSourcePath, sourcemapPath) {
+function sourcemapPathTransform(relativeSourcePath, sourcemapPath) {
     let res = locationCache[relativeSourcePath];
     if (res === undefined) {
         if (!isContinuousIntegrationBuild) {
@@ -138,7 +140,7 @@ function sourcemapPathTransform (relativeSourcePath, sourcemapPath) {
     return res;
 }
 
-function consts (dict) {
+function consts(dict) {
     // implement rollup-plugin-const in terms of @rollup/plugin-virtual
     // It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
     // and the virtual module always exports a single default binding (the const value).
@@ -269,14 +271,14 @@ const allConfigs = [
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
 
-function evalCodePlugin () {
+function evalCodePlugin() {
     return {
         name: "evalCode",
         generateBundle: evalCode
     };
 }
 
-async function evalCode (options, bundle) {
+async function evalCode(options, bundle) {
     try {
         const name = Object.keys(bundle)[0];
         const asset = bundle[name];
@@ -292,7 +294,7 @@ async function evalCode (options, bundle) {
 
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
-function writeOnChangePlugin () {
+function writeOnChangePlugin() {
     return {
         name: "writeOnChange",
         generateBundle: writeWhenChanged
@@ -300,7 +302,7 @@ function writeOnChangePlugin () {
 }
 
 // force always unix line ending
-function alwaysLF () {
+function alwaysLF() {
     return {
         name: "writeOnChange",
         generateBundle: (options, bundle) => {
@@ -312,7 +314,7 @@ function alwaysLF () {
     };
 }
 
-async function writeWhenChanged (options, bundle) {
+async function writeWhenChanged(options, bundle) {
     try {
         const name = Object.keys(bundle)[0];
         const asset = bundle[name];
@@ -343,31 +345,31 @@ async function writeWhenChanged (options, bundle) {
     }
 }
 
-function checkFileExists (file) {
+function checkFileExists(file) {
     return fs.promises.access(file, fs.constants.F_OK)
         .then(() => true)
         .catch(() => false);
 }
 
-function regexCheck (checks = []) {
+function regexCheck(checks = []) {
     const filter = createFilter("**/*.ts");
 
     return {
         name: "regexCheck",
 
-        renderChunk (code, chunk) {
+        renderChunk(code, chunk) {
             const id = chunk.fileName;
             if (!filter(id)) return null;
             return executeCheck(this, code, id);
         },
 
-        transform (code, id) {
+        transform(code, id) {
             if (!filter(id)) return null;
             return executeCheck(this, code, id);
         }
     };
 
-    function executeCheck (self, code, id) {
+    function executeCheck(self, code, id) {
         // self.warn("executeCheck" + id);
         for (const rep of checks) {
             const { pattern, failure } = rep;
@@ -383,25 +385,25 @@ function regexCheck (checks = []) {
 }
 
 
-function regexReplace (replacements = []) {
+function regexReplace(replacements = []) {
     const filter = createFilter("**/*.ts");
 
     return {
         name: "regexReplace",
 
-        renderChunk (code, chunk) {
+        renderChunk(code, chunk) {
             const id = chunk.fileName;
             if (!filter(id)) return null;
             return executeReplacement(this, code, id);
         },
 
-        transform (code, id) {
+        transform(code, id) {
             if (!filter(id)) return null;
             return executeReplacement(this, code, id);
         }
     };
 
-    function executeReplacement (_, code, id) {
+    function executeReplacement(_, code, id) {
         const magicString = new MagicString(code);
         if (!codeHasReplacements(code, id, magicString)) {
             return null;
@@ -412,7 +414,7 @@ function regexReplace (replacements = []) {
         return result;
     }
 
-    function codeHasReplacements (code, id, magicString) {
+    function codeHasReplacements(code, id, magicString) {
         let result = false;
         let match;
         for (const rep of replacements) {
@@ -432,7 +434,7 @@ function regexReplace (replacements = []) {
     }
 }
 
-function onwarn (warning) {
+function onwarn(warning) {
     if (warning.code === "CIRCULAR_DEPENDENCY") {
         return;
     }
