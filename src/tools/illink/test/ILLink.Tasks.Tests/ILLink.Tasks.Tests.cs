@@ -911,35 +911,114 @@ namespace ILLink.Tasks.Tests
             Assert.Throws<ArgumentException>(() => task.CreateDriver());
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void TaskPreparesEmptyOutputDirectory(bool exists, bool populated)
+        {
+            using var test = new OutputDirectoryTest();
+            if (exists)
+                Directory.CreateDirectory(test.Output);
+            if (populated)
+            {
+                Directory.CreateDirectory(Path.Combine(test.Output, "fr"));
+                Directory.CreateDirectory(Path.Combine(test.Output, "empty"));
+                File.WriteAllText(Path.Combine(test.Output, "old.dll"), "old assembly");
+                File.WriteAllText(Path.Combine(test.Output, "old.dll.config"), "old configuration");
+                File.WriteAllText(Path.Combine(test.Output, "fr", "old.resources.dll"), "old satellite");
+            }
+            string sibling = Path.Combine(test.Root, "unrelated.txt");
+            File.WriteAllText(sibling, "keep");
+
+            Assert.True(test.Task.Execute());
+            Assert.True(Directory.Exists(test.Output));
+            Assert.Empty(Directory.EnumerateFileSystemEntries(test.Output));
+            Assert.Equal("keep", File.ReadAllText(sibling));
+            Assert.Empty(test.BuildEngine.Errors);
+        }
+
+        [Fact]
+        public void TaskOutputPreparationFailureDoesNotRunTool()
+        {
+            using var test = new OutputDirectoryTest();
+            File.WriteAllText(test.Output, "not a directory");
+
+            Assert.False(test.Task.Execute());
+            Assert.Equal("not a directory", File.ReadAllText(test.Output));
+            Assert.Contains(test.BuildEngine.Errors, error => error.Message.Contains(test.Output));
+            Assert.Empty(test.Task.Messages);
+        }
+
+        [Fact]
+        public void TaskWritesOutputsAfterCleaning()
+        {
+            using var test = new OutputDirectoryTest();
+            string input = Path.Combine(test.Root, "Input.dll");
+            using (var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
+                new Mono.Cecil.AssemblyNameDefinition("Input", new Version(1, 0)), "Input", Mono.Cecil.ModuleKind.Dll))
+            {
+                assembly.Write(input);
+            }
+
+            test.Task.AssemblyPaths = new ITaskItem[]
+            {
+                new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } })
+            };
+            test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
+            test.Task.ExtraArgs = null;
+            string outputAssembly = Path.Combine(test.Output, "Input.dll");
+            string stale = Path.Combine(test.Output, "stale.txt");
+            for (int i = 0; i < 2; i++)
+            {
+                Directory.CreateDirectory(test.Output);
+                File.WriteAllText(stale, "old output");
+                Assert.True(test.Task.Execute(), string.Join(Environment.NewLine, test.Task.Messages.Select(message => message.Line)));
+                Assert.False(File.Exists(stale));
+                Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(outputAssembly));
+            }
+        }
+
         [Fact]
         public void TestErrorHandling()
         {
-            var task = new MockTask()
-            {
-                RootAssemblyNames = Array.Empty<ITaskItem>()
-            };
-            task.BuildEngine = new MockBuildEngine();
+            using var test = new OutputDirectoryTest();
+            Directory.CreateDirectory(test.Output);
+            string stale = Path.Combine(test.Output, "stale.dll");
+            File.WriteAllText(stale, "old assembly");
+            test.Task.ExtraArgs = null;
 
-            // This won't work in single-file, but it's the simplest way for now
-            string corelibPath = typeof(object).Assembly.Location;
-            if (corelibPath == null)
-                throw new NotSupportedException("Running this test in single-file mode is not yet supported.");
-
-            string dotnetToolName = OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
-
-            // The path to corelib should be something like <dotnetroot>/shared/Microsoft.NETCore.App/version/System.Private.CoreLib.dll
-            // So get the dotnetroot from this
-            string dotnetRootPath = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(corelibPath))));
-            string dotnetPath = Path.Combine(dotnetRootPath, dotnetToolName);
-            if (!File.Exists(dotnetPath))
-                throw new NotSupportedException("Running test in a configuration where we can't figure out dotnet root path.");
-
-            task.ToolPath = dotnetRootPath;
-            task.ToolExe = dotnetToolName;
-
-            Assert.False(task.Execute());
-            Assert.Contains(task.Messages, message =>
+            Assert.False(test.Task.Execute());
+            Assert.False(File.Exists(stale));
+            Assert.Contains(test.Task.Messages, message =>
                 message.Line.Contains("No input files were specified"));
+        }
+
+        private sealed class OutputDirectoryTest : IDisposable
+        {
+            public string Root { get; } = Path.Combine(Path.GetTempPath(), "illink-task-output-" + Guid.NewGuid().ToString("N"));
+            public string Output => Path.Combine(Root, "linked output");
+            public MockBuildEngine BuildEngine { get; } = new MockBuildEngine();
+            public MockTask Task { get; }
+
+            public OutputDirectoryTest()
+            {
+                Directory.CreateDirectory(Root);
+                string corelibPath = typeof(object).Assembly.Location;
+                string dotnetRoot = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(corelibPath))));
+                string dotnetName = OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
+                Assert.True(File.Exists(Path.Combine(dotnetRoot, dotnetName)));
+                Task = new MockTask
+                {
+                    BuildEngine = BuildEngine,
+                    OutputDirectory = new TaskItem(Output + Path.DirectorySeparatorChar),
+                    ExtraArgs = "--help",
+                    ToolPath = dotnetRoot,
+                    ToolExe = dotnetName
+                };
+            }
+
+            public void Dispose() => Directory.Delete(Root, recursive: true);
         }
     }
 }

@@ -34,7 +34,11 @@ Additional [options](illink-options.md) passed to ILLink.
 
 ### OutputDirectory
 
-The directory in which to place processed assemblies.
+The dedicated directory in which to place processed assemblies. Before running ILLink, the task deletes this directory and all its contents, then recreates it. If cleanup fails, the task fails without running the tool.
+
+Previously, the SDK targets deleted only candidate assembly and PDB outputs. Other files could survive from earlier runs. Callers must now keep all inputs and any files they want to preserve outside `OutputDirectory`, including inputs supplied through `ExtraArgs`. Concurrent task invocations must use different output directories.
+
+This cleanup occurs only when the task executes; an up-to-date target leaves its outputs intact. Running the command-line linker directly still permits a nonempty output directory and does not perform this cleanup.
 
 ### ReferenceAssemblyPaths
 
