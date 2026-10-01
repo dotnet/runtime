@@ -79,12 +79,28 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.ModuleReference(_module, import.Module), "DllImport");
 
                 EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
+
                 if (method.Signature.ReturnType.GetTypeDefinition() is EcmaType ecmaReturnType)
+                {
+                    AddInteropFields(factory, dependencies, ecmaReturnType);
                     AddInteropAllocatedType(factory, dependencies, ecmaReturnType);
+                }
+
+                if (!method.Signature.IsStatic && method.OwningType.GetTypeDefinition() is EcmaType ecmaDeclaringType)
+                    AddInteropFields(factory, dependencies, ecmaDeclaringType);
+
                 foreach (var parameter in method.Signature)
                 {
-                    if (parameter.IsByRef && ((ByRefType)parameter).ParameterType.GetTypeDefinition() is EcmaType ecmaByRefParam)
-                        AddInteropAllocatedType(factory, dependencies, ecmaByRefParam);
+                    TypeDesc parameterType = parameter;
+                    if (parameterType is ByRefType byRefParameterType)
+                        parameterType = byRefParameterType.ParameterType;
+
+                    if (parameterType.GetTypeDefinition() is EcmaType ecmaParameterType)
+                    {
+                        AddInteropFields(factory, dependencies, ecmaParameterType);
+                        if (parameter.IsByRef)
+                            AddInteropAllocatedType(factory, dependencies, ecmaParameterType);
+                    }
                 }
 
                 static void AddInteropAllocatedType(NodeFactory factory, DependencyList dependencies, EcmaType type)
@@ -92,6 +108,18 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(factory.ConstructedType(type), "Interop-allocated instance");
                     if (type.GetParameterlessConstructor() is EcmaMethod ctorMethod && factory.IsModuleTrimmed(ctorMethod.Module))
                         dependencies.Add(factory.MethodDefinition(ctorMethod.Module, ctorMethod.Handle), "Interop-called ctor");
+                }
+
+                static void AddInteropFields(NodeFactory factory, DependencyList dependencies, EcmaType type)
+                {
+                    if (type.IsComImport || type.IsWindowsRuntime || !factory.IsModuleTrimmed(type.Module))
+                        return;
+
+                    foreach (EcmaField field in type.GetFields())
+                    {
+                        if (!field.IsStatic)
+                            dependencies.Add(factory.FieldDefinition(type.Module, field.Handle), "Interop field");
+                    }
                 }
             }
 
