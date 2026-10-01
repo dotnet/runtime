@@ -3,8 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -268,7 +274,19 @@ namespace ILLink.Tasks
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             if (!ClearOutputDirectory)
+            {
+                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: output directory clearing is disabled.");
                 return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+            }
+
+            DateTime outputTimestampUtc = DateTime.UtcNow;
+            ILLinkCache cache = ILLinkCache.TryCreateFromEnvironment(Log);
+            string inputHash = null;
+            if (cache is not null && !TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out inputHash))
+                cache = null;
+
+            if (cache is not null && cache.TryRestore(inputHash, OutputDirectory.ItemSpec, outputTimestampUtc))
+                return 0;
 
             try
             {
@@ -284,7 +302,115 @@ namespace ILLink.Tasks
                 return -1;
             }
 
-            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+            int exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+            if (exitCode == 0 && !Log.HasLoggedErrors && cache is not null)
+                cache.Store(inputHash, OutputDirectory.ItemSpec);
+
+            return exitCode;
+        }
+
+        private bool TryComputeCacheKey(string pathToTool, string commandLineCommands, string responseFileCommands, out string inputHash)
+        {
+            inputHash = string.Empty;
+            if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
+                !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
+            {
+                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: custom steps/data, dependency dumps, and task environment overrides are not supported.");
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(ExtraArgs))
+            {
+                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
+                return false;
+            }
+
+            try
+            {
+                var files = new SortedSet<string>(StringComparer.Ordinal);
+                var assemblies = new HashSet<string>(StringComparer.Ordinal);
+                foreach (ITaskItem assembly in AssemblyPaths)
+                    AddAssembly(assembly.ItemSpec);
+                foreach (ITaskItem assembly in ReferenceAssemblyPaths ?? Array.Empty<ITaskItem>())
+                    AddAssembly(assembly.ItemSpec);
+                foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
+                    AddFile(descriptor.ItemSpec);
+
+#pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
+                AddFile(typeof(ILLink).Assembly.Location);
+#pragma warning restore IL3000
+                AddFile(pathToTool);
+                AddFile(ILLinkPath);
+
+                using var sha256 = SHA256.Create();
+                using var description = new MemoryStream();
+                using var writer = new BinaryWriter(description, Encoding.UTF8, leaveOpen: true);
+                writer.Write("ILLink task cache key v1");
+                writer.Write(commandLineCommands);
+                writer.Write(responseFileCommands);
+                writer.Write(Environment.CurrentDirectory);
+                writer.Write(Path.GetFullPath(OutputDirectory.ItemSpec));
+                writer.Write(RuntimeInformation.OSDescription);
+                writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
+                writer.Write(CultureInfo.CurrentCulture.Name);
+                writer.Write(CultureInfo.CurrentUICulture.Name);
+                writer.Write(files.Count);
+                foreach (string file in files)
+                {
+                    writer.Write(file);
+                    using var input = File.OpenRead(file);
+                    writer.Write(sha256.ComputeHash(input));
+                }
+
+                writer.Flush();
+                description.Position = 0;
+                inputHash = BitConverter.ToString(sha256.ComputeHash(description)).Replace("-", "").ToLowerInvariant();
+                return true;
+
+                void AddFile(string path) => files.Add(Path.GetFullPath(path));
+
+                void AddOptionalFile(string path)
+                {
+                    if (File.Exists(path))
+                        AddFile(path);
+                }
+
+                void AddAssembly(string path)
+                {
+                    path = Path.GetFullPath(path);
+                    if (!assemblies.Add(path))
+                        return;
+
+                    AddFile(path);
+                    AddOptionalFile(path + ".config");
+                    AddOptionalFile(path + ".mdb");
+                    AddOptionalFile(Path.ChangeExtension(path, ".pdb"));
+                    string directory = Path.GetDirectoryName(path);
+                    string satelliteName = Path.GetFileNameWithoutExtension(path) + ".resources.dll";
+                    foreach (string satelliteDirectory in Directory.EnumerateDirectories(directory))
+                        AddOptionalFile(Path.Combine(satelliteDirectory, satelliteName));
+
+                    using var input = File.OpenRead(path);
+                    using var pe = new PEReader(input);
+                    if (!pe.HasMetadata)
+                        throw new BadImageFormatException("Input PE image has no managed metadata.", path);
+                    MetadataReader metadata = pe.GetMetadataReader();
+                    foreach (AssemblyFileHandle handle in metadata.AssemblyFiles)
+                    {
+                        AssemblyFile file = metadata.GetAssemblyFile(handle);
+                        string filePath = Path.Combine(directory, metadata.GetString(file.Name));
+                        if (file.ContainsMetadata)
+                            AddAssembly(filePath);
+                        else
+                            AddFile(filePath);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or BadImageFormatException or InvalidDataException)
+            {
+                Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: input identity could not be computed: {ex.Message}");
+                return false;
+            }
         }
 
         private string _illinkPath = "";
