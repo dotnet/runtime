@@ -261,7 +261,7 @@ void HENUMInternal::DestroyEnumIfEmpty(
 
 
 void HENUMInternal::ClearEnum(
-    HENUMInternal   *pmdEnum)
+    HENUMInternal   *pmdEnum) noexcept
 {
     if (pmdEnum == NULL)
         return;

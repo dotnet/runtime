@@ -4,7 +4,7 @@ This is an experimental in-tree publishing workflow. The shipping WASI SDK
 does not yet select the CoreCLR app builder.
 
 WASI requires the compiled composite to be composed into the host component before execution.
-Copying `composite-r2r.wasm` beside an unmodified host is not sufficient. Composition is
+Copying the composite beside an unmodified host is not sufficient. Composition is
 implemented by the in-tree `ComposeWasiReadyToRun` MSBuild task.
 The [WebCIL design document](../../../design/mono/webcil.md#wasi-host-composition) describes
 the image layout and host contract.
@@ -31,8 +31,11 @@ Build the runtime, libraries, and packs, then publish an in-tree WASI project:
 ```
 
 The app builder enables composite R2R, compiles the app/framework closure, sizes the host's image
-buffer and table reservation, links the host, and invokes the composer. It deploys the composed
-host and the per-assembly stubs under the app bundle's `managed/` directory.
+buffer and table reservation, links the host, and invokes the composer. As on browser, the
+ReadyToRun tasks name the composite `<entry>.r2r.wasm` after the app's main assembly. The composer
+records that file name in the host, so the host answers only to the name the component stubs
+carry. It deploys the composed host and the per-assembly stubs under the app bundle's `managed/`
+directory.
 Non-composite R2R and `WasmSingleFileBundle` are not supported by this path.
 
 ## Composer diagnostics

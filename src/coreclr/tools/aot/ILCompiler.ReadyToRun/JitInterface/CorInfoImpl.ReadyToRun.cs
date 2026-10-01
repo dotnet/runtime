@@ -825,7 +825,7 @@ namespace Internal.JitInterface
                 }
 
                 var typicalDef = MethodBeingCompiled.GetTypicalMethodDefinition();
-                if (typicalDef is EcmaMethod or AsyncMethodVariant)
+                if (ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(MethodBeingCompiled) is not null)
                 {
                     var ecmaMethod = (EcmaMethod)typicalDef.GetPrimaryMethodDesc();
                     if ((methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == typicalDef.Context.SystemModule) ||
@@ -1364,6 +1364,26 @@ namespace Internal.JitInterface
                 false,
                 false);
             pResult = CreateConstLookupToSymbol(entrypoint);
+        }
+
+        private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
+        {
+            // Only Wasm calls this; other targets use the dynamically composed delegate constructor helpers.
+            Debug.Assert(_compilation.NodeFactory.Target.IsWasm);
+
+            MethodDesc targetMethod = HandleToObject(targetMethodHnd);
+            MethodDesc delegateInvoke = HandleToObject(clsHnd).GetKnownMethod("Invoke"u8, null);
+            MetadataType systemDelegate = _compilation.TypeSystemContext.SystemModule.GetKnownType("System"u8, "Delegate"u8);
+
+            // Closed over a reference type instance, matching COMDelegate::GetDelegateCtor.
+            if (!targetMethod.Signature.IsStatic &&
+                !targetMethod.OwningType.IsValueType &&
+                delegateInvoke.Signature.Length == targetMethod.Signature.Length)
+            {
+                return ObjectToHandle(systemDelegate.GetKnownMethod("CtorClosed"u8, null));
+            }
+
+            return ObjectToHandle(systemDelegate.GetKnownMethod("DelegateConstruct"u8, null));
         }
 
         private FieldWithToken ComputeFieldWithToken(FieldDesc field, ref CORINFO_RESOLVED_TOKEN pResolvedToken)

@@ -1963,6 +1963,7 @@ protected:
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
 #ifdef FEATURE_INTERPRETER
+// [cDAC] [ExecutionManager]: Contract depends on the value of INTERPRETER_CODE_POISON.
 #define INTERPRETER_CODE_POISON 1
     PTR_InterpByteCodeStart m_interpreterCode;
 public:
@@ -2408,6 +2409,9 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
     static constexpr size_t EntryPointFlags = offsetof(MethodDesc, m_bFlags4);
     static constexpr size_t CodeData = offsetof(MethodDesc, m_codeData);
+#ifdef FEATURE_INTERPRETER
+    static constexpr size_t InterpreterCode = offsetof(MethodDesc, m_interpreterCode);
+#endif // FEATURE_INTERPRETER
 };
 
 #ifndef DACCESS_COMPILE

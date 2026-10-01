@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <set>
 #include <sstream>
@@ -41,7 +42,6 @@ namespace envvar
 {
     const char_t* const coreRoot = W("CORE_ROOT");
     const char_t* const coreLibraries = W("CORE_LIBRARIES");
-    const char_t* const printExitCode = W("DOTNET_WASI_PRINT_EXIT_CODE");
 }
 
 // Statically linked at the per-app relink, so declared extern here (as browserhost does).
@@ -308,12 +308,7 @@ int main(int argc, char* argv[])
         latched_exit_code = -1;
     }
 
-    // wasi:cli/exit's exit() only signals ok/err, so wasmtime collapses a non-zero result to host
-    // exit 1. Under DOTNET_WASI_PRINT_EXIT_CODE=1, emit a "WASM EXIT <n>" marker the WASI launcher
-    // parses (matching Mono). exit-with-code is stable in WASI 0.3 but still @unstable in the wasip2
-    // world this targets; see corerun.cpp.
-    if (pal::getenv(envvar::printExitCode) == W("1"))
-        std::fprintf(stderr, "WASM EXIT %d\n", latched_exit_code);
-
-    return latched_exit_code;
+    // Returning from main only reports success/failure through wasi:cli/run.
+    // exit() reports the actual code through wasi:cli/exit's exit-with-code.
+    std::exit(latched_exit_code);
 }

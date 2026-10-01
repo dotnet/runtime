@@ -1276,6 +1276,7 @@ namespace
             case IMAGE_CEE_CS_CALLCONV_DEFAULT:
             case IMAGE_CEE_CS_CALLCONV_C:
             case IMAGE_CEE_CS_CALLCONV_STDCALL:
+            case IMAGE_CEE_CS_CALLCONV_THISCALL:
             case IMAGE_CEE_CS_CALLCONV_FASTCALL:
             case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
                 break;

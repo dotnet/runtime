@@ -28,6 +28,9 @@ public struct CodeBlockHandle
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
     // Attempt to get the method desc of an entrypoint
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint);
+    // Map a method entry point to the code start that diagnostics report and that resolves through
+    // GetCodeBlockHandle. Other addresses are returned unchanged.
+    TargetCodePointer GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint);
 
     // Gets the unwind info of the code block at the specified code pointer
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle);
@@ -216,6 +219,10 @@ virtual-IP ranges bypass native thunk classification.
 | `ExceptionLookupTableEntry` | *(type size)* | `uint32` | Size of an exception lookup table entry in bytes |
 | `ExceptionLookupTableEntry` | `ExceptionInfoRVA` | `uint32` | RVA of the exception clause data |
 | `ExceptionLookupTableEntry` | `MethodStartRVA` | `uint32` | RVA of the method start |
+| `FunctionTableIndexRangeSection` | `MinFunctionTableIndex` | `uint32` | First runtime-global shared function-table index owned by the R2R module |
+| `FunctionTableIndexRangeSection` | `Next` | `pointer` | Pointer to the next registered WASM R2R function-table range |
+| `FunctionTableIndexRangeSection` | `NumRuntimeFunctions` | `uint32` | Number of consecutive RUNTIME_FUNCTION entries owned by the R2R module |
+| `FunctionTableIndexRangeSection` | `R2RModule` | `pointer` | Pointer to the Module that owns this function-table range |
 | `HashMap` | `Buckets` | `pointer` | Pointer to the buckets of a `HashMap` |
 | `HostCodeHeap` | `BaseAddress` | `pointer` | Pointer to the base of the committed memory region |
 | `HostCodeHeap` | `CurrentAddress` | `pointer` | Pointer to the last available committed byte in the region |
@@ -226,7 +233,12 @@ virtual-IP ranges bypass native thunk classification.
 | `InterpreterRealCodeHeader` | `JitEHInfo` | `pointer` | Pointer to the `EE_ILEXCEPTION` containing exception clauses for interpreter code |
 | `InterpreterRealCodeHeader` | `MethodDesc` | `pointer` | Pointer to the corresponding `MethodDesc` for interpreter code |
 | `LoaderCodeHeap` | `LoaderHeap` | `pointer` | Offset of the embedded `ExplicitControlLoaderHeap` within the `LoaderCodeHeap` object; adding this to the object's base address yields the loader heap address |
+| `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
+| `MethodDesc` | `InterpreterCode` | `pointer` | Pointer to the method's `InterpByteCodeStart`, or the poison value 1 if the method will never be interpreted (only defined if `FEATURE_INTERPRETER` is enabled) |
+| `MethodDescCodeData` | `TemporaryEntryPoint` | `CodePointer` | Temporary code entry point used before the method has a stable entry point |
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
+| `PortableEntryPoint` | `ActualCode` | `pointer` | Native code for the entrypoint; on WebAssembly R2R code this is a function-table index (only defined if `FeaturePortableEntrypoints` is enabled) |
+| `PortableEntryPoint` | `Flags` | `int32` | Portable entrypoint flags; `0x4` means the interpreter entrypoint is preferred over `ActualCode` (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `PortableEntryPoint` | `MethodDesc` | `pointer` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `R2RExceptionClause` | *(type size)* | `uint32` | Size of a ReadyToRun exception clause in bytes |
 | `R2RExceptionClause` | `ClassToken` | `uint32` | Union field: ClassToken or FilterOffset |
@@ -287,6 +299,7 @@ virtual-IP ranges bypass native thunk classification.
 | --- | --- | --- |
 | `EEJitManagerAddress` | `pointer` | Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address) |
 | `ExecutionManagerCodeRangeMapAddress` | `pointer` | Pointer to the global RangeSectionMap |
+| `FunctionTableIndexRangeList` | `pointer` | Pointer to the head pointer of the registered WASM R2R function-table range list |
 | `GCInfoVersion` | `uint32` | JITted code GCInfo version |
 | `HashMapSlotsPerBucket` | `uint32` | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | `uint64` | Bitmask used when storing values in a `HashMap` |
@@ -490,6 +503,60 @@ TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer ent
 }
 ```
 
+
+`GetDiagnosticCodeStartFromEntryPoint` mirrors the native `GetDiagnosticCodeStartFromEntryPoint` (`src/coreclr/vm/precode.cpp`). Without portable entrypoints it maps an interpreter precode to its bytecode through `PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent`. With portable entrypoints (WebAssembly), an entry point is a `PortableEntryPoint` rather than code: an interpreted method maps to its `InterpByteCodeStart`, and a native ReadyToRun method maps its function-table index to the synthetic virtual IP registered in the virtual-IP range list, so that the result resolves through `GetCodeBlockHandle`.
+
+```csharp
+// Constants from native code
+const int PortableEntryPointPrefersInterpreterEntryPoint = 0x4; // PortableEntryPoint::kPrefersInterpreterEntryPoint
+const ulong InterpreterCodePoison = 1;                          // INTERPRETER_CODE_POISON
+
+TargetCodePointer IExecutionManager.GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint)
+{
+    if (entryPoint == TargetCodePointer.Null)
+        return entryPoint;
+
+    if (!FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
+        return PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(entryPoint);
+
+    // On any read failure, entryPoint is returned unchanged.
+    // An address in a code range (including a Wasm R2R virtual IP) is already a code start.
+    if (/* range section found for entryPoint - see RangeSectionMap and the virtual-IP range list */)
+        return entryPoint;
+
+    Data.PortableEntryPoint pep = // read PortableEntryPoint at entryPoint
+    if (pep.MethodDesc == TargetPointer.Null)
+        return entryPoint;
+
+    Data.MethodDesc md = // read MethodDesc at pep.MethodDesc
+    if (md.InterpreterCode is TargetPointer interpreterCode && interpreterCode != TargetPointer.Null && interpreterCode != InterpreterCodePoison)
+        return new TargetCodePointer(interpreterCode);
+
+    // Native R2R portable entry points store a Wasm function-table index in ActualCode. As in native code,
+    // this applies only to the method's own portable entry point, which is currently its temporary entry point.
+    if (pep.ActualCode == TargetPointer.Null
+        || (pep.Flags & PortableEntryPointPrefersInterpreterEntryPoint) != 0
+        || md.CodeData == TargetPointer.Null
+        || /* MethodDescCodeData.TemporaryEntryPoint at md.CodeData */ != entryPoint)
+    {
+        return entryPoint;
+    }
+
+    return TryGetWasmVirtualIPFromFunctionTableIndex((uint)pep.ActualCode, out ulong virtualIP)
+        ? new TargetCodePointer(virtualIP)
+        : entryPoint;
+}
+
+// Mirrors ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex. Also used by the WebAssembly stack walk.
+bool TryGetWasmVirtualIPFromFunctionTableIndex(uint functionTableIndex, out ulong virtualIP)
+{
+    // Walk the FunctionTableIndexRangeSection list headed by *FunctionTableIndexRangeList (with cycle
+    // detection) to the section where MinFunctionTableIndex <= functionTableIndex < MinFunctionTableIndex + NumRuntimeFunctions.
+    // Starting at RuntimeFunctions[functionTableIndex - MinFunctionTableIndex] of the section's
+    // R2RModule's ReadyToRunInfo, step back past funclet entries to the controlling function, then
+    // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunction.BeginAddress.
+}
+```
 
 The `CodeBlock` encapsulates the `MethodDesc` data from the target runtime together with the start of the jitted method
 

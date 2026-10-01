@@ -374,7 +374,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     m_SafePointIndex = m_NumSafePoints;
 #endif
 
-    if (slimHeader)
+    if (slimHeader || !GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
     {
         m_NumInterruptibleRanges = 0;
     }
@@ -736,6 +736,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
 {
 
     unsigned executionAborted = (inputFlags & ExecutionAborted);
+    bool reportUntrackedOnly = false;
 
     // In order to make ARM more x86-like we only ever report the leaf frame
     // of any given function. We accomplish this by having the stackwalker
@@ -776,6 +777,12 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
             m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA1_ENCBASE );
             m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA2_ENCBASE );
         }
+    }
+    else if constexpr (!GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
+    {
+        // Outside of safe points only untracked slots can be reported. Report them for aborted
+        // frames too: an aborted funclet shares them with parent frames that are skipped.
+        reportUntrackedOnly = true;
     }
     else
     {
@@ -828,6 +835,9 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
 
 
     slotDecoder.DecodeSlotTable(m_Reader);
+
+    if (reportUntrackedOnly)
+        goto ReportUntracked;
 
     {
         UINT32 numSlots = slotDecoder.GetNumTracked();

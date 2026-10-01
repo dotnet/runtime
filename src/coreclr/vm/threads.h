@@ -922,7 +922,7 @@ public:
     DWORD                m_ThreadId;
 
 #ifndef DACCESS_COMPILE
-    Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP);
+    Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP) noexcept;
 #endif // DACCESS_COMPILE
 
     // Lock thread is trying to acquire
@@ -1223,7 +1223,7 @@ public:
     //--------------------------------------------------------------
     // Enter cooperative GC mode. NOT NESTABLE.
     //--------------------------------------------------------------
-    FORCEINLINE_NONDEBUG void DisablePreemptiveGC()
+    FORCEINLINE_NONDEBUG void DisablePreemptiveGC() noexcept
     {
 #ifndef DACCESS_COMPILE
         WRAPPER_NO_CONTRACT;
@@ -1273,7 +1273,7 @@ public:
 #endif
     }
 
-    NOINLINE void RareDisablePreemptiveGC();
+    NOINLINE void RareDisablePreemptiveGC() noexcept;
 
     void HandleThreadAbort();
 
@@ -1286,7 +1286,7 @@ public:
     //--------------------------------------------------------------
     // Leave cooperative GC mode. NOT NESTABLE.
     //--------------------------------------------------------------
-    FORCEINLINE_NONDEBUG void EnablePreemptiveGC()
+    FORCEINLINE_NONDEBUG void EnablePreemptiveGC() noexcept
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -1320,7 +1320,7 @@ public:
     //--------------------------------------------------------------
     // Query mode
     //--------------------------------------------------------------
-    BOOL PreemptiveGCDisabled()
+    BOOL PreemptiveGCDisabled() noexcept
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(this == GetThread());
@@ -3864,7 +3864,7 @@ public:
 
     static void InitThreadStore();
     static void LockThreadStore();
-    static void UnlockThreadStore();
+    static void UnlockThreadStore() noexcept;
 
     // Add a Thread to the ThreadStore
     static void AddThread(Thread *newThread);
@@ -3918,7 +3918,7 @@ private:
     // Enter and leave the critical section around the thread store.  Clients should
     // use LockThreadStore and UnlockThreadStore.
     void Enter();
-    void Leave();
+    void Leave() noexcept;
 
     // Critical section for adding and removing threads to the store
     Crst        m_Crst;
