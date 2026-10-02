@@ -217,6 +217,12 @@
           SourceFiles="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
           DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
+    <!-- The wasihost corehost reads the app's runtimeconfig properties from runtimeconfig.bin
+         next to the entry assembly and passes them to the runtime. -->
+    <Copy Condition="'$(_ParsedRuntimeConfigFilePath)' != '' and Exists('$(_ParsedRuntimeConfigFilePath)')"
+          SourceFiles="$(_ParsedRuntimeConfigFilePath)"
+          DestinationFolder="$(WasmAppDir)managed"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- ============================ Per-app wasihost link ============================ -->
