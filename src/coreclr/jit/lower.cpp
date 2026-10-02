@@ -7684,11 +7684,10 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
-        !m_compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
+    if (parent->OperIs(GT_STOREIND) && parent->AsIndir()->IsVolatile() &&
+        m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(parent->AsStoreInd()))
     {
-        // For Arm64 we avoid using LEA for volatile INDs
-        // because we won't be able to use ldar/star
+        // Write barrier helpers require the address in a register, not an RCPC2 addressing mode.
         return false;
     }
 
@@ -7734,8 +7733,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // Generally, we try to avoid creating addressing modes for volatile INDs so we can then use
         // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
         // addressing modes (if the offset fits into 9 bits)
-        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Rcpc2));
-
         if ((scale > 1) || (!emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset)) || (index != nullptr))
         {
             return false;
@@ -7770,6 +7767,15 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         DISPNODE(addr);
         return false;
     }
+
+#ifdef TARGET_ARM64
+    // Record the RCPC2 dependency only after all checks for creating the volatile addressing mode have passed.
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
+        !m_compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
+    {
+        return false;
+    }
+#endif
 
     JITDUMP("Addressing mode:\n");
     JITDUMP("  Base\n    ");
