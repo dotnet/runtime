@@ -60,7 +60,7 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         var onReportDiagnostic = context.ReportDiagnostic;
                         var targetNode = context.Symbol.DeclaringSyntaxReferences[0].GetSyntax(context.CancellationToken);
-                        var regexPatternAndSyntax = ParseGeneratedRegexAttribute(targetNode, context.Symbol, context.Compilation, attributes, onReportDiagnostic, context.CancellationToken);
+                        var regexPatternAndSyntax = ParseGeneratedRegexAttribute(targetNode, context.Symbol, context.Compilation, attributes, onReportDiagnostic);
                         if (regexPatternAndSyntax is null)
                         {
                             return;

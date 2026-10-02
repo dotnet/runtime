@@ -27,7 +27,7 @@ namespace System.Text.RegularExpressions.Generator
         /// </summary>
         private static RegexPatternAndSyntax? ParseGeneratedRegexAttribute(
             SyntaxNode targetNode, ISymbol regexMemberSymbol, Compilation compilation, ImmutableArray<AttributeData> boundAttributes,
-            Action<Diagnostic>? onReportDiagnostic, CancellationToken cancellationToken)
+            Action<Diagnostic>? onReportDiagnostic)
         {
             if (targetNode is IndexerDeclarationSyntax or AccessorDeclarationSyntax)
             {
@@ -258,7 +258,7 @@ namespace System.Text.RegularExpressions.Generator
         /// that can be used to emit the source code for the regex.
         /// </summary>
         private static RegexMethod? GetRegexMethod(RegexPatternAndSyntax? patternAndSyntax, SyntaxNode? targetNode, Action<Diagnostic>? onReportDiagnostic)
-        { 
+        {
             try
             {
                 // make sure Compiled is included to get all optimizations applied to it

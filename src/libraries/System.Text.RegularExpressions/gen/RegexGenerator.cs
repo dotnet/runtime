@@ -72,7 +72,7 @@ namespace System.Text.RegularExpressions.Generator
                 .ForAttributeWithMetadataName(
                     GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax or AccessorDeclarationSyntax,
-                    (context, cancellationToken) => ParseGeneratedRegexAttribute(context.TargetNode, context.TargetSymbol, context.SemanticModel.Compilation, context.Attributes, null, cancellationToken))
+                    (context, _) => ParseGeneratedRegexAttribute(context.TargetNode, context.TargetSymbol, context.SemanticModel.Compilation, context.Attributes, null))
 
                 // Filter out any parsing errors that resulted in null objects being returned.
                 .Where(static m => m is not null)
