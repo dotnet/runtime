@@ -28,6 +28,13 @@ public class WasmUnwinderTests
     {
         public Dictionary<uint, ulong> VirtualIpBases { get; } = new();
         public Dictionary<uint, ulong> UnwindData { get; } = new();
+        public HashSet<uint> Funclets { get; } = new();
+
+        public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
+        {
+            isFunclet = Funclets.Contains(functionTableIndex);
+            return VirtualIpBases.ContainsKey(functionTableIndex) || UnwindData.ContainsKey(functionTableIndex) || isFunclet;
+        }
 
         public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP)
             => VirtualIpBases.TryGetValue(functionTableIndex, out baseVirtualIP);

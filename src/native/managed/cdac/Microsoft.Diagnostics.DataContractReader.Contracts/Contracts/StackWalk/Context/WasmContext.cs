@@ -88,11 +88,9 @@ internal struct WasmContext : IPlatformContext
         {
             StackPointer = sp;
             InstructionPointer = ip;
-            // Native WasmUnwindStackFrame recomputes the caller's frame pointer from its stack pointer.
-            // Root-function frame base; the funclet-aware logical frame pointer is not modeled yet.
-            FramePointer = unwinder.TryGetFramePointer(sp, out TargetPointer framePointer)
-                ? framePointer
-                : TargetPointer.Null;
+            // Native WasmUnwindStackFrame recomputes the caller's frame pointer from its stack pointer;
+            // funclets report the establishing method's frame base (GetWasmFramePointerFromStackPointer).
+            FramePointer = unwinder.TryGetLogicalFramePointer(sp, out TargetPointer fp) ? fp : TargetPointer.Null;
         }
         else
         {
