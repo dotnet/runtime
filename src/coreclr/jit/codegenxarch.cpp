@@ -4351,6 +4351,10 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
     if (varTypeIsSmall(node->TypeGet()))
     {
         instruction mov = varTypeIsSigned(node->TypeGet()) ? INS_movsx : INS_movzx;
+        if ((mov == INS_movsx) && genIsSignedWideningUse(node))
+        {
+            size = EA_SET_FLG(size, EA_8BYTE_DST);
+        }
         GetEmitter()->emitIns_Mov(mov, size, targetReg, targetReg, /* canSkip */ false);
     }
 
@@ -4396,6 +4400,10 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     if (varTypeIsSmall(tree->TypeGet()))
     {
         instruction mov = varTypeIsSigned(tree->TypeGet()) ? INS_movsx : INS_movzx;
+        if ((mov == INS_movsx) && genIsSignedWideningUse(tree))
+        {
+            size = EA_SET_FLG(size, EA_8BYTE_DST);
+        }
         GetEmitter()->emitIns_Mov(mov, size, targetReg, REG_RAX, /* canSkip */ false);
     }
     else
@@ -4953,6 +4961,10 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     assert(varNum < m_compiler->lvaCount);
 
     instruction loadIns = tree->DontExtend() ? INS_mov : ins_Load(targetType);
+    if ((loadIns == INS_movsx) && genIsSignedWideningUse(tree))
+    {
+        size = EA_SET_FLG(size, EA_8BYTE_DST);
+    }
     GetEmitter()->emitIns_R_S(loadIns, size, targetReg, varNum, offs);
 
     genProduceReg(tree);
@@ -5300,7 +5312,12 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     {
         genConsumeAddress(addr);
         instruction loadIns = tree->DontExtend() ? INS_mov : ins_Load(targetType);
-        emit->emitInsLoadInd(loadIns, emitTypeSize(tree), tree->GetRegNum(), tree);
+        emitAttr    size    = emitTypeSize(tree);
+        if ((loadIns == INS_movsx) && genIsSignedWideningUse(tree))
+        {
+            size = EA_SET_FLG(size, EA_8BYTE_DST);
+        }
+        emit->emitInsLoadInd(loadIns, size, tree->GetRegNum(), tree);
     }
 
     genProduceReg(tree);
@@ -6763,6 +6780,70 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 }
 
 //------------------------------------------------------------------------
+// genIsSignedWideningUse: Check whether a value feeds a signed cast to long.
+//
+// Arguments:
+//    node - The value producing node.
+//
+// Returns:
+//    True when preserving native-width sign bits can eliminate the consuming cast.
+//
+bool CodeGen::genIsSignedWideningUse(GenTree* node)
+{
+#ifndef TARGET_AMD64
+    return false;
+#else
+    if ((node->gtFlags & GTF_SPILL) != 0)
+    {
+        return false;
+    }
+
+    // Bound the entire search, including a possible temporary, independently of
+    // block size. Missing a distant widening only costs a separate extension.
+    // Use the same lookahead length as the emitter's backward peephole window.
+    unsigned remaining   = EMIT_MAX_PEEPHOLE_INS_COUNT;
+    bool     followStore = true;
+    for (GenTree* next = node->gtNext; (next != nullptr) && (remaining != 0); next = next->gtNext, remaining--)
+    {
+        if (node->OperIs(GT_STORE_LCL_VAR))
+        {
+            // Follow only the first access; a redefinition or address use ends the search.
+            if (next->OperIsAnyLocal() && (next->AsLclVarCommon()->GetLclNum() == node->AsLclVar()->GetLclNum()))
+            {
+                if (!next->OperIs(GT_LCL_VAR) || (next->GetRegNum() != node->GetRegNum()) ||
+                    ((next->gtFlags & (GTF_SPILL | GTF_SPILLED)) != 0))
+                {
+                    return false;
+                }
+                node = next;
+            }
+            continue;
+        }
+
+        if (next->TryGetUse(node))
+        {
+            if (next->OperIs(GT_STORE_LCL_VAR) && followStore)
+            {
+                // A store or a 32-bit register copy does not preserve the upper sign bits.
+                if ((next->GetRegNum() == REG_NA) || (next->GetRegNum() != node->GetRegNum()) ||
+                    ((next->gtFlags & GTF_SPILL) != 0))
+                {
+                    return false;
+                }
+                node        = next;
+                followStore = false;
+                continue;
+            }
+            return next->OperIs(GT_CAST) && next->TypeIs(TYP_LONG) && !next->AsCast()->IsUnsigned() &&
+                   (next->GetRegNum() == node->GetRegNum());
+        }
+    }
+
+    return false;
+#endif // TARGET_AMD64
+}
+
+//------------------------------------------------------------------------
 // genIntToIntCast: Generate code for an integer cast, with or without overflow check.
 //
 // Arguments:
@@ -6833,14 +6914,22 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             unreached();
     }
 
+    emitAttr attr = EA_ATTR(insSize);
+#ifdef TARGET_AMD64
+    if ((ins == INS_movsx) && (cast->TypeIs(TYP_LONG) || genIsSignedWideningUse(cast)))
+    {
+        attr = EA_SET_FLG(attr, EA_8BYTE_DST);
+    }
+#endif
+
     if (srcReg != REG_NA)
     {
-        emit->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, canSkip);
+        emit->emitIns_Mov(ins, attr, dstReg, srcReg, canSkip);
     }
     else
     {
         assert(src->isUsedFromMemory());
-        inst_RV_TT(ins, EA_ATTR(insSize), dstReg, src);
+        inst_RV_TT(ins, attr, dstReg, src);
     }
 
     genProduceReg(cast);

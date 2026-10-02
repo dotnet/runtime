@@ -855,6 +855,7 @@ protected:
         unsigned _idCustom4 : 1;
 
 #define _idCallRegPtr   _idCustom4 /* IL indirect calls : addr in reg */
+#define _idMovsx64      _idCustom4 /* movsx destination width; movsx has no EVEX encoding */
 #define _idEvexZContext _idCustom4 /* bits used for the EVEX.z context */
 #endif                             // !TARGET_ARMARCH
 
@@ -1759,6 +1760,18 @@ protected:
             _idCallRegPtr = 1;
         }
 #endif // !TARGET_ARMARCH
+
+#ifdef TARGET_XARCH
+        bool idIsMovsx64() const
+        {
+            assert(idIns() == INS_movsx);
+            return _idMovsx64 != 0;
+        }
+        void idSetMovsx64()
+        {
+            _idMovsx64 = 1;
+        }
+#endif
 
         bool idIsTlsGD() const
         {
