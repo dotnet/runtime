@@ -110,15 +110,34 @@ public class R2RTestSuites
                 new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
-                    Validate = Validate,
+                    Validate = ValidateDefault,
+                },
+                new("WasmWebcilModuleNoDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=none"],
+                    Validate = ValidateNone,
+                },
+                new("WasmWebcilModuleSymbolMap", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=symbol-map"],
+                    Validate = ValidateSymbolMap,
+                },
+                new("WasmWebcilModuleAllDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=name,symbol-map"],
+                    Validate = ValidateAll,
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        static void ValidateDefault(ReadyToRunReader reader)
         {
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+            Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
@@ -151,6 +170,75 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+
+        static void ValidateNone(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.False(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));
+        }
+
+        static void ValidateSymbolMap(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.False(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.True(
+                WasmR2RAssert.WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic),
+                diagnostic);
+        }
+
+        static void ValidateAll(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.True(
+                WasmR2RAssert.WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic),
+                diagnostic);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmDelegateConstructors()
+    {
+        var wasmDelegateConstructors = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmDelegateConstructors),
+            SourceResourceNames = ["Webcil/WasmDelegateConstructors.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmDelegateConstructors),
+            [
+                new(nameof(WasmDelegateConstructors), [new CrossgenAssembly(wasmDelegateConstructors)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+            List<ReadyToRunImportSection.ImportSectionEntry> importEntries = reader.ImportSections
+                .Where(section => section.Entries is not null)
+                .SelectMany(section => section.Entries)
+                .ToList();
+            List<string> importSignatures = importEntries
+                .Where(entry => entry.Signature is not null)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            string diagnostic = string.Join(Environment.NewLine, importSignatures);
+
+            Assert.DoesNotContain(importEntries, entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.DelegateConstruct(", StringComparison.Ordinal)),
+                diagnostic);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.CtorClosed(", StringComparison.Ordinal)),
+                diagnostic);
         }
     }
 
@@ -2008,6 +2096,56 @@ public class R2RTestSuites
             // must be read as absolute values, not delta-accumulated, and validates
             // that the resolved method names match the expected inliners.
             Assert.True(R2RAssert.HasCrossModuleInliners(reader, "GetValue", ["GenericWrapperA", "GenericWrapperB"], out diag), diag);
+        }
+    }
+
+    /// <summary>
+    /// Tests cross-module generic compilation where the runtime-async variant of a method from an
+    /// --opt-cross-module library is compiled into the consumer and inlines another library method.
+    /// The inlining info must reference the IL body fixup that was recorded for the async variant.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    public void AsyncCrossModuleGenericInliner()
+    {
+        var asyncCrossModuleGenericLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncCrossModuleGenericLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/AsyncCrossModuleGenericLib.cs"],
+            Features = { RuntimeAsyncFeature },
+        };
+        var consumer = new CompiledAssembly
+        {
+            AssemblyName = "AsyncGenericInlinerConsumer",
+            SourceResourceNames = ["CrossModuleInlining/AsyncGenericInlinerConsumer.cs"],
+            References = [asyncCrossModuleGenericLib],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AsyncCrossModuleGenericInliner),
+            [
+                new(consumer.AssemblyName,
+                [
+                    new CrossgenAssembly(asyncCrossModuleGenericLib)
+                    {
+                        Kind = Crossgen2InputKind.Reference,
+                        Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                    new CrossgenAssembly(consumer),
+                ])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncCrossModuleGenericLib", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliners(reader, "GetAsyncGenericValue", ["InvokeGetValueAsync"], out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GetValueTask", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinerCount(reader, "GetSharedInlineeValue", "GetValueTask", 1, out diag), diag);
         }
     }
 

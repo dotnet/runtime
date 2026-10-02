@@ -28,9 +28,7 @@ namespace System.Net.Security
             {
                 ApplicationProtocol = alpn.ToArray();
             }
-#if DEBUG
             TlsResumed = Interop.Ssl.SslSessionReused(sslContext);
-#endif
             MapCipherSuite(SslGetCurrentCipherSuite(sslContext));
         }
 
