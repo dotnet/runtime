@@ -109,7 +109,10 @@ export PATH="$PWD/.github/workflows/evals/node_modules/.bin:$PATH"
 export COPILOT_GITHUB_TOKEN="$(gh auth token)"
 export GH_TOKEN="$(gh auth token)"
 export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"
-vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml --strict
+export KBE_SEARCH_HELPER="$PWD/.github/workflows/evals/search-kbe-issues.cjs"
+vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
+  --grader-plugin "$PWD/.github/workflows/evals/kbe-candidate-reads-grader.mjs" --strict
 vally eval --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
+  --grader-plugin "$PWD/.github/workflows/evals/kbe-candidate-reads-grader.mjs" \
   --skill-dir .github/workflows --workspace /tmp/ws --output-dir /tmp/out
 ```

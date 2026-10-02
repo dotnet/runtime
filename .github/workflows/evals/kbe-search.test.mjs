@@ -83,6 +83,7 @@ async function runProductionSearch(result, query = "query") {
 function validResult() {
     return {
         incomplete_results: false,
+        total_count: 1,
         items: [{
             repository_url: "https://api.github.com/repos/dotnet/runtime",
             number: 132843,
@@ -101,6 +102,13 @@ test("production wrapper uses authenticated gh api transport", async () => {
 test("production wrapper rejects incomplete results", async () => {
     await assert.rejects(
         runProductionSearch({ ...validResult(), incomplete_results: true }),
+        /invalid response/
+    );
+});
+
+test("production wrapper rejects truncated results", async () => {
+    await assert.rejects(
+        runProductionSearch({ ...validResult(), total_count: 11 }),
         /invalid response/
     );
 });
@@ -128,6 +136,11 @@ test("production wrapper projects validated candidate metadata", async () => {
 
 test("eval search wrapper rejects incomplete results", async () => {
     const runApi = async () => ({ ...validResult(), incomplete_results: true });
+    await assert.rejects(searchKbeIssues("query", testToken, runApi), /invalid response/);
+});
+
+test("eval search wrapper rejects truncated results", async () => {
+    const runApi = async () => ({ ...validResult(), total_count: 11 });
     await assert.rejects(searchKbeIssues("query", testToken, runApi), /invalid response/);
 });
 
@@ -236,6 +249,87 @@ test("candidate-read grader accepts an indented helper command", async () => {
     assert.equal(gradeResult.passed, true);
 });
 
+test("candidate-read grader rejects result-level issue read errors", async () => {
+    const events = [
+        call("bash", "search", {
+            command: trustedSearchCommand,
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+        call("github-issue_read", "read-10", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("github-issue_read", "read-10", { isError: true }),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, false);
+    assert.deepEqual(gradeResult.metadata.missing, [10]);
+});
+
+test("candidate-read grader decodes MCP issue-read content envelopes", async () => {
+    const events = [
+        call("bash", "search", {
+            command: trustedSearchCommand,
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+        call("github-issue_read", "read-content", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("github-issue_read", "read-content", {
+            content: [{
+                type: "text",
+                text: JSON.stringify({ number: 10 }),
+            }],
+        }),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, true);
+});
+
+test("candidate-read grader decodes structured MCP issue-read content", async () => {
+    const events = [
+        call("bash", "search", {
+            command: trustedSearchCommand,
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+        call("mcp__github-issue_read", "read-structured", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("mcp__github-issue_read", "read-structured", {
+            structuredContent: { issue: { number: 10 } },
+        }),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, true);
+});
+
+test("candidate-read grader rejects a read for the wrong issue", async () => {
+    const events = [
+        call("bash", "search", {
+            command: trustedSearchCommand,
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+        call("github-issue_read", "read-10", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("github-issue_read", "read-10", { number: 11 }),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, false);
+    assert.deepEqual(gradeResult.metadata.missing, [10]);
+});
+
 test("no-op output is accepted only as the complete document", async () => {
     const patterns = await noOpOutputPatterns();
     assert.equal(patterns.length, 6);
@@ -329,6 +423,18 @@ test("candidate-read grader accepts searches with no candidates", async () => {
     assert.equal(gradeResult.passed, true);
 });
 
+test("candidate-read grader fails for an unmatched search call", async () => {
+    const events = [
+        call("bash", "search", {
+            command: trustedSearchCommand,
+        }),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, false);
+    assert.match(gradeResult.evidence, /did not return a result/);
+});
+
 test("candidate-read grader fails closed on search errors", async () => {
     const events = [
         call("bash", "search", {
@@ -340,4 +446,19 @@ test("candidate-read grader fails closed on search errors", async () => {
     const gradeResult = await grade(events);
     assert.equal(gradeResult.passed, false);
     assert.match(gradeResult.evidence, /search-kbe-issues call failed/);
+});
+
+test("candidate-read grader rejects a lookalike helper outside the trusted directory", async () => {
+    const events = [
+        call("bash", "search", {
+            command: "node /tmp/search-kbe-issues.cjs query",
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, false);
+    assert.match(gradeResult.evidence, /search-kbe-issues was not called/);
 });

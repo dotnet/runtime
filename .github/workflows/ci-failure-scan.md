@@ -87,7 +87,10 @@ mcp-scripts:
       } catch {
         throw new Error("gh issue search returned invalid JSON");
       }
-      if (result.incomplete_results !== false || !Array.isArray(result.items)) {
+      if (result.incomplete_results !== false ||
+          !Array.isArray(result.items) ||
+          !Number.isInteger(result.total_count) ||
+          result.total_count !== result.items.length) {
         throw new Error("GitHub issue search returned an invalid response");
       }
       return result.items.map((item) => {
