@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
     [DebuggerTypeProxy(typeof(ServiceProviderDebugView))]
-    public sealed class ServiceProvider : IServiceProvider, IKeyedServiceProvider, IDisposable, IAsyncDisposable
+    public sealed class ServiceProvider : IServiceProvider, IKeyedServiceProvider, IServiceKeysProvider, IDisposable, IAsyncDisposable
     {
         private readonly CallSiteValidator? _callSiteValidator;
 
@@ -165,6 +165,18 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             return service;
+        }
+
+        /// <summary>
+        /// Gets all known service keys for the specified type.
+        /// </summary>
+        /// <param name="serviceType">The type of service to get known keys for.</param>
+        /// <returns>An enumeration of known service keys for the specified <paramref name="serviceType"/>.</returns>
+        public IEnumerable<object?> GetServiceKeys(Type serviceType)
+        {
+            ArgumentNullException.ThrowIfNull(serviceType);
+
+            return CallSiteFactory.GetServiceKeys(serviceType);
         }
 
         internal bool IsDisposed() => _disposed;
