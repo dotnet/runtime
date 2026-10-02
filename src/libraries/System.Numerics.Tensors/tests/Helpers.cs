@@ -11,7 +11,11 @@ namespace System.Numerics.Tensors.Tests
 {
     public static class Helpers
     {
+#if NET
         public static bool IsWasmWithAcceleratedVector128 => PlatformDetection.IsWasm && System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated;
+#else
+        public static bool IsWasmWithAcceleratedVector128 => false;
+#endif
 
         public static int SizeGreaterThanByte => 260;
         public static int SizeGreaterThanInt16 => 65540;
