@@ -3355,13 +3355,17 @@ public:
  * type arguments <string,List<int>> you get string followed by List followed by int.
  * ------------------------------------------------------------------------ */
 
-// Owns an interop-safe buffer and the ExternalMemoryHandle registration that keeps references in
-// the buffer visible to the GC.
+void ReleaseDebuggerExternalMemoryHandle(ExternalMemoryHandle* pHandle);
+
+// Owns an interop-safe buffer and external registrations for its references and collectible layout.
 class DebuggerExternalMemoryOwner
 {
 public:
     DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory);
     ~DebuggerExternalMemoryOwner();
+
+    DebuggerExternalMemoryOwner(const DebuggerExternalMemoryOwner&) = delete;
+    DebuggerExternalMemoryOwner& operator=(const DebuggerExternalMemoryOwner&) = delete;
 
     BYTE *GetMemory() const
     {
@@ -3371,6 +3375,8 @@ public:
 private:
     ExternalMemoryHandle *m_pHandle;
     BYTE                 *m_pMemory;
+    OBJECTREF             m_loaderAllocator;
+    ExternalMemoryHandle *m_loaderAllocatorHandle;
 };
 
 class DebuggerEval
@@ -3484,6 +3490,29 @@ public:
     }
 
 };
+
+// Raw byref result roots shared by the worker and completion controller.
+class DebuggerFuncEvalResult
+{
+public:
+    explicit DebuggerFuncEvalResult(OBJECTREF loaderAllocator);
+    ~DebuggerFuncEvalResult();
+
+    DebuggerFuncEvalResult(const DebuggerFuncEvalResult&) = delete;
+    DebuggerFuncEvalResult& operator=(const DebuggerFuncEvalResult&) = delete;
+
+    void RefreshByRefResult(DebuggerEval* pDE);
+
+    OBJECTREF m_loaderAllocator;
+    void* m_resultByRef;
+
+private:
+    ExternalMemoryHandle* m_loaderAllocatorHandle;
+    ExternalMemoryHandle* m_resultByRefHandle;
+};
+
+typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
+    DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
 
 /* ------------------------------------------------------------------------ *
  * New/delete overrides to use the debugger's private heap

@@ -1268,9 +1268,18 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     }
 }
 
+void ReleaseDebuggerExternalMemoryHandle(ExternalMemoryHandle* pHandle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    ExternalMemoryHandle::Remove(pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+}
+
 DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory)
     : m_pHandle(NULL),
-      m_pMemory(pMemory)
+      m_pMemory(pMemory),
+      m_loaderAllocator(nullptr),
+      m_loaderAllocatorHandle(nullptr)
 {
     CONTRACTL
     {
@@ -1280,14 +1289,25 @@ DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE 
     }
     CONTRACTL_END;
 
+    m_loaderAllocator = pMT->GetLoaderAllocator()->GetExposedObject();
+    Holder<ExternalMemoryHandle*, DoNothing<ExternalMemoryHandle*>, ReleaseDebuggerExternalMemoryHandle>
+        keepAlive(m_loaderAllocator != nullptr
+            ? ExternalMemoryHandle::Add(g_pObjectClass, &m_loaderAllocator, 0)
+            : nullptr);
     m_pHandle = ExternalMemoryHandle::Add(pMT, m_pMemory, 0);
+    m_loaderAllocatorHandle = keepAlive.GetValue();
+    keepAlive.SuppressRelease();
 }
 
 DebuggerExternalMemoryOwner::~DebuggerExternalMemoryOwner()
 {
     WRAPPER_NO_CONTRACT;
 
-    ExternalMemoryHandle::Remove(m_pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+    ReleaseDebuggerExternalMemoryHandle(m_pHandle);
+    if (m_loaderAllocatorHandle != nullptr)
+    {
+        ReleaseDebuggerExternalMemoryHandle(m_loaderAllocatorHandle);
+    }
     DeleteInteropSafe(m_pMemory);
 }
 
