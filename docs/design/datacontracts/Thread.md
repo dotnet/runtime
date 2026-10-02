@@ -140,7 +140,7 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointe
 | `ThreadLocalData` | `NonCollectibleTlsDataCount` | `int32` | Count of non-collectible TLS data entries |
 | `ThreadStore` | `BackgroundCount` | `int32` | Number of background threads |
 | `ThreadStore` | `DeadCount` | `int32` | Number of dead threads |
-| `ThreadStore` | `FirstThreadLink` | `pointer` | Pointer to first thread in the linked list |
+| `ThreadStore` | `FirstThreadLink` | `pointer` | Pointer to the first native thread; the single-threaded store has one entry |
 | `ThreadStore` | `PendingCount` | `int32` | Number of pending threads |
 | `ThreadStore` | `ThreadCount` | `int32` | Number of threads |
 | `ThreadStore` | `UnstartedCount` | `int32` | Number of unstarted threads |
@@ -286,6 +286,16 @@ TargetPointer IThread.IdToThread(uint id)
 {
     TargetPointer idDispenserPointer = target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
     TargetPointer idDispenser = target.ReadPointer(idDispenserPointer);
+    if (idDispenser == TargetPointer.Null)
+    {
+        // Single-threaded CoreCLR has no dispenser. Verify the sole native thread's ID.
+        if (id != 1)
+            return TargetPointer.Null;
+        TargetPointer threadStore = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
+        TargetPointer thread = target.ReadPointer(threadStore + /* ThreadStore::FirstThreadLink offset */);
+        return thread != TargetPointer.Null &&
+            target.Read<uint>(thread + /* Thread::Id offset */) == id ? thread : TargetPointer.Null;
+    }
     uint HighestId = target.Read<uint>(idDispenser + /* IdDispenser::HighestId offset */);
     TargetPointer threadPtr = TargetPointer.Null;
     if (id <= HighestId)

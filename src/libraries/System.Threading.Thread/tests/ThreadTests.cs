@@ -26,6 +26,12 @@ namespace System.Threading.Threads.Tests
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
 
+        [ThreadStatic]
+        private static int t_threadStaticValue;
+        [ThreadStatic]
+        private static object t_threadStaticReference;
+        private static int s_globalStaticValue;
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ConstructorTest()
         {
@@ -76,6 +82,85 @@ namespace System.Threading.Threads.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(() => { }, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(state => { }, -1));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void ConstructorTest_WithoutMultithreading()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(() => { }, -1));
+
+            Thread first = new Thread(() => { });
+            Thread second = new Thread(state => { });
+
+            Assert.True(first.ManagedThreadId > 1);
+            Assert.True(second.ManagedThreadId > 1);
+            Assert.NotEqual(first.ManagedThreadId, second.ManagedThreadId);
+            Assert.NotEqual(Environment.CurrentManagedThreadId, first.ManagedThreadId);
+            Assert.Equal(1, Thread.CurrentThread.ManagedThreadId);
+
+            Thread current = Thread.CurrentThread;
+            bool wasBackground = current.IsBackground;
+            try
+            {
+                current.IsBackground = !wasBackground;
+                Assert.Equal(!wasBackground, current.IsBackground);
+            }
+            finally
+            {
+                current.IsBackground = wasBackground;
+            }
+
+            Assert.False(first.IsAlive);
+            Assert.Equal(ThreadState.Unstarted, first.ThreadState);
+            Assert.False(first.IsBackground);
+            first.IsBackground = true;
+            Assert.True(first.IsBackground);
+            Assert.Equal(ThreadState.Unstarted | ThreadState.Background, first.ThreadState);
+
+            Assert.Equal(ThreadPriority.Normal, first.Priority);
+            first.Priority = ThreadPriority.AboveNormal;
+            Assert.Equal(ThreadPriority.AboveNormal, first.Priority);
+            Assert.Throws<ArgumentOutOfRangeException>(() => first.Priority = (ThreadPriority)int.MaxValue);
+
+            const string ThreadName = "unstarted";
+            first.Name = ThreadName;
+            Assert.Equal(ThreadName, first.Name);
+            first.Name = null;
+            Assert.Null(first.Name);
+
+            Assert.Throws<PlatformNotSupportedException>(() => first.Start());
+            Assert.Equal(ThreadState.Unstarted | ThreadState.Background, first.ThreadState);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void ThreadStaticValuePersistsWhenConstructingThread()
+        {
+            const int ThreadStaticValue = 1;
+            const int GlobalStaticValue = 2;
+            const int UpdatedGlobalStaticValue = 3;
+            const int UpdatedThreadStaticValue = 4;
+
+            t_threadStaticValue = ThreadStaticValue;
+            object reference = new object();
+            t_threadStaticReference = reference;
+            s_globalStaticValue = GlobalStaticValue;
+
+            _ = new Thread(() => { });
+            GC.Collect();
+
+            Assert.Equal(ThreadStaticValue, t_threadStaticValue);
+            Assert.Same(reference, t_threadStaticReference);
+            Assert.Equal(GlobalStaticValue, s_globalStaticValue);
+
+            s_globalStaticValue = UpdatedGlobalStaticValue;
+            Assert.Equal(ThreadStaticValue, t_threadStaticValue);
+            Assert.Equal(UpdatedGlobalStaticValue, s_globalStaticValue);
+
+            t_threadStaticValue = UpdatedThreadStaticValue;
+            Assert.Equal(UpdatedThreadStaticValue, t_threadStaticValue);
+            Assert.Equal(UpdatedGlobalStaticValue, s_globalStaticValue);
+            t_threadStaticReference = null;
         }
 
         public static IEnumerable<object[]> ApartmentStateTest_MemberData()

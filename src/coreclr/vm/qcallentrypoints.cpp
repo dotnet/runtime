@@ -302,6 +302,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(AppContext_TryGetHostPropertyValue)
     DllImportEntry(ThreadNative_GetQCallSpecialException)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -311,6 +312,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Initialize)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_GetThreadState)
     DllImportEntry(ThreadNative_ReentrantWaitAny)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -319,7 +321,9 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_SpinWait)
+#endif // FEATURE_MULTITHREADING
 #ifdef TARGET_WINDOWS
     DllImportEntry(ThreadNative_CheckForPendingInterrupt)
     DllImportEntry(ThreadNative_Interrupt)

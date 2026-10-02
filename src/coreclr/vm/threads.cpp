@@ -407,7 +407,9 @@ void SetThread(Thread* t)
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 extern INT32 MapFromNTPriority(INT32 NTPriority);
+#endif // FEATURE_MULTITHREADING
 
 BOOL Thread::SetThreadPriority(
     int nPriority   // thread priority level
@@ -430,6 +432,9 @@ BOOL Thread::SetThreadPriority(
             fRet = ::SetThreadPriority(GetThreadHandle(), nPriority);
     }
 
+#ifdef FEATURE_MULTITHREADING
+    // Without multithreading, the managed priority is purely managed state and is not
+    // mirrored from the native thread priority.
     if (fRet)
     {
         GCX_COOP();
@@ -440,6 +445,7 @@ BOOL Thread::SetThreadPriority(
             pObject->SetPriority (MapFromNTPriority(nPriority));
         }
     }
+#endif // FEATURE_MULTITHREADING
     return fRet;
 }
 
@@ -800,6 +806,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 //
 // When there is, complete the setup with code:Thread::HasStarted()
 //-------------------------------------------------------------------------
+#ifdef FEATURE_MULTITHREADING
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 {
     CONTRACTL {
@@ -822,6 +829,13 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 
     return pThread;
 }
+#else // FEATURE_MULTITHREADING
+Thread* SetupUnstartedThread(SetupUnstartedThreadFlags)
+{
+    PORTABILITY_ASSERT("Unstarted native threads are not supported without multithreading");
+    return nullptr;
+}
+#endif // FEATURE_MULTITHREADING
 
 //-------------------------------------------------------------------------
 // Public function: DestroyThread()
@@ -1492,7 +1506,11 @@ Thread::Thread()
     m_sfEstablisherOfActualHandlerFrame.Clear();
 
     // Do not expose thread until it is fully constructed
+#ifdef FEATURE_MULTITHREADING
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
+#else
+    m_ThreadId = 1;
+#endif // FEATURE_MULTITHREADING
 
     //
     // DO NOT ADD ADDITIONAL CONSTRUCTION AFTER THIS POINT.
@@ -2431,7 +2449,9 @@ Thread::~Thread()
         DestroyStrongHandle(m_StrongHndToExposedObject);
     }
 
+#ifdef FEATURE_MULTITHREADING
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
+#endif // FEATURE_MULTITHREADING
 
     m_tailCallTls.FreeArgBuffer();
 
@@ -3953,6 +3973,10 @@ ThreadStore::ThreadStore()
     }
     CONTRACTL_END;
 
+#ifndef FEATURE_MULTITHREADING
+    m_pThread = nullptr;
+#endif // !FEATURE_MULTITHREADING
+
     m_TerminationEvent.CreateManualEvent(FALSE);
     _ASSERTE(m_TerminationEvent.IsValid());
 }
@@ -3968,7 +3992,9 @@ void ThreadStore::InitThreadStore()
 
     s_pThreadStore = new ThreadStore;
 
+#ifdef FEATURE_MULTITHREADING
     g_pThinLockThreadIdDispenser = new IdDispenser();
+#endif // FEATURE_MULTITHREADING
 
     s_pWaitForStackCrawlEvent = new CLREvent();
     s_pWaitForStackCrawlEvent->CreateManualEvent(FALSE);
@@ -4049,7 +4075,12 @@ void ThreadStore::AddThread(Thread *newThread)
 
     ThreadStoreLockHolder TSLockHolder(!lockHeld);
 
+#ifdef FEATURE_MULTITHREADING
     s_pThreadStore->m_ThreadList.InsertTail(newThread);
+#else
+    _ASSERTE(s_pThreadStore->m_pThread == nullptr);
+    s_pThreadStore->m_pThread = newThread;
+#endif // FEATURE_MULTITHREADING
 
     s_pThreadStore->m_ThreadCount++;
 
@@ -4101,7 +4132,13 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     _ASSERTE(s_pThreadStore->m_Crst.GetEnterCount() > 0 ||
              IsAtProcessExit());
     _ASSERTE(s_pThreadStore->DbgFindThread(target));
+#ifdef FEATURE_MULTITHREADING
     found = s_pThreadStore->m_ThreadList.FindAndRemove(target);
+#else
+    found = s_pThreadStore->m_pThread == target;
+    if (found)
+        s_pThreadStore->m_pThread = nullptr;
+#endif // FEATURE_MULTITHREADING
     _ASSERTE(found);
 
     if (found)
@@ -4409,6 +4446,7 @@ Thread *ThreadStore::GetAllThreadList(Thread *cursor, ULONG mask, ULONG bits)
     _ASSERTE((s_pThreadStore->m_Crst.GetEnterCount() > 0) || IsAtProcessExit());
 #endif
 
+#ifdef FEATURE_MULTITHREADING
     while (TRUE)
     {
         cursor = (cursor
@@ -4422,6 +4460,10 @@ Thread *ThreadStore::GetAllThreadList(Thread *cursor, ULONG mask, ULONG bits)
             return cursor;
     }
     return NULL;
+#else
+    Thread *thread = cursor == NULL ? s_pThreadStore->m_pThread : NULL;
+    return thread != NULL && (thread->m_State & mask) == bits ? thread : NULL;
+#endif // FEATURE_MULTITHREADING
 }
 
 // Iterate over the threads that have been started
@@ -7145,7 +7187,12 @@ ThreadStore::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         // ignore exceptions during enumeration.
         EX_TRY
         {
-            Thread* thread       = s_pThreadStore->m_ThreadList.GetHead();
+            Thread* thread       =
+#ifdef FEATURE_MULTITHREADING
+                s_pThreadStore->m_ThreadList.GetHead();
+#else
+                s_pThreadStore->m_pThread;
+#endif // FEATURE_MULTITHREADING
             LONG    dwNumThreads = s_pThreadStore->m_ThreadCount;
 
             for (LONG i = 0; (i < dwNumThreads) && (thread != NULL); i++)
@@ -7155,7 +7202,11 @@ ThreadStore::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
                 CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED(
                     thread->EnumMemoryRegions(flags);
                 );
+#ifdef FEATURE_MULTITHREADING
                 thread = s_pThreadStore->m_ThreadList.GetNext(thread);
+#else
+                thread = NULL;
+#endif // FEATURE_MULTITHREADING
             }
         }
         EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED

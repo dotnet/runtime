@@ -206,6 +206,20 @@ internal readonly struct Thread_1 : IThread
     {
         TargetPointer idDispenserPtr = _target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
         TargetPointer idDispenser = _target.ReadPointer(idDispenserPtr);
+        if (idDispenser == TargetPointer.Null)
+        {
+            if (id != 1)
+                return TargetPointer.Null;
+
+            Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStore);
+            TargetPointer threadPointer = threadStore.FirstThreadLink;
+            if (threadPointer == TargetPointer.Null)
+                return TargetPointer.Null;
+
+            Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+            return thread.Id == id ? threadPointer : TargetPointer.Null;
+        }
+
         Data.IdDispenser idDispenserObj = _target.ProcessedData.GetOrAdd<Data.IdDispenser>(idDispenser);
         TargetPointer threadPtr = TargetPointer.Null;
         if (id <= idDispenserObj.HighestId)

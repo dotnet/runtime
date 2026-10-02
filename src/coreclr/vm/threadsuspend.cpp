@@ -5468,6 +5468,7 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_MULTITHREADING
     //
     // If we raised this thread's priority in SuspendRuntime, we restore it here.
     //
@@ -5479,6 +5480,7 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
             pCurThread->m_Priority = INVALID_THREAD_PRIORITY;
         }
     }
+#endif // FEATURE_MULTITHREADING
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 
@@ -5592,6 +5594,7 @@ retry_for_debugger:
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_MULTITHREADING
     //
     // If this thread is running at low priority, boost its priority.  We remember the old
     // priority so that we can restore it in ResumeEE.
@@ -5606,6 +5609,7 @@ retry_for_debugger:
             pCurThread->SetThreadPriority(THREAD_PRIORITY_NORMAL);
         }
     }
+#endif // FEATURE_MULTITHREADING
 
     //
     // Now that we've instructed all threads to please stop,

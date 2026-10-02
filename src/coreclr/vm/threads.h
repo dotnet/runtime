@@ -3923,11 +3923,14 @@ private:
     // Critical section for adding and removing threads to the store
     Crst        m_Crst;
 
-    // List of all the threads known to the ThreadStore (started & unstarted).
+    // Native threads known to the ThreadStore.
+#ifdef FEATURE_MULTITHREADING
     ThreadList  m_ThreadList;
+#else
+    PTR_Thread  m_pThread;
+#endif // FEATURE_MULTITHREADING
 
-    // m_ThreadCount is the count of all threads in m_ThreadList.  This includes
-    // background threads / unstarted threads / whatever.
+    // m_ThreadCount includes background and unstarted native threads in multithreaded builds.
     //
     // m_UnstartedThreadCount is the subset of m_ThreadCount that have not yet been
     // started.
@@ -4079,7 +4082,11 @@ public:
 template<>
 struct cdac_data<ThreadStore>
 {
+#ifdef FEATURE_MULTITHREADING
     static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_pHead);
+#else
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_pThread);
+#endif // FEATURE_MULTITHREADING
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
     static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
     static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);

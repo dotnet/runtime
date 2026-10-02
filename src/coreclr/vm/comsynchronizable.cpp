@@ -53,6 +53,7 @@ static inline BOOL ThreadIsDead(Thread *t)
 }
 
 
+#ifdef FEATURE_MULTITHREADING
 // Map our exposed notion of thread priorities into the enumeration that NT uses.
 static INT32 MapToNTPriority(INT32 ours)
 {
@@ -393,6 +394,7 @@ extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, 
     GCPROTECT_END();
     END_QCALL;
 }
+#endif // FEATURE_MULTITHREADING
 
 // Deliver the state of the thread as a consistent set of bits.
 // Duplicate logic in DacDbiInterfaceImpl::GetPartialUserState()
@@ -622,6 +624,7 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CatchAtSafePoint)
 }
 FCIMPLEND
 
+#ifdef FEATURE_MULTITHREADING
 // Get whether or not this is a background thread.
 extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
 {
@@ -692,6 +695,7 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
 
     END_QCALL;
 }
+#endif // FEATURE_MULTITHREADING
 
 FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 {
@@ -743,6 +747,7 @@ FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
 FCIMPLEND
 #endif // TARGET_WASM
 
+#ifdef FEATURE_MULTITHREADING
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 {
     FCALL_CONTRACT;
@@ -754,6 +759,7 @@ extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 
     YieldProcessorNormalized(iterations);
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
@@ -806,6 +812,7 @@ extern "C" void QCALLTYPE ThreadNative_PollGC()
     // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
 }
 
+#ifdef FEATURE_MULTITHREADING
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -820,6 +827,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallEr
 
     return ret;
 }
+#endif // FEATURE_MULTITHREADING
 
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError)
 {

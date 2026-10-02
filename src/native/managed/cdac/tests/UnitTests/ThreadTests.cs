@@ -95,6 +95,29 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IdToThread_WithoutDispenserUsesOnlyNativeThread(MockTarget.Architecture arch)
+    {
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        MockThreadBuilder threadBuilder = new(builder.MemoryBuilder);
+        MockThread thread = threadBuilder.AddThread(id: 1, osId: 42);
+        MockMemorySpace.HeapFragment dispenserGlobal = builder.MemoryBuilder.CreateAllocator(0x1000, 0x9000)
+            .Allocate((ulong)new TargetTestHelpers(arch).PointerSize, "ThinlockThreadIdDispenser");
+
+        Target target = builder
+            .AddTypes(CreateContractTypes(threadBuilder))
+            .AddGlobals(
+                (Constants.Globals.ThinlockThreadIdDispenser, dispenserGlobal.Address),
+                (Constants.Globals.ThreadStore, threadBuilder.ThreadStoreGlobalAddress))
+            .AddContract<IThread>("c1")
+            .Build();
+
+        Assert.Equal(TargetPointer.Null, target.Contracts.Thread.IdToThread(0));
+        Assert.Equal(new TargetPointer(thread.Address), target.Contracts.Thread.IdToThread(1));
+        Assert.Equal(TargetPointer.Null, target.Contracts.Thread.IdToThread(2));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetThreadStoreData(MockTarget.Architecture arch)
     {
         int threadCount = 15;

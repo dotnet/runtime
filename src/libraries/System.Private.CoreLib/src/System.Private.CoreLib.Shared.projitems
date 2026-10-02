@@ -2740,7 +2740,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" Condition="'$(TargetsLinux)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" Condition="'$(FeatureCoreCLR)' != 'true' or '$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.SingleThreading.cs" Condition="'$(FeatureCoreCLR)' == 'true' and '$(FeatureMultithreading)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" Condition="'$(FeaturePortableTimer)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.Android.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'" />
@@ -3065,6 +3066,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Wasi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiEventLoop.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiFinalizerScheduler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPoll.cs" />

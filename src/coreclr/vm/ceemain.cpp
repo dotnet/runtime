@@ -1026,6 +1026,17 @@ void EEStartupHelper()
 
         InitializeThreadStaticData();
 
+#ifndef FEATURE_MULTITHREADING
+        {
+            // There is only one thread, so publish its managed Thread object for Thread.CurrentThread.
+            GCX_COOP();
+            g_pThreadClass->CheckRunClassInitThrowing();
+            FieldDesc* pCurrentThreadField = CoreLibBinder::GetField(FIELD__THREAD__CURRENT_THREAD);
+            OBJECTREF exposedThread = GetThread()->GetExposedObject();
+            pCurrentThreadField->SetStaticOBJECTREF(exposedThread);
+        }
+#endif // !FEATURE_MULTITHREADING
+
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
