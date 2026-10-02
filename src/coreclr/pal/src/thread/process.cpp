@@ -2497,7 +2497,7 @@ PROCCreateCrashDump(
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
             close(child_write_pipe);
-            exit(-1);
+            _exit(EXIT_FAILURE);
         }
 
         // Only dup the child's stderr if there is error buffer
@@ -2524,7 +2524,7 @@ PROCCreateCrashDump(
             if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
-                exit(-1);
+                _exit(EXIT_FAILURE);
             }
         }
     }
