@@ -989,6 +989,7 @@ TEST(CustomAttribute, ThreadSafeEmitterHandlesPseudoAttributes)
     EXPECT_EQ(16u, ReadLayout(emit.p, mdtid_FieldLayout, mdtFieldLayout_Offset));
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 TEST(CustomAttribute, ENCLogsOnlySuccessfulPseudoMutationsAndRetainedRows)
 {
     minipal::com_ptr<IMetaDataEmit> emit;
@@ -1092,3 +1093,4 @@ TEST(CustomAttribute, ENCLogsDllImportModuleAndMapOnlyAfterValidatingBlob)
     EXPECT_EQ(2u, CountRows(emit.p, mdtid_ModuleRef));
     EXPECT_EQ(1u, CountRows(emit.p, mdtid_ImplMap));
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES

@@ -16,8 +16,11 @@ set(SOURCES
 	fieldrva.cpp
 	duplicates.cpp
 	initialsize.cpp
-	metadataemithelper.cpp
 	updatemode.cpp)
+
+if (DNMD_ENABLE_INTERNAL_INTERFACES)
+	list(APPEND SOURCES metadataemithelper.cpp)
+endif()
 
 set(HEADERS emit.hpp)
 

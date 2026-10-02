@@ -410,6 +410,7 @@ TEST(UpdateMode, DispenserValidatesAndReportsMode)
     EXPECT_EQ(MDUpdateExtension, V_UI4(&option));
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 TEST(UpdateMode, ScopesCaptureModeAndExposeInternalEmitter)
 {
     minipal::com_ptr<IMetaDataDispenserEx> dispenser;
@@ -457,6 +458,7 @@ TEST(UpdateMode, ScopesCaptureModeAndExposeInternalEmitter)
     ASSERT_EQ(S_OK, internal->SetMDUpdateMode(MDUpdateFull, &previous));
     EXPECT_EQ(MDUpdateFull, previous);
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 TEST(UpdateMode, ENCRecordsCoreEditsAndResetsWithoutChangingTokens)
 {
@@ -542,6 +544,7 @@ TEST(UpdateMode, FullAndExtensionDoNotRecordENCLog)
     }
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 TEST(UpdateMode, LogsRelatedRowsAndCreationOperations)
 {
     minipal::com_ptr<IMetaDataDispenserEx> dispenser;
@@ -605,6 +608,7 @@ TEST(UpdateMode, LogsRelatedRowsAndCreationOperations)
         { RecordToken(mdtid_FieldLayout, 1), 0 }
     }), log);
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 TEST(UpdateMode, UpdatingInterfacesLogsExistingAndReplacementRows)
 {
@@ -780,6 +784,7 @@ TEST(UpdateMode, ResetENCLogPreservesLaterTables)
     EXPECT_STREQ("Dependency", name);
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 TEST(UpdateMode, ChangingModeOnlyRecordsENCOperations)
 {
     minipal::com_ptr<IMetaDataEmit2> emit;
@@ -806,6 +811,7 @@ TEST(UpdateMode, ChangingModeOnlyRecordsENCOperations)
     ASSERT_NO_FATAL_FAILURE(ReadENCLog(emit.p, log));
     EXPECT_TRUE(log.empty());
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 TEST(UpdateMode, DeltaGenerationIsNotImplemented)
 {
@@ -1060,6 +1066,7 @@ TEST(UpdateMode, AppliesParameterEventAndPropertyCreateOperations)
         { RecordToken(mdtid_PropertyMap, 1), 4 }, { TokenFromRid(1, mdtProperty), 0 }
     }), log);
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
     minipal::com_ptr<IMDInternalImportENC> internalENC;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMDInternalImportENC, (void**)&internalENC));
     HENUMInternal deltaTokens{};
@@ -1076,8 +1083,10 @@ TEST(UpdateMode, AppliesParameterEventAndPropertyCreateOperations)
         TokenFromRid(1, mdtParamDef), TokenFromRid(1, mdtEvent),
         TokenFromRid(1, mdtProperty)
     }), tokens);
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 TEST(UpdateMode, ConsecutiveDeltasKeepScopeIdentityAndHeapPointers)
 {
     minipal::com_ptr<IMetaDataDispenserEx> dispenser;
@@ -1191,6 +1200,7 @@ TEST(UpdateMode, ConsecutiveDeltasKeepScopeIdentityAndHeapPointers)
     ASSERT_TRUE(md_get_column_value_as_guid(module, mdtModule_EncId, &actualId));
     EXPECT_EQ(0, std::memcmp(&actualId, &nextGuid, sizeof(nextGuid)));
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 TEST(UpdateMode, InvalidAndRemappingDeltasDoNotModifyScope)
 {
@@ -1252,6 +1262,7 @@ TEST(UpdateMode, InvalidAndRemappingDeltasDoNotModifyScope)
     EXPECT_EQ(E_INVALIDARG, emit->ApplyEditAndContinue(nullptr));
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 TEST(UpdateMode, InternalENCInterfaceHasWritableScopeIdentityAndNoLegacyDeltaOverload)
 {
     for (bool threadSafe : { false, true })
@@ -1473,3 +1484,4 @@ TEST(UpdateMode, ThreadSafeApplyWaitsForCurrentReaders)
     EXPECT_TRUE(blocked);
     EXPECT_EQ(1u, enumerated.get());
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES

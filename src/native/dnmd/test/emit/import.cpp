@@ -180,6 +180,7 @@ TEST(Import, TypeRefWithoutAssemblyManifestInDifferentModule)
         translated.data(), (ULONG)translated.size(), &translatedLength));
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 TEST(Import, ReopenReplacesMetadataWithoutChangingScopeIdentity)
 {
     minipal::com_ptr<IMetaDataEmit> first, second;
@@ -298,6 +299,37 @@ TEST(Import, ReadOnlyReopenPreservesConcurrentReaders)
     writer.join();
     EXPECT_TRUE(succeeded);
 }
+#else
+TEST(Import, InternalInterfacesAreNotExposed)
+{
+    GUID const internalIIDs[] =
+    {
+        { 0x5c240ae4, 0x1e09, 0x11d3, { 0x94, 0x24, 0, 0, 0xf8, 0x08, 0x34, 0x60 } },
+        { 0xf102c526, 0x38cb, 0x49ed, { 0x9b, 0x5f, 0x49, 0x88, 0x16, 0xae, 0x36, 0xe0 } },
+        { 0x1b119f60, 0xc507, 0x4024, { 0xbb, 0x39, 0xf8, 0x22, 0x3f, 0xb3, 0xe1, 0xfd } },
+        { 0xe03d7730, 0xd7e3, 0x11d2, { 0x8c, 0x0d, 0, 0xc0, 0x4f, 0xf7, 0x43, 0x1a } },
+    };
+
+    minipal::com_ptr<IMetaDataEmit> emit;
+    ASSERT_NO_FATAL_FAILURE(CreateThreadSafeEmit(emit));
+    std::vector<uint8_t> image;
+    ASSERT_NO_FATAL_FAILURE(SaveScopeImage(emit.p, image));
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+    minipal::com_ptr<IMetaDataImport> import;
+    ASSERT_EQ(S_OK, dispenser->OpenScopeOnMemory(image.data(), (ULONG)image.size(),
+        ofReadOnly | ofCopyMemory, IID_IMetaDataImport, (IUnknown**)&import));
+
+    for (GUID const& iid : internalIIDs)
+    {
+        minipal::com_ptr<IUnknown> unavailable;
+        EXPECT_EQ(E_NOINTERFACE, emit->QueryInterface(iid, (void**)&unavailable));
+        EXPECT_EQ(nullptr, unavailable.p);
+        EXPECT_EQ(E_NOINTERFACE, import->QueryInterface(iid, (void**)&unavailable));
+        EXPECT_EQ(nullptr, unavailable.p);
+    }
+}
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 TEST(Import, OpenScopeReadsMetadataAndManagedPEFiles)
 {
@@ -427,11 +459,13 @@ TEST(Import, PEKindUsesTheOpenedImage)
         EXPECT_EQ(test.expectedMachine, machine);
         EXPECT_EQ(S_OK, import->GetPEKind(nullptr, nullptr));
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
         ASSERT_EQ(S_OK, ReOpenDNMDMetaDataWithMemory(import.p, metadata.data(),
             (ULONG)metadata.size(), 0));
         kind = machine = UINT32_MAX;
         EXPECT_EQ(S_FALSE, import->GetPEKind(&kind, &machine));
         EXPECT_EQ(peNot, kind);
         EXPECT_EQ(0u, machine);
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
     }
 }

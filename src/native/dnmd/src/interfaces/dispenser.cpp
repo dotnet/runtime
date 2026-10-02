@@ -14,7 +14,9 @@
 #include "metadataimportro.hpp"
 #include "metadataemit.hpp"
 #include "threadsafe.hpp"
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 #include "internal/metadataimport.hpp"
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 #include <minipal/guid.h>
 #include <minipal/rwlock.h>
 
@@ -107,7 +109,9 @@ namespace
         MetadataImportRO* import = unknown->CreateAndAddTearOff<MetadataImportRO>(handle_view);
         if (!threadSafe)
         {
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
             (void)unknown->CreateAndAddTearOff<InternalMetadataImportRW>(handle_view);
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
             return unknown;
         }
 
@@ -115,9 +119,14 @@ namespace
         threadSafeUnknown.Attach(new ControllingIUnknown());
 
         (void)threadSafeUnknown->CreateAndAddTearOff<DelegatingDNMDOwner>(handle_view);
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
         auto* wrapper = threadSafeUnknown->CreateAndAddTearOff<ThreadSafeImportEmit<MetadataImportRO, MetadataEmit>>(
             std::move(unknown), import, emit);
         (void)threadSafeUnknown->CreateAndAddTearOff<InternalMetadataImportRW>(handle_view, wrapper->GetLock());
+#else // DNMD_ENABLE_INTERNAL_INTERFACES
+        (void)threadSafeUnknown->CreateAndAddTearOff<ThreadSafeImportEmit<MetadataImportRO, MetadataEmit>>(
+            std::move(unknown), import, emit);
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
         return threadSafeUnknown;
     }
 
@@ -327,9 +336,12 @@ namespace
             try
             {
                 // Internal opens of compressed (#~) metadata start RO and upgrade on demand.
-                bool internalReadOnly = riid == IID_IMDInternalImport &&
+                bool internalReadOnly = false;
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
+                internalReadOnly = riid == IID_IMDInternalImport &&
                     (dwOpenFlags & ofReadWriteMask) == ofRead &&
                     !md_is_uncompressed_table_heap(md_ptr.get());
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
                 bool readWrite = (dwOpenFlags & ofReadOnly) == 0 && !internalReadOnly;
                 DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(
                     std::move(md_ptr), std::move(copiedMem), std::move(nowOwned), _duplicateChecks, _updateMode, readWrite);
@@ -339,7 +351,9 @@ namespace
                 {
                     // If we're read-only, then we don't need to deal with thread safety.
                     (void)obj->CreateAndAddTearOff<MetadataImportRO>(handle_view);
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
                     (void)obj->CreateAndAddTearOff<InternalMetadataImportRO>(handle_view);
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
                     return PublishScope(std::move(obj), riid, ppIUnk);
                 }
 
@@ -505,6 +519,7 @@ namespace
     };
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 extern "C" DNMD_EXPORT
 HRESULT ConvertDNMDInternalImport(IMDInternalImport* source, IMDInternalImport** converted)
 {
@@ -621,6 +636,7 @@ HRESULT ReOpenDNMDMetaDataWithMemory(IUnknown* scope, void const* data, ULONG si
         owner->ClearPEKind();
     return hr;
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 extern "C" DNMD_EXPORT
 HRESULT GetDispenser(

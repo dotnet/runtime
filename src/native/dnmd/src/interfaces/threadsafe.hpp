@@ -10,8 +10,10 @@
 
 #include <cor.h>
 #include <corhdr.h>
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 #include <metadataemithelper.h>
 #include <mdinternalemit.h>
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 #include <cstdint>
 #include <mutex>
@@ -86,8 +88,13 @@ public:
     }
 };
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 template<typename TImport, typename TEmit>
 class ThreadSafeImportEmit : public TearOffBase<IMetaDataImport2, IMetaDataEmit2, IMetaDataAssemblyImport, IMetaDataAssemblyEmit, IMetaDataEmitHelper, IMDInternalEmit>
+#else // DNMD_ENABLE_INTERNAL_INTERFACES
+template<typename TImport, typename TEmit>
+class ThreadSafeImportEmit : public TearOffBase<IMetaDataImport2, IMetaDataEmit2, IMetaDataAssemblyImport, IMetaDataAssemblyEmit>
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 {
     pal::ReadWriteLock _lock;
     // owning reference to the thread-unsafe object that provides the underlying implementation.
@@ -120,6 +127,7 @@ protected:
             *ppvObject = static_cast<IMetaDataAssemblyEmit*>(this);
             return true;
         }
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
         if (riid == IID_IMetaDataEmitHelper)
         {
             *ppvObject = static_cast<IMetaDataEmitHelper*>(this);
@@ -130,6 +138,7 @@ protected:
             *ppvObject = static_cast<IMDInternalEmit*>(this);
             return true;
         }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
         return false;
     }
 
@@ -1759,6 +1768,7 @@ public: // IMetaDataAssemblyEmit
         return _emit->SetManifestResourceProps(mr, tkImplementation, dwOffset, dwResourceFlags);
     }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 public: // IMetaDataEmitHelper
     STDMETHOD(DefineMethodSemanticsHelper)(mdToken tkAssociation, DWORD dwFlags, mdMethodDef md) override
     {
@@ -1821,6 +1831,7 @@ public: // IMDInternalEmit
         std::lock_guard<pal::WriteLock> lock{ this->_lock.GetWriteLock() };
         return _emit->SetMDUpdateMode(updateMode, previousUpdateMode);
     }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 };
 
 #endif // _SRC_INTERFACES_THREADSAFE_HPP_

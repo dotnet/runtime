@@ -7,7 +7,6 @@ set(SOURCES
   ./pal.cpp
   ./signatures.cpp
   ./importhelpers.cpp
-  ./internal/metadataimport.cpp
 )
 
 set(HEADERS
@@ -23,8 +22,12 @@ set(HEADERS
   ./dnmdowner.hpp
   ./signatures.hpp
   ./importhelpers.hpp
-  ./internal/metadataimport.hpp
 )
+
+if (DNMD_ENABLE_INTERNAL_INTERFACES)
+  list(APPEND SOURCES ./internal/metadataimport.cpp)
+  list(APPEND HEADERS ./internal/metadataimport.hpp)
+endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -71,6 +74,11 @@ target_compile_definitions(dnmd_interfaces PRIVATE DNMD_BUILD_SHARED COM_NO_WIND
 if (DNMD_ENABLE_LOADED_MODULES_CACHE)
   target_compile_definitions(dnmd_interfaces_static PUBLIC DNMD_ENABLE_LOADED_MODULES_CACHE)
   target_compile_definitions(dnmd_interfaces PUBLIC DNMD_ENABLE_LOADED_MODULES_CACHE)
+endif()
+
+if (DNMD_ENABLE_INTERNAL_INTERFACES)
+  target_compile_definitions(dnmd_interfaces_static PUBLIC DNMD_ENABLE_INTERNAL_INTERFACES)
+  target_compile_definitions(dnmd_interfaces PUBLIC DNMD_ENABLE_INTERNAL_INTERFACES)
 endif()
 
 if(CMAKE_PROJECT_NAME STREQUAL "CoreCLR" AND CLR_CMAKE_TARGET_UNIX)

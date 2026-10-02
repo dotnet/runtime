@@ -5,8 +5,6 @@
 #define DNMD_EXPORT
 #endif // !DNMD_EXPORT
 
-struct IMDInternalImport;
-
 // Create a metadata dispenser instance.
 //
 //  IMetaDataDispenser  - {809C652E-7396-11D2-9771-00A0C9B4D50C}
@@ -22,6 +20,9 @@ extern "C" DNMD_EXPORT
 HRESULT GetSymBinder(
     REFGUID riid,
     void** ppObj);
+
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
+struct IMDInternalImport;
 
 // Replace the metadata in an existing DNMD scope without changing its COM identity.
 extern "C" DNMD_EXPORT
@@ -46,5 +47,6 @@ HRESULT GetDNMDPublicInterfaceFromInternal(
     IMDInternalImport* source,
     REFIID riid,
     void** publicInterface);
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 #endif // _INC_DNMD_INTERFACES_HPP_

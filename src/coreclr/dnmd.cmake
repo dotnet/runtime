@@ -8,6 +8,7 @@ FetchContent_Declare(
 set(DNMD_BUILD_TESTS OFF)
 set(DNMD_INSTALL OFF)
 set(DNMD_ENABLE_LOADED_MODULES_CACHE ON CACHE BOOL "Enable DNMD cross-scope TypeRef resolution")
+set(DNMD_ENABLE_INTERNAL_INTERFACES ON CACHE BOOL "Enable CoreCLR-specific DNMD metadata interfaces")
 FetchContent_MakeAvailable(dnmd)
 
 set_property(DIRECTORY ${CLR_SRC_NATIVE_DIR}/dnmd PROPERTY CLR_CONTROL_FLOW_GUARD ON)

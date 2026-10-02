@@ -5457,6 +5457,7 @@ HRESULT MetadataEmit::SetManifestResourceProps(
     return LogToken(mr);
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 HRESULT MetadataEmit::DefineMethodSemanticsHelper(mdToken tkAssociation, DWORD dwFlags, mdMethodDef md)
 {
     if ((TypeFromToken(tkAssociation) != mdtProperty && TypeFromToken(tkAssociation) != mdtEvent)
@@ -5471,6 +5472,7 @@ HRESULT MetadataEmit::DefineMethodSemanticsHelper(mdToken tkAssociation, DWORD d
 
     return AddMethodSemantic(association, static_cast<CorMethodSemanticsAttr>(dwFlags), md);
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 HRESULT MetadataEmit::SetFieldLayoutHelper(mdFieldDef fd, ULONG ulOffset)
 {
@@ -5489,6 +5491,7 @@ HRESULT MetadataEmit::SetFieldLayoutHelper(mdFieldDef fd, ULONG ulOffset)
     return FAILED(hr) ? hr : LogRow(layout);
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 HRESULT MetadataEmit::DefineEventHelper(mdTypeDef td, LPCWSTR szEvent, DWORD dwEventFlags, mdToken tkEventType, mdEvent *pmdEvent)
 {
     return DefineEvent(td, szEvent, dwEventFlags, tkEventType,
@@ -5605,3 +5608,4 @@ HRESULT MetadataEmit::SetMDUpdateMode(ULONG updateMode, ULONG* previousUpdateMod
         *previousUpdateMode = originalMode;
     return S_OK;
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES

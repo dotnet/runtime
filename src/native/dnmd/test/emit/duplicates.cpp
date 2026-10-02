@@ -460,6 +460,7 @@ TEST(CheckDuplicates, ScopesCaptureOptionsIncludingWritableMemoryScopes)
     EXPECT_EQ(TokenFromRid(3, mdtTypeDef), second);
 }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 TEST(CheckDuplicates, LookupIndexObservesChangedNamesAndScopes)
 {
     minipal::com_ptr<IMetaDataDispenserEx> dispenser;
@@ -521,6 +522,7 @@ TEST(CheckDuplicates, LookupIndexObservesChangedNamesAndScopes)
         mdTypeDefNil, tdPublic, &recreated));
     EXPECT_NE(exported, recreated);
 }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 TEST(CheckDuplicates, LookupIndexLoadsPreexistingRowsInTokenOrder)
 {

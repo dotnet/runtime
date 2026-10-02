@@ -8,15 +8,21 @@
 
 #include <cor.h>
 #include <corhdr.h>
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 #include <metadataemithelper.h>
 #include <mdinternalemit.h>
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 #include <cstdint>
 #include <cstddef>
 #include <atomic>
 #include <unordered_map>
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyEmit, IMetaDataEmitHelper, IMDInternalEmit>
+#else // DNMD_ENABLE_INTERNAL_INTERFACES
+class MetadataEmit final : public TearOffBase<IMetaDataEmit2, IMetaDataAssemblyEmit>
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 {
     struct DuplicateIndex
     {
@@ -68,6 +74,7 @@ protected:
             *ppvObject = static_cast<IMetaDataAssemblyEmit*>(this);
             return true;
         }
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
         else if (riid == IID_IMetaDataEmitHelper)
         {
             *ppvObject = static_cast<IMetaDataEmitHelper*>(this);
@@ -78,6 +85,7 @@ protected:
             *ppvObject = static_cast<IMDInternalEmit*>(this);
             return true;
         }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
         return false;
     }
 
@@ -518,6 +526,7 @@ public: // IMetaDataAssemblyEmit
         DWORD       dwOffset,
         DWORD       dwResourceFlags) override;
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 public: // IMetaDataEmitHelper
     STDMETHOD(DefineMethodSemanticsHelper)(mdToken tkAssociation, DWORD dwFlags, mdMethodDef md) override;
     STDMETHOD(SetFieldLayoutHelper)(mdFieldDef fd, ULONG ulOffset) override;
@@ -531,6 +540,9 @@ public: // IMetaDataEmitHelper
 public: // IMDInternalEmit
     STDMETHOD(ChangeMvid)(REFGUID newMvid) override;
     STDMETHOD(SetMDUpdateMode)(ULONG updateMode, ULONG* previousUpdateMode) override;
+#else // DNMD_ENABLE_INTERNAL_INTERFACES
+    STDMETHOD(SetFieldLayoutHelper)(mdFieldDef fd, ULONG ulOffset);
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 };
 
 #endif

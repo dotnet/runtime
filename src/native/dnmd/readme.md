@@ -24,6 +24,10 @@ references; the first matching scope wins. This option defaults on for
 CoreCLR and standalone DNMD test builds, and off when another project includes
 DNMD. Without it, TypeRef resolution returns `E_NOTIMPL`; the local TypeDef
 shortcut remains available.
+`DNMD_ENABLE_INTERNAL_INTERFACES` controls CoreCLR-only metadata interfaces
+and the conversion and reopen helpers. It defaults on for CoreCLR and standalone
+DNMD test builds, and off for embedded consumers. Enabling
+`DNMD_ENABLE_LOADED_MODULES_CACHE` also requires internal interfaces.
 `IMetaDataEmit::DefineCustomAttribute` applies supported interop, layout, and
 flag pseudoattributes to their metadata tables. Security-related attributes
 remain ordinary custom attributes and do not set security flags.

@@ -7,8 +7,11 @@ set(SOURCES
     ./main.cpp
     ./discovery.cpp
     ./metadata.cpp
-    ./internalmetadata.cpp
 )
+
+if (DNMD_ENABLE_INTERNAL_INTERFACES)
+    list(APPEND SOURCES ./internalmetadata.cpp)
+endif()
 
 add_executable(regtest ${SOURCES} ${HEADERS})
 target_include_directories(regtest PRIVATE "${CLR_SRC_NATIVE_DIR}/../coreclr/minipal")
