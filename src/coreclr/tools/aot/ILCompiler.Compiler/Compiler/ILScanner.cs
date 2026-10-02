@@ -194,7 +194,7 @@ namespace ILCompiler
             {
                 MethodDesc methodDesc = JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key);
                 ISymbolNode entryPoint = methodDesc is null
-                    ? _compilation.NodeFactory.KnownExternFunction(key)
+                    ? _compilation.NodeFactory.ReadyToRunHelper(key)
                     : _compilation.NodeFactory.MethodEntrypoint(methodDesc);
 
                 return new Helper(key, entryPoint);

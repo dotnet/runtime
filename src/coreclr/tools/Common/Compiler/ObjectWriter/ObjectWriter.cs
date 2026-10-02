@@ -297,6 +297,10 @@ namespace ILCompiler.ObjectWriter
             return symbolName;
         }
 
+        private protected virtual void PrepareImportsForUndefinedSymbols()
+        {
+        }
+
         private protected virtual void EmitSectionsAndLayout()
         {
         }
@@ -305,7 +309,7 @@ namespace ILCompiler.ObjectWriter
 
         partial void EmitDebugInfo(IReadOnlyCollection<DependencyNode> nodes, Logger logger);
 
-        private SortedSet<Utf8String> GetUndefinedSymbols()
+        private protected SortedSet<Utf8String> GetUndefinedSymbols()
         {
             SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
@@ -358,6 +362,11 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
+                if (_nodeFactory.Target.IsWasm && depNode is INodeWithTypeSignature methodDeclaration)
+                {
+                    RecordMethodDeclaration(methodDeclaration);
+                }
+
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
                 // Right now we still need to determine placements for some traditionally text-placed nodes,
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
@@ -416,19 +425,11 @@ namespace ILCompiler.ObjectWriter
                     RecordMethodSignature(signature);
                 }
 
-                if (node is WasmFunctionImportNode import)
-                {
-                    RecordFunctionImport(import);
-                }
-
                 if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
                     Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
 
-                    // Record only information we can get from the MethodDesc here. The actual
-                    // body will be emitted by the call to EmitData() at the end
-                    // of this loop iteration.
-                    RecordMethodDeclaration(codeNode);
+                    RecordMethodDefinition(codeNode);
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -590,6 +591,7 @@ namespace ILCompiler.ObjectWriter
             }
             blocksToRelocate.Clear();
 
+            PrepareImportsForUndefinedSymbols();
             EmitSectionsAndLayout();
 
             if (_options.HasFlag(ObjectWritingOptions.GenerateDebugInfo))
@@ -627,13 +629,14 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
-        private protected virtual void RecordMethodSignature(WasmTypeNode signature)
+        private protected virtual void RecordMethodDefinition(INodeWithTypeSignature node)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
-        private protected virtual void RecordFunctionImport(WasmFunctionImportNode import)
+        private protected virtual void RecordMethodSignature(WasmTypeNode signature)
         {
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)

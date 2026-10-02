@@ -179,7 +179,7 @@ namespace ILCompiler.DependencyAnalysis
                         MethodDesc targetMethod = (MethodDesc)Target;
                         if (targetMethod.OwningType.IsInterface)
                         {
-                            ISymbolNode helper = factory.KnownExternFunction(ReadyToRunHelper.ResolveInterfaceMethod);
+                            ISymbolNode helper = factory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethod);
                             expressions.Add(Local.Get(1));
                             expressions.Add(I32.ConstRVA(factory.DispatchCell(targetMethod)));
                             expressions.Add(ControlFlow.ReturnCall(helper));

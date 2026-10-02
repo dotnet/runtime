@@ -426,7 +426,6 @@ namespace Internal.ReadyToRunConstants
         ResolveInterfaceMethodFast,
         ResolveInterfaceMethod,
 
-        NyiLdVirtFtn,
         TlsGetAddr,
     }
 

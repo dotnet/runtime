@@ -962,7 +962,7 @@ namespace ILCompiler.DependencyAnalysis
                 return null;
             }
             Debug.Assert(!instantiatedType.IsCanonicalSubtype(CanonicalFormKind.Any));
-            return factory.KnownExternFunction(JitHelper.GetNewObjectHelperForType(instantiatedType));
+            return factory.ReadyToRunHelper(JitHelper.GetNewObjectHelperForType(instantiatedType));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

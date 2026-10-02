@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
-using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
 using Internal.Text;
@@ -63,6 +62,7 @@ namespace ILCompiler.ObjectWriter
         /// logical WebAssembly indices and must not be used to resolve index relocations.
         /// </summary>
         private protected Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
+        private readonly Dictionary<Utf8String, INodeWithTypeSignature> _externalFunctions = new();
         private int[] _sectionEmitOrder;
 
         /// <summary>
@@ -86,6 +86,25 @@ namespace ILCompiler.ObjectWriter
         protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
+        }
+
+        private protected override void PrepareImportsForUndefinedSymbols()
+        {
+            // Imports must be registered before layout consumes function indices. Only actual unresolved
+            // references require imports; a marked extern can also resolve to a definition in this object.
+            foreach (Utf8String name in GetUndefinedSymbols())
+            {
+                if (_externalFunctions.TryGetValue(name, out INodeWithTypeSignature function))
+                {
+                    if (function.Signature is null)
+                    {
+                        throw new InvalidOperationException($"Extern function '{name}' has no known signature and cannot be imported on Wasm");
+                    }
+
+                    int typeIndex = RegisterSignature(WasmLowering.GetSignature(function).FuncType);
+                    WriteImport(new WasmImport("env", name.ToString(), new WasmFunctionImportType(typeIndex)));
+                }
+            }
         }
 
         private protected static void EmitWasmHeader(Stream outputFileStream)
@@ -143,6 +162,14 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
+            if (node is not ISymbolDefinitionNode && !node.RepresentsIndirectionCell)
+            {
+                _externalFunctions.TryAdd(GetMangledName(node), node);
+            }
+        }
+
+        private protected override void RecordMethodDefinition(INodeWithTypeSignature node)
+        {
             WriteSignatureIndexForFunction(node);
             Utf8String methodName = new(node.GetMangledName(_nodeFactory.NameMangler));
             RegisterFunctionSymbol(methodName);
@@ -157,14 +184,6 @@ namespace ILCompiler.ObjectWriter
             {
                 RecordFunclets(nodeWithFunclets);
             }
-        }
-
-        private protected override void RecordFunctionImport(WasmFunctionImportNode import)
-        {
-            // Assign the import's index in the function index space. The import entry itself is emitted
-            // by the node's own data.
-            _wasmSymbolManager.AddImport(new Utf8String(import.GetMangledName(_nodeFactory.NameMangler)), WasmIndexSpace.Function);
-            GetOrCreateSection<WasmImportSection>(WasmObjectNodeSection.ImportSection, out _).CompleteExternallyWrittenEntry();
         }
 
         private void RecordFunclets(INodeWithFunclets nodeWithFunclets)
@@ -329,7 +348,7 @@ namespace ILCompiler.ObjectWriter
         private protected void RegisterFunctionSymbol(Utf8String name) =>
             _wasmSymbolManager.AddDefinition(name, WasmIndexSpace.Function);
 
-        // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
+        // This effectively recreates the logic of RecordMethodDefinition, but for manually inserted stubs that are not
         // represented by nodes in the dependency graph.
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
         private protected void RegisterStubIndexAndSignature(WasmFuncType signature)
