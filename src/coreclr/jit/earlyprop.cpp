@@ -337,6 +337,13 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         // The current indir is no longer non-faulting.
         tree->gtFlags &= ~GTF_IND_NONFAULTING;
 
+        GenTree* addr = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
+        if (addr->OperIs(GT_ARR_ADDR))
+        {
+            // The array may be null now that the null check is gone.
+            addr->gtFlags &= ~GTF_ARR_ADDR_NONNULL;
+        }
+
         if (nullCheckParent != nullptr)
         {
             nullCheckParent->gtFlags &= ~GTF_DONT_CSE;
@@ -394,6 +401,12 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     GenTree* addr = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
 
     ssize_t offsetValue = 0;
+
+    // ARR_ADDR is a transparent wrapper, look through it to get the actual address.
+    if (addr->OperIs(GT_ARR_ADDR))
+    {
+        addr = addr->AsArrAddr()->Addr();
+    }
 
     if (addr->OperIs(GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
     {
