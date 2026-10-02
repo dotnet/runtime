@@ -58,6 +58,9 @@ namespace ILLink.Tasks
         [Required]
         public ITaskItem OutputDirectory { get; set; }
 
+        // Unsupported compatibility escape hatch for callers that share their output directory.
+        public bool ClearOutputDirectory { get; set; } = true;
+
         /// <summary>
         /// The subset of warnings that have to be turned off.
         /// Maps to '--nowarn'.
@@ -264,6 +267,9 @@ namespace ILLink.Tasks
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
+            if (!ClearOutputDirectory)
+                return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+
             try
             {
                 string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
@@ -460,7 +466,7 @@ namespace ILLink.Tasks
                 }
             }
 
-            if (OutputDirectory != null)
+            if (!ClearOutputDirectory && OutputDirectory is not null)
                 args.Append("-out ").AppendLine(Quote(OutputDirectory.ItemSpec));
 
             if (NoWarn != null)
@@ -570,6 +576,10 @@ namespace ILLink.Tasks
             {
                 args.Append("--dependencies-file-format ").AppendLine(DependenciesFileFormat);
             }
+
+            // Keep the tool's output directory consistent with the directory owned by the task.
+            if (ClearOutputDirectory && OutputDirectory is not null)
+                args.Append("-out ").AppendLine(Quote(OutputDirectory.ItemSpec));
 
             return args.ToString();
         }

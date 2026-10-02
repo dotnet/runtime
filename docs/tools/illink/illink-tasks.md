@@ -30,13 +30,15 @@ The output will include only necessary code to run your application. The framewo
 
 ### ExtraArgs
 
-Additional [options](illink-options.md) passed to ILLink.
+Additional [options](illink-options.md) passed to ILLink. Use `OutputDirectory` to select the output location; its value takes precedence over `-o` or `-out` arguments supplied here.
 
 ### OutputDirectory
 
 The dedicated directory in which to place processed assemblies. Before running ILLink, the task deletes this directory and all its contents, then recreates it. If cleanup fails, the task fails without running the tool.
 
 Previously, the SDK targets deleted only candidate assembly and PDB outputs. Other files could survive from earlier runs. Callers must now keep all inputs and any files they want to preserve outside `OutputDirectory`, including inputs supplied through `ExtraArgs`. Concurrent task invocations must use different output directories.
+
+This is a breaking change for task callers that share the output directory with other build steps or override it through `ExtraArgs`. Set `OutputDirectory` to a dedicated linker output directory, then copy or move its results into any shared destination after the task succeeds. The SDK publish integration already uses a dedicated directory.
 
 This cleanup occurs only when the task executes; an up-to-date target leaves its outputs intact. Running the command-line linker directly still permits a nonempty output directory and does not perform this cleanup.
 

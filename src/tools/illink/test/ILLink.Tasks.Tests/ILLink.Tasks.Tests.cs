@@ -918,6 +918,7 @@ namespace ILLink.Tasks.Tests
         public void TaskPreparesEmptyOutputDirectory(bool exists, bool populated)
         {
             using var test = new OutputDirectoryTest();
+            Assert.True(test.Task.ClearOutputDirectory);
             if (exists)
                 Directory.CreateDirectory(test.Output);
             if (populated)
@@ -950,10 +951,17 @@ namespace ILLink.Tasks.Tests
             Assert.Empty(test.Task.Messages);
         }
 
-        [Fact]
-        public void TaskWritesOutputsAfterCleaning()
+        [Theory]
+        [InlineData(false, null)]
+        [InlineData(true, null)]
+        [InlineData(false, "-o")]
+        [InlineData(true, "-o")]
+        [InlineData(false, "-out")]
+        [InlineData(true, "-out")]
+        public void TaskWritesOutputsWithConfiguredOwnership(bool clearOutputDirectory, string outputOption)
         {
             using var test = new OutputDirectoryTest();
+            test.Task.ClearOutputDirectory = clearOutputDirectory;
             string input = Path.Combine(test.Root, "Input.dll");
             using (var assembly = Mono.Cecil.AssemblyDefinition.CreateAssembly(
                 new Mono.Cecil.AssemblyNameDefinition("Input", new Version(1, 0)), "Input", Mono.Cecil.ModuleKind.Dll))
@@ -966,30 +974,49 @@ namespace ILLink.Tasks.Tests
                 new TaskItem(input, new Dictionary<string, string> { { "TrimMode", "copy" } })
             };
             test.Task.RootAssemblyNames = new ITaskItem[] { new TaskItem("Input") };
-            test.Task.ExtraArgs = null;
-            string outputAssembly = Path.Combine(test.Output, "Input.dll");
-            string stale = Path.Combine(test.Output, "stale.txt");
+            string alternateOutput = Path.Combine(test.Root, "alternate output");
+            Directory.CreateDirectory(alternateOutput);
+            string unrelated = Path.Combine(alternateOutput, "unrelated.txt");
+            File.WriteAllText(unrelated, "keep");
+            test.Task.ExtraArgs = outputOption is null ? null : $"{outputOption} \"{alternateOutput}\"";
+            string expectedOutput = clearOutputDirectory || outputOption is null ? test.Output : alternateOutput;
+            string otherOutput = expectedOutput == test.Output ? alternateOutput : test.Output;
+            string outputAssembly = Path.Combine(expectedOutput, "Input.dll");
+
+            Assert.True(test.Task.Execute(), string.Join(Environment.NewLine, test.Task.Messages.Select(message => message.Line)));
+            Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(outputAssembly));
+            Assert.False(File.Exists(Path.Combine(otherOutput, "Input.dll")));
+            Assert.Equal(expectedOutput == test.Output, Directory.Exists(test.Output));
+            string stale = Path.Combine(test.Output, "nested", "stale.txt");
             for (int i = 0; i < 2; i++)
             {
-                Directory.CreateDirectory(test.Output);
+                Directory.CreateDirectory(Path.GetDirectoryName(stale));
                 File.WriteAllText(stale, "old output");
+                File.WriteAllText(outputAssembly, "replace with current output");
                 Assert.True(test.Task.Execute(), string.Join(Environment.NewLine, test.Task.Messages.Select(message => message.Line)));
-                Assert.False(File.Exists(stale));
+                Assert.Equal(!clearOutputDirectory, File.Exists(stale));
+                if (!clearOutputDirectory)
+                    Assert.Equal("old output", File.ReadAllText(stale));
                 Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(outputAssembly));
+                Assert.False(File.Exists(Path.Combine(otherOutput, "Input.dll")));
+                Assert.Equal("keep", File.ReadAllText(unrelated));
             }
         }
 
-        [Fact]
-        public void TestErrorHandling()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestErrorHandling(bool clearOutputDirectory)
         {
             using var test = new OutputDirectoryTest();
+            test.Task.ClearOutputDirectory = clearOutputDirectory;
             Directory.CreateDirectory(test.Output);
             string stale = Path.Combine(test.Output, "stale.dll");
             File.WriteAllText(stale, "old assembly");
             test.Task.ExtraArgs = null;
 
             Assert.False(test.Task.Execute());
-            Assert.False(File.Exists(stale));
+            Assert.Equal(!clearOutputDirectory, File.Exists(stale));
             Assert.Contains(test.Task.Messages, message =>
                 message.Line.Contains("No input files were specified"));
         }
