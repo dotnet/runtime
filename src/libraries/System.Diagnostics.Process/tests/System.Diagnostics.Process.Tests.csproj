@@ -10,7 +10,11 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
+    <XUnitShowProgress Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</XUnitShowProgress>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetArchitecture)' == 'x86'">
+    <Compile Include="ProcessTestHangDiagnostics.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\IO\StringParser.cs"
              Link="Common\System\IO\StringParser.cs" />
