@@ -60,7 +60,7 @@ namespace System.Reflection
                 }
 
                 if (RuntimeFeature.IsDynamicCodeCompiled &&
-                    !(LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke) &&
+                    !LocalAppContextSwitches.ForceInterpretedInvoke &&
                     --state.InvocationsUntilSpecialization <= 0)
                 {
                     // Let the normal strategy selection specialize the next invocation's argument path.
