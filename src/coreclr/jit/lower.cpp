@@ -6259,7 +6259,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 // SpillStructCallResult: Spill call result to memory.
 //
 // Arguments:
-//     call - call with 3, 5, 6 or 7 return size that has to be spilled to memory.
+//     call - call returning a struct in a single register whose layout has no primitive register type.
 //
 // Return Value:
 //    load of the spilled variable.
@@ -6267,12 +6267,18 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
 {
     // TODO-1stClassStructs: we can support this in codegen for `GT_STORE_BLK` without new temps.
-    const unsigned spillNum = m_compiler->lvaGrabTemp(true DEBUGARG("Return value temp for an odd struct return size"));
+    const unsigned spillNum =
+        m_compiler->lvaGrabTemp(true DEBUGARG("Return value temp for a non-enregisterable struct return"));
     m_compiler->lvaSetVarDoNotEnregister(spillNum DEBUGARG(DoNotEnregisterReason::LocalField));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     m_compiler->lvaSetStruct(spillNum, retClsHnd, false);
-    unsigned       offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
-    GenTreeLclFld* spill  = m_compiler->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
+#if FEATURE_MULTIREG_RET
+    unsigned offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
+#else
+    // No ReturnTypeDesc without FEATURE_MULTIREG_RET.
+    unsigned offset = 0;
+#endif
+    GenTreeLclFld* spill = m_compiler->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
 
     BlockRange().InsertAfter(call, spill);
     ContainCheckStoreLoc(spill);
@@ -6502,7 +6508,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // [originalThis + firstTgtOffs]
 
     unsigned targetOffs = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
-    GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
+    GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_BYREF, base, nullptr, 0, targetOffs);
     GenTree* callTarget = Ind(result);
 
     // don't need to sequence and insert this tree, caller will do it

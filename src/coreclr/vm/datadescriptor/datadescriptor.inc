@@ -483,6 +483,14 @@ CDAC_TYPE_FIELD(AppDomain, TYPE(ArrayListBase), AssemblyList, cdac_data<AppDomai
 CDAC_TYPE_FIELD(AppDomain, T_POINTER, FriendlyName, cdac_data<AppDomain>::FriendlyName)
 CDAC_TYPE_END(AppDomain)
 
+CDAC_TYPE_BEGIN(ExternalMemoryHandle)
+CDAC_TYPE_INDETERMINATE(ExternalMemoryHandle)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Next, cdac_data<ExternalMemoryHandle>::Next)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, MethodTable, cdac_data<ExternalMemoryHandle>::MethodTable)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Memory, cdac_data<ExternalMemoryHandle>::Memory)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_UINT32, GCFlags, cdac_data<ExternalMemoryHandle>::GCFlags)
+CDAC_TYPE_END(ExternalMemoryHandle)
+
 CDAC_TYPE_BEGIN(SystemDomain)
 CDAC_TYPE_INDETERMINATE(SystemDomain)
 CDAC_TYPE_FIELD(SystemDomain, TYPE(LoaderAllocator), GlobalLoaderAllocator, cdac_data<SystemDomain>::GlobalLoaderAllocator)
@@ -782,6 +790,9 @@ CDAC_TYPE_FIELD(MethodDesc, T_UINT16, Flags, cdac_data<MethodDesc>::Flags)
 CDAC_TYPE_FIELD(MethodDesc, T_UINT16, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
 CDAC_TYPE_FIELD(MethodDesc, T_UINT8, EntryPointFlags, cdac_data<MethodDesc>::EntryPointFlags)
 CDAC_TYPE_FIELD(MethodDesc, T_POINTER, CodeData, cdac_data<MethodDesc>::CodeData)
+#ifdef FEATURE_INTERPRETER
+CDAC_TYPE_FIELD(MethodDesc, T_POINTER, InterpreterCode, cdac_data<MethodDesc>::InterpreterCode)
+#endif // FEATURE_INTERPRETER
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(MethodDesc, T_POINTER, GCCoverageInfo, offsetof(MethodDesc, m_GcCover))
 #endif // HAVE_GCCOVER
@@ -862,7 +873,9 @@ CDAC_TYPE_END(CodePointer)
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_BEGIN(PortableEntryPoint)
 CDAC_TYPE_INDETERMINATE(PortableEntryPoint)
+CDAC_TYPE_FIELD(PortableEntryPoint, T_POINTER, ActualCode, cdac_data<PortableEntryPoint>::ActualCode)
 CDAC_TYPE_FIELD(PortableEntryPoint, T_POINTER, MethodDesc, cdac_data<PortableEntryPoint>::MethodDesc)
+CDAC_TYPE_FIELD(PortableEntryPoint, T_INT32, Flags, cdac_data<PortableEntryPoint>::Flags)
 CDAC_TYPE_END(PortableEntryPoint)
 #endif
 
@@ -1796,6 +1809,7 @@ CDAC_GLOBAL_POINTER(CanonMethodTable, &::g_pCanonMethodTableClass)
 CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
 CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
+CDAC_GLOBAL_POINTER(ExternalMemoryHandles, cdac_data<ExternalMemoryHandle>::HandlesHead)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(MulticastDelegateMethodTable, &::g_pMulticastDelegateClass)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
@@ -1897,6 +1911,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeMutableTypeSystem, c1)
 #endif // FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(Exception, c1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, c1)
+CDAC_GLOBAL_CONTRACT(ExternalMemoryHandles, c1)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
 CDAC_GLOBAL_CONTRACT(ManagedTypeSource, c1)

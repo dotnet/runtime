@@ -35,6 +35,8 @@ struct CallDescrData
     bool                        hasThis;
     bool                        hasRetBuff;
     void*                       pRetBuffArg;
+    // TransitionBlock that pSrc follows, or NULL. Lets a PrestubMethodFrame report the arguments.
+    TransitionBlock*            pTransitionBlock;
 #endif // TARGET_WASM
 
 #ifdef CALLDESCR_RETBUFFARGREG

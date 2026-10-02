@@ -1364,7 +1364,6 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = GTF_DEBUG_NONE;
-    gtMorphCount = 0;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
     ClearAssertion();
@@ -2773,7 +2772,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
-        assert(!lvaIsUnknownSizeLocal(varNum));
+        assert(!lvaLocalIsOnUnknownSizeFrame(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
@@ -5020,6 +5019,35 @@ inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
     return VisitPhysicalLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
+}
+
+//------------------------------------------------------------------------
+// VisitLogicalLocalOccurrencesViaLocalsTreeList:
+//   Visit occurrences in locals-list order without expanding promoted parents.
+//
+// Arguments:
+//   visitor - Generic functor accepting a local occurrence provider.
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+// Remarks:
+//   The callback may abort the walk, but must not change the list and continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult Statement::VisitLogicalLocalOccurrencesViaLocalsTreeList(TVisitor visitor)
+{
+    assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllLocals);
+
+    for (GenTree* node : LocalsTreeList())
+    {
+        if (visitor(LocalOccurrence(node->AsLclVarCommon())) == GenTree::VisitResult::Abort)
+        {
+            return GenTree::VisitResult::Abort;
+        }
+    }
+
+    return GenTree::VisitResult::Continue;
 }
 
 /*****************************************************************************

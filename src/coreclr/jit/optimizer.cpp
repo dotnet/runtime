@@ -3372,9 +3372,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         if (srcSize == 8)
                         {
                             assert(tree->TypeIs(TYP_INT));
-                            GenTree* castOp = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
-                            castOp->SetMorphed(this);
-                            *otherOpPtr = castOp;
+                            *otherOpPtr = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
                         }
                     }
                     return true;
@@ -4811,6 +4809,10 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     {
                         CorInfoHelpFunc helpFunc = call->GetHelperNum();
                         if (s_helperCallProperties.MutatesHeap(helpFunc))
+                        {
+                            m_canHoistSideEffects = false;
+                        }
+                        else if ((call->gtCallMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) != 0)
                         {
                             m_canHoistSideEffects = false;
                         }

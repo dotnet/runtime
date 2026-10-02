@@ -602,7 +602,7 @@ public:
     // Adds reference if the native object is alive  - code:#AssemblyPhases.
     // Returns TRUE if the reference was added.
     BOOL AddReferenceIfAlive();
-    BOOL Release();
+    BOOL Release() noexcept;
     // Checks if the native object is alive - see code:#AssemblyPhases.
     BOOL IsAlive() { LIMITED_METHOD_DAC_CONTRACT; return (m_cReferences != (UINT32)0); }
     // Checks if managed scout is alive - see code:#AssemblyPhases.

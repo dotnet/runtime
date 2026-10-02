@@ -381,6 +381,11 @@ namespace Internal.JitInterface
             return true;
         }
 
+        private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
+        {
+            throw new NotImplementedException(nameof(GetDelegateCtor));
+        }
+
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP pLookup)
         {
 #if DEBUG
