@@ -720,6 +720,10 @@ HRESULT MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** p
         return hr;
     }
 
+#if !defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
+    (void)sourceLock;
+    return E_NOTIMPL;
+#else // DNMD_ENABLE_LOADED_MODULES_CACHE
     struct TypeRefName
     {
         std::string Namespace;
@@ -801,6 +805,7 @@ HRESULT MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** p
     {
         return E_OUTOFMEMORY;
     }
+#endif // !DNMD_ENABLE_LOADED_MODULES_CACHE
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMembers(

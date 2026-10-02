@@ -24,6 +24,13 @@ option(DNMD_BUILD_INTERFACES "Build implementations of the metadata interfaces f
 option(DNMD_BUILD_TOOLS "Build tools for dnmd" ON)
 option(DNMD_ENABLE_FUZZING "Build with fuzzing support." OFF)
 
+set(DNMD_LOADED_MODULES_CACHE_DEFAULT OFF)
+if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}" AND
+    (DNMD_BUILD_TESTS OR DNMD_ENABLE_FUZZING))
+    set(DNMD_LOADED_MODULES_CACHE_DEFAULT ON)
+endif()
+option(DNMD_ENABLE_LOADED_MODULES_CACHE "Track live metadata scopes for cross-scope TypeRef resolution" ${DNMD_LOADED_MODULES_CACHE_DEFAULT})
+
 if (DNMD_BUILD_INTERFACES OR DNMD_BUILD_TESTS OR DNMD_BUILD_TOOLS OR DNMD_ENABLE_FUZZING)
     enable_language(CXX)
 endif()

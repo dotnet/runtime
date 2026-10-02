@@ -18,8 +18,12 @@ DNMD provides the following tools:
 
 `IMetaDataDispenser::OpenScope` accepts raw ECMA-335 metadata files and managed
 PE32/PE32+ files. `OpenScopeOnMemory` accepts raw metadata rather than a PE image.
-`IMetaDataImport::ResolveTypeRef` searches live DNMD scopes by type name and
-nesting. It does not bind assembly references; the first matching scope wins.
+When built with `DNMD_ENABLE_LOADED_MODULES_CACHE`, `IMetaDataImport::ResolveTypeRef`
+searches live DNMD scopes by type name and nesting. It does not bind assembly
+references; the first matching scope wins. This option defaults on for
+CoreCLR and standalone DNMD test builds, and off when another project includes
+DNMD. Without it, TypeRef resolution returns `E_NOTIMPL`; the local TypeDef
+shortcut remains available.
 `IMetaDataEmit::DefineCustomAttribute` applies supported interop, layout, and
 flag pseudoattributes to their metadata tables. Security-related attributes
 remain ordinary custom attributes and do not set security flags.

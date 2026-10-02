@@ -67,6 +67,11 @@ target_include_directories(dnmd_interfaces
 target_compile_definitions(dnmd_interfaces_static PRIVATE COM_NO_WINDOWS_H)
 target_compile_definitions(dnmd_interfaces PRIVATE DNMD_BUILD_SHARED COM_NO_WINDOWS_H)
 
+if (DNMD_ENABLE_LOADED_MODULES_CACHE)
+  target_compile_definitions(dnmd_interfaces_static PUBLIC DNMD_ENABLE_LOADED_MODULES_CACHE)
+  target_compile_definitions(dnmd_interfaces PUBLIC DNMD_ENABLE_LOADED_MODULES_CACHE)
+endif()
+
 if(CMAKE_PROJECT_NAME STREQUAL "CoreCLR" AND CLR_CMAKE_TARGET_UNIX)
   target_compile_definitions(dnmd_interfaces_static PRIVATE DNMD_USE_CORECLR_GUIDS)
 endif()

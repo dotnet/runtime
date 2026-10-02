@@ -23,14 +23,17 @@
 #include <fstream>
 #include <limits>
 #include <memory>
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
 #include <mutex>
 #include <vector>
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
 
 #if !defined(_MSC_VER) && !defined(DNMD_USE_CORECLR_GUIDS)
 extern "C" const GUID MetaDataCheckDuplicatesFor =
     { 0x30fe7be8, 0xd7d9, 0x11d2, { 0x9f, 0x80, 0x00, 0xc0, 0x4f, 0x79, 0xa0, 0xa3 } };
 #endif
 
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
 namespace
 {
     struct RegisteredMetadataScopes
@@ -86,6 +89,7 @@ std::vector<minipal::com_ptr<IUnknown>> MetadataScopeRegistry::AcquireScopes()
     }
     return snapshot;
 }
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
 
 namespace
 {
@@ -304,7 +308,9 @@ namespace
         if (FAILED(hr))
             return hr;
 
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
         MetadataScopeRegistry::RegisterScope(scope.p);
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
         *output = requestedInterface.Detach();
         return hr;
     }

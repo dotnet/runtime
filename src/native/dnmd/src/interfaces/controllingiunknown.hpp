@@ -4,11 +4,14 @@
 #include "tearoffbase.hpp"
 #include <minipal_com.h>
 #include <atomic>
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
 #include <limits>
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
 #include <vector>
 #include <new>
 #include <utility>
 
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
 class ControllingIUnknown;
 
 class MetadataScopeRegistry
@@ -18,15 +21,21 @@ public:
     static void UnregisterScope(ControllingIUnknown* scope) noexcept;
     static std::vector<minipal::com_ptr<IUnknown>> AcquireScopes();
 };
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
 
 class ControllingIUnknown final : public IUnknown
 {
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
     friend class MetadataScopeRegistry;
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
 
     std::atomic<int32_t> _refCount{ 1 };
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
     std::atomic<bool> _registeredScope{ false };
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
     std::vector<std::unique_ptr<TearOffUnknown>> _tearOffs;
 
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
     // Called only under the registry lock, before a final Release can remove and delete this scope.
     bool TryAddRef() noexcept
     {
@@ -38,6 +47,7 @@ class ControllingIUnknown final : public IUnknown
         }
         return false;
     }
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
 
 public:
     ControllingIUnknown() = default;
@@ -89,8 +99,10 @@ public: // IUnknown
         uint32_t c = --_refCount;
         if (c == 0)
         {
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
             if (_registeredScope.load(std::memory_order_acquire))
                 MetadataScopeRegistry::UnregisterScope(this);
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
             delete this;
         }
         return c;

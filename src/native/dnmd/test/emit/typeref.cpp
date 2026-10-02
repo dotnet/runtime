@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
 static void EnableThreadSafeScopes(IMetaDataDispenserEx* dispenser)
 {
     VARIANT option{};
@@ -16,6 +17,7 @@ static void EnableThreadSafeScopes(IMetaDataDispenserEx* dispenser)
     V_UI4(&option) = MDThreadSafetyOn;
     ASSERT_EQ(S_OK, dispenser->SetOption(MetaDataThreadSafetyOptions, &option));
 }
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
 
 TEST(TypeRef, ValidScopeAndDottedName)
 {
@@ -224,9 +226,23 @@ TEST(TypeRef, ResolveTypeDefShortcutAndInvalidTokens)
 
         output = identity.p;
         resolved = type;
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
         EXPECT_EQ(CLDB_E_RECORD_NOTFOUND, import->ResolveTypeRef(TokenFromRid(42, mdtTypeRef), IID_IUnknown, &output, &resolved));
+#else // DNMD_ENABLE_LOADED_MODULES_CACHE
+        EXPECT_EQ(E_NOTIMPL, import->ResolveTypeRef(TokenFromRid(42, mdtTypeRef), IID_IUnknown, &output, &resolved));
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
         EXPECT_EQ(nullptr, output);
         EXPECT_EQ(mdTypeDefNil, resolved);
+
+#if !defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
+        mdTypeRef localReference;
+        ASSERT_EQ(S_OK, emit->DefineTypeRefByName(TokenFromRid(1, mdtModule), W("Resolve.Shortcut"), &localReference));
+        output = identity.p;
+        resolved = type;
+        EXPECT_EQ(E_NOTIMPL, import->ResolveTypeRef(localReference, IID_IUnknown, &output, &resolved));
+        EXPECT_EQ(nullptr, output);
+        EXPECT_EQ(mdTypeDefNil, resolved);
+#endif // !DNMD_ENABLE_LOADED_MODULES_CACHE
 
         resolved = type;
         EXPECT_EQ(E_POINTER, import->ResolveTypeRef(type, IID_IUnknown, nullptr, &resolved));
@@ -237,6 +253,7 @@ TEST(TypeRef, ResolveTypeDefShortcutAndInvalidTokens)
     }
 }
 
+#if defined(DNMD_ENABLE_LOADED_MODULES_CACHE)
 TEST(TypeRef, ResolveSameAndCrossScopeNestedTypes)
 {
     minipal::com_ptr<IMetaDataDispenserEx> destinationDispenser, sourceDispenser;
@@ -565,3 +582,4 @@ TEST(TypeRef, ResolveWhileDestinationIsUpdated)
     writer.join();
     EXPECT_EQ(S_OK, failure.load());
 }
+#endif // DNMD_ENABLE_LOADED_MODULES_CACHE
