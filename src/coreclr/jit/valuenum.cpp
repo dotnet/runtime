@@ -11996,7 +11996,17 @@ PhaseStatus Compiler::fgValueNumber()
             // SSA numbers always start from FIRST_SSA_NUM, and we give the value number to SSA name FIRST_SSA_NUM.
             // We use the VNF_InitVal(i) from here so we know that this value is loop-invariant
             // in all loops.
-            ValueNum      initVal = vnStore->VNForFunc(varDsc->TypeGet(), VNF_InitVal, vnStore->VNForIntCon(lclNum));
+            VNFunc initValFunc = VNF_InitVal;
+#ifdef TARGET_WASM
+            if (IsReadyToRun() && (JitConfig.JitWasmAssumeNonNullThis() != 0) && (lclNum == info.compThisArg) &&
+                varDsc->TypeIs(TYP_REF))
+            {
+                initValFunc = VNF_InitValNonNull;
+                JITDUMP("Assuming incoming this V%02u is non-null\n", lclNum);
+            }
+#endif // TARGET_WASM
+
+            ValueNum      initVal = vnStore->VNForFunc(varDsc->TypeGet(), initValFunc, vnStore->VNForIntCon(lclNum));
             LclSsaVarDsc* ssaDef  = varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM);
             ssaDef->m_vnPair.SetBoth(initVal);
             ssaDef->SetBlock(fgFirstBB);
