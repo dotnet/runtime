@@ -143,6 +143,7 @@ namespace System.Text.RegularExpressions.Generator
                 Dictionary<string, string[]> requiredHelpers = new();
                 foreach (var result in results)
                 {
+                    context.CancellationToken.ThrowIfCancellationRequested();
                     RegexMethod regexMethod = result.RegexMethod;
                     if (result.RequiredHelpers is not null)
                     {
@@ -196,6 +197,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.Indent++;
                 foreach (var result in results)
                 {
+                    context.CancellationToken.ThrowIfCancellationRequested();
                     var regexMethod = result.RegexMethod;
                     if (!regexMethod.IsDuplicate)
                     {
@@ -226,6 +228,7 @@ namespace System.Text.RegularExpressions.Generator
                     bool sawFirst = false;
                     foreach (KeyValuePair<string, string[]> helper in requiredHelpers.OrderBy(h => h.Key, StringComparer.Ordinal))
                     {
+                        context.CancellationToken.ThrowIfCancellationRequested();
                         if (sawFirst)
                         {
                             writer.WriteLine();
