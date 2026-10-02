@@ -919,9 +919,6 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 
             printf("%s-%s", getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg1)),
                    getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg2)));
-#elif defined(TARGET_WASM)
-            printf("$%u-$%u", (unsigned)var->loc.vlRegReg.vlrrReg1 - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE,
-                   (unsigned)var->loc.vlRegReg.vlrrReg2 - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE);
 #else
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
 #endif
