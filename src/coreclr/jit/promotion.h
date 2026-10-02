@@ -21,8 +21,8 @@ struct Replacement
     unsigned    Offset;
     var_types   AccessType;
     unsigned    LclNum = BAD_VAR_NUM;
-    // Dense index into the inter-block pending-readback sets.
-    unsigned ReadBackIndex = BAD_VAR_NUM;
+    // Index in dense set of all replacements
+    unsigned ReplacementIndex = BAD_VAR_NUM;
 #ifdef DEBUG
     const char* Description = "";
 #endif
@@ -246,20 +246,26 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     BasicBlock*        m_currentBlock      = nullptr;
 
     FlowGraphDfsTree* m_dfsTree;
-    BitVecTraits*     m_readBackTraits;
+    BitVecTraits*     m_replacementsTraits;
     BitVecTraits      m_postOrderTraits;
     BitVec*           m_pendingReadBacks;
     BitVec*           m_currentStructFields;
-    BitVec            m_processedBlocks;
     BitVec            m_requiresAlreadyReadBackOnEntry;
     BitVec            m_requiresReadBackOnExit;
-    // Exact state while rewriting the current block.
+
+    // Replacements that need to be read back into their locals.
     BitVec m_needsReadBack;
+    // Replacements that are up-to-date in their struct home.
     BitVec m_structCurrent;
+
+    // Scratch bit vector used to compute replacements that disagree on status
+    // in some predecessors.
     BitVec m_reconcileReadBacks;
+    // Replacements that need readbacks in the entry block (parameters/OSR locals).
     BitVec m_entryReadBacks;
-    // Shared by empty exit snapshots; never modified after initialization.
-    BitVec m_emptyReadBacks;
+    // Set of replacements with no bits set, used for the common case where a
+    // block ends with no pending readbacks.
+    BitVec m_emptyReplacements;
 
     struct ReplacementInfo
     {
@@ -294,9 +300,9 @@ public:
         return m_mayHaveForwardSub;
     }
 
-    Statement* StartBlock(BasicBlock* block);
-    void       EndBlock();
-    void       StartStatement(Statement* stmt);
+    void StartBlock(BasicBlock* block);
+    void EndBlock();
+    void StartStatement(Statement* stmt);
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
@@ -307,12 +313,12 @@ private:
 
     bool NeedsReadBack(const Replacement& rep) const
     {
-        return BitVecOps::IsMember(m_readBackTraits, m_needsReadBack, rep.ReadBackIndex);
+        return BitVecOps::IsMember(m_replacementsTraits, m_needsReadBack, rep.ReplacementIndex);
     }
 
     bool NeedsWriteBack(const Replacement& rep) const
     {
-        return !BitVecOps::IsMember(m_readBackTraits, m_structCurrent, rep.ReadBackIndex);
+        return !BitVecOps::IsMember(m_replacementsTraits, m_structCurrent, rep.ReplacementIndex);
     }
 
     void SetNeedsWriteBack(Replacement& rep);

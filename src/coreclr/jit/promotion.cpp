@@ -1685,21 +1685,20 @@ void ReplaceVisitor::PrepareReadBacks()
     {
         for (Replacement& rep : agg->Replacements)
         {
-            rep.ReadBackIndex = index++;
+            rep.ReplacementIndex = index++;
         }
     }
 
-    m_readBackTraits                 = new (m_compiler, CMK_Promotion) BitVecTraits(index, m_compiler);
+    m_replacementsTraits             = new (m_compiler, CMK_Promotion) BitVecTraits(index, m_compiler);
     m_pendingReadBacks               = new (m_compiler, CMK_Promotion) BitVec[dfsTree->GetPostOrderCount()]{};
     m_currentStructFields            = new (m_compiler, CMK_Promotion) BitVec[dfsTree->GetPostOrderCount()]{};
-    m_processedBlocks                = BitVecOps::MakeEmpty(&m_postOrderTraits);
     m_requiresAlreadyReadBackOnEntry = BitVecOps::MakeEmpty(&m_postOrderTraits);
     m_requiresReadBackOnExit         = BitVecOps::MakeEmpty(&m_postOrderTraits);
-    m_needsReadBack                  = BitVecOps::MakeEmpty(m_readBackTraits);
-    m_structCurrent                  = BitVecOps::MakeEmpty(m_readBackTraits);
-    m_reconcileReadBacks             = BitVecOps::MakeEmpty(m_readBackTraits);
-    m_entryReadBacks                 = BitVecOps::MakeEmpty(m_readBackTraits);
-    m_emptyReadBacks                 = BitVecOps::MakeEmpty(m_readBackTraits);
+    m_needsReadBack                  = BitVecOps::MakeEmpty(m_replacementsTraits);
+    m_structCurrent                  = BitVecOps::MakeEmpty(m_replacementsTraits);
+    m_reconcileReadBacks             = BitVecOps::MakeEmpty(m_replacementsTraits);
+    m_entryReadBacks                 = BitVecOps::MakeEmpty(m_replacementsTraits);
+    m_emptyReplacements              = BitVecOps::MakeEmpty(m_replacementsTraits);
     m_replacementInfo                = new (m_compiler, CMK_Promotion) ReplacementInfo[index];
 
     for (AggregateInfo* agg : m_aggregates)
@@ -1707,12 +1706,12 @@ void ReplaceVisitor::PrepareReadBacks()
         LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
         for (unsigned i = 0; i < agg->Replacements.size(); i++)
         {
-            Replacement& rep                     = agg->Replacements[i];
-            m_replacementInfo[rep.ReadBackIndex] = {agg, i};
+            Replacement& rep                        = agg->Replacements[i];
+            m_replacementInfo[rep.ReplacementIndex] = {agg, i};
             if ((dsc->lvIsParam || dsc->lvIsOSRLocal) &&
                 m_liveness->IsReplacementLiveIn(m_compiler->fgFirstBB, agg->LclNum, i))
             {
-                BitVecOps::AddElemD(m_readBackTraits, m_entryReadBacks, rep.ReadBackIndex);
+                BitVecOps::AddElemD(m_replacementsTraits, m_entryReadBacks, rep.ReplacementIndex);
             }
         }
     }
@@ -1745,7 +1744,7 @@ void ReplaceVisitor::PrepareReadBacks()
         }
     }
 
-    if (!BitVecOps::IsEmpty(m_readBackTraits, m_entryReadBacks))
+    if (!BitVecOps::IsEmpty(m_replacementsTraits, m_entryReadBacks))
     {
         PlanReadBacks();
     }
@@ -1803,9 +1802,8 @@ void ReplaceVisitor::PlanReadBacks()
                 {
                     bool anyPending = false;
                     bool allPending = true;
-                    for (FlowEdge* edge : block->PredEdges())
+                    for (BasicBlock* pred : block->PredBlocks())
                     {
-                        BasicBlock* pred = edge->getSourceBlock();
                         if (!m_dfsTree->Contains(pred))
                         {
                             continue;
@@ -1818,9 +1816,8 @@ void ReplaceVisitor::PlanReadBacks()
                     if (anyPending && !allPending)
                     {
                         hasReconciliation = true;
-                        for (FlowEdge* edge : block->PredEdges())
+                        for (BasicBlock* pred : block->PredBlocks())
                         {
-                            BasicBlock* pred = edge->getSourceBlock();
                             if (m_dfsTree->Contains(pred) &&
                                 BitVecOps::IsMember(&m_postOrderTraits, pendingOut, pred->bbPostorderNum))
                             {
@@ -1920,70 +1917,71 @@ void ReplaceVisitor::PlanReadBacks()
 // Parameters:
 //   block - The block
 //
-// Returns:
-//   Statement in block to start from.
-//
-Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
+void ReplaceVisitor::StartBlock(BasicBlock* block)
 {
     m_currentBlock = block;
 
-    assert(BitVecOps::IsEmpty(m_readBackTraits, m_needsReadBack));
-    assert(BitVecOps::IsEmpty(m_readBackTraits, m_structCurrent));
     if (block == m_compiler->fgFirstBB)
     {
-        BitVecOps::Assign(m_readBackTraits, m_needsReadBack, m_entryReadBacks);
-        BitVecOps::Assign(m_readBackTraits, m_structCurrent, m_entryReadBacks);
-        return block->firstStmt();
+        BitVecOps::Assign(m_replacementsTraits, m_needsReadBack, m_entryReadBacks);
+        BitVecOps::Assign(m_replacementsTraits, m_structCurrent, m_entryReadBacks);
+        return;
     }
-    bool requiresReadBack =
-        BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, block->bbPostorderNum);
-    bool hasPred = false;
-    BitVecOps::ClearD(m_readBackTraits, m_reconcileReadBacks);
-    for (FlowEdge* edge : block->PredEdges())
+    if (BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, block->bbPostorderNum))
     {
-        BasicBlock* pred = edge->getSourceBlock();
+        // Predecessors materialize pending readbacks before reaching this boundary.
+        BitVecOps::ClearD(m_replacementsTraits, m_needsReadBack);
+        BitVecOps::ClearD(m_replacementsTraits, m_structCurrent);
+        return;
+    }
+
+    bool first = true;
+    BitVecOps::ClearD(m_replacementsTraits, m_reconcileReadBacks);
+    for (BasicBlock* pred : block->PredBlocks())
+    {
         if (!m_dfsTree->Contains(pred))
         {
             continue;
         }
 
-        bool processed = BitVecOps::IsMember(&m_postOrderTraits, m_processedBlocks, pred->bbPostorderNum);
-        if (processed)
+        assert(pred->bbPostorderNum > block->bbPostorderNum);
+        BitVecOps::UnionD(m_replacementsTraits, m_reconcileReadBacks, m_pendingReadBacks[pred->bbPostorderNum]);
+        if (first)
         {
-            BitVecOps::UnionD(m_readBackTraits, m_reconcileReadBacks, m_pendingReadBacks[pred->bbPostorderNum]);
+            BitVecOps::Assign(m_replacementsTraits, m_needsReadBack, m_pendingReadBacks[pred->bbPostorderNum]);
+            BitVecOps::Assign(m_replacementsTraits, m_structCurrent, m_currentStructFields[pred->bbPostorderNum]);
         }
-        if (!requiresReadBack)
+        else
         {
-            assert(processed);
-            if (!hasPred)
-            {
-                BitVecOps::Assign(m_readBackTraits, m_needsReadBack, m_pendingReadBacks[pred->bbPostorderNum]);
-                BitVecOps::Assign(m_readBackTraits, m_structCurrent, m_currentStructFields[pred->bbPostorderNum]);
-            }
-            else
-            {
-                BitVecOps::IntersectionD(m_readBackTraits, m_needsReadBack, m_pendingReadBacks[pred->bbPostorderNum]);
-                BitVecOps::IntersectionD(m_readBackTraits, m_structCurrent,
-                                         m_currentStructFields[pred->bbPostorderNum]);
-            }
+            BitVecOps::IntersectionD(m_replacementsTraits, m_needsReadBack, m_pendingReadBacks[pred->bbPostorderNum]);
+            BitVecOps::IntersectionD(m_replacementsTraits, m_structCurrent,
+                                     m_currentStructFields[pred->bbPostorderNum]);
         }
-        hasPred = true;
+        first = false;
     }
 
-    // Only mixed incoming states need reconciliation; unanimous pending states
-    // can remain lazy. Do this before dropping fields that are not live-in.
-    BitVecOps::DiffD(m_readBackTraits, m_reconcileReadBacks, m_needsReadBack);
-    BitVecOps::VisitBits(m_readBackTraits, m_structCurrent, [&](unsigned index) {
-        const ReplacementInfo& info = m_replacementInfo[index];
-        if (!m_liveness->IsReplacementLiveIn(block, info.Aggregate->LclNum, info.Index))
-        {
-            BitVecOps::RemoveElemD(m_readBackTraits, m_structCurrent, index);
-            BitVecOps::RemoveElemD(m_readBackTraits, m_needsReadBack, index);
-        }
-        return true;
-    });
+    if (first)
+    {
+        BitVecOps::ClearD(m_replacementsTraits, m_needsReadBack);
+        BitVecOps::ClearD(m_replacementsTraits, m_structCurrent);
+    }
+    else
+    {
+        // Only mixed incoming states need reconciliation; unanimous pending states
+        // can remain lazy. Do this before dropping fields that are not live-in.
+        BitVecOps::DiffD(m_replacementsTraits, m_reconcileReadBacks, m_needsReadBack);
+        BitVecOps::VisitBits(m_replacementsTraits, m_structCurrent, [&](unsigned index) {
+            const ReplacementInfo& info = m_replacementInfo[index];
+            if (!m_liveness->IsReplacementLiveIn(block, info.Aggregate->LclNum, info.Index))
+            {
+                BitVecOps::RemoveElemD(m_replacementsTraits, m_structCurrent, index);
+                BitVecOps::RemoveElemD(m_replacementsTraits, m_needsReadBack, index);
+            }
+            return true;
+        });
+    }
 
-    BitVecOps::VisitBits(m_readBackTraits, m_reconcileReadBacks, [&](unsigned index) {
+    BitVecOps::VisitBits(m_replacementsTraits, m_reconcileReadBacks, [&](unsigned index) {
         const ReplacementInfo& info = m_replacementInfo[index];
         AggregateInfo*         agg  = info.Aggregate;
         if (!m_liveness->IsReplacementLiveIn(block, agg->LclNum, info.Index))
@@ -1993,21 +1991,17 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
 
         // Loading at the join could read a stale home from a path that updated
         // the replacement. Materialize only on pending predecessors.
-        for (FlowEdge* edge : block->PredEdges())
+        for (BasicBlock* pred : block->PredBlocks())
         {
-            BasicBlock* pred = edge->getSourceBlock();
-            if (m_dfsTree->Contains(pred) &&
-                BitVecOps::IsMember(&m_postOrderTraits, m_processedBlocks, pred->bbPostorderNum) &&
-                BitVecOps::IsMember(m_readBackTraits, m_pendingReadBacks[pred->bbPostorderNum], index))
+            if (m_dfsTree->Contains(pred) && (pred->bbPostorderNum > block->bbPostorderNum) &&
+                BitVecOps::IsMember(m_replacementsTraits, m_pendingReadBacks[pred->bbPostorderNum], index))
             {
                 InsertReadBackAtEnd(pred, agg->LclNum, agg->Replacements[info.Index]);
-                BitVecOps::RemoveElemD(m_readBackTraits, m_pendingReadBacks[pred->bbPostorderNum], index);
+                BitVecOps::RemoveElemD(m_replacementsTraits, m_pendingReadBacks[pred->bbPostorderNum], index);
             }
         }
         return true;
     });
-
-    return block->firstStmt();
 }
 
 //------------------------------------------------------------------------
@@ -2059,20 +2053,19 @@ bool ReplaceVisitor::MustMaterializeReadBacks(BasicBlock* block)
 //   Save readback/writeback status for successors, materializing readbacks at loop/EH boundaries.
 //
 // Remarks:
-//   Working bitsets are cleared between visits; the saved state determines
+//   StartBlock restores the working bitsets; the saved state determines
 //   which replacements and original fields are current on entry to successors.
 //
 void ReplaceVisitor::EndBlock()
 {
     BitVec& pendingReadBacks    = m_pendingReadBacks[m_currentBlock->bbPostorderNum];
     BitVec& currentStructFields = m_currentStructFields[m_currentBlock->bbPostorderNum];
-    BitVecOps::AddElemD(&m_postOrderTraits, m_processedBlocks, m_currentBlock->bbPostorderNum);
 
-    assert(BitVecOps::IsSubset(m_readBackTraits, m_needsReadBack, m_structCurrent));
+    assert(BitVecOps::IsSubset(m_replacementsTraits, m_needsReadBack, m_structCurrent));
     bool materialize =
         BitVecOps::IsMember(&m_postOrderTraits, m_requiresReadBackOnExit, m_currentBlock->bbPostorderNum);
 
-    BitVecOps::VisitBits(m_readBackTraits, m_needsReadBack, [&](unsigned index) {
+    BitVecOps::VisitBits(m_replacementsTraits, m_needsReadBack, [&](unsigned index) {
         const ReplacementInfo& info = m_replacementInfo[index];
         AggregateInfo*         agg  = info.Aggregate;
         Replacement&           rep  = agg->Replacements[info.Index];
@@ -2112,14 +2105,12 @@ void ReplaceVisitor::EndBlock()
 
     // Snapshots must not alias the working sets: reconciliation can update a
     // predecessor's pending set after subsequent blocks have been processed.
-    pendingReadBacks    = BitVecOps::IsEmpty(m_readBackTraits, m_needsReadBack)
-                              ? m_emptyReadBacks
-                              : BitVecOps::MakeCopy(m_readBackTraits, m_needsReadBack);
-    currentStructFields = BitVecOps::IsEmpty(m_readBackTraits, m_structCurrent)
-                              ? m_emptyReadBacks
-                              : BitVecOps::MakeCopy(m_readBackTraits, m_structCurrent);
-    BitVecOps::ClearD(m_readBackTraits, m_needsReadBack);
-    BitVecOps::ClearD(m_readBackTraits, m_structCurrent);
+    pendingReadBacks    = BitVecOps::IsEmpty(m_replacementsTraits, m_needsReadBack)
+                              ? m_emptyReplacements
+                              : BitVecOps::MakeCopy(m_replacementsTraits, m_needsReadBack);
+    currentStructFields = BitVecOps::IsEmpty(m_replacementsTraits, m_structCurrent)
+                              ? m_emptyReplacements
+                              : BitVecOps::MakeCopy(m_replacementsTraits, m_structCurrent);
 }
 
 //------------------------------------------------------------------------
@@ -2198,7 +2189,7 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
 //
 void ReplaceVisitor::SetNeedsWriteBack(Replacement& rep)
 {
-    BitVecOps::RemoveElemD(m_readBackTraits, m_structCurrent, rep.ReadBackIndex);
+    BitVecOps::RemoveElemD(m_replacementsTraits, m_structCurrent, rep.ReplacementIndex);
     assert(!NeedsReadBack(rep));
 }
 
@@ -2209,7 +2200,7 @@ void ReplaceVisitor::SetNeedsWriteBack(Replacement& rep)
 //
 void ReplaceVisitor::ClearNeedsWriteBack(Replacement& rep)
 {
-    BitVecOps::AddElemD(m_readBackTraits, m_structCurrent, rep.ReadBackIndex);
+    BitVecOps::AddElemD(m_replacementsTraits, m_structCurrent, rep.ReplacementIndex);
 }
 
 //------------------------------------------------------------------------
@@ -2224,7 +2215,7 @@ void ReplaceVisitor::ClearNeedsWriteBack(Replacement& rep)
 //
 void ReplaceVisitor::SetNeedsReadBack(Replacement& rep)
 {
-    BitVecOps::AddElemD(m_readBackTraits, m_needsReadBack, rep.ReadBackIndex);
+    BitVecOps::AddElemD(m_replacementsTraits, m_needsReadBack, rep.ReplacementIndex);
 }
 
 //------------------------------------------------------------------------
@@ -2234,7 +2225,7 @@ void ReplaceVisitor::SetNeedsReadBack(Replacement& rep)
 //
 void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
 {
-    BitVecOps::RemoveElemD(m_readBackTraits, m_needsReadBack, rep.ReadBackIndex);
+    BitVecOps::RemoveElemD(m_replacementsTraits, m_needsReadBack, rep.ReplacementIndex);
 }
 
 //------------------------------------------------------------------------
@@ -2243,7 +2234,7 @@ void ReplaceVisitor::ClearNeedsReadBack(Replacement& rep)
 //
 void ReplaceVisitor::InsertPreStatementReadBacks()
 {
-    if (BitVecOps::IsEmpty(m_readBackTraits, m_needsReadBack))
+    if (BitVecOps::IsEmpty(m_replacementsTraits, m_needsReadBack))
     {
         return;
     }
@@ -2471,7 +2462,7 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
 //
 GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
 {
-    if (BitVecOps::IsEmpty(m_readBackTraits, m_needsReadBack) || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
+    if (BitVecOps::IsEmpty(m_replacementsTraits, m_needsReadBack) || !m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
     {
         return use;
     }
@@ -2511,7 +2502,7 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
         }
     }
 
-    assert(BitVecOps::IsEmpty(m_readBackTraits, m_needsReadBack));
+    assert(BitVecOps::IsEmpty(m_replacementsTraits, m_needsReadBack));
     return use;
 }
 
@@ -3235,14 +3226,14 @@ PhaseStatus Promotion::Run()
     replacer.PrepareReadBacks();
     for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
     {
-        BasicBlock* bb        = dfsTree->GetPostOrder(i - 1);
-        Statement*  firstStmt = replacer.StartBlock(bb);
+        BasicBlock* bb = dfsTree->GetPostOrder(i - 1);
+        replacer.StartBlock(bb);
 
         JITDUMP("\nReplacing in ");
         DBEXEC(m_compiler->verbose, bb->dspBlockHeader());
         JITDUMP("\n");
 
-        for (Statement* stmt : StatementList(firstStmt))
+        for (Statement* stmt : bb->Statements())
         {
             replacer.StartStatement(stmt);
 
