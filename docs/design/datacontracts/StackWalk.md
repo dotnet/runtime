@@ -212,6 +212,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` | `FirstGCRefMapSlot` | `pointer` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
 | `TransitionBlock` | `ReturnAddress` | `CodePointer` | Return address associated with the TransitionBlock |
+| `TransitionBlock` | `StackPointer` | `pointer` | WASM only: R2R linear-stack pointer of the caller, saved by the transition helper |
 | `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
 
 ### Global variables used
@@ -470,8 +471,9 @@ TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock hold
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
+* On WASM, a transition helper called from R2R code records the caller's R2R linear-stack pointer in `TransitionBlock.StackPointer`, and may leave `ReturnAddress` 0. When `ReturnAddress` is 0 and `StackPointer` is set, the return address is the R2R virtual IP of the frame at `StackPointer` (native `FramedMethodFrame::GetTransitionBlock_Impl`). When `StackPointer` is set and a return address is known, the caller's SP is `StackPointer` and its FP is that frame's base (native `TransitionFrame::GetSP`); otherwise the SP is the end of the TransitionBlock and the FP is null. This also applies when the interpreted chain under an `InterpreterFrame` is exhausted and the walker applies the `InterpreterFrame`'s transition.
 
-**Return Address**: Read from `TransitionBlock.ReturnAddress`. This applies to all frame types that use the TransitionFrame mechanism.
+**Return Address**: Read from `TransitionBlock.ReturnAddress` (on WASM, derived from `TransitionBlock.StackPointer` when it is 0, as above). This applies to all frame types that use the TransitionFrame mechanism.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame

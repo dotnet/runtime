@@ -64,6 +64,34 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
         }
     }
 
+    // Mirrors TransitionFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp. A transition
+    // helper called from R2R code records the caller's linear-stack pointer; when it is set and a
+    // return address is known (stored, or derived from that stack pointer), the caller is the R2R
+    // frame at that stack pointer (native TransitionFrame::GetSP). Otherwise the frame was entered
+    // from interpreted or native code and the caller's stack pointer is the end of the TransitionBlock.
+    public override void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
+    {
+        Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
+        TargetCodePointer instructionPointer = _frameHelpers.GetTransitionBlockReturnAddress(transitionBlock);
+        TargetPointer stackPointer = transitionBlock.StackPointer ?? TargetPointer.Null;
+
+        _holder.Context.InstructionPointer = instructionPointer;
+        if (stackPointer != TargetPointer.Null && instructionPointer != TargetCodePointer.Null)
+        {
+            _holder.Context.StackPointer = stackPointer;
+            // Root-function frame base; the funclet-aware logical frame pointer is not modeled yet.
+            Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
+            _holder.Context.FramePointer = unwinder.TryGetFramePointer(stackPointer, out TargetPointer framePointer)
+                ? framePointer
+                : TargetPointer.Null;
+        }
+        else
+        {
+            _holder.Context.StackPointer = framedMethodFrame.TransitionBlockPtr + Data.TransitionBlock.GetSize(_target);
+            _holder.Context.FramePointer = TargetPointer.Null;
+        }
+    }
+
     public void HandleHijackFrame(HijackFrame frame)
         => throw new PlatformNotSupportedException("HijackFrame handling is not supported on WASM.");
 }
