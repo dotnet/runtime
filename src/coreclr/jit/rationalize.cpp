@@ -450,7 +450,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 {
                     *use = result;
                 }
-               // Since "hwintrinsic" is replaced with "result", pop "hwintrinsic" node (i.e the current node)
+                // Since "hwintrinsic" is replaced with "result", pop "hwintrinsic" node (i.e the current node)
                 // and replace it with "result" on parent stack.
                 assert(parents.Top() == hwintrinsic);
                 (void)parents.Pop();
