@@ -117,6 +117,7 @@ static BOOL GetStaticFieldElementTypeForFieldDef(Module * pModule, IMDInternalIm
     if (!IsFdStatic(dwMemberAttribs) || IsFdLiteral(dwMemberAttribs))
         return TRUE;
 
+#ifdef FEATURE_MULTITHREADING
     // We need to do an extra check to see if this field is ThreadStatic
     HRESULT hr = pModule->GetCustomAttribute((mdToken)field,
                                                     WellKnownAttribute::ThreadStatic,
@@ -125,6 +126,10 @@ static BOOL GetStaticFieldElementTypeForFieldDef(Module * pModule, IMDInternalIm
 
     // Use one set of variables for regular statics, and the other set for thread statics
     *pkk = (hr == S_OK) ? 1 : 0;
+#else
+    // Without multithreading, thread statics are laid out as regular statics.
+    *pkk = 0;
+#endif // FEATURE_MULTITHREADING
 
 
     // Get the type of the static field.

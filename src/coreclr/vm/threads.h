@@ -3006,8 +3006,10 @@ public:
 #endif // FEATURE_HIJACK
     }
 
+#ifdef FEATURE_MULTITHREADING
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
     TADDR GetStaticFieldAddrNoCreate(FieldDesc *pFD);
+#endif // FEATURE_MULTITHREADING
 
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
@@ -3190,9 +3192,11 @@ public:
 #endif //DACCESS_COMPILE
 
     PTR_ThreadLocalData m_ThreadLocalDataPtr;
+#ifdef FEATURE_MULTITHREADING
     int32_t cLoaderHandles = 0;
     PTR_LOADERHANDLE pLoaderHandles = 0;
     SpinLock m_TlsSpinLock;
+#endif // FEATURE_MULTITHREADING
     PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
 
 private:

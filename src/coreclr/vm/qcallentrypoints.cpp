@@ -540,8 +540,10 @@ static const Entry s_QCall[] =
     DllImportEntry(AppendExceptionStackFrame)
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(GetThreadStaticsByMethodTable)
     DllImportEntry(GetThreadStaticsByIndex)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(GenericHandleWorker)
     DllImportEntry(ThrowInvalidCastException)
     DllImportEntry(IsInstanceOf_NoCacheLookup)

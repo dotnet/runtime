@@ -1682,6 +1682,9 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
 
+        private static bool IsThreadStaticForTarget(FieldDesc field)
+            => ((ReadyToRunCompilerContext)field.Context).IsThreadStaticForTarget(field);
+
         private bool IsClassPreInited(TypeDesc type)
         {
             if (type.IsGenericDefinition)
@@ -1730,7 +1733,7 @@ namespace Internal.JitInterface
                         return true; // Dynamic statics
 
                     if (!field.HasRva &&
-                        !field.IsThreadStatic &&
+                        !IsThreadStaticForTarget(field) &&
                         field.FieldType.IsValueType &&
                         !field.FieldType.UnderlyingType.IsPrimitive)
                     {
@@ -1820,7 +1823,7 @@ namespace Internal.JitInterface
                 {
                     // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
-                    if (field.IsThreadStatic)
+                    if (IsThreadStaticForTarget(field))
                     {
                         pResult->helper = (field.HasGCStaticBase ?
                             CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE :
@@ -1852,7 +1855,7 @@ namespace Internal.JitInterface
                     {
                         fieldAccessor = intrinsicAccessor;
                     }
-                    else if (field.IsThreadStatic)
+                    else if (IsThreadStaticForTarget(field))
                     {
                         if (field.HasGCStaticBase)
                         {

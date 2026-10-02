@@ -1171,6 +1171,7 @@ inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 #ifndef DACCESS_COMPILE
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
@@ -1229,6 +1230,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 
     return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThread, tlsIndex);
 }
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 inline OBJECTREF MethodTable::AllocateNoChecks()

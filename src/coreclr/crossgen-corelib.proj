@@ -171,6 +171,8 @@
       <CrossGenDllCmd Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(FeatureDynamicCodeCompiled)' != ''">$(CrossGenDllCmd) --target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)</CrossGenDllCmd>
+      <!-- crossgen2 assumes WebAssembly runtimes are single-threaded. Multithreaded WebAssembly runtimes lay out [ThreadStatic] fields as thread statics. -->
+      <CrossGenDllCmd Condition="'$(WasmEnableThreads)' == 'true'">$(CrossGenDllCmd) --target-single-threaded:false</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'">$(CrossGenDllCmd) --embed-pgo-data</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>

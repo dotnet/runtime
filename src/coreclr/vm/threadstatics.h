@@ -341,21 +341,25 @@ public:
 #endif
 };
 
+#ifdef FEATURE_MULTITHREADING
 PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread *pThreadLocalData, TLSIndex index);
+#endif // FEATURE_MULTITHREADING
 
 #ifndef DACCESS_COMPILE
+void InitializeCurrentThreadsStaticData(Thread* pThread);
+void FreeThreadStaticData(Thread* pThread);
+void AssertThreadStaticDataFreed();
+#ifdef FEATURE_MULTITHREADING
 void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc);
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index);
 void InitializeThreadStaticData();
-void InitializeCurrentThreadsStaticData(Thread* pThread);
 void FreeLoaderAllocatorHandlesForTLSData(Thread* pThread);
-void FreeThreadStaticData(Thread* pThread);
-void AssertThreadStaticDataFreed();
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);
 void GetThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 bool CanJITOptimizeTLSAccess();
+#endif // FEATURE_MULTITHREADING
 #else
 void EnumThreadMemoryRegions(ThreadLocalData* pThreadLocalData, CLRDataEnumMemoryFlags flags);
 #endif

@@ -649,6 +649,22 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
 
+    // Single-threaded runtimes lay out [ThreadStatic] fields as regular statics, so the image's static field
+    // layout is only valid if it was compiled for the same threading model.
+#ifdef FEATURE_MULTITHREADING
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_SINGLE_THREADED) != 0)
+    {
+        DoLog("Ready to Run disabled - image was compiled for a single-threaded runtime");
+        return NULL;
+    }
+#else
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_SINGLE_THREADED) == 0)
+    {
+        DoLog("Ready to Run disabled - image was not compiled for a single-threaded runtime");
+        return NULL;
+    }
+#endif // FEATURE_MULTITHREADING
+
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
     {

@@ -69,12 +69,16 @@ namespace ILCompiler
             RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetGCStaticBase");
             RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicNonGCStaticBase");
             RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicGCStaticBase");
-            RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetNonGCThreadStaticBase");
-            RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetGCThreadStaticBase");
-            RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicNonGCThreadStaticBase");
-            RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicGCThreadStaticBase");
-            RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetOptimizedNonGCThreadStaticBase");
-            RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetOptimizedGCThreadStaticBase");
+            if (!context.TargetIsSingleThreaded)
+            {
+                // Single-threaded targets lay out thread statics as regular statics, so the thread-static helpers are never used.
+                RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetNonGCThreadStaticBase");
+                RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetGCThreadStaticBase");
+                RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicNonGCThreadStaticBase");
+                RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicGCThreadStaticBase");
+                RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetOptimizedNonGCThreadStaticBase");
+                RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetOptimizedGCThreadStaticBase");
+            }
             RootMethod(rootProvider, "System.Runtime.CompilerServices"u8, "VirtualDispatchHelpers"u8, "VirtualFunctionPointer");
 
             RootMethod(rootProvider, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowArgumentException");

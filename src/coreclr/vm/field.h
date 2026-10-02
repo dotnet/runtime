@@ -288,7 +288,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_MULTITHREADING
         return m_isThreadLocal;
+#else
+        // Without multithreading, [ThreadStatic] fields are laid out as regular statics.
+        return FALSE;
+#endif // FEATURE_MULTITHREADING
     }
 
     // Indicate that this field was added by EnC
@@ -521,11 +526,14 @@ public:
 
         _ASSERTE(IsStatic());
 
+#ifdef FEATURE_MULTITHREADING
         if (IsThreadStatic())
         {
             return Thread::GetStaticFieldAddress(this);
         }
-        else {
+        else
+#endif // FEATURE_MULTITHREADING
+        {
             PTR_BYTE base = 0;
             if (!IsRVA()) // for RVA the base is ignored
             {

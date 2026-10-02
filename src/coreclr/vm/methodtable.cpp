@@ -3971,6 +3971,7 @@ bool MethodTable::IsInitedIfStaticDataAllocated()
     return true;
 }
 
+#ifdef FEATURE_MULTITHREADING
 void MethodTable::EnsureTlsIndexAllocated()
 {
     CONTRACTL
@@ -4010,6 +4011,7 @@ void MethodTable::EnsureTlsIndexAllocated()
     }
     pAuxiliaryData->SetIsTlsIndexAllocated();
 }
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 void MethodTable::CheckRunClassInitAsIfConstructingThrowing()

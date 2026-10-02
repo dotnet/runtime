@@ -394,7 +394,9 @@ protected:
     Volatile<PgoManager *> m_pgoManager;
 #endif // FEATURE_PGO
 
+#ifdef FEATURE_MULTITHREADING
     SArray<TLSIndex> m_tlsIndices;
+#endif // FEATURE_MULTITHREADING
 
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
@@ -439,11 +441,13 @@ protected:
 
     PTR_VirtualCallStubManager m_pVirtualCallStubManager;
 
+#ifdef FEATURE_MULTITHREADING
 public:
     SArray<TLSIndex>& GetTLSIndexList()
     {
         return m_tlsIndices;
     }
+#endif // FEATURE_MULTITHREADING
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;

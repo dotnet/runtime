@@ -3,6 +3,10 @@
 #include "common.h"
 #include "threadstatics.h"
 
+// Without multithreading, [ThreadStatic] fields are laid out as regular statics, so none of the
+// thread-static storage machinery (TLS indices, per-thread arrays, in-flight data) is needed.
+#ifdef FEATURE_MULTITHREADING
+
 #ifndef DACCESS_COMPILE
 InFlightTLSData::InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), hTLSData(0) { }
 InFlightTLSData::~InFlightTLSData()
@@ -206,8 +210,11 @@ void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 }
 #endif // DACCESS_COMPILE
 
+#endif // FEATURE_MULTITHREADING
+
 #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_MULTITHREADING
 void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isGCStatic)
 {
     CONTRACTL
@@ -314,6 +321,7 @@ void InitializeThreadStaticData()
     CoreLibBinder::GetClass(CLASS__THREADID);
     g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
 }
+#endif // FEATURE_MULTITHREADING
 
 void InitializeCurrentThreadsStaticData(Thread* pThread)
 {
@@ -321,10 +329,13 @@ void InitializeCurrentThreadsStaticData(Thread* pThread)
 
     t_ThreadStatics.pThread = pThread;
     t_ThreadStatics.pThread->m_ThreadLocalDataPtr = &t_ThreadStatics;
+#ifdef FEATURE_MULTITHREADING
     t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, FALSE);
+#endif // FEATURE_MULTITHREADING
     t_ThreadStatics.managedThreadId = pThread->GetThreadId();
 }
 
+#ifdef FEATURE_MULTITHREADING
 void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
 {
     CONTRACTL
@@ -409,6 +420,7 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
         }
     }
 }
+#endif // FEATURE_MULTITHREADING
 
 void AssertThreadStaticDataFreed()
 {
@@ -433,6 +445,7 @@ void FreeThreadStaticData(Thread* pThread)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_MULTITHREADING
     InFlightTLSData* pOldInFlightData = nullptr;
 
     int32_t oldCollectibleTlsDataCount = 0;
@@ -473,8 +486,14 @@ void FreeThreadStaticData(Thread* pThread)
         pOldInFlightData = pInFlightData->pNext;
         delete pInFlightData;
     }
+#else
+    ThreadLocalData *pThreadLocalData = &t_ThreadStatics;
+    _ASSERTE(pThreadLocalData->pThread == pThread);
+    pThreadLocalData->pThread = NULL;
+#endif // FEATURE_MULTITHREADING
 }
 
+#ifdef FEATURE_MULTITHREADING
 void SetTLSBaseValue(TADDR *ppTLSBaseAddress, TADDR pTLSBaseAddress, bool useGCBarrierInsteadOfHandleStore)
 {
     CONTRACTL
@@ -1204,6 +1223,7 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     pInfo->offsetOfBaseOfThreadLocalData = (uint32_t)threadStaticBaseOffset;
 #endif // !TARGET_ANDROID
 }
+#endif // FEATURE_MULTITHREADING
 #endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

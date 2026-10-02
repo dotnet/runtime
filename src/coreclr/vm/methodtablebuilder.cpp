@@ -3645,6 +3645,7 @@ MethodTableBuilder::EnumerateClassFields()
 
                 bmtEnumFields.dwNumStaticFields++;
 
+#ifdef FEATURE_MULTITHREADING
                 // If this static field is thread static, then we need
                 // to increment bmtEnumFields.dwNumThreadStaticFields
                 hr = GetCustomAttribute(tok,
@@ -3656,6 +3657,7 @@ MethodTableBuilder::EnumerateClassFields()
                     // It's a thread static, so increment the count
                     bmtEnumFields.dwNumThreadStaticFields++;
                 }
+#endif // FEATURE_MULTITHREADING
             }
         }
         else
@@ -4118,10 +4120,12 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                                     WellKnownAttribute::ThreadStatic,
                                     NULL, NULL);
             IfFailThrow(hr);
-            if (hr == S_OK)
-            {
-                fIsThreadStatic = TRUE;
-            }
+            BOOL fHasThreadStaticAttribute = (hr == S_OK);
+#ifdef FEATURE_MULTITHREADING
+            fIsThreadStatic = fHasThreadStaticAttribute;
+#endif // FEATURE_MULTITHREADING
+            // Without multithreading there is only one thread, so thread statics are laid out
+            // and accessed as regular statics.
 
 
             if (ElementType == ELEMENT_TYPE_VALUETYPE)
@@ -4139,7 +4143,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             // Do some sanity checks that we are not mixing context and thread
             // relative statics.
-            if (fHasRVA && fIsThreadStatic)
+            if (fHasRVA && fHasThreadStaticAttribute)
             {
                 IfFailThrow(COR_E_TYPELOAD);
             }

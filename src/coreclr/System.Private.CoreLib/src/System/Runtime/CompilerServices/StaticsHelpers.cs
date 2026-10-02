@@ -11,6 +11,7 @@ namespace System.Runtime.CompilerServices
     [DebuggerStepThrough]
     internal static unsafe partial class StaticsHelpers
     {
+#if FEATURE_MULTITHREADING
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
@@ -18,6 +19,7 @@ namespace System.Runtime.CompilerServices
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
+#endif // FEATURE_MULTITHREADING
 
         [Intrinsic]
         private static ref byte VolatileReadAsByref(ref IntPtr address) => ref VolatileReadAsByref(ref address);
@@ -83,6 +85,7 @@ namespace System.Runtime.CompilerServices
         }
 
         // Thread static helpers
+#if FEATURE_MULTITHREADING
 
         /// <summary>
         /// Return beginning of the object as a reference to byte
@@ -271,6 +274,7 @@ namespace System.Runtime.CompilerServices
         {
             return ref GetThreadLocalStaticBaseByIndex(index, true);
         }
+#endif // FEATURE_MULTITHREADING
 
         [StructLayout(LayoutKind.Sequential)]
         private struct StaticFieldAddressArgs

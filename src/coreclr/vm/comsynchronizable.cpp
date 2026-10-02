@@ -735,18 +735,6 @@ extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     END_QCALL;
 }
 
-// Returns the address of the current thread's ThreadLocalData (&t_ThreadStatics). Used on wasm to break
-// the thread-static bootstrap recursion in Thread.GetThreadStaticsBase (see the managed counterpart).
-#ifdef TARGET_WASM
-FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
-{
-    FCALL_CONTRACT;
-
-    return (void*)&t_ThreadStatics;
-}
-FCIMPLEND
-#endif // TARGET_WASM
-
 #ifdef FEATURE_MULTITHREADING
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 {

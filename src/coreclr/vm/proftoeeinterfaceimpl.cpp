@@ -3400,6 +3400,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
         return E_INVALIDARG;
     }
 
+#ifdef FEATURE_MULTITHREADING
     //
     // Verify this field is of the right type
     //
@@ -3434,6 +3435,10 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     *ppAddress = pAddress;
 
     return S_OK;
+#else
+    // Without multithreading there are no thread statics; [ThreadStatic] fields are regular statics.
+    return E_INVALIDARG;
+#endif // FEATURE_MULTITHREADING
 }
 
 /*

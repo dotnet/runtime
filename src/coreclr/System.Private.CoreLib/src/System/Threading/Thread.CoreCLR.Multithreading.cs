@@ -20,6 +20,25 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Initialize")]
         private static partial void Initialize(ObjectHandleOnStack thread);
 
+        private static class DirectOnThreadLocalData
+        {
+            // Special Thread Static variable which is always allocated at the address of the Thread variable in the ThreadLocalData of the current thread
+            [ThreadStatic]
+            public static IntPtr pNativeThread;
+        }
+
+        /// <summary>
+        /// Get the ThreadStaticBase used for this threads TLS data. This ends up being a pointer to the pNativeThread field on the ThreadLocalData,
+        /// which is at a well known offset from the start of the ThreadLocalData
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
+        {
+            return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {

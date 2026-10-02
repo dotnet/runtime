@@ -277,6 +277,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
             }
+            if (_r2rContext.TargetIsSingleThreaded)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SingleThreaded;
+            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(

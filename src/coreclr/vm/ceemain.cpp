@@ -1024,9 +1024,9 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
+#ifdef FEATURE_MULTITHREADING
         InitializeThreadStaticData();
-
-#ifndef FEATURE_MULTITHREADING
+#else
         {
             // There is only one thread, so publish its managed Thread object for Thread.CurrentThread.
             GCX_COOP();
@@ -1035,7 +1035,7 @@ void EEStartupHelper()
             OBJECTREF exposedThread = GetThread()->GetExposedObject();
             pCurrentThreadField->SetStaticOBJECTREF(exposedThread);
         }
-#endif // !FEATURE_MULTITHREADING
+#endif // FEATURE_MULTITHREADING
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)

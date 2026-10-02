@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 30
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -78,6 +78,8 @@
 // consumes the scaffolding, so the flag is only ever set on WebAssembly images.
 // R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
 // R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
+// R2R Version 30.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
+// for a runtime built without FEATURE_MULTITHREADING.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -119,6 +121,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
     READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
     READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS  = 0x00001000,   // Code in this image verifies that GC mode transitions are legal. WebAssembly only; its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
+    READYTORUN_FLAG_SINGLE_THREADED             = 0x00002000,   // The image targets a single-threaded runtime (no FEATURE_MULTITHREADING) and lays out [ThreadStatic] fields as regular statics.
 };
 
 enum class ReadyToRunSectionType : uint32_t

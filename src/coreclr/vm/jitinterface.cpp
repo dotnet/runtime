@@ -1224,9 +1224,11 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         {
             if (noCtor)
             {
+#ifdef FEATURE_MULTITHREADING
                 if (pFieldMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
                     helper = CanJITOptimizeTLSAccess() ? CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 : CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT; // ALWAYS use this helper, as its needed to ensure basic thread static access works
                 else
+#endif // FEATURE_MULTITHREADING
                     helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR;
             }
             else
@@ -1295,6 +1297,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_MULTITHREADING
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
     MethodTable *pMT = fieldDesc->GetEnclosingMethodTable();
@@ -1310,6 +1313,10 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
     }
 
     _ASSERTE(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+#else
+    // Without multithreading, thread statics are laid out as regular statics, so the JIT never asks for TLS info.
+    UNREACHABLE();
+#endif // FEATURE_MULTITHREADING
 
     EE_TO_JIT_TRANSITION();
     return typeIndex;
@@ -1324,7 +1331,12 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     } CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION();
+#ifdef FEATURE_MULTITHREADING
     GetThreadLocalStaticBlocksInfo(pInfo);
+#else
+    // Without multithreading, thread statics are laid out as regular statics, so the JIT never asks for TLS info.
+    UNREACHABLE();
+#endif // FEATURE_MULTITHREADING
     EE_TO_JIT_TRANSITION();
 }
 
@@ -1426,6 +1438,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
             }
+#ifdef FEATURE_MULTITHREADING
             else if (pField->IsThreadStatic())
             {
                  // We always treat accessing thread statics as if we are in domain neutral code.
@@ -1473,6 +1486,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     }
                 }
             }
+#endif // FEATURE_MULTITHREADING
             else
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_ADDRESS;

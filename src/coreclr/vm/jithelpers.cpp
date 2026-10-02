@@ -318,6 +318,7 @@ __declspec(selectany)
 #endif // _MSC_VER
 PLATFORM_THREAD_LOCAL ThreadLocalData t_ThreadStatics;
 
+#ifdef FEATURE_MULTITHREADING
 extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, BOOL gcStatic, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -384,6 +385,7 @@ HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
     return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
 }
 HCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 #include <optdefault.h>
 

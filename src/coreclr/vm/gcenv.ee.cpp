@@ -313,7 +313,9 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
             ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
             ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -681,7 +683,9 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
         ScanTailCallArgBufferRoots(pThread, fn, sc);
+#ifdef FEATURE_MULTITHREADING
         ScanThreadStaticRoots(pThread, fn, sc);
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE

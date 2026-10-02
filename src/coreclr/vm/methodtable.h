@@ -1243,7 +1243,9 @@ public:
 
     // Allocate any memory needed for statics, acquire TLSIndex for TLS statics, and check to see if the class can be considered pre-inited, and if so, set the initialized flag
     void EnsureStaticDataAllocated();
+#ifdef FEATURE_MULTITHREADING
     void EnsureTlsIndexAllocated();
+#endif // FEATURE_MULTITHREADING
 
     BOOL IsInitError()
     {
@@ -2648,6 +2650,7 @@ public:
 
     inline PTR_BYTE GetNonGCStaticsBasePointer();
     inline PTR_BYTE GetGCStaticsBasePointer();
+#ifdef FEATURE_MULTITHREADING
 #ifndef DACCESS_COMPILE
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer();
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
@@ -2661,6 +2664,7 @@ public:
     // This is particularly relevant as a problem for profiler developers, but they are given the tools (such as GC events) to be notified of situations where these invariants may not hold
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
+#endif // FEATURE_MULTITHREADING
 
     inline BOOL IsDynamicStatics()
     {

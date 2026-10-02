@@ -360,6 +360,9 @@
   <data name="VerifyGCModeTransitionsOption" xml:space="preserve">
     <value>Emit the diagnostic helpers that verify GC mode transitions are legal, and mark the image as using them. WebAssembly only; has no effect on other targets. Use only for diagnostic purposes.</value>
   </data>
+  <data name="TargetSingleThreadedOption" xml:space="preserve">
+    <value>Override whether the target runtime is single-threaded. Single-threaded runtimes lay out [ThreadStatic] fields as regular statics. Defaults to true for WebAssembly targets.</value>
+  </data>
   <data name="HotColdSplittingOption" xml:space="preserve">
     <value>Turn on hot cold splitting optimization.</value>
   </data>

@@ -2811,8 +2811,10 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         // Destroy the LastThrown handle (and anything that violates the above assert).
         SafeSetThrowables(NULL);
 
+#ifdef FEATURE_MULTITHREADING
         // Free loader allocator structures related to this thread
         FreeLoaderAllocatorHandlesForTLSData(this);
+#endif // FEATURE_MULTITHREADING
     }
 
     // We switch a thread to dead when it has finished doing useful work.  But it
@@ -6187,6 +6189,7 @@ void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
 //
 //+----------------------------------------------------------------------------
 
+#ifdef FEATURE_MULTITHREADING
 LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
 {
     CONTRACTL {
@@ -6231,9 +6234,11 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
 
     return result;
 }
+#endif // FEATURE_MULTITHREADING
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_MULTITHREADING
  //+----------------------------------------------------------------------------
 //
 //  Method:     Thread::GetStaticFieldAddrNoCreate   private
@@ -6292,6 +6297,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
 
     return result;
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifndef DACCESS_COMPILE
 

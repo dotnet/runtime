@@ -204,38 +204,6 @@ namespace System.Threading
             get;
         }
 
-        private static class DirectOnThreadLocalData
-        {
-            // Special Thread Static variable which is always allocated at the address of the Thread variable in the ThreadLocalData of the current thread
-            [ThreadStatic]
-            public static IntPtr pNativeThread;
-        }
-
-        /// <summary>
-        /// Get the ThreadStaticBase used for this threads TLS data. This ends up being a pointer to the pNativeThread field on the ThreadLocalData,
-        /// which is at a well known offset from the start of the ThreadLocalData
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
-        {
-#if TARGET_WASM
-            // On wasm, reading &DirectOnThreadLocalData.pNativeThread goes through the general
-            // thread-static-base helper (StaticsHelpers.GetNonGCThreadStaticBase), which itself needs
-            // this base, causing infinite recursion. Read the ThreadLocalData base directly via an
-            // FCall to break the bootstrap cycle.
-            return (StaticsHelpers.ThreadLocalData*)GetThreadStaticsBaseNative();
-#else
-            return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));
-#endif
-        }
-
-#if TARGET_WASM
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void* GetThreadStaticsBaseNative();
-#endif
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CatchAtSafePoint();
 
