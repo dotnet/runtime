@@ -254,9 +254,7 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.Kernel32.SafeJobHandle? jobHandle = null;
                 if (killOnParentExit)
                 {
-                    jobHandle = replaceKillOnParentExitJob ?
-                        ReplaceKillOnParentExitJob() :
-                        GetKillOnParentExitJob();
+                    jobHandle = replaceKillOnParentExitJob ? ReplaceKillOnParentExitJob() : GetKillOnParentExitJob();
                 }
 
                 startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
