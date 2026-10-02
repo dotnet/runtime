@@ -52,6 +52,8 @@ public static class DiagnosticIds
     public const string KeyFileError = "ILA0032";
     public const string TooManyGenericParameters = "ILA0033";
     public const string UnsupportedTlsData = "ILA0034";
+    public const string BranchOffsetOutOfRange = "ILA0035";
+    public const string InvalidExceptionRegion = "ILA0036";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -89,4 +91,7 @@ internal static class DiagnosticMessageTemplates
     public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
     public const string TooManyGenericParameters = "Generic parameter count {0} exceeds the maximum of {1}";
     public const string UnsupportedTlsData = "TLS RVA data declarations are not supported";
+    public const string BranchOffsetOutOfRange = "The offset {1} is too large for short branch instruction '{0}'; truncated";
+    public const string InvalidExceptionRegion = "Exception region bounds (try {0} to {1}, handler {2} to {3}) are invalid for a method with {4} bytes of code";
+    public const string InvalidFilterOffset = "Exception filter offset {0} is out of range for a method with {1} bytes of code";
 }

@@ -21,6 +21,30 @@ namespace ILAssembler.Tests
 {
     public class SourceDirectiveTests
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Optimization_SequencePointsFollowEmittedInstructionSizes(bool optimize)
+        {
+            string source = DocumentCompilerTestHelpers.MethodSource("""
+                .line 10,10:1,2 "test.cs"
+                ldc.i4 0
+                .line 20,20:1,2 "test.cs"
+                ldarg 0
+                .line 30,30:1,2 "test.cs"
+                br END
+                .line 40,40:1,2 "test.cs"
+                END: ret
+                """);
+            using MetadataReaderProvider provider = MetadataReaderProvider.FromPortablePdbImage(
+                DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, new Options { Optimize = optimize }));
+            MetadataReader reader = provider.GetMetadataReader();
+            SequencePoint[] points = reader.GetMethodDebugInformation(reader.MethodDebugInformation.Single())
+                .GetSequencePoints().ToArray();
+            Assert.Equal(optimize ? new[] { 0, 1, 2, 7 } : new[] { 0, 5, 9, 14 }, points.Select(point => point.Offset));
+            Assert.Equal(new[] { 10, 20, 30, 40 }, points.Select(point => point.StartLine));
+        }
+
         private const string CSharpLanguageGuid = "{3F5162F8-07C6-11D3-9053-00C04FA302A1}";
         private const string CSharpVendorGuid = "{994B45C4-E6E9-11D2-903F-00C04FA302A1}";
         private const string DocumentTypeGuid = "{5A869D0B-6611-11D3-BD2A-0000F80849BD}";

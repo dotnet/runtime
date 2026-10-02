@@ -122,9 +122,9 @@ namespace ILAssembler
         public string? KeyFile { get; set; }
 
         /// <summary>
-        /// Optimize long instructions to short.
+        /// Gets or sets a value that indicates whether instruction encodings are optimized.
         /// </summary>
-        /// <remarks>Not yet implemented; accepted for CLI compatibility with native ilasm.</remarks>
+        /// <remarks>The default is <see langword="false"/>, preserving the instruction forms in the source.</remarks>
         public bool Optimize { get; set; }
 
         /// <summary>

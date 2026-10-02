@@ -18,6 +18,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
+using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
 namespace ILAssembler
 {
@@ -543,7 +544,9 @@ namespace ILAssembler
                 or DiagnosticIds.GenericParameterNotFound
                 or DiagnosticIds.UnknownGenericParameter
                 or DiagnosticIds.MissingInstanceCallConv
-                or DiagnosticIds.TooManyGenericParameters;
+                or DiagnosticIds.TooManyGenericParameters
+                or DiagnosticIds.BranchOffsetOutOfRange
+                or DiagnosticIds.InvalidExceptionRegion;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -2023,6 +2026,7 @@ namespace ILAssembler
                     }
                     _currentMethod.Definition.LocalsSignature = _entityRegistry.GetOrCreateStandaloneSignature(localsSig);
                 }
+                ValidateLabelReferences();
                 _currentMethod = null;
                 return GrammarResult.SentinelValue.Result;
             }
@@ -3073,7 +3077,7 @@ namespace ILAssembler
             }
             if (context.id() is CILParser.IdContext id)
             {
-                var start = _currentMethod!.Labels.TryGetValue(VisitId(id).Value, out LabelHandle startLabel) ? startLabel : _currentMethod.Labels[VisitId(id).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
+                LabelHandle start = GetReferencedLabel(id);
                 return new(start);
             }
             if (context.int32() is CILParser.Int32Context offset)
@@ -3142,8 +3146,8 @@ namespace ILAssembler
             var ids = context.id();
             if (ids.Length == 2)
             {
-                var start = _currentMethod!.Labels.TryGetValue(VisitId(ids[0]).Value, out LabelHandle startLabel) ? startLabel : _currentMethod.Labels[VisitId(ids[0]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
-                var end = _currentMethod!.Labels.TryGetValue(VisitId(ids[1]).Value, out LabelHandle endLabel) ? endLabel : _currentMethod.Labels[VisitId(ids[1]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
+                LabelHandle start = GetReferencedLabel(ids[0]);
+                LabelHandle end = GetReferencedLabel(ids[1]);
                 return new((start, end));
             }
             var offsets = context.int32();
@@ -3319,25 +3323,14 @@ namespace ILAssembler
                         ParserRuleContext argument = context.GetRuleContext<ParserRuleContext>(1);
                         if (argument is CILParser.IdContext id)
                         {
-                            string label = VisitId(id).Value;
-                            if (!_currentMethod!.Labels.TryGetValue(label, out var handle))
-                            {
-                                handle = _currentMethod.Definition.MethodBody.DefineLabel();
-                                _currentMethod.Labels[label] = handle;
-                                // Track undefined label references for later validation
-                                if (!_currentMethod.UndefinedLabelReferences.ContainsKey(label))
-                                {
-                                    _currentMethod.UndefinedLabelReferences[label] = context;
-                                }
-                            }
-                            _currentMethod.Definition.MethodBody.Branch(opcode, handle);
+                            _currentMethod!.Definition.MethodBody.Branch(opcode, GetReferencedLabel(id),
+                                _options.Optimize, Location.From(context.Start, _documents));
                         }
                         if (argument is CILParser.Int32Context int32)
                         {
                             int offset = VisitInt32(int32).Value;
-                            LabelHandle label = _currentMethod!.Definition.MethodBody.DefineLabel();
-                            _currentMethod.Definition.MethodBody.Branch(opcode, label);
-                            _currentMethod.Definition.MethodBody.MarkLabel(label, _currentMethod.Definition.MethodBody.Offset + offset);
+                            _currentMethod!.Definition.MethodBody.Branch(opcode, offset,
+                                _options.Optimize, Location.From(context.Start, _documents));
                         }
                     }
                     break;
@@ -3375,7 +3368,7 @@ namespace ILAssembler
                         int arg = VisitInt32(context.int32()).Value;
                         if (opcode == ILOpCode.Ldc_i4 || opcode == ILOpCode.Ldc_i4_s)
                         {
-                            _currentMethod!.Definition.MethodBody.LoadConstantI4(arg);
+                            _currentMethod!.Definition.MethodBody.LoadConstantI4(opcode, arg, _options.Optimize);
                         }
                         else
                         {
@@ -3525,49 +3518,16 @@ namespace ILAssembler
                             {
                             if (label is CILParser.IdContext id)
                             {
-                                string labelName = VisitId(id).Value;
-                                if (!_currentMethod!.Labels.TryGetValue(labelName, out var handle))
-                                {
-                                    handle = _currentMethod.Definition.MethodBody.DefineLabel();
-                                    _currentMethod.Labels[labelName] = handle;
-                                    // Track undefined label references for later validation
-                                    if (!_currentMethod.UndefinedLabelReferences.ContainsKey(labelName))
-                                    {
-                                        _currentMethod.UndefinedLabelReferences[labelName] = context;
-                                    }
-                                }
-                                labels.Add((handle, null));
+                                labels.Add((GetReferencedLabel(id), null));
                             }
                             else if (label is CILParser.Int32Context int32)
                             {
                                 int offset = VisitInt32(int32).Value;
-                                LabelHandle labelHandle = _currentMethod!.Definition.MethodBody.DefineLabel();
-                                labels.Add((labelHandle, offset));
+                                labels.Add((default, offset));
                             }
                             }
                         }
-                        if (labels.Count > 0)
-                        {
-                            var switchEncoder = _currentMethod!.Definition.MethodBody.Switch(labels.Count);
-                            foreach (var label in labels)
-                            {
-                                switchEncoder.Branch(label.Label);
-                            }
-                        }
-                        else
-                        {
-                            // Empty switch: emit opcode + 0 count manually
-                            _currentMethod!.Definition.MethodBody.OpCode(ILOpCode.Switch);
-                            _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(0);
-                        }
-                        // Now that we've emitted the switch instruction, we can go back and mark the offset-based target labels
-                        foreach (var label in labels)
-                        {
-                            if (label.Offset is int offset)
-                            {
-                                _currentMethod.Definition.MethodBody.MarkLabel(label.Label, _currentMethod.Definition.MethodBody.Offset + offset);
-                            }
-                        }
+                        _currentMethod!.Definition.MethodBody.Switch(labels, Location.From(context.Start, _documents));
                     }
                     break;
                 case CILParser.RULE_instr_tok:
@@ -3599,20 +3559,10 @@ namespace ILAssembler
                 case CILParser.RULE_instr_var:
                     {
                         string instrName = opcode.ToString();
-                        bool isShortForm = instrName.EndsWith("_s");
-                        _currentMethod!.Definition.MethodBody.OpCode(opcode);
                         if (context.int32() is CILParser.Int32Context int32)
                         {
                             int value = VisitInt32(int32).Value;
-                            if (isShortForm)
-                            {
-                                // Emit a byte instead of the int for the short form
-                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)value);
-                            }
-                            else
-                            {
-                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(value);
-                            }
+                            _currentMethod!.Definition.MethodBody.Variable(opcode, value, _options.Optimize);
                         }
                         else
                         {
@@ -3653,15 +3603,7 @@ namespace ILAssembler
 
                             index ??= -1;
 
-                            if (isShortForm)
-                            {
-                                // Emit a byte instead of the int for the short form
-                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)index.Value);
-                            }
-                            else
-                            {
-                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(index.Value);
-                            }
+                            _currentMethod.Definition.MethodBody.Variable(opcode, index.Value, _options.Optimize);
                         }
                     }
                     break;
@@ -3830,6 +3772,19 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => VisitIntOrWildcard(context);
         public GrammarResult.Literal<int?> VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => context.int32() is {} int32 ? new(VisitInt32(int32).Value) : new(null);
 
+        private LabelHandle GetReferencedLabel(CILParser.IdContext context)
+        {
+            Debug.Assert(_currentMethod is not null);
+            string name = VisitId(context).Value;
+            if (!_currentMethod.Labels.TryGetValue(name, out LabelHandle label))
+            {
+                label = _currentMethod.Definition.MethodBody.DefineLabel();
+                _currentMethod.Labels.Add(name, label);
+            }
+            _currentMethod.UndefinedLabelReferences.TryAdd(name, context);
+            return label;
+        }
+
         private void ValidateLabelReferences()
         {
             if (_currentMethod is null)
@@ -3849,8 +3804,11 @@ namespace ILAssembler
                     ReportError(DiagnosticIds.LabelNotFound,
                         string.Format(DiagnosticMessageTemplates.LabelNotFound, labelName),
                         context);
+                    // The diagnosed unresolved reference retains a zero target in error-tolerant output.
+                    _currentMethod.Definition.MethodBody.MarkLabel(_currentMethod.Labels[labelName], 0);
                 }
             }
+            _diagnostics.AddRange(_currentMethod.Definition.MethodBody.Complete(_currentMethod.Definition.ExceptionRegions));
         }
 
         public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
@@ -5221,16 +5179,16 @@ namespace ILAssembler
                 switch (clause)
                 {
                     case ExceptionClause.Finally finallyClause:
-                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FinallyRegion(tryStart, tryEnd, finallyClause.Start, finallyClause.End));
+                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FinallyRegion(tryStart, tryEnd, finallyClause.Start, finallyClause.End, Location.From(context.Start, _documents)));
                         break;
                     case ExceptionClause.Fault faultClause:
-                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FaultRegion(tryStart, tryEnd, faultClause.Start, faultClause.End));
+                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FaultRegion(tryStart, tryEnd, faultClause.Start, faultClause.End, Location.From(context.Start, _documents)));
                         break;
                     case ExceptionClause.Catch catchClause:
-                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.CatchRegion(tryStart, tryEnd, catchClause.Start, catchClause.End, catchClause.Type));
+                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.CatchRegion(tryStart, tryEnd, catchClause.Start, catchClause.End, catchClause.Type, Location.From(context.Start, _documents)));
                         break;
                     case ExceptionClause.Filter filterClause:
-                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FilterRegion(tryStart, tryEnd, filterClause.Start, filterClause.End, filterClause.FilterStart));
+                        _currentMethod!.Definition.ExceptionRegions.Add(new EntityRegistry.ExceptionRegion.FilterRegion(tryStart, tryEnd, filterClause.Start, filterClause.End, filterClause.FilterStart, Location.From(context.Start, _documents)));
                         break;
                     default:
                         throw new UnreachableException();
@@ -5573,8 +5531,8 @@ namespace ILAssembler
             var ids = context.id();
             if (ids.Length == 2)
             {
-                var start = _currentMethod!.Labels.TryGetValue(VisitId(ids[0]).Value, out LabelHandle startLabel) ? startLabel : _currentMethod.Labels[VisitId(ids[0]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
-                var end = _currentMethod!.Labels.TryGetValue(VisitId(ids[1]).Value, out LabelHandle endLabel) ? endLabel : _currentMethod.Labels[VisitId(ids[1]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
+                LabelHandle start = GetReferencedLabel(ids[0]);
+                LabelHandle end = GetReferencedLabel(ids[1]);
                 return new((start, end));
             }
             var offsets = context.int32();
