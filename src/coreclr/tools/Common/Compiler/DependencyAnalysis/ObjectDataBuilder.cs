@@ -122,16 +122,16 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void EmitHalfNaturalInt(short emit)
+        public void EmitHalfNaturalUInt(ushort emit)
         {
             if (_target.PointerSize == 8)
             {
-                EmitInt(emit);
+                EmitUInt(emit);
             }
             else
             {
                 Debug.Assert(_target.PointerSize == 4);
-                EmitShort(emit);
+                EmitUShort(emit);
             }
         }
 

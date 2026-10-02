@@ -109,17 +109,12 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(multiDim || rank == 1);
 
+            if (elementType.IsByRef || elementType.IsVoid || elementType.IsByRefLike)
+                throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
+
             RuntimeTypeHandle elementTypeHandle = elementType.InternalTypeHandleIfAvailable;
             if (elementTypeHandle.IsNull())
                 return default(RuntimeTypeHandle);
-
-            // The check is here on purpose - one of the implementations of IsByRefLike contains a custom attribute
-            // search and those are very expensive from size on disk footprint perspective. We purposefully
-            // place this call in a path that won't be part of the executable image unless more advanced reflection services
-            // are also needed ("pay for play"). We really don't want a typeof() to push the app into requiring the full reflection
-            // stack to be compiled into the final executable.
-            if (elementType.IsByRefLike)
-                throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
 
             RuntimeTypeHandle typeHandle;
             if (!multiDim)
@@ -140,8 +135,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimeArrayTypeInfo Factory(UnificationKey key)
             {
-                ValidateElementType(key.ElementType, multiDim: false, rank: 1);
-
                 return new RuntimeArrayTypeInfo(key, multiDim: false, rank: 1);
             }
 
@@ -157,8 +150,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
             protected sealed override RuntimeArrayTypeInfo Factory(UnificationKey key)
             {
-                ValidateElementType(key.ElementType, multiDim: true, rank: _rank);
-
                 return new RuntimeArrayTypeInfo(key, multiDim: true, rank: _rank);
             }
 
@@ -177,14 +168,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             public static readonly TypeTableForMultiDimArrayTypeTables Table = new TypeTableForMultiDimArrayTypeTables();
-        }
-
-        private static void ValidateElementType(RuntimeTypeInfo elementType, bool multiDim, int rank)
-        {
-            Debug.Assert(multiDim || rank == 1);
-
-            if (elementType.IsByRef || elementType.IsVoid)
-                throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
         }
     }
 
