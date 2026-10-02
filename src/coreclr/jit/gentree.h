@@ -2127,8 +2127,6 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    bool IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def);
-
     template <typename TVisitor>
     VisitResult VisitLocalDef(Compiler* comp, GenTreeLclVarCommon* def, TVisitor visitor);
 
@@ -2138,9 +2136,6 @@ public:
 
     template <typename TVisitor>
     VisitResult VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor);
-
-    template <typename TVisitor>
-    VisitResult VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor);
 
     bool HasAnyLocalDefs(Compiler* comp);
 
@@ -4523,6 +4518,9 @@ struct AsyncCallInfo
     // and suspend unconditionally.
     bool AlwaysSuspends = false;
 
+    // This async call defines a 'resumed' indicator local
+    bool DefinesResumedIndicator = false;
+
     bool NeedsToSaveAndRestoreExecutionContext() const
     {
         return true;
@@ -5729,6 +5727,9 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
     }
+
+    template <typename TVisitor>
+    VisitResult VisitCallLocalDefNodes(Compiler* comp, TVisitor visitor);
 
     InlineCandidateInfo* GetSingleInlineCandidateInfo()
     {

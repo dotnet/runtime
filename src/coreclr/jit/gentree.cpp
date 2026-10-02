@@ -2576,7 +2576,8 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
         const AsyncCallInfo& i1 = c1->GetAsyncInfo();
         const AsyncCallInfo& i2 = c2->GetAsyncInfo();
         if ((i1.ContinuationContextHandling != i2.ContinuationContextHandling) ||
-            (i1.IsValueTaskAsTask != i2.IsValueTaskAsTask) || (i1.IsTailAwait != i2.IsTailAwait))
+            (i1.IsValueTaskAsTask != i2.IsValueTaskAsTask) || (i1.IsTailAwait != i2.IsTailAwait) ||
+            (i1.DefinesResumedIndicator != i2.DefinesResumedIndicator))
         {
             return false;
         }
@@ -8658,10 +8659,9 @@ bool GenTree::OperRequiresAsgFlag() const
         case GT_MEMORYBARRIER:
             return true;
 
-        // If the call has return buffer argument, it produced a definition and hence
-        // should be marked with GTF_ASG.
         case GT_CALL:
-            return AsCall()->IsOptimizingRetBufAsLocal();
+            return AsCall()->IsOptimizingRetBufAsLocal() ||
+                   (AsCall()->IsAsync() && AsCall()->GetAsyncInfo().DefinesResumedIndicator);
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -22040,16 +22040,13 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 //
 GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call)
 {
-    if (!call->IsAsync())
+    if (!call->IsAsync() || !call->GetAsyncInfo().DefinesResumedIndicator)
     {
         return nullptr;
     }
 
     CallArg* arg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
-    if (arg == nullptr)
-    {
-        return nullptr;
-    }
+    assert(arg != nullptr);
 
     GenTree* node = arg->GetNode();
     assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());

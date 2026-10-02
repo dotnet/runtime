@@ -4761,24 +4761,19 @@ struct PromotedRangeLocalDef : LocalDefProvider<PromotedRangeLocalDef>
 };
 
 template <typename TVisitor>
-GenTree::VisitResult VisitPromotedRangeLocalDefs(
-    Compiler* comp, GenTreeLclVarCommon* def, LclVarDsc* varDsc, ssize_t offset, ValueSize storeSize, TVisitor visitor)
+GenTree::VisitResult VisitPromotedRangeLocalDefs(Compiler*            comp,
+                                                 GenTreeLclVarCommon* def,
+                                                 LclVarDsc*           varDsc,
+                                                 ssize_t              offset,
+                                                 ValueSize            storeSize,
+                                                 TVisitor             visitor,
+                                                 bool*                needsBaseDef)
 {
-    unsigned fieldLclNum = comp->lvaGetFieldLocal(varDsc, static_cast<unsigned>(offset));
-    if (fieldLclNum != BAD_VAR_NUM)
-    {
-        LclVarDsc* fieldVarDsc = comp->lvaGetDesc(fieldLclNum);
-        if (fieldVarDsc->lvValueSize() == storeSize)
-        {
-            unsigned index = fieldLclNum - varDsc->lvFieldLclStart;
-            return visitor(PromotedRangeLocalDef(def, fieldLclNum, index, /* isEntire */ true,
-                                                 /* offset */ 0, storeSize, /* valueOffset */ 0, storeSize));
-        }
-    }
-
+    *needsBaseDef        = false;
+    unsigned coveredSize = 0;
     for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
     {
-        fieldLclNum            = varDsc->lvFieldLclStart + index;
+        unsigned   fieldLclNum = varDsc->lvFieldLclStart + index;
         LclVarDsc* fieldVarDsc = comp->lvaGetDesc(fieldLclNum);
 
         ssize_t   fieldStoreOffset;
@@ -4786,6 +4781,11 @@ GenTree::VisitResult VisitPromotedRangeLocalDefs(
         if (!comp->gtStoreMayDefineField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
         {
             continue;
+        }
+
+        if (fieldStoreSize.IsExact())
+        {
+            coveredSize += fieldStoreSize.GetExact();
         }
 
         bool    isEntire    = (fieldStoreOffset == 0) && (fieldStoreSize == fieldVarDsc->lvValueSize());
@@ -4797,42 +4797,9 @@ GenTree::VisitResult VisitPromotedRangeLocalDefs(
         }
     }
 
+    *needsBaseDef = varDsc->lvContainsHoles && (ValueSize(coveredSize) != storeSize) && varDsc->lvDoNotEnregister;
+
     return GenTree::VisitResult::Continue;
-}
-
-//------------------------------------------------------------------------
-// IsEntireLocalDef: Check whether a physical local definition entirely
-// defines its local.
-//
-// Arguments:
-//   comp - the compiler instance
-//   def  - the physical definition
-//
-// Return Value:
-//   True if it does.
-//
-inline bool GenTree::IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def)
-{
-    if (OperIs(GT_STORE_LCL_VAR))
-    {
-        return true;
-    }
-
-    if (OperIs(GT_STORE_LCL_FLD))
-    {
-        return !def->IsPartialLclFld(comp);
-    }
-
-    assert(OperIs(GT_CALL));
-    GenTreeCall* call = AsCall();
-    if (def == comp->gtCallGetDefinedAsyncResumedLclAddr(call))
-    {
-        return comp->lvaLclExactSize(def->GetLclNum()) == TARGET_POINTER_SIZE;
-    }
-
-    assert(def == comp->gtCallGetDefinedRetBufLclAddr(call));
-    ValueSize storeSize(comp->typGetObjLayout(call->gtRetClsHnd)->GetSize());
-    return comp->IsEntireAccess(def->GetLclNum(), def->GetLclOffs(), storeSize);
 }
 
 //------------------------------------------------------------------------
@@ -4864,6 +4831,11 @@ GenTree::VisitResult GenTree::VisitLocalDef(Compiler* comp, GenTreeLclVarCommon*
         RETURN_IF_ABORT(visitor(PromotedStoreLclVarDef(def, fieldLclNum, index)));
     }
 
+    if (varDsc->lvContainsHoles && varDsc->lvDoNotEnregister)
+    {
+        return visitor(StoreLclVarDef(def));
+    }
+
     return VisitResult::Continue;
 }
 
@@ -4888,14 +4860,20 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 {
     assert(OperIs(GT_CALL));
 
-    unsigned   lclNum = def->GetLclNum();
-    LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
-    if (!varDsc->lvPromoted)
+    unsigned   lclNum       = def->GetLclNum();
+    LclVarDsc* varDsc       = comp->lvaGetDesc(lclNum);
+    bool       needsBaseDef = true;
+    if (varDsc->lvPromoted)
+    {
+        RETURN_IF_ABORT(VisitPromotedRangeLocalDefs(comp, def, varDsc, offset, size, visitor, &needsBaseDef));
+    }
+
+    if (needsBaseDef)
     {
         return visitor(CallLocalDef(def, isEntire, offset, size));
     }
 
-    return VisitPromotedRangeLocalDefs(comp, def, varDsc, offset, size, visitor);
+    return VisitResult::Continue;
 }
 
 //------------------------------------------------------------------------
@@ -4909,6 +4887,10 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
 //
 // Notes:
+//   Stores touching padding in dependently promoted locals also report a
+//   definition of the parent covering the full store range, overlapping any
+//   reported field definitions.
+//
 //   This function is contractually bound to recognize a superset of stores
 //   that "LocalAddressVisitor" recognizes and transforms, as it is used to
 //   detect which trees can define tracked locals.
@@ -4922,14 +4904,21 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
     }
     if (OperIs(GT_STORE_LCL_FLD))
     {
-        GenTreeLclFld* fld    = AsLclFld();
-        LclVarDsc*     varDsc = comp->lvaGetDesc(fld);
-        if (!varDsc->lvPromoted)
+        GenTreeLclFld* fld          = AsLclFld();
+        LclVarDsc*     varDsc       = comp->lvaGetDesc(fld);
+        bool           needsBaseDef = true;
+        if (varDsc->lvPromoted)
+        {
+            RETURN_IF_ABORT(VisitPromotedRangeLocalDefs(comp, fld, varDsc, fld->GetLclOffs(), fld->GetValueSize(),
+                                                        visitor, &needsBaseDef));
+        }
+
+        if (needsBaseDef)
         {
             return visitor(StoreLclFldDef(fld));
         }
 
-        return VisitPromotedRangeLocalDefs(comp, fld, varDsc, fld->GetLclOffs(), fld->GetValueSize(), visitor);
+        return VisitResult::Continue;
     }
     if (OperIs(GT_CALL))
     {
@@ -4961,7 +4950,7 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
 }
 
 //------------------------------------------------------------------------
-// VisitPhysicalLocalDefNodes: Visit physical GenTreeLclVarCommon nodes representing definitions in the specified node.
+// VisitCallLocalDefNodes: Visit local address nodes representing definitions made by this call.
 //
 // Arguments:
 //   comp    - the compiler instance
@@ -4971,31 +4960,18 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
 //
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor)
+GenTree::VisitResult GenTreeCall::VisitCallLocalDefNodes(Compiler* comp, TVisitor visitor)
 {
-    if (OperIs(GT_STORE_LCL_VAR))
+    GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(this);
+    if (asyncResumedLclAddr != nullptr)
     {
-        return visitor(AsLclVarCommon());
+        RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
     }
-    if (OperIs(GT_STORE_LCL_FLD))
-    {
-        return visitor(AsLclFld());
-    }
-    if (OperIs(GT_CALL))
-    {
-        GenTreeCall* call = AsCall();
 
-        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
-        if (asyncResumedLclAddr != nullptr)
-        {
-            RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
-        }
-
-        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (retBufLclAddr != nullptr)
-        {
-            return visitor(retBufLclAddr);
-        }
+    GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(this);
+    if (retBufLclAddr != nullptr)
+    {
+        return visitor(retBufLclAddr);
     }
 
     return VisitResult::Continue;
@@ -5013,7 +4989,7 @@ GenTree::VisitResult GenTree::VisitPhysicalLocalDefNodes(Compiler* comp, TVisito
 //
 inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
 {
-    return VisitPhysicalLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
+    return VisitLogicalLocalDefs(comp, [](const auto& def) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
 }

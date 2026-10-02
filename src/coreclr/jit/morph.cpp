@@ -6481,8 +6481,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         }
     }
 
-    // Assign DEF flags if it produces a definition from "return buffer".
-    fgAssignSetVarDef(call);
     if (call->OperRequiresAsgFlag())
     {
         call->gtFlags |= GTF_ASG;
@@ -6824,26 +6822,6 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
     }
 
     return tree;
-}
-
-void Compiler::fgAssignSetVarDef(GenTree* tree)
-{
-    auto visitDef = [=](GenTreeLclVarCommon* def) {
-        if (tree->IsEntireLocalDef(this, def))
-        {
-            def->gtFlags |= GTF_VAR_DEF;
-        }
-        else
-        {
-            // We consider partial definitions to be modeled as uses followed by definitions.
-            // This captures the idea that precedings defs are not necessarily made redundant
-            // by this definition.
-            def->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
-        }
-        return GenTree::VisitResult::Continue;
-    };
-
-    tree->VisitPhysicalLocalDefNodes(this, visitDef);
 }
 
 //------------------------------------------------------------------------------
@@ -13133,12 +13111,12 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
     //
     if (optAssertionCount > 0)
     {
-        auto visitDef = [=](GenTreeLclVarCommon* def) {
-            fgKillDependentAssertions(def->GetLclNum() DEBUGARG(tree));
+        auto visitDef = [=](const auto& def) {
+            fgKillDependentAssertions(def.GetLclNum() DEBUGARG(tree));
             return GenTree::VisitResult::Continue;
         };
 
-        tree->VisitPhysicalLocalDefNodes(this, visitDef);
+        tree->VisitLogicalLocalDefs(this, visitDef);
     }
 
     // Generate assertions
