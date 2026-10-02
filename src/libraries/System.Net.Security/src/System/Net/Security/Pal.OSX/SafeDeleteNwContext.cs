@@ -253,6 +253,19 @@ namespace System.Net.Security
                                 {
                                     _appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
                                 }
+
+                                if (handshakePhase)
+                                {
+                                    // The transport ended before the handshake did, so it can never
+                                    // complete. Fail it here rather than waiting for the cancellation
+                                    // below to round trip through Network.framework and come back as
+                                    // ConnectionCancelled: that callback can be delayed well past the
+                                    // point the peer is known to be gone, leaving AuthenticateAs*
+                                    // pending long after the other PALs would have failed.
+                                    _handshakeCompletionSource.TrySetResult(ExceptionDispatchInfo.SetCurrentStackTrace(
+                                        new IOException(SR.net_io_eof)));
+                                }
+
                                 Interop.NetworkFramework.Tls.NwConnectionCancel(ConnectionHandle);
                                 break;
                             }
