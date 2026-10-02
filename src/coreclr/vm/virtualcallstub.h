@@ -1303,7 +1303,7 @@ public:
 #ifdef CHAIN_LOOKUP
         CONSISTENCY_CHECK(m_writeLock.OwnedByCurrentThread());
 #endif
-          cache[idx] = elem;
+          VolatileStore(&cache[idx], elem);
         }
 
 #ifdef CHAIN_LOOKUP

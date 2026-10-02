@@ -27,8 +27,9 @@ public class Async2FibonacceWithoutYields
         return num;
     }
 
+    [Fact]
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
-    private static async Task<int> AsyncEntry()
+    public static async Task<int> AsyncEntry()
     {
         int result = 0;
         for (int i = 0; i < 10; i++)
@@ -37,11 +38,5 @@ public class Async2FibonacceWithoutYields
         }
 
         return result;
-    }
-
-    [Fact]
-    public static int Test()
-    {
-        return AsyncEntry().Result;
     }
 }

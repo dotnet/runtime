@@ -766,7 +766,8 @@ CMiniMdRW::CMiniMdRW()
         // If assert fires, change define for AUTO_GROW_CODED_TOKEN_PADDING.
         _ASSERTE(CMiniMdRW::m_cb[iMax] == AUTO_GROW_CODED_TOKEN_PADDING);
     }
-    dbg_m_pLock = NULL;
+    dbg_m_fLockEnabled = false;
+    dbg_m_fIsLockedForWrite.Store(false);
 #endif //_DEBUG
 
 } // CMiniMdRW::CMiniMdRW
@@ -1232,16 +1233,17 @@ CMiniMdRW::MapToken(    // Return value from user callback.
     mdToken tkn)        // Token type.
 {
     HRESULT     hr = S_OK;
-    TOKENREC   *pTokenRec;
-    MDTOKENMAP *pMovementMap;
     // If not change, done.
     if (from == to)
         return S_OK;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
+    MDTOKENMAP *pMovementMap;
     pMovementMap = GetTokenMovementMap();
     _ASSERTE(GetTokenMovementMap() != NULL);
     if (pMovementMap != NULL)
-        IfFailRet(pMovementMap->AppendRecord( TokenFromRid(from, tkn), false, TokenFromRid(to, tkn), &pTokenRec ));
+        IfFailRet(pMovementMap->AppendRecord(TokenFromRid(from, tkn), TokenFromRid(to, tkn)));
+#endif
 
     // Notify client.
     if (m_pHandler != NULL)
@@ -1791,6 +1793,7 @@ ErrExit:
     return hr;
 } // CMiniMdRW::InitNew
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Determine how big the tables would be when saved.
 //*****************************************************************************
@@ -2132,6 +2135,8 @@ int CMiniMdRW::IsPoolEmpty(             // True or false.
     return true;
 } // CMiniMdRW::IsPoolEmpty
 
+#endif
+
 // --------------------------------------------------------------------------------------
 //
 // Gets user string (*Data) at index (nIndex) and fills the index (*pnNextIndex) of the next user string
@@ -2224,6 +2229,7 @@ bool CMiniMdRW::CanHaveCustomAttribute( // Can a given table have a custom attri
 } // CMiniMdRW::CanHaveCustomAttribute
 #endif //_DEBUG
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //---------------------------------------------------------------------------------------
 //
 // Perform any available pre-save optimizations.
@@ -3343,6 +3349,8 @@ CMiniMdRW::SavePoolToStream(
     return hr;
 } // CMiniMdRW::SavePoolToStream
 
+#endif
+
 //*****************************************************************************
 // Expand a table from the initial (hopeful) 2-byte column sizes to the large
 //  (but always adequate) 4-byte column sizes.
@@ -3561,6 +3569,7 @@ ErrExit:
 } // CMiniMdRW::ExpandTableColumns
 
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Used by caller to let us know save is completed.
 //*****************************************************************************
@@ -3631,6 +3640,7 @@ CMiniMdRW::FixUpRefToDef()
 {
     return NOERROR;
 } // CMiniMdRW::FixUpRefToDef
+#endif
 
 //*****************************************************************************
 // Given a table with a pointer (index) to a sequence of rows in another
@@ -6271,57 +6281,6 @@ ErrExit:
 } // CMiniMdRW::AddNamedItemToHash
 
 //*****************************************************************************
-// If the hash is built, search for the item.
-//*****************************************************************************
-CMiniMdRW::HashSearchResult
-CMiniMdRW::FindNamedItemFromHash(
-    ULONG     ixTbl,    // Table with the item.
-    LPCUTF8   szName,   // Name of item.
-    mdToken   tkParent, // Token of parent, if any.
-    mdToken * ptk)      // Return if found.
-{
-    // If the table is there, look for the item in the chain of items.
-    if (m_pNamedItemHash != NULL)
-    {
-        TOKENHASHENTRY *p;              // Hash entry from chain.
-        ULONG       iHash;              // Item's hash value.
-        int         pos;                // Position in hash chain.
-        mdToken     type;               // Type of the item being sought.
-
-        type = g_TblIndex[ixTbl].m_Token;
-
-        // Hash the data.
-        iHash = HashNamedItem(tkParent, szName);
-
-        // Go through every entry in the hash chain looking for ours.
-        for (p = m_pNamedItemHash->FindFirst(iHash, pos);
-             p != NULL;
-             p = m_pNamedItemHash->FindNext(pos))
-        {   // Check that the item is from the right table.
-            if (TypeFromToken(p->tok) != (ULONG)type)
-            {
-                //<TODO>@FUTURE: if using the named item hash for multiple tables, remove
-                //  this check.  Until then, debugging aid.</TODO>
-                _ASSERTE(!"Table mismatch in hash chain");
-                continue;
-            }
-            // Item is in the right table, do the deeper check.
-            if (CompareNamedItems(ixTbl, p->tok, szName, tkParent) == S_OK)
-            {
-                *ptk = p->tok;
-                return Found;
-            }
-        }
-
-        return NotFound;
-    }
-    else
-    {
-        return NoTable;
-    }
-} // CMiniMdRW::FindNamedItemFromHash
-
-//*****************************************************************************
 // Check a given mr token to see if this one is a match.
 //*****************************************************************************
 __checkReturn
@@ -6997,7 +6956,7 @@ void
 CMiniMdRW::Debug_CheckIsLockedForWrite()
 {
     // If this assert fires, then we are trying to modify MetaData that is not locked for write
-    _ASSERTE((dbg_m_pLock == NULL) || dbg_m_pLock->Debug_IsLockedForWrite());
+    _ASSERTE(!dbg_m_fLockEnabled || dbg_m_fIsLockedForWrite.Load());
 }
 
 #endif //_DEBUG

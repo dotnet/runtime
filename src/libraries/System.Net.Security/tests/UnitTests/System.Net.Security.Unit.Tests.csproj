@@ -55,6 +55,7 @@
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <!-- Linux specific tests -->
+    <Compile Include="OpenSslErrorTests.cs" />
     <Compile Include="SslStreamCertificateContextOcspLinuxTests.cs" />
 
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Linux.cs" />
@@ -135,7 +136,7 @@
   </ItemGroup>
 
   <!-- Compiled on desktop only: crashes Apple-mobile CoreCLR at startup due to R2R IL-body stripping. -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true' and ('$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx')">
     <Compile Include="SslAuthenticationOptionsTests.Desktop.cs" />
   </ItemGroup>
 

@@ -443,6 +443,7 @@ class AsyncTransformation
                                     const jitstd::vector<GenTree*>& defs,
                                     AsyncAnalysis&                  analyses,
                                     ContinuationLayoutBuilder*      layoutBuilder);
+    bool IsCallDefLiveInEHSucc(BasicBlock* block, unsigned lclNum);
 
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
@@ -565,6 +566,7 @@ class AsyncTransformation
                                                               GenTree*                  syncContext);
     GenTreeLclVarCommon*      FindAndRemoveCommonAsyncResumedDef();
     const ContinuationLayout* CreateResumptionsAndSuspensions(ArrayStack<GenTree*>& continuationMemberOffsets);
+    BasicBlock*               CreateOSRJumpBB(GenTree* osrAddress);
     void                      CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyncResumedDef);
 
     BasicBlock* CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,

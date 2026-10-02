@@ -129,6 +129,9 @@
   <data name="Argument_InputAndDestinationSpanMustNotOverlap" xml:space="preserve">
     <value>The destination span may only overlap with an input span if the two spans start at the same memory location.</value>
   </data>
+  <data name="Argument_OverlappingTensorLayoutsNotSupported" xml:space="preserve">
+    <value>The input and destination tensor spans overlap in an unsupported layout.</value>
+  </data>
   <data name="Argument_DestinationSpansMustNotOverlap" xml:space="preserve">
     <value>Destination spans must not overlap with each other.</value>
   </data>
@@ -137,6 +140,9 @@
   </data>
   <data name="Argument_InvalidEnumValue" xml:space="preserve">
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
+  </data>
+  <data name="InvalidOperation_EnumerationNotPositioned" xml:space="preserve">
+    <value>Enumeration has not started or has already finished.</value>
   </data>
   <data name="Argument_TypeContainsReferences" xml:space="preserve">
     <value>The type '{0}' is not supported because it contains references.</value>
@@ -167,6 +173,9 @@
   </data>
   <data name="ThrowArgument_DimensionsNotSame" xml:space="preserve">
     <value>Number of dimensions to slice does not equal the number of dimensions in the span</value>
+  </data>
+  <data name="ThrowArgument_DestinationHasOverlappingElements" xml:space="preserve">
+    <value>The destination contains overlapping elements and cannot represent distinct output values.</value>
   </data>
   <data name="ThrowArgument_FilterTensorMustEqualTensorLength" xml:space="preserve">
     <value>The total length of the filter tensor must equal the length of the tensor to be filtered.</value>

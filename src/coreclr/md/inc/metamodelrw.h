@@ -197,9 +197,10 @@ public:
 typedef CMetaDataHashBase CMemberRefHash;
 typedef CMetaDataHashBase CLookUpHash;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 class MDTOKENMAP;
+#endif
 class MDInternalRW;
-class UTSemReadWrite;
 
 template <class MiniMd> class CLiteWeightStgdb;
 class DacDbiInterfaceImpl;
@@ -772,12 +773,6 @@ public:
         LPCUTF8     szName,                 // Name of item.
         mdToken     tkParent);              // Token of parent, if any.
 
-    HashSearchResult FindNamedItemFromHash(
-        ULONG     ixTbl,    // Table with the item.
-        LPCUTF8   szName,   // Name of item.
-        mdToken   tkParent, // Token of parent, if any.
-        mdToken * ptk);     // Return if found.
-
     __checkReturn
     HRESULT CompareNamedItems(              // S_OK match, S_FALSE no match.
         ULONG       ixTbl,                  // Table with the item.
@@ -1232,15 +1227,23 @@ protected:
 #ifdef _DEBUG
 
 protected:
-    UTSemReadWrite * dbg_m_pLock;
+    bool dbg_m_fLockEnabled;
+    Volatile<bool> dbg_m_fIsLockedForWrite;
 
 public:
     // Checks that MetaData is locked for write operation (if thread-safety is enabled and the lock exists)
     void Debug_CheckIsLockedForWrite();
 
-    void Debug_SetLock(UTSemReadWrite * pLock)
+    void Debug_EnableLockCheck()
     {
-        dbg_m_pLock = pLock;
+        dbg_m_fLockEnabled = true;
+    }
+
+    void Debug_SetIsLockedForWrite(bool isLockedForWrite)
+    {
+        _ASSERTE(dbg_m_fLockEnabled);
+        _ASSERTE(dbg_m_fIsLockedForWrite.Load() != isLockedForWrite);
+        dbg_m_fIsLockedForWrite.Store(isLockedForWrite);
     }
 
 #endif //_DEBUG
@@ -1261,8 +1264,10 @@ public:
     FORCEINLINE TOKENMAP *GetMemberRefToMemberDefMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetMemberRefToMemberDefMap() : NULL; };
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     FORCEINLINE MDTOKENMAP *GetTokenMovementMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetTokenMovementMap() : NULL; };
+#endif
 
     FORCEINLINE TokenRemapManager *GetTokenRemapManager() { return m_pTokenRemapManager; };
 

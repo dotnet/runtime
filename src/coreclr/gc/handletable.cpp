@@ -25,14 +25,6 @@
 DWORD g_dwHandles = 0;
 #endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
-#ifndef DACCESS_COMPILE
-int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj)
-{
-    int generation = g_theGCHeap->WhichGeneration(obj);
-    return generation == INT_MAX ? max_generation : generation;
-}
-#endif //DACCESS_COMPILE
-
 /****************************************************************************
  *
  * FORWARD DECLARATIONS
@@ -509,108 +501,6 @@ HHANDLETABLE HndGetHandleTable(OBJECTHANDLE handle)
 
     return (HHANDLETABLE)pTable;
 }
-
-void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
-    if (EVENT_ENABLED(SetGCHandle) || EVENT_ENABLED(PrvSetGCHandle))
-    {
-        uint32_t hndType = HandleFetchType(handle);
-        uint32_t generation = value != 0 ? g_theGCHeap->WhichGeneration(value) : 0;
-        FIRE_EVENT(SetGCHandle, (void *)handle, (void *)value, hndType, generation);
-        FIRE_EVENT(PrvSetGCHandle, (void *) handle, (void *)value, hndType, generation);
-
-#ifdef FEATURE_ASYNC_PINNED_HANDLES
-        // Also fire the things pinned by Async pinned handles
-        if (hndType == HNDTYPE_ASYNCPINNED)
-        {
-            GCToEEInterface::WalkAsyncPinned(value, value, [](Object*, Object* to, void* ctx)
-            {
-                Object* overlapped = reinterpret_cast<Object*>(ctx);
-                uint32_t generation = to != nullptr ? g_theGCHeap->WhichGeneration(to) : 0;
-                FIRE_EVENT(SetGCHandle, (void *)overlapped, (void *)to, HNDTYPE_PINNED, generation);
-            });
-        }
-#endif
-    }
-#else
-    UNREFERENCED_PARAMETER(handle);
-    UNREFERENCED_PARAMETER(value);
-#endif
-}
-
-#ifndef DACCESS_COMPILE
-/*
- * HndWriteBarrierWorker
- *
- * Resets the generation number for the handle's clump to zero.
- *
- */
-void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
-{
-    _ASSERTE (value != NULL);
-
-    // find the write barrier for this handle
-    uint8_t *barrier = (uint8_t *)((uintptr_t)handle & HANDLE_SEGMENT_ALIGN_MASK);
-
-    // sanity
-    _ASSERTE(barrier);
-
-    // find the offset of this handle into the segment
-    uintptr_t offset = (uintptr_t)handle & HANDLE_SEGMENT_CONTENT_MASK;
-
-    // make sure it is in the handle area and not the header
-    _ASSERTE(offset >= HANDLE_HEADER_SIZE);
-
-    // compute the clump index for this handle
-    offset = (offset - HANDLE_HEADER_SIZE) / (HANDLE_SIZE * HANDLE_HANDLES_PER_CLUMP);
-
-    // Be careful to read and write the age byte via volatile operations. Otherwise the compiler has been
-    // observed to translate the read + conditional write sequence below into an unconditional read/write
-    // (utilizing a conditional register move to determine whether the write is an update or simply writes
-    // back what was read). This is a legal transformation for non-volatile accesses but obviously leads to a
-    // race condition where we can lose an update (see the comment below for the race condition).
-    volatile uint8_t * pClumpAge = barrier + offset;
-
-    // if this age is smaller than age of the clump, update the clump age
-    if (*pClumpAge != 0) // Perf optimization: if clumpAge is 0, nothing more to do
-    {
-        // find out generation
-        int generation = GetConvertedGeneration(value);
-        uint32_t uType = HandleFetchType(handle);
-
-#ifdef FEATURE_ASYNC_PINNED_HANDLES
-        //OverlappedData need special treatment: because all user data pointed by it needs to be reported by this handle,
-        //its age is consider to be min age of the user data, to be simple, we just make it 0
-        if (uType == HNDTYPE_ASYNCPINNED)
-        {
-            generation = 0;
-        }
-#endif
-
-        if (uType == HNDTYPE_DEPENDENT)
-        {
-            generation = 0;
-        }
-
-        if (*pClumpAge > (uint8_t) generation)
-        {
-            // We have to be careful here. HndWriteBarrier is not under any synchronization
-            // Consider the scenario where 2 threads are hitting the line below at the same
-            // time. Only one will win. If the winner has an older age than the loser, we
-            // just created a potential GC hole  (The clump will not be reporting the
-            // youngest handle in the clump, thus GC may skip the clump). To fix this
-            // we just set the clump age to 0, which means that whoever wins the race
-            // results are the same, as GC will always look at the clump
-            *pClumpAge = (uint8_t)0;
-        }
-    }
-}
-#endif // DACCESS_COMPILE
 
 /*
  * HndEnumHandles
@@ -1152,5 +1042,3 @@ void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
 
 
 /*--------------------------------------------------------------------------*/
-
-

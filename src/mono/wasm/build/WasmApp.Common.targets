@@ -399,6 +399,7 @@
       <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccDefaultIncomingModuleJSAPI ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <PropertiesThatTriggerRelinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
@@ -408,6 +409,7 @@
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
       <Output TaskParameter="EmccDefaultExportedFunctions" ItemName="EmccExportedFunction" />
       <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName="EmccExportedRuntimeMethod" />
+      <Output TaskParameter="EmccDefaultIncomingModuleJSAPI" ItemName="_EmccIncomingModuleJSAPI" />
 
       <!-- shared by browser/wasi -->
       <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_DefaulWasmOptConfigurationFlags" />
@@ -523,8 +525,8 @@
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
 
-      <!-- default to relinking in Release config -->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+      <!-- default to relinking in Release config (unless the in-tree defaults are disabled) -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release' and '$(WasmBuildNativeImplicitInReleaseConfiguration)' != 'false'">true</WasmBuildNative>
     </PropertyGroup>
 
     <PropertyGroup>

@@ -44,6 +44,47 @@ public class SyncBlockTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSyncBlock_RefreshesSyncTableEntriesAfterFlush(MockTarget.Architecture arch)
+    {
+        const ulong FirstSyncBlock = 0x1000;
+        const ulong SecondSyncBlock = 0x2000;
+
+        TargetTestHelpers helpers = new(arch);
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.BumpAllocator allocator = builder.MemoryBuilder.CreateAllocator(0x0001_0000, 0x0002_0000);
+        Layout<MockSyncTableEntry> layout = MockSyncTableEntry.CreateLayout(arch);
+
+        MockSyncTableEntry firstEntry = layout.Create(allocator.Allocate((ulong)layout.Size, "First SyncTableEntry"));
+        firstEntry.SyncBlock = FirstSyncBlock;
+
+        MockSyncTableEntry secondEntry = layout.Create(allocator.Allocate((ulong)layout.Size, "Second SyncTableEntry"));
+        secondEntry.SyncBlock = SecondSyncBlock;
+
+        MockMemorySpace.HeapFragment global = allocator.Allocate((ulong)helpers.PointerSize, "SyncTableEntries");
+        helpers.WritePointer(global.Data, firstEntry.Address);
+
+        TestPlaceholderTarget target = builder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.SyncTableEntry] = TargetTestHelpers.CreateTypeInfo(layout),
+            })
+            .AddGlobals((Constants.Globals.SyncTableEntries, global.Address))
+            .AddContract<ISyncBlock>("c1")
+            .Build();
+
+        ISyncBlock contract = target.Contracts.SyncBlock;
+        Assert.Equal(new TargetPointer(FirstSyncBlock), contract.GetSyncBlock(0));
+
+        target.WritePointer(global.Address, new TargetPointer(secondEntry.Address));
+        Assert.Equal(new TargetPointer(FirstSyncBlock), contract.GetSyncBlock(0));
+
+        target.Flush(FlushScope.All);
+
+        Assert.Equal(new TargetPointer(SecondSyncBlock), contract.GetSyncBlock(0));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetSyncBlockFromCleanupList_SingleItem(MockTarget.Architecture arch)
     {
         TargetPointer syncBlockAddress = TargetPointer.Null;

@@ -32,6 +32,11 @@ public class Program
     [Fact]
     public static int TestEntryPoint()
     {
+        if (Assembly.GetExecutingAssembly().Location.Length == 0)
+        {
+            return 100;
+        }
+
         var holdResult = HoldAssembliesAliveThroughByRefFields(out GCHandle gch1, out GCHandle gch2);
         if (holdResult != 100)
             return holdResult;

@@ -240,6 +240,18 @@ namespace System.Security.Cryptography
         public static CngAlgorithm CompositeMLDsa =>
             field ??= new CngAlgorithm("Composite-ML-DSA"); // BCRYPT_COMPOSITE_MLDSA_ALGORITHM
 
+        /// <summary>
+        ///   Gets a new <see cref="CngAlgorithm"/> object that specifies the Composite Module-Lattice-Based
+        ///   Key-Encapsulation Mechanism (Composite ML-KEM) algorithm.
+        /// </summary>
+        /// <value>
+        ///   A new <see cref="CngAlgorithm"/> object that specifies the Composite Module-Lattice-Based
+        ///   Key-Encapsulation Mechanism (Composite ML-KEM) algorithm.
+        /// </value>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithm CompositeMLKem =>
+            field ??= new CngAlgorithm("Composite-ML-KEM"); // BCRYPT_COMPOSITE_MLKEM_ALGORITHM
+
         private static CngAlgorithm? s_ecdh;
         private static CngAlgorithm? s_ecdhp256;
         private static CngAlgorithm? s_ecdhp384;

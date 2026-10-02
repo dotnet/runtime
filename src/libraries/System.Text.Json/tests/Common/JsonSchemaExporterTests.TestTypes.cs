@@ -919,7 +919,8 @@ namespace System.Text.Json.Schema.Tests
                         "X7": {"type":["integer","null"], "default": 42 },
                         "X8": {"type":["boolean","null"], "default": true },
                         "X9": {"type":["number","null"], "default": 0 },
-                        "X10": {"enum":["A","B","C", null], "default": "A" }
+                        "X10": {"enum":["A","B","C", null], "default": "A" },
+                        "X11": {"type":"string", "format":"uuid", "default":"00000000-0000-0000-0000-000000000000" }
                     }
                 }
                 """);
@@ -1404,6 +1405,13 @@ namespace System.Text.Json.Schema.Tests
             public string? StringProperty { get; set; }
         }
 
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        public union StrictIntOrStringUnion(int, string);
+
+        public union IntOrBoolUnion(int, bool);
+
+        public union NullableIntUnion(int?);
+
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public class PocoWithCustomNumberHandling
         {
@@ -1592,7 +1600,8 @@ namespace System.Text.Json.Schema.Tests
 
         public class PocoWithOptionalConstructorParams(
             string x1 = "str", int x2 = 42, bool x3 = true, double x4 = 0, StringEnum x5 = StringEnum.A,
-            string? x6 = "str", int? x7 = 42, bool? x8 = true, double? x9 = 0, StringEnum? x10 = StringEnum.A)
+            string? x6 = "str", int? x7 = 42, bool? x8 = true, double? x9 = 0, StringEnum? x10 = StringEnum.A,
+            Guid x11 = default)
         {
             public string X1 { get; } = x1;
             public int X2 { get; } = x2;
@@ -1605,6 +1614,7 @@ namespace System.Text.Json.Schema.Tests
             public bool? X8 { get; } = x8;
             public double? X9 { get; } = x9;
             public StringEnum? X10 { get; } = x10;
+            public Guid X11 { get; } = x11;
         }
 
         // Regression test for https://github.com/dotnet/runtime/issues/92487
