@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             IConfigurationSection section = configuration.GetSection(key);
 
-            if (TryGetConfigurationValue(section, key: null, out string? value) && !string.IsNullOrEmpty(value))
+            if (TryGetConfigurationValue(section, key: null, out string? value) && value is not null)
             {
                 if (type == typeof(int))
                 {
@@ -68,7 +68,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (type == typeof(bool?))
                 {
-                    return ParseBool(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        return ParseBool(value, section.Path);
+                    }
                 }
                 else if (type == typeof(byte[]))
                 {

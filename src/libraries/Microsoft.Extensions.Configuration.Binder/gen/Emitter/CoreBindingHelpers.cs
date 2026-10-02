@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -123,8 +123,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Identifier.value,
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"return {parsedValueExpr};"),
-                                    checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
+                                    checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue,
+                                    checkForEmptySectionValue: type is NullableSpec);
                                 EmitEndBlock(); // End if-check for input type.
+                                _writer.WriteLine("return null;");
                             }
                             break;
                         case ConfigurationSectionSpec:
@@ -185,7 +187,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _writer.WriteLine($@"{Identifier.IConfigurationSection} {Identifier.section} = {GetSectionFromConfigurationExpression(Identifier.key, addQuotes: false)};");
                 _writer.WriteLine();
 
-                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.section}, {Identifier.key}: null, out string? {Identifier.value}) && !string.IsNullOrEmpty({Identifier.value}))");
+                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.section}, {Identifier.key}: null, out string? {Identifier.value}) && {Identifier.value} is not null)");
 
                 bool isFirstType = true;
                 foreach (TypeSpec type in targetTypes)
@@ -198,7 +200,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         Identifier.value,
                         Expression.sectionPath,
                         writeOnSuccess: (parsedValueExpr) => _writer.WriteLine($"return {parsedValueExpr};"),
-                        checkForNullSectionValue: false);
+                        checkForNullSectionValue: false,
+                        checkForEmptySectionValue: type is NullableSpec);
 
                     EmitEndBlock();
                 }
@@ -727,7 +730,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 Identifier.value,
                                 Expression.sectionPath,
                                 (parsedValueExpr) => _writer.WriteLine($"{addExpr}({parsedValueExpr});"),
-                                checkForNullSectionValue: true);
+                                checkForNullSectionValue: true,
+                                checkForEmptySectionValue: elementTypeRef.SpecialType is SpecialType.System_Nullable_T);
                             EmitEndBlock(); // End if-check for input type.
                         }
                         break;
@@ -794,7 +798,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Identifier.value,
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"),
-                                    checkForNullSectionValue: true);
+                                    checkForNullSectionValue: true,
+                                    checkForEmptySectionValue: type.ElementTypeRef.SpecialType is SpecialType.System_Nullable_T);
                                 EmitEndBlock(); // End if-check for input type.
                             }
                             break;
@@ -1044,7 +1049,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     valueIdentifier,
                                     sectionPathExpr,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr};"),
-                                    checkForNullSectionValue: !(emitNullCheck && treatEmptyValueAsNull) && !requireValue);
+                                    checkForNullSectionValue: !emitNullCheck && !requireValue);
 
                                 if (emitNullCheck)
                                 {
@@ -1368,7 +1373,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string sectionValueExpr,
                 string sectionPathExpr,
                 Action<string>? writeOnSuccess,
-                bool checkForNullSectionValue)
+                bool checkForNullSectionValue,
+                bool checkForEmptySectionValue = false)
             {
                 StringParsableTypeKind typeKind = type.StringParsableTypeKind;
                 Debug.Assert(typeKind is not StringParsableTypeKind.None);
@@ -1381,25 +1387,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
 
                 // Usually assigning the configuration value to string or object
-                if (!checkForNullSectionValue || typeKind == StringParsableTypeKind.AssignFromSectionValue)
+                if ((!checkForNullSectionValue && !checkForEmptySectionValue) || typeKind == StringParsableTypeKind.AssignFromSectionValue)
                 {
                     writeOnSuccess?.Invoke(parsedValueExpr);
                 }
                 else
                 {
-                    // call parsing methods
+                    string condition = checkForEmptySectionValue
+                        ? $"!string.IsNullOrEmpty({sectionValueExpr})"
+                        : $"{sectionValueExpr} is not null";
 
-                    string conditionPrefix = string.Empty;
-                    // Special case ByteArray when having empty string configuration value as we need to assign empty byte array at that time.
-                    if (typeKind == StringParsableTypeKind.ByteArray)
-                    {
-                        EmitStartBlock($"if ({sectionValueExpr} == string.Empty)");
-                        writeOnSuccess?.Invoke(parsedValueExpr);
-                        EmitEndBlock();
-                        conditionPrefix = "else ";
-                    }
-
-                    EmitStartBlock($"{conditionPrefix}if (!string.IsNullOrEmpty({sectionValueExpr}))");
+                    EmitStartBlock($"if ({condition})");
                     writeOnSuccess?.Invoke(parsedValueExpr);
                     EmitEndBlock();
                 }
