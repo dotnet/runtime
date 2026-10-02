@@ -1500,12 +1500,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
 
-        public WasmFunctionImportNode WasmFunctionImport(ExternFunctionSymbolNode node)
-        {
-            // ReadyToRun does not reference extern functions
-            throw new NotSupportedException();
-        }
-
         private NodeCache<MethodWithGCInfo, WasmMethodRelativeVirtualIPNode> _wasmMethodRelativeVirtualIPs;
 
         private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>

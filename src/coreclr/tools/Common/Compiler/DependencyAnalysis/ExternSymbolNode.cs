@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 
 using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.DependencyAnalysis.Wasm;
 
-using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -110,20 +107,10 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public ExternalTypeSignature? TypeSignature => _typeSignature;
 
-        MethodSignature INodeWithTypeSignature.Signature => _typeSignature.Value.Signature;
+        MethodSignature INodeWithTypeSignature.Signature => _typeSignature?.Signature;
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => _typeSignature.Value.IsUnmanagedCallersOnly;
         bool INodeWithTypeSignature.IsAsyncCall => _typeSignature.Value.IsAsyncCall;
         bool INodeWithTypeSignature.HasGenericContextArg => _typeSignature.Value.HasGenericContextArg;
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
-        {
-            // Indirection cells are data, not functions, so they are not imported as functions
-            if (!factory.Target.IsWasm || RepresentsIndirectionCell)
-                return null;
-
-            Debug.Assert(_typeSignature is not null, $"Extern function '{this}' has no known signature and cannot be imported on Wasm");
-            return [new DependencyListEntry(factory.WasmFunctionImport(this), "Wasm extern functions are imported")];
-        }
     }
 
     public class AddressTakenExternFunctionSymbolNode(Utf8String name) : ExternFunctionSymbolNode(name, typeSignature: null)

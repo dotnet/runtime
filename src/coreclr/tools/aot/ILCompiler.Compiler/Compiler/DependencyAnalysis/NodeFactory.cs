@@ -634,9 +634,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new AnalysisCharacteristicNode(c);
             });
 
-            _wasmFunctionImports = new NodeCache<Utf8String, WasmFunctionImportNode>((Utf8String name) =>
-                throw new InvalidOperationException($"Wasm function import '{name}' must be created from an extern function"));
-
             _wasmTypeNodes = new NodeCache<WasmFuncType, WasmTypeNode>(key =>
             {
                 return new WasmTypeNode(key);
@@ -1663,13 +1660,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
-
-        private NodeCache<Utf8String, WasmFunctionImportNode> _wasmFunctionImports;
-
-        public WasmFunctionImportNode WasmFunctionImport(ExternFunctionSymbolNode node)
-        {
-            return _wasmFunctionImports.GetOrAdd(node.Name, name => new WasmFunctionImportNode(name, node));
-        }
 
         // TODO-Wasm: Do not use WasmFuncType directly as the key for better
         // memory efficiency on lookup
