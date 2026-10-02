@@ -1,9 +1,14 @@
-# This is a wrapper yml for `runtime-extra-platforms-androidemulator.yml`,
-# which has all the wasm jobs. This file is essentially so we can have
-# point the pipeline in azdo UI to this, and thus avoid any scheduled
-# triggers
+# Wrapper for the Android emulator jobs, without scheduled triggers.
 
 trigger: none
+
+pr:
+  branches:
+    include:
+    - release/11.0-rc2
+  paths:
+    include:
+    - '*'
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -20,8 +25,8 @@ extends:
         - template: /eng/common/core-templates/job/helix-job-monitor.yml
           parameters:
             helixAccessToken: $(HelixApiAccessToken)
-            timeoutInMinutes: 540
-            allowNoHelixJobs: true
+            timeoutInMinutes: 1800
+            allowNoHelixJobs: false
 
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
         parameters:
