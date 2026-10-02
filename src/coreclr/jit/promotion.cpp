@@ -1929,7 +1929,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
     }
     if (BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, block->bbPostorderNum))
     {
-        // Predecessors materialize pending readbacks before reaching this boundary.
+        // Predecessors materialize pending readbacks before reaching this block.
         BitVecOps::ClearD(m_replacementsTraits, m_needsReadBack);
         BitVecOps::ClearD(m_replacementsTraits, m_structCurrent);
         return;
