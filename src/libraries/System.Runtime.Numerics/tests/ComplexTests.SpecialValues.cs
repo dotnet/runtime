@@ -365,9 +365,11 @@ namespace System.Numerics.Tests
         [MemberData(nameof(Tan_SpecialValues))]
         public static void Tan(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
-            Verify<double>(Complex<double>.Tan, "Tan", real, imaginary, expectedReal, expectedImaginary);
-            Verify<float>(Complex<float>.Tan, "Tan", real, imaginary, expectedReal, expectedImaginary);
-            Verify<Half>(Complex<Half>.Tan, "Tan", real, imaginary, expectedReal, expectedImaginary);
+            // The sign of a zero result is taken from a NaN input, whose sign is not preserved on every platform.
+            bool exactZeroSign = PlatformDetection.IsNaNPayloadPreservationExpected || (!double.IsNaN(real) && !double.IsNaN(imaginary));
+            Verify<double>(Complex<double>.Tan, "Tan", real, imaginary, expectedReal, expectedImaginary, exactZeroSign);
+            Verify<float>(Complex<float>.Tan, "Tan", real, imaginary, expectedReal, expectedImaginary, exactZeroSign);
+            Verify<Half>(Complex<Half>.Tan, "Tan", real, imaginary, expectedReal, expectedImaginary, exactZeroSign);
         }
 
         [Theory]
@@ -392,9 +394,11 @@ namespace System.Numerics.Tests
         [MemberData(nameof(Tanh_SpecialValues))]
         public static void Tanh(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
-            Verify<double>(Complex<double>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary);
-            Verify<float>(Complex<float>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary);
-            Verify<Half>(Complex<Half>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary);
+            // The sign of a zero result is taken from a NaN input, whose sign is not preserved on every platform.
+            bool exactZeroSign = PlatformDetection.IsNaNPayloadPreservationExpected || (!double.IsNaN(real) && !double.IsNaN(imaginary));
+            Verify<double>(Complex<double>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary, exactZeroSign);
+            Verify<float>(Complex<float>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary, exactZeroSign);
+            Verify<Half>(Complex<Half>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary, exactZeroSign);
         }
 
         [Fact]
