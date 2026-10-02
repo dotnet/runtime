@@ -419,6 +419,11 @@ public:
     // false otherwise.
     bool WaitForSessionToOpen(DWORD dwTimeout);
 
+    // Why the connection to the target's transport has not formed: the reason shared by every completed
+    // attempt since the last success, E_FAIL if they failed for different reasons, or S_OK if none failed or one
+    // is in progress. Lets a caller whose WaitForSessionToOpen() timed out report why.
+    HRESULT GetConnectFailure();
+
     // A valid ticket is returned if no other client is currently acting as the debugger.
     bool UseAsDebugger(DebugTicket * pTicket);
 
@@ -664,6 +669,10 @@ private:
 #ifdef RIGHT_SIDE_COMPILE
     // On the RS the transport thread needs to know the IP address and port number to Connect() to.
     ProcessDescriptor m_pd;                  // Descriptor of a process we're talking to.
+
+    // Updated under m_sStateLock by the transport thread; see GetConnectFailure().
+    HRESULT m_hrConnectFailure = S_OK;
+    bool m_fConnectInProgress = false;
 
     WaitHandle *m_hProcessExited = NULL;     // wait which will be signaled when the debuggee is terminated
 
