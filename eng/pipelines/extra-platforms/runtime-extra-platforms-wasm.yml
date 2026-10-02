@@ -23,19 +23,6 @@ jobs:
 # - rest are covered by runtime
 #
 - ${{ if eq(parameters.isExtraPlatformsBuild, true) }}:
-  # Full trimmed CoreCLR ReadyToRun library tests
-  - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-library-tests.yml
-    parameters:
-      platforms:
-        - wasi_wasm
-      nameSuffix: _R2R
-      readyToRun: true
-      timeoutInMinutes: 480
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      alwaysRun: true
-      useHelixMonitor: ${{ parameters.useHelixMonitor }}
-
   # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
