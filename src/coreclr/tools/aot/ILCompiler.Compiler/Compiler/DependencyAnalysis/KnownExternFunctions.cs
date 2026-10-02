@@ -88,7 +88,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 ReadyToRunHelper.StackProbe => "RhpStackProbe",
                 ReadyToRunHelper.GCPoll => "RhpGcPoll",
-                ReadyToRunHelper.NyiLdVirtFtn => "NYI_LDVIRTFTN",
                 ReadyToRunHelper.TlsGetAddr => "__tls_get_addr",
 
                 _ => throw new NotImplementedException(function.ToString())
@@ -195,8 +194,6 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunHelper.InterfaceDispatchGuarded => null,
 
                 ReadyToRunHelper.StackProbe => null,
-
-                ReadyToRunHelper.NyiLdVirtFtn => null,
 
                 ReadyToRunHelper.TlsGetAddr => null,
 
