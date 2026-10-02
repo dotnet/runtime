@@ -384,8 +384,8 @@ public unsafe partial class TargetTests
         Assert.Equal("unsupported-version", ex.ContractVersion);
     }
 
-    // The contracts required by the data-access interfaces, advertised at the versions
-    // CoreCLRContracts registers. Mirrors CoreCLRContracts.ValidateForDataAccess.
+    // Contracts used by the data-access interfaces, including optional ReJIT.
+    // Versions match CoreCLRContracts.Register.
     private static readonly IReadOnlyDictionary<string, string> s_requiredDataAccessContracts =
         new Dictionary<string, string>
         {
@@ -492,6 +492,48 @@ public unsafe partial class TargetTests
         Contracts.CoreCLRContracts.ValidateForDataAccess(target);
     }
 
+    public static IEnumerable<object?[]> ReJITValidationData()
+    {
+        foreach (object[] data in new MockTarget.StdArch())
+        {
+            yield return [data[0], null, null];
+            yield return [data[0], "c999", typeof(ContractUnrecognizedException)];
+            yield return [data[0], "obsolete-version", typeof(ContractObsoleteException)];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ReJITValidationData))]
+    public void ValidateForDataAccess_ReJITIsOptional(
+        MockTarget.Architecture arch, string? reJitVersion, Type? expectedExceptionType)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        Dictionary<string, string> contracts = new(s_requiredDataAccessContracts);
+        contracts.Remove("ReJIT");
+        if (reJitVersion is not null)
+            contracts["ReJIT"] = reJitVersion;
+
+        descriptorBuilder.SetContracts(contracts);
+        Assert.True(builder.TryCreateTarget(
+            descriptorBuilder,
+            out ContractDescriptorTarget? target,
+            registry => registry.RegisterUnsupported<Contracts.IReJIT>("obsolete-version")));
+
+        if (expectedExceptionType is not null)
+        {
+            System.Exception exception = Assert.Throws(expectedExceptionType, () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
+            ContractUnsupportedException failure = Assert.IsAssignableFrom<ContractUnsupportedException>(exception);
+            Assert.Equal("ReJIT", failure.ContractName);
+            Assert.Equal(reJitVersion, failure.ContractVersion);
+        }
+        else
+        {
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+        }
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void ValidateForDataAccess_Net11Target_DoesNotRequireExternalMemoryHandles(MockTarget.Architecture arch)
@@ -547,7 +589,7 @@ public unsafe partial class TargetTests
         ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
         descriptorBuilder.SetContracts(
             s_requiredDataAccessContracts
-                .Where(static pair => pair.Key != "RuntimeInfo")
+                .Where(static pair => pair.Key is not ("ReJIT" or "RuntimeInfo"))
                 .ToDictionary(static pair => pair.Key, static pair => pair.Value));
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));

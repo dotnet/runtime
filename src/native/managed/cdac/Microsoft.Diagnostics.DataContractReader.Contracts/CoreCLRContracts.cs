@@ -80,19 +80,16 @@ public static class CoreCLRContracts
     }
 
     /// <summary>
-    /// Eagerly validates that every contract required by the cDAC data-access interfaces can be
-    /// provided for the target. Contract availability is checked without instantiating the
-    /// contracts; <see cref="IRuntimeInfo"/> is read to determine the target operating system so
-    /// that OS-specific contracts are validated only when the target platform actually uses them.
-    /// In-box (main-descriptor) contracts are required unconditionally. Contracts published by a
-    /// sub-descriptor are version-checked always, but their absence is tolerated while their
-    /// sub-descriptor is still pending.
+    /// Validates the contracts required by the cDAC data-access interfaces without instantiating them,
+    /// except for <see cref="IRuntimeInfo"/>, which determines the target operating system.
+    /// ReJIT may be absent, but its advertised version must be supported. Sub-descriptor contracts
+    /// may be absent while their provider is pending.
     /// </summary>
     /// <param name="target">The target being validated (source of the contract registry and
     /// sub-descriptor resolution state).</param>
     /// <exception cref="ContractNotAvailableException">
-    /// Thrown for the first required contract that cannot be provided. The concrete exception type
-    /// and its <see cref="System.Exception.HResult"/> identify the failure:
+    /// A required contract is missing or a checked contract version is unsupported. The concrete
+    /// exception type and its <see cref="System.Exception.HResult"/> identify the failure:
     /// <see cref="ContractMissingException"/> / <see cref="CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED"/>
     /// if the target does not advertise a required contract,
     /// <see cref="ContractUnrecognizedException"/> / <see cref="CdacHResults.CDAC_E_CONTRACT_UNRECOGNIZED"/>
@@ -105,11 +102,8 @@ public static class CoreCLRContracts
         using Lock.Scope scope = apiLock is null ? default : apiLock.EnterScope();
         ContractRegistry registry = target.Contracts;
 
-        // In-box (main-descriptor) contract accesses across the ISOSDac* and IXCLRData* surface that
-        // SOSDacImpl exposes. These live in the main descriptor, present as soon as the runtime module
-        // is loaded, so they are required eagerly and unconditionally - a genuinely-missing one is a
-        // serviceability failure even at early attach. IObjectiveCMarshal is intentionally omitted:
-        // SOS reaches it through TryGetContract so its absence degrades gracefully rather than faulting.
+        // Main-descriptor contracts are already published at early attach.
+        // IObjectiveCMarshal is omitted because its callers handle absence through TryGetContract.
         Validate<IAuxiliarySymbols>(registry);
         Validate<ICodeNotifications>(registry);
         Validate<ICodeVersions>(registry);
@@ -125,7 +119,7 @@ public static class CoreCLRContracts
         Validate<INotifications>(registry);
         Validate<IObject>(registry);
         Validate<IPrecodeStubs>(registry);
-        Validate<IReJIT>(registry);
+        Validate<IReJIT>(registry, allowMissing: true); // Not advertised without PROFILING_SUPPORTED.
         Validate<IRuntimeInfo>(registry);
         Validate<IRuntimeTypeSystem>(registry);
         Validate<ISignature>(registry);
@@ -170,9 +164,10 @@ public static class CoreCLRContracts
         // sub-descriptor is resolved. Defer and let the tool APIs see a degradation to E_NOTIMPL.
         ValidateSubDescriptorContract<IGC>(target);
 
-        static void Validate<TContract>(ContractRegistry registry) where TContract : IContract
+        static void Validate<TContract>(ContractRegistry registry, bool allowMissing = false) where TContract : IContract
         {
-            if (registry.TryValidate<TContract>(out System.Exception? failure))
+            if (registry.TryValidate<TContract>(out System.Exception? failure) ||
+                (allowMissing && failure is ContractMissingException))
             {
                 return;
             }
