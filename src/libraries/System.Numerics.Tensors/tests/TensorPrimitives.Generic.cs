@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -309,6 +310,42 @@ namespace System.Numerics.Tensors.Tests
             }
         }
 #endif
+    }
+
+    public unsafe class IndexOfMinMaxLargeSpanTests
+    {
+        // A span whose length is within one block of int.MaxValue: the block loop must not wrap its index past the last block.
+        [OuterLoop("Allocates 2 GB")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public void IndexOfMinMax_LengthNearIntMaxValue()
+        {
+            const int Length = int.MaxValue;
+
+            byte* ptr;
+            try
+            {
+                ptr = (byte*)NativeMemory.Alloc((nuint)Length);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Unable to allocate 2 GB.");
+            }
+
+            try
+            {
+                Span<byte> x = new Span<byte>(ptr, Length);
+                x.Fill(1);
+                x[Length - 1] = 0;
+                x[Length - 3] = 2;
+
+                Assert.Equal(Length - 1, TensorPrimitives.IndexOfMin<byte>(x));
+                Assert.Equal(Length - 3, TensorPrimitives.IndexOfMax<byte>(x));
+            }
+            finally
+            {
+                NativeMemory.Free(ptr);
+            }
+        }
     }
 
     // The tests for some types have been marked as OuterLoop simply to decrease inner loop testing time.
