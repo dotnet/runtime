@@ -10,12 +10,11 @@
 #include "bundle/info.h"
 #include <cassert>
 
-// The semantics of applying the runtimeconfig.json values follows, in the following steps from
-// first to last, where last always wins. These steps are also annotated in the code here.
-// 0) Apply the values in the current "runtimeOptions" section
-// 1) Apply the values in the referenced "frameworks" section
-// 2) Apply the environment settings for DOTNET_ROLL_FORWARD
-// 3) Apply the overrides (from command line or other)
+// Roll-forward settings are selected in precedence order. The code is also annotated with these numbers.
+// 0) Overrides (from command line or other)
+// 1) The environment setting for DOTNET_ROLL_FORWARD
+// 2) The referenced "frameworks" section
+// 3) The config's "runtimeOptions" section
 
 runtime_config_t::runtime_config_t()
     : m_default_settings()
@@ -42,6 +41,8 @@ void runtime_config_t::parse(const pal::string_t& path, const pal::string_t& dev
 {
     m_path = path;
     m_dev_path = dev_path;
+
+    // 0) Command-line and other overrides.
     m_override_settings = override_settings;
 
     // Parse the file
@@ -120,16 +121,17 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         }
     }
 
-    // Step #0: set the defaults from the "runtimeOptions"
+    // 3) "rollForward" value from "runtimeOptions".
     const auto& roll_forward = opts_obj.FindMember(_X("rollForward"));
     if (roll_forward != opts_obj.MemberEnd())
     {
-        auto val = roll_forward_option_from_string(roll_forward->value.GetString());
+        roll_forward_option val = roll_forward_option_from_string(roll_forward->value.GetString());
         if (val == roll_forward_option::__Last)
         {
             trace::error(_X("Invalid value for property 'rollForward'."));
             return false;
         }
+
         m_default_settings.set_roll_forward(val);
     }
 
@@ -139,12 +141,33 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         m_tfm = tfm->value.GetString();
     }
 
-    // Step #1: read the "framework" and "frameworks" section
     const auto& framework = opts_obj.FindMember(_X("framework"));
-    if (framework != opts_obj.MemberEnd())
+    const auto& frameworks = opts_obj.FindMember(_X("frameworks"));
+    if (framework != opts_obj.MemberEnd() || frameworks != opts_obj.MemberEnd())
     {
         m_is_framework_dependent = true;
 
+        if (!m_override_settings.has_roll_forward)
+        {
+            // 1) DOTNET_ROLL_FORWARD environment variable.
+            pal::string_t environment_roll_forward;
+            if (pal::getenv(_X("DOTNET_ROLL_FORWARD"), &environment_roll_forward))
+            {
+                roll_forward_option val = roll_forward_option_from_string(environment_roll_forward);
+                if (val == roll_forward_option::__Last)
+                {
+                    trace::error(_X("Invalid value for environment variable 'DOTNET_ROLL_FORWARD'."));
+                    return false;
+                }
+
+                m_override_settings.set_roll_forward(val);
+            }
+        }
+    }
+
+    // Read the "framework" section.
+    if (framework != opts_obj.MemberEnd())
+    {
         fx_reference_t fx_out;
         if (!parse_framework(framework->value, /*name_and_version_only*/ false, fx_out))
         {
@@ -154,12 +177,10 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         m_frameworks.push_back(fx_out);
     }
 
-    const auto& iter = opts_obj.FindMember(_X("frameworks"));
-    if (iter != opts_obj.MemberEnd())
+    // Read the "frameworks" section.
+    if (frameworks != opts_obj.MemberEnd())
     {
-        m_is_framework_dependent = true;
-
-        if (!read_framework_array(iter->value, /*name_and_version_only*/ false, m_frameworks))
+        if (!read_framework_array(frameworks->value, /*name_and_version_only*/ false, m_frameworks))
         {
             return false;
         }
@@ -183,24 +204,8 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
     return true;
 }
 
-namespace
-{
-    void apply_settings_to_fx_reference(const runtime_config_t::settings_t& settings, fx_reference_t& fx_ref)
-    {
-        if (settings.has_roll_forward)
-        {
-            fx_ref.set_roll_forward(settings.roll_forward);
-        }
-    }
-}
-
 bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, bool name_and_version_only, fx_reference_t& fx_out)
 {
-    if (!name_and_version_only)
-    {
-        apply_settings_to_fx_reference(m_default_settings, fx_out);
-    }
-
     const auto& fx_name = fx_obj.FindMember(_X("name"));
     if (fx_name == fx_obj.MemberEnd())
     {
@@ -235,34 +240,32 @@ bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, boo
         fx_out.set_prefer_release(true);
     }
 
-    const auto& roll_forward = fx_obj.FindMember(_X("rollForward"));
-    if (roll_forward != fx_obj.MemberEnd())
+    if (m_override_settings.has_roll_forward)
     {
-        auto val = roll_forward_option_from_string(roll_forward->value.GetString());
-        if (val == roll_forward_option::__Last)
-        {
-            trace::error(_X("Invalid value for property 'rollForward'."));
-            return false;
-        }
-        fx_out.set_roll_forward(val);
+        // 0) Command-line and other overrides, or 1) DOTNET_ROLL_FORWARD.
+        fx_out.set_roll_forward(m_override_settings.roll_forward);
     }
-
-    // Step #2: apply environment for DOTNET_ROLL_FORWARD
-    pal::string_t env_roll_forward;
-    if (pal::getenv(_X("DOTNET_ROLL_FORWARD"), &env_roll_forward))
+    else
     {
-        auto val = roll_forward_option_from_string(env_roll_forward);
-        if (val == roll_forward_option::__Last)
+        // 2) "rollForward" value from the framework reference.
+        const auto& roll_forward = fx_obj.FindMember(_X("rollForward"));
+        if (roll_forward != fx_obj.MemberEnd())
         {
-            trace::error(_X("Invalid value for environment variable 'DOTNET_ROLL_FORWARD'."));
-            return false;
+            roll_forward_option val = roll_forward_option_from_string(roll_forward->value.GetString());
+            if (val == roll_forward_option::__Last)
+            {
+                trace::error(_X("Invalid value for property 'rollForward'."));
+                return false;
+            }
+
+            fx_out.set_roll_forward(val);
         }
-
-        fx_out.set_roll_forward(val);
+        else if (m_default_settings.has_roll_forward)
+        {
+            // 3) "rollForward" value from "runtimeOptions".
+            fx_out.set_roll_forward(m_default_settings.roll_forward);
+        }
     }
-
-    // Step #3: apply overrides (command line and such)
-    apply_settings_to_fx_reference(m_override_settings, fx_out);
 
     return true;
 }

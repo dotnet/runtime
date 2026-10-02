@@ -44,8 +44,8 @@ private:
     std::unordered_map<pal::string_t, pal::string_t> m_properties;
     fx_reference_vector_t m_frameworks;
     fx_reference_vector_t m_included_frameworks;
-    settings_t m_default_settings;   // the default settings (Step #0)
-    settings_t m_override_settings;  // the settings that can't be changed (Step #3)
+    settings_t m_default_settings;   // 3) The current "runtimeOptions" section
+    settings_t m_override_settings;  // 0) Overrides or 1) the environment setting
     std::list<pal::string_t> m_probe_paths;
 
     pal::string_t m_tfm;
