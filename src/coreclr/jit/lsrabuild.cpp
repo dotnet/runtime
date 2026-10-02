@@ -268,6 +268,11 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     // to change the register assignments to RDX and RAX respectively.
     bool canChangeDef = !defRefPosition->treeNode->IsMultiRegNode();
 
+    // A lowered divide/remainder pair defines RAX followed immediately by RDX.
+    // Redirecting either definition could overwrite the other hardware result
+    // before the physical-register capture has taken place.
+    canChangeDef &= !defRefPosition->treeNode->IsDivRemPair();
+
     // Avoid changing the def reg away from its assignment if that register is
     // currently busy. The reason is that we have a number of places in LSRA
     // that assume that BuildDef(tree, SRBM_REG) means that SRBM_REG will be

@@ -423,6 +423,7 @@ private:
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void     LowerDivOrMod(GenTreeOp* divMod);
+    void     TryLowerDivRem(GenTreeOp* div);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);

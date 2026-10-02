@@ -917,6 +917,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     emit->emitInsBinary(ins, size, treeNode, divisor);
 
     // DIV/IDIV instructions always store the quotient in RAX and the remainder in RDX.
+    assert(!treeNode->IsDivRemPair() || (targetReg == REG_RAX));
     // Move the result to the desired register, if necessary
     if (oper == GT_DIV || oper == GT_UDIV)
     {
@@ -4492,6 +4493,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
 void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 {
     assert(tree->OperIs(GT_PHYSREG));
+    assert(!tree->IsDivRemPair() || ((tree->GetRegNum() == REG_RDX) && (tree->gtSrcReg == REG_RDX)));
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
