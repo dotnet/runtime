@@ -38,7 +38,7 @@ namespace System.Reflection.Tests
                     ConstructorEnum.Negative
                 }
             };
-            // Exceeds MaxStackAttributeArguments (16): exercises CreateCustomAttributeInstance's heap-array
+            // Exceeds MaxStackAttributeArguments (4): exercises CreateCustomAttributeInstance's heap-array
             // fallback (primitives/references/byrefs) together with the existing forced compacting GC in
             // Capture(), so a moving GC during construction must not corrupt the heap-backed byref storage.
             yield return new object[]
@@ -101,7 +101,7 @@ namespace System.Reflection.Tests
                 int integer, uint unsignedInteger, long longInteger, ulong unsignedLong, float single, double dbl, ConstructorEnum enumeration)
                 => Arguments = Capture([boolean, unsignedByte, signedByte, character, shortInteger, unsignedShort,
                     integer, unsignedInteger, longInteger, unsignedLong, single, dbl, enumeration]);
-            // 17 fixed arguments: one past MaxStackAttributeArguments (16), forcing CreateCustomAttributeInstance's
+            // 17 fixed arguments: exceeds MaxStackAttributeArguments (4), forcing CreateCustomAttributeInstance's
             // heap-array fallback for its primitive/reference/byref storage instead of stackalloc/InlineArray.
             public ConstructorArgumentsAttribute(
                 bool boolean, byte unsignedByte, sbyte signedByte, char character, short shortInteger, ushort unsignedShort,

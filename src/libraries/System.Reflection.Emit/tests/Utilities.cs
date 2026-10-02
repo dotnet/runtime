@@ -40,20 +40,15 @@ namespace System.Reflection.Emit.Tests
         public ObjectAllAttribute(object o) { _o = o; }
     }
 
-    // Builds raw ECMA-335 II.23.3 custom-attribute blobs by hand, for malformed/edge-case inputs that C#
-    // attribute syntax cannot express. Combine with SetCustomAttribute(ConstructorInfo, byte[]) and force
-    // live materialization (e.g. via GetCustomAttributes()) to exercise the decoder. Only the CorElementType
-    // tags actually exercised by current tests are defined; add more as needed.
+    // Builds raw ECMA-335 II.23.3 custom-attribute blobs for values that C# attribute syntax cannot express.
     internal static class CustomAttributeBlob
     {
         internal const byte TagInt32 = 0x08;
         internal const byte TagFloat = 0x0C;
         internal const byte TagDouble = 0x0D;
         internal const byte TagString = 0x0E;
-        internal const byte TagArray = 0x1D;
         internal const byte TagType = 0x50;
         internal const byte TagField = 0x53;
-        internal const byte TagEnum = 0x55;
 
         internal static readonly byte[] Prolog = { 0x01, 0x00 };
 
