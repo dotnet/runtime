@@ -1196,6 +1196,7 @@ struct MSLAYOUT DebuggerIPCE_TypeArgData
 //
 // Remote enregistered info used by CordbValues and for passing
 // variable homes between the left and right sides during a func eval.
+// Non-leaf register values can be registered as GC roots and updated in place during the eval.
 //
 
 enum RemoteAddressKind
