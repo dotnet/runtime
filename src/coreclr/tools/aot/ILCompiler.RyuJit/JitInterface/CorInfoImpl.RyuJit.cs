@@ -486,8 +486,10 @@ namespace Internal.JitInterface
             }
         }
 
-        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
+        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
+            helperMethod = null;
+
             ReadyToRunHelper id;
 
             switch (ftnNum)

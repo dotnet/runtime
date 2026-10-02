@@ -93,6 +93,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _method;
 
+        public bool IsJitHelper { get; set; }
+
         public List<ISymbolNode> Fixups => _fixups;
 
         public int Size => _methodCode.Data.Length;

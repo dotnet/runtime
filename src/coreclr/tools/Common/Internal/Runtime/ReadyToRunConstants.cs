@@ -37,9 +37,9 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunImportSectionFlags : ushort
     {
-        None     = 0x0000,
-        Eager    = 0x0001, // Section at module load time.
-        PCode    = 0x0004, // Section contains pointers to code
+        None  = 0x0000,
+        Eager = 0x0001, // Section before module activation.
+        PCode = 0x0004, // Section contains pointers to code
     }
 
     /// <summary>
@@ -200,6 +200,8 @@ namespace Internal.ReadyToRunConstants
         InjectStringThunks = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
 
         StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
+
+        MethodEntry_ReadyToRun = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref

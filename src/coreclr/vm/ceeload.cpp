@@ -3577,6 +3577,16 @@ void Module::RunEagerFixupsUnlocked()
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
     ReadyToRunLoadedImage *pNativeImage = GetReadyToRunImage();
 
+#ifndef TARGET_WASM
+    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
+
+    ExecutionManager::AddCodeRange(
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
+        ExecutionManager::GetReadyToRunJitManager(),
+        RangeSection::RANGE_SECTION_NONE,
+        this /* pHeapListOrZapModule */);
+#endif // !TARGET_WASM
+
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
     {
         PTR_READYTORUN_IMPORT_SECTION pSection = pSections + iSection;
@@ -3612,15 +3622,6 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
-#ifndef TARGET_WASM
-    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
-
-    ExecutionManager::AddCodeRange(
-        base, base + (TADDR)pNativeImage->GetVirtualSize(),
-        ExecutionManager::GetReadyToRunJitManager(),
-        RangeSection::RANGE_SECTION_NONE,
-        this /* pHeapListOrZapModule */);
-#endif // !TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 
