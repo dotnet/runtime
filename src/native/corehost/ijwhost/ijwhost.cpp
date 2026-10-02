@@ -20,7 +20,7 @@
 #define IJW_API SHARED_API
 #endif // _WIN32
 
-pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_memory_assembly_fn* delegate, void **load_context)
+pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_memory_assembly_fn* delegate, load_context_storage& load_context)
 {
     get_function_pointer_fn get_function_pointer;
     int status = load_fxr_and_get_delegate(
@@ -40,16 +40,44 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
 
             return StatusCode::Success;
         },
-        [load_context](pal::dll_t fxr, hostfxr_handle context)
+        [&load_context](pal::dll_t fxr, hostfxr_handle context)
         {
-            *load_context = nullptr;   // default load context
+            constexpr const pal::char_t* isolated_context_property = _X("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext");
+            constexpr const pal::char_t* identifier_property = _X("System.Runtime.InteropServices.CppCLI.LoadContextIdentifier");
+
             auto get_runtime_property_value = reinterpret_cast<hostfxr_get_runtime_property_value_fn>(pal::get_symbol(fxr, "hostfxr_get_runtime_property_value"));
-            const pal::char_t* value;
-            if (get_runtime_property_value(context, _X("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext"), &value) == StatusCode::Success
-                && pal::strcasecmp(value, _X("true")) == 0)
+            const pal::char_t* use_isolated_context;
+            bool has_isolated_context_prop = get_runtime_property_value(context, isolated_context_property, &use_isolated_context) == StatusCode::Success;
+            const pal::char_t* identifier;
+            bool has_identifier_prop = get_runtime_property_value(context, identifier_property, &identifier) == StatusCode::Success;
+            if (has_isolated_context_prop && has_identifier_prop)
             {
-                *load_context = ISOLATED_CONTEXT; // Isolated load context
+                trace::error(_X("%s and %s cannot both be set."), isolated_context_property, identifier_property);
+                return StatusCode::InvalidConfigFile;
             }
+
+            if (has_isolated_context_prop)
+            {
+                load_context = pal::strcasecmp(use_isolated_context, _X("true")) == 0
+                    ? load_context_storage::create_isolated()
+                    : load_context_storage::create_default();
+            }
+            else if (has_identifier_prop)
+            {
+                if (identifier[0] == '\0')
+                {
+                    trace::error(_X("%s cannot be empty."), identifier_property);
+                    return StatusCode::InvalidConfigFile;
+                }
+
+                load_context = load_context_storage::create_named(identifier);
+            }
+            else
+            {
+                load_context = load_context_storage::create_default();
+            }
+
+            return StatusCode::Success;
         },
         reinterpret_cast<void**>(&get_function_pointer),
         true // ignore missing config file if there's an active context

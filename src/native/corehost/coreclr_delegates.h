@@ -26,6 +26,15 @@ extern "C"
 
 #define UNMANAGEDCALLERSONLY_METHOD ((const char_t*)-1)
 
+#define CORECLR_LOAD_CONTEXT_ISOLATED ((void*)-1)
+
+// Keep in sync with ComponentLoadContextManager.LoadContext in ComponentLoadContextManager.cs.
+struct coreclr_load_context
+{
+    size_t size;                /* Size of this structure for versioning */
+    const char_t *identifier;   /* Load context identifier */
+};
+
 // Signature of delegate returned by coreclr_delegate_type::load_assembly_and_get_function_pointer
 typedef int (CORECLR_DELEGATE_CALLTYPE *load_assembly_and_get_function_pointer_fn)(
     const char_t *assembly_path      /* Fully qualified path to assembly */,
