@@ -22,10 +22,16 @@ For Windows x86 CoreCLR Helix runs, an eight-minute background watchdog in the x
 launches that runtime's `createdump.exe --full`. On Windows, this tool dumps its parent process;
 it is not launched through a shell and no PID lookup or WER registry configuration is needed.
 RemoteExecutor children do not arm the watchdog, and normal runner exit ends the background thread.
+An in-flight dump child is terminated and reaped if the runner exits during capture.
 Local runs without `HELIX_WORKITEM_UPLOAD_ROOT` do not arm it.
 
 The dump is written directly to `HELIX_WORKITEM_UPLOAD_ROOT` for Helix artifact collection.
 Dump capture has a two-minute budget, followed by at most 30 seconds to terminate the dumper.
-The test host then exits with code 124, including if dump capture fails, before Helix's
-15-minute timeout. Capture failures are logged explicitly. These diagnostics are temporary
-and are not a production fix or evidence that different timeout reports share a root cause.
+This is a snapshot only: successful capture and diagnostic failures do not terminate the test host
+or change its exit status. Capture and cleanup failures are logged explicitly to standard error.
+The full suite continues until ordinary completion or Helix's original 15-minute deadline,
+allowing slow progress to be distinguished from a whole-work-item timeout.
+
+These diagnostics investigate the unexplained Process-suite timeout independently of earlier
+investigations. They are temporary, not a production fix, and do not establish that different
+timeout reports share a root cause.

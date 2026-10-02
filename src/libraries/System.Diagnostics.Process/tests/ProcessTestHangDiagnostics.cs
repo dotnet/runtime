@@ -14,6 +14,7 @@ internal static class ProcessTestHangDiagnostics
 {
     private static readonly TimeSpan s_watchdogTimeout = TimeSpan.FromMinutes(8);
     private static readonly TimeSpan s_dumpTimeout = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan s_dumperExitTimeout = TimeSpan.FromSeconds(30);
 
     [ModuleInitializer]
     internal static void Initialize()
@@ -26,13 +27,7 @@ internal static class ProcessTestHangDiagnostics
         }
 
         string dumpTool = Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "createdump.exe");
-        if (!File.Exists(dumpTool))
-        {
-            throw new FileNotFoundException("The diagnostic watchdog requires the test runtime's Windows createdump.exe.", dumpTool);
-        }
-
-        Directory.CreateDirectory(uploadRoot);
-        var watchdog = new Thread(() => Watchdog(dumpTool, uploadRoot, s_watchdogTimeout))
+        var watchdog = new Thread(() => Watchdog(dumpTool, uploadRoot, s_watchdogTimeout, s_dumpTimeout))
         {
             // The watchdog belongs to the runner, not to RemoteExecutor children, and ends with the runner.
             IsBackground = true,
@@ -41,30 +36,27 @@ internal static class ProcessTestHangDiagnostics
         watchdog.Start();
     }
 
-    private static void Watchdog(string dumpTool, string uploadRoot, TimeSpan watchdogTimeout)
+    private static void Watchdog(string dumpTool, string uploadRoot, TimeSpan watchdogTimeout, TimeSpan dumpTimeout)
     {
         // Bypass xUnit's per-test output capture, including passing-output suppression.
-        using var log = new StreamWriter(Console.OpenStandardError(), new UTF8Encoding(false), leaveOpen: true)
+        using TextWriter log = TextWriter.Synchronized(new StreamWriter(Console.OpenStandardError(), new UTF8Encoding(false), leaveOpen: true)
         {
             AutoFlush = true
-        };
+        });
         log.WriteLine($"[Process hang diagnostics] Armed for {watchdogTimeout}; PID={Environment.ProcessId}; architecture={RuntimeInformation.ProcessArchitecture}; OS={Environment.OSVersion}; createdump={dumpTool}; upload={uploadRoot}");
 
         Thread.Sleep(watchdogTimeout);
         string dumpPath = Path.Combine(uploadRoot, $"ProcessTests.{Environment.ProcessId}.dmp");
-        log.WriteLine($"[Process hang diagnostics] Watchdog expired. Capturing full test-host dump to {dumpPath}.");
+        log.WriteLine($"[Process hang diagnostics] Snapshot time reached. Capturing full test-host dump to {dumpPath} without terminating tests.");
         try
         {
-            CaptureDump(dumpTool, dumpPath, s_dumpTimeout, log);
+            Directory.CreateDirectory(uploadRoot);
+            CaptureDump(dumpTool, dumpPath, dumpTimeout, log);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException or OperationCanceledException)
         {
             log.WriteLine($"[Process hang diagnostics] Dump capture failed: {e}");
         }
-
-        // Return a distinct failure before Helix's 900s kill, leaving time for artifact upload.
-        log.WriteLine("[Process hang diagnostics] Ending the timed-out test host with exit code 124.");
-        Environment.Exit(124);
     }
 
     private static void CaptureDump(string dumpTool, string dumpPath, TimeSpan dumpTimeout, TextWriter log)
@@ -77,24 +69,91 @@ internal static class ProcessTestHangDiagnostics
         startInfo.ArgumentList.Add("--name");
         startInfo.ArgumentList.Add(dumpPath);
 
-        // Windows createdump targets its parent, so launch the matching runtime's tool directly from the test host.
-        using Process dumper = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start createdump.");
-        if (!dumper.WaitForExit((int)dumpTimeout.TotalMilliseconds))
+        using var dumper = new Process { StartInfo = startInfo };
+        var exitLock = new object();
+        bool started = false;
+        bool finished = false;
+        bool hostExiting = false;
+
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+        try
         {
-            dumper.Kill();
-            if (!dumper.WaitForExit(30_000))
+            lock (exitLock)
             {
-                throw new InvalidOperationException($"createdump PID {dumper.Id} did not exit after termination.");
+                if (hostExiting)
+                {
+                    throw new OperationCanceledException("The test host exited before the snapshot could start.");
+                }
+
+                // Windows createdump targets its parent, so start it directly in the test host.
+                started = dumper.Start();
+                if (!started)
+                {
+                    throw new InvalidOperationException("Could not start createdump.");
+                }
             }
 
-            throw new IOException($"createdump exceeded its {dumpTimeout} budget.");
-        }
+            log.WriteLine($"[Process hang diagnostics] createdump PID={dumper.Id} started.");
+            if (!dumper.WaitForExit((int)dumpTimeout.TotalMilliseconds))
+            {
+                throw new IOException($"createdump exceeded its {dumpTimeout} budget.");
+            }
 
-        if (dumper.ExitCode != 0 || !File.Exists(dumpPath) || new FileInfo(dumpPath).Length == 0)
+            if (dumper.ExitCode != 0 || !File.Exists(dumpPath) || new FileInfo(dumpPath).Length == 0)
+            {
+                throw new IOException($"createdump exited with code {dumper.ExitCode} without a successful nonempty dump at {dumpPath}.");
+            }
+
+            log.WriteLine($"[Process hang diagnostics] Full dump captured: {dumpPath} ({new FileInfo(dumpPath).Length} bytes). Test execution continues.");
+        }
+        finally
         {
-            throw new IOException($"createdump exited with code {dumper.ExitCode} without a successful nonempty dump at {dumpPath}.");
+            lock (exitLock)
+            {
+                finished = true;
+                AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+                if (started)
+                {
+                    StopDumper(dumper);
+                }
+            }
         }
 
-        log.WriteLine($"[Process hang diagnostics] Full dump captured: {dumpPath} ({new FileInfo(dumpPath).Length} bytes).");
+        void OnProcessExit(object? sender, EventArgs args)
+        {
+            lock (exitLock)
+            {
+                if (finished)
+                {
+                    return;
+                }
+
+                hostExiting = true;
+                if (started)
+                {
+                    try
+                    {
+                        StopDumper(dumper);
+                    }
+                    catch (Exception e) when (e is Win32Exception or InvalidOperationException)
+                    {
+                        log.WriteLine($"[Process hang diagnostics] Dump child cleanup failed during test-host exit: {e}");
+                    }
+                }
+            }
+        }
+    }
+
+    private static void StopDumper(Process dumper)
+    {
+        if (!dumper.HasExited)
+        {
+            dumper.Kill();
+        }
+
+        if (!dumper.WaitForExit((int)s_dumperExitTimeout.TotalMilliseconds))
+        {
+            throw new InvalidOperationException($"createdump PID {dumper.Id} did not exit after termination.");
+        }
     }
 }
