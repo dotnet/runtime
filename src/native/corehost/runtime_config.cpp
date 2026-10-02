@@ -17,8 +17,8 @@
 // 3) The config's "runtimeOptions" section
 
 runtime_config_t::runtime_config_t()
-    : m_default_settings()
-    , m_override_settings()
+    : m_runtime_options_roll_forward()
+    , m_override_roll_forward()
     , m_is_framework_dependent(false)
     , m_valid(false)
     , m_roll_forward_to_prerelease(false)
@@ -31,19 +31,16 @@ runtime_config_t::runtime_config_t()
     }
 }
 
-runtime_config_t::settings_t::settings_t()
-    : has_roll_forward(false)
-    , roll_forward(roll_forward_option::Minor)
-{
-}
-
-void runtime_config_t::parse(const pal::string_t& path, const pal::string_t& dev_path, const settings_t& override_settings)
+void runtime_config_t::parse(
+    const pal::string_t& path,
+    const pal::string_t& dev_path,
+    const std::optional<roll_forward_option>& override_roll_forward)
 {
     m_path = path;
     m_dev_path = dev_path;
 
     // 0) Command-line and other overrides.
-    m_override_settings = override_settings;
+    m_override_roll_forward = override_roll_forward;
 
     // Parse the file
     m_valid = ensure_parsed();
@@ -132,7 +129,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
             return false;
         }
 
-        m_default_settings.set_roll_forward(val);
+        m_runtime_options_roll_forward = val;
     }
 
     const auto& tfm = opts_obj.FindMember(_X("tfm"));
@@ -147,7 +144,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
     {
         m_is_framework_dependent = true;
 
-        if (!m_override_settings.has_roll_forward)
+        if (!m_override_roll_forward.has_value())
         {
             // 1) DOTNET_ROLL_FORWARD environment variable.
             pal::string_t environment_roll_forward;
@@ -160,7 +157,7 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
                     return false;
                 }
 
-                m_override_settings.set_roll_forward(val);
+                m_override_roll_forward = val;
             }
         }
     }
@@ -240,10 +237,10 @@ bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, boo
         fx_out.set_prefer_release(true);
     }
 
-    if (m_override_settings.has_roll_forward)
+    if (m_override_roll_forward.has_value())
     {
         // 0) Command-line and other overrides, or 1) DOTNET_ROLL_FORWARD.
-        fx_out.set_roll_forward(m_override_settings.roll_forward);
+        fx_out.set_roll_forward(*m_override_roll_forward);
     }
     else
     {
@@ -260,10 +257,10 @@ bool runtime_config_t::parse_framework(const json_parser_t::value_t& fx_obj, boo
 
             fx_out.set_roll_forward(val);
         }
-        else if (m_default_settings.has_roll_forward)
+        else if (m_runtime_options_roll_forward.has_value())
         {
             // 3) "rollForward" value from "runtimeOptions".
-            fx_out.set_roll_forward(m_default_settings.roll_forward);
+            fx_out.set_roll_forward(*m_runtime_options_roll_forward);
         }
     }
 

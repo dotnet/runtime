@@ -25,8 +25,8 @@ fx_definition_t::fx_definition_t(
 void fx_definition_t::parse_runtime_config(
     const pal::string_t& path,
     const pal::string_t& dev_path,
-    const runtime_config_t::settings_t& override_settings
+    const std::optional<roll_forward_option>& override_roll_forward
 )
 {
-    m_runtime_config.parse(path, dev_path, override_settings);
+    m_runtime_config.parse(path, dev_path, override_roll_forward);
 }

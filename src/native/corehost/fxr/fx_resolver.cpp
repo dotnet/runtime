@@ -316,8 +316,8 @@ std::vector<pal::string_t> fx_resolver_t::get_disabled_versions()
     return disabled_versions;
 }
 
-fx_resolver_t::fx_resolver_t(const runtime_config_t::settings_t& override_settings)
-    : m_override_settings{override_settings}
+fx_resolver_t::fx_resolver_t(const std::optional<roll_forward_option>& override_roll_forward)
+    : m_override_roll_forward{override_roll_forward}
     , m_disabled_versions{get_disabled_versions()}
 { }
 
@@ -468,7 +468,7 @@ StatusCode fx_resolver_t::read_framework(
             pal::string_t config_file;
             pal::string_t dev_config_file;
             get_runtime_config_paths(fx->get_dir(), fx_name, &config_file, &dev_config_file);
-            fx->parse_runtime_config(config_file, dev_config_file, m_override_settings);
+            fx->parse_runtime_config(config_file, dev_config_file, m_override_roll_forward);
 
             runtime_config_t new_config = fx->get_runtime_config();
             if (!new_config.is_valid())
@@ -504,12 +504,12 @@ StatusCode fx_resolver_t::read_framework(
 
 StatusCode fx_resolver_t::resolve_frameworks(
     const pal::string_t& dotnet_root,
-    const runtime_config_t::settings_t& override_settings,
+    const std::optional<roll_forward_option>& override_roll_forward,
     const runtime_config_t& app_config,
     fx_definition_vector_t& fx_definitions,
     resolution_failure_info& resolution_failure)
 {
-    fx_resolver_t resolver{ override_settings };
+    fx_resolver_t resolver{ override_roll_forward };
 
     // Read the shared frameworks; retry is necessary when a framework is already resolved, but then a newer compatible version is processed.
     StatusCode rc = StatusCode::Success;
@@ -532,13 +532,13 @@ StatusCode fx_resolver_t::resolve_frameworks(
 
 StatusCode fx_resolver_t::resolve_frameworks_for_app(
     const pal::string_t& dotnet_root,
-    const runtime_config_t::settings_t& override_settings,
+    const std::optional<roll_forward_option>& override_roll_forward,
     const runtime_config_t& app_config,
     fx_definition_vector_t& fx_definitions,
     const pal::char_t* app_display_name)
 {
     resolution_failure_info resolution_failure;
-    StatusCode rc = resolve_frameworks(dotnet_root, override_settings, app_config, fx_definitions, resolution_failure);
+    StatusCode rc = resolve_frameworks(dotnet_root, override_roll_forward, app_config, fx_definitions, resolution_failure);
     switch (rc)
     {
         case StatusCode::FrameworkMissingFailure:

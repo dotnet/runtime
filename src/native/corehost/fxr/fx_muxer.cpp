@@ -5,6 +5,7 @@
 #include <cassert>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <error_codes.h>
 #include <pal.h>
 #include <trace.h>
@@ -335,7 +336,7 @@ namespace
         fx_definition_t& app,
         const pal::string_t& app_candidate,
         pal::string_t& runtime_config,
-        const runtime_config_t::settings_t& override_settings)
+        const std::optional<roll_forward_option>& override_roll_forward)
     {
         // Check for the runtimeconfig.json file specified at the command line
         if (!runtime_config.empty() && !pal::fullpath(&runtime_config))
@@ -357,7 +358,7 @@ namespace
             get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
         }
 
-        app.parse_runtime_config(config_file, dev_config_file, override_settings);
+        app.parse_runtime_config(config_file, dev_config_file, override_roll_forward);
         if (!app.get_runtime_config().is_valid())
         {
             trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), app.get_runtime_config().get_path().c_str(), app.get_runtime_config().get_dev_path().c_str());
@@ -428,7 +429,7 @@ namespace
             return StatusCode::InvalidArgFailure;
         }
 
-        runtime_config_t::settings_t override_settings;
+        std::optional<roll_forward_option> override_roll_forward;
 
         pal::string_t roll_forward = command_line::get_option_value(opts, known_options::roll_forward, _X(""));
         if (roll_forward.length() > 0)
@@ -440,14 +441,14 @@ namespace
                 return StatusCode::InvalidArgFailure;
             }
 
-            override_settings.set_roll_forward(val);
+            override_roll_forward = val;
         }
 
         // Read config
         fx_definition_vector_t fx_definitions;
         auto app = new fx_definition_t();
         fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
-        int rc = read_config(*app, app_candidate, runtime_config, override_settings);
+        int rc = read_config(*app, app_candidate, runtime_config, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
@@ -474,7 +475,7 @@ namespace
                 pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
             }
 
-            rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
+            rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_roll_forward, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
             if (rc != StatusCode::Success)
             {
                 return rc;
@@ -615,8 +616,8 @@ namespace
         auto app = new fx_definition_t();
         fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
 
-        const runtime_config_t::settings_t override_settings;
-        int rc = read_config(*app, host_info.app_path, runtime_config_path, override_settings);
+        const std::optional<roll_forward_option> override_roll_forward;
+        int rc = read_config(*app, host_info.app_path, runtime_config_path, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
@@ -627,7 +628,7 @@ namespace
             return StatusCode::InvalidConfigFile;
         }
 
-        rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, host_info.host_path.c_str());
+        rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_roll_forward, app_config, fx_definitions, host_info.host_path.c_str());
         if (rc != StatusCode::Success)
             return rc;
 
@@ -657,8 +658,8 @@ namespace
     {
         // Read config
         fx_definition_t app;
-        const runtime_config_t::settings_t override_settings;
-        int rc = read_config(app, host_info.app_path, runtime_config_path, override_settings);
+        const std::optional<roll_forward_option> override_roll_forward;
+        int rc = read_config(app, host_info.app_path, runtime_config_path, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
