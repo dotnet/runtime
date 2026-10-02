@@ -194,6 +194,58 @@ namespace ILAssembler.Tests
             Assert.NotEqual(0, pe.PEHeaders.PEHeader!.SizeOfImage);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FoldOption_SharesOnlyIdenticalMethodBodies(bool fold)
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void First() cil managed { ret }
+                    .method public static void Second() cil managed { ret }
+                    .method public static void DifferentCode() cil managed { nop ret }
+                    .method public static void DifferentStack() cil managed
+                    {
+                        .maxstack 1
+                        ret
+                    }
+                    .method public static void FirstLocals() cil managed
+                    {
+                        .locals init (int32 V_0)
+                        ret
+                    }
+                    .method public static void SecondLocals() cil managed
+                    {
+                        .locals init (int32 V_0)
+                        ret
+                    }
+                    .method public static void DifferentLocals() cil managed
+                    {
+                        .locals init (int64 V_0)
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Fold = fold });
+            var reader = pe.GetMetadataReader();
+            var methods = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .ToDictionary(method => reader.GetString(method.Name), method => method.RelativeVirtualAddress);
+
+            Assert.NotEqual(0, methods["First"]);
+            Assert.Equal(fold, methods["First"] == methods["Second"]);
+            Assert.Equal(fold, methods["FirstLocals"] == methods["SecondLocals"]);
+            Assert.NotEqual(methods["First"], methods["DifferentCode"]);
+            Assert.NotEqual(methods["First"], methods["DifferentStack"]);
+            Assert.NotEqual(methods["First"], methods["FirstLocals"]);
+            Assert.NotEqual(methods["FirstLocals"], methods["DifferentLocals"]);
+            Assert.Equal(new byte[] { 0x2a }, pe.GetMethodBody(methods["Second"]).GetILBytes());
+            Assert.False(pe.GetMethodBody(methods["SecondLocals"]).LocalSignature.IsNil);
+        }
+
         [Fact]
         public void PdbOption_EmitsEmbeddedPortablePdbWithoutLineDirectives()
         {
