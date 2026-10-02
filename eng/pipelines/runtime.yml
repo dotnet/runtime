@@ -557,14 +557,25 @@ extends:
                   testRunNamePrefixSuffix: coreclr_checked
                   testScope: innerloop
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  # Temporary opt-in for this diagnostic PR's Windows x86 checked-libraries leg only.
                   condition: >-
                     or(
                       eq(variables['coreclrContainsChange'], true),
-                      eq(variables['isRollingBuild'], true))
+                      eq(variables['isRollingBuild'], true),
+                      and(
+                        eq(variables['Build.Reason'], 'PullRequest'),
+                        eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge'),
+                        eq(variables['osGroup'], 'windows'),
+                        eq(variables['archType'], 'x86')))
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+                eq(variables['isRollingBuild'], true),
+                and(
+                  eq(variables['Build.Reason'], 'PullRequest'),
+                  eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge'),
+                  eq(variables['osGroup'], 'windows'),
+                  eq(variables['archType'], 'x86')))
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:

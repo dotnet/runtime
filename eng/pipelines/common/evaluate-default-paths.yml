@@ -114,6 +114,8 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: mono_excluding_wasm
@@ -126,6 +128,8 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
       - eng/Version.Details.xml
@@ -158,6 +162,8 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: runtimetests
@@ -198,6 +204,8 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # We have limited Apple Silicon testing capacity
@@ -267,6 +275,8 @@ jobs:
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # wasm/runtimetests mono need to be run
@@ -289,6 +299,8 @@ jobs:
       - src/mono/wasm/Wasm.Build.Tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # wasm/runtimetests coreCLR need to be run
@@ -302,6 +314,8 @@ jobs:
       - src/mono/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # Wasm-specific paths excluding Wasm.Build.Tests, WASI (build/runtime/testassets), and the debugger
@@ -331,6 +345,8 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: wasm_chrome
@@ -344,6 +360,8 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/pull/131907/merge') }}:
+        - eng/pipelines/runtime.yml
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
       - eng/testing/tests.mobile.targets
       - src/mono/*
