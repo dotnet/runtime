@@ -198,7 +198,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
-size_t CallDescrWorkerInternalReturnAddressOffset = 0;
 
 // File-local WebAssembly exception tag used only by RtlRestoreContext. Carries
 // no payload; the resume IP is communicated via the JIT-managed resumeIP local.

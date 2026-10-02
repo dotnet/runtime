@@ -53,13 +53,11 @@ class ComCallMethodDesc;
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16   // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16   // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         16   // bytes
-#define CALLDESCR_ARGREGS                       1    // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1    // CallDescrWorker has FloatArgumentRegisters parameter
+#define CALLDESCR_FPARGREGS                     1    // Calling convention has separate floating-point argument registers
 #else
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          8    // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8    // bytes
-#define CALLDESCR_REGTYPEMAP                    1
 #endif
 
 #define INSTRFMT_K64SMALL
