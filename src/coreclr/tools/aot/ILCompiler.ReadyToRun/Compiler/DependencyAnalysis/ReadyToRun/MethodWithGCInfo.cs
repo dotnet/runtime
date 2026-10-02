@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature, IArm64BranchThunkTarget
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature
     {
         public readonly MethodGCInfoNode GCInfoNode;
 

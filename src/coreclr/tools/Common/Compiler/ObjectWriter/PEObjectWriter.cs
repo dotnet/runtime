@@ -82,8 +82,6 @@ namespace ILCompiler.ObjectWriter
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
         private long _coffHeaderOffset;
 
-        private protected override bool UseArm64BranchRangeExtensionThunks => true;
-
         public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder, string outputPath, int sectionAlignment, int? coffTimestamp)
             : base(factory, options, outputInfoBuilder)
         {

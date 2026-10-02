@@ -47,13 +47,6 @@ namespace ILCompiler.DependencyAnalysis
     {
     }
 
-    /// <summary>
-    /// Marks code symbols that are eligible targets for Arm64 direct-call range-extension thunks in PE images.
-    /// </summary>
-    public interface IArm64BranchThunkTarget : ISymbolNode
-    {
-    }
-
 
     /// <summary>
     /// Represents a definition of a symbol within an <see cref="ObjectNode"/>. The symbol will be defined

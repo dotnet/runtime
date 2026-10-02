@@ -117,7 +117,7 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            if (context.Target.Architecture == TargetArchitecture.ARM)
+            if (context.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
                 return;
 
             var rootedMethods = new HashSet<MethodDesc>();

@@ -410,7 +410,7 @@ namespace ILCompiler.DependencyAnalysis
             return imm28;
         }
 
-        internal static bool FitsInArm64Rel28(long imm28)
+        private static bool FitsInArm64Rel28(long imm28)
         {
             return (imm28 >= -0x08000000L) && (imm28 < 0x08000000L);
         }
