@@ -456,8 +456,9 @@ When updating the context from a TransitionFrame, the IP, SP, and all ABI specif
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
 * On x86, the caller SP also skips callee-popped stack arguments. For `ExternalMethodFrame` and `StubDispatchFrame`, the argument size comes from the frame's GCRefMap, including when its MethodDesc is null. `ReadStackPop()` gives the number of pointer-sized slots to add to the SP. If no GCRefMap is available, MethodDesc-backed frames use the argument map computed from their signature. `PInvokeCalliFrame` instead uses `VASigCookie.SizeOfArgs`.
+* For an x86 `StubDispatchFrame` without a GCRefMap, resolve its method from the stored MethodDesc or its representative MethodTable and slot. If no method is available, the SP stays at the end of the transition block and the IP is adjusted to the call instruction by subtracting five bytes from the saved return address.
 
-**Return Address**: Read from `TransitionBlock.ReturnAddress`. This applies to all frame types that use the TransitionFrame mechanism.
+**Return Address**: Read from `TransitionBlock.ReturnAddress`. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame

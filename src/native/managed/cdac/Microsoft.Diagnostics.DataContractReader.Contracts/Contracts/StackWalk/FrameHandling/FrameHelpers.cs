@@ -311,6 +311,14 @@ internal sealed class FrameHelpers
             case FrameType.DynamicHelperFrame:
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
                 Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
+                if (frameType == FrameType.StubDispatchFrame &&
+                    _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86 &&
+                    GetMethodDescPtr(frame.Address) == TargetPointer.Null)
+                {
+                    Data.StubDispatchFrame dispatchFrame = _target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frame.Address);
+                    if (FindGCRefMap(dispatchFrame.Indirection) == TargetPointer.Null)
+                        return new TargetCodePointer((uint)tb.ReturnAddress - X86FrameHandler.CallInstructionSize);
+                }
                 return tb.ReturnAddress;
 
             // SoftwareExceptionFrame: stored m_ReturnAddress

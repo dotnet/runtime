@@ -151,6 +151,8 @@ public unsafe class StackWalkTests
             target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
 
         AssertX86TransitionFrameContext(context, stackPopSlots);
+        Assert.Equal(0x1234_5678UL, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
     }
 
     [Theory]
@@ -166,12 +168,66 @@ public unsafe class StackWalkTests
             target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
 
         AssertX86TransitionFrameContext(context, stackPopSlots: 2);
+        Assert.Equal(0x1234_5678UL, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
     }
 
-    private static void AssertX86TransitionFrameContext(ContextHolder<X86Context> context, uint stackPopSlots)
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void X86TransitionFrame_StubDispatchWithoutMapOrMethod_AdjustsInstructionPointer(
+        bool hasRepresentativeMethodTable, bool hasUnresolvedIndirection)
+    {
+        (TestPlaceholderTarget target, ContextHolder<X86Context> context) = CreateX86TransitionFrameTarget(
+            nameof(Data.StubDispatchFrame), gcRefMap: null, hasMethodDesc: false,
+            representativeMethodDescAddress: hasRepresentativeMethodTable ? 0u : null,
+            hasUnresolvedIndirection: hasUnresolvedIndirection);
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots: 0, instructionPointer: 0x1234_5673);
+        Assert.Equal(0x1234_5673UL, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void X86TransitionFrame_StubDispatchUsesRepresentativeMethod(bool hasUnresolvedIndirection)
+    {
+        (TestPlaceholderTarget target, ContextHolder<X86Context> context) = CreateX86TransitionFrameTarget(
+            nameof(Data.StubDispatchFrame), gcRefMap: null, hasMethodDesc: false, signatureBlob: [0x02],
+            representativeMethodDescAddress: 0x6000, hasUnresolvedIndirection: hasUnresolvedIndirection);
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots: 2);
+        Assert.Equal(0x1234_5678UL, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    [Theory]
+    [InlineData(RuntimeInfoArchitecture.X86, 0x1234_5673UL)]
+    [InlineData(RuntimeInfoArchitecture.Arm, 0x1234_5678UL)]
+    public void StubDispatchFrame_ReturnAddressWithoutMapOrMethod(
+        RuntimeInfoArchitecture architecture, ulong expectedReturnAddress)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            nameof(Data.StubDispatchFrame), gcRefMap: null, hasMethodDesc: false, architecture: architecture);
+
+        Assert.Equal(expectedReturnAddress, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    private static void AssertX86TransitionFrameContext(
+        ContextHolder<X86Context> context, uint stackPopSlots, uint instructionPointer = 0x1234_5678)
     {
         Assert.Equal(0x2000u + X86TransitionBlockSize + stackPopSlots * sizeof(uint), context.Context.Esp);
-        Assert.Equal(0x1234_5678u, context.Context.Eip);
+        Assert.Equal(instructionPointer, context.Context.Eip);
         Assert.Equal(0x1111_1111u, context.Context.Ebp);
         Assert.Equal(0x2222_2222u, context.Context.Ebx);
         Assert.Equal(0x3333_3333u, context.Context.Edi);
@@ -180,7 +236,9 @@ public unsafe class StackWalkTests
     }
 
     private static (TestPlaceholderTarget Target, ContextHolder<X86Context> Context) CreateX86TransitionFrameTarget(
-        string frameType, byte[]? gcRefMap, bool hasMethodDesc, byte[]? signatureBlob = null)
+        string frameType, byte[]? gcRefMap, bool hasMethodDesc, byte[]? signatureBlob = null,
+        uint? representativeMethodDescAddress = null, bool hasUnresolvedIndirection = false,
+        RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86)
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
         TestPlaceholderTarget.Builder builder = new(arch);
@@ -192,11 +250,13 @@ public unsafe class StackWalkTests
         const uint GCRefMapRva = 0x200;
         TargetPointer indirection = new(ImageBase + ImportSectionRva + 2 * sizeof(uint));
 
-        byte[] frameData = new byte[20];
+        byte[] frameData = new byte[28];
         helpers.Write(frameData.AsSpan(0), FrameIdentifier);
         helpers.Write(frameData.AsSpan(8), 0x2000u);
         helpers.Write(frameData.AsSpan(12), hasMethodDesc ? MethodDescAddress : 0);
-        helpers.Write(frameData.AsSpan(16), gcRefMap is not null ? (uint)indirection.Value : 0);
+        helpers.Write(frameData.AsSpan(16), gcRefMap is not null || hasUnresolvedIndirection ? (uint)indirection.Value : 0);
+        helpers.Write(frameData.AsSpan(20), representativeMethodDescAddress.HasValue ? 0x7000u : 0);
+        helpers.Write(frameData.AsSpan(24), 3u);
         builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x1000, Data = frameData, Name = "Transition frame" });
 
         byte[] transitionBlock = new byte[X86TransitionBlockSize];
@@ -231,8 +291,19 @@ public unsafe class StackWalkTests
             builder.MemoryBuilder.AddHeapFragment(new() { Address = ImageBase + GCRefMapRva, Data = maps, Name = "GCRefMaps" });
             executionManager.Setup(e => e.FindReadyToRunModule(indirection)).Returns(new TargetPointer(0x3000));
         }
+        else if (hasUnresolvedIndirection)
+        {
+            executionManager.Setup(e => e.FindReadyToRunModule(indirection)).Returns(TargetPointer.Null);
+        }
 
         Mock<IRuntimeTypeSystem> runtimeTypeSystem = new(MockBehavior.Strict);
+        if (representativeMethodDescAddress.HasValue)
+        {
+            Mock<ITypeHandle> representativeType = new(MockBehavior.Strict);
+            runtimeTypeSystem.Setup(r => r.GetTypeHandle(new TargetPointer(0x7000))).Returns(representativeType.Object);
+            runtimeTypeSystem.Setup(r => r.GetMethodDescForSlot(representativeType.Object, 3))
+                .Returns(new TargetPointer(representativeMethodDescAddress.Value));
+        }
         Mock<ICallingConvention> callingConvention = new(MockBehavior.Strict);
         if (signatureBlob is not null)
         {
@@ -259,13 +330,22 @@ public unsafe class StackWalkTests
             types[Enum.Parse<DataType>(frameType)] = CreateTypeInfo(
                 (nameof(Data.FramedMethodFrame.MethodDescPtr), 12), (nameof(Data.ExternalMethodFrame.Indirection), 16));
         }
+        if (frameType == nameof(Data.StubDispatchFrame))
+        {
+            types[DataType.StubDispatchFrame] = CreateTypeInfo(
+                (nameof(Data.StubDispatchFrame.MethodDescPtr), 12), (nameof(Data.StubDispatchFrame.Indirection), 16),
+                (nameof(Data.StubDispatchFrame.RepresentativeMTPtr), 20), (nameof(Data.StubDispatchFrame.RepresentativeSlot), 24));
+        }
 
+        Mock<IRuntimeInfo> runtimeInfo = new(MockBehavior.Strict);
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(architecture);
         TestPlaceholderTarget target = builder
             .AddTypes(types)
             .AddGlobals((frameType + "Identifier", FrameIdentifier))
             .AddMockContract(executionManager)
             .AddMockContract(runtimeTypeSystem)
             .AddMockContract(callingConvention)
+            .AddMockContract(runtimeInfo)
             .Build();
         ContextHolder<X86Context> context = new()
         {
