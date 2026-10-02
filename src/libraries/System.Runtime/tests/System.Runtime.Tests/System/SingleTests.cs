@@ -999,6 +999,25 @@ namespace System.Tests
             Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
         }
 
+        [Theory]
+        [InlineData(-3.0f, "E-0")]
+        [InlineData(-0.75f, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(float value, string exponentSign)
+        {
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(float.TryParse(formatted, NumberStyles.Float, info, out float result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+            Assert.True(float.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(float.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+        }
+
         [Fact]
         public static void HexFloat_CustomNumberFormat()
         {

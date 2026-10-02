@@ -1247,6 +1247,38 @@ namespace System.Tests
             Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
         }
 
+        [Theory]
+        [InlineData(-3.0, "E-0")]
+        [InlineData(-0.75, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(double value, string exponentSign)
+        {
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(double.TryParse(formatted, NumberStyles.Float, info, out double result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+            Assert.True(double.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(double.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+        }
+
+        [Theory]
+        [InlineData("123-+", "-", "-+", -123.0)]
+        [InlineData("123-+", "-+", "-", 123.0)]
+        public static void Parse_CustomSignPrefixes_Trailing(string value, string positiveSign, string negativeSign, double expected)
+        {
+            var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };
+
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(double.Parse(value, NumberStyles.AllowTrailingSign, info)));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(double.Parse(value.AsSpan(), NumberStyles.AllowTrailingSign, info)));
+            byte[] utf8 = Encoding.UTF8.GetBytes(value);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(double.Parse(utf8, NumberStyles.AllowTrailingSign, info)));
+        }
+
         [Fact]
         public static void HexFloat_CustomNumberFormat()
         {

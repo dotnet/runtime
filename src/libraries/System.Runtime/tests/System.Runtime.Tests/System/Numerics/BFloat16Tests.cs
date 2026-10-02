@@ -1439,6 +1439,26 @@ namespace System.Numerics.Tests
             Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
         }
 
+        [Theory]
+        [InlineData(-3.0f, "E-0")]
+        [InlineData(-0.75f, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(float f, string exponentSign)
+        {
+            BFloat16 value = (BFloat16)f;
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(BFloat16.TryParse(formatted, NumberStyles.Float, info, out BFloat16 result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
+            Assert.True(BFloat16.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(BFloat16.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
+        }
+
         [Fact]
         public static void HexFloat_CustomNumberFormat()
         {

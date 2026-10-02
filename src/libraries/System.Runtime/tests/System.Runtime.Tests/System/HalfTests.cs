@@ -1435,6 +1435,26 @@ namespace System.Tests
             Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
         }
 
+        [Theory]
+        [InlineData(-3.0f, "E-0")]
+        [InlineData(-0.75f, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(float f, string exponentSign)
+        {
+            Half value = (Half)f;
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(Half.TryParse(formatted, NumberStyles.Float, info, out Half result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            Assert.True(Half.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(Half.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+        }
+
         [Fact]
         public static void HexFloat_CustomNumberFormat()
         {

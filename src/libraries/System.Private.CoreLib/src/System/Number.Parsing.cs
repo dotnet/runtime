@@ -366,40 +366,12 @@ namespace System
                         num = TChar.CastToUInt32(value[index]);
                     }
                 }
-                else if (info.AllowHyphenDuringParsing() && num == '-')
-                {
-                    isNegative = true;
-                    index++;
-
-                    if ((uint)index >= (uint)value.Length)
-                    {
-                        goto FalseExit;
-                    }
-                    num = TChar.CastToUInt32(value[index]);
-                }
                 else
                 {
-                    // Slice a copy rather than reassigning value, so that index (and thus the number
-                    // of elements reported as consumed) stays relative to the original input.
-                    ReadOnlySpan<TChar> remaining = value.Slice(index);
-
-                    ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                    ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-
-                    if (!positiveSign.IsEmpty && remaining.StartsWith(positiveSign))
+                    int nextIndex = MatchSignChars(value, index, info, out isNegative);
+                    if (nextIndex >= 0)
                     {
-                        index += positiveSign.Length;
-
-                        if ((uint)index >= (uint)value.Length)
-                        {
-                            goto FalseExit;
-                        }
-                        num = TChar.CastToUInt32(value[index]);
-                    }
-                    else if (!negativeSign.IsEmpty && remaining.StartsWith(negativeSign))
-                    {
-                        isNegative = true;
-                        index += negativeSign.Length;
+                        index = nextIndex;
 
                         if ((uint)index >= (uint)value.Length)
                         {
@@ -1204,35 +1176,6 @@ namespace System
             return false;
         }
 
-        private static int MatchHexFloatSign<TChar>(ReadOnlySpan<TChar> value, int index, NumberFormatInfo info, out bool isNegative)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            int positiveSignIndex = MatchChars(value, index, info.PositiveSignTChar<TChar>());
-
-            // Check for a longer negative sign only when it can share the positive sign as a prefix.
-            // This keeps formatted values parseable without changing the common non-overlapping path.
-            ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-            ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-            if (positiveSignIndex >= 0 &&
-                (positiveSign.Length >= negativeSign.Length || MatchChars(negativeSign, 0, positiveSign) < 0))
-            {
-                isNegative = false;
-                return positiveSignIndex;
-            }
-
-            int negativeSignIndex = MatchNegativeSignChars(value, index, info);
-
-            // Prefer the longer sign when custom signs overlap. Positive wins ties.
-            if (positiveSignIndex >= negativeSignIndex)
-            {
-                isNegative = false;
-                return positiveSignIndex;
-            }
-
-            isNegative = true;
-            return negativeSignIndex;
-        }
-
         internal static bool TryParseHexFloatingPoint<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
@@ -1266,7 +1209,7 @@ namespace System
             bool isNegative = false;
             if ((styles & NumberStyles.AllowLeadingSign) != 0)
             {
-                int nextIndex = MatchHexFloatSign(value, index, info, out isNegative);
+                int nextIndex = MatchSignChars(value, index, info, out isNegative);
                 if (nextIndex >= 0)
                 {
                     index = nextIndex;
@@ -1418,7 +1361,7 @@ namespace System
                 }
 
                 bool exponentIsNegative = false;
-                int nextIndex = MatchHexFloatSign(value, index, info, out exponentIsNegative);
+                int nextIndex = MatchSignChars(value, index, info, out exponentIsNegative);
                 if (nextIndex >= 0)
                 {
                     index = nextIndex;
