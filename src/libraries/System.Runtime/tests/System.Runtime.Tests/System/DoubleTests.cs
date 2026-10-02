@@ -1206,6 +1206,44 @@ namespace System.Tests
             Assert.True(double.IsNegative(result) && result == 0.0);
         }
 
+        [Theory]
+        [InlineData(0.0, "x", "plus", "minus", "0x0pplus0")]
+        [InlineData(-0.0, "X", "plus", "minus", "minus0X0Pplus0")]
+        [InlineData(0.0, "x3", "plus", "minus", "0x0.000pplus0")]
+        [InlineData(-0.0, "X3", "plus", "minus", "minus0X0.000Pplus0")]
+        [InlineData(3.0, "x", "plus", "minus", "0x1.8pplus1")]
+        [InlineData(-0.75, "X", "plus", "minus", "minus0X1.8Pminus1")]
+        [InlineData(3.0, "X", "\u200E+", "\u200E-", "0X1.8P\u200E+1")]
+        [InlineData(-0.75, "x", "\u200E+", "\u200E-", "\u200E-0x1.8p\u200E-1")]
+        [InlineData(3.0, "x", "\u061C+", "\u061C-", "0x1.8p\u061C+1")]
+        [InlineData(-0.75, "X", "\u061C+", "\u061C-", "\u061C-0X1.8P\u061C-1")]
+        [InlineData(0.75, "x", "+", "\u2212", "0x1.8p\u22121")]
+        [InlineData(3.0, "X", "", "~", "0X1.8P1")]
+        [InlineData(3.0, "x", "-+", "-", "0x1.8p-+1")]
+        [InlineData(3.0, "X", "-", "-+", "0X1.8P-1")]
+        [InlineData(3.0, "x", "-", "+", "0x1.8p-1")]
+        [InlineData(0.75, "X", "-", "+", "0X1.8P+1")]
+        [InlineData(-3.0, "X", "-", "+", "+0X1.8P-1")]
+        [InlineData(-3.0, "x", "-+", "-", "-0x1.8p-+1")]
+        public static void ToStringHexFloat_CustomSigns(double value, string format, string positiveSign, string negativeSign, string expected)
+        {
+            var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };
+            Assert.Equal(expected, value.ToString(format, info));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, info, expected, formatCasingMatchesOutput: false);
+
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(double.Parse(expected, NumberStyles.HexFloat, info)));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(double.Parse(expected.AsSpan(), NumberStyles.HexFloat, info)));
+            byte[] utf8 = Encoding.UTF8.GetBytes(expected);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(double.Parse(utf8, NumberStyles.HexFloat, info)));
+
+            Assert.True(double.TryParse(expected, NumberStyles.HexFloat, info, out double result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+            Assert.True(double.TryParse(expected.AsSpan(), NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+            Assert.True(double.TryParse(utf8, NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+        }
+
         [Fact]
         public static void HexFloat_CustomNumberFormat()
         {

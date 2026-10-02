@@ -1237,24 +1237,16 @@ namespace System
             bool isNegative = false;
             if ((styles & NumberStyles.AllowLeadingSign) != 0)
             {
-                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-                if (!negativeSign.IsEmpty && value[index..].StartsWith(negativeSign))
+                ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+                int nextIndex = MatchChars(value, index, positiveSign);
+                if (nextIndex >= 0)
+                {
+                    index = nextIndex;
+                }
+                else if ((nextIndex = MatchNegativeSignChars(value, index, info)) >= 0)
                 {
                     isNegative = true;
-                    index += negativeSign.Length;
-                }
-                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
-                {
-                    isNegative = true;
-                    index++;
-                }
-                else
-                {
-                    ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                    if (!positiveSign.IsEmpty && value[index..].StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                    }
+                    index = nextIndex;
                 }
             }
 
@@ -1403,21 +1395,16 @@ namespace System
                 }
 
                 bool exponentIsNegative = false;
-                ReadOnlySpan<TChar> negSign = info.NegativeSignTChar<TChar>();
-                ReadOnlySpan<TChar> posSign = info.PositiveSignTChar<TChar>();
-                if (!negSign.IsEmpty && value[index..].StartsWith(negSign))
+                ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+                int nextIndex = MatchChars(value, index, positiveSign);
+                if (nextIndex >= 0)
+                {
+                    index = nextIndex;
+                }
+                else if ((nextIndex = MatchNegativeSignChars(value, index, info)) >= 0)
                 {
                     exponentIsNegative = true;
-                    index += negSign.Length;
-                }
-                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
-                {
-                    exponentIsNegative = true;
-                    index++;
-                }
-                else if (!posSign.IsEmpty && value[index..].StartsWith(posSign))
-                {
-                    index += posSign.Length;
+                    index = nextIndex;
                 }
 
                 if (index >= value.Length)
