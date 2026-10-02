@@ -64,19 +64,7 @@ void GCHeap::UpdatePreGCCounters()
     uint32_t count = (uint32_t)pSettings->gc_index;
     uint32_t depth = (uint32_t)pSettings->condemned_generation;
     uint32_t reason = (uint32_t)pSettings->reason;
-    gc_etw_type type = gc_etw_type_ngc;
-    if (pSettings->concurrent)
-    {
-        type = gc_etw_type_bgc;
-    }
-#ifdef BACKGROUND_GC
-    else if (depth < max_generation && pSettings->background_p)
-    {
-        type = gc_etw_type_fgc;
-    }
-#endif // BACKGROUND_GC
-
-    FIRE_EVENT(GCStart_V2, count, depth, reason, static_cast<uint32_t>(type));
+    FIRE_EVENT(GCStart_V2, count, depth, reason, static_cast<uint32_t>(pSettings->get_etw_type()));
     ReportGenerationBounds();
 }
 

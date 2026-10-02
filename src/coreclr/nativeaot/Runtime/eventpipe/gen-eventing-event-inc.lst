@@ -68,6 +68,7 @@ GCMarkOlderGenerationRoots
 GCMarkStackRoots
 GCMarkWithType
 GCOptimized_V1
+GCPause
 GCPerHeapHistory_V3
 GCRestartEEBegin_V1
 GCRestartEEEnd_V1

@@ -1601,6 +1601,7 @@ void gc_heap::do_post_gc()
 
         last_gc_info->pause_durations[0] = pause_duration;
         total_suspended_time += pause_duration;
+        record_gc_pause(pause_duration);
         last_gc_info->pause_durations[1] = 0;
     }
 
