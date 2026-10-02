@@ -112,7 +112,7 @@ namespace System.Runtime.CompilerServices
         private static ref Entry TableData(Entry[] table)
         {
             // points to element 0, which is used for embedded aux data
-            return ref Unsafe.As<byte, Entry>(ref Unsafe.As<RawArrayData>(table).Data);
+            return ref MemoryMarshal.GetArrayDataReference(table);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -138,7 +138,7 @@ namespace System.Runtime.CompilerServices
         private static ref Entry Element(Entry[] table, int index)
         {
             // element 0 is used for embedded aux data, skip it
-            return ref Unsafe.Add(ref Unsafe.As<byte, Entry>(ref Unsafe.As<RawArrayData>(table).Data), index + 1);
+            return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(table), index + 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
