@@ -9240,6 +9240,12 @@ DebuggerFuncEvalComplete::DebuggerFuncEvalComplete(Thread *thread,
     AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)dest, LEAF_MOST_FRAME, FALSE, TRACE_UNMANAGED);
 }
 
+DebuggerFuncEvalComplete::~DebuggerFuncEvalComplete()
+{
+    WRAPPER_NO_CONTRACT;
+    DeleteInteropSafe(m_pResultRoots);
+}
+
 TP_RESULT DebuggerFuncEvalComplete::TriggerPatch(DebuggerControllerPatch *patch,
                                             Thread *thread,
                                             TRIGGER_WHY tyWhy)
@@ -9300,6 +9306,11 @@ bool DebuggerFuncEvalComplete::SendEvent(Thread *thread, bool fIpChanged)
 
     // The DebuggerEval is at our faulting address.
     DebuggerEval *pDE = m_pDE;
+
+    if (m_pResultRoots != nullptr)
+    {
+        m_pResultRoots->RefreshByRefResult(pDE);
+    }
 
     // Send the func eval complete (or exception) event.
     g_pDebugger->FuncEvalComplete(thread, pDE);

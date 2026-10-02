@@ -45,7 +45,7 @@ namespace System.Reflection
 
         [StackTraceHidden]
         [DebuggerHidden]
-        internal unsafe void InvokeForDebugger(IntPtr* storage)
+        internal InvokerEmitUtil.InvokeFunc_Debugger GetDebuggerInvokeDelegate()
         {
             InvokerEmitUtil.InvokeFunc_Debugger? invoke = Volatile.Read(ref _invokeFunc_Debugger);
             if (invoke is null)
@@ -57,7 +57,7 @@ namespace System.Reflection
                 invoke = Interlocked.CompareExchange(ref _invokeFunc_Debugger, invoke, null) ?? invoke;
             }
 
-            invoke(storage);
+            return invoke;
         }
     }
 }
