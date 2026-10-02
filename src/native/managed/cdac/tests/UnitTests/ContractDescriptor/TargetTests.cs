@@ -448,19 +448,19 @@ public unsafe partial class TargetTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TryValidate_DoesNotInstantiateContract(MockTarget.Architecture arch)
     {
-        // GCInfo's creator reads RuntimeInfo from target memory. Advertise GCInfo but omit RuntimeInfo:
-        // TryValidate must succeed (a creator is registered) without invoking it, whereas a real
-        // GetContract would chain into RuntimeInfo and fail.
         TargetTestHelpers targetTestHelpers = new(arch);
         ContractDescriptorBuilder builder = new(targetTestHelpers);
         ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        // GCInfo's factory requires RuntimeInfo; presence-only validation must not invoke it.
         descriptorBuilder.SetContracts(new Dictionary<string, string> { ["GCInfo"] = "c1" });
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
         Assert.True(target.Contracts.TryValidate<Contracts.IGCInfo>(out System.Exception? failure));
         Assert.Null(failure);
-        Assert.Throws<ContractMissingException>(() => target.Contracts.GCInfo);
+        ContractMissingException exception = Assert.Throws<ContractMissingException>(
+            () => target.Contracts.TryGetContract<Contracts.IGCInfo>(out _));
+        Assert.Equal("RuntimeInfo", exception.ContractName);
     }
 
     [Theory]

@@ -2005,11 +2005,9 @@ Determining if a method supports multiple code versions:
         // MethodDesc::IsEligibleForReJIT
         // Targets without profiling support do not advertise ReJIT.
         // An invalid advertised contract is still an error.
-        if (!_target.Contracts.TryGetContract(out IReJIT reJit, out System.Exception? failure))
+        if (!_target.Contracts.TryGetContract(out IReJIT reJit))
         {
-            if (failure is ContractMissingException)
-                return false;
-            throw failure;
+            return false;
         }
         if (reJit.IsEnabled())
         {

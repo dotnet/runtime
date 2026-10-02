@@ -171,12 +171,17 @@ public class MethodDescTests
             arch, tiered: false, builder => builder.AddContract<IReJIT>("c999"));
         Assert.Throws<ContractUnrecognizedException>(() => contract.IsVersionable(method));
 
-        InvalidOperationException failure = new("Injected ReJIT target-read failure.");
-        Mock<IReJIT> reJit = new(MockBehavior.Strict);
-        reJit.Setup(r => r.IsEnabled()).Throws(failure);
+        // A partial dump can advertise ReJIT without capturing the profiler's data.
+        const ulong ProfilerControlBlockAddress = 0x3000_0000;
         (contract, method) = CreateMethodForVersioning(
-            arch, tiered: false, builder => builder.AddMockContract(reJit));
-        Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => contract.IsVersionable(method)));
+            arch, tiered: false, builder => builder
+                .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.ProfControlBlock] = TargetTestHelpers.CreateTypeInfo(MockProfControlBlock.CreateLayout(arch)),
+                })
+                .AddGlobals((nameof(Constants.Globals.ProfilerControlBlock), ProfilerControlBlockAddress))
+                .AddContract<IReJIT>("c1"));
+        Assert.Throws<VirtualReadException>(() => contract.IsVersionable(method));
     }
 
     [Theory]
