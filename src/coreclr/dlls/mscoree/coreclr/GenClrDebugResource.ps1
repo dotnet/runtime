@@ -3,6 +3,8 @@ param (
     $dac,
     [string]
     $dbi,
+    [switch]
+    $noNativeDacDbi,
     [string]
     $out
 )
@@ -34,10 +36,17 @@ try {
     $clrDebugResource.Write(0);
     # Write the GUID for CoreCLR (should match the CLR_ID_ONECORE_CLR GUID in clrinternal.idl)
     $clrDebugResource.Write([System.Guid]::Parse("{0xb1ee760d,0x6c4a,0x4533,{0xba,0x41,0x6f,0x4f,0x66,0x1f,0xab,0xaf}}").ToByteArray())
-    [int]$dacTimeStamp = dumpbin $dac /HEADERS | Select-String "([0-9A-Fa-f]+) time date stamp" | %{ $_.Matches.Groups[1].Value } | Parse-Int
-    [int]$dacImageSize = dumpbin $dac /HEADERS | Select-String "([0-9A-Fa-f]+) size of image" | %{ $_.Matches.Groups[1].Value } | Parse-Int
-    [int]$dbiTimeStamp = dumpbin $dbi /HEADERS | Select-String "([0-9A-Fa-f]+) time date stamp" | %{ $_.Matches.Groups[1].Value } | Parse-Int
-    [int]$dbiImageSize = dumpbin $dbi /HEADERS | Select-String "([0-9A-Fa-f]+) size of image" | %{ $_.Matches.Groups[1].Value } | Parse-Int
+    # Zero identities allow CLR recognition without advertising native DAC/DBI binaries.
+    [int]$dacTimeStamp = 0
+    [int]$dacImageSize = 0
+    [int]$dbiTimeStamp = 0
+    [int]$dbiImageSize = 0
+    if (-not $noNativeDacDbi) {
+        $dacTimeStamp = dumpbin $dac /HEADERS | Select-String "([0-9A-Fa-f]+) time date stamp" | %{ $_.Matches.Groups[1].Value } | Parse-Int
+        $dacImageSize = dumpbin $dac /HEADERS | Select-String "([0-9A-Fa-f]+) size of image" | %{ $_.Matches.Groups[1].Value } | Parse-Int
+        $dbiTimeStamp = dumpbin $dbi /HEADERS | Select-String "([0-9A-Fa-f]+) time date stamp" | %{ $_.Matches.Groups[1].Value } | Parse-Int
+        $dbiImageSize = dumpbin $dbi /HEADERS | Select-String "([0-9A-Fa-f]+) size of image" | %{ $_.Matches.Groups[1].Value } | Parse-Int
+    }
     $clrDebugResource.Write($dacTimeStamp)
     $clrDebugResource.Write($dacImageSize)
     $clrDebugResource.Write($dbiTimeStamp)

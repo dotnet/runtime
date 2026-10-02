@@ -50,13 +50,14 @@ The separate NativeAOT project controls its exports, architecture restrictions,
 size settings, and installation without duplicating collection logic.
 
 With `UseCdacDumpCollectProvider=true`, the native build omits both the legacy
-DAC and legacy DBI, but still builds `mscordbi_universal`. These builds omit
-the Windows `CLRDEBUGINFO` resources and leave the DAC/DBI identity indexes
-in `DotNetRuntimeInfo` empty. Runtime identity/version information and WER's
-separate dump-provider resources are preserved. Current Windows dbgshim
-runtime discovery paths that require the legacy identities cannot discover
-these builds; those paths need to support absent legacy identities before
-they can be used for cDAC live debugging.
+DAC and legacy DBI, but still builds `mscordbi_universal`. These builds retain
+the Windows `CLRDEBUGINFO` resources with the CoreCLR signature and zero
+DAC/DBI timestamps and image sizes, allowing dbgshim to recognize the runtime
+for universal DBI activation without advertising matching legacy binaries.
+Legacy DAC/DBI identity indexes in `DotNetRuntimeInfo` remain empty.
+Runtime identity/version information and WER's separate dump-provider resources
+are preserved. Discovery paths that require valid legacy identities remain
+unsupported.
 
 Enumeration shares the SOS/process instance's COM identity and API lock.
 `MemoryEnumerator.Enumerate` requires a `ContractDescriptorTarget`, returning
