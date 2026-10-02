@@ -10,6 +10,8 @@ namespace ILLink.CacheTool;
 
 internal static class Program
 {
+    private static readonly string[] s_cutoffFormats = { "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFFzzz" };
+
     private static int Main(string[] args) => Run(args, Console.Out, Console.Error);
 
     internal static int Run(string[] args, TextWriter output, TextWriter error)
@@ -27,8 +29,7 @@ internal static class Program
             CustomParser = result =>
             {
                 string value = result.Tokens[0].Value;
-                if (DateTimeOffset.TryParseExact(value,
-                    new[] { "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFFzzz" },
+                if (DateTimeOffset.TryParseExact(value, s_cutoffFormats,
                     CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTimeOffset cutoff) &&
                     cutoff.Offset == TimeSpan.Zero)
                 {
