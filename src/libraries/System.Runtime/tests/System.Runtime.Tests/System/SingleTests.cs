@@ -977,6 +977,9 @@ namespace System.Tests
         [InlineData(0.75f, "X", "-", "+", "0X1.8P+1")]
         [InlineData(-3.0f, "X", "-", "+", "+0X1.8P-1")]
         [InlineData(-3.0f, "x", "-+", "-", "-0x1.8p-+1")]
+        [InlineData(-3.0f, "X", "-", "-+", "-+0X1.8P-1")]
+        [InlineData(-0.75f, "x", "-", "-+", "-+0x1.8p-+1")]
+        [InlineData(0.75f, "x", "-", "-+", "0x1.8p-+1")]
         public static void ToStringHexFloat_CustomSigns(float value, string format, string positiveSign, string negativeSign, string expected)
         {
             var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };

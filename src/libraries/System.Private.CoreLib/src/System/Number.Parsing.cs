@@ -1204,6 +1204,35 @@ namespace System
             return false;
         }
 
+        private static int MatchHexFloatSign<TChar>(ReadOnlySpan<TChar> value, int index, NumberFormatInfo info, out bool isNegative)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            int positiveSignIndex = MatchChars(value, index, info.PositiveSignTChar<TChar>());
+
+            // Check for a longer negative sign only when it can share the positive sign as a prefix.
+            // This keeps formatted values parseable without changing the common non-overlapping path.
+            ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+            ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+            if (positiveSignIndex >= 0 &&
+                (positiveSign.Length >= negativeSign.Length || MatchChars(negativeSign, 0, positiveSign) < 0))
+            {
+                isNegative = false;
+                return positiveSignIndex;
+            }
+
+            int negativeSignIndex = MatchNegativeSignChars(value, index, info);
+
+            // Prefer the longer sign when custom signs overlap. Positive wins ties.
+            if (positiveSignIndex >= negativeSignIndex)
+            {
+                isNegative = false;
+                return positiveSignIndex;
+            }
+
+            isNegative = true;
+            return negativeSignIndex;
+        }
+
         internal static bool TryParseHexFloatingPoint<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
@@ -1237,15 +1266,9 @@ namespace System
             bool isNegative = false;
             if ((styles & NumberStyles.AllowLeadingSign) != 0)
             {
-                ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                int nextIndex = MatchChars(value, index, positiveSign);
+                int nextIndex = MatchHexFloatSign(value, index, info, out isNegative);
                 if (nextIndex >= 0)
                 {
-                    index = nextIndex;
-                }
-                else if ((nextIndex = MatchNegativeSignChars(value, index, info)) >= 0)
-                {
-                    isNegative = true;
                     index = nextIndex;
                 }
             }
@@ -1395,15 +1418,9 @@ namespace System
                 }
 
                 bool exponentIsNegative = false;
-                ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                int nextIndex = MatchChars(value, index, positiveSign);
+                int nextIndex = MatchHexFloatSign(value, index, info, out exponentIsNegative);
                 if (nextIndex >= 0)
                 {
-                    index = nextIndex;
-                }
-                else if ((nextIndex = MatchNegativeSignChars(value, index, info)) >= 0)
-                {
-                    exponentIsNegative = true;
                     index = nextIndex;
                 }
 
