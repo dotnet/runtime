@@ -1481,12 +1481,16 @@ namespace System.Net.Security
                 bool staged = false;
                 try
                 {
-                    if (token.Failed)
+                    // NoRenegotiation means no request can be made (e.g. a TLS 1.3 client that didn't offer
+                    // post-handshake authentication, or renegotiation disabled in the OpenSSL configuration),
+                    // not a failure: nothing is staged, so the session stays in its completed state below.
+                    bool noRenegotiation = token.Status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation;
+                    if (token.Failed && !noRenegotiation)
                     {
                         throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
 
-                    if (token.Size > 0)
+                    if (token.Size > 0 && !noRenegotiation)
                     {
                         Debug.Assert(token.Payload != null);
                         AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));

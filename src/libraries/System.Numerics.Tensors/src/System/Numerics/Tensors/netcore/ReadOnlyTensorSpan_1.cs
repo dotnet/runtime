@@ -243,7 +243,7 @@ namespace System.Numerics.Tensors
 
         internal ReadOnlyTensorSpan(ref readonly T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
-            _shape = TensorShape.Create(in data, dataLength, lengths, strides, pinned);
+            _shape = TensorShape.CreateForView(dataLength, lengths, strides, pinned);
             _reference = ref Unsafe.AsRef(in data);
         }
 

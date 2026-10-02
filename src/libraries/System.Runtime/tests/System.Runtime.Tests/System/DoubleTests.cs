@@ -1422,7 +1422,8 @@ namespace System.Tests
 
             // Non-ASCII and supplementary signs are matched ignoring case
             yield return new object[] { "\u00C9Infinity", "\u00E9", "-", true, double.PositiveInfinity };
-            yield return new object[] { "\U00010400Infinity", "\U00010428", "-", true, double.PositiveInfinity };
+            // NLS doesn't case-fold supplementary characters
+            yield return new object[] { "\U00010400Infinity", "\U00010428", "-", !PlatformDetection.IsNlsGlobalization, PlatformDetection.IsNlsGlobalization ? 0.0 : double.PositiveInfinity };
             yield return new object[] { "\u200E+\u200EInfinity", "\u200E+\u200E", "\u200E-\u200E", true, double.PositiveInfinity };
             yield return new object[] { "\u200E-\u200ENaN", "\u200E+\u200E", "\u200E-\u200E", true, double.NaN };
 
