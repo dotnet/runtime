@@ -31,8 +31,8 @@ MethodDesc* g_pDebuggerInvokeFunctionMethodDesc = nullptr;
 
 // Bootstrap protection must precede the first managed entry, including metadata loading
 // and thunk generation. Objects, possible interior values, and writable argument homes
-// have separate roots. Primitive values and enregistered structs are captured with GC forbidden;
-// ExternalMemoryHandle reports references in enregistered value-type snapshots.
+// have separate roots. Native capture runs with GC forbidden. ExternalMemoryHandle
+// protects serialized non-leaf register slots in place and copies of leaf-frame structs.
 // Managed evaluation owns conversion, boxing, invocation and copy-back; byref-like
 // temporaries are exact typed locals in its emitted thunk.
 //
@@ -1139,6 +1139,142 @@ static void ReleaseFuncEvalArgumentHandles(ExternalMemoryHandle** pHandles)
     }
 }
 
+static bool HasNonLeafFuncEvalRegister(DebuggerIPCE_FuncEvalArgData* pArg)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (pArg->argAddr != static_cast<CORDB_ADDRESS>(0) || pArg->argIsLiteral || pArg->argIsHandleValue)
+    {
+        return false;
+    }
+
+    switch (pArg->argHome.kind)
+    {
+    case RAK_REG:
+#if !defined(HOST_64BIT)
+    case RAK_REGMEM:
+    case RAK_MEMREG:
+#endif
+        return pArg->argHome.reg1Addr == kNonLeafFrameRegAddr;
+#if !defined(HOST_64BIT)
+    case RAK_REGREG:
+        return pArg->argHome.reg1Addr == kNonLeafFrameRegAddr ||
+            pArg->argHome.u.reg2Addr == kNonLeafFrameRegAddr;
+#endif
+    default:
+        return false;
+    }
+}
+
+static bool CanReadFuncEvalRegistersInPlace(DebuggerIPCE_FuncEvalArgData* pArg)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (!HasNonLeafFuncEvalRegister(pArg))
+    {
+        return false;
+    }
+
+#if !defined(HOST_64BIT)
+    if (pArg->argHome.kind == RAK_REGREG)
+    {
+        return pArg->argHome.reg1Addr == kNonLeafFrameRegAddr &&
+            pArg->argHome.u.reg2Addr == kNonLeafFrameRegAddr;
+    }
+#endif
+    return pArg->argHome.kind == RAK_REG;
+}
+
+template <typename T>
+static void RegisterFuncEvalSlot(Portable<T>* pSlot, uint32_t flags, ExternalMemoryHandle**& pNextHandle)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    static_assert(sizeof(T) >= sizeof(void*));
+    T* pAddress = pSlot->GetNativeAddress();
+    _ASSERTE(IS_ALIGNED(reinterpret_cast<SIZE_T>(pAddress), sizeof(void*)));
+    *pNextHandle = ExternalMemoryHandle::Add(g_pObjectClass, pAddress, flags);
+    pNextHandle++;
+}
+
+struct FuncEvalRegisterRootContext : ScanContext
+{
+    RemoteAddress* home;
+    BYTE* layoutBase;
+    ExternalMemoryHandle** nextHandle;
+
+    FuncEvalRegisterRootContext(RemoteAddress* home, BYTE* layoutBase, ExternalMemoryHandle** nextHandle)
+        : home(home), layoutBase(layoutBase), nextHandle(nextHandle)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    static void Register(PTR_PTR_Object pField, ScanContext* sc, uint32_t flags)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        FuncEvalRegisterRootContext* context = static_cast<FuncEvalRegisterRootContext*>(sc);
+        SIZE_T offset = reinterpret_cast<BYTE*>(pField) - context->layoutBase;
+        if (offset >= sizeof(UINT64) || offset % sizeof(void*) != 0)
+        {
+            COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
+        }
+
+        RemoteAddress* home = context->home;
+        switch (home->kind)
+        {
+        case RAK_REG:
+            _ASSERTE(offset == 0);
+            if (home->reg1Addr == kNonLeafFrameRegAddr)
+            {
+                RegisterFuncEvalSlot(&home->reg1Value, flags, context->nextHandle);
+            }
+            break;
+#if !defined(HOST_64BIT)
+        case RAK_REGREG:
+            if (offset == 0)
+            {
+                if (home->u.reg2Addr == kNonLeafFrameRegAddr)
+                {
+                    RegisterFuncEvalSlot(&home->u.reg2Value, flags, context->nextHandle);
+                }
+            }
+            else if (home->reg1Addr == kNonLeafFrameRegAddr)
+            {
+                RegisterFuncEvalSlot(&home->reg1Value, flags, context->nextHandle);
+            }
+            break;
+        case RAK_MEMREG:
+            if (offset == 0 && home->reg1Addr == kNonLeafFrameRegAddr)
+            {
+                RegisterFuncEvalSlot(&home->reg1Value, flags, context->nextHandle);
+            }
+            break;
+        case RAK_REGMEM:
+            if (offset == sizeof(void*) && home->reg1Addr == kNonLeafFrameRegAddr)
+            {
+                RegisterFuncEvalSlot(&home->reg1Value, flags, context->nextHandle);
+            }
+            break;
+#endif
+        default:
+            UNREACHABLE();
+        }
+    }
+};
+
 static HRESULT CaptureFuncEvalArgumentValues(
     DebuggerEval* pDE, OBJECTREF* pObjectRefArray, INT64* pBufferForArgsArray,
     ExternalMemoryHandle** pArgumentHandles)
@@ -1152,12 +1288,28 @@ static HRESULT CaptureFuncEvalArgumentValues(
     CONTRACTL_END;
 
     DebuggerIPCE_FuncEvalArgData* pArguments = pDE->GetArgData();
-    UINT32 handleCount = 0;
+    ExternalMemoryHandle** pNextHandle = pArgumentHandles;
     for (UINT32 i = 0; i < pDE->m_argCount; i++)
     {
         DebuggerIPCE_FuncEvalArgData* pArg = &pArguments[i];
+        bool nonLeafRegister = HasNonLeafFuncEvalRegister(pArg);
+#if !defined(HOST_64BIT)
+        if (nonLeafRegister && (pArg->argHome.kind == RAK_MEMREG || pArg->argHome.kind == RAK_REGMEM))
+        {
+            // Root the serialized address, not the memory contents already reported by the original home.
+            RegisterFuncEvalSlot(&pArg->argHome.addr, GC_CALL_INTERIOR, pNextHandle);
+        }
+#endif
         if (IsElementTypeSpecial(pArg->argElementType))
         {
+            if (nonLeafRegister)
+            {
+                if (pArg->argHome.kind != RAK_REG)
+                {
+                    return COR_E_ARGUMENT;
+                }
+                RegisterFuncEvalSlot(&pArg->argHome.reg1Value, 0, pNextHandle);
+            }
             continue;
         }
 
@@ -1188,20 +1340,32 @@ static HRESULT CaptureFuncEvalArgumentValues(
             {
                 return CORDBG_E_CLASS_NOT_LOADED;
             }
-            if (!type.IsValueType() || type.AsMethodTable()->GetNumInstanceFieldBytes() > sizeof(value))
+            if (!type.IsValueType() || type.AsMethodTable()->GetNumInstanceFieldBytes() > sizeof(value) ||
+                (pArg->argHome.kind == RAK_REG && type.AsMethodTable()->GetNumInstanceFieldBytes() > sizeof(SIZE_T)))
             {
                 return COR_E_ARGUMENT;
             }
 
-            pBufferForArgsArray[i] = static_cast<INT64>(value);
             MethodTable* pMT = type.AsMethodTable();
             // Value-type arguments do not use this object slot. Keep their captured layout alive.
             pObjectRefArray[i] = pMT->GetLoaderAllocator()->GetExposedObject();
-            if (pMT->ContainsGCPointers() || pMT->IsByRefLike())
+            if (nonLeafRegister)
             {
-                // Non-leaf register values are immutable IPC snapshots, not GC-updated context slots.
-                pArgumentHandles[handleCount] = ExternalMemoryHandle::Add(pMT, &pBufferForArgsArray[i], 0);
-                handleCount++;
+                // Only field offsets are consumed; the callback registers the original serialized slots.
+                UINT64 layout = 0;
+                FuncEvalRegisterRootContext context(&pArg->argHome, reinterpret_cast<BYTE*>(&layout), pNextHandle);
+                ReportPointersFromValueType(FuncEvalRegisterRootContext::Register, &context, pMT, &layout);
+                pNextHandle = context.nextHandle;
+            }
+            if (!CanReadFuncEvalRegistersInPlace(pArg))
+            {
+                // Mixed homes still need a snapshot: their original memory contents may also be stack roots.
+                pBufferForArgsArray[i] = static_cast<INT64>(value);
+                if (pMT->ContainsGCPointers() || pMT->IsByRefLike())
+                {
+                    *pNextHandle = ExternalMemoryHandle::Add(pMT, &pBufferForArgsArray[i], 0);
+                    pNextHandle++;
+                }
             }
             continue;
         }
@@ -1507,8 +1671,19 @@ extern "C" void QCALLTYPE DebugDebugger_CopyFuncEvalValueTypeArgument(
     _ASSERTE(index < pContext->argumentCount);
     MethodTable* pMT = type.AsTypeHandle().GetMethodTable();
     _ASSERTE(pMT->GetNumInstanceFieldBytes() <= sizeof(UINT64));
-    // Both the captured source and the destination are rooted; keep the raw copy GC-free.
-    CopyValueClassUnchecked(pDestination, &pContext->pPrimitives[index], pMT);
+    DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
+    if (CanReadFuncEvalRegistersInPlace(pArg))
+    {
+        UINT64 value;
+        BOOL read = ReadFuncEvalRegisterValue(pContext->pEval, pArg, &value);
+        _ASSERTE(read);
+        // Read the GC-updated serialized slots and transfer directly into rooted managed storage.
+        CopyValueClassUnchecked(pDestination, &value, pMT);
+    }
+    else
+    {
+        CopyValueClassUnchecked(pDestination, &pContext->pPrimitives[index], pMT);
+    }
 }
 
 extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalArgument(
@@ -1839,8 +2014,8 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
     GCPROTECT_BEGININTERIOR_ARRAY(*pByRefMaybeInteriorPtrArray, (UINT)(cbAllocSize/sizeof(OBJECTREF)));
 
     //
-    // Capture primitive and enregistered value-type data before managed preparation.
-    // Value-class snapshots are protected separately; handles are already rooted.
+    // Capture primitive, leaf-frame and mixed-home value-type data before managed preparation.
+    // Pure non-leaf register homes are rooted in place and read again when preparing managed storage.
     //
     if ((!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(INT64), cbAllocSize)) ||
         (cbAllocSize != (size_t)(cbAllocSize)))
@@ -1850,8 +2025,11 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
     INT64 *pBufferForArgsArray = (INT64*)_alloca(cbAllocSize);
     memset(pBufferForArgsArray, 0, cbAllocSize);
 
+    // Mixed homes can need a register root, a memory-address root and a rooted snapshot.
+    constexpr SIZE_T MaxHandlesPerArgument = 3;
     SIZE_T handleCount;
-    if (!ClrSafeInt<SIZE_T>::addition(pDE->m_argCount, 1, handleCount) ||
+    if (!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, MaxHandlesPerArgument, handleCount) ||
+        !ClrSafeInt<SIZE_T>::addition(handleCount, 1, handleCount) ||
         !ClrSafeInt<SIZE_T>::multiply(handleCount, sizeof(ExternalMemoryHandle*), cbAllocSize))
     {
         ThrowHR(COR_E_OVERFLOW);
