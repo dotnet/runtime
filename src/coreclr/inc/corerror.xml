@@ -2044,6 +2044,12 @@
   <Comment>The operation is not supported because assembly updates have been applied.</Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131c6a">
+  <SymbolicName>CORDBG_E_DEBUGGER_TRANSPORT_NOT_FOUND</SymbolicName>
+  <Message>"The debugger could not find the target process's debugger transport. The process may have been started with DOTNET_EnableDiagnostics=0 or DOTNET_EnableDiagnostics_Debugger=0, or the debugger may be looking for it in a different location, for example because it uses a different temporary directory or runs in a different container."</Message>
+  <Comment>The target process has no debugger transport where the debugger looked for it.</Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131d02">
 	<SymbolicName>PEFMT_E_64BIT</SymbolicName>
 	<Message>"File is PE32+."</Message>

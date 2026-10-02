@@ -190,7 +190,13 @@ HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, const 
         // Wait for the connection to become usable (or time out).
         if (!m_pTransport->WaitForSessionToOpen(10000))
         {
-            hr = CORDBG_E_TIMEOUT;
+            // If every attempt failed because the target's transport pipe does not exist, say so rather than
+            // reporting a timeout. The target was most likely started with the debugger disabled
+            // (DOTNET_EnableDiagnostics=0 or DOTNET_EnableDiagnostics_Debugger=0), or the debugger looked for the
+            // pipe in a different location (a different temporary directory, or another container's process ids).
+            hr = (m_pTransport->GetConnectFailure() == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+                ? CORDBG_E_DEBUGGER_TRANSPORT_NOT_FOUND
+                : CORDBG_E_TIMEOUT;
         }
         else
         {

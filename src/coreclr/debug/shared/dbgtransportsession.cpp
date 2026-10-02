@@ -292,6 +292,17 @@ bool DbgTransportSession::WaitForSessionToOpen(DWORD dwTimeout)
     return m_eState == SS_Open;
 }
 
+// Returns why the connection to the target's transport has not formed: the reason shared by every completed
+// connection attempt since the last success, E_FAIL if those attempts failed for different reasons, or S_OK if
+// no attempt has failed or one is still in progress (which means the pipe exists but nobody has answered yet).
+// A caller whose WaitForSessionToOpen() timed out can use it to say why, for example
+// HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) when the target has no transport pipe at all.
+HRESULT DbgTransportSession::GetConnectFailure()
+{
+    TransportLockHolder lock(m_sStateLock);
+    return m_fConnectInProgress ? S_OK : m_hrConnectFailure;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // A valid ticket is returned if no other client is currently acting as the debugger.
@@ -1314,23 +1325,40 @@ void DbgTransportSession::TransportWorker()
         // the debugger will eventually get bored waiting for us and shutdown the session, which will
         // terminate this loop.
         ConnStatus eStatus;
+        HRESULT hrConnect = E_FAIL;
+        {
+            TransportLockHolder sLockHolder(m_sStateLock);
+            m_fConnectInProgress = true;
+        }
+
         if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Connect))
         {
             eStatus = SCS_NetworkFailure;
         }
         else
         {
-            hr = ConnectToChannel(m_pd, &m_channel);
-            if (SUCCEEDED(hr))
+            hrConnect = ConnectToChannel(m_pd, &m_channel);
+            if (SUCCEEDED(hrConnect))
             {
                 eStatus = SCS_Success;
             }
             else
             {
-                //not really sure that this is the real failure
-                //TODO: we probably need to analyse GetErrorCode() here
+                // Usually the left side is not listening yet, so keep retrying. The reason is recorded below so
+                // that a caller that stops waiting can report it (see GetConnectFailure()).
                 eStatus = SCS_NoListener;
             }
+        }
+
+        {
+            TransportLockHolder sLockHolder(m_sStateLock);
+            m_fConnectInProgress = false;
+            if (SUCCEEDED(hrConnect))
+                m_hrConnectFailure = S_OK;
+            else if (m_hrConnectFailure == S_OK)
+                m_hrConnectFailure = hrConnect;
+            else if (m_hrConnectFailure != hrConnect)
+                m_hrConnectFailure = E_FAIL; // The attempts failed for different reasons.
         }
 
         if (eStatus != SCS_Success)
@@ -2752,8 +2780,11 @@ HRESULT ConnectToChannel(
 
     if (!channel->Pipe().Connect(procDesc))
     {
+        // Read the reason first: releasing the channel runs its destructor, whose unlink() calls change errno,
+        // which is what GetLastError() reads on Unix.
+        DWORD dwError = GetLastError();
         (void)channel->Release();
-        return E_OUTOFMEMORY;
+        return (dwError != ERROR_SUCCESS) ? HRESULT_FROM_WIN32(dwError) : E_FAIL;
     }
 
     HRESULT hr = channel->QueryInterface(IID_IDebugChannel, (void**)ppChannel);
