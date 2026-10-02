@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
@@ -264,4 +265,295 @@ public class WasmUnwinderTests
     }
 
     private const uint StackWalkSentinelIndirect = 0;
+
+    // ---------------------------------------------------------------------------------------
+    // Funclet stack walks over linear-stack layouts that mirror what the producers emit:
+    //  * RyuJIT funclet prolog (genFuncletProlog, src/coreclr/jit/codegenwasm.cpp): an unwindable
+    //    funclet moves its own $sp down by AlignUp(2 * pointer, STACK_ALIGN) (16 on wasm32), stores
+    //    its own function table index at $sp[0], and its unwind blob encodes that 16-byte frame.
+    //  * fgWasmVirtualIP (src/coreclr/jit/fgwasm.cpp): a funclet stores its virtual IP at $sp[4] of
+    //    its own frame; virtual IPs are relative to the controlling method, so the funclet's table
+    //    index resolves to the parent's base virtual IP.
+    //  * genCallFinally (codegenwasm.cpp): a non-exceptional finally is called with the parent's
+    //    current $sp and FP; WasmRegAlloc::AllocateFramePointer (regallocwasm.cpp) makes the
+    //    funclet's FP local that parent FP.
+    //  * genLclHeap (codegenwasm.cpp): after localloc, $sp[0] == STACK_WALK_INDIRECT_TO_FRAMEPOINTER
+    //    and $sp[pointer] == FP.
+    //  * CallFuncletWith[out]Throwable (src/coreclr/vm/wasm/helpers.cpp): the VM pushes a 16-byte
+    //    frame holding TERMINATE_R2R_STACK_WALK at +0 and the establishing FP at
+    //    TERMINATE_R2R_STACK_WALK_FP_OFFSET (one pointer), then calls the funclet with that $sp.
+    // Expected frame pointers follow native GetWasmFramePointerFromStackPointer, which reports a
+    // funclet's logical FP: the frame base of the establishing method.
+    // ---------------------------------------------------------------------------------------
+
+    private const ulong LinearStackBase = 0x0001_0000;
+    private const int LinearStackSize = 0x1000;
+    private const ulong ProducerMinVirtualIP = 0x8001_0000;
+    private const uint WasmFuncletFlag = 0x8000_0000;
+
+    // Function table indices are assigned consecutively per R2R module; a method's funclets
+    // immediately follow it, which is what lets a funclet index walk back to its parent.
+    private const uint ParentIndex = 100;
+    private const uint OuterFuncletIndex = 101;
+    private const uint InnerFuncletIndex = 102;
+    private const uint CalleeIndex = 103;
+
+    private const uint ParentBegin = 0x100;
+    private const uint CalleeBegin = 0x200;
+
+    private const uint ParentFrameSize = 0x30;
+    private const uint FuncletFrameSize = 16; // AlignUp(2 * TARGET_POINTER_SIZE, STACK_ALIGN) on wasm32
+    private const uint CalleeFrameSize = 0x20;
+
+    private const uint ParentVipHalf = 0x05;
+    private const uint OuterFuncletVipHalf = 0x21;
+    private const uint InnerFuncletVipHalf = 0x29;
+    private const uint CalleeVipHalf = 0x03;
+
+    private const ulong ParentIp = ProducerMinVirtualIP + ParentBegin + ParentVipHalf * 2;
+    private const ulong OuterFuncletIp = ProducerMinVirtualIP + ParentBegin + OuterFuncletVipHalf * 2;
+    private const ulong InnerFuncletIp = ProducerMinVirtualIP + ParentBegin + InnerFuncletVipHalf * 2;
+    private const ulong CalleeIp = ProducerMinVirtualIP + CalleeBegin + CalleeVipHalf * 2;
+
+    // The parent method's frame base, near the top of the modeled linear stack. Its own caller
+    // slot holds TERMINATE_R2R_STACK_WALK (e.g. it was entered from the interpreter).
+    private const ulong ParentFp = LinearStackBase + 0xF00;
+
+    private sealed class LinearStack
+    {
+        private readonly TargetTestHelpers _helpers = new(WasmArch);
+        public byte[] Data { get; } = new byte[LinearStackSize];
+
+        private Span<byte> At(ulong address, int length) => Data.AsSpan((int)(address - LinearStackBase), length);
+
+        public void Record(ulong address, uint functionIndex, uint vipHalf)
+        {
+            _helpers.Write(At(address, sizeof(uint)), functionIndex);
+            _helpers.Write(At(address + 4, sizeof(uint)), vipHalf);
+        }
+
+        public void Terminator(ulong address, ulong establishingFp = 0)
+        {
+            _helpers.Write(At(address, sizeof(uint)), 1u);
+            _helpers.WritePointer(At(address + (ulong)_helpers.PointerSize, _helpers.PointerSize), establishingFp);
+        }
+
+        public void LocallocSlot(ulong address, ulong framePointer)
+        {
+            _helpers.Write(At(address, sizeof(uint)), 0u);
+            _helpers.WritePointer(At(address + (ulong)_helpers.PointerSize, _helpers.PointerSize), framePointer);
+        }
+    }
+
+    // Parent root method, the two funclets it owns, and an unrelated callee root method, in one
+    // R2R module, registered through FunctionTableIndexRangeList exactly as the runtime does.
+    private static TestPlaceholderTarget CreateProducerLayoutTarget(LinearStack stack)
+    {
+        TestPlaceholderTarget.Builder targetBuilder = new(WasmArch);
+        TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+        MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+
+        (uint BeginAddress, uint FrameSize)[] functions =
+        [
+            (ParentBegin, ParentFrameSize),
+            (WasmFuncletFlag | (ParentBegin + 0x40), FuncletFrameSize),
+            (WasmFuncletFlag | (ParentBegin + 0x50), FuncletFrameSize),
+            (CalleeBegin, CalleeFrameSize),
+        ];
+
+        int hashMapStride = MockHashMap.CreateLayout(WasmArch).Size;
+        var moduleLayout = MockLoaderModule.CreateLayout(WasmArch);
+        var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(WasmArch, hashMapStride, isWasm: true);
+        TargetTestHelpers.LayoutResult runtimeFunctionLayout = helpers.LayoutFields([
+            new(nameof(Data.RuntimeFunction.BeginAddress), DataType.uint32),
+            new(nameof(Data.RuntimeFunction.UnwindData), DataType.uint32),
+        ]);
+        TargetTestHelpers.LayoutResult rangeSectionLayout = helpers.LayoutFields([
+            new(nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex), DataType.uint32),
+            new(nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions), DataType.uint32),
+            new(nameof(Data.FunctionTableIndexRangeSection.R2RModule), DataType.pointer),
+            new(nameof(Data.FunctionTableIndexRangeSection.Next), DataType.pointer),
+        ]);
+
+        MockMemorySpace.HeapFragment runtimeFunctions = allocator.Allocate(runtimeFunctionLayout.Stride * (ulong)functions.Length, "RuntimeFunctions");
+        for (int i = 0; i < functions.Length; i++)
+        {
+            // Unwind data is the ULEB128 fixed frame size, addressed as LoadedImageBase (0) + UnwindData.
+            Assert.True(functions[i].FrameSize < 0x80);
+            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
+            unwindData.Data[0] = (byte)functions[i].FrameSize;
+
+            Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
+            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);
+            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
+        }
+
+        MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
+        r2rInfo.CompositeInfo = r2rInfo.Address;
+        r2rInfo.NumRuntimeFunctions = (uint)functions.Length;
+        r2rInfo.RuntimeFunctions = runtimeFunctions.Address;
+        r2rInfo.MinVirtualIP = ProducerMinVirtualIP;
+
+        MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
+        module.ReadyToRunInfo = r2rInfo.Address;
+
+        MockMemorySpace.HeapFragment section = allocator.Allocate(rangeSectionLayout.Stride, "FunctionTableIndexRangeSection");
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), ParentIndex);
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), (uint)functions.Length);
+        helpers.WritePointer(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RModule)].Offset, helpers.PointerSize), module.Address);
+
+        MockMemorySpace.HeapFragment listSlot = allocator.Allocate((ulong)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
+        helpers.WritePointer(listSlot.Data.AsSpan(), section.Address);
+
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment { Address = LinearStackBase, Data = stack.Data, Name = "LinearStack" });
+        targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.RuntimeFunction] = new() { Fields = runtimeFunctionLayout.Fields, Size = runtimeFunctionLayout.Stride },
+                [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(r2rInfoLayout),
+                [DataType.Module] = TargetTestHelpers.CreateTypeInfo(moduleLayout),
+                [DataType.FunctionTableIndexRangeSection] = new() { Fields = rangeSectionLayout.Fields, Size = rangeSectionLayout.Stride },
+            })
+            .AddGlobals((Constants.Globals.FunctionTableIndexRangeList, listSlot.Address));
+        return targetBuilder.Build();
+    }
+
+    // The walk starts in a root method called from inside the innermost funclet (for example
+    // a breakpoint or Debugger.Break in a method called from a catch/finally body).
+    private static WasmContext CalleeContext(ulong calleeSp) => new()
+    {
+        StackPointer = new TargetPointer(calleeSp),
+        InstructionPointer = new TargetCodePointer(CalleeIp),
+        FramePointer = new TargetPointer(calleeSp),
+    };
+
+    private static void AssertFrame(WasmContext context, ulong sp, ulong ip, ulong fp, string frame)
+    {
+        Assert.True(sp == context.StackPointer.Value, $"{frame}: SP 0x{context.StackPointer.Value:x}, expected 0x{sp:x}");
+        Assert.True(ip == context.InstructionPointer.Value, $"{frame}: IP 0x{context.InstructionPointer.Value:x}, expected 0x{ip:x}");
+        Assert.True(fp == context.FramePointer.Value, $"{frame}: FP 0x{context.FramePointer.Value:x}, expected 0x{fp:x}");
+    }
+
+    // The walk leaves R2R code at a TERMINATE_R2R_STACK_WALK frame; no R2R caller is reported.
+    private static void AssertLeftR2R(WasmContext context)
+        => Assert.Equal(TargetCodePointer.Null, context.InstructionPointer);
+
+    /// <summary>
+    /// Non-exceptional finally: the parent calls the finally funclet directly (genCallFinally)
+    /// with its own $sp and FP, so the funclet's 16-byte frame sits immediately below the parent's
+    /// $sp. When <paramref name="parentUsedLocalloc"/>, the parent's $sp is a localloc slot that
+    /// indirects to its FP, and the funclet frame sits below that slot.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Unwind_ProducerLayout_FinallyCalledByParent_ReportsParentFramePointer(bool parentUsedLocalloc)
+    {
+        ulong parentSp = parentUsedLocalloc ? ParentFp - 0x40 : ParentFp;
+        ulong funcletSp = parentSp - FuncletFrameSize;
+        ulong calleeSp = funcletSp - CalleeFrameSize;
+
+        LinearStack stack = new();
+        stack.Terminator(ParentFp + ParentFrameSize);
+        stack.Record(ParentFp, ParentIndex, ParentVipHalf);
+        if (parentUsedLocalloc)
+            stack.LocallocSlot(parentSp, ParentFp);
+        stack.Record(funcletSp, OuterFuncletIndex, OuterFuncletVipHalf);
+        stack.Record(calleeSp, CalleeIndex, CalleeVipHalf);
+        Target target = CreateProducerLayoutTarget(stack);
+
+        WasmContext context = CalleeContext(calleeSp);
+
+        context.Unwind(target);
+        AssertFrame(context, funcletSp, OuterFuncletIp, ParentFp, "finally funclet");
+
+        context.Unwind(target);
+        AssertFrame(context, parentSp, ParentIp, ParentFp, "parent");
+
+        context.Unwind(target);
+        AssertLeftR2R(context);
+    }
+
+    /// <summary>
+    /// Catch, finally, fault or filter invoked by the VM (EECodeManager::CallFunclet ->
+    /// CallFuncletWith[out]Throwable). The funclet's frame sits directly below the synthetic
+    /// TERMINATE_R2R_STACK_WALK frame, which carries the establishing FP; the establishing frame
+    /// itself is far above, past native VM frames. A filter runs during the first pass, so the
+    /// R2R frames of the try body that threw are still live between the establishing frame and
+    /// the terminator (<paramref name="throwingFramesStillLive"/>); they must not be visited.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Unwind_ProducerLayout_FuncletInvokedByVM_ReportsEstablishingFramePointer(bool throwingFramesStillLive)
+    {
+        ulong terminatorSp = LinearStackBase + 0x800;
+        ulong funcletSp = terminatorSp - FuncletFrameSize;
+        ulong calleeSp = funcletSp - CalleeFrameSize;
+
+        LinearStack stack = new();
+        stack.Terminator(ParentFp + ParentFrameSize);
+        stack.Record(ParentFp, ParentIndex, ParentVipHalf);
+        if (throwingFramesStillLive)
+            stack.Record(ParentFp - CalleeFrameSize, CalleeIndex, CalleeVipHalf);
+        stack.Terminator(terminatorSp, ParentFp);
+        stack.Record(funcletSp, OuterFuncletIndex, OuterFuncletVipHalf);
+        stack.Record(calleeSp, CalleeIndex, CalleeVipHalf);
+        Target target = CreateProducerLayoutTarget(stack);
+
+        WasmContext context = CalleeContext(calleeSp);
+
+        context.Unwind(target);
+        AssertFrame(context, funcletSp, OuterFuncletIp, ParentFp, "VM-invoked funclet");
+
+        context.Unwind(target);
+        AssertLeftR2R(context);
+    }
+
+    /// <summary>
+    /// A finally nested in another funclet (for example try/finally inside a catch) is called
+    /// directly by the outer funclet with the outer funclet's $sp and its FP local, which is
+    /// already the establishing FP. Both funclets report the establishing method's frame base,
+    /// whether the outer funclet was called by the parent or invoked by the VM.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Unwind_ProducerLayout_NestedFinally_ReportsEstablishingFramePointer(bool outerInvokedByVM)
+    {
+        ulong outerCallerSp = outerInvokedByVM ? LinearStackBase + 0x800 : ParentFp;
+        ulong outerSp = outerCallerSp - FuncletFrameSize;
+        ulong innerSp = outerSp - FuncletFrameSize;
+        ulong calleeSp = innerSp - CalleeFrameSize;
+
+        LinearStack stack = new();
+        stack.Terminator(ParentFp + ParentFrameSize);
+        stack.Record(ParentFp, ParentIndex, ParentVipHalf);
+        if (outerInvokedByVM)
+            stack.Terminator(outerCallerSp, ParentFp);
+        stack.Record(outerSp, OuterFuncletIndex, OuterFuncletVipHalf);
+        stack.Record(innerSp, InnerFuncletIndex, InnerFuncletVipHalf);
+        stack.Record(calleeSp, CalleeIndex, CalleeVipHalf);
+        Target target = CreateProducerLayoutTarget(stack);
+
+        WasmContext context = CalleeContext(calleeSp);
+
+        context.Unwind(target);
+        AssertFrame(context, innerSp, InnerFuncletIp, ParentFp, "inner finally");
+
+        context.Unwind(target);
+        AssertFrame(context, outerSp, OuterFuncletIp, ParentFp, "outer funclet");
+
+        context.Unwind(target);
+        if (outerInvokedByVM)
+        {
+            AssertLeftR2R(context);
+        }
+        else
+        {
+            AssertFrame(context, ParentFp, ParentIp, ParentFp, "parent");
+            context.Unwind(target);
+            AssertLeftR2R(context);
+        }
+    }
 }
