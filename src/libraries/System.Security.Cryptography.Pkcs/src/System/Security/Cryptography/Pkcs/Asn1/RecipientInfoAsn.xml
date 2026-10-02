@@ -17,6 +17,7 @@
   -->
   <asn:AsnType name="Ktri" typeName="System.Security.Cryptography.Pkcs.Asn1.KeyTransRecipientInfoAsn" />
   <asn:AsnType name="Kari" typeName="System.Security.Cryptography.Pkcs.Asn1.KeyAgreeRecipientInfoAsn" implicitTag="1" />
-  <!-- By not declaring the rest of the types here we get an ASN deserialization
+  <asn:AsnType name="Ori" typeName="System.Security.Cryptography.Pkcs.Asn1.OtherRecipientInfoAsn" implicitTag="4" />
+  <!-- By not declaring the remaining types here we get an ASN deserialization
        error for unsupported recipient types -->
 </asn:Choice>

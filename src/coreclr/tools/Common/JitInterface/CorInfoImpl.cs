@@ -455,11 +455,14 @@ namespace Internal.JitInterface
             PublishCode();
             PublishROData();
             PublishRWData();
+            PublishWasmMethodVirtualIPFixups();
 
             return CompilationResult.CompilationComplete;
         }
 
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result);
+        partial void PublishWasmMethodVirtualIPFixups();
+        partial void ClearWasmMethodVirtualIPFixups();
 
         private void PublishCode()
         {
@@ -704,6 +707,7 @@ namespace Internal.JitInterface
             _codeRelocs = default(ArrayBuilder<Relocation>);
             _roDataRelocs = default(ArrayBuilder<Relocation>);
             _rwDataRelocs = default(ArrayBuilder<Relocation>);
+            ClearWasmMethodVirtualIPFixups();
 #if READYTORUN
             _coldCodeRelocs = default(ArrayBuilder<Relocation>);
 #endif
@@ -4224,8 +4228,6 @@ namespace Internal.JitInterface
 
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
-        private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
-        { throw new NotImplementedException("GetDelegateCtor"); }
         private void MethodCompileComplete(CORINFO_METHOD_STRUCT_* methHnd)
         { throw new NotImplementedException("MethodCompileComplete"); }
 
@@ -4562,6 +4564,14 @@ namespace Internal.JitInterface
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
         partial void TryUseWasmMethodCodeStoreFixup(void* target, CorInfoReloc fRelocType, BlockType locationBlock, int relocOffset, int addlDelta, ref bool handled);
+        partial void TryGetWasmMethodVirtualIPRelocation(
+            void* target,
+            CorInfoReloc fRelocType,
+            BlockType locationBlock,
+            int relocOffset,
+            ref ISymbolNode relocTarget,
+            ref RelocType relocType,
+            ref bool handled);
 
         private ref ArrayBuilder<Relocation> findRelocBlock(BlockType blockType, out int length)
         {
@@ -4648,52 +4658,67 @@ namespace Internal.JitInterface
             int relocDelta;
             BlockType targetBlock = findKnownBlock(target, out relocDelta);
 
-            ISymbolNode relocTarget;
-            switch (targetBlock)
+            ISymbolNode relocTarget = null;
+            RelocType relocType = default;
+            bool handledByMethodVirtualIPRelocation = false;
+            TryGetWasmMethodVirtualIPRelocation(
+                target,
+                fRelocType,
+                locationBlock,
+                relocOffset,
+                ref relocTarget,
+                ref relocType,
+                ref handledByMethodVirtualIPRelocation);
+
+            if (!handledByMethodVirtualIPRelocation)
             {
-                case BlockType.Code:
-                    relocTarget = _methodCodeNode;
-                    break;
+                switch (targetBlock)
+                {
+                    case BlockType.Code:
+                        relocTarget = _methodCodeNode;
+                        break;
 
-                case BlockType.ColdCode:
+                    case BlockType.ColdCode:
 #if READYTORUN
-                    Debug.Assert(_methodColdCodeNode != null);
-                    relocTarget = _methodColdCodeNode;
-                    break;
+                        Debug.Assert(_methodColdCodeNode != null);
+                        relocTarget = _methodColdCodeNode;
+                        break;
 #else
-                    throw new NotImplementedException("ColdCode relocs");
+                        throw new NotImplementedException("ColdCode relocs");
 #endif
 
-                case BlockType.ROData:
-                    relocTarget = _roDataBlob;
-                    break;
+                    case BlockType.ROData:
+                        relocTarget = _roDataBlob;
+                        break;
 
-                case BlockType.RWData:
-                    relocTarget = _rwDataBlob;
-                    break;
+                    case BlockType.RWData:
+                        relocTarget = _rwDataBlob;
+                        break;
 
 #if READYTORUN
-                case BlockType.BBCounts:
-                    relocTarget = null;
-                    break;
+                    case BlockType.BBCounts:
+                        relocTarget = null;
+                        break;
 #endif
 
-                default:
-                    // Reloc points to something outside of the generated blocks
-                    var targetObject = HandleToObject(target);
+                    default:
+                        // Reloc points to something outside of the generated blocks
+                        var targetObject = HandleToObject(target);
 
 #if READYTORUN
-                    if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
-                    {
-                        throw new RequiresRuntimeJitException(requiresRuntimeSymbol.Message);
-                    }
+                        if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
+                        {
+                            throw new RequiresRuntimeJitException(requiresRuntimeSymbol.Message);
+                        }
 #endif
 
-                    relocTarget = (ISymbolNode)targetObject;
-                    break;
+                        relocTarget = (ISymbolNode)targetObject;
+                        break;
+                }
+
+                relocType = GetRelocType(fRelocType);
             }
 
-            RelocType relocType = GetRelocType(fRelocType);
             relocDelta += addlDelta;
 
             // relocDelta is stored as the value
@@ -5037,7 +5062,7 @@ namespace Internal.JitInterface
         InstructionSetFlags _actualInstructionSetSupported;
         InstructionSetFlags _actualInstructionSetUnsupported;
 
-        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency)
         {
             instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
 
@@ -5051,8 +5076,8 @@ namespace Internal.JitInterface
             {
                 // By policy we code review all changes into corelib, such that failing to use an instruction
                 // set is not a reason to not support usage of it. Except for functions which check if a given
-                // feature is supported or hardware accelerated.
-                if (!isMethodDefinedInCoreLib())
+                // feature is supported or hardware accelerated, or the JIT explicitly requests the negative dependency.
+                if (preserveNegativeDependency || !isMethodDefinedInCoreLib())
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
@@ -5103,7 +5128,7 @@ namespace Internal.JitInterface
             return supportEnabled;
         }
 #else
-        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency)
         {
             instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
 

@@ -82,11 +82,15 @@ namespace ILAssembler
 
         private IToken NextTokenWithoutNestedEof(bool errorOnEof = false)
         {
-            IToken nextToken = CurrentTokenSource.NextToken();
-
-            if (nextToken.Type == CILLexer.Eof)
+            while (true)
             {
-                // Skip the nested file EOF token.
+                IToken nextToken = CurrentTokenSource.NextToken();
+                if (nextToken.Type != CILLexer.Eof)
+                {
+                    return nextToken;
+                }
+
+                // Skip nested file EOF tokens until reaching a parent with more input.
                 // Native ILASM only failed to parse across include file boundaries for the following cases:
                 // - A comment tries to cross the file boundary.
                 // - The included file does not have at least one fully parsable rule.
@@ -96,15 +100,27 @@ namespace ILAssembler
                 {
                     ReportPreprocessorSyntaxError(nextToken);
                 }
-                _includeSourceStack.Pop();
-                if (_includeSourceStack.Count == 0)
+
+                if (_includeSourceStack.Count == 1)
                 {
                     // If we hit EOF of our entry file, return the EOF token.
                     return nextToken;
                 }
-                nextToken = CurrentTokenSource.NextToken();
+
+                int activeIfDefBlocks = ActiveIfDefBlocksInCurrentSource;
+                if (activeIfDefBlocks != 0 && !errorOnEof)
+                {
+                    ReportPreprocessorSyntaxError(nextToken);
+                }
+
+                for (int i = 0; i < activeIfDefBlocks; i++)
+                {
+                    _activeIfDefBlocks.Pop();
+                }
+
+                _includeSourceStack.Pop();
+                errorOnEof = activeIfDefBlocks == 0 && ActiveIfDefBlocksInCurrentSource != 0;
             }
-            return nextToken;
         }
 
         // Stack of tokens produced by macro expansion re-lexing
@@ -141,6 +157,12 @@ namespace ILAssembler
                 IToken valueMaybe = NextTokenWithoutNestedEof(errorOnEof: ActiveIfDefBlocksInCurrentSource != 0);
                 if (valueMaybe.Type == CILLexer.QSTRING)
                 {
+                    if (valueMaybe.Text.Contains("\\\"", StringComparison.Ordinal))
+                    {
+                        ReportPreprocessorSyntaxError(valueMaybe);
+                        return NextToken();
+                    }
+
                     _definedVars.Add(identifier.Text, StringHelpers.ParseQuotedString(valueMaybe.Text));
                     return NextToken();
                 }
@@ -316,7 +338,8 @@ namespace ILAssembler
         {
             string text = token.TokenSource.InputStream.GetText(Interval.Of(token.StartIndex, token.TokenSource.InputStream.Index));
             string msg = "preprocessor syntax error at: '" + GetErrorDisplay(text) + "'";
-            OnPreprocessorSyntaxError?.Invoke(token.TokenSource.SourceName, token.StartIndex, token.StopIndex - token.StartIndex, msg);
+            SourceSpan span = Location.GetSourceSpan(token);
+            OnPreprocessorSyntaxError?.Invoke(token.TokenSource.SourceName, span.Start, span.Length, msg);
         }
 
         private static string GetErrorDisplay(string s)

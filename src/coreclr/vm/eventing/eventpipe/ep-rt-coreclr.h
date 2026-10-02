@@ -16,6 +16,7 @@
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
+#include "CLREventBase.h"
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
@@ -658,6 +659,16 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 #endif // !DACCESS_COMPILE && PROFILING_SUPPORTED
 }
 
+static
+inline
+void
+ep_rt_session_stopping (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    extern void ep_rt_coreclr_session_stopping (void);
+    ep_rt_coreclr_session_stopping ();
+}
+
 /*
  * Arrays.
  */
@@ -752,7 +763,7 @@ ep_rt_wait_event_wait (
 	int32_t result;
 	EX_TRY
 	{
-		result = wait_event->event->Wait (timeout, alertable);
+		result = wait_event->event->Wait (timeout, alertable, false);
 	}
 	EX_CATCH
 	{
@@ -1092,8 +1103,13 @@ ep_rt_queue_job (
 	void *params)
 {
 #ifdef HOST_BROWSER
-	// In single-threaded mode the job runs on the browser event loop
-	SystemJS_DiagnosticServerQueueJob ((ep_rt_job_cb_t)job_func, params);
+	// In single-threaded mode the job runs on the browser event loop. Run the callback inline the
+	// first time so the diagnostic server makes progress synchronously (e.g. it can connect and
+	// resume during startup suspension) and only defer a re-schedule if it isn't done yet. Mirrors
+	// the Mono ep_rt_queue_job in ep-rt-mono.h.
+	ep_rt_job_cb_t cb = (ep_rt_job_cb_t)job_func;
+	if (!cb (params))
+		SystemJS_DiagnosticServerQueueJob (cb, params);
 	return true;
 #else
 	EP_UNREACHABLE ("Not implemented on this platform");
@@ -1123,7 +1139,7 @@ ep_rt_thread_sleep (uint64_t ns)
 	PAL_nanosleep (ns);
 #else  //TARGET_UNIX
 	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
-	ClrSleepEx (static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS), FALSE);
+	minipal_sleep(static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS));
 #endif //TARGET_UNIX
 #endif // PERFTRACING_DISABLE_THREADS
 }
