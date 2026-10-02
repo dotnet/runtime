@@ -53,6 +53,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="source">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="lengthsSource">Other <see cref="Tensor{T}"/> to make shapes broadcastable.</param>
+        /// <remarks>Rank-zero empty spans are treated as empty vectors with shape <c>[0]</c> when checking broadcast compatibility. Explicitly specified dimension lengths are preserved.</remarks>
         public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> source, scoped in ReadOnlyTensorSpan<T> lengthsSource)
         {
             return Broadcast(source, lengthsSource.Lengths);
@@ -64,6 +65,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="source">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
+        /// <remarks>A rank-zero empty source or an empty <paramref name="lengths"/> span is treated as the shape <c>[0]</c> when checking broadcast compatibility. Explicitly specified dimension lengths are preserved.</remarks>
         /// <exception cref="ArgumentException">The shapes are not broadcast compatible.</exception>
         public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> source, scoped ReadOnlySpan<nint> lengths)
         {
@@ -112,6 +114,7 @@ namespace System.Numerics.Tensors
         /// Join a sequence of tensors along an existing axis.
         /// </summary>
         /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
+        /// <remarks>Leading singleton padding is ignored when aligning inputs to the first tensor's shape. Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
         public static Tensor<T> Concatenate<T>(params scoped ReadOnlySpan<Tensor<T>> tensors)
         {
             return ConcatenateOnDimension(0, tensors);
@@ -122,6 +125,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
         /// <param name="dimension">The axis along which the tensors will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
+        /// <remarks>The dimension refers to the first tensor's effective shape. Other inputs are aligned by adding or removing leading singleton dimensions. Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
         public static Tensor<T> ConcatenateOnDimension<T>(int dimension, params scoped ReadOnlySpan<Tensor<T>> tensors)
         {
             if (tensors.Length < 2)
@@ -129,7 +133,9 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_ConcatenateTooFewTensors();
             }
 
-            if (dimension < -1 || dimension >= tensors[0].Rank)
+            ref readonly TensorShape shape = ref TensorShape.Normalize(tensors[0]._shape);
+            int rank = shape.Rank;
+            if (dimension < -1 || dimension >= rank)
             {
                 ThrowHelper.ThrowArgument_InvalidDimension();
             }
@@ -139,30 +145,8 @@ namespace System.Numerics.Tensors
             // If axis != -1, make sure all dimensions except the one to concatenate on match.
             if (dimension != -1)
             {
-                nint sumOfAxis = tensors[0].Lengths[dimension];
-                for (int i = 1; i < tensors.Length; i++)
-                {
-                    if (tensors[0].Rank != tensors[i].Rank)
-                        ThrowHelper.ThrowArgument_InvalidConcatenateShape();
-                    for (int j = 0; j < tensors[0].Rank; j++)
-                    {
-                        if (j != dimension)
-                        {
-                            if (tensors[0].Lengths[j] != tensors[i].Lengths[j])
-                                ThrowHelper.ThrowArgument_InvalidConcatenateShape();
-                        }
-                    }
-                    checked
-                    {
-                        sumOfAxis += tensors[i].Lengths[dimension];
-                    }
-                }
-
-                scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(tensors[0].Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-                tensors[0].Lengths.CopyTo(lengths);
-                lengths[dimension] = sumOfAxis;
-                tensor = CreateFromShape<T>(lengths);
-                lengthsRentedBuffer.Dispose();
+                nint sumOfAxis = GetConcatenatedLength(dimension, tensors, shape);
+                tensor = CreateConcatenationResult<T>(shape.Lengths, dimension, sumOfAxis);
             }
             else
             {
@@ -179,7 +163,7 @@ namespace System.Numerics.Tensors
                 tensor = CreateFromShape<T>([totalLength]);
             }
 
-            ConcatenateOnDimension(dimension, tensors, tensor);
+            CopyConcatenatedValues(dimension, tensors, tensor, rank);
             return tensor;
         }
 
@@ -188,6 +172,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
         /// <param name="destination"></param>
+        /// <remarks>Inputs and the destination are aligned to the first tensor's effective shape by adding or removing leading singleton dimensions. Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
         public static ref readonly TensorSpan<T> Concatenate<T>(scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
         {
             return ref ConcatenateOnDimension(0, tensors, destination);
@@ -199,7 +184,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
         /// <param name="dimension">The axis along which the tensors will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
         /// <param name="destination"></param>
-
+        /// <remarks>The dimension refers to the first tensor's effective shape. Other inputs and the destination are aligned by adding or removing leading singleton dimensions. Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
         public static ref readonly TensorSpan<T> ConcatenateOnDimension<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
         {
             if (tensors.Length < 2)
@@ -207,7 +192,10 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_ConcatenateTooFewTensors();
             }
 
-            if (dimension < -1 || dimension >= tensors[0].Rank)
+            ref readonly TensorShape shape = ref TensorShape.Normalize(tensors[0]._shape);
+            int rank = shape.Rank;
+            nint destinationLength = destination.FlattenedLength;
+            if (dimension < -1 || dimension >= rank)
             {
                 ThrowHelper.ThrowArgument_InvalidDimension();
             }
@@ -215,39 +203,8 @@ namespace System.Numerics.Tensors
             // If axis != -1, make sure all dimensions except the one to concatenate on match.
             if (dimension != -1)
             {
-                nint sumOfAxis = tensors[0].Lengths[dimension];
-                int rank = tensors[0].Rank;
-                for (int i = 1; i < tensors.Length; i++)
-                {
-                    if (rank != tensors[i].Rank)
-                    {
-                        ThrowHelper.ThrowArgument_InvalidConcatenateShape();
-                    }
-                    for (int j = 0; j < rank; j++)
-                    {
-                        if (j != dimension)
-                        {
-                            if (tensors[0].Lengths[j] != tensors[i].Lengths[j])
-                            {
-                                ThrowHelper.ThrowArgument_InvalidConcatenateShape();
-                            }
-                        }
-                    }
-                    sumOfAxis = checked(sumOfAxis + tensors[i].Lengths[dimension]);
-                }
-
-                // Make sure the destination tensor has the correct shape.
-                if (destination.Rank != rank || destination.Lengths[dimension] != sumOfAxis)
-                {
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                }
-                for (int i = 0; i < rank; i++)
-                {
-                    if (i != dimension && destination.Lengths[i] != tensors[0].Lengths[i])
-                    {
-                        ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                    }
-                }
+                nint sumOfAxis = GetConcatenatedLength(dimension, tensors, shape);
+                ValidateConcatenationDestination(dimension, shape.Lengths, sumOfAxis, destination);
             }
             else
             {
@@ -257,31 +214,92 @@ namespace System.Numerics.Tensors
                     totalLength = checked(totalLength + tensors[i].FlattenedLength);
                 }
 
-                if (destination.FlattenedLength != totalLength)
+                if (destinationLength != totalLength)
                 {
                     ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
                 }
             }
 
+            ValidateConcatenationStorage(tensors, destination);
+            CopyConcatenatedValues(dimension, tensors, destination, rank);
+            return ref destination;
+        }
+
+        private static void ValidateConcatenationDestination<T>(int dimension, ReadOnlySpan<nint> lengths, nint sumOfAxis,
+            in TensorSpan<T> destination)
+        {
+            ReadOnlySpan<nint> destinationLengths = TensorShape.Normalize(destination._shape).Lengths;
+            if (!TensorShape.AreLengthsEquivalentExceptDimension(lengths, destinationLengths, dimension, out nint destinationAxisLength)
+                || destinationAxisLength != sumOfAxis)
+            {
+                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
+            }
+        }
+
+        private static Tensor<T> CreateConcatenationResult<T>(ReadOnlySpan<nint> sourceLengths, int dimension, nint axisLength)
+        {
+            scoped Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(sourceLengths.Length,
+                out TensorOperation.RentedBuffer<nint> rentedBuffer);
+            Tensor<T> result;
+            try
+            {
+                sourceLengths.CopyTo(lengths);
+                lengths[dimension] = axisLength;
+                result = CreateFromShape<T>(lengths);
+            }
+            finally
+            {
+                rentedBuffer.Dispose();
+            }
+
+            return result;
+        }
+
+        private static void ValidateConcatenationStorage<T>(scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
+        {
             if (destination._shape.IsSelfOverlapping)
             {
                 ThrowHelper.ThrowArgument_DestinationHasOverlappingElements(nameof(destination));
             }
 
+            if (destination.FlattenedLength == 0)
+            {
+                return;
+            }
+
+            nint destinationLinearLength = destination._shape.LinearLength;
             for (int i = 0; i < tensors.Length; i++)
             {
                 ReadOnlyTensorSpan<T> source = tensors[i].AsReadOnlyTensorSpan();
-                if (source._shape.Overlaps(in source._reference, ref destination._reference, destination._shape.LinearLength))
+                if (source._shape.Overlaps(in source._reference, ref destination._reference, destinationLinearLength))
                 {
                     ThrowHelper.ThrowArgument_OverlappingTensorLayoutsNotSupported();
                 }
             }
+        }
 
-            if (!destination.IsDense)
+        private static void CopyConcatenatedValues<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors,
+            in TensorSpan<T> destination, int rank)
+        {
+            nint destinationLength = destination.FlattenedLength;
+            if (destinationLength == 0)
+            {
+                return;
+            }
+
+            TensorSpan<T> alignedTarget;
+            scoped ref readonly TensorSpan<T> target = ref destination;
+            if (dimension != -1 && destination.Rank != rank)
+            {
+                alignedTarget = new TensorSpan<T>(ref destination._reference, TensorShape.WithRank(destination._shape, rank));
+                target = ref alignedTarget;
+            }
+
+            if (!target.IsDense || destinationLength > int.MaxValue)
             {
                 if (dimension == -1)
                 {
-                    TensorSpan<T>.Enumerator output = destination.GetEnumerator();
+                    TensorSpan<T>.Enumerator output = target.GetEnumerator();
                     foreach (Tensor<T> tensor in tensors)
                     {
                         Tensor<T>.Enumerator input = tensor.GetEnumerator();
@@ -295,25 +313,48 @@ namespace System.Numerics.Tensors
                 }
                 else
                 {
-                    Span<NRange> ranges = TensorOperation.RentedBuffer.CreateUninitialized(destination.Rank, out TensorOperation.RentedBuffer<NRange> rentedBuffer);
+                    int targetRank = target.Rank;
+                    Span<NRange> ranges = TensorOperation.RentedBuffer.CreateUninitialized(targetRank, out TensorOperation.RentedBuffer<NRange> rentedBuffer);
                     ranges.Fill(NRange.All);
                     nint offset = 0;
                     foreach (Tensor<T> tensor in tensors)
                     {
-                        ranges[dimension] = new NRange(offset, offset + tensor.Lengths[dimension]);
-                        TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(tensor.AsReadOnlyTensorSpan(), destination.Slice(ranges));
-                        offset += tensor.Lengths[dimension];
+                        ReadOnlyTensorSpan<T> source = tensor.AsReadOnlyTensorSpan();
+                        if (source.Rank != targetRank)
+                        {
+                            source = new ReadOnlyTensorSpan<T>(in source._reference, TensorShape.WithRank(source._shape, targetRank));
+                        }
+                        nint length = source.Lengths[dimension];
+                        ranges[dimension] = new NRange(offset, offset + length);
+                        TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(source, target.Slice(ranges));
+                        offset += length;
                     }
                     rentedBuffer.Dispose();
                 }
             }
             else
             {
-                Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
-                ConcatenateOnDimensionToSpan(dimension, tensors, destination, dstSpan);
+                Span<T> dstSpan = MemoryMarshal.CreateSpan(ref target._reference, (int)destinationLength);
+                ConcatenateOnDimensionToSpan(dimension, tensors, target, dstSpan);
+            }
+        }
+
+        private static nint GetConcatenatedLength<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors, in TensorShape shape)
+        {
+            ReadOnlySpan<nint> lengths = shape.Lengths;
+            nint sumOfAxis = lengths[dimension];
+
+            for (int i = 1; i < tensors.Length; i++)
+            {
+                ReadOnlySpan<nint> sourceLengths = TensorShape.Normalize(tensors[i]._shape).Lengths;
+                if (!TensorShape.AreLengthsEquivalentExceptDimension(lengths, sourceLengths, dimension, out nint axisLength))
+                {
+                    ThrowHelper.ThrowArgument_InvalidConcatenateShape();
+                }
+                sumOfAxis = checked(sumOfAxis + axisLength);
             }
 
-            return ref destination;
+            return sumOfAxis;
         }
 
         private static void ConcatenateOnDimensionToSpan<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination, Span<T> dstSpan)
@@ -328,12 +369,13 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                Span<NRange> ranges = TensorOperation.RentedBuffer.CreateUninitialized(destination.Rank, out TensorOperation.RentedBuffer<NRange> rentedBuffer);
+                int rank = destination.Rank;
+                Span<NRange> ranges = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<NRange> rentedBuffer);
                 for (int i = 0; i < dimension; i++)
                 {
                     ranges[i] = 0..1;
                 }
-                for (int i = dimension; i < destination.Rank; i++)
+                for (int i = dimension; i < rank; i++)
                 {
                     ranges[i] = ..;
                 }
@@ -343,7 +385,12 @@ namespace System.Numerics.Tensors
                 {
                     for (int i = 0; i < tensors.Length; i++)
                     {
-                        ReadOnlyTensorSpan<T> slice = tensors[i].AsReadOnlyTensorSpan().Slice(ranges);
+                        ReadOnlyTensorSpan<T> source = tensors[i].AsReadOnlyTensorSpan();
+                        if (source.Rank != rank)
+                        {
+                            source = new ReadOnlyTensorSpan<T>(in source._reference, TensorShape.WithRank(source._shape, rank));
+                        }
+                        ReadOnlyTensorSpan<T> slice = source.Slice(ranges);
                         TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(slice, dstSpan);
                         dstSpan = dstSpan.Slice((int)slice.FlattenedLength);
                     }
@@ -414,9 +461,10 @@ namespace System.Numerics.Tensors
         {
             random ??= Random.Shared;
 
-            if (destination.IsDense)
+            nint flattenedLength = destination.FlattenedLength;
+            if (destination.IsDense && flattenedLength <= int.MaxValue)
             {
-                Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)flattenedLength);
 
                 for (int i = 0; i < span.Length; i++)
                 {
@@ -427,13 +475,14 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                int dimension = destination.FlattenedLength >= TensorOperation.MinSlicedOperationLength
+                int dimension = flattenedLength >= TensorOperation.MinSlicedOperationLength
                     ? TensorOperation.GetDenseSliceDimension(destination._shape, destination._shape)
                     : -1;
                 if (dimension >= 0)
                 {
                     TensorDimensionSpan<T> slices = destination.GetDimensionSpan(dimension);
-                    for (nint i = 0; i < slices.Length; i++)
+                    nint sliceCount = slices.Length;
+                    for (nint i = 0; i < sliceCount; i++)
                     {
                         TensorSpan<T> slice = slices[i];
                         Span<T> span = MemoryMarshal.CreateSpan(ref slice._reference, (int)slice.FlattenedLength);
@@ -472,9 +521,10 @@ namespace System.Numerics.Tensors
         {
             random ??= Random.Shared;
 
-            if (destination.IsDense)
+            nint flattenedLength = destination.FlattenedLength;
+            if (destination.IsDense && flattenedLength <= int.MaxValue)
             {
-                Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)flattenedLength);
                 for (int i = 0; i < span.Length; i++)
                 {
                     span[i] = T.CreateChecked(random.NextDouble());
@@ -482,13 +532,14 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                int dimension = destination.FlattenedLength >= TensorOperation.MinSlicedOperationLength
+                int dimension = flattenedLength >= TensorOperation.MinSlicedOperationLength
                     ? TensorOperation.GetDenseSliceDimension(destination._shape, destination._shape)
                     : -1;
                 if (dimension >= 0)
                 {
                     TensorDimensionSpan<T> slices = destination.GetDimensionSpan(dimension);
-                    for (nint i = 0; i < slices.Length; i++)
+                    nint sliceCount = slices.Length;
+                    for (nint i = 0; i < sliceCount; i++)
                     {
                         TensorSpan<T> slice = slices[i];
                         Span<T> span = MemoryMarshal.CreateSpan(ref slice._reference, (int)slice.FlattenedLength);
@@ -1400,35 +1451,38 @@ namespace System.Numerics.Tensors
         /// <param name="dimensions"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
         public static Tensor<T> PermuteDimensions<T>(this Tensor<T> tensor, ReadOnlySpan<int> dimensions)
         {
-            if (tensor.Rank <= 1 && (dimensions.IsEmpty || (tensor.Rank == 1 && dimensions.Length == 1 && dimensions[0] == 0)))
+            int rank = tensor.Rank;
+            if (rank <= 1 && (dimensions.IsEmpty || (dimensions.Length == 1 && dimensions[0] == 0)))
             {
                 return tensor;
             }
             else
             {
-                if (!dimensions.IsEmpty && dimensions.Length != tensor.Lengths.Length)
+                ReadOnlySpan<nint> lengths = tensor.Lengths;
+                ReadOnlySpan<nint> strides = tensor.Strides;
+                if (!dimensions.IsEmpty && dimensions.Length != rank)
                 {
                     ThrowHelper.ThrowArgument_PermuteAxisOrder();
                 }
 
-                scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-                scoped Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+                scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+                scoped Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
                 if (dimensions.IsEmpty)
                 {
-                    for (int i = 0; i < tensor.Rank; i++)
+                    for (int i = 0; i < rank; i++)
                     {
-                        newLengths[i] = tensor.Lengths[tensor.Rank - 1 - i];
-                        newStrides[i] = tensor.Strides[tensor.Rank - 1 - i];
+                        newLengths[i] = lengths[rank - 1 - i];
+                        newStrides[i] = strides[rank - 1 - i];
                     }
                 }
                 else
                 {
                     scoped Span<ulong> seen = TensorOperation.RentedBuffer.CreateUninitialized(
-                        (tensor.Rank - 1) / 64 + 1, out TensorOperation.RentedBuffer<ulong> seenRentedBuffer);
+                        (rank - 1) / 64 + 1, out TensorOperation.RentedBuffer<ulong> seenRentedBuffer);
                     for (int i = 0; i < dimensions.Length; i++)
                     {
                         int dimension = dimensions[i];
-                        if ((uint)dimension >= (uint)tensor.Lengths.Length)
+                        if ((uint)dimension >= (uint)rank)
                         {
                             ThrowHelper.ThrowArgument_InvalidDimension();
                         }
@@ -1441,8 +1495,8 @@ namespace System.Numerics.Tensors
                         }
 
                         seen[word] |= bit;
-                        newLengths[i] = tensor.Lengths[dimension];
-                        newStrides[i] = tensor.Strides[dimension];
+                        newLengths[i] = lengths[dimension];
+                        newStrides[i] = strides[dimension];
                     }
                     seenRentedBuffer.Dispose();
                 }
@@ -1516,7 +1570,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (!sourceStrides.ContainsAnyExcept(0))
+            if (!sourceStrides.ContainsAnyExcept(0) || sourceLengths.Contains(0))
             {
                 return;
             }
@@ -1563,6 +1617,12 @@ namespace System.Numerics.Tensors
                 return tensor;
             }
 
+            if (tensor.Rank == 0)
+            {
+                TensorSpan<T> reshaped = tensor.AsTensorSpan().Reshape(lengths);
+                return new Tensor<T>(tensor._values, tensor._start, reshaped._shape);
+            }
+
             if (!tensor.IsDense && !tensor.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
@@ -1594,15 +1654,16 @@ namespace System.Numerics.Tensors
                 return tensor;
             }
 
-            if (!tensor.IsDense && !tensor.Strides.Contains(0))
+            ref readonly TensorShape shape = ref TensorShape.Normalize(tensor._shape);
+            if (!shape.IsDense && !shape.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
 
             scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(lengths.Length, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            GetReshapeLengths(lengths, tensor.FlattenedLength, newLengths);
-            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            GetReshapeStrides(tensor.Lengths, tensor.Strides, tensor.IsDense, newLengths, strides);
+            GetReshapeLengths(lengths, shape.FlattenedLength, newLengths);
+            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(shape.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            GetReshapeStrides(shape.Lengths, shape.Strides, shape.IsDense, newLengths, strides);
 
             TensorSpan<T> result = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides, tensor.IsPinned);
             stridesRentedBuffer.Dispose();
@@ -1625,15 +1686,16 @@ namespace System.Numerics.Tensors
                 return tensor;
             }
 
-            if (!tensor.IsDense && !tensor.Strides.Contains(0))
+            ref readonly TensorShape shape = ref TensorShape.Normalize(tensor._shape);
+            if (!shape.IsDense && !shape.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
 
             scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(lengths.Length, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            GetReshapeLengths(lengths, tensor.FlattenedLength, newLengths);
-            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            GetReshapeStrides(tensor.Lengths, tensor.Strides, tensor.IsDense, newLengths, strides);
+            GetReshapeLengths(lengths, shape.FlattenedLength, newLengths);
+            scoped Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(shape.IsDense ? 0 : newLengths.Length, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            GetReshapeStrides(shape.Lengths, shape.Strides, shape.IsDense, newLengths, strides);
 
             ReadOnlyTensorSpan<T> result = new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, newLengths, strides, tensor.IsPinned);
             stridesRentedBuffer.Dispose();
@@ -1738,24 +1800,30 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationHasOverlappingElements(nameof(destination));
             }
 
+            nint destinationLength = destination.FlattenedLength;
+            nint copyLength = Math.Min(tensor.FlattenedLength, destinationLength);
             if (tensor.IsDense && destination.IsDense)
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor.FlattenedLength);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
-                if (ospan.Length >= span.Length)
+                if (destinationLength <= int.MaxValue)
                 {
+                    ReadOnlySpan<T> span = MemoryMarshal.CreateReadOnlySpan(in tensor._reference, (int)copyLength);
+                    Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destinationLength);
                     span.CopyTo(ospan);
-                    ospan[span.Length..].Clear();
+                    ospan[(int)copyLength..].Clear();
                 }
                 else
                 {
-                    span.Slice(0, ospan.Length).CopyTo(ospan);
+                    TensorOperation.CopyDense(in tensor._reference, ref destination._reference, copyLength);
+                    for (nint offset = copyLength; offset < destinationLength;)
+                    {
+                        int length = (int)Math.Min(destinationLength - offset, int.MaxValue);
+                        MemoryMarshal.CreateSpan(ref Unsafe.Add(ref destination._reference, offset), length).Clear();
+                        offset += length;
+                    }
                 }
             }
             else
             {
-                nint copyLength = Math.Min(tensor.FlattenedLength, destination.FlattenedLength);
-
                 if (tensor._shape.Overlaps(in tensor._reference, ref destination._reference, destination._shape.LinearLength))
                 {
                     ThrowHelper.ThrowArgument_OverlappingTensorLayoutsNotSupported();
@@ -1772,7 +1840,7 @@ namespace System.Numerics.Tensors
                     dstEnumerator.Current = srcEnumerator.Current;
                 }
 
-                for (nint i = copyLength; i < destination.FlattenedLength; i++)
+                for (nint i = copyLength; i < destinationLength; i++)
                 {
                     bool dstMoved = dstEnumerator.MoveNext();
                     Debug.Assert(dstMoved);
@@ -1828,20 +1896,19 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">dimension along which to reverse over. -1 will reverse over all of the dimensions of the left tensor.</param>
         public static ref readonly TensorSpan<T> ReverseDimension<T>(scoped in ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination, int dimension)
         {
-            if (dimension < -1 || dimension >= tensor.Rank)
+            if (dimension < -1 || dimension >= TensorShape.Normalize(tensor._shape).Rank)
             {
                 ThrowHelper.ThrowArgument_InvalidDimension();
             }
             TensorOperation.ValidateCompatibility(tensor, destination);
-            if (tensor.FlattenedLength == 0)
+            if (destination.FlattenedLength == 0)
             {
                 return ref destination;
             }
             if (tensor._shape.Overlaps(in tensor._reference, ref destination._reference, destination._shape.LinearLength))
             {
                 if (Unsafe.AreSame(ref Unsafe.AsRef(in tensor._reference), ref destination._reference)
-                    && tensor.Lengths.SequenceEqual(destination.Lengths)
-                    && tensor.Strides.SequenceEqual(destination.Strides))
+                    && TensorShape.AreLayoutsTheSame(tensor._shape, destination._shape))
                 {
                     if ((tensor._shape.LinearLength == 1) || (dimension >= 0 && tensor.Lengths[dimension] == 1))
                     {
@@ -1849,7 +1916,8 @@ namespace System.Numerics.Tensors
                     }
                     if (tensor.IsDense)
                     {
-                        ReverseDimensionInPlace(destination, dimension);
+                        int destinationDimension = dimension == -1 ? -1 : dimension + destination.Rank - tensor.Rank;
+                        ReverseDimensionInPlace(destination, destinationDimension);
                         return ref destination;
                     }
                 }
@@ -1901,8 +1969,10 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                Span<NRange> srcIndexes = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<NRange> srcIndexesRentedBuffer);
-                Span<NRange> dstIndexes = TensorOperation.RentedBuffer.CreateUninitialized(destination.Rank, out TensorOperation.RentedBuffer<NRange> dstIndexesRentedBuffer);
+                int rank = tensor.Rank;
+                int destinationRank = destination.Rank;
+                Span<NRange> srcIndexes = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<NRange> srcIndexesRentedBuffer);
+                Span<NRange> dstIndexes = TensorOperation.RentedBuffer.CreateUninitialized(destinationRank, out TensorOperation.RentedBuffer<NRange> dstIndexesRentedBuffer);
 
                 for (int i = 0; i < srcIndexes.Length; i++)
                 {
@@ -1913,12 +1983,13 @@ namespace System.Numerics.Tensors
                     dstIndexes[i] = NRange.All;
                 }
 
-                int destinationAxis = dimension + destination.Rank - tensor.Rank;
-                for (nint i = destination.Lengths[destinationAxis]; i > 0; i--)
+                int destinationAxis = dimension + destinationRank - rank;
+                nint axisLength = destination.Lengths[destinationAxis];
+                for (nint i = axisLength; i > 0; i--)
                 {
                     nint sourceIndex = i - 1;
                     srcIndexes[dimension] = new NRange(sourceIndex, sourceIndex + 1);
-                    dstIndexes[destinationAxis] = new NRange(destination.Lengths[destinationAxis] - i, destination.Lengths[destinationAxis] - i + 1);
+                    dstIndexes[destinationAxis] = new NRange(axisLength - i, axisLength - i + 1);
                     TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(tensor.Slice(srcIndexes), destination.Slice(dstIndexes));
                 }
                 srcIndexesRentedBuffer.Dispose();
@@ -1932,6 +2003,7 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
+        /// <remarks>Shapes must be equivalent after ignoring leading singleton padding and treating rank-zero empty tensors as shape <c>[0]</c>. Other dimensions are not broadcast.</remarks>
         public static bool SequenceEqual<T>(this scoped in TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
             where T : IEquatable<T>?
         {
@@ -1941,29 +2013,44 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
+        /// <remarks>Shapes must be equivalent after ignoring leading singleton padding and treating rank-zero empty tensors as shape <c>[0]</c>. Other dimensions are not broadcast.</remarks>
         public static bool SequenceEqual<T>(this scoped in ReadOnlyTensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
             where T : IEquatable<T>?
         {
-            if (tensor.FlattenedLength != other.FlattenedLength
-                || !tensor.Lengths.SequenceEqual(other.Lengths))
+            nint flattenedLength = tensor.FlattenedLength;
+            if (flattenedLength != other.FlattenedLength
+                || !TensorShape.AreLengthsEquivalent(tensor.Lengths, other.Lengths))
             {
                 return false;
             }
 
-            if (tensor.IsDense && other.IsDense)
+            if (flattenedLength == 0)
             {
-                return MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor.FlattenedLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other.FlattenedLength));
+                return true;
             }
 
-            int dimension = tensor.FlattenedLength >= TensorOperation.MinSlicedOperationLength
-                ? TensorOperation.GetDenseSliceDimension(tensor._shape, other._shape)
+            if (tensor.IsDense && other.IsDense && flattenedLength <= int.MaxValue)
+            {
+                return MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)flattenedLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)flattenedLength));
+            }
+
+            ReadOnlyTensorSpan<T> alignedOther = other;
+            int rank = tensor.Rank;
+            if (rank != other.Rank && flattenedLength >= TensorOperation.MinSlicedOperationLength)
+            {
+                alignedOther = new ReadOnlyTensorSpan<T>(in other._reference, TensorShape.WithRank(other._shape, rank));
+            }
+
+            int dimension = flattenedLength >= TensorOperation.MinSlicedOperationLength
+                ? TensorOperation.GetDenseSliceDimension(tensor._shape, alignedOther._shape)
                 : -1;
             if (dimension >= 0)
             {
                 ReadOnlyTensorDimensionSpan<T> tensorSlices = tensor.GetDimensionSpan(dimension);
-                ReadOnlyTensorDimensionSpan<T> otherSlices = other.GetDimensionSpan(dimension);
+                ReadOnlyTensorDimensionSpan<T> otherSlices = alignedOther.GetDimensionSpan(dimension);
 
-                for (nint i = 0; i < tensorSlices.Length; i++)
+                nint sliceCount = tensorSlices.Length;
+                for (nint i = 0; i < sliceCount; i++)
                 {
                     ReadOnlyTensorSpan<T> tensorSlice = tensorSlices[i];
                     ReadOnlyTensorSpan<T> otherSlice = otherSlices[i];
@@ -2035,23 +2122,33 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="splitCount">How many times to split the <paramref name="tensor"/></param>
         /// <param name="dimension">The axis to split on.</param>
+        /// <remarks>Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="splitCount"/> is not positive.</exception>
         public static Tensor<T>[] Split<T>(scoped in ReadOnlyTensorSpan<T> tensor, int splitCount, nint dimension)
         {
-            if (dimension < 0 || dimension >= tensor.Rank)
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(splitCount);
+            ref readonly TensorShape shape = ref TensorShape.Normalize(tensor._shape);
+            int rank = shape.Rank;
+            ReadOnlySpan<nint> lengths = shape.Lengths;
+            if (dimension < 0 || dimension >= rank)
+            {
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
-            if (tensor.Lengths[(int)dimension] % splitCount != 0)
+            }
+            if (lengths[(int)dimension] % splitCount != 0)
+            {
                 ThrowHelper.ThrowArgument_SplitNotSplitEvenly();
+            }
 
             Tensor<T>[] outputs = new Tensor<T>[splitCount];
 
             nint totalToCopy = tensor.FlattenedLength / splitCount;
 
-            scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
-            tensor.Lengths.CopyTo(newLengths);
+            scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+            lengths.CopyTo(newLengths);
             nint splitLength = newLengths[(int)dimension] / splitCount;
             newLengths[(int)dimension] = splitLength;
 
-            scoped Span<NRange> sliceDims = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<NRange> sliceDimsRentedBuffer);
+            scoped Span<NRange> sliceDims = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<NRange> sliceDimsRentedBuffer);
             for (int i = 0; i < sliceDims.Length; i++)
             {
                 sliceDims[i] = NRange.All;
@@ -2314,81 +2411,94 @@ namespace System.Numerics.Tensors
 
         #region Stack
         /// <summary>
-        /// Join multiple <see cref="Tensor{T}"/> along a new dimension that is added at position 0. All tensors must have the same shape.
+        /// Join multiple <see cref="Tensor{T}"/> along a new dimension that is added at position 0. All tensors must have equivalent shapes.
         /// </summary>
         /// <param name="tensors">Input <see cref="Tensor{T}"/>.</param>
+        /// <remarks>Inputs are aligned to the first tensor's shape by adding or removing leading singleton dimensions. Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
         public static Tensor<T> Stack<T>(params ReadOnlySpan<Tensor<T>> tensors)
         {
             return StackAlongDimension(0, tensors);
         }
 
         /// <summary>
-        /// Join multiple <see cref="Tensor{T}"/> along a new dimension. The axis parameter specifies the index of the new dimension. All tensors must have the same shape.
+        /// Join multiple <see cref="Tensor{T}"/> along a new dimension. The axis parameter specifies the index of the new dimension. All tensors must have equivalent shapes.
         /// </summary>
         /// <param name="tensors">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="dimension">Index of where the new dimension will be.</param>
+        /// <remarks>The dimension refers to the first tensor's effective shape. Other inputs are aligned by adding or removing leading singleton dimensions. Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
         public static Tensor<T> StackAlongDimension<T>(int dimension, params ReadOnlySpan<Tensor<T>> tensors)
         {
-            if (tensors.Length < 2)
-                ThrowHelper.ThrowArgument_StackTooFewTensors();
-
-            for (int i = 1; i < tensors.Length; i++)
-            {
-                if (!tensors[0].Lengths.SequenceEqual(tensors[i].Lengths))
-                    ThrowHelper.ThrowArgument_StackShapesNotSame();
-            }
-
-            // We are safe to do dimension > tensors[0].Rank instead of >= because we are adding a new dimension
-            // with our call to Unsqueeze.
-            if (dimension < 0 || dimension > tensors[0].Rank)
-                ThrowHelper.ThrowArgument_AxisLargerThanRank();
-
-            Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
-            for (int i = 0; i < tensors.Length; i++)
-            {
-                outputs[i] = Unsqueeze(tensors[i], dimension);
-            }
-            return ConcatenateOnDimension(dimension, outputs);
+            Tensor<T>[] outputs = UnsqueezeForStack(dimension, tensors);
+            ReadOnlySpan<nint> lengths = outputs[0].Lengths;
+            Tensor<T> result = CreateConcatenationResult<T>(lengths, dimension, outputs.Length);
+            CopyConcatenatedValues(dimension, outputs, result, lengths.Length);
+            return result;
         }
 
         /// <summary>
-        /// Join multiple <see cref="Tensor{T}"/> along a new dimension that is added at position 0. All tensors must have the same shape.
+        /// Join multiple <see cref="Tensor{T}"/> along a new dimension that is added at position 0. All tensors must have equivalent shapes.
         /// </summary>
         /// <param name="tensors">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="destination"></param>
+        /// <remarks>Inputs are aligned to the first tensor's shape by adding or removing leading singleton dimensions. The destination may differ from the result by leading singleton padding. Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
         public static ref readonly TensorSpan<T> Stack<T>(scoped in ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
         {
             return ref StackAlongDimension(tensors, destination, 0);
         }
 
         /// <summary>
-        /// Join multiple <see cref="Tensor{T}"/> along a new dimension. The axis parameter specifies the index of the new dimension. All tensors must have the same shape.
+        /// Join multiple <see cref="Tensor{T}"/> along a new dimension. The axis parameter specifies the index of the new dimension. All tensors must have equivalent shapes.
         /// </summary>
         /// <param name="tensors">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="destination"></param>
         /// <param name="dimension">Index of where the new dimension will be.</param>
+        /// <remarks>The dimension refers to the first tensor's effective shape. Other inputs are aligned by adding or removing leading singleton dimensions. The destination may differ from the result by leading singleton padding. Rank-zero empty tensors have effective shape <c>[0]</c>.</remarks>
         public static ref readonly TensorSpan<T> StackAlongDimension<T>(scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination, int dimension)
         {
-            if (tensors.Length < 2)
-                ThrowHelper.ThrowArgument_StackTooFewTensors();
+            Tensor<T>[] outputs = UnsqueezeForStack(dimension, tensors);
+            ReadOnlySpan<nint> lengths = outputs[0].Lengths;
+            ValidateConcatenationDestination(dimension, lengths, outputs.Length, destination);
+            ValidateConcatenationStorage<T>(outputs, destination);
+            CopyConcatenatedValues<T>(dimension, outputs, destination, lengths.Length);
+            return ref destination;
+        }
 
-            for (int i = 1; i < tensors.Length; i++)
+        private static Tensor<T>[] UnsqueezeForStack<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors)
+        {
+            if (tensors.Length < 2)
             {
-                if (!tensors[0].Lengths.SequenceEqual(tensors[i].Lengths))
-                    ThrowHelper.ThrowArgument_StackShapesNotSame();
+                ThrowHelper.ThrowArgument_StackTooFewTensors();
             }
 
-            // We are safe to do dimension > tensors[0].Rank instead of >= because we are adding a new dimension
-            // with our call to Unsqueeze.
-            if (dimension < 0 || dimension > tensors[0].Rank)
+            ref readonly TensorShape shape = ref TensorShape.Normalize(tensors[0]._shape);
+            int rank = shape.Rank;
+            ReadOnlySpan<nint> lengths = shape.Lengths;
+            for (int i = 1; i < tensors.Length; i++)
+            {
+                if (!TensorShape.AreLengthsEquivalent(lengths, tensors[i].Lengths))
+                {
+                    ThrowHelper.ThrowArgument_StackShapesNotSame();
+                }
+            }
+
+            // Insertion also accepts the position immediately after the last axis.
+            if (dimension < 0 || dimension > rank)
+            {
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            }
 
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Unsqueeze(tensors[i], dimension);
+                Tensor<T> tensor = tensors[i];
+                if (tensor.Rank != rank)
+                {
+                    tensor = new Tensor<T>(tensor._values, tensor._start, TensorShape.WithRank(tensor._shape, rank));
+                }
+                outputs[i] = Unsqueeze(tensor, dimension);
             }
-            return ref ConcatenateOnDimension(dimension, outputs, destination);
+
+            return outputs;
         }
         #endregion
 
@@ -2436,11 +2546,14 @@ namespace System.Numerics.Tensors
 
         private static void ToString<T>(in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths, StringBuilder sb, int indentLevel = 0)
         {
-            nint length = nint.Min(tensor.Lengths[0], maximumLengths[0]);
+            int rank = tensor.Rank;
+            ReadOnlySpan<nint> lengths = tensor.Lengths;
+            nint firstDimensionLength = lengths[0];
+            nint length = nint.Min(firstDimensionLength, maximumLengths[0]);
 
             if (indentLevel != 0)
             {
-                if (tensor.Rank != 1)
+                if (rank != 1)
                 {
                     sb.Append(' ', indentLevel * 2);
                     sb.AppendLine("[");
@@ -2454,7 +2567,7 @@ namespace System.Numerics.Tensors
 
             if (length != 0)
             {
-                TensorShape tmpShape = TensorShape.Create(tensor.Lengths[1..], tensor.Strides[1..], tensor.IsPinned);
+                TensorShape tmpShape = TensorShape.Create(lengths[1..], tensor.Strides[1..], tensor.IsPinned);
 
                 ReadOnlyTensorSpan<T> tmpTensor = new ReadOnlyTensorSpan<T>(ref tensor._reference, tmpShape);
                 ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
@@ -2462,11 +2575,12 @@ namespace System.Numerics.Tensors
                 for (nint i = 1; i < length; i++)
                 {
                     sb.AppendLine(",");
-                    tmpTensor = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref tensor._reference, i * tensor.Strides[0]), tmpShape);
+                    nint linearOffset = tensor._shape.GetLinearOffsetForDimension(i, 1);
+                    tmpTensor = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref tensor._reference, linearOffset), tmpShape);
                     ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
                 }
 
-                if (length != tensor.Lengths[0])
+                if (length != firstDimensionLength)
                 {
                     sb.AppendLine(",");
                     sb.Append(' ', (indentLevel + 1) * 2);
@@ -2622,27 +2736,40 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">The index of the dimension to add.</param>
         public static Tensor<T> Unsqueeze<T>(this Tensor<T> tensor, int dimension)
         {
-            if (dimension > tensor.Lengths.Length)
+            if (tensor.Rank == 0)
+            {
+                TensorSpan<T> unsqueezed = tensor.AsTensorSpan().Unsqueeze(dimension);
+                return new Tensor<T>(tensor._values, tensor._start, unsqueezed._shape);
+            }
+
+            int rank = tensor.Rank;
+            ReadOnlySpan<nint> lengths = tensor.Lengths;
+            ReadOnlySpan<nint> strides = tensor.Strides;
+            if (dimension > rank)
+            {
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            }
             if (dimension < 0)
-                dimension = tensor.Rank - dimension;
+            {
+                dimension = rank - dimension;
+            }
 
-            scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank + 1, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+            scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(rank + 1, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
 
-            tensor.Lengths.Slice(0, dimension).CopyTo(newLengths);
-            tensor.Lengths.Slice(dimension).CopyTo(newLengths.Slice(dimension + 1));
+            lengths.Slice(0, dimension).CopyTo(newLengths);
+            lengths.Slice(dimension).CopyTo(newLengths.Slice(dimension + 1));
             newLengths[dimension] = 1;
 
-            Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank + 1, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            if (dimension == tensor.Rank)
+            Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(rank + 1, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            if (dimension == rank)
             {
-                tensor.Strides.CopyTo(newStrides);
+                strides.CopyTo(newStrides);
                 newStrides[dimension] = 0;
             }
             else
             {
-                tensor.Strides.Slice(0, dimension).CopyTo(newStrides);
-                tensor.Strides.Slice(dimension).CopyTo(newStrides.Slice(dimension + 1));
+                strides.Slice(0, dimension).CopyTo(newStrides);
+                strides.Slice(dimension).CopyTo(newStrides.Slice(dimension + 1));
                 newStrides[dimension] = 0;
             }
 
@@ -2659,27 +2786,35 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">The index of the dimension to add.</param>
         public static TensorSpan<T> Unsqueeze<T>(this scoped in TensorSpan<T> tensor, int dimension)
         {
-            if (dimension > tensor.Lengths.Length)
+            ref readonly TensorShape shape = ref TensorShape.Normalize(tensor._shape);
+            int rank = shape.Rank;
+            ReadOnlySpan<nint> lengths = shape.Lengths;
+            ReadOnlySpan<nint> strides = shape.Strides;
+            if (dimension > rank)
+            {
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            }
             if (dimension < 0)
-                dimension = tensor.Rank - dimension;
+            {
+                dimension = rank - dimension;
+            }
 
-            scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank + 1, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+            scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(rank + 1, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
 
-            tensor.Lengths.Slice(0, dimension).CopyTo(newLengths);
-            tensor.Lengths.Slice(dimension).CopyTo(newLengths.Slice(dimension + 1));
+            lengths.Slice(0, dimension).CopyTo(newLengths);
+            lengths.Slice(dimension).CopyTo(newLengths.Slice(dimension + 1));
             newLengths[dimension] = 1;
 
-            Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank + 1, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            if (dimension == tensor.Rank)
+            Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(rank + 1, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            if (dimension == rank)
             {
-                tensor.Strides.CopyTo(newStrides);
+                strides.CopyTo(newStrides);
                 newStrides[dimension] = 0;
             }
             else
             {
-                tensor.Strides.Slice(0, dimension).CopyTo(newStrides);
-                tensor.Strides.Slice(dimension).CopyTo(newStrides.Slice(dimension + 1));
+                strides.Slice(0, dimension).CopyTo(newStrides);
+                strides.Slice(dimension).CopyTo(newStrides.Slice(dimension + 1));
                 newStrides[dimension] = 0;
             }
 
@@ -2696,27 +2831,35 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">The index of the dimension to add.</param>
         public static ReadOnlyTensorSpan<T> Unsqueeze<T>(this scoped in ReadOnlyTensorSpan<T> tensor, int dimension)
         {
-            if (dimension > tensor.Lengths.Length)
+            ref readonly TensorShape shape = ref TensorShape.Normalize(tensor._shape);
+            int rank = shape.Rank;
+            ReadOnlySpan<nint> lengths = shape.Lengths;
+            ReadOnlySpan<nint> strides = shape.Strides;
+            if (dimension > rank)
+            {
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            }
             if (dimension < 0)
-                dimension = tensor.Rank - dimension;
+            {
+                dimension = rank - dimension;
+            }
 
-            scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank + 1, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+            scoped Span<nint> newLengths = TensorOperation.RentedBuffer.CreateUninitialized(rank + 1, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
 
-            tensor.Lengths.Slice(0, dimension).CopyTo(newLengths);
-            tensor.Lengths.Slice(dimension).CopyTo(newLengths.Slice(dimension + 1));
+            lengths.Slice(0, dimension).CopyTo(newLengths);
+            lengths.Slice(dimension).CopyTo(newLengths.Slice(dimension + 1));
             newLengths[dimension] = 1;
 
-            Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank + 1, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
-            if (dimension == tensor.Rank)
+            Span<nint> newStrides = TensorOperation.RentedBuffer.CreateUninitialized(rank + 1, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            if (dimension == rank)
             {
-                tensor.Strides.CopyTo(newStrides);
+                strides.CopyTo(newStrides);
                 newStrides[dimension] = 0;
             }
             else
             {
-                tensor.Strides.Slice(0, dimension).CopyTo(newStrides);
-                tensor.Strides.Slice(dimension).CopyTo(newStrides.Slice(dimension + 1));
+                strides.Slice(0, dimension).CopyTo(newStrides);
+                strides.Slice(dimension).CopyTo(newStrides.Slice(dimension + 1));
                 newStrides[dimension] = 0;
             }
 
@@ -3862,25 +4005,7 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMax<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            if (x.IsDense)
-            {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
-                return TensorPrimitives.IndexOfMax(span);
-            }
-
-            return IndexOfMaxFallback(x);
-        }
-
-        private static nint IndexOfMaxFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>
-        {
-            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
-            x.FlattenTo(flat);
-
-            nint result = TensorPrimitives.IndexOfMax<T>(flat.AsSpan(0, (int)x.FlattenedLength));
-            ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-
-            return result;
+            return TensorOperation.IndexOfMinMax<T, TensorPrimitives.IndexOfMaxOperator<T>>(x);
         }
 
         #endregion
@@ -3891,25 +4016,7 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            if (x.IsDense)
-            {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
-                return TensorPrimitives.IndexOfMaxMagnitude(span);
-            }
-
-            return IndexOfMaxMagnitudeFallback(x);
-        }
-
-        private static nint IndexOfMaxMagnitudeFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>
-        {
-            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
-            x.FlattenTo(flat);
-
-            nint result = TensorPrimitives.IndexOfMaxMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
-            ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-
-            return result;
+            return TensorOperation.IndexOfMinMax<T, TensorPrimitives.IndexOfMaxMagnitudeOperator<T>>(x);
         }
         #endregion
 
@@ -3919,25 +4026,7 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMin<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            if (x.IsDense)
-            {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
-                return TensorPrimitives.IndexOfMin(span);
-            }
-
-            return IndexOfMinFallback(x);
-        }
-
-        private static nint IndexOfMinFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>
-        {
-            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
-            x.FlattenTo(flat);
-
-            nint result = TensorPrimitives.IndexOfMin<T>(flat.AsSpan(0, (int)x.FlattenedLength));
-            ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-
-            return result;
+            return TensorOperation.IndexOfMinMax<T, TensorPrimitives.IndexOfMinOperator<T>>(x);
         }
         #endregion
 
@@ -3949,25 +4038,7 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            if (x.IsDense)
-            {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
-                return TensorPrimitives.IndexOfMinMagnitude(span);
-            }
-
-            return IndexOfMinMagnitudeFallback(x);
-        }
-
-        private static nint IndexOfMinMagnitudeFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>
-        {
-            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
-            x.FlattenTo(flat);
-
-            nint result = TensorPrimitives.IndexOfMinMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
-            ArrayPool<T>.Shared.Return(flat, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-
-            return result;
+            return TensorOperation.IndexOfMinMax<T, TensorPrimitives.IndexOfMinMagnitudeOperator<T>>(x);
         }
         #endregion
 
