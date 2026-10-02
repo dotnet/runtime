@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
 namespace ILAssembler
 {
@@ -350,27 +351,6 @@ namespace ILAssembler
                 int bodyOffset = -1;
                 if (methodDef.MethodBody.CodeBuilder.Count != 0)
                 {
-                    // Add deferred exception regions now that TypeRef-to-TypeDef resolution is complete.
-                    // Catch clause type handles are read here, after resolution has set the real handle.
-                    foreach (var region in methodDef.ExceptionRegions)
-                    {
-                        switch (region)
-                        {
-                            case ExceptionRegion.CatchRegion catchRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddCatchRegion(catchRegion.TryStart, catchRegion.TryEnd, catchRegion.HandlerStart, catchRegion.HandlerEnd, catchRegion.CatchType.Handle);
-                                break;
-                            case ExceptionRegion.FinallyRegion finallyRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFinallyRegion(finallyRegion.TryStart, finallyRegion.TryEnd, finallyRegion.HandlerStart, finallyRegion.HandlerEnd);
-                                break;
-                            case ExceptionRegion.FaultRegion faultRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFaultRegion(faultRegion.TryStart, faultRegion.TryEnd, faultRegion.HandlerStart, faultRegion.HandlerEnd);
-                                break;
-                            case ExceptionRegion.FilterRegion filterRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFilterRegion(filterRegion.TryStart, filterRegion.TryEnd, filterRegion.HandlerStart, filterRegion.HandlerEnd, filterRegion.FilterStart);
-                                break;
-                        }
-                    }
-
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
@@ -387,55 +367,8 @@ namespace ILAssembler
                         bodyAttributes |= MethodBodyAttributes.InitLocals;
                     }
 
-                    bool requiresFatHeaderWhenExceptionRegionsAreOmitted =
-                        (methodDef.MaxStack < 8 || bodyAttributes.HasFlag(MethodBodyAttributes.InitLocals))
-                        && methodDef.MethodBody.CodeBuilder.Count < 64
-                        && localsSigHandle.IsNil;
-
-                    try
-                    {
-                        bodyOffset = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody,
-                            methodDef.MaxStack,
-                            localsSigHandle,
-                            bodyAttributes,
-                            hasDynamicStackAllocation: true);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // Method has unresolved labels or other body errors.
-                        // Emit a minimal valid method body containing the raw IL bytes so
-                        // the PE can still be emitted (error diagnostics are already recorded).
-                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody.CodeBuilder.Count,
-                            methodDef.MaxStack,
-                            exceptionRegionCount: 0,
-                            hasSmallExceptionRegions: true,
-                            requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
-                            bodyAttributes,
-                            hasDynamicStackAllocation: true);
-                        bodyOffset = fallbackBody.Offset;
-                        var writer1 = new BlobWriter(fallbackBody.Instructions);
-                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer1);
-                    }
-                    catch (ArgumentOutOfRangeException)
-                    {
-                        // Exception handler regions have invalid ranges (e.g., from parse
-                        // errors that produced malformed control flow). Emit the IL in a
-                        // minimal valid method body and omit exception regions in fallback.
-                        // TODO-COMPAT: Emit the invalid exception regions manually
-                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody.CodeBuilder.Count,
-                            methodDef.MaxStack,
-                            exceptionRegionCount: 0,
-                            hasSmallExceptionRegions: true,
-                            requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
-                            bodyAttributes,
-                            hasDynamicStackAllocation: true);
-                        bodyOffset = fallbackBody.Offset;
-                        var writer2 = new BlobWriter(fallbackBody.Instructions);
-                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer2);
-                    }
+                    bodyOffset = methodDef.MethodBody.WriteTo(bodyStreamEncoder, methodDef.MaxStack,
+                        localsSigHandle, bodyAttributes, methodDef.ExceptionRegions, hasDynamicStackAllocation: true);
                 }
 
                 var methodAttributes = methodDef.MethodAttributes;
@@ -1657,13 +1590,6 @@ namespace ILAssembler
             return GetOrCreateEntity(signature, TableIndex.StandAloneSig, _seenStandaloneSignatures, (sig) => new(sig), _ => { });
         }
 
-        private StandaloneSignatureHandle GetOrCreateEmptyLocalsSignature()
-        {
-            BlobBuilder signature = new();
-            new BlobEncoder(signature).LocalVariableSignature(0);
-            return (StandaloneSignatureHandle)GetOrCreateStandaloneSignature(signature).Handle;
-        }
-
         public DeclarativeSecurityAttributeEntity CreateDeclarativeSecurityAttribute(DeclarativeSecurityAction action, BlobBuilder permissionSet)
         {
             var entity = new DeclarativeSecurityAttributeEntity(action, permissionSet);
@@ -1974,17 +1900,13 @@ namespace ILAssembler
 
             public StandaloneSignatureEntity? LocalsSignature { get; set; }
 
-            // TODO: https://github.com/dotnet/runtime/issues/127261
-            // InstructionEncoder produces corrupted IL when mixing OpCode() with
-            // direct CodeBuilder.WriteByte() across BlobBuilder chunk boundaries.
-            // Using a larger initial capacity avoids multi-chunk operation.
-            public InstructionEncoder MethodBody { get; } = new(new BlobBuilder(4096), new ControlFlowBuilder());
+            public MethodBodyWriter MethodBody { get; } = new();
 
             public MethodBodyAttributes BodyAttributes { get; set; }
 
             /// <summary>
-            /// Deferred exception regions. Registered during parsing but added to
-            /// <see cref="InstructionEncoder.ControlFlowBuilder"/> during emission
+            /// Deferred exception regions. Registered during parsing but written by
+            /// <see cref="MethodBodyWriter"/> during emission
             /// so that TypeRef-to-TypeDef resolution has completed before catch type
             /// handles are read.
             /// </summary>
@@ -2238,14 +2160,14 @@ namespace ILAssembler
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the
-        /// <see cref="ControlFlowBuilder"/> during emission, after TypeRef-to-TypeDef resolution.
+        /// <see cref="MethodBodyWriter"/> during emission, after TypeRef-to-TypeDef resolution.
         /// </summary>
-        internal abstract record ExceptionRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd)
+        internal abstract record ExceptionRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location)
         {
-            internal sealed record CatchRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, TypeEntity CatchType) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FinallyRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FaultRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FilterRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, LabelHandle FilterStart) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
+            internal sealed record CatchRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, TypeEntity CatchType, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FinallyRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FaultRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FilterRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, LabelHandle FilterStart, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
         }
     }
 }
