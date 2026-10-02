@@ -1131,6 +1131,7 @@ public unsafe class StackWalkTests
     // InterpreterFrame whose TransitionBlock records only the R2R caller's linear-stack pointer.
     // When the interpreted chain is exhausted, the walk must continue into that R2R caller rather
     // than reporting a native marker at the end of the TransitionBlock and skipping the R2R frames.
+    // Each R2R frame's frame pointer is recomputed from its own stack pointer as the walk unwinds.
     [Fact]
     public void CreateStackWalk_WasmInterpreterFrameEnteredFromR2R_ContinuesIntoR2RCaller()
     {
@@ -1141,8 +1142,10 @@ public unsafe class StackWalkTests
         const ulong MinVirtualIP = 0x8001_0000;
         const uint FunctionBeginAddress = 0x100;
         const uint LocalVirtualIPHalf = 3;
+        const uint OuterLocalVirtualIPHalf = 5;
         const byte R2RFrameSize = 16;
         const ulong R2RCallerIp = MinVirtualIP + FunctionBeginAddress + LocalVirtualIPHalf * 2;
+        const ulong OuterR2RCallerIp = MinVirtualIP + FunctionBeginAddress + OuterLocalVirtualIPHalf * 2;
 
         MockThread? thread = null;
         MockFrameBuilder? frames = null;
@@ -1166,12 +1169,14 @@ public unsafe class StackWalkTests
                 AddWasmR2RFunction(targetBuilder, allocator, FunctionTableIndex, MinVirtualIP, FunctionBeginAddress, R2RFrameSize);
                 AddWasmNullDebugger(targetBuilder, allocator);
 
-                // The R2R caller's frame record; its own caller (frame base + frame size) is a
-                // TERMINATE_R2R_STACK_WALK marker, so the walk ends after it.
-                MockMemorySpace.HeapFragment r2rStack = allocator.Allocate(R2RFrameSize + 4, "R2RLinearStack");
+                // Two R2R frame records, each frame size apart, then a TERMINATE_R2R_STACK_WALK
+                // marker, so the walk ends after the outer caller.
+                MockMemorySpace.HeapFragment r2rStack = allocator.Allocate(2 * R2RFrameSize + 4, "R2RLinearStack");
                 helpers.Write(r2rStack.Data.AsSpan(0, sizeof(uint)), FunctionTableIndex);
                 helpers.Write(r2rStack.Data.AsSpan(4, sizeof(uint)), LocalVirtualIPHalf);
-                helpers.Write(r2rStack.Data.AsSpan(R2RFrameSize, sizeof(uint)), 1u);
+                helpers.Write(r2rStack.Data.AsSpan(R2RFrameSize, sizeof(uint)), FunctionTableIndex);
+                helpers.Write(r2rStack.Data.AsSpan(R2RFrameSize + 4, sizeof(uint)), OuterLocalVirtualIPHalf);
+                helpers.Write(r2rStack.Data.AsSpan(2 * R2RFrameSize, sizeof(uint)), 1u);
                 r2rFrame = r2rStack.Address;
 
                 ulong transitionBlock = AddWasmTransitionBlock(helpers, allocator, returnAddress: 0, stackPointer: r2rFrame);
@@ -1199,20 +1204,21 @@ public unsafe class StackWalkTests
                         [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = (uint)(isFaultingOffset + pointerSize) },
                     });
             },
-            executionManager: CreateInterpreterExecutionManager([InterpIp1, InterpIp2], managedIps: [R2RCallerIp]));
+            executionManager: CreateInterpreterExecutionManager([InterpIp1, InterpIp2], managedIps: [R2RCallerIp, OuterR2RCallerIp]));
 
         IStackWalk stackWalk = target.Contracts.StackWalk;
         ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
         IStackDataFrameHandle[] walked = stackWalk.CreateStackWalk(threadData).Take(16).ToArray();
 
-        (ulong Ip, ulong Sp)[] frameless = walked
+        (ulong Ip, ulong Sp, ulong Fp)[] frameless = walked
             .Where(f => f.State == StackWalkState.Frameless)
-            .Select(f => (stackWalk.GetInstructionPointer(f).Value, stackWalk.GetStackPointer(f).Value))
+            .Select(f => (stackWalk.GetInstructionPointer(f).Value, stackWalk.GetStackPointer(f).Value, stackWalk.GetContextFramePointer(f).Value))
             .ToArray();
 
-        Assert.Equal([InterpIp1, InterpIp2, R2RCallerIp], frameless.Select(f => f.Ip));
-        Assert.Equal(r2rFrame, frameless[^1].Sp);
-        Assert.True(walked.Length <= 6, $"Walk did not terminate: {walked.Length} frames");
+        Assert.Equal([InterpIp1, InterpIp2, R2RCallerIp, OuterR2RCallerIp], frameless.Select(f => f.Ip));
+        Assert.Equal((r2rFrame, r2rFrame), (frameless[2].Sp, frameless[2].Fp));
+        Assert.Equal((r2rFrame + R2RFrameSize, r2rFrame + R2RFrameSize), (frameless[3].Sp, frameless[3].Fp));
+        Assert.True(walked.Length <= 7, $"Walk did not terminate: {walked.Length} frames");
     }
 
     private static IExecutionManager CreateInterpreterExecutionManager(ulong[] interpreterIps, ulong[]? managedIps = null)
