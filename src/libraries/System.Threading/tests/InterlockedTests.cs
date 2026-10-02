@@ -1493,7 +1493,10 @@ namespace System.Threading.Tests
             Assert.Equal(1000*1000, count);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        private static bool IsThreadingAndRemoteExecutorSupported =>
+            PlatformDetection.IsMultithreadingSupported && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(typeof(InterlockedTests), nameof(IsThreadingAndRemoteExecutorSupported))]
         public void MemoryBarrierProcessWide_ConcurrentCalls()
         {
             RemoteExecutor.Invoke(static () =>
