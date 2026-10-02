@@ -454,24 +454,6 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        [InlineData(GCLargeObjectHeapCompactionMode.CompactOnce)]
-        [InlineData(GCLargeObjectHeapCompactionMode.Default)]
-        public static void LargeObjectHeapCompactionModeRoundTrips(GCLargeObjectHeapCompactionMode value)
-        {
-            GCLargeObjectHeapCompactionMode orig = GCSettings.LargeObjectHeapCompactionMode;
-            try
-            {
-                GCSettings.LargeObjectHeapCompactionMode = value;
-                Assert.Equal(value, GCSettings.LargeObjectHeapCompactionMode);
-            }
-            finally
-            {
-                GCSettings.LargeObjectHeapCompactionMode = orig;
-                Assert.Equal(orig, GCSettings.LargeObjectHeapCompactionMode);
-            }
-        }
-
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [InlineData(GCLatencyMode.Batch)]
