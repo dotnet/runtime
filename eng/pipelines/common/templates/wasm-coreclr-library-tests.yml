@@ -10,6 +10,7 @@ parameters:
   scenarios: ['WasmTestOnChrome']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
+  testScope: innerloop
   # Default matches the fast interpreter lane. The R2R lane trims and crossgen2-publishes
   # every test app, which is substantially slower, so its callers raise this.
   timeoutInMinutes: 240
@@ -90,8 +91,9 @@ jobs:
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
+      testScope: ${{ parameters.testScope }}
       nameSuffix: LibraryTestsCoreCLR${{ parameters.nameSuffix }}
-      buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) $(wasmReadyToRunArgs) ${{ parameters.extraBuildArgs }}
+      buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) -testscope ${{ parameters.testScope }} /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) $(wasmReadyToRunArgs) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
@@ -107,6 +109,7 @@ jobs:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
+            testScope: ${{ parameters.testScope }}
             testRunNamePrefixSuffix: CoreCLR${{ parameters.nameSuffix }}_$(_BuildConfig)
             extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(wasmReadyToRunArgs) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}

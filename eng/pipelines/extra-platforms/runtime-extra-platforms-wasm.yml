@@ -1,7 +1,6 @@
 # This contains only wasm-specific jobs
-# These are run as part of runtime-extra-platforms by default.
-# But can also be triggered manually via `runtime-wasm` name
-#   /azp run runtime-wasm
+# Run the full trimmed CoreCLR ReadyToRun library tests with
+#   /azp run runtime-wasm-libtests
 
 parameters:
   isExtraPlatformsBuild: false
@@ -11,48 +10,24 @@ parameters:
   excludeNonLibTests: false
   excludeOptional: true
   debuggerTestsOnly: false
+  runFullR2RLibraryTests: false
 
 jobs:
 
-- ${{ if and(ne(variables.isRollingBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
-  # CoreCLR ReadyToRun library tests, complementary to the default pipeline's lane.
-  - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-      nameSuffix: _R2R
-      readyToRun: true
-      timeoutInMinutes: 480
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      useHelixMonitor: ${{ parameters.useHelixMonitor }}
-      scenarios:
-        - WasmTestOnChrome
-
-- ${{ if and(ne(variables.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
-  # Release build of browser wasm for CoreCLR. Only stages the CoreCLR runtime pack
-  # (BuildArtifacts_browser_wasm_<os>_Release_CoreCLR) that the wasm-tools workload
-  # install in the Wasm.Build.Tests job below requires.
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Release
-      platforms:
-        - browser_wasm
-        - browser_wasm_win
-      jobParameters:
-        nameSuffix: CoreCLR
-        buildArgs: -s clr+libs+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:InstallWorkloadForTesting=false /p:BuildCrossgen2HostPackForWorkloadTesting=true
-        timeoutInMinutes: 120
-        postBuildSteps:
-          - template: /eng/pipelines/common/wasm-post-build-steps.yml
-            parameters:
-              publishArtifactsForWorkload: true
-              publishWBT: false
-        extraVariablesTemplates:
-          - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-            parameters:
-              testGroup: innerloop
-              liveLibrariesBuildConfig: Release
+- ${{ if and(ne(parameters.isExtraPlatformsBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+  # Full trimmed CoreCLR ReadyToRun library tests, available through runtime-wasm-libtests.
+  - ${{ if eq(parameters.runFullR2RLibraryTests, true) }}:
+    - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+      parameters:
+        platforms:
+          - browser_wasm
+        nameSuffix: _R2R
+        readyToRun: true
+        timeoutInMinutes: 480
+        extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+        isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+        isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+        alwaysRun: true
+        useHelixMonitor: ${{ parameters.useHelixMonitor }}
+        scenarios:
+          - WasmTestOnChrome

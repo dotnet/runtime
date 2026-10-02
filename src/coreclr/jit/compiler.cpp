@@ -1970,11 +1970,14 @@ void Compiler::compSetProcessor()
 #endif // TARGET_XARCH
 }
 
-bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const
+bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa,
+                                         bool                   supported,
+                                         bool                   preserveNegativeDependency) const
 {
     const char* isaString = InstructionSetToString(isa);
-    JITDUMP("Notify VM instruction set (%s) %s be supported.\n", isaString, supported ? "must" : "must not");
-    return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    JITDUMP("Notify VM instruction set (%s) %s be supported%s.\n", isaString, supported ? "must" : "must not",
+            preserveNegativeDependency ? " (preserve negative dependency)" : "");
+    return info.compCompHnd->notifyInstructionSetUsage(isa, supported, preserveNegativeDependency);
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -4309,14 +4312,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         hashBv::Init(this);
 
         VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
-
-        // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
-        if (info.compPublishStubParam)
-        {
-            assert(lvaStubArgumentVar == BAD_VAR_NUM);
-            lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-            lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
-        }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
@@ -5038,9 +5033,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering->Run();
 
     // Set stack levels and analyze throw helper usage.
+    // This may create throw helper calls that get lowered.
+    //
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
+
+    // Run the final liveness pass after adding throw helper calls.
+    //
+    DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
 #ifdef TARGET_WASM
     // Determine if a Virtual IP is needed and add code as needed to
@@ -5653,8 +5654,19 @@ void Compiler::generatePatchpointInfo()
     // SP is not manipulated by calls so no frame size adjustment needed.
     // Local Offsets may need adjusting, if FP is at bottom of frame.
     //
-    const int totalFrameSize = codeGen->genTotalFrameSize();
+    int       totalFrameSize = codeGen->genTotalFrameSize();
     const int offsetAdjust   = codeGen->genSPtoFPdelta() - totalFrameSize;
+
+#ifdef TARGET_ARM64
+    // If there is an UnknownSizeFrame for this compilation, force evaluation of it's runtime
+    // value and add this to the total.
+    if (compUsesUnknownSizeFrame)
+    {
+        int unkSizeFrameSize = unkSizeFrame.FrameSizeInVectors() * getRuntimeVectorTByteLength();
+        JITDUMP("--OSR-- UnknownSizeFrame Size %d\n", unkSizeFrameSize);
+        totalFrameSize += unkSizeFrameSize;
+    }
+#endif
 #else
     NYI("patchpoint info generation");
     const int offsetAdjust   = 0;
@@ -5675,12 +5687,6 @@ void Compiler::generatePatchpointInfo()
         //
         unsigned varNum = lclNum;
 
-        // Variable-sized locals reside in a different part of the stack frame.
-        if (lvaIsUnknownSizeLocal(varNum))
-        {
-            continue;
-        }
-
         if (gsShadowVarInfo != nullptr)
         {
             unsigned const shadowNum = gsShadowVarInfo[lclNum].shadowCopy;
@@ -5699,11 +5705,28 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvOnFrame);
         assert(varDsc->lvFramePointerBased);
 
+        int stackOffset = 0;
+
         // Record FramePtr relative offset (no localloc yet)
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // That bit of IL might be skipped by OSR partial importation.
         const bool isExposed = varDsc->lvHasLdAddrOp;
-        patchpointInfo->SetOffsetAndExposure(lclNum, varDsc->GetStackOffset() + offsetAdjust, isExposed);
+
+#ifdef TARGET_ARM64
+        if (lvaLocalIsOnUnknownSizeFrame(varNum))
+        {
+            // The UnknownSizeFrame starts at the end of the original frame.
+            // All addressing is relative to this location locals with unknown size.
+            int unkSizeFrameOffset = -codeGen->genTotalFrameSize();
+
+            stackOffset = unkSizeFrameOffset + unkSizeFrame.GetExactOffset(varDsc, getRuntimeVectorTByteLength());
+        }
+        else
+#endif
+        {
+            stackOffset = varDsc->GetStackOffset() + offsetAdjust;
+        }
+        patchpointInfo->SetOffsetAndExposure(lclNum, stackOffset, isExposed);
 
         JITDUMP("--OSR-- V%02u is at virtual offset %d%s%s\n", lclNum, patchpointInfo->Offset(lclNum),
                 patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "", (varNum != lclNum) ? " (shadowed)" : "");
@@ -6797,8 +6820,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
 
-    info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
-
     if (opts.IsReversePInvoke())
     {
         bool unused;
@@ -7417,94 +7438,6 @@ VarScopeDsc* Compiler::compGetNextExitScope(unsigned offs, bool scan)
     }
 
     return nullptr;
-}
-
-// The function will call the callback functions for scopes with boundaries
-// at instrs from the current status of the scope lists to 'offset',
-// ordered by instrs.
-
-void Compiler::compProcessScopesUntil(unsigned   offset,
-                                      VARSET_TP* inScope,
-                                      void (Compiler::*enterScopeFn)(VARSET_TP* inScope, VarScopeDsc*),
-                                      void (Compiler::*exitScopeFn)(VARSET_TP* inScope, VarScopeDsc*))
-{
-    assert(offset != BAD_IL_OFFSET);
-    assert(inScope != nullptr);
-
-    bool         foundExit = false, foundEnter = true;
-    VarScopeDsc* scope;
-    VarScopeDsc* nextExitScope  = nullptr;
-    VarScopeDsc* nextEnterScope = nullptr;
-    unsigned     offs = offset, curEnterOffs = 0;
-
-    goto START_FINDING_SCOPES;
-
-    // We need to determine the scopes which are open for the current block.
-    // This loop walks over the missing blocks between the current and the
-    // previous block, keeping the enter and exit offsets in lockstep.
-
-    do
-    {
-        foundExit = foundEnter = false;
-
-        if (nextExitScope)
-        {
-            (this->*exitScopeFn)(inScope, nextExitScope);
-            nextExitScope = nullptr;
-            foundExit     = true;
-        }
-
-        offs = nextEnterScope ? nextEnterScope->vsdLifeBeg : offset;
-
-        while ((scope = compGetNextExitScope(offs, true)) != nullptr)
-        {
-            foundExit = true;
-
-            if (!nextEnterScope || scope->vsdLifeEnd > nextEnterScope->vsdLifeBeg)
-            {
-                // We overshot the last found Enter scope. Save the scope for later
-                // and find an entering scope
-
-                nextExitScope = scope;
-                break;
-            }
-
-            (this->*exitScopeFn)(inScope, scope);
-        }
-
-        if (nextEnterScope)
-        {
-            (this->*enterScopeFn)(inScope, nextEnterScope);
-            curEnterOffs   = nextEnterScope->vsdLifeBeg;
-            nextEnterScope = nullptr;
-            foundEnter     = true;
-        }
-
-        offs = nextExitScope ? nextExitScope->vsdLifeEnd : offset;
-
-    START_FINDING_SCOPES:
-
-        while ((scope = compGetNextEnterScope(offs, true)) != nullptr)
-        {
-            foundEnter = true;
-
-            if ((nextExitScope && scope->vsdLifeBeg >= nextExitScope->vsdLifeEnd) || (scope->vsdLifeBeg > curEnterOffs))
-            {
-                // We overshot the last found exit scope. Save the scope for later
-                // and find an exiting scope
-
-                nextEnterScope = scope;
-                break;
-            }
-
-            (this->*enterScopeFn)(inScope, scope);
-
-            if (!nextExitScope)
-            {
-                curEnterOffs = scope->vsdLifeBeg;
-            }
-        }
-    } while (foundExit || foundEnter);
 }
 
 #if defined(DEBUG)
@@ -9605,10 +9538,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         if (tree->gtDebugFlags & GTF_DEBUG_NODE_SMALL)
         {
             chars += printf("[NODE_SMALL]");
-        }
-        if (tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED)
-        {
-            chars += printf("[MORPHED]");
         }
 #endif // defined(DEBUG)
 

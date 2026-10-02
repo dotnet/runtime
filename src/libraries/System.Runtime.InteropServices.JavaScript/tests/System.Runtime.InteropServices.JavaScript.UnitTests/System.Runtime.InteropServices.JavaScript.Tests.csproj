@@ -37,6 +37,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSExportTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\YieldAwaitableTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSInteropTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\ProxyLeakTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\Utils.cs" />
 
     <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
