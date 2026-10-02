@@ -3429,6 +3429,51 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(32)]
+        [InlineData(64)]
+        [InlineData(128)]
+        [InlineData(255)]
+        [InlineData(-1)]
+        [InlineData(int.MaxValue)]
+        public void Vector512ShuffleNativeIndirectTest(int index)
+        {
+            AssertIndirect<byte, byte>(Vector512.ShuffleNative(Vector512<byte>.One, Vector512.Create(unchecked((byte)index))), index);
+            AssertIndirect<sbyte, sbyte>(Vector512.ShuffleNative(Vector512<sbyte>.One, Vector512.Create(unchecked((sbyte)index))), index);
+            AssertIndirect<short, short>(Vector512.ShuffleNative(Vector512<short>.One, Vector512.Create(unchecked((short)index))), index);
+            AssertIndirect<ushort, ushort>(Vector512.ShuffleNative(Vector512<ushort>.One, Vector512.Create(unchecked((ushort)index))), index);
+            AssertIndirect<int, int>(Vector512.ShuffleNative(Vector512<int>.One, Vector512.Create(index)), index);
+            AssertIndirect<uint, uint>(Vector512.ShuffleNative(Vector512<uint>.One, Vector512.Create(unchecked((uint)index))), index);
+            AssertIndirect<long, long>(Vector512.ShuffleNative(Vector512<long>.One, Vector512.Create((long)index)), index);
+            AssertIndirect<ulong, ulong>(Vector512.ShuffleNative(Vector512<ulong>.One, Vector512.Create(unchecked((ulong)index))), index);
+            AssertIndirect<nint, nint>(Vector512.ShuffleNative(Vector512<nint>.One, Vector512.Create((nint)index)), index);
+            AssertIndirect<nuint, nuint>(Vector512.ShuffleNative(Vector512<nuint>.One, Vector512.Create(unchecked((nuint)index))), index);
+            AssertIndirect<float, int>(Vector512.ShuffleNative(Vector512<float>.One, Vector512.Create(index)), index);
+            AssertIndirect<double, long>(Vector512.ShuffleNative(Vector512<double>.One, Vector512.Create((long)index)), index);
+
+            static void AssertIndirect<T, TIndex>(Vector512<T> expected, int index)
+                where T : struct
+                where TIndex : struct, INumberBase<TIndex>
+            {
+                Vector512<T> vector = Vector512<T>.One;
+                Vector512<TIndex> indices = Vector512.Create(TIndex.CreateTruncating(index));
+                MethodInfo methodInfo = typeof(Vector512).GetMethod(nameof(Vector512.ShuffleNative), [typeof(Vector512<T>), typeof(Vector512<TIndex>)]);
+                Vector512<T> reflected = (Vector512<T>)methodInfo.Invoke(null, [vector, indices]);
+                Func<Vector512<T>, Vector512<TIndex>, Vector512<T>> shuffle = methodInfo.CreateDelegate<Func<Vector512<T>, Vector512<TIndex>, Vector512<T>>>();
+                Vector512<T> delegated = shuffle(vector, indices);
+
+                for (int lane = 0; lane < Vector512<T>.Count; lane++)
+                {
+                    Assert.Equal(expected.GetElement(lane), reflected.GetElement(lane));
+                    Assert.Equal(expected.GetElement(lane), delegated.GetElement(lane));
+                }
+            }
+        }
+
         [Fact]
         public void Vector512DoubleShuffleNativeOneInputTest()
         {

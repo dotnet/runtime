@@ -2900,6 +2900,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
 //    simdSize        -- size of the SIMD value, in bytes.
+//    mustExpand      -- true if the intrinsic must expand rather than remain a managed call.
 //
 // Return Value:
 //    the expanded intrinsic.
@@ -2918,7 +2919,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                                      CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                      var_types             simdBaseType,
                                      var_types             retType,
-                                     unsigned              simdSize)
+                                     unsigned              simdSize,
+                                     bool                  mustExpand)
 {
     assert(HWIntrinsicInfo::lookupIsa(intrinsic) == InstructionSet_Vector);
 
@@ -3030,7 +3032,9 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
         bool isShuffleNative = intrinsic == NI_Vector_ShuffleNative;
 
-        if (potentiallyNotSupported && !compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
+        if (potentiallyNotSupported &&
+            !((isShuffleNative && mustExpand) ? compHWIntrinsicDependsOn(InstructionSet_AVX2, true)
+                                              : compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative)))
         {
             return nullptr;
         }
@@ -4897,8 +4901,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             // indices that might become possible to emit later (due to them becoming constant), this will be
             // indicated in canBecomeValidForShuffle; otherwise, it's just the same as validForShuffle.
             bool canBecomeValidForShuffle = false;
-            bool validForShuffle =
-                IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle, isShuffleNative);
+            bool validForShuffle = IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle,
+                                                     isShuffleNative, mustExpand);
 
             // If it isn't valid for shuffle (and can't become valid later), then give up now.
             if (!canBecomeValidForShuffle)
@@ -4911,10 +4915,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(sig->numArgs == 2);
 
-                if (opts.OptimizationEnabled())
+                if (opts.OptimizationEnabled() && !mustExpand)
                 {
-                    // Only enable late stage rewriting if optimizations are enabled
-                    // as we won't otherwise encounter a constant at the later point
+                    // Recursive intrinsics must expand now: late rewriting could reject an optimistic ISA
+                    // and recreate the recursive call instead of the guarded hardware implementation.
                     op2 = impSIMDPopStack();
                     op1 = impSIMDPopStack();
 

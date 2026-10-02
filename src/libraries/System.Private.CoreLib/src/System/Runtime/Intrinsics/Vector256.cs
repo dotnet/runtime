@@ -3560,7 +3560,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<byte> ShuffleNative(Vector256<byte> vector, Vector256<byte> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3575,7 +3575,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<double> ShuffleNative(Vector256<double> vector, Vector256<long> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3590,7 +3590,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<short> ShuffleNative(Vector256<short> vector, Vector256<short> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3605,7 +3605,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<int> ShuffleNative(Vector256<int> vector, Vector256<int> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3620,7 +3620,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<long> ShuffleNative(Vector256<long> vector, Vector256<long> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3635,7 +3635,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<nint> ShuffleNative(Vector256<nint> vector, Vector256<nint> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3651,7 +3651,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<sbyte> ShuffleNative(Vector256<sbyte> vector, Vector256<sbyte> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3666,7 +3666,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<float> ShuffleNative(Vector256<float> vector, Vector256<int> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3682,7 +3682,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ushort> ShuffleNative(Vector256<ushort> vector, Vector256<ushort> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3698,7 +3698,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<uint> ShuffleNative(Vector256<uint> vector, Vector256<uint> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3714,7 +3714,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ulong> ShuffleNative(Vector256<ulong> vector, Vector256<ulong> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3730,7 +3730,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<nuint> ShuffleNative(Vector256<nuint> vector, Vector256<nuint> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx2.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }

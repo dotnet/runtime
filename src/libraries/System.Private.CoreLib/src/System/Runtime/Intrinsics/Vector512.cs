@@ -3604,7 +3604,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<double> ShuffleNative(Vector512<double> vector, Vector512<long> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3619,7 +3619,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<short> ShuffleNative(Vector512<short> vector, Vector512<short> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3634,7 +3634,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<int> ShuffleNative(Vector512<int> vector, Vector512<int> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3649,7 +3649,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<long> ShuffleNative(Vector512<long> vector, Vector512<long> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3664,7 +3664,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<nint> ShuffleNative(Vector512<nint> vector, Vector512<nint> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3697,7 +3697,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<float> ShuffleNative(Vector512<float> vector, Vector512<int> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3713,7 +3713,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<ushort> ShuffleNative(Vector512<ushort> vector, Vector512<ushort> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3729,7 +3729,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<uint> ShuffleNative(Vector512<uint> vector, Vector512<uint> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3745,7 +3745,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<ulong> ShuffleNative(Vector512<ulong> vector, Vector512<ulong> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }
@@ -3761,7 +3761,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<nuint> ShuffleNative(Vector512<nuint> vector, Vector512<nuint> indices)
         {
 #if !MONO
-            if (IsHardwareAccelerated)
+            if (Avx512F.IsSupported)
             {
                 return ShuffleNative(vector, indices);
             }

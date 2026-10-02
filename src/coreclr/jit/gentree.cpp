@@ -20685,8 +20685,12 @@ unsigned GenTreeVecCon::ElementCount(unsigned simdSize, var_types simdBaseType)
     return simdSize / genTypeSize(simdBaseType);
 }
 
-bool Compiler::IsValidForShuffle(
-    GenTree* indices, unsigned simdSize, var_types simdBaseType, bool* canBecomeValid, bool isShuffleNative) const
+bool Compiler::IsValidForShuffle(GenTree*  indices,
+                                 unsigned  simdSize,
+                                 var_types simdBaseType,
+                                 bool*     canBecomeValid,
+                                 bool      isShuffleNative,
+                                 bool      mustExpand) const
 {
 #if defined(TARGET_XARCH)
     if (canBecomeValid != nullptr)
@@ -20696,9 +20700,14 @@ bool Compiler::IsValidForShuffle(
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
+    // A recursive ShuffleNative call is protected by an ISA support check in its managed body.
+    // Like an explicit hardware intrinsic, it can use an optimistic ISA under that runtime guard.
+    bool explicitIsa = isShuffleNative && mustExpand;
+
     if (simdSize == 32)
     {
-        if (!compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
+        if (!(explicitIsa ? compHWIntrinsicDependsOn(InstructionSet_AVX2, true)
+                          : compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative)))
         {
             // While we could accelerate some functions on hardware with only AVX support
             // it's likely not worth it overall given that IsHardwareAccelerated reports false
@@ -20707,7 +20716,9 @@ bool Compiler::IsValidForShuffle(
     }
     else if (simdSize == 64)
     {
-        if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
+        if (varTypeIsByte(simdBaseType) &&
+            !(explicitIsa ? compHWIntrinsicDependsOn(InstructionSet_AVX512v2, true)
+                          : compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative)))
         {
             // TYP_BYTE, TYP_UBYTE need AVX512v2.
             return false;
