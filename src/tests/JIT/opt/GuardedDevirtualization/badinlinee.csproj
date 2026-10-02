@@ -3,6 +3,8 @@
     <CLRTestPriority>1</CLRTestPriority>
     <Optimize>True</Optimize>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- GC stress allocates synthetic objects on the current thread, invalidating the zero-allocation assertion. -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
