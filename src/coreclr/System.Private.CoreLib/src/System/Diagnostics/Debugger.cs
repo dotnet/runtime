@@ -4,7 +4,6 @@
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
 
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -98,20 +97,20 @@ namespace System.Diagnostics
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [DebuggerHidden]
-        internal static unsafe void InvokeFunction(IntPtr methodHandle, IntPtr declaringTypeHandle, IntPtr* storage)
+#pragma warning disable CS8500
+        internal static unsafe void InvokeFunction(IntPtr context, IntPtr execute, object?* state)
+#pragma warning restore CS8500
         {
-            RuntimeType declaringType = RuntimeTypeHandle.GetRuntimeTypeFromHandle(declaringTypeHandle);
-            MethodBase? method = RuntimeType.GetMethodBase(declaringType, new RuntimeMethodHandleInternal(methodHandle));
-            Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
-
-            // Exceptions must reach the native func-eval handler without introducing a managed catch site.
-            if (method is RuntimeMethodInfo methodInfo)
+            if (execute == IntPtr.Zero)
             {
-                methodInfo.Invoker.InvokeForDebugger(storage);
+                *state = new FunctionEvaluation((FunctionEvaluation.Context*)context);
             }
             else
             {
-                ((RuntimeConstructorInfo)method!).InvokeForDebugger(storage);
+                object? evaluation = *state;
+                Debug.Assert(evaluation is FunctionEvaluation);
+                // Exceptions must reach the native catcher without a managed catch site.
+                ((FunctionEvaluation)evaluation).Invoke();
             }
         }
     }
