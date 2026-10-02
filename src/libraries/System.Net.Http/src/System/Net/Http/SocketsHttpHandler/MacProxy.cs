@@ -82,8 +82,16 @@ namespace System.Net.Http
         public Uri? GetProxy(Uri targetUri)
         {
             using (SafeCFDictionaryHandle systemProxySettings = CFNetworkCopySystemProxySettings())
+            {
+                return GetProxy(targetUri, systemProxySettings);
+            }
+        }
+
+        // Resolves the proxy for targetUri from proxy settings in the format returned by CFNetworkCopySystemProxySettings.
+        internal static Uri? GetProxy(Uri targetUri, SafeCFDictionaryHandle proxySettings)
+        {
             using (SafeCreateHandle cfurl = CFURLCreateWithString(targetUri.AbsoluteUri))
-            using (SafeCFArrayHandle proxies = CFNetworkCopyProxiesForURL(cfurl, systemProxySettings))
+            using (SafeCFArrayHandle proxies = CFNetworkCopyProxiesForURL(cfurl, proxySettings))
             {
                 long proxyCount = CFArrayGetCount(proxies);
                 for (int i = 0; i < proxyCount; i++)

@@ -259,7 +259,6 @@
     <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Fakes\HttpTelemetry.cs" />
-    <Compile Include="Fakes\MacProxy.cs" Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'" />
     <Compile Include="Headers\AltSvcHeaderParserTest.cs" />
     <Compile Include="Headers\AuthenticationHeaderParserTest.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
@@ -429,5 +428,30 @@
              Link="WinHttpHandler\UnitTests\APICallHistory.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\TestServer.cs"
              Link="WinHttpHandler\UnitTests\TestServer.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'maccatalyst'">
+    <Compile Include="MacProxyTest.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\MacProxy.cs"
+             Link="ProductionCode\System\Net\Http\SocketsHttpHandler\MacProxy.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.CoreFoundation.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFData.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.CoreFoundation.CFData.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFDictionary.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.CoreFoundation.CFDictionary.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFNumber.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.CoreFoundation.CFNumber.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFProxy.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.CoreFoundation.CFProxy.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFString.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.CoreFoundation.CFString.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFUrl.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.CoreFoundation.CFUrl.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.RunLoop.cs"
+             Link="ProductionCode\Common\Interop\OSX\Interop.RunLoop.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
+             Link="ProductionCode\Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
   </ItemGroup>
 </Project>
