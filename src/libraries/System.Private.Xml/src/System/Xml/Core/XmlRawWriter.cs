@@ -179,6 +179,12 @@ namespace System.Xml
             WriteString(data);
         }
 
+        // Forward call to WriteString(string).
+        internal virtual void WriteRaw(ReadOnlySpan<char> value)
+        {
+            WriteString(value.ToString());
+        }
+
         // Override in order to handle Xml simple typed values and to pass resolver for QName values
         public override void WriteValue(object value)
         {
