@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -17,6 +18,212 @@ namespace System.Reflection.Tests
         }
 
         protected override bool SupportsMissing => false;
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SharedThunk_CachedInvokerPromotes(bool useByRef)
+        {
+            MethodInfo method = typeof(CachedInvokerTarget).GetMethod(
+                useByRef ? nameof(CachedInvokerTarget.TryGetValue) : nameof(CachedInvokerTarget.Echo))!;
+            MethodInvoker invoker = MethodInvoker.Create(method);
+            var target = new CachedInvokerTarget();
+            object argument = new object();
+            object?[] arguments = { target, null };
+
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
+            {
+                if (useByRef)
+                {
+                    Assert.Equal(true, invoker.Invoke(null, arguments.AsSpan()));
+                    Assert.Same(target, arguments[1]);
+                }
+                else
+                {
+                    Assert.Same(argument, invoker.Invoke(target, argument));
+                }
+
+                if (i == 0 || i == IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold - 1)
+                {
+                    IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1, IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold);
+                }
+            }
+
+            Assert.Equal(IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold + 1, target.CallCount);
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker, IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold);
+        }
+
+        [Fact]
+        public void SharedThunk_ObjectMethodOnBoxedValueReceiverUsesSharedThunk()
+        {
+            MethodInfo method = typeof(object).GetMethod(nameof(object.ToString))!;
+            MethodInvoker invoker = MethodInvoker.Create(method);
+
+            // The virtual dispatch resolves to the struct's own unboxing(-and-instantiating) stub,
+            // which is self-contained and call-compatible with the shared thunk.
+            Assert.Equal("50", invoker.Invoke(new IntrinsicInvokeStructReceiver(50)));
+            IntrinsicInvokeSelectionAssertions.AssertShared(invoker);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Constructor_ExistingInstanceAcrossTiers(bool useSpan)
+        {
+            ConstructorInfo constructor = typeof(RefConstructorTarget).GetConstructor(new[] { typeof(int).MakeByRefType() });
+            MethodInvoker invoker = MethodInvoker.Create(constructor);
+            var target = (RefConstructorTarget)RuntimeHelpers.GetUninitializedObject(typeof(RefConstructorTarget));
+
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
+            {
+                if (useSpan)
+                {
+                    object[] arguments = { i };
+                    Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+                    Assert.Equal(i + 1, arguments[0]);
+                }
+                else
+                {
+                    Assert.Null(invoker.Invoke(target, i));
+                }
+
+                Assert.Equal(i, target.Value);
+            }
+        }
+
+        public sealed class RefConstructorTarget
+        {
+            public int Value;
+
+            public RefConstructorTarget(ref int value)
+            {
+                Value = value;
+                value++;
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void Constructor_AbstractDeclaringTypeWithExistingInstance()
+        {
+            ConstructorInfo constructor = typeof(AbstractRefConstructorTarget).GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                new[] { typeof(int).MakeByRefType() },
+                modifiers: null)!;
+            MethodInvoker invoker = MethodInvoker.Create(constructor);
+            int initialValue = -1;
+            var target = new ConcreteRefConstructorTarget(ref initialValue);
+            object?[] arguments = { 42 };
+
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(42, target.Value);
+            Assert.Equal(43, arguments[0]);
+
+            object?[] constructorArguments = { 84 };
+            Assert.Null(constructor.Invoke(target, constructorArguments));
+            Assert.Equal(84, target.Value);
+            Assert.Equal(85, constructorArguments[0]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void Constructor_AbstractDeclaringTypeWithExistingInstance_RegularArguments()
+        {
+            ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                new[] { typeof(int) },
+                modifiers: null)!;
+            MethodInvoker invoker = MethodInvoker.Create(constructor);
+            var target = new ConcreteRegularConstructorTarget(0);
+
+            Assert.Null(invoker.Invoke(target, 42));
+            Assert.Equal(42, target.Value);
+            Assert.Null(invoker.Invoke(target, 43));
+            Assert.Equal(43, target.Value);
+
+            object?[] arguments = { 44 };
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(44, target.Value);
+            arguments[0] = 45;
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(45, target.Value);
+
+            Assert.Throws<MemberAccessException>(() => invoker.Invoke(null, 46));
+            object?[] nullTargetArguments = { 47 };
+            Assert.Throws<MemberAccessException>(() => invoker.Invoke(null, nullTargetArguments.AsSpan()));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134901", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134903", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void Constructor_AbstractDeclaringTypeWithExistingInstance_ManyRegularArguments()
+        {
+            ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                new[]
+                {
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int)
+                },
+                modifiers: null)!;
+            MethodInvoker invoker = MethodInvoker.Create(constructor);
+            var target = new ConcreteRegularConstructorTarget(0);
+            object?[] arguments = { 1, 2, 3, 4, 5 };
+
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(15, target.Value);
+            arguments[0] = 10;
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(24, target.Value);
+        }
+
+        public abstract class AbstractRefConstructorTarget
+        {
+            public int Value;
+
+            protected AbstractRefConstructorTarget(ref int value)
+            {
+                Value = value;
+                value++;
+            }
+        }
+
+        public sealed class ConcreteRefConstructorTarget : AbstractRefConstructorTarget
+        {
+            public ConcreteRefConstructorTarget(ref int value) : base(ref value)
+            {
+            }
+        }
+
+        public abstract class AbstractRegularConstructorTarget
+        {
+            public int Value;
+
+            protected AbstractRegularConstructorTarget(int value)
+            {
+                Value = value;
+            }
+
+            protected AbstractRegularConstructorTarget(int a, int b, int c, int d, int e)
+            {
+                Value = a + b + c + d + e;
+            }
+        }
+
+        public sealed class ConcreteRegularConstructorTarget : AbstractRegularConstructorTarget
+        {
+            public ConcreteRegularConstructorTarget(int value) : base(value)
+            {
+            }
+        }
 
         [Fact]
         public void NullTypeValidation()
@@ -296,6 +503,27 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Invoke_TestData() => MethodInfoTests.Invoke_TestData();
+
+        private sealed class CachedInvokerTarget
+        {
+            internal int CallCount { get; private set; }
+
+            public static bool TryGetValue(CachedInvokerTarget target, out object result)
+            {
+                result = target.Echo(target);
+                return true;
+            }
+
+            public object Echo(object value)
+            {
+                if (CallCount++ == 0)
+                {
+                    GC.Collect();
+                }
+
+                return value;
+            }
+        }
 
         private class TestClass
         {
