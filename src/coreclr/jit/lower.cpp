@@ -7687,7 +7687,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     if (parent->OperIs(GT_STOREIND) && parent->AsIndir()->IsVolatile() &&
         m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(parent->AsStoreInd()))
     {
-        // Write barrier helpers require the address in a register, not an RCPC2 addressing mode.
+        // Early out here so we don't report an RCPC2 dependency for a store that will ultimately
+        // be a write barrier instead of a volatile RCPC2 store
         return false;
     }
 
@@ -7769,7 +7770,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    // Record the RCPC2 dependency only after all checks for creating the volatile addressing mode have passed.
     if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
         !m_compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
     {
