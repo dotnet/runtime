@@ -21,7 +21,7 @@
   <!-- Manually reference these assemblies which are provided by MSBuild / .NET SDK -->
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageDownloadAndReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" Folder="lib/net462" />
-    <PackageDownloadAndReference Include="System.Memory" Version="$(SystemMemoryToolsetVersion)" Folder="lib/net461" />
+    <PackageDownloadAndReference Include="System.Memory" Version="$(SystemMemoryToolsetVersion)" Folder="lib/net462" />
     <PackageDownloadAndReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" Folder="lib/net462" />
     <PackageDownloadAndReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" Folder="lib/net462" />
     <PackageDownloadAndReference Include="Microsoft.IO.Redist" Version="$(MicrosoftIoRedistToolsetVersion)" Folder="lib/net472" />

@@ -15,6 +15,14 @@
     <IntermediateOutputPath Condition="'$(TargetFramework)' == 'net8.0'">$(IntermediateOutputPath)net8.0\</IntermediateOutputPath>
   </PropertyGroup>
 
+  <!-- The internal .NET 8 package must continue to load in .NET 8 SDKs. -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <MicrosoftBuildVersion>17.11.48</MicrosoftBuildVersion>
+    <MicrosoftBuildFrameworkVersion>$(MicrosoftBuildVersion)</MicrosoftBuildFrameworkVersion>
+    <MicrosoftBuildUtilitiesCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildUtilitiesCoreVersion>
+    <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />

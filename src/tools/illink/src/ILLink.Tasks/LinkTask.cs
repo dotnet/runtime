@@ -11,6 +11,7 @@ using Microsoft.Build.Utilities;
 
 namespace ILLink.Tasks
 {
+    [MSBuildMultiThreadableTask]
     public class ILLink : ToolTask
     {
         /// <summary>
@@ -243,10 +244,11 @@ namespace ILLink.Tasks
                 if (!string.IsNullOrEmpty(_dotnetPath))
                     return _dotnetPath;
 
-                _dotnetPath = Environment.GetEnvironmentVariable(DotNetHostPathEnvironmentName);
+                _dotnetPath = TaskEnvironment.GetEnvironmentVariable(DotNetHostPathEnvironmentName);
                 if (string.IsNullOrEmpty(_dotnetPath))
                     throw new InvalidOperationException($"{DotNetHostPathEnvironmentName} is not set");
 
+                _dotnetPath = TaskEnvironment.GetAbsolutePath(_dotnetPath);
                 return _dotnetPath;
             }
         }
@@ -262,6 +264,9 @@ namespace ILLink.Tasks
 
         private string _illinkPath = "";
 
+        /// <summary>
+        /// Gets or sets the path to the linker assembly.
+        /// </summary>
         public string ILLinkPath
         {
             get
@@ -289,7 +294,7 @@ namespace ILLink.Tasks
         protected override string GenerateCommandLineCommands()
         {
             var args = new StringBuilder();
-            var path = ILLinkPath;
+            var path = TaskEnvironment.GetAbsolutePath(ILLinkPath);
             args.Append(Quote(path));
             Log.LogMessage(MessageImportance.Normal, $"ILLink.Tasks path: {path}");
 
@@ -309,11 +314,12 @@ namespace ILLink.Tasks
         protected override string GenerateResponseFileCommands()
         {
             var args = new StringBuilder();
+            AbsolutePath projectDirectory = TaskEnvironment.ProjectDirectory;
 
             if (RootDescriptorFiles != null)
             {
                 foreach (var rootFile in RootDescriptorFiles)
-                    args.Append("-x ").AppendLine(Quote(rootFile.ItemSpec));
+                    args.Append("-x ").AppendLine(Quote(new AbsolutePath(rootFile.ItemSpec, projectDirectory)));
             }
 
             foreach (var assemblyItem in RootAssemblyNames)
@@ -360,7 +366,7 @@ namespace ILLink.Tasks
             HashSet<string> assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var assembly in AssemblyPaths)
             {
-                var assemblyPath = assembly.ItemSpec;
+                var assemblyPath = new AbsolutePath(assembly.ItemSpec, projectDirectory);
                 var assemblyName = Path.GetFileNameWithoutExtension(assemblyPath);
 
                 // If there are multiple paths with the same assembly name, only use the first one.
@@ -422,7 +428,7 @@ namespace ILLink.Tasks
             {
                 foreach (var assembly in ReferenceAssemblyPaths)
                 {
-                    var assemblyPath = assembly.ItemSpec;
+                    var assemblyPath = new AbsolutePath(assembly.ItemSpec, projectDirectory);
                     var assemblyName = Path.GetFileNameWithoutExtension(assemblyPath);
 
                     // Don't process references for which we already have
@@ -440,7 +446,7 @@ namespace ILLink.Tasks
             }
 
             if (OutputDirectory != null)
-                args.Append("-out ").AppendLine(Quote(OutputDirectory.ItemSpec));
+                args.Append("-out ").AppendLine(Quote(new AbsolutePath(OutputDirectory.ItemSpec, projectDirectory)));
 
             if (NoWarn != null)
                 args.Append("--nowarn ").AppendLine(Quote(NoWarn));
@@ -519,7 +525,7 @@ namespace ILLink.Tasks
                 foreach (var customStep in CustomSteps)
                 {
                     args.Append("--custom-step ");
-                    var stepPath = customStep.ItemSpec;
+                    var stepPath = new AbsolutePath(customStep.ItemSpec, projectDirectory);
                     var stepType = customStep.GetMetadata("Type");
                     if (stepType == null)
                         throw new ArgumentException("custom step requires \"Type\" metadata");
