@@ -86,18 +86,22 @@ namespace System.Globalization
         /// <code>
         ///   [sign] 0x hexSignificand pExponent
         /// </code>
-        /// where <c>sign</c> is an optional <c>+</c> or <c>-</c>,
+        /// where <c>sign</c> is an optional <see cref="NumberFormatInfo.PositiveSign"/> or
+        /// <see cref="NumberFormatInfo.NegativeSign"/> string,
         /// <c>0x</c> (or <c>0X</c>) is a required hexadecimal indicator,
         /// <c>hexSignificand</c> is one of <c>hh</c>, <c>hh.</c>, <c>hh.hh</c>, or <c>.hh</c>
-        /// (where <c>hh</c> represents one or more hexadecimal digits), and
-        /// <c>pExponent</c> is a required <c>p</c> (or <c>P</c>) followed by an optional sign (<c>+</c> or <c>-</c>)
+        /// (where <c>.</c> represents <see cref="NumberFormatInfo.NumberDecimalSeparator"/> and
+        /// <c>hh</c> represents one or more hexadecimal digits), and
+        /// <c>pExponent</c> is a required <c>p</c> (or <c>P</c>) followed by an optional
+        /// <see cref="NumberFormatInfo.PositiveSign"/> or <see cref="NumberFormatInfo.NegativeSign"/> string
         /// and one or more decimal digits specifying an exponent in the radix of the floating-point format
         /// (for binary types such as <see cref="float"/> and <see cref="double"/>,
         /// the significand is multiplied by 2 raised to this power).
         /// </summary>
         /// <remarks>
-        /// The leading sign, exponent sign, and decimal separator use the corresponding
-        /// <see cref="NumberFormatInfo"/> properties of the format provider.
+        /// The leading and exponent signs use <see cref="NumberFormatInfo.PositiveSign"/> and
+        /// <see cref="NumberFormatInfo.NegativeSign"/>, and the decimal separator uses
+        /// <see cref="NumberFormatInfo.NumberDecimalSeparator"/> from the format provider.
         /// Use <see cref="CultureInfo.InvariantCulture"/> for culture-independent hexadecimal floating-point text.
         ///
         /// Note that unlike <see cref="HexNumber"/> for integer types (which rejects a "0x"/"0X" prefix),
