@@ -133,6 +133,11 @@ for arg in $cmake_extra_defines "${__UnprocessedCMakeArgs[@]}" "${cmake_extra_de
         -DCMAKE_TOOLCHAIN_FILE=*|-DCMAKE_TOOLCHAIN_FILE:*=*) compiler_inputs+=$'\n'"$arg" ;;
     esac
 done
+# The compiler's version, which changes when the compiler behind an unchanged path is replaced, e.g. by an
+# Xcode update (/usr/bin/clang is a shim) or a distro package upgrade.
+if [[ -n "${CC:-}" ]]; then
+    compiler_inputs+=$'\n'"$("$CC" --version 2>/dev/null | head -n 1)"
+fi
 # The cmake command, including any wrapper such as emcmake or scan-build, resolved to full paths.
 for tool in $cmake_command; do
     compiler_inputs+=$'\n'"$(command -v "$tool" || echo "$tool")"
