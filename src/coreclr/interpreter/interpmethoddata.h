@@ -79,8 +79,8 @@ public:
     InterpMethodDataBuilder();
     ~InterpMethodDataBuilder();
 
-    // Allocate space in a section and return a reference to it
-    InterpSectionRef AllocateInSection(InterpMethodDataSection section, uint32_t size, uint32_t alignment = 0);
+    // Reserve space in a section
+    void AllocateInSection(InterpMethodDataSection section, uint32_t size, uint32_t alignment = 0);
 
     // Set the bytecode section size (bytecodes are written directly by the compiler)
     void SetBytecodeSize(uint32_t sizeInBytes);
@@ -107,17 +107,17 @@ public:
     // Get the writable location for a section reference (for copying data during finalization)
     void* GetWritablePointer(void* baseAddressRW, InterpSectionRef ref) const;
 
-    // Helper: Allocate InterpMethod and return its reference
-    InterpSectionRef AllocateInterpMethod();
+    // Helper: Reserve space for InterpMethod
+    void AllocateInterpMethod();
 
     // Helper: Allocate data items array
-    InterpSectionRef AllocateDataItems(int32_t count);
+    void AllocateDataItems(int32_t count);
 
     // Helper: Allocate async suspend data
-    InterpSectionRef AllocateAsyncSuspendData();
+    void AllocateAsyncSuspendData();
 
     // Helper: Allocate interval map entries
-    InterpSectionRef AllocateIntervalMap(int32_t count);
+    void AllocateIntervalMap(int32_t count);
 
     bool IsFinalized() const { return m_finalized; }
 };

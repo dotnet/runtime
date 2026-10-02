@@ -31,8 +31,13 @@ void insertion_sort(RandomAccessIterator first, RandomAccessIterator last, Less 
 }
 
 // Sort the elements in range [first, last] using quick sort.
+// Keep the partition stacks out of the caller's small-input path on WASM.
 template <typename RandomAccessIterator, typename Less>
+#ifdef HOST_WASM
+NOINLINE void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less)
+#else
 void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less)
+#endif // HOST_WASM
 {
     // Avoid real recursion as it can be slower, at least due to the extra "less"
     // parameter that needs to be passed around. It's also likely to need more
@@ -179,7 +184,7 @@ void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less
 // Sort the elements in range [first, last) in ascending order, where the order
 // is defined by the specified "less" predicate. This implementation does not
 // use a stable sort algorithm.
-template<typename RandomAccessIterator, typename Less>
+template <typename RandomAccessIterator, typename Less>
 void sort(RandomAccessIterator first, RandomAccessIterator last, Less less)
 {
     assert(first <= last);
@@ -187,9 +192,18 @@ void sort(RandomAccessIterator first, RandomAccessIterator last, Less less)
 
     if (first != last)
     {
-        // For convenience, quick_sort sorts the [first, last] range
+        // The sorting helpers use the inclusive [first, last] range
         // so "last" needs to be adjusted accordingly.
-        quick_sort(first, last - 1, less);
+#ifdef HOST_WASM
+        if ((last - first) <= 8)
+        {
+            insertion_sort(first, last - 1, less);
+        }
+        else
+#endif // HOST_WASM
+        {
+            quick_sort(first, last - 1, less);
+        }
 
 #ifdef DEBUG
         for (RandomAccessIterator i = first; i != last - 1; ++i)
@@ -199,4 +213,4 @@ void sort(RandomAccessIterator first, RandomAccessIterator last, Less less)
 #endif // DEBUG
     }
 }
-}
+} // namespace jitstd

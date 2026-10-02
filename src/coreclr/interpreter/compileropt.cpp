@@ -5,6 +5,46 @@
 
 #include <algorithm>
 
+namespace
+{
+    template <typename TCallback>
+    void ForEachInsSVar(InterpInst *ins, const TCallback& callback)
+    {
+        int numSVars = g_interpOpSVars[ins->opcode];
+        if (numSVars)
+        {
+            for (int i = 0; i < numSVars; i++)
+            {
+                if (ins->sVars[i] == CALL_ARGS_SVAR)
+                {
+                    if (ins->info.pCallInfo && ins->info.pCallInfo->pCallArgs)
+                    {
+                        int32_t *callArgs = ins->info.pCallInfo->pCallArgs;
+                        while (*callArgs != CALL_ARGS_TERMINATOR)
+                        {
+                            callback(callArgs);
+                            callArgs++;
+                        }
+                    }
+                }
+                else
+                {
+                    callback(&ins->sVars[i]);
+                }
+            }
+        }
+    }
+
+    template <typename TCallback>
+    void ForEachInsVar(InterpInst *ins, const TCallback& callback)
+    {
+        ForEachInsSVar(ins, callback);
+
+        if (g_interpOpDVars[ins->opcode])
+            callback(&ins->dVar);
+    }
+}
+
 // Allocates the offset for var at the stack position identified by
 // *pPos while bumping the pointer to point to the next stack location
 int32_t InterpCompiler::AllocVarOffset(int32_t var, int32_t *pPos)
@@ -54,11 +94,6 @@ void InterpCompiler::SetVarLiveRange(int32_t var, InterpInst* ins)
     m_pVars[var].liveEnd = ins;
 }
 
-void InterpCompiler::SetVarLiveRangeCB(int32_t *pVar, void *pData)
-{
-    SetVarLiveRange(*pVar, (InterpInst*)pData);
-}
-
 void InterpCompiler::InitializeGlobalVar(int32_t var, int bbIndex)
 {
     // Check if already handled
@@ -75,11 +110,6 @@ void InterpCompiler::InitializeGlobalVar(int32_t var, int bbIndex)
         m_pVars[var].global = true;
         INTERP_DUMP("alloc global var %d to offset %d of size %d\n", var, m_pVars[var].offset, m_pVars[var].size);
     }
-}
-
-void InterpCompiler::InitializeGlobalVarCB(int32_t *pVar, void *pData)
-{
-    InitializeGlobalVar(*pVar, (int)(size_t)pData);
 }
 
 void InterpCompiler::InitializeGlobalVars()
@@ -105,7 +135,10 @@ void InterpCompiler::InitializeGlobalVars()
                     INTERP_DUMP("alloc global var %d to offset %d of size %d for ldloca\n", var, m_pVars[var].offset, m_pVars[var].size);
                 }
             }
-            ForEachInsVar(pIns, (void*)(size_t)pBB->index, &InterpCompiler::InitializeGlobalVarCB);
+            ForEachInsVar(pIns, [this, bbIndex = pBB->index](int32_t *pVar)
+            {
+                InitializeGlobalVar(*pVar, bbIndex);
+            });
         }
     }
 
@@ -295,7 +328,10 @@ void InterpCompiler::AllocOffsets()
                             // The arg of the call is no longer global
                             *callArgs = newVar;
                             // Also update liveness for this instruction
-                            ForEachInsVar(newInst, newInst, &InterpCompiler::SetVarLiveRangeCB);
+                            ForEachInsVar(newInst, [this, newInst](int32_t *pVar)
+                            {
+                                SetVarLiveRange(*pVar, newInst);
+                            });
                             insIndex++;
                         }
                         else
@@ -310,7 +346,10 @@ void InterpCompiler::AllocOffsets()
                 }
             }
             // Set liveStart and liveEnd for every referenced local that is not global
-            ForEachInsVar(pIns, pIns, &InterpCompiler::SetVarLiveRangeCB);
+            ForEachInsVar(pIns, [this, pIns](int32_t *pVar)
+            {
+                SetVarLiveRange(*pVar, pIns);
+            });
             insIndex++;
         }
         int32_t currentOffset = m_totalVarsStackSize;
