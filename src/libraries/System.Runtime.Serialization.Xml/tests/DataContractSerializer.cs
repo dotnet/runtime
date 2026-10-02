@@ -3695,6 +3695,7 @@ public static partial class DataContractSerializerTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_DataSet()
     {
 
