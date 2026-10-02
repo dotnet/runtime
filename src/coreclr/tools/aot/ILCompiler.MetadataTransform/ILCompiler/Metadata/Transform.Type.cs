@@ -237,8 +237,13 @@ namespace ILCompiler.Metadata
                 record.EnclosingType = enclosingType;
                 enclosingType.NestedTypes.Add(record);
 
+                // Nested types inherit the namespace of the outermost containing type.
+                // The enclosing metadata record may still be initializing, so walk the type system.
+                while (containingType.ContainingType != null)
+                    containingType = (Cts.MetadataType)containingType.ContainingType;
+
                 var namespaceDefinition =
-                    HandleNamespaceDefinition(containingType.Module, entity.ContainingType.GetNamespace());
+                    HandleNamespaceDefinition(containingType.Module, containingType.GetNamespace());
                 record.NamespaceDefinition = namespaceDefinition;
             }
             else
