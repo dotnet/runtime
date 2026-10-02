@@ -1325,7 +1325,7 @@ void DbgTransportSession::TransportWorker()
         // the debugger will eventually get bored waiting for us and shutdown the session, which will
         // terminate this loop.
         ConnStatus eStatus;
-        HRESULT hrConnect = E_FAIL;
+        hr = E_FAIL;
         {
             TransportLockHolder sLockHolder(m_sStateLock);
             m_fConnectInProgress = true;
@@ -1337,8 +1337,8 @@ void DbgTransportSession::TransportWorker()
         }
         else
         {
-            hrConnect = ConnectToChannel(m_pd, &m_channel);
-            if (SUCCEEDED(hrConnect))
+            hr = ConnectToChannel(m_pd, &m_channel);
+            if (SUCCEEDED(hr))
             {
                 eStatus = SCS_Success;
             }
@@ -1353,11 +1353,11 @@ void DbgTransportSession::TransportWorker()
         {
             TransportLockHolder sLockHolder(m_sStateLock);
             m_fConnectInProgress = false;
-            if (SUCCEEDED(hrConnect))
+            if (SUCCEEDED(hr))
                 m_hrConnectFailure = S_OK;
             else if (m_hrConnectFailure == S_OK)
-                m_hrConnectFailure = hrConnect;
-            else if (m_hrConnectFailure != hrConnect)
+                m_hrConnectFailure = hr;
+            else if (m_hrConnectFailure != hr)
                 m_hrConnectFailure = E_FAIL; // The attempts failed for different reasons.
         }
 
