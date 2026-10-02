@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    internal static class InvokerEmitUtil
+    internal static partial class InvokerEmitUtil
     {
         // If changed, update native stack walking code that also uses this prefix to ignore reflection frames.
         private const string InvokeStubPrefix = "InvokeStub_";
@@ -15,62 +15,6 @@ namespace System.Reflection
         internal unsafe delegate object? InvokeFunc_RefArgs(object? obj, IntPtr* refArguments);
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, Span<object?> arguments);
         internal delegate object? InvokeFunc_Obj4Args(object? obj, object? arg1, object? arg2, object? arg3, object? arg4);
-
-#if !MONO
-        internal unsafe delegate void InvokeFunc_Debugger(IntPtr* storage);
-
-        internal static InvokeFunc_Debugger CreateInvokeDelegate_Debugger(MethodBase method)
-        {
-            Debug.Assert(!method.ContainsGenericParameters);
-
-            Type[] delegateParameters = [typeof(object), typeof(IntPtr*)];
-            string declaringTypeName = method.DeclaringType is not null ? method.DeclaringType.Name + "." : string.Empty;
-            var dm = new DynamicMethod(
-                InvokeStubPrefix + declaringTypeName + method.Name,
-                returnType: typeof(void),
-                delegateParameters,
-                typeof(object).Module,
-                skipVisibility: true);
-
-            ILGenerator il = dm.GetILGenerator();
-
-            // Storage contains the receiver, explicit arguments, and return destination, all as byrefs.
-            if (!method.IsStatic)
-            {
-                EmitLoadRefArgument(il, 0, argumentArrayIndex: 1);
-                if (!method.DeclaringType!.IsValueType)
-                {
-                    il.Emit(OpCodes.Ldind_Ref);
-                }
-            }
-
-            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
-            EmitLoadRefArguments(il, parameters, argumentArrayIndex: 1, argumentOffset: 1);
-            EmitCall(il, method, emitNew: false, backwardsCompat: true);
-
-            if (method is MethodInfo methodInfo && methodInfo.ReturnType != typeof(void))
-            {
-                Type returnType = methodInfo.ReturnType;
-                LocalBuilder result = il.DeclareLocal(returnType);
-                il.Emit(OpCodes.Stloc, result);
-                EmitLoadRefArgument(il, parameters.Length + 1, argumentArrayIndex: 1);
-                il.Emit(OpCodes.Ldloc, result);
-
-                // Preserve byref identity and true nullable storage instead of reflection's boxing semantics.
-                if (returnType.IsByRef)
-                {
-                    il.Emit(OpCodes.Stind_I);
-                }
-                else
-                {
-                    il.Emit(OpCodes.Stobj, returnType.IsPointer || returnType.IsFunctionPointer ? typeof(IntPtr) : returnType);
-                }
-            }
-
-            il.Emit(OpCodes.Ret);
-            return (InvokeFunc_Debugger)dm.CreateDelegate(typeof(InvokeFunc_Debugger), target: null);
-        }
-#endif
 
         public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method, bool backwardsCompat)
         {

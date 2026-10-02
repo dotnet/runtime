@@ -1180,8 +1180,9 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
 
 // DebuggerIPCE_TypeArgData is used when sending type arguments
 // across to a funceval.  It contains the DebuggerIPCE_ExpandedTypeData describing the
-// essence of the type, but the typeHandle and other
-// BasicTypeData fields should be zero and will be ignored.
+// essence of the type. Type handles are normally zero and are ignored when
+// loading types. An enregistered func-eval value-type argument includes an already-loaded
+// layout handle in its first node, for GC protection of its snapshot before any type loading.
 // The DebuggerIPCE_ExpandedTypeData is then followed
 // by the required number of type arguments, each of which
 // will be a further DebuggerIPCE_TypeArgData record in the stream of

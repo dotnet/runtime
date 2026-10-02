@@ -71,7 +71,7 @@ namespace System.Reflection
 
         [StackTraceHidden]
         [DebuggerHidden]
-        internal unsafe void InvokeForDebugger(IntPtr* storage) => Invoker.InvokeForDebugger(storage);
+        internal InvokerEmitUtil.InvokeFunc_Debugger GetDebuggerInvokeDelegate() => Invoker.GetDebuggerInvokeDelegate();
 
         internal override bool CacheEquals(object? o) =>
             o is RuntimeConstructorInfo m && m.m_handle == m_handle &&

@@ -9376,6 +9376,8 @@ public:
 
 private:
 
+    void RefreshObjectCopy();
+
     // local cached copy of the value class
     BYTE *   m_pObjectCopy;
 
@@ -9383,6 +9385,7 @@ private:
     ValueHome * m_pValueHome;
 
     VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
+    bool m_isExternalMemory;
 };
 
 
