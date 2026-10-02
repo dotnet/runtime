@@ -364,7 +364,11 @@ namespace ILLink.Tasks
 
                 writer.Flush();
                 description.Position = 0;
+#if NET
+                inputHash = Convert.ToHexStringLower(sha256.ComputeHash(description));
+#else
                 inputHash = BitConverter.ToString(sha256.ComputeHash(description)).Replace("-", "").ToLowerInvariant();
+#endif
                 return true;
 
                 void AddFile(string path) => files.Add(Path.GetFullPath(path));

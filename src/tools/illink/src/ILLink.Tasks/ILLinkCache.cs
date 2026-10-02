@@ -266,9 +266,14 @@ internal sealed class ILLinkCache
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             directory = directory.ToUpperInvariant();
 
+#if NET
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(directory + "\n" + inputHash));
+        return @"Global\ILLinkCache-" + Convert.ToHexString(hash);
+#else
         using var sha256 = SHA256.Create();
         byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(directory + "\n" + inputHash));
         return @"Global\ILLinkCache-" + BitConverter.ToString(hash).Replace("-", "");
+#endif
     }
 
     private string ValidateOutputDirectory(string outputDirectory)
@@ -339,7 +344,7 @@ internal sealed class ILLinkCache
         foreach (string component in path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
         {
             if (component is "" or "." or ".." || component.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && (component.EndsWith(".", StringComparison.Ordinal) || component.EndsWith(" ", StringComparison.Ordinal))))
+                (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && component[component.Length - 1] is '.' or ' '))
                 throw new InvalidDataException("Invalid ILLink cache output path.");
         }
     }
