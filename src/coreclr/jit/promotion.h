@@ -21,14 +21,8 @@ struct Replacement
     unsigned    Offset;
     var_types   AccessType;
     unsigned    LclNum = BAD_VAR_NUM;
-    // Dense index into the inter-block pending-readback sets.
-    unsigned ReadBackIndex = BAD_VAR_NUM;
-    // Is the replacement local (given by LclNum) fresher than the value in the struct local?
-    bool NeedsWriteBack = true;
-    // Is the value in the struct local fresher than the replacement local?
-    // This may remain true across blocks when all incoming paths agree that
-    // the struct local contains the current value.
-    bool NeedsReadBack = false;
+    // Index in dense set of all replacements
+    unsigned ReplacementIndex = BAD_VAR_NUM;
 #ifdef DEBUG
     const char* Description = "";
 #endif
@@ -249,20 +243,40 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Promotion*         m_promotion;
     AggregateInfoMap&  m_aggregates;
     PromotionLiveness* m_liveness;
-    bool               m_madeChanges         = false;
-    unsigned           m_numPendingReadBacks = 0;
-    bool               m_mayHaveForwardSub   = false;
-    Statement*         m_currentStmt         = nullptr;
-    BasicBlock*        m_currentBlock        = nullptr;
+    bool               m_madeChanges       = false;
+    bool               m_mayHaveForwardSub = false;
+    Statement*         m_currentStmt       = nullptr;
+    BasicBlock*        m_currentBlock      = nullptr;
 
     FlowGraphDfsTree* m_dfsTree;
-    BitVecTraits*     m_readBackTraits;
+    BitVecTraits*     m_replacementsTraits;
     BitVecTraits      m_postOrderTraits;
     BitVec*           m_pendingReadBacks;
     BitVec*           m_currentStructFields;
-    BitVec            m_processedBlocks;
     BitVec            m_requiresAlreadyReadBackOnEntry;
     BitVec            m_requiresReadBackOnExit;
+
+    // Replacements that need to be read back into their locals.
+    BitVec m_needsReadBack;
+    // Replacements that are up-to-date in their struct home.
+    BitVec m_structCurrent;
+
+    // Scratch bit vector used to compute replacements that disagree on status
+    // in some predecessors.
+    BitVec m_reconcileReadBacks;
+    // Replacements that need readbacks in the entry block (parameters/OSR locals).
+    BitVec m_entryReadBacks;
+    // Set of replacements with no bits set, used for the common case where a
+    // block ends with no pending readbacks.
+    BitVec m_emptyReplacements;
+
+    struct ReplacementInfo
+    {
+        AggregateInfo* Aggregate;
+        unsigned       Index;
+    };
+
+    ReplacementInfo* m_replacementInfo;
 
 public:
     enum
@@ -289,9 +303,9 @@ public:
         return m_mayHaveForwardSub;
     }
 
-    Statement* StartBlock(BasicBlock* block);
-    void       EndBlock();
-    void       StartStatement(Statement* stmt);
+    void StartBlock(BasicBlock* block);
+    void EndBlock();
+    void StartStatement(Statement* stmt);
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
@@ -299,6 +313,16 @@ private:
     void PlanReadBacks();
     bool MustMaterializeReadBacks(BasicBlock* block);
     void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep);
+
+    bool NeedsReadBack(const Replacement& rep) const
+    {
+        return BitVecOps::IsMember(m_replacementsTraits, m_needsReadBack, rep.ReplacementIndex);
+    }
+
+    bool NeedsWriteBack(const Replacement& rep) const
+    {
+        return !BitVecOps::IsMember(m_replacementsTraits, m_structCurrent, rep.ReplacementIndex);
+    }
 
     void SetNeedsWriteBack(Replacement& rep);
     void ClearNeedsWriteBack(Replacement& rep);
