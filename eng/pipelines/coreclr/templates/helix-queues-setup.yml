@@ -66,7 +66,7 @@ jobs:
     # Android x64
     - ${{ if in(parameters.platform, 'android_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - ${{ if eq(variables['isAndroidEmulatorOnlyBuild'], true) }}:
+        - ${{ if eq(variables['Build.DefinitionName'], 'runtime-androidemulator') }}:
           - Ubuntu.2204.Amd64.Android.24.Open
           - Ubuntu.2204.Amd64.Android.25.Open
           - Ubuntu.2204.Amd64.Android.26.Open
