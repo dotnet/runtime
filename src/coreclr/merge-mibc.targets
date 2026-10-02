@@ -1,0 +1,6 @@
+<Project>
+
+  <Target Name="GetTargetPath"
+          Returns="@(MergedMibcFile)" />
+
+</Project>

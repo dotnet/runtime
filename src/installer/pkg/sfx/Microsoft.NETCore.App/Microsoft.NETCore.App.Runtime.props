@@ -1,4 +1,27 @@
 <Project>
+  <ItemGroup>
+    <ProjectReference Include="$(CoreLibProject)"
+                      AdditionalProperties="BuildAllProjects=true"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_RuntimeCoreLibFile"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreLibConfiguration)"
+                      SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="$(SharedNativeRoot)libs\build-native.proj"
+                      AdditionalProperties="RuntimeFlavor=$(LibrariesRuntimeFlavor)"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;TargetFramework"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)sfx-src.proj"
+                      AdditionalProperties="RuntimeFlavor=$(LibrariesRuntimeFlavor)"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_NetCoreAppLibrarySourceAssembly"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
   <PropertyGroup>
     <IncludeFallbacksInDepsFile>true</IncludeFallbacksInDepsFile>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
@@ -34,7 +57,8 @@
     <_SymbolFilesToPackage Include="@(_HostSymbolFiles->Exists())" IsNative="true" />
   </ItemGroup>
 
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+  <Target Name="AddRuntimeFilesToPackage"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <RuntimeFiles Condition="'%(RuntimeFiles.IsNative)' == 'true'">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native</TargetPath>
@@ -44,10 +68,18 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+  <Target Name="AddFrameworkFilesToPackage"
+          DependsOnTargets="ResolveProjectReferences;ResolveLibrariesNativeRuntimeFilesFromLocalBuild">
     <ItemGroup>
+      <_NetCoreAppLibraryRuntimeAssembly Include="@(_NetCoreAppLibrarySourceAssembly)"
+                                         Condition="'%(_NetCoreAppLibrarySourceAssembly.Extension)' == '.dll' and '%(_NetCoreAppLibrarySourceAssembly.Filename)' != 'System.Private.CoreLib'" />
+      <_NetCoreAppLibraryRuntimeAssemblySymbols Include="@(_NetCoreAppLibraryRuntimeAssembly->'%(RootDir)%(Directory)%(Filename).pdb')" />
+      <_NetCoreAppLibraryRuntimeAssemblySymbols Remove="@(_NetCoreAppLibraryRuntimeAssemblySymbols)"
+                                                Condition="!Exists('%(_NetCoreAppLibraryRuntimeAssemblySymbols.Identity)')" />
+      <ReferenceCopyLocalPaths Include="@(_NetCoreAppLibraryRuntimeAssembly);
+                                        @(_NetCoreAppLibraryRuntimeAssemblySymbols)" />
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)"
-        Condition="'%(LibrariesRuntimeFiles.Extension)' != '$(StaticLibSuffix)' or '$(IncludeStaticLibrariesInPack)' == 'true'">
+                               Condition="'%(LibrariesRuntimeFiles.Extension)' != '$(StaticLibSuffix)' or '$(IncludeStaticLibrariesInPack)' == 'true'">
         <TargetPath Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''">runtimes/$(RuntimeIdentifier)/native/%(LibrariesRuntimeFiles.NativeSubDirectory)%(RecursiveDir)</TargetPath>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
