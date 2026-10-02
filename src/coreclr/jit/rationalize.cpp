@@ -429,6 +429,35 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             }
 
             result = m_compiler->gtNewSimdShuffleNode(retType, op1, op2, simdBaseType, simdSize, isShuffleNative);
+
+            if (result == op1)
+            {
+                // The simd shuffle folded to op1. That means op2 should be a vector constant,
+                // and we can simply remove the shuffle (hwintrinsic) and the constant (op2) from the block range, and
+                // replace the shuffle with op1 with no node re-sequencing.
+                assert(op2->IsCnsVec());
+                JITDUMP("Removing outer identity shuffle:\n");
+                DISPNODE(hwintrinsic);
+                DISPNODE(op2);
+                BlockRange().Remove(hwintrinsic);
+                BlockRange().Remove(op2);
+
+                if (parents.Height() > 1)
+                {
+                    parents.Top(1)->ReplaceOperand(use, result);
+                }
+                else
+                {
+                    *use = result;
+                }
+                // Since "hwintrinsic" is replaced with "result", pop "hwintrinsic" node (i.e the current node)
+                // and replace it with "result" on parent stack.
+                assert(parents.Top() == hwintrinsic);
+                (void)parents.Pop();
+                parents.Push(result);
+                return;
+            }
+
             break;
         }
 
@@ -2394,24 +2423,32 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 // particular statement, link that statement's nodes into the current basic block.
 Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree** use, GenTree* user)
 {
-    GenTree* const node = *use;
+    GenTree* node;
 
-    if (node->OperIs(GT_INTRINSIC))
+    // The below is a loop, because rewriting an intrinsic or HW intrinsic as a user call
+    // may replace the node with another node which also needs the same pre-order processing.
+    // Continue until no replacement is made.
+    do
     {
-        if (m_rationalizer.m_compiler->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
+        node = *use;
+
+        if (node->OperIs(GT_INTRINSIC))
         {
-            m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
+            if (m_rationalizer.m_compiler->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
+            {
+                m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
+            }
         }
-    }
 #if defined(FEATURE_HW_INTRINSICS)
-    else if (node->OperIsHWIntrinsic())
-    {
-        if (node->AsHWIntrinsic()->IsUserCall())
+        else if (node->OperIsHWIntrinsic())
         {
-            m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors);
+            if (node->AsHWIntrinsic()->IsUserCall())
+            {
+                m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors);
+            }
         }
-    }
 #endif // FEATURE_HW_INTRINSICS
+    } while (*use != node);
 
 #ifdef TARGET_ARM64
     if (node->OperIs(GT_SUB))
