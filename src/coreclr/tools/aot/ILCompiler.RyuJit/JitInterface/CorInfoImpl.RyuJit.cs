@@ -1941,11 +1941,7 @@ namespace Internal.JitInterface
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
             MethodDesc md = HandleToObject(method);
-
-            Utf8String externName = new Utf8String(_compilation.PInvokeILProvider.GetDirectCallExternName(md));
-            externName = _compilation.NodeFactory.NameMangler.NodeMangler.ExternMethod(externName, md);
-
-            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DirectPInvokeTarget(externName, md));
+            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DirectPInvokeTarget(md));
         }
 
         private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)

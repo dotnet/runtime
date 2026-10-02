@@ -272,13 +272,17 @@ namespace ILCompiler.DependencyAnalysis
                 return new FieldRvaDataNode(key);
             });
 
-            _externFunctionSymbols = new NodeCache<ExternFunctionKey, ExternFunctionSymbolNode>(static (ExternFunctionKey key) =>
+            _directPInvokes = new NodeCache<MethodDesc, ExternFunctionSymbolNode>((MethodDesc key) =>
             {
-                return new ExternFunctionSymbolNode(key.Name, key.TypeSignature);
+                Utf8String externName = new Utf8String(InteropStubManager.GetDirectCallExternName(key));
+                externName = NameMangler.NodeMangler.ExternMethod(externName, key);
+
+                return new ExternFunctionSymbolNode(externName, key.Signature, isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false);
             });
+
             _externIndirectFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
-                return new ExternFunctionSymbolNode(name, typeSignature: null, isIndirection: true);
+                return new ExternFunctionSymbolNode(name, signature: null, false, false, false, isIndirection: true);
             });
             _externDataSymbols = new NodeCache<Utf8String, ExternDataSymbolNode>((Utf8String name) =>
             {
@@ -436,7 +440,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new ExternFunctionSymbolNode(
                     KnownExternFunctions.GetName(id, TypeSystemContext.Target),
-                    KnownExternFunctions.GetTypeSignature(id, TypeSystemContext));
+                    KnownExternFunctions.GetSignature(id, TypeSystemContext),
+                    isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false);
             });
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
@@ -1002,31 +1007,6 @@ namespace ILCompiler.DependencyAnalysis
             return _genericVariances.GetOrAdd(details);
         }
 
-        private NodeCache<ExternFunctionKey, ExternFunctionSymbolNode> _externFunctionSymbols;
-
-        /// <summary>
-        /// Gets the node for an extern function. Nodes are keyed by name alone, so every reference to the
-        /// same symbol (e.g. a JIT helper and a direct P/Invoke to the same native function) shares one node,
-        /// and on Wasm all references must agree on its lowered function type.
-        /// </summary>
-        private ExternFunctionSymbolNode ExternFunctionSymbol(Utf8String name, ExternalTypeSignature? typeSignature)
-        {
-            ExternFunctionSymbolNode node = _externFunctionSymbols.GetOrAdd(new ExternFunctionKey(name, typeSignature));
-            // Distinct managed types can describe the same native ABI. In the a case like shared pinvoke source with
-            // different managed enum types, fall back to checking the lowered ABI is at least the same.
-            Debug.Assert(!Target.IsWasm || node.TypeSignature == typeSignature ||
-                Equals(
-                    WasmLowering.GetSignature(node),
-                    typeSignature.HasValue ?
-                        WasmLowering.GetSignature(typeSignature.Value.Signature,
-                                                  typeSignature.Value.HasGenericContextArg,
-                                                  typeSignature.Value.IsAsyncCall,
-                                                  typeSignature.Value.IsUnmanagedCallersOnly)
-                        : null),
-                $"Conflicting signatures for extern function '{name}'");
-            return node;
-        }
-
         private NodeCache<Utf8String, ExternFunctionSymbolNode> _externIndirectFunctionSymbols;
 
         public ISortableSymbolNode ExternIndirectFunctionSymbol(Utf8String name)
@@ -1034,9 +1014,10 @@ namespace ILCompiler.DependencyAnalysis
             return _externIndirectFunctionSymbols.GetOrAdd(name);
         }
 
-        public ExternFunctionSymbolNode DirectPInvokeTarget(Utf8String externName, MethodDesc pInvoke)
+        private NodeCache<MethodDesc, ExternFunctionSymbolNode> _directPInvokes;
+        public ExternFunctionSymbolNode DirectPInvokeTarget(MethodDesc method)
         {
-            return ExternFunctionSymbol(externName, ExternalTypeSignature.Unmanaged(pInvoke.Signature));
+            return _directPInvokes.GetOrAdd(method);
         }
 
         private NodeCache<Utf8String, ExternDataSymbolNode> _externDataSymbols;
@@ -1884,24 +1865,6 @@ namespace ILCompiler.DependencyAnalysis
             public override bool Equals(object obj) => obj is SerializedFrozenObjectKey && Equals((SerializedFrozenObjectKey)obj);
             public bool Equals(SerializedFrozenObjectKey other) => OwnerType == other.OwnerType && AllocationSiteId == other.AllocationSiteId;
             public override int GetHashCode() => HashCode.Combine(OwnerType.GetHashCode(), AllocationSiteId);
-        }
-
-        private struct ExternFunctionKey : IEquatable<ExternFunctionKey>
-        {
-            public readonly Utf8String Name;
-
-            // Used to create the node, but not part of the key's identity
-            public readonly ExternalTypeSignature? TypeSignature;
-
-            public ExternFunctionKey(Utf8String name, ExternalTypeSignature? typeSignature)
-            {
-                Name = name;
-                TypeSignature = typeSignature;
-            }
-
-            public bool Equals(ExternFunctionKey other) => Name.Equals(other.Name);
-            public override bool Equals(object obj) => obj is ExternFunctionKey other && Equals(other);
-            public override int GetHashCode() => Name.GetHashCode();
         }
 
         private struct MethodILKey : IEquatable<MethodILKey>

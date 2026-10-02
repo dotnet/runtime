@@ -61,61 +61,29 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
-    /// Signature information for an extern function, used to type its import on Wasm.
-    /// </summary>
-    public readonly record struct ExternalTypeSignature(
-        MethodSignature Signature,
-        bool IsUnmanagedCallersOnly,
-        bool IsAsyncCall,
-        bool HasGenericContextArg)
-    {
-        /// <summary>
-        /// Signature for a native target, such as a direct P/Invoke or a native runtime helper.
-        /// </summary>
-        public static ExternalTypeSignature Unmanaged(MethodSignature signature)
-            => new ExternalTypeSignature(signature, IsUnmanagedCallersOnly: true, IsAsyncCall: false, HasGenericContextArg: false);
-
-        /// <summary>
-        /// Signature for managed code that is referenced by name.
-        /// </summary>
-        // Keep aligned with IMethodCodeNodeWithTypeSignature
-        public static ExternalTypeSignature FromMethod(MethodDesc method)
-            => new ExternalTypeSignature(
-                method.Signature,
-                method.IsUnmanagedCallersOnly,
-                method.IsAsyncCall(),
-                method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg() || method.IsArrayAddressMethod());
-    }
-
-    /// <summary>
     /// Represents a function symbol that is defined externally and statically linked to the output obj file.
     /// </summary>
     public class ExternFunctionSymbolNode : ExternSymbolNode, INodeWithTypeSignature
     {
-        private readonly ExternalTypeSignature? _typeSignature;
+        private readonly MethodSignature _signature;
+        private readonly bool _isUnmanagedCallersOnly;
+        private readonly bool _isAsyncCall;
+        private readonly bool _hasGenericContextArg;
 
-        public ExternFunctionSymbolNode(Utf8String name, ExternalTypeSignature? typeSignature, bool isIndirection = false)
+        public ExternFunctionSymbolNode(Utf8String name, MethodDesc method, bool isIndirection = false)
+            : this(name, method.Signature, method.IsUnmanagedCallersOnly, method.IsAsyncCall(), method.RequiresInstArg() || method.IsArrayAddressMethod(), isIndirection)
+        { }
+
+        public ExternFunctionSymbolNode(Utf8String name, MethodSignature signature, bool isUnmanagedCallersOnly, bool isAsyncCall, bool hasGenericContextArg, bool isIndirection = false)
             : base(name, isIndirection)
-        {
-            _typeSignature = typeSignature;
-        }
+            => (_signature, _isUnmanagedCallersOnly, _isAsyncCall, _hasGenericContextArg) = (signature, isUnmanagedCallersOnly, isAsyncCall, hasGenericContextArg);
 
         public override int ClassCode => 1452455506;
 
-        /// <summary>
-        /// The signature of the function, or null if it has no standard-ABI signature.
-        /// </summary>
-        public ExternalTypeSignature? TypeSignature => _typeSignature;
-
-        MethodSignature INodeWithTypeSignature.Signature => _typeSignature?.Signature;
-        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => _typeSignature.Value.IsUnmanagedCallersOnly;
-        bool INodeWithTypeSignature.IsAsyncCall => _typeSignature.Value.IsAsyncCall;
-        bool INodeWithTypeSignature.HasGenericContextArg => _typeSignature.Value.HasGenericContextArg;
-    }
-
-    public class AddressTakenExternFunctionSymbolNode(Utf8String name) : ExternFunctionSymbolNode(name, typeSignature: null)
-    {
-        public override int ClassCode => -45645737;
+        MethodSignature INodeWithTypeSignature.Signature => _signature;
+        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => _isUnmanagedCallersOnly;
+        bool INodeWithTypeSignature.IsAsyncCall => _isAsyncCall;
+        bool INodeWithTypeSignature.HasGenericContextArg => _hasGenericContextArg;
     }
 
     /// <summary>

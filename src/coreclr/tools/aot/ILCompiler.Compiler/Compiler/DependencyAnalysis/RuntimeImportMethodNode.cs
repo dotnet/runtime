@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeImportMethodNode(MethodDesc method, NameMangler nameMangler)
             : base(nameMangler.NodeMangler.ExternMethod(new Utf8String(((EcmaMethod)method).GetRuntimeImportName()), method),
-                  ExternalTypeSignature.FromMethod(method))
+                  method)
         {
             _method = method;
         }

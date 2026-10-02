@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Extern function nodes are shared by name, so when a function is also reachable through a direct
         /// P/Invoke (e.g. CoreLib's memset), its signature must exactly match that P/Invoke's signature.
         /// </remarks>
-        public static ExternalTypeSignature? GetTypeSignature(ReadyToRunHelper function, TypeSystemContext context)
+        public static MethodSignature GetSignature(ReadyToRunHelper function, TypeSystemContext context)
         {
             TypeDesc voidType = context.GetWellKnownType(WellKnownType.Void);
             TypeDesc voidPointerType = voidType.MakePointerType();
@@ -116,23 +116,22 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc singleType = context.GetWellKnownType(WellKnownType.Single);
             TypeDesc doubleType = context.GetWellKnownType(WellKnownType.Double);
 
-            // All of these use the unmanaged calling convention, like the native FCIMPLs that implement most of them.
-            ExternalTypeSignature UnmanagedSignature(TypeDesc returnType, params TypeDesc[] parameters) =>
-                ExternalTypeSignature.Unmanaged(new MethodSignature(MethodSignatureFlags.Static, 0, returnType, parameters));
+            MethodSignature MakeSignature(TypeDesc returnType, params TypeDesc[] parameters) =>
+                new MethodSignature(MethodSignatureFlags.Static, 0, returnType, parameters);
 
             return function switch
             {
-                ReadyToRunHelper.Throw => UnmanagedSignature(voidType, objectType),
-                ReadyToRunHelper.ThrowExact => UnmanagedSignature(voidType, objectType),
+                ReadyToRunHelper.Throw => MakeSignature(voidType, objectType),
+                ReadyToRunHelper.ThrowExact => MakeSignature(voidType, objectType),
 
-                ReadyToRunHelper.Rethrow => UnmanagedSignature(voidType),
+                ReadyToRunHelper.Rethrow => MakeSignature(voidType),
 
-                ReadyToRunHelper.FailFast => UnmanagedSignature(voidType),
+                ReadyToRunHelper.FailFast => MakeSignature(voidType),
 
-                ReadyToRunHelper.DebugBreak => UnmanagedSignature(voidType),
+                ReadyToRunHelper.DebugBreak => MakeSignature(voidType),
 
-                ReadyToRunHelper.WriteBarrier => UnmanagedSignature(voidType, nativeIntType, objectType),
-                ReadyToRunHelper.CheckedWriteBarrier => UnmanagedSignature(voidType, nativeIntType, objectType),
+                ReadyToRunHelper.WriteBarrier => MakeSignature(voidType, nativeIntType, objectType),
+                ReadyToRunHelper.CheckedWriteBarrier => MakeSignature(voidType, nativeIntType, objectType),
 
                 ReadyToRunHelper.WriteBarrier_EAX or
                 ReadyToRunHelper.WriteBarrier_EBX or
@@ -147,46 +146,46 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunHelper.CheckedWriteBarrier_ESI or
                 ReadyToRunHelper.CheckedWriteBarrier_EBP => null,
 
-                ReadyToRunHelper.BulkWriteBarrierSmall => UnmanagedSignature(voidType, nativeIntType, nativeIntType, nativeUIntType),
+                ReadyToRunHelper.BulkWriteBarrierSmall => MakeSignature(voidType, nativeIntType, nativeIntType, nativeUIntType),
 
-                ReadyToRunHelper.NewArray => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
-                ReadyToRunHelper.NewObject => UnmanagedSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewArray => MakeSignature(objectType, nativeIntType, nativeIntType),
+                ReadyToRunHelper.NewObject => MakeSignature(objectType, nativeIntType),
 
-                ReadyToRunHelper.NewFast => UnmanagedSignature(objectType, nativeIntType),
-                ReadyToRunHelper.NewFinalizable => UnmanagedSignature(objectType, nativeIntType),
-                ReadyToRunHelper.NewFastAlign8 => UnmanagedSignature(objectType, nativeIntType),
-                ReadyToRunHelper.NewFinalizableAlign8 => UnmanagedSignature(objectType, nativeIntType),
-                ReadyToRunHelper.NewFastMisalign => UnmanagedSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFast => MakeSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFinalizable => MakeSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFastAlign8 => MakeSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFinalizableAlign8 => MakeSignature(objectType, nativeIntType),
+                ReadyToRunHelper.NewFastMisalign => MakeSignature(objectType, nativeIntType),
 
-                ReadyToRunHelper.NewPtrArrayFast => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
-                ReadyToRunHelper.NewArrayFastAlign8 => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
-                ReadyToRunHelper.NewArrayFast => UnmanagedSignature(objectType, nativeIntType, nativeIntType),
+                ReadyToRunHelper.NewPtrArrayFast => MakeSignature(objectType, nativeIntType, nativeIntType),
+                ReadyToRunHelper.NewArrayFastAlign8 => MakeSignature(objectType, nativeIntType, nativeIntType),
+                ReadyToRunHelper.NewArrayFast => MakeSignature(objectType, nativeIntType, nativeIntType),
 
-                ReadyToRunHelper.NativeMemSet => UnmanagedSignature(voidPointerType, voidPointerType, int32Type, nativeUIntType),
-                ReadyToRunHelper.DblRem => UnmanagedSignature(doubleType, doubleType, doubleType),
-                ReadyToRunHelper.FltRem => UnmanagedSignature(singleType, singleType, singleType),
+                ReadyToRunHelper.NativeMemSet => MakeSignature(voidPointerType, voidPointerType, int32Type, nativeUIntType),
+                ReadyToRunHelper.DblRem => MakeSignature(doubleType, doubleType, doubleType),
+                ReadyToRunHelper.FltRem => MakeSignature(singleType, singleType, singleType),
 
-                ReadyToRunHelper.Lng2Dbl => UnmanagedSignature(doubleType, int64Type),
-                ReadyToRunHelper.ULng2Dbl => UnmanagedSignature(doubleType, uint64Type),
-                ReadyToRunHelper.Lng2Flt => UnmanagedSignature(singleType, int64Type),
-                ReadyToRunHelper.ULng2Flt => UnmanagedSignature(singleType, uint64Type),
-                ReadyToRunHelper.Dbl2Lng => UnmanagedSignature(int64Type, doubleType),
-                ReadyToRunHelper.Dbl2ULng => UnmanagedSignature(uint64Type, doubleType),
+                ReadyToRunHelper.Lng2Dbl => MakeSignature(doubleType, int64Type),
+                ReadyToRunHelper.ULng2Dbl => MakeSignature(doubleType, uint64Type),
+                ReadyToRunHelper.Lng2Flt => MakeSignature(singleType, int64Type),
+                ReadyToRunHelper.ULng2Flt => MakeSignature(singleType, uint64Type),
+                ReadyToRunHelper.Dbl2Lng => MakeSignature(int64Type, doubleType),
+                ReadyToRunHelper.Dbl2ULng => MakeSignature(uint64Type, doubleType),
 
-                ReadyToRunHelper.LMul => UnmanagedSignature(int64Type, int64Type, int64Type),
-                ReadyToRunHelper.LRsz => UnmanagedSignature(uint64Type, uint64Type, int32Type),
-                ReadyToRunHelper.LRsh => UnmanagedSignature(int64Type, int64Type, int32Type),
-                ReadyToRunHelper.LLsh => UnmanagedSignature(int64Type, int64Type, int32Type),
+                ReadyToRunHelper.LMul => MakeSignature(int64Type, int64Type, int64Type),
+                ReadyToRunHelper.LRsz => MakeSignature(uint64Type, uint64Type, int32Type),
+                ReadyToRunHelper.LRsh => MakeSignature(int64Type, int64Type, int32Type),
+                ReadyToRunHelper.LLsh => MakeSignature(int64Type, int64Type, int32Type),
 
-                ReadyToRunHelper.PInvokeBegin => UnmanagedSignature(voidType, nativeIntType),
-                ReadyToRunHelper.PInvokeEnd => UnmanagedSignature(voidType, nativeIntType),
-                ReadyToRunHelper.ReversePInvokeEnter => UnmanagedSignature(voidType, nativeIntType),
-                ReadyToRunHelper.ReversePInvokeExit => UnmanagedSignature(voidType, nativeIntType),
+                ReadyToRunHelper.PInvokeBegin => MakeSignature(voidType, nativeIntType),
+                ReadyToRunHelper.PInvokeEnd => MakeSignature(voidType, nativeIntType),
+                ReadyToRunHelper.ReversePInvokeEnter => MakeSignature(voidType, nativeIntType),
+                ReadyToRunHelper.ReversePInvokeExit => MakeSignature(voidType, nativeIntType),
 
-                ReadyToRunHelper.GCPoll => UnmanagedSignature(voidType),
+                ReadyToRunHelper.GCPoll => MakeSignature(voidType),
 
-                ReadyToRunHelper.GVMLookupForSlot => UnmanagedSignature(nativeIntType, objectType, nativeIntType),
-                ReadyToRunHelper.ResolveInterfaceMethod => UnmanagedSignature(nativeIntType, objectType, nativeIntType),
+                ReadyToRunHelper.GVMLookupForSlot => MakeSignature(nativeIntType, objectType, nativeIntType),
+                ReadyToRunHelper.ResolveInterfaceMethod => MakeSignature(nativeIntType, objectType, nativeIntType),
                 ReadyToRunHelper.ResolveInterfaceMethodFast => throw new NotImplementedException(
                     $"{nameof(ReadyToRunHelper.ResolveInterfaceMethodFast)} is not implemented by the runtime."),
 
