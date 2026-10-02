@@ -109,7 +109,7 @@ test("production wrapper rejects incomplete results", async () => {
 test("production wrapper rejects truncated results", async () => {
     await assert.rejects(
         runProductionSearch({ ...validResult(), total_count: 11 }),
-        /invalid response/
+        /more matches than the page limit/
     );
 });
 
@@ -141,7 +141,10 @@ test("eval search wrapper rejects incomplete results", async () => {
 
 test("eval search wrapper rejects truncated results", async () => {
     const runApi = async () => ({ ...validResult(), total_count: 11 });
-    await assert.rejects(searchKbeIssues("query", testToken, runApi), /invalid response/);
+    await assert.rejects(
+        searchKbeIssues("query", testToken, runApi),
+        /more matches than the page limit/
+    );
 });
 
 test("eval search wrapper rejects malformed candidates", async () => {
