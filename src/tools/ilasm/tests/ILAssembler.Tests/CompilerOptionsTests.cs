@@ -226,6 +226,34 @@ namespace ILAssembler.Tests
                         .locals init (int64 V_0)
                         ret
                     }
+                    .method public static void FirstBranch() cil managed
+                    {
+                        br.s Done
+                        Done: ret
+                    }
+                    .method public static void SecondBranch() cil managed
+                    {
+                        br.s Done
+                        Done: ret
+                    }
+                    .method public static void FirstFinally() cil managed
+                    {
+                        .try { leave.s Done }
+                        finally { endfinally }
+                        Done: ret
+                    }
+                    .method public static void SecondFinally() cil managed
+                    {
+                        .try { leave.s Done }
+                        finally { endfinally }
+                        Done: ret
+                    }
+                    .method public static void DifferentHandler() cil managed
+                    {
+                        .try { leave.s Done }
+                        fault { endfinally }
+                        Done: ret
+                    }
                 }
                 """;
 
@@ -238,12 +266,16 @@ namespace ILAssembler.Tests
             Assert.NotEqual(0, methods["First"]);
             Assert.Equal(fold, methods["First"] == methods["Second"]);
             Assert.Equal(fold, methods["FirstLocals"] == methods["SecondLocals"]);
+            Assert.Equal(fold, methods["FirstBranch"] == methods["SecondBranch"]);
+            Assert.Equal(fold, methods["FirstFinally"] == methods["SecondFinally"]);
             Assert.NotEqual(methods["First"], methods["DifferentCode"]);
             Assert.NotEqual(methods["First"], methods["DifferentStack"]);
             Assert.NotEqual(methods["First"], methods["FirstLocals"]);
             Assert.NotEqual(methods["FirstLocals"], methods["DifferentLocals"]);
+            Assert.NotEqual(methods["FirstFinally"], methods["DifferentHandler"]);
             Assert.Equal(new byte[] { 0x2a }, pe.GetMethodBody(methods["Second"]).GetILBytes());
             Assert.False(pe.GetMethodBody(methods["SecondLocals"]).LocalSignature.IsNil);
+            Assert.Single(pe.GetMethodBody(methods["SecondFinally"]).ExceptionRegions);
         }
 
         [Fact]
