@@ -290,7 +290,7 @@ InterpreterFrame
 
 This produces three frames in order: C, B, A (innermost to outermost).
 
-When the stack walk starts with a context in interpreted code (e.g., from a debugger breakpoint, or a context seeded from an interpreted P/Invoke's `InlinedCallFrame`), the interpreted frames are already yielded from the initial context as frameless frames. Like native `StackFrameIterator::Init`, the walker reads the owning `InterpreterFrame` from the context's first-argument register and sets the Frame iterator to that Frame's `Next`, so the same frames are not walked twice. If the context does not record its owner, a head `InterpreterFrame` is skipped instead.
+When the stack walk starts with a context in interpreted code (e.g., from a debugger breakpoint, or a context seeded from an interpreted P/Invoke's `InlinedCallFrame`), the interpreted frames are already yielded from the initial context as frameless frames. Like native `StackFrameIterator::Init`, the walker reads the owning `InterpreterFrame` from the context's first-argument register and sets the Frame iterator to that Frame's `Next`, so the same frames are not walked twice. If the first-argument register is null or does not name an `InterpreterFrame`, the walk fails (native asserts both).
 
 An interpreted P/Invoke pushes an active `InlinedCallFrame` whose `CallSiteSP` is the top `InterpMethodContextFrame` of the `InterpreterFrame` that immediately follows it (native `InlinedCallFrame::IsInInterpreter`). When the walker reaches such a Frame, it moves to that `InterpreterFrame` without updating the context; the `InterpreterFrame` then switches into the interpreted chain.
 
@@ -736,7 +736,7 @@ The runtime installs a small set of redirect/hijack stubs whose code blocks are 
 
 The recovery step is driven by `IDebugger.GetHijackKind(controlPC)`, which returns a `HijackKind`:
 
-* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special. WASM has no hijack stubs; its `Debugger` contract reports `HijackKind.None` for every IP, and if a WASM target does not advertise the contract (runtimes built before it was advertised there), the walker uses `HijackKind.None` without it.
+* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special. WASM has no hijack stubs; its `Debugger` contract reports `HijackKind.None` for every IP.
 * `HijackKind.UnhandledException` — the IP is inside the `ExceptionHijack` stub. The saved `PT_CONTEXT*` is at `*SP` (the stub pushed it directly), so the implementation reads `*context.StackPointer`.
 * `HijackKind.Other` — the IP is inside another redirect stub. The saved `PT_CONTEXT*` is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_*` constants.
 

@@ -51,10 +51,7 @@ public static class CoreCLRContracts
 
         registry.Register<IFeatureFlags>("c1", static t => new FeatureFlags_1(t));
 
-        // Runtimes built with portable entry points before c2 existed advertise c1; serve them with c2.
-        registry.Register<IPrecodeStubs>("c1", static t => t.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints)
-            ? new PrecodeStubs_2(t)
-            : new PrecodeStubs_1(t));
+        registry.Register<IPrecodeStubs>("c1", static t => new PrecodeStubs_1(t));
         registry.Register<IPrecodeStubs>("c2", static t => new PrecodeStubs_2(t));
 
         registry.Register<IReJIT>("c1", static t => new ReJIT_1(t));
@@ -147,17 +144,7 @@ public static class CoreCLRContracts
 
         // Transitive contract accesses from the implementations above.
         Validate<IConditionalWeakTable>(registry); // IComWrappers: ComWrappers_1.cs
-        // IStackWalk: StackWalk_1.cs. WASM runtimes built before the contract was advertised there
-        // do not have it, and the stack walker tolerates that; any other failure is still an error.
-        if (registry.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.Wasm)
-        {
-            Validate<IDebugger>(registry);
-        }
-        else if (!registry.TryValidate<IDebugger>(out System.Exception? debuggerFailure)
-            && debuggerFailure is not ContractMissingException)
-        {
-            throw debuggerFailure;
-        }
+        Validate<IDebugger>(registry);             // IStackWalk: StackWalk_1.cs
         Validate<IPlatformMetadata>(registry);     // IAuxiliarySymbols/IPrecodeStubs: CodePointerUtils.cs, PrecodeStubs_Common.cs
         Validate<ISHash>(registry);                // ILoader: Loader_1.cs
 

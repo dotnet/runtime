@@ -404,7 +404,6 @@ public class PrecodeStubsTests
             .AddTypes(precodeBuilder.Types)
             .AddGlobals(globals)
             .AddMockContract(platformMetadata)
-            .AddContract<IFeatureFlags>(version: "c1")
             .AddContract<IPrecodeStubs>(version: precodeBuilder.PrecodesVersion)
             .Build();
 
@@ -543,19 +542,9 @@ public class PrecodeStubsTests
         Assert.Equal(unreadableAddress, actual);
     }
 
-    public static IEnumerable<object[]> PortableEntryPointVersions()
-    {
-        foreach (object[] data in new MockTarget.StdArch())
-        {
-            // c2 is advertised with portable entry points; c1 covers runtimes built before it existed.
-            yield return [data[0], "c2"];
-            yield return [data[0], "c1"];
-        }
-    }
-
     [Theory]
-    [MemberData(nameof(PortableEntryPointVersions))]
-    public void GetMethodDescFromStubAddress_PortableEntryPoint_ReturnsOwningMethodDesc(MockTarget.Architecture arch, string contractVersion)
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMethodDescFromStubAddress_PortableEntryPoint_ReturnsOwningMethodDesc(MockTarget.Architecture arch)
     {
         MockMemorySpace.Builder builder = new(new TargetTestHelpers(arch));
         TargetTestHelpers helpers = builder.TargetTestHelpers;
@@ -569,20 +558,13 @@ public class PrecodeStubsTests
         MockMemorySpace.HeapFragment entryPoint = allocator.Allocate(layout.Stride, "PortableEntryPoint");
         helpers.WritePointer(entryPoint.Data.AsSpan(layout.Fields[nameof(Data.PortableEntryPoint.MethodDesc)].Offset, helpers.PointerSize), expectedMethodDesc);
 
-        // Strict: with portable entry points there is no PrecodeMachineDescriptor to read.
-        Mock<IPlatformMetadata> platformMetadata = new(MockBehavior.Strict);
-        platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(default(CodePointerFlags));
-
         Target target = new TestPlaceholderTarget.Builder(arch)
             .UseReader(builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(new Dictionary<DataType, Target.TypeInfo>
             {
                 [DataType.PortableEntryPoint] = new() { Fields = layout.Fields, Size = layout.Stride },
             })
-            .AddGlobals((Constants.Globals.FeaturePortableEntrypoints, 1ul))
-            .AddMockContract(platformMetadata)
-            .AddContract<IFeatureFlags>(version: "c1")
-            .AddContract<IPrecodeStubs>(version: contractVersion)
+            .AddContract<IPrecodeStubs>(version: "c2")
             .Build();
 
         IPrecodeStubs precodeStubs = target.Contracts.PrecodeStubs;

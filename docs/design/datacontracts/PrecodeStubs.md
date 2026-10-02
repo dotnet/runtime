@@ -29,7 +29,6 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 | `InterpByteCodeStart` | `Method` | `pointer` | pointer to the InterpMethod associated with the bytecode |
 | `InterpMethod` | `MethodDesc` | `pointer` | pointer to the MethodDesc for the interpreted method |
 | `InterpreterPrecodeData` | `ByteCodeAddr` | `pointer` | pointer to the InterpByteCodeStart for the interpreter bytecode |
-| `PortableEntryPoint` | `MethodDesc` | `pointer` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `PrecodeMachineDescriptor` | `DynamicHelperPrecodeType` | `uint8` | Precode type byte for a dynamic helper precode |
 | `PrecodeMachineDescriptor` | `FixupBytes` | `uint8[]` | Assembly code of a FixupStub |
 | `PrecodeMachineDescriptor` | `FixupIgnoredBytes` | `uint8[]` | Bytes to ignore when comparing FixupBytes to an actual block of memory in the target process. |
@@ -326,7 +325,7 @@ _None._
 _None._
 <!-- END GENERATED: usage contract=PrecodeStubs version=c2 -->
 
-Version 2 is advertised by runtimes built with `FEATURE_PORTABLE_ENTRYPOINTS` (for example WebAssembly). Those runtimes have no executable precode stubs and do not describe `PrecodeMachineDescriptor`: every entry point is a `PortableEntryPoint` that records its owning `MethodDesc`. Runtimes with portable entry points that were built before Version 2 existed advertise Version 1; readers serve them with the Version 2 algorithm when the `FeatureFlags` contract reports `PortableEntrypoints`.
+Version 2 is advertised by runtimes built with `FEATURE_PORTABLE_ENTRYPOINTS` (for example WebAssembly). Those runtimes have no executable precode stubs and do not describe `PrecodeMachineDescriptor`: every entry point is a `PortableEntryPoint` that records its owning `MethodDesc`.
 
 ```csharp
     // Mirrors the FEATURE_PORTABLE_ENTRYPOINTS path of MethodDesc::GetMethodDescFromPrecode.

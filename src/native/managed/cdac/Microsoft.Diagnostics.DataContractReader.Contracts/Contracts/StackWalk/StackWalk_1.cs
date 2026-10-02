@@ -249,34 +249,24 @@ internal partial class StackWalk_1 : IStackWalk
         }
     }
 
-    // When the walk starts inside interpreted code, move the frame iterator past the
-    // InterpreterFrame that owns the current InterpMethodContextFrame chain; otherwise a later
-    // Frame step would re-walk the same chain. Mirrors native StackFrameIterator::Init/ResetRegDisp,
-    // which set the Frame cursor to the Next of the owning InterpreterFrame recorded in the
-    // first-argument register. Falls back to skipping a head InterpreterFrame when the context does
-    // not record its owner (see dotnet/runtime#126953).
+    // When the walk starts inside interpreted code, set the Frame cursor to the Next of the
+    // InterpreterFrame that owns the current InterpMethodContextFrame chain, so a later Frame step
+    // does not re-walk the same chain. Mirrors native StackFrameIterator::Init/ResetRegDisp, which
+    // read the owning InterpreterFrame from the first-argument register.
     private void SkipOwningInterpreterFrame(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIterator)
     {
-        if (state != StackWalkState.Frameless
-            || !frameIterator.IsValid()
-            || !IsInterpreterCode(context.InstructionPointer))
-        {
+        if (state != StackWalkState.Frameless || !IsInterpreterCode(context.InstructionPointer))
             return;
-        }
 
         TargetPointer owningFrame = _frameHelpers.GetFirstArgRegister(context);
-        if (owningFrame != TargetPointer.Null)
-        {
-            Data.Frame owning = _target.ProcessedData.GetOrAdd<Data.Frame>(owningFrame);
-            if (_frameHelpers.GetFrameType(owning.Identifier) == FrameType.InterpreterFrame)
-            {
-                frameIterator.MoveTo(owning.Next);
-                return;
-            }
-        }
+        if (owningFrame == TargetPointer.Null)
+            throw new InvalidOperationException("Interpreted context does not record its owning InterpreterFrame.");
 
-        if (frameIterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
-            frameIterator.Next();
+        Data.Frame owning = _target.ProcessedData.GetOrAdd<Data.Frame>(owningFrame);
+        if (_frameHelpers.GetFrameType(owning.Identifier) != FrameType.InterpreterFrame)
+            throw new InvalidOperationException($"Owning frame {owningFrame} of an interpreted context is not an InterpreterFrame.");
+
+        frameIterator.MoveTo(owning.Next);
     }
 
     IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers)
@@ -877,7 +867,7 @@ internal partial class StackWalk_1 : IStackWalk
             case StackWalkState.NativeMarker:
             {
                 TargetCodePointer ip = handle.Context.InstructionPointer;
-                HijackKind hijackKind = GetHijackKind(ip);
+                HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(ip);
                 if (hijackKind != HijackKind.None)
                 {
                     IPlatformAgnosticContext recoveredContext = RetrieveHijackedContext(handle.Context, hijackKind == HijackKind.UnhandledException);
@@ -1227,24 +1217,6 @@ internal partial class StackWalk_1 : IStackWalk
                 : context.TryReadRegister((int)storage.RegisterNumber, out value);
     }
 
-    // WASM runtimes built before the Debugger contract was advertised there do not have it. WASM
-    // has no in-process debugger and so no hijack stubs, so treat a missing contract as no hijack.
-    private HijackKind GetHijackKind(TargetCodePointer controlPC)
-    {
-        if (!_target.Contracts.TryGetContract(out IDebugger debugger, out System.Exception? failure))
-        {
-            if (failure is ContractMissingException
-                && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm)
-            {
-                return HijackKind.None;
-            }
-
-            throw failure;
-        }
-
-        return debugger.GetHijackKind(controlPC);
-    }
-
     // See https://github.com/dotnet/runtime/blob/71830fdb091c9be1ad297b8649ac445af628fb81/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L659
     private TargetPointer ComputeX86FramePointer(StackDataFrameHandle handle)
     {
@@ -1267,7 +1239,7 @@ internal partial class StackWalk_1 : IStackWalk
 
         // Native marker / initial native context: RetrieveHijackedContext already returns the context
         // the stub unwinds to, so PCTAddr = hijackedContext.Esp - sizeof(DWORD).
-        HijackKind hijackKind = GetHijackKind(handle.Context.InstructionPointer);
+        HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(handle.Context.InstructionPointer);
         IPlatformAgnosticContext hijacked = RetrieveHijackedContext(handle.Context, hijackKind == HijackKind.UnhandledException);
         return new TargetPointer(hijacked.StackPointer.Value - pointerSize);
     }
