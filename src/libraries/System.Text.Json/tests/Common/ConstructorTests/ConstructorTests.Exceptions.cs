@@ -45,16 +45,19 @@ namespace System.Text.Json.Serialization.Tests
 
             string exStr = ex.ToString();
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_Without_Members", exStr);
+            Assert.Contains("Could not find a matching property or field for constructor parameter 'x' of type 'System.Int32'.", exStr);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.DeserializeWrapper<Point_With_MismatchedMembers>("{}"));
             exStr = ex.ToString();
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_With_MismatchedMembers", exStr);
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to property or field 'Y' of type 'System.Single'.", exStr);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.DeserializeWrapper<WrapperFor_Point_With_MismatchedMembers>("""{"MyInt":1,"MyPoint":{}}"""));
             exStr = ex.ToString();
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_With_MismatchedMembers", exStr);
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to property or field 'Y' of type 'System.Single'.", exStr);
         }
 
         [Fact]
@@ -376,5 +379,71 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         public record ParameterizedRecord_WithStringProperty(string Text);
+
+        [Fact]
+        public async Task ConstructorParameterIncompleteBinding_AccurateErrorMessage()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                return;
+            }
+
+            // Case 1: First unbound parameter in declaration order has no matching member.
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<FirstMissingSecondTypeMismatch>("{}"));
+            Assert.Contains("Could not find a matching property or field for constructor parameter 'y' of type 'System.String'.", ex.Message);
+
+            // Case 2: First unbound parameter in declaration order has matching name but type mismatch.
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<FirstTypeMismatchSecondMissing>("{}"));
+            Assert.Contains("Parameter 'z' of type 'System.Double' could not be bound to property or field 'Z' of type 'System.String'.", ex.Message);
+
+            // Case 3: When IncludeFields is disabled (default), field is not considered, so reported as missing property or field.
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<ClassWithPropertyAndFieldMismatch>("{}"));
+            Assert.Contains("Could not find a matching property or field for constructor parameter 'y' of type 'System.Int32'.", ex.Message);
+
+            // Case 4: When IncludeFields is enabled, field is considered and detected as a type mismatch.
+            var options = new JsonSerializerOptions { IncludeFields = true };
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<ClassWithPropertyAndFieldMismatch>("{}", options));
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to property or field 'Y' of type 'System.Single'.", ex.Message);
+        }
+
+        public class FirstMissingSecondTypeMismatch
+        {
+            public int X { get; set; }
+            public string Z { get; set; }
+
+            public FirstMissingSecondTypeMismatch(int x, string y, double z)
+            {
+                X = x;
+                Z = z.ToString();
+            }
+        }
+
+        public class FirstTypeMismatchSecondMissing
+        {
+            public int X { get; set; }
+            public string Z { get; set; }
+
+            public FirstTypeMismatchSecondMissing(int x, double z, string y)
+            {
+                X = x;
+                Z = z.ToString();
+            }
+        }
+
+        public class ClassWithPropertyAndFieldMismatch
+        {
+            public int X { get; set; }
+            public float Y;
+
+            public ClassWithPropertyAndFieldMismatch(int x, int y)
+            {
+                X = x;
+                Y = y;
+            }
+        }
     }
 }

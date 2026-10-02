@@ -420,6 +420,32 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo.UnboundConstructorParameterDiagnostic is { } info)
+            {
+                if (info.MatchingPropertyName is not null)
+                {
+                    throw new InvalidOperationException(SR.Format(
+                        SR.ConstructorParamIncompleteBinding_TypeMismatch,
+                        jsonTypeInfo.Type,
+                        info.ParameterName,
+                        info.ParameterType,
+                        info.MatchingPropertyName,
+                        info.MatchingPropertyType));
+                }
+
+                throw new InvalidOperationException(SR.Format(
+                    SR.ConstructorParamIncompleteBinding_NameMismatch,
+                    jsonTypeInfo.Type,
+                    info.ParameterName,
+                    info.ParameterType));
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.ConstructorParamIncompleteBinding, jsonTypeInfo.Type));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type parentType)
         {
             throw new InvalidOperationException(SR.Format(SR.ConstructorParamIncompleteBinding, parentType));
