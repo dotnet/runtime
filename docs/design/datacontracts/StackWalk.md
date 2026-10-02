@@ -455,6 +455,7 @@ TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock hold
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
+* On x86, the caller SP also skips callee-popped stack arguments. For `ExternalMethodFrame` and `StubDispatchFrame`, the argument size comes from the frame's GCRefMap, including when its MethodDesc is null. `ReadStackPop()` gives the number of pointer-sized slots to add to the SP. If no GCRefMap is available, MethodDesc-backed frames use the argument map computed from their signature. `PInvokeCalliFrame` instead uses `VASigCookie.SizeOfArgs`.
 
 **Return Address**: Read from `TransitionBlock.ReturnAddress`. This applies to all frame types that use the TransitionFrame mechanism.
 

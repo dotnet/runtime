@@ -30,9 +30,23 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         // x86: the base implementation skips the callee-popped argument byte count
         // (cbStackPop) that the runtime's TransitionFrame::UpdateRegDisplay_Impl adds
         // to CallerSP.
-        FrameHelpers frameHelpers = new(_target);
-        FrameType frameType = frameHelpers.GetFrameType(
+        FrameType frameType = _frameHelpers.GetFrameType(
             _target.ProcessedData.GetOrAdd<Frame>(framedMethodFrame.Address).Identifier);
+
+        // These frames can have no MethodDesc; their GCRefMap supplies the callee-pop count.
+        if (frameType is FrameType.ExternalMethodFrame or FrameType.StubDispatchFrame)
+        {
+            TargetPointer indirection = frameType == FrameType.ExternalMethodFrame
+                ? _target.ProcessedData.GetOrAdd<ExternalMethodFrame>(framedMethodFrame.Address).Indirection
+                : _target.ProcessedData.GetOrAdd<StubDispatchFrame>(framedMethodFrame.Address).Indirection;
+            TargetPointer gcRefMap = _frameHelpers.FindGCRefMap(indirection);
+            if (gcRefMap != TargetPointer.Null)
+            {
+                GCRefMapDecoder mapDecoder = new(_target, gcRefMap);
+                _context.Context.Esp += mapDecoder.ReadStackPop() * (uint)_target.PointerSize;
+                return;
+            }
+        }
 
         if (frameType == FrameType.PInvokeCalliFrame)
         {
