@@ -10507,11 +10507,13 @@ regNumber emitter::emitIns_BASE_R_R_RM(
 //                 ireg - The current source/destination register
 //                 varx - The variable index used for the memory address
 //                 offs - The offset added to the memory address from varx
+//          instOptions - The instruction options of the current instruction
 //
 // Return Value:
 //    true if the move instruction is redundant; otherwise, false.
 
-bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs)
+bool emitter::IsRedundantStackMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs, insOpts instOptions)
 {
     assert(IsMovInstruction(ins));
     assert((fmt == IF_SWR_RRD) || (fmt == IF_RWR_SRD));
@@ -10539,6 +10541,14 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
 
     // Don't optimize if the last instruction is also not a Load/Store.
     if (!((emitLastIns->idInsFmt() == IF_SWR_RRD) || (emitLastIns->idInsFmt() == IF_RWR_SRD)))
+    {
+        return false;
+    }
+
+    // Don't optimize if either instruction uses embedded masking, since a masked move only
+    // reads or writes the selected elements and so doesn't make the other move redundant.
+    if (((instOptions & INS_OPTS_EVEX_aaa_MASK) != 0) ||
+        (IsSimdInstruction(ins) && emitLastIns->idIsEvexAaaContextSet()))
     {
         return false;
     }
@@ -10574,7 +10584,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions)
 {
     insFormat fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
-    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs, instOptions))
     {
         return;
     }
@@ -10612,7 +10622,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     noway_assert(emitVerifyEncodable(ins, size, ireg));
     insFormat fmt = emitInsModeFormat(ins, IF_RRD_SRD);
 
-    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs, instOptions))
     {
         return;
     }
