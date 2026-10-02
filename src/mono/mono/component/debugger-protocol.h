@@ -15,7 +15,7 @@
 
 /*
  * Processor architecture constants for GetSystemInformation command.
- * These values must match PROCESSOR_ARCHITECTURE_* from winnt.h — do not change them.
+ * These values must match PROCESSOR_ARCHITECTURE_* from winnt.h - do not change them.
  */
 #define CYCORDEBUG_PROCESSOR_ARCHITECTURE_INTEL   0
 #define CYCORDEBUG_PROCESSOR_ARCHITECTURE_ARM     5
