@@ -152,7 +152,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.DispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.KnownExternFunction(ReadyToRunHelper.ResolveInterfaceMethod));
+                            encoder.EmitJMP(factory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethod));
                         }
                         else
                         {

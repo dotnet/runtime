@@ -432,6 +432,13 @@ namespace ILCompiler.DependencyAnalysis
                 return new InterfaceUseNode(type);
             });
 
+            _r2rHelpers = new NodeCache<ReadyToRunHelper, ISymbolNode>((ReadyToRunHelper id) =>
+            {
+                return new ExternFunctionSymbolNode(
+                    KnownExternFunctions.GetName(id, TypeSystemContext.Target),
+                    KnownExternFunctions.GetTypeSignature(id, TypeSystemContext));
+            });
+
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromDictionaryNode);
@@ -1042,13 +1049,6 @@ namespace ILCompiler.DependencyAnalysis
             return _externDataSymbols.GetOrAdd(name);
         }
 
-        public ExternFunctionSymbolNode KnownExternFunction(ReadyToRunHelper function)
-        {
-            return ExternFunctionSymbol(
-                KnownExternFunctions.GetName(function, TypeSystemContext.Target),
-                KnownExternFunctions.GetTypeSignature(function, TypeSystemContext));
-        }
-
         public ISortableSymbolNode ExternVariable(Utf8String name)
         {
             Utf8String mangledName = NameMangler.NodeMangler.ExternVariable(name);
@@ -1456,6 +1456,13 @@ namespace ILCompiler.DependencyAnalysis
         public DependencyNodeCore<NodeFactory> InterfaceUse(TypeDesc type)
         {
             return _interfaceUses.GetOrAdd(type);
+        }
+
+        private NodeCache<ReadyToRunHelper, ISymbolNode> _r2rHelpers;
+
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelper id)
+        {
+            return _r2rHelpers.GetOrAdd(id);
         }
 
         private NodeCache<ReadyToRunHelperKey, ISymbolNode> _readyToRunHelpers;

@@ -161,7 +161,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.DispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.KnownExternFunction(ReadyToRunHelper.ResolveInterfaceMethod));
+                            encoder.EmitJMP(factory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethod));
                         }
                         else
                         {
