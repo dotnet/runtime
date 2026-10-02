@@ -35,7 +35,7 @@ public class CachePurgeTests
         using var cache = new TestCache();
         string old = cache.AddEntry('a', TestCache.Cutoff.AddDays(-1));
         string recent = cache.AddEntry('b', TestCache.Cutoff.AddDays(1));
-        foreach (string name in new[] { new string('a', 64) + ".unique.tmp", "unrelated", new string('A', 64), new string('c', 63) })
+        foreach (string name in new[] { new string('a', 64) + ".unique.tmp", "unrelated", new string('E', 64), new string('c', 63) })
         {
             Directory.CreateDirectory(Path.Combine(cache.Entries, name));
         }
