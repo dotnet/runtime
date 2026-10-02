@@ -305,6 +305,7 @@ namespace ILCompiler
         private readonly string _perfMapPath;
         private readonly int _perfMapFormatVersion;
         private readonly bool _generateProfileFile;
+        private readonly WasmDebugInfo _wasmDebugInfo;
         private readonly Func<MethodDesc, string> _printReproInstructions;
 
         private readonly ProfileDataManager _profileData;
@@ -356,7 +357,8 @@ namespace ILCompiler
             FileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
             bool verifyTypeAndFieldLayout,
-            ReadyToRunContainerFormat format)
+            ReadyToRunContainerFormat format,
+            WasmDebugInfo wasmDebugInfo)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -380,6 +382,7 @@ namespace ILCompiler
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
+            _wasmDebugInfo = wasmDebugInfo;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
             if (nodeFactory.InstrumentationDataTable != null)
@@ -440,6 +443,7 @@ namespace ILCompiler
                     callChainProfile: _profileData.CallChainProfile,
                     _format,
                     _customPESectionAlignment,
+                    _wasmDebugInfo,
                     _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
@@ -596,7 +600,8 @@ namespace ILCompiler
                 _profileData.CallChainProfile,
                 componentFormat,
                 customPESectionAlignment: 0,
-                _logger);
+                wasmDebugInfo: _wasmDebugInfo,
+                logger: _logger);
         }
 
         public override void WriteDependencyLog(string outputFileName)
@@ -728,6 +733,7 @@ namespace ILCompiler
         private WorkerState _singleThreadedWorkerState;
         private int _compilationSessionGeneratedColdCode;
         private bool _hasAddedAsyncReferences = false;
+        private bool _hasAddedDelegateCtorReferences = false;
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
@@ -763,6 +769,9 @@ namespace ILCompiler
                         bool shouldBeCompiled = !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method);
                         if (method.IsAsyncCall() && shouldBeCompiled)
                             AddNecessaryAsyncReferences(method);
+
+                        if (_nodeFactory.Target.IsWasm && shouldBeCompiled)
+                            AddNecessaryDelegateCtorReferences(method);
 
                         if ((method.IsCompilerGeneratedILBodyForAsync() || ((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method)) && shouldBeCompiled)
                             EnsureGeneratedILTokensAreAvailable(method);
@@ -1052,6 +1061,26 @@ namespace ILCompiler
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
             _hasAddedAsyncReferences = true;
+        }
+
+        private void AddNecessaryDelegateCtorReferences(MethodDesc method)
+        {
+            if (_hasAddedDelegateCtorReferences ||
+                method.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+            {
+                return;
+            }
+
+            // Keep in sync with CorInfoImpl.GetDelegateCtor. The JIT replaces delegate constructor
+            // calls with calls to these, so nothing in the caller's IL refers to them.
+            TypeDesc delegateType = TypeSystemContext.SystemModule.GetKnownType("System"u8, "Delegate"u8);
+            MethodDesc[] requiredMethods =
+            [
+                delegateType.GetKnownMethod("CtorClosed"u8, null),
+                delegateType.GetKnownMethod("DelegateConstruct"u8, null),
+            ];
+            _tokenManager.EnsureDefTokensAreAvailable(requiredMethods, ecmaMethod.Module, false);
+            _hasAddedDelegateCtorReferences = true;
         }
 
         public ISymbolNode GetFieldRvaData(FieldDesc field)

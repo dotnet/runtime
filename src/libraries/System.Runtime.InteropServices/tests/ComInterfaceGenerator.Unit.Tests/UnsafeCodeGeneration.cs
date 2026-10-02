@@ -227,6 +227,13 @@ namespace ComInterfaceGenerator.Unit.Tests
                     return solution.WithProjectCompilationOptions(projectId, options.WithWarningLevel(9999));
                 });
             }
+
+            protected override ParseOptions CreateParseOptions()
+            {
+                var options = (CSharpParseOptions)base.CreateParseOptions();
+                return options.WithFeatures(
+                    [.. options.Features, new KeyValuePair<string, string>("updated-memory-safety-rules", "")]);
+            }
         }
     }
 }

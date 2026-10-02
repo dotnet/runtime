@@ -16,9 +16,9 @@ using Xunit;
 
 public class Async2EHMicrobench
 {
-    public static int Main()
+    public static async Task<int> Main()
     {
-        Task.Run(AsyncEntry).Wait();
+        await Task.Run(AsyncEntry);
 
         Console.WriteLine("Test Passed");
         return 100;

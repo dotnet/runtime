@@ -14,7 +14,7 @@ import {
 import { bindCsFunction, getAssemblyExports } from "./invoke-cs";
 import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
 import { initializeMarshalersToCs } from "./marshal-to-cs";
-import { forceDisposeProxies, releaseCSOwnedObject } from "./gc-handles";
+import { forceDisposeProxies, getProxyCounts, releaseCSOwnedObject } from "./gc-handles";
 import { cancelPromise } from "./cancelable-promise";
 import { loadLazyAssembly, loadSatelliteAssemblies } from "./lazy";
 import { jsInteropState } from "./marshal";
@@ -52,6 +52,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         bindCsFunction,
         loadSatelliteAssemblies,
         loadLazyAssembly,
+        getProxyCounts,
 
         // WebSocket
         wsCreate,

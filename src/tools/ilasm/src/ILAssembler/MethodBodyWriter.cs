@@ -260,7 +260,7 @@ internal sealed class MethodBodyWriter
     }
 
     public int WriteTo(MethodBodyStreamEncoder bodyStream, int maxStack, StandaloneSignatureHandle localsSignature,
-        MethodBodyAttributes attributes, IReadOnlyList<EntityRegistry.ExceptionRegion> exceptionRegions)
+        MethodBodyAttributes attributes, IReadOnlyList<EntityRegistry.ExceptionRegion> exceptionRegions, bool hasDynamicStackAllocation)
     {
         var regions = new List<ResolvedExceptionRegion>(exceptionRegions.Count);
         bool small = ExceptionRegionEncoder.IsSmallRegionCount(exceptionRegions.Count);
@@ -284,7 +284,7 @@ internal sealed class MethodBodyWriter
         }
 
         MethodBodyStreamEncoder.MethodBody body = bodyStream.AddMethodBody(
-            CodeBuilder.Count, maxStack, regions.Count, small, localsSignature, attributes);
+            CodeBuilder.Count, maxStack, regions.Count, small, localsSignature, attributes, hasDynamicStackAllocation);
         var instructions = new BlobWriter(body.Instructions);
         CodeBuilder.WriteContentTo(ref instructions);
 

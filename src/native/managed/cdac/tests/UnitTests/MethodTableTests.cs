@@ -889,6 +889,57 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IsInlineArrayReturnsFalseWhenVMFlagNotSet(MockTarget.Architecture arch)
+    {
+        TargetPointer mtPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddEEClass("NotInlineArray");
+                MockMethodTable mt = rtsBuilder.AddMethodTable("NotInlineArray");
+                mt.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+                // EEClass.VMFlags does NOT have VMFLAG_INLINE_ARRAY (0x00010000) set
+                mtPtr = mt.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.False(contract.IsInlineArray(typeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsInlineArrayReturnsTrueWhenVMFlagSet(MockTarget.Architecture arch)
+    {
+        const uint InlineArrayVMFlag = 0x00010000;
+        TargetPointer mtPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddEEClass("InlineArray");
+                eeClass.VMFlags = InlineArrayVMFlag;
+                MockMethodTable mt = rtsBuilder.AddMethodTable("InlineArray");
+                mt.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+                mtPtr = mt.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.True(contract.IsInlineArray(typeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetGCDescSeriesReturnsEmptyWhenNoGCPointers(MockTarget.Architecture arch)
     {
         TargetPointer mtPtr = default;

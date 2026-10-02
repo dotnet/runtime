@@ -17,47 +17,37 @@
 
 #include <stddef.h>
 
-// #SwitchToThreadSpinning
+// #minipal_switch_to_thread backoff
 //
-// If you call __SwitchToThread in a loop waiting for a condition to be met,
+// If you call minipal_switch_to_thread in a loop waiting for a condition to be met,
 // it is critical that you insert periodic sleeps.  This is because the thread
 // you are waiting for to set that condition may need your CPU, and simply
-// calling __SwitchToThread(0) will NOT guarantee that it gets a chance to run.
+// calling minipal_switch_to_thread(0) will NOT guarantee that it gets a chance to run.
 // If there are other runnable threads of higher priority, or even if there
 // aren't and it is in another processor's queue, you will be spinning a very
 // long time.
 //
-// To force all callers to consider this issue and to avoid each having to
-// duplicate the same backoff code, __SwitchToThread takes a required second
-// parameter.  If you want it to handle backoff for you, this parameter should
-// be the number of successive calls you have made to __SwitchToThread (a loop
-// count).  If you want to take care of backing off yourself, you can pass
-// CALLER_LIMITS_SPINNING.  There are three valid cases for doing this:
+// To have minipal_switch_to_thread handle backoff, pass the number of
+// successive calls made in the loop.
 //
-//     - You count iterations and induce a sleep periodically
-//     - The number of consecutive __SwitchToThreads is limited
-//     - Your call to __SwitchToThread includes a non-zero sleep duration
+// If you handle backoff yourself, either induce a sleep periodically or limit
+// the number of consecutive calls.
 //
 // Lastly, to simplify this requirement for the following common coding pattern:
 //
 //     while (!condition)
-//         SwitchToThread
+//         minipal_switch_to_thread
 //
 // you can use the YIELD_WHILE macro.
-
-#define CALLER_LIMITS_SPINNING 0
 
 #define YIELD_WHILE(condition)                                          \
     {                                                                   \
         DWORD __dwSwitchCount = 0;                                      \
         while (condition)                                               \
         {                                                               \
-            __SwitchToThread(0, ++__dwSwitchCount);                     \
+            minipal_switch_to_thread(++__dwSwitchCount);                \
         }                                                               \
     }
-
-// non-zero return value if this function causes the OS to switch to another thread
-BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount);
 
 
 //----------------------------------------------------------------------------

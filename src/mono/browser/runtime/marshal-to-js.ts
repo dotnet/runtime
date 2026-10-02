@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
 import cwraps from "./cwraps";
-import { _lookup_js_owned_object, mono_wasm_get_js_handle, mono_wasm_get_jsobj_from_js_handle, SystemInteropJS_ReleaseCSOwnedObject, register_with_jsv_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
+import { _lookup_js_owned_object, mono_wasm_get_js_handle, mono_wasm_get_jsobj_from_js_handle, SystemInteropJS_ReleaseCSOwnedObject, register_with_jsv_handle, setup_managed_proxy, teardown_managed_proxy, eager_task_handle_symbol } from "./gc-handles";
 import { loaderHelpers, mono_assert } from "./globals";
 import {
     ManagedObject, ManagedError,
@@ -256,7 +256,19 @@ export function begin_marshal_task_to_js (arg: JSMarshalerArgument, _?: Marshale
     }
     set_js_handle(arg, js_handle);
     set_arg_type(arg, MarshalerType.TaskPreCreated);
+    // the caller only gets the promise back, so it needs a way to find the handle again.
+    // storing the number rather than the holder keeps the promise from retaining it.
+    (holder.promise as any)[eager_task_handle_symbol] = js_handle;
     return holder.promise;
+}
+
+// the eagerly created Promise was never handed to managed code, drop its proxy
+export function release_eager_task_holder (eagerPromise: Promise<any> | null | undefined): void {
+    if (!eagerPromise) return;
+    const js_handle = (eagerPromise as any)[eager_task_handle_symbol];
+    mono_assert(js_handle, "Expected JSHandle on the eagerly created promise");
+    (eagerPromise as any)[eager_task_handle_symbol] = undefined;
+    SystemInteropJS_ReleaseCSOwnedObject(js_handle);
 }
 
 export function end_marshal_task_to_js (args: JSMarshalerArguments, res_converter: MarshalerToJs | undefined, eagerPromise: Promise<any> | null) {
@@ -270,8 +282,7 @@ export function end_marshal_task_to_js (args: JSMarshalerArguments, res_converte
     }
 
     // otherwise drop the eagerPromise's handle
-    const js_handle = mono_wasm_get_js_handle(eagerPromise);
-    SystemInteropJS_ReleaseCSOwnedObject(js_handle);
+    release_eager_task_holder(eagerPromise);
 
     // get the synchronous result
     const promise = try_marshal_sync_task_to_js(res, type, res_converter);
