@@ -83,6 +83,7 @@ namespace LOHCompactAPI
             if (GCSettings.LargeObjectHeapCompactionMode != GCLargeObjectHeapCompactionMode.CompactOnce)
             {
                 Console.WriteLine("Failed to set GCSettings.LargeObjectHeapCompactionMode = CompactOnce");
+                return false;
             }
             GCCount = GetBlockingGen2Count();
             if (initialGCCount != GCCount)
@@ -135,6 +136,7 @@ namespace LOHCompactAPI
             if (GCSettings.LargeObjectHeapCompactionMode != GCLargeObjectHeapCompactionMode.CompactOnce)
             {
                 Console.WriteLine("Failed to set GCSettings.LargeObjectHeapCompactionMode = CompactOnce");
+                return false;
             }
             GC.Collect();
             GCLargeObjectHeapCompactionMode mode = GCSettings.LargeObjectHeapCompactionMode;
