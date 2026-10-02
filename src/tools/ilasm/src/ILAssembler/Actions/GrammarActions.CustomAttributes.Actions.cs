@@ -164,12 +164,14 @@ internal sealed partial class GrammarActions
     }
 
     private EntityRegistry.CustomAttributeEntity MaterializeCustomAttribute(
-        CustomAttributeDescriptorValue descriptor)
+        CustomAttributeDescriptorValue descriptor,
+        IToken location)
     {
         EntityRegistry.EntityBase constructor = MaterializeMethodReference(descriptor.Constructor);
         BlobBuilder value = MaterializeCustomAttributeBlob(descriptor.Value);
         EntityRegistry.CustomAttributeEntity attribute =
             _entityRegistry.CreateCustomAttribute(constructor, value);
+        attribute.Location = Location.From(location, _documents);
         if (descriptor.Owner is { } owner)
         {
             attribute.Owner = MaterializeOwnerType(owner);
@@ -196,6 +198,7 @@ internal sealed partial class GrammarActions
             EntityRegistry.CustomAttributeEntity typedefAttribute =
                 _entityRegistry.CreateCustomAttribute(resolved.Constructor, resolved.Value);
             typedefAttribute.Owner = resolved.Owner;
+            typedefAttribute.Location = Location.From(location, _documents);
             return typedefAttribute;
         }
 
@@ -204,7 +207,7 @@ internal sealed partial class GrammarActions
             return null;
         }
 
-        EntityRegistry.CustomAttributeEntity attribute = MaterializeCustomAttribute(descriptor);
+        EntityRegistry.CustomAttributeEntity attribute = MaterializeCustomAttribute(descriptor, location);
         return descriptor.Owner is null ? attribute : null;
     }
 
@@ -214,7 +217,7 @@ internal sealed partial class GrammarActions
 
     internal EntityRegistry.CustomAttributeEntity MaterializeCustomAttributeDescriptor(
         CILParser.CustomDescrContext context)
-        => MaterializeCustomAttribute(context.Value);
+        => MaterializeCustomAttribute(context.Value, context.Start);
 
     internal EntityRegistry.CustomAttributeEntity? MaterializeMethodBodyCustomAttributeDeclaration(
         CILParser.CustomDescrInMethodBodyContext context)

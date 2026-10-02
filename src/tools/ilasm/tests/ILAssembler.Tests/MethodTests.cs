@@ -160,6 +160,172 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void PseudoCustomAttribute_SpecialNameOnMethod_LowersToFlagAndDropsAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.SpecialNameAttribute::.ctor() = ( 01 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(MethodAttributes.SpecialName, method.Attributes & MethodAttributes.SpecialName);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("08 00", MethodImplAttributes.NoInlining)]
+        [InlineData("00 20", MethodImplAttributes.Async)]
+        public void PseudoCustomAttribute_MethodImpl_LowersToImplAttributeAndDropsAttribute(
+            string valueBytes,
+            MethodImplAttributes expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor(int16) = ( 01 00 {{valueBytes}} 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(expected, method.ImplAttributes & expected);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MethodImplWithMethodCodeTypeNamedArgument_LowersToImplAttributeAndDropsAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor() = ( 01 00 01 00 53 55 2E 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 43 6F 6D 70 69 6C 65 72 53 65 72 76 69 63 65 73 2E 4D 65 74 68 6F 64 43 6F 64 65 54 79 70 65 0E 4D 65 74 68 6F 64 43 6F 64 65 54 79 70 65 01 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(MethodImplAttributes.Native, method.ImplAttributes & MethodImplAttributes.CodeTypeMask);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MethodImplInvalidValue_ReportsDiagnostic()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor(int16) = ( 01 00 02 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_InvalidMethodCodeTypeDoesNotApplyFixedFlags()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor(int16) = ( 01 00 08 00 01 00 53 55 2E 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 43 6F 6D 70 69 6C 65 72 53 65 72 76 69 63 65 73 2E 4D 65 74 68 6F 64 43 6F 64 65 54 79 70 65 0E 4D 65 74 68 6F 64 43 6F 64 65 54 79 70 65 04 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { ErrorTolerant = true });
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(default, method.ImplAttributes & MethodImplAttributes.NoInlining);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_ParameterlessMethodImplClearsExistingCodeType()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() native unmanaged
+                    {
+                        .custom instance void [mscorlib]System.Runtime.CompilerServices.MethodImplAttribute::.ctor() = ( 01 00 00 00 )
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(default, method.ImplAttributes & MethodImplAttributes.CodeTypeMask);
+        }
+
+        [Fact]
         public void MethodBodyDirectives_EmitRawInstructionLocalsInitializationAndMappedData()
         {
             string source = """
