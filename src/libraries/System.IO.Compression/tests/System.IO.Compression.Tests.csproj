@@ -49,6 +49,7 @@
     <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.CompressionLevel.cs" Link="Common\System\IO\Compression\ZLibNative.CompressionLevel.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="DeflaterStatePoolTests.cs" />
     <Compile Include="ZLibCompressionOptionsUnitTests.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
     <Compile Include="ZLibEncoderDecoderTestBase.cs" />
