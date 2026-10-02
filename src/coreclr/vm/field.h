@@ -516,7 +516,6 @@ public:
             THROWS;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
-            INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END
 
@@ -543,7 +542,6 @@ public:
         {
             THROWS;
             GC_TRIGGERS;
-            INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END;
 
@@ -678,15 +676,6 @@ public:
         return GetModule()->GetMDImport();
     }
 
-#ifndef DACCESS_COMPILE
-    IMetaDataImport *GetRWImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return GetModule()->GetRWImporter();
-    }
-#endif // DACCESS_COMPILE
-
     TypeHandle LookupFieldTypeHandle(ClassLoadLevel level = CLASS_LOADED, BOOL dropGenericArgumentLevel = FALSE);
 
     TypeHandle LookupApproxFieldTypeHandle()
@@ -747,4 +736,3 @@ struct cdac_data<FieldDesc>
 };
 
 #endif // _FIELD_H_
-

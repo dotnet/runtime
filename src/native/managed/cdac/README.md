@@ -144,10 +144,9 @@ with the legacy DAC or with the cDAC enabled.
 
 `SOSDacImpl` has `#if DEBUG` cross-validation that compares cDAC results against the legacy
 DAC. To enable this, build the cDAC in Debug configuration while everything else can be
-Release. Note that some legacy calls must run outside `#if DEBUG` when their results are
-used functionally (not just for validation) — see the
-[Legacy project README](Microsoft.Diagnostics.DataContractReader.Legacy/README.md) for
-details.
+Release. Some stateful validation paths keep a legacy enumeration or child object in sync
+with its cDAC counterpart so later calls can be compared. Release cDAC builds retain the
+fallback interface only to preserve its required lifetime and never invoke it.
 
 At runtime, the DAC checks the `ENABLE_CDAC` config knob
 ([daccess.cpp](/src/coreclr/debug/daccess/daccess.cpp)). When set to `1`, it looks up the

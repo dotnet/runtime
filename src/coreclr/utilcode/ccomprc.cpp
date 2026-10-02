@@ -26,9 +26,7 @@ HRESULT CCompRC::LoadString(UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer
     {
         GC_NOTRIGGER;
         NOTHROW;
-#ifdef      MODE_PREEMPTIVE
-        MODE_PREEMPTIVE;
-#endif
+        MODE_ANY;
     }
     CONTRACTL_END;
 

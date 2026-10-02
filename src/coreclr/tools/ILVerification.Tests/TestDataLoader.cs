@@ -251,9 +251,13 @@ namespace ILVerification.Tests
         {
             var simpleNameToPathMap = new Dictionary<string, string>();
 
-            foreach (var fileName in GetAllTestDlls())
+            foreach (var fileName in Directory.GetFiles(TestAssemblyPath))
             {
-                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), Path.Combine(TestAssemblyPath, fileName));
+                string name = fileName.ToLower();
+                if (name.EndsWith(".dll") || name.EndsWith(".netmodule"))
+                {
+                    simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), fileName);
+                }
             }
 
             Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;

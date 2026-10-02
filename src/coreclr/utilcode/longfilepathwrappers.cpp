@@ -46,6 +46,7 @@ SearchPathWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -137,6 +138,7 @@ GetModuleFileNameWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -193,6 +195,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -256,6 +259,7 @@ LoadLibraryExWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -304,6 +308,7 @@ CreateFileWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -348,6 +353,7 @@ int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -383,6 +389,7 @@ CopyFileExWrapper(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 

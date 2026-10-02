@@ -3,6 +3,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 include(configure.cmake)
 
 set(SOURCES
+    conditionvariable.c
     cpufeatures.c
     descriptorlimit.c
     entrypoints.c
@@ -12,6 +13,7 @@ set(SOURCES
     ospagesize.c
     guid.c
     random.c
+    rwlock.c
     debugger.c
     strings.c
     time.c

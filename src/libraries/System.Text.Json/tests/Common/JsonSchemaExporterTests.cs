@@ -56,6 +56,84 @@ namespace System.Text.Json.Schema.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UnionNumberHandling_StrictTypeAttributeOverridesWebDefaults(bool asCollectionElement)
+        {
+            JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+            };
+
+            Type type = asCollectionElement ? typeof(List<StrictIntOrStringUnion>) : typeof(StrictIntOrStringUnion);
+            JsonNode schema = Serializer.GetTypeInfo(type, options).GetJsonSchemaAsNode();
+            JsonNode unionSchema = asCollectionElement ? schema["items"]! : schema;
+
+            JsonTestHelper.AssertJsonEqual("""{"type":"integer"}""", unionSchema["anyOf"]![0]!.ToJsonString());
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTestHelper.GetUnionCaseNumberHandlingPrecedenceTestData), MemberType = typeof(JsonTestHelper))]
+        public void UnionNumberHandling_MetadataOverrides(
+            JsonNumberHandling globalHandling, JsonNumberHandling? unionHandling, JsonNumberHandling? caseHandling, JsonNumberHandling expectedHandling)
+        {
+            foreach ((Type unionType, Type numberType) in new[] { (typeof(IntOrBoolUnion), typeof(int)), (typeof(NullableIntUnion), typeof(int?)) })
+            {
+                JsonSerializerOptions options = Serializer.CreateOptions(
+                    configure: options => options.NumberHandling = globalHandling,
+                    modifier: typeInfo =>
+                    {
+                        if (typeInfo.Type == numberType)
+                        {
+                            typeInfo.NumberHandling = caseHandling;
+                        }
+                    });
+
+                JsonTypeInfo typeInfo = Serializer.GetTypeInfo(unionType, options, mutable: true);
+                typeInfo.NumberHandling = unionHandling;
+                JsonNode schema = typeInfo.GetJsonSchemaAsNode();
+                JsonNode numberSchema = numberType == typeof(int) ? schema["anyOf"]![0]! : schema;
+                JsonNode schemaType = numberSchema["type"]!;
+                IEnumerable<string?> actualTypes = schemaType is JsonArray types
+                    ? types.Select(type => (string?)type)
+                    : [(string?)schemaType];
+
+                List<string> expectedTypes = ["integer"];
+                if ((expectedHandling & (JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)) != 0)
+                {
+                    expectedTypes.Add("string");
+                }
+                if (numberType == typeof(int?))
+                {
+                    expectedTypes.Add("null");
+                }
+
+                Assert.Equal(expectedTypes.OrderBy(type => type, StringComparer.Ordinal), actualTypes.OrderBy(type => type, StringComparer.Ordinal));
+            }
+        }
+
+        [Theory]
+        [InlineData(JsonNumberHandling.AllowReadingFromString, JsonNumberHandling.Strict)]
+        [InlineData(JsonNumberHandling.Strict, JsonNumberHandling.AllowReadingFromString)]
+        public void UnionNumberHandling_NullableCasePreservesElementOverride(JsonNumberHandling globalHandling, JsonNumberHandling elementHandling)
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                configure: options => options.NumberHandling = globalHandling,
+                modifier: typeInfo =>
+                {
+                    if (typeInfo.Type == typeof(int))
+                    {
+                        typeInfo.NumberHandling = elementHandling;
+                    }
+                });
+
+            bool allowsStrings = (elementHandling & JsonNumberHandling.AllowReadingFromString) != 0;
+            JsonNode schema = Serializer.GetTypeInfo<NullableIntUnion>(options).GetJsonSchemaAsNode();
+            JsonArray types = Assert.IsType<JsonArray>(schema["type"]);
+            Assert.Equal(allowsStrings, types.Any(type => (string?)type == "string"));
+        }
+
+        [Theory]
         [InlineData(typeof(string), "string")]
         [InlineData(typeof(int[]), "array")]
         [InlineData(typeof(Dictionary<string, int>), "object")]

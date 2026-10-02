@@ -95,16 +95,15 @@ def main(main_args):
     helix_source_prefix = "official"
     creator = ""
 
-    # (repo url, proj path, sparse path)
-    # sparse_path is needed when the tool lives in a subtree of a larger repo, to avoid pulling the entire repo.
+    # (repo url, proj path)
     build_repos = {
-        "Antigen": ("https://github.com/dotnet/jitutils.git", "src/Antigen/Antigen/Antigen.csproj", "src/Antigen"),
-        "Fuzzlyn": ("https://github.com/jakobbotsch/Fuzzlyn.git", "Fuzzlyn/Fuzzlyn.csproj", None),
+        "Antigen": ("https://github.com/dotnet/jitutils.git", "src/Antigen/Antigen/Antigen.csproj"),
+        "Fuzzlyn": ("https://github.com/jakobbotsch/Fuzzlyn.git", "Fuzzlyn/Fuzzlyn.csproj"),
     }
 
     # tool_name is verifed in setup_args
     assert coreclr_args.tool_name in build_repos
-    (repo_url, proj_path, sparse_path) = build_repos[coreclr_args.tool_name]
+    (repo_url, proj_path) = build_repos[coreclr_args.tool_name]
 
     # create exploratory directory
     print('Copying {} -> {}'.format(scripts_src_directory, coreroot_directory))
@@ -123,17 +122,8 @@ def main(main_args):
     try:
         with TempDir() as tool_code_directory:
             # clone the tool
-            if sparse_path is None:
-                run_command(
-                    ["git", "clone", "--quiet", "--depth", "1", repo_url, tool_code_directory])
-            else:
-                # sparse checkout so we don't pull all of jitutils
-                run_command(
-                    ["git", "clone", "--quiet", "--no-checkout", "--filter=blob:none",
-                     "--depth", "1", "--sparse", repo_url, tool_code_directory])
-                with ChangeDir(tool_code_directory):
-                    run_command(["git", "sparse-checkout", "set", "--cone", sparse_path])
-                    run_command(["git", "checkout"])
+            run_command(
+                ["git", "clone", "--quiet", "--depth", "1", repo_url, tool_code_directory])
 
             publish_dir = path.join(tool_code_directory, "publish")
 

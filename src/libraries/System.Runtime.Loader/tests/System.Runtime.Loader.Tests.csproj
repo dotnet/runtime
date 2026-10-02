@@ -102,6 +102,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <!-- Test.Assembly/Test.Assembly2 are embedded resources on browser (not link inputs); only root them where they are real references. -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.AppleMobile.xml" />
   </ItemGroup>
 
   <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">

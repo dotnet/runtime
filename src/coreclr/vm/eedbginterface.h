@@ -129,6 +129,8 @@ public:
 
 #endif // #ifndef DACCESS_COMPILE
 
+    virtual BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip) = 0;
+
     virtual PCODE GetNativeCodeStartAddress(PCODE address) = 0;
 
     virtual MethodDesc *GetNativeCodeMethodDesc(const PCODE address) = 0;

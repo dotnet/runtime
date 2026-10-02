@@ -11,7 +11,7 @@
 ** Dependencies: PAL_Initialize
 **               Fail
 **               SwitchToThread
-**               WaitForMultipleObject
+**               WaitForSingleObject
 **               CreateThread
 **               GetLastError
 ** 
@@ -23,7 +23,7 @@
 #include <palsuite.h>
 #define THREAD_COUNT  10
 #define REPEAT_COUNT  1000
-#define TIMEOUT       60000
+LONG completedThreadCount_SwitchToThread_test1 = 0;
 void PALAPI Run_Thread_switchtothread_test1(LPVOID lpParam);
 
 /**
@@ -37,8 +37,7 @@ PALTEST(threading_SwitchToThread_test1_paltest_switchtothread_test1, "threading/
     HANDLE hThread[THREAD_COUNT];
     DWORD  threadId[THREAD_COUNT];
     
-    int i = 0;   
-    int returnCode = 0;
+    int i = 0;
 
     /*PAL initialization */
     if( (PAL_Initialize(argc, argv)) != 0 )
@@ -68,10 +67,10 @@ PALTEST(threading_SwitchToThread_test1_paltest_switchtothread_test1, "threading/
     } 
 
 
-    returnCode = WaitForMultipleObjectsEx(THREAD_COUNT, hThread, TRUE, TIMEOUT, FALSE);
-    if( WAIT_OBJECT_0 != returnCode )
+    WaitForThreadCompletion(&completedThreadCount_SwitchToThread_test1, THREAD_COUNT);
+    for (i = 0; i < THREAD_COUNT; i++)
     {
-        Trace("Wait for Object(s) returned %d, expected value is  %d, and GetLastError value is %d\n", returnCode, WAIT_OBJECT_0, GetLastError());
+        CloseHandle(hThread[i]);
     }
 
     PAL_Terminate();
@@ -93,4 +92,5 @@ void  PALAPI Run_Thread_switchtothread_test1 (LPVOID lpParam)
                    "for thread id[%d], iteration [%d]\n", Id, i );
         }
     }
+    InterlockedIncrement(&completedThreadCount_SwitchToThread_test1);
 }

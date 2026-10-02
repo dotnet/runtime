@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests;
 
-[TestCategory("native-mono")]
+[TestCategory("native")]
 public class OptimizationFlagChangeTests : NativeRebuildTestsBase
 {
     public OptimizationFlagChangeTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -28,21 +28,52 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
                     new object[] { /*cflags*/ "",                                   /*ldflags*/ "/p:EmccLinkOptimizationFlag=-O1" }
         ).UnwrapItemsAsArrays();
 
+    public static IEnumerable<object?[]> FlagsOnlyChangeDataForCurrentRuntime()
+    {
+        IEnumerable<object?[]> data = FlagsOnlyChangeData(aot: false);
+        return IsCoreClrRuntime ? data : data.Concat(FlagsOnlyChangeData(aot: true));
+    }
+
     [Theory]
-    [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]
-    [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
+    [MemberData(nameof(FlagsOnlyChangeDataForCurrentRuntime))]
     public async Task OptimizationFlagChange(Configuration config, bool aot, string cflags, string ldflags)
     {
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
-        // force _WasmDevel=false, so we don't get -O0 but -O2
+        // Use the runtime's default optimization level instead of the -O0 used for rebuild tests.
         string optElevationArg = "/p:_WasmDevel=false";
         BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false, extraBuildArgs: optElevationArg);
 
         string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
         var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
-        pathsDict.UpdateTo(unchanged: true, mainAssembly, "icall-table.h", "pinvoke-table.h", "driver-gen.c");
-        if (cflags.Length == 0)
-            pathsDict.UpdateTo(unchanged: true, "pinvoke.o", "corebindings.o", "driver.o", "runtime.o");
+        if (IsCoreClrRuntime)
+        {
+            pathsDict.UpdateTo(unchanged: true,
+                mainAssembly,
+                "callhelpers-generator.rsp",
+                "callhelpers-interp-to-managed.cpp",
+                "callhelpers-pinvoke.cpp",
+                "callhelpers-reverse.cpp");
+            if (cflags.Length == 0)
+            {
+                pathsDict.UpdateTo(unchanged: true,
+                    "callhelpers-interp-to-managed.o",
+                    "callhelpers-pinvoke.o",
+                    "callhelpers-reverse.o",
+                    "emcc-compile-generated.rsp");
+            }
+            else
+            {
+                // Recompilation can produce identical bytes at both optimization levels.
+                pathsDict.Remove("callhelpers-interp-to-managed.o");
+                pathsDict.UpdateTo(unchanged: true, "emcc-link.rsp");
+            }
+        }
+        else
+        {
+            pathsDict.UpdateTo(unchanged: true, mainAssembly, "icall-table.h", "pinvoke-table.h", "driver-gen.c");
+            if (cflags.Length == 0)
+                pathsDict.UpdateTo(unchanged: true, "pinvoke.o", "corebindings.o", "driver.o", "runtime.o");
+        }
 
         pathsDict.Remove(mainAssembly);
         if (aot)
@@ -70,6 +101,12 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
                                 assertAppBundle: false); // optimization flags change changes the size of dotnet.native.wasm
         var newStat = StatFilesAfterRebuild(pathsDict);
         CompareStat(originalStat, newStat, pathsDict);
+
+        if (IsCoreClrRuntime)
+        {
+            TestUtils.AssertSubstring("callhelpers-interp-to-managed.cpp -> callhelpers-interp-to-managed.o",
+                output, contains: cflags.Length > 0);
+        }
 
         RunResult runOutput = await RunForPublishWithWebServer(new BrowserRunOptions(config, aot, TestScenario: "DotnetRun"));
         TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.ConsoleOutput,

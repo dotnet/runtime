@@ -100,6 +100,7 @@ namespace JitTest_lcs_gcref_port
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133307", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
         [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {

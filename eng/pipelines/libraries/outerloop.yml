@@ -21,11 +21,12 @@ extends:
     stages:
     - stage: Build
       jobs:
-        - template: /eng/common/core-templates/job/helix-job-monitor.yml
-          parameters:
-            helixAccessToken: $(HelixApiAccessToken)
-            timeoutInMinutes: 720
-            allowNoHelixJobs: true
+        - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+          - template: /eng/common/core-templates/job/helix-job-monitor.yml
+            parameters:
+              helixAccessToken: $(HelixApiAccessToken)
+              timeoutInMinutes: 720
+              allowNoHelixJobs: true
 
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -162,3 +163,18 @@ extends:
                       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                       extraHelixArguments: /p:BrowserHost=$(_hostedOs)
                       useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+
+          # Full trimmed CoreCLR ReadyToRun library tests, including slow [OuterLoop] tests
+          - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+            parameters:
+              platforms:
+                - browser_wasm
+              nameSuffix: _R2R
+              readyToRun: true
+              testScope: all
+              timeoutInMinutes: 600
+              extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+              alwaysRun: true
+              useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              scenarios:
+                - WasmTestOnChrome

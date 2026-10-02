@@ -572,9 +572,6 @@ namespace pal
     // Returns the default install location for a given platform for the specified architecture
     bool get_default_installation_dir_for_arch(architecture arch, string_t* recv);
 
-    // Returns the global locations to search for SDK/Frameworks - used when multi-level lookup is enabled
-    bool get_global_dotnet_dirs(std::vector<string_t>* recv);
-
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
     bool is_path_fully_qualified(const string_t& path);
