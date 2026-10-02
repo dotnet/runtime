@@ -50,7 +50,6 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
         public void CopyDirectory_SourceDirectoryName_DestinationDirectoryName()
         {
             var FullPathToSourceDirectory = System.IO.Path.Combine(TestDirectory, "SourceDirectory");
@@ -74,7 +73,6 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
         public void CopyDirectory_SourceDirectoryName_DestinationDirectoryName_OverwriteFalse()
         {
             var FullPathToSourceDirectory = System.IO.Path.Combine(TestDirectory, "SourceDirectory");
@@ -103,7 +101,6 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
         public void CopyDirectory_SourceDirectoryName_DestinationDirectoryName_OverwriteTrue()
         {
             var FullPathToSourceDirectory = System.IO.Path.Combine(TestDirectory, "SourceDirectory");
@@ -161,7 +158,6 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
         public void CopyFile_FileSourceFileName_DestinationFileName()
         {
             var testFileSource = GetTestFilePath();
@@ -200,7 +196,6 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
         public void CopyFile_FileSourceFileName_DestinationFileName_OverwriteTrue()
         {
             var testFileSource = GetTestFilePath();
@@ -498,7 +493,6 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
         public void GetFileInfo_File()
         {
             var TestFile = CreateTestFile(SourceData, TestFileName: GetTestFileName());

@@ -17,7 +17,6 @@ namespace System.Xml.XslTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - GetParam", Desc = "Get Param Test Cases")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CArgIntegrity : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -590,7 +589,6 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltArgumentList - AddParam : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltArgumentList - AddParam : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - AddParam : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CArgAddParam : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -1442,7 +1440,6 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltArgumentList - AddParam Misc : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltArgumentList - AddParam Misc : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - AddParam Misc : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CArgAddParamMisc : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -2161,7 +2158,6 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CArgAddExtObj : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -3190,7 +3186,6 @@ namespace System.Xml.XslTransformApiTests
     ////[TestCase(Name="XsltArgumentList - RemoveParam : URI, Stream", Desc="URI,STREAM")]
     //[TestCase(Name = "XsltArgumentList - RemoveParam : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - RemoveParam : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CArgRemoveParam : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -3826,7 +3821,6 @@ namespace System.Xml.XslTransformApiTests
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
     ////[TestCase(Name="XsltArgumentList - RemoveExtensionObject : URI, Reader", Desc="URI,READER")]
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CArgRemoveExtObj : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -4123,7 +4117,6 @@ namespace System.Xml.XslTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - Clear", Desc = "XsltArgumentList.Clear")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class CArgClear : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;

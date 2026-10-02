@@ -29,7 +29,6 @@ TypeAttr(typeof(object), name = "TypeAttrSimple")]
 
 namespace System.Reflection.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134944", TestPlatforms.Wasi)]
     public class AssemblyTests : FileCleanupTestBase
     {
         private const string s_sourceTestAssemblyName = "TestAssembly.dll";
