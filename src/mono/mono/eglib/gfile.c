@@ -127,10 +127,13 @@ g_fopen (const gchar *path, const gchar *mode)
 		return NULL;
 
 #ifdef HOST_WIN32
-	if (is_ascii_string (path) && is_ascii_string (mode)) {
-		fp = fopen (path, mode);
+	gchar *path_mod;
+	path_mod = g_path_make_long_compatible(path);
+	
+	if (is_ascii_string (path_mod) && is_ascii_string (mode)) {
+		fp = fopen (path_mod, mode);
 	} else {
-		gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
+		gunichar2 *wPath = g_utf8_to_utf16 (path_mod, -1, 0, 0, 0);
 		gunichar2 *wMode = g_utf8_to_utf16 (mode, -1, 0, 0, 0);
 
 		if (!wPath || !wMode)
@@ -140,6 +143,7 @@ g_fopen (const gchar *path, const gchar *mode)
 		g_free (wPath);
 		g_free (wMode);
 	}
+	g_free (path_mod);
 #else
 	fp = fopen (path, mode);
 #endif
