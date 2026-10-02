@@ -135,7 +135,6 @@ namespace ILAssembler
         /// <summary>
         /// Fold identical method bodies into one.
         /// </summary>
-        /// <remarks>Not yet implemented; accepted for CLI compatibility with native ilasm.</remarks>
         public bool Fold { get; set; }
 
         /// <summary>
