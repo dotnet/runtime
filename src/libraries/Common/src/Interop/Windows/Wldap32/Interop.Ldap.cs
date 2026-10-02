@@ -6,6 +6,9 @@ using System.DirectoryServices.Protocols;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate Interop.BOOL VERIFYSERVERCERT(IntPtr Connection, IntPtr pServerCert);
+
 internal static partial class Interop
 {
     internal static partial class Ldap

@@ -29,9 +29,6 @@ namespace System.DirectoryServices.Protocols
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate int DEREFERENCECONNECTIONInternal(IntPtr Connection, IntPtr ConnectionToDereference);
 
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate Interop.BOOL VERIFYSERVERCERT(IntPtr Connection, IntPtr pServerCert);
-
     [Flags]
     public enum LocatorFlags : long
     {
@@ -147,7 +144,6 @@ namespace System.DirectoryServices.Protocols
         private readonly QUERYFORCONNECTIONInternal _queryDelegate;
         private readonly NOTIFYOFNEWCONNECTIONInternal _notifiyDelegate;
         private readonly DEREFERENCECONNECTIONInternal _dereferenceDelegate;
-        private readonly VERIFYSERVERCERT _serverCertificateRoutine;
 
         internal unsafe LdapSessionOptions(LdapConnection connection)
         {
@@ -155,7 +151,7 @@ namespace System.DirectoryServices.Protocols
             _queryDelegate = new QUERYFORCONNECTIONInternal(ProcessQueryConnection);
             _notifiyDelegate = new NOTIFYOFNEWCONNECTIONInternal(ProcessNotifyConnection);
             _dereferenceDelegate = new DEREFERENCECONNECTIONInternal(ProcessDereferenceConnection);
-            _serverCertificateRoutine = new VERIFYSERVERCERT(ProcessServerCertificate);
+            InitializeServerCertificateDelegate();
         }
 
         public int ReferralHopLimit
@@ -491,34 +487,6 @@ namespace System.DirectoryServices.Protocols
                 }
 
                 _clientCertificateDelegate = value;
-            }
-        }
-
-        public VerifyServerCertificateCallback VerifyServerCertificate
-        {
-            get
-            {
-                if (_connection._disposed)
-                {
-                    throw new ObjectDisposedException(GetType().Name);
-                }
-
-                return _serverCertificateDelegate;
-            }
-            set
-            {
-                if (_connection._disposed)
-                {
-                    throw new ObjectDisposedException(GetType().Name);
-                }
-
-                if (value != null)
-                {
-                    int error = LdapPal.SetServerCertOption(_connection._ldapHandle, LdapOption.LDAP_OPT_SERVER_CERTIFICATE, _serverCertificateRoutine);
-                    ErrorChecking.CheckAndSetLdapError(error);
-                }
-
-                _serverCertificateDelegate = value;
             }
         }
 
@@ -1083,31 +1051,6 @@ namespace System.DirectoryServices.Protocols
             string password = Marshal.PtrToStringUni(SecAuthIdentit->password);
 
             return new NetworkCredential(user, password, domain);
-        }
-
-        private Interop.BOOL ProcessServerCertificate(IntPtr connection, IntPtr serverCert)
-        {
-            // If callback is not specified by user, it means the server certificate is accepted.
-            bool value = true;
-            if (_serverCertificateDelegate != null)
-            {
-                IntPtr certPtr = IntPtr.Zero;
-                X509Certificate certificate = null;
-                try
-                {
-                    Debug.Assert(serverCert != IntPtr.Zero);
-                    certPtr = Marshal.ReadIntPtr(serverCert);
-                    certificate = new X509Certificate(certPtr);
-                }
-                finally
-                {
-                    PALCertFreeCRLContext(certPtr);
-                }
-
-                value = _serverCertificateDelegate(_connection, certificate);
-            }
-
-            return value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
 
         private static bool AddLdapHandleRef(LdapConnection ldapConnection)
