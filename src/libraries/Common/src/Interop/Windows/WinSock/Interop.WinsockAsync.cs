@@ -3,6 +3,7 @@
 
 using System;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -22,13 +23,19 @@ internal static partial class Interop
         internal const int IPv6AddressLength = 16;
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct ControlDataIPv6
+        internal struct ControlDataIPv6
         {
             internal UIntPtr length;
             internal uint level;
             internal uint type;
-            internal fixed byte address[IPv6AddressLength];
+            internal AddressBuffer address;
             internal uint index;
+
+            [InlineArray(IPv6AddressLength)]
+            internal struct AddressBuffer
+            {
+                private byte _element0;
+            }
         }
 
         // Flags equivalent to winsock TRANSMIT_PACKETS_ELEMENT flags

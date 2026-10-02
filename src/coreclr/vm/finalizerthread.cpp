@@ -743,7 +743,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     // since doing so will cause OLE32 to CoUninitialize.
     while (1)
     {
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        minipal_sleep(INFINITE);
     }
 
     return 0;

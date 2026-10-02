@@ -46,6 +46,12 @@ internal sealed class FrameIterator
     }
 
     /// <summary>
+    /// Moves the cursor to <paramref name="frameAddress"/> (native <c>m_crawl.pFrame = ...</c>).
+    /// </summary>
+    public void MoveTo(TargetPointer frameAddress)
+        => currentFramePointer = frameAddress;
+
+    /// <summary>
     /// Returns the <see cref="FrameType"/> of the current frame.
     /// </summary>
     public FrameType GetCurrentFrameType()
@@ -56,6 +62,13 @@ internal sealed class FrameIterator
     /// </summary>
     public TargetCodePointer GetCurrentReturnAddress()
         => frameHelpers.GetReturnAddress(CurrentFrame);
+
+    /// <summary>
+    /// Returns whether the current frame is an InlinedCallFrame for a P/Invoke made by the
+    /// interpreter (native <c>InlinedCallFrame::IsInInterpreter</c>).
+    /// </summary>
+    public bool IsCurrentInlinedCallFrameInInterpreter()
+        => frameHelpers.IsInlinedCallFrameInInterpreter(CurrentFrame);
 
     /// <summary>
     /// Updates <paramref name="context"/> based on the current frame's type.

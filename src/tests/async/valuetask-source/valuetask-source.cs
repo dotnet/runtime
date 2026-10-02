@@ -10,108 +10,84 @@ using Xunit;
 
 public class Async2ValueTaskSource
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void AwaitValueTaskDefaultContext()
+    [Fact]
+    public static async Task AwaitValueTaskDefaultContext()
     {
-        SynchronizationContext currentCtx = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(null);
-        try
-        {
-            Source sUseContext = new Source(true);
+        Source sUseContext = new Source(true);
 
-            AwaitConfigDefault(sUseContext).GetAwaiter().GetResult();
-            // If we have no scheduling context or it is the default context,
-            // then "UseSchedulingContext" works the same as "None".
-            // However, what is passed to the VTS is optimization-specific:
-            // - in unoptimized case ValueTask awaiters will pass "UseSchedulingContext",
-            //   unless configured to "false".
-            // - in optimized (as in JitOptimizeAwait=1, which is the default) case
-            //   we do not distinguish "false" config vs. having default/no scheduling context,
-            //   and "None" is passed in either case.
-            Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
-            AwaitConfigTrue(sUseContext).GetAwaiter().GetResult();
-            // Either value is ok. See comment above.
-            Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
-            AwaitConfigFalse(sUseContext).GetAwaiter().GetResult();
-            Assert.Equal("None", sUseContext.trace);
+        await AwaitConfigDefault(sUseContext);
+        // If we have no scheduling context or it is the default context,
+        // then "UseSchedulingContext" works the same as "None".
+        // However, what is passed to the VTS is optimization-specific:
+        // - in unoptimized case ValueTask awaiters will pass "UseSchedulingContext",
+        //   unless configured to "false".
+        // - in optimized (as in JitOptimizeAwait=1, which is the default) case
+        //   we do not distinguish "false" config vs. having default/no scheduling context,
+        //   and "None" is passed in either case.
+        Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
+        await AwaitConfigTrue(sUseContext);
+        // Either value is ok. See comment above.
+        Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
+        await AwaitConfigFalse(sUseContext);
+        Assert.Equal("None", sUseContext.trace);
 
-            Source sIgnoreContext = new Source(false);
+        Source sIgnoreContext = new Source(false);
 
-            AwaitConfigDefault(sIgnoreContext).GetAwaiter().GetResult();
-            // Either value is ok. See comment above.
-            Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
-            AwaitConfigTrue(sIgnoreContext).GetAwaiter().GetResult();
-            // Either value is ok. See comment above.
-            Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
-            AwaitConfigFalse(sIgnoreContext).GetAwaiter().GetResult();
-            Assert.Equal("None", sIgnoreContext.trace);
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(currentCtx);
-        }
+        await AwaitConfigDefault(sIgnoreContext);
+        // Either value is ok. See comment above.
+        Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
+        await AwaitConfigTrue(sIgnoreContext);
+        // Either value is ok. See comment above.
+        Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
+        await AwaitConfigFalse(sIgnoreContext);
+        Assert.Equal("None", sIgnoreContext.trace);
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void AwaitValueTaskCustomContext()
+    [Fact]
+    public static async Task AwaitValueTaskCustomContext()
     {
-        SynchronizationContext currentCtx = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(new CustomContext());
-        try
-        {
-            Source sUseContext = new Source(true);
+        Source sUseContext = new Source(true);
 
-            AwaitConfigDefault(sUseContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
-            AwaitConfigTrue(sUseContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
-            AwaitConfigFalse(sUseContext).GetAwaiter().GetResult();
-            Assert.Equal("None Posted", sUseContext.trace);
+        await AwaitConfigDefault(sUseContext);
+        Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
+        await AwaitConfigTrue(sUseContext);
+        Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
+        await AwaitConfigFalse(sUseContext);
+        Assert.Equal("None Posted", sUseContext.trace);
 
-            Source sIgnoreContext = new Source(false);
+        Source sIgnoreContext = new Source(false);
 
-            AwaitConfigDefault(sIgnoreContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
-            AwaitConfigTrue(sIgnoreContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
-            AwaitConfigFalse(sIgnoreContext).GetAwaiter().GetResult();
-            Assert.Equal("None", sIgnoreContext.trace);
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(currentCtx);
-        }
+        await AwaitConfigDefault(sIgnoreContext);
+        Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
+        await AwaitConfigTrue(sIgnoreContext);
+        Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
+        await AwaitConfigFalse(sIgnoreContext);
+        Assert.Equal("None", sIgnoreContext.trace);
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void AwaitValueTaskCustomContextExtraCall()
+    [Fact]
+    public static async Task AwaitValueTaskCustomContextExtraCall()
     {
-        SynchronizationContext currentCtx = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(new CustomContext());
-        try
-        {
-            Source sUseContext = new Source(true);
+        Source sUseContext = new Source(true);
 
-            AwaitConfigDefaultExtraCall(sUseContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
-            AwaitConfigTrueExtraCall(sUseContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
-            AwaitConfigFalseExtraCall(sUseContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
+        await AwaitConfigDefaultExtraCall(sUseContext);
+        Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
+        await AwaitConfigTrueExtraCall(sUseContext);
+        Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
+        await AwaitConfigFalseExtraCall(sUseContext);
+        Assert.Equal("UseSchedulingContext Posted", sUseContext.trace);
 
-            Source sIgnoreContext = new Source(false);
+        Source sIgnoreContext = new Source(false);
 
-            AwaitConfigDefaultExtraCall(sIgnoreContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
-            AwaitConfigTrueExtraCall(sIgnoreContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
-            AwaitConfigFalseExtraCall(sIgnoreContext).GetAwaiter().GetResult();
-            Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(currentCtx);
-        }
+        await AwaitConfigDefaultExtraCall(sIgnoreContext);
+        Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
+        await AwaitConfigTrueExtraCall(sIgnoreContext);
+        Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
+        await AwaitConfigFalseExtraCall(sIgnoreContext);
+        Assert.Equal("UseSchedulingContext", sIgnoreContext.trace);
     }
 
     static bool IsDefaultContext()

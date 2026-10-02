@@ -192,6 +192,9 @@ int32_t CryptoNative_MLDsaSignExternalMu(EVP_PKEY* pKey,
 
         if (EVP_PKEY_sign_message_init(ctx, NULL, initParams) <= 0)
         {
+            // This can fail if the provider does not support external mu. Let this fail correctly so that the managed
+            // side throws an exception with PROV_R_NOT_SUPPORTED.
+            ret = 0;
             goto done;
         }
 

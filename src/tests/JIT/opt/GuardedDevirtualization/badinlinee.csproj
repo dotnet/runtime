@@ -5,6 +5,10 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- GC stress allocates synthetic objects on the current thread, invalidating the zero-allocation assertion. -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134169 -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <!-- Tiered compilation is disabled in interpreter mode. -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
@@ -13,5 +17,6 @@
     <CLRTestEnvironmentVariable Include="DOTNET_TC_CallCountingDelayMs" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
   </ItemGroup>
 </Project>

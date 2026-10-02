@@ -1386,7 +1386,9 @@ namespace System.StubHelpers
 
         private static class SizeHolder
         {
-            public static readonly int UnmanagedSize = typeof(T).IsEnum ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))) : Marshal.SizeOf<T>();
+            public static readonly int UnmanagedSize = typeof(T).IsEnum
+                ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T)))
+                : Marshal.SizeOfHelper((RuntimeType)typeof(T), throwIfNotMarshalable: true);
         }
 
         private static int UnmanagedSize
@@ -2548,9 +2550,6 @@ namespace System.StubHelpers
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
-
-        [Intrinsic]
-        internal static IntPtr GetStubContext() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void MulticastDebuggerTraceHelper(object o, int count)

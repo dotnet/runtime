@@ -11,6 +11,7 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <RunAnalyzers>false</RunAnalyzers>
     <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
     <PackageId>Microsoft.ILVerification</PackageId>
     <PackageDescription>IL verification library.</PackageDescription>
     <PackageReleaseNotes>
@@ -21,4 +22,8 @@
 
   <Import Project="ILVerification.projitems" />
 
+  <ItemGroup>
+    <!-- The package intentionally dropped .NET Standard support in 10.0. -->
+    <PackageValidationBaselineFrameworkToIgnore Include="netstandard2.0" />
+  </ItemGroup>
 </Project>
