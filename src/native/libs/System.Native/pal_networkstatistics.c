@@ -84,13 +84,67 @@
 
 static _Atomic(int) icmp6statSize = sizeof(struct icmp6stat);
 
-static size_t GetEstimatedSize(const char* name)
+static int32_t GetEstimatedSize(const char* name, size_t* size)
 {
-    void* oldp = NULL;
-    size_t oldlenp = 0;
+    *size = 0;
+    return sysctlbyname(name, NULL, size, NULL, 0);
+}
 
-    sysctlbyname(name, oldp, &oldlenp, NULL, 0);
-    return oldlenp;
+static int32_t GetSysctlBuffer(const char* name, uint8_t** buffer, size_t* size)
+{
+    *buffer = NULL;
+    *size = 0;
+
+    size_t capacity;
+    if (GetEstimatedSize(name, &capacity) != 0)
+    {
+        return -1;
+    }
+    if (capacity == 0)
+    {
+        return 0;
+    }
+
+    uint8_t* data = (uint8_t*)malloc(capacity);
+    if (data == NULL)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    for (;;)
+    {
+        size_t length = capacity;
+        if (sysctlbyname(name, data, &length, NULL, 0) == 0)
+        {
+            *buffer = data;
+            *size = length;
+            return 0;
+        }
+
+        int error = errno;
+        free(data);
+        if (error != ENOMEM)
+        {
+            errno = error;
+            return -1;
+        }
+
+        // A failed sysctl can change length; grow from the allocated capacity instead.
+        size_t nextCapacity;
+        if (!multiply_s(capacity, (size_t)2, &nextCapacity) || nextCapacity <= capacity)
+        {
+            errno = ENOMEM;
+            return -1;
+        }
+        capacity = nextCapacity;
+        data = (uint8_t*)malloc(capacity);
+        if (data == NULL)
+        {
+            errno = ENOMEM;
+            return -1;
+        }
+    }
 }
 
 int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
@@ -282,7 +336,14 @@ int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
     {
         // We did not provide enough memory.
         // macOS 11.0 added new member to icmp6stat so as FreeBSD reported changes between versions.
-        oldlenp = GetEstimatedSize(sysctlName);
+        if (GetEstimatedSize(sysctlName, &oldlenp) != 0)
+        {
+            int error = errno;
+            free(buffer);
+            memset(retStats, 0, sizeof(Icmpv6GlobalStatistics));
+            errno = error;
+            return -1;
+        }
         free(buffer);
         buffer = malloc(oldlenp);
         if (!buffer)
@@ -350,49 +411,43 @@ int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
 
 int32_t SystemNative_GetEstimatedTcpConnectionCount(void)
 {
-    int32_t count;
+    int32_t count = 0;
     size_t oldlenp = sizeof(count);
-    sysctlbyname("net.inet.tcp.pcbcount", &count, &oldlenp, NULL, 0);
+    if (sysctlbyname("net.inet.tcp.pcbcount", &count, &oldlenp, NULL, 0) != 0)
+    {
+        return -1;
+    }
     return count;
 }
 
 int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
 {
-    assert(infos != NULL);
     assert(infoCount != NULL);
+    assert(infos != NULL || *infoCount == 0);
 
     const char* sysctlName = "net.inet.tcp.pcblist";
+    int32_t capacity = *infoCount;
+    *infoCount = 0;
 
-    size_t estimatedSize = GetEstimatedSize(sysctlName);
-    uint8_t* buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t));
-    if (buffer == NULL)
+    size_t estimatedSize;
+    uint8_t* buffer;
+    if (GetSysctlBuffer(sysctlName, &buffer, &estimatedSize) != 0)
     {
-        errno = ENOMEM;
         return -1;
     }
-
-    void* newp = NULL;
-    size_t newlen = 0;
-
-    while (sysctlbyname(sysctlName, buffer, &estimatedSize, newp, newlen) != 0)
+    if (estimatedSize == 0)
     {
         free(buffer);
-        size_t tmpEstimatedSize;
-        if (!multiply_s(estimatedSize, (size_t)2, &tmpEstimatedSize) ||
-            (buffer = (uint8_t*)malloc(tmpEstimatedSize * sizeof(uint8_t))) == NULL)
-        {
-            errno = ENOMEM;
-            return -1;
-        }
-        estimatedSize = tmpEstimatedSize;
+        return 0;
     }
 
     int32_t count = (int32_t)(estimatedSize / sizeof(struct xtcpcb));
-    if (count > *infoCount)
+    if (count > capacity)
     {
         // Not enough space in caller-supplied buffer.
         free(buffer);
         *infoCount = count;
+        errno = ENOBUFS;
         return -1;
     }
     *infoCount = count;
@@ -464,49 +519,59 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
 
 int32_t SystemNative_GetEstimatedUdpListenerCount(void)
 {
-    int32_t count;
+#if defined(__FreeBSD__)
+    // FreeBSD exposes pcblist, but not pcbcount.
+    size_t size;
+    if (GetEstimatedSize("net.inet.udp.pcblist", &size) != 0)
+    {
+        return -1;
+    }
+    size_t count = size / sizeof(struct xinpcb);
+    if (count > INT32_MAX)
+    {
+        errno = EOVERFLOW;
+        return -1;
+    }
+    return (int32_t)count;
+#else
+    int32_t count = 0;
     size_t oldlenp = sizeof(count);
-    sysctlbyname("net.inet.udp.pcbcount", &count, &oldlenp, NULL, 0);
+    if (sysctlbyname("net.inet.udp.pcbcount", &count, &oldlenp, NULL, 0) != 0)
+    {
+        return -1;
+    }
     return count;
+#endif
 }
 
 int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
 {
-    assert(infos != NULL);
     assert(infoCount != NULL);
+    assert(infos != NULL || *infoCount == 0);
 
     const char* sysctlName = "net.inet.udp.pcblist";
+    int32_t capacity = *infoCount;
+    *infoCount = 0;
 
-    size_t estimatedSize = GetEstimatedSize(sysctlName);
-    uint8_t* buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t));
-    if (buffer == NULL)
+    size_t estimatedSize;
+    uint8_t* buffer;
+    if (GetSysctlBuffer(sysctlName, &buffer, &estimatedSize) != 0)
     {
-        errno = ENOMEM;
         return -1;
     }
-
-    void* newp = NULL;
-    size_t newlen = 0;
-
-    while (sysctlbyname(sysctlName, buffer, &estimatedSize, newp, newlen) != 0)
+    if (estimatedSize == 0)
     {
         free(buffer);
-        size_t tmpEstimatedSize;
-        if (!multiply_s(estimatedSize, (size_t)2, &tmpEstimatedSize) ||
-            (buffer = (uint8_t*)malloc(tmpEstimatedSize * sizeof(uint8_t))) == NULL)
-        {
-            errno = ENOMEM;
-            return -1;
-        }
-        estimatedSize = tmpEstimatedSize;
+        return 0;
     }
     int32_t count = (int32_t)(estimatedSize / sizeof(struct xinpcb));
 
-    if (count > *infoCount)
+    if (count > capacity)
     {
         // Not enough space in caller-supplied buffer.
         free(buffer);
         *infoCount = count;
+        errno = ENOBUFS;
         return -1;
     }
 

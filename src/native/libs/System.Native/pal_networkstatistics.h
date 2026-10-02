@@ -158,12 +158,18 @@ PALEXPORT int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics*
 
 PALEXPORT int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats);
 
+// Returns the estimated count, or -1 with errno set on failure.
 PALEXPORT int32_t SystemNative_GetEstimatedTcpConnectionCount(void);
 
+// Returns 0 on success, or -1 with errno set on failure.
+// infoCount is the capacity on input and the actual count (or required count for ENOBUFS) on output.
 PALEXPORT int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount);
 
+// Returns the estimated count, or -1 with errno set on failure.
 PALEXPORT int32_t SystemNative_GetEstimatedUdpListenerCount(void);
 
+// Returns 0 on success, or -1 with errno set on failure.
+// infoCount is the capacity on input and the actual count (or required count for ENOBUFS) on output.
 PALEXPORT int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount);
 
 PALEXPORT int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats);
