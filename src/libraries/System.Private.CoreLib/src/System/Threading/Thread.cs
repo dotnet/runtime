@@ -421,15 +421,13 @@ namespace System.Threading
 
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Thread_GetOptimalMaxSpinWaitsPerSpinIteration")]
-        [SuppressGCTransition]
-        private static partial int GetOptimalMaxSpinWaitsPerSpinIteration();
-
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
         /// appropriate for the processor.
         /// </summary>
-        internal static int OptimalMaxSpinWaitsPerSpinIteration => GetOptimalMaxSpinWaitsPerSpinIteration();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Thread_GetOptimalMaxSpinWaitsPerSpinIteration")]
+        [SuppressGCTransition]
+        internal static partial int GetOptimalMaxSpinWaitsPerSpinIteration();
 #endif
 
         internal static Thread CurrentThreadAssumedInitialized
