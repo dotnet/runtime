@@ -61,24 +61,31 @@ namespace ILLink.RoslynAnalyzer
 
         public static bool IsTypeOf(this ITypeSymbol symbol, string @namespace, string name)
         {
-            return symbol.ContainingNamespace?.GetDisplayName() == @namespace && symbol.MetadataName == name;
+            return symbol.MetadataName == name && symbol.ContainingNamespace?.GetDisplayName() == @namespace;
         }
 
         public static bool IsTypeOf(this ITypeSymbol symbol, WellKnownType wellKnownType)
         {
-            return symbol.TryGetWellKnownType() == wellKnownType;
-        }
-
-        public static WellKnownType? TryGetWellKnownType(this ITypeSymbol symbol)
-        {
-            return symbol.SpecialType switch
+            switch (symbol.SpecialType)
             {
-                SpecialType.System_String => WellKnownType.System_String,
-                SpecialType.System_Nullable_T => WellKnownType.System_Nullable_T,
-                SpecialType.System_Array => WellKnownType.System_Array,
-                SpecialType.System_Object => WellKnownType.System_Object,
-                _ => WellKnownTypeExtensions.GetWellKnownType(symbol.ContainingNamespace?.GetDisplayName() ?? "", symbol.MetadataName)
-            };
+                case SpecialType.System_String:
+                    return wellKnownType == WellKnownType.System_String;
+                case SpecialType.System_Nullable_T:
+                    return wellKnownType == WellKnownType.System_Nullable_T;
+                case SpecialType.System_Array:
+                    return wellKnownType == WellKnownType.System_Array;
+                case SpecialType.System_Object:
+                    return wellKnownType == WellKnownType.System_Object;
+            }
+
+            // WellKnownType is contiguous from zero through System_Void; invalid values previously returned false.
+            if ((uint)wellKnownType > (uint)WellKnownType.System_Void)
+            {
+                return false;
+            }
+
+            (string @namespace, string name) = wellKnownType.GetNamespaceAndName();
+            return symbol.IsTypeOf(@namespace, name);
         }
     }
 }
