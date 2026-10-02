@@ -3091,11 +3091,16 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
 }
 
 #if defined(TARGET_WASI)
-// from https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/descriptor_table.h
-// The descriptor table entry is a "fat pointer":
-//   typedef struct { void* data; descriptor_vtable_t* vtable; } descriptor_table_entry_t;
-// where `data` points to the descriptor-specific state (a tcp_socket_t* or udp_socket_t*).
-void* descriptor_table_get_ref(int fd);
+// from https://github.com/WebAssembly/wasi-libc/blob/2e6fb9d8ee0c/libc-bottom-half/headers/private/wasi/descriptor_table.h
+// The descriptor table entry is a "fat pointer" where `data` points to the descriptor-specific
+// state (a tcp_socket_t* or udp_socket_t*), which starts with a reference count.
+typedef struct
+{
+    unsigned* data;
+    void* vtable;
+} WasiDescriptorTableEntry;
+int descriptor_table_get(int fd, WasiDescriptorTableEntry* entry);
+void __wasilibc_descriptor_deallocate(WasiDescriptorTableEntry entry);
 
 // this method is invading private implementation details of wasi-libc
 // we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
@@ -3112,14 +3117,23 @@ int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int3
     }
 
     int fd = ToFileDescriptor(socket);
-    // The returned pointer is a descriptor_table_entry_t*; its first word is the `data` pointer.
-    void** ref = (void**)descriptor_table_get_ref(fd);
-    if (ref == NULL)
+    WasiDescriptorTableEntry tableEntry;
+    if (descriptor_table_get(fd, &tableEntry) != 0)
     {
         // The fd is not present in the descriptor table (e.g. closed or not a socket).
         return Error_EBADF;
     }
-    *entry = ref[0];
+
+    // descriptor_table_get returns a strong reference. The descriptor table still holds its own
+    // reference while the fd is open, so release ours (mirroring descriptor_table_entry_dec) and
+    // hand out a borrowed pointer, which is how the managed side uses it.
+    *entry = tableEntry.data;
+    if (--(*tableEntry.data) == 0)
+    {
+        __wasilibc_descriptor_deallocate(tableEntry);
+        *entry = NULL;
+        return Error_EBADF;
+    }
 
     int type = 0;
     socklen_t length = sizeof(type);

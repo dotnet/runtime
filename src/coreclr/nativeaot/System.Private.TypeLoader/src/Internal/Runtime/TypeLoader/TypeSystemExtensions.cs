@@ -16,12 +16,6 @@ namespace Internal.TypeSystem
             return (type != type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        public static bool IsGeneric(this TypeDesc type)
-        {
-            DefType typeAsDefType = type as DefType;
-            return typeAsDefType != null && typeAsDefType.HasInstantiation;
-        }
-
         public static bool IsWellKnownType(this TypeDesc type, WellKnownType wellKnownType)
         {
             return type == type.Context.GetWellKnownType(wellKnownType, false);

@@ -28,9 +28,15 @@ public class Runtime_64883
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
+        string assemblyPath = Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return;
+        }
+
         // This needs an ALC because the "static access" helper is different in ALCs.
         CollectibleALC alc = new CollectibleALC();
-        Assembly asm = alc.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
+        Assembly asm = alc.LoadFromAssemblyPath(assemblyPath);
         MethodInfo mi = asm.GetType($"{nameof(Runtime_64883)}.{nameof(Runtime_64883)}").GetMethod(nameof(MainT));
         mi.Invoke(null, new object[0]);
     }
