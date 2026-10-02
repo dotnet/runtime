@@ -177,9 +177,6 @@ namespace System.Runtime.CompilerServices
             return false;
         }
 
-        internal static ref byte GetRawData(this object obj) =>
-            ref Unsafe.As<RawData>(obj).Data;
-
         internal static unsafe nuint GetRawObjectDataSize(this object obj)
         {
             MethodTable* pMT = GetMethodTable(obj);
@@ -198,6 +195,9 @@ namespace System.Runtime.CompilerServices
         {
             return array.GetMethodTable()->ComponentSize;
         }
+
+        [Intrinsic]
+        internal static ref byte GetRawData(this object obj) => ref obj.GetRawData();
 
         [Intrinsic]
         internal static unsafe MethodTable* GetMethodTable(this object obj) => obj.GetMethodTable();
