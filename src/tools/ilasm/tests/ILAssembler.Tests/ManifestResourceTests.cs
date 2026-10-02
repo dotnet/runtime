@@ -115,7 +115,7 @@ namespace ILAssembler.Tests
                 resourceLocator: alias =>
                 {
                     Assert.Equal("MissingAlias", alias);
-                    return null!;
+                    return null;
                 });
 
             var strictDiagnostic = Assert.Single(strictDiagnostics.Where(d => d.Id == DiagnosticIds.FileNotFound));
@@ -129,7 +129,7 @@ namespace ILAssembler.Tests
                 resourceLocator: alias =>
                 {
                     Assert.Equal("MissingAlias", alias);
-                    return null!;
+                    return null;
                 });
 
             var tolerantDiagnostic = Assert.Single(tolerantDiagnostics.Where(d => d.Id == DiagnosticIds.FileNotFound));
@@ -143,7 +143,54 @@ namespace ILAssembler.Tests
             Assert.Equal("Missing.Resource", reader.GetString(resource.Name));
             Assert.True(resource.Implementation.IsNil);
             Assert.Equal(0u, resource.Offset);
-            Assert.Equal(0, pe.PEHeaders.CorHeader!.ResourcesDirectory.Size);
+            Assert.Equal(4, pe.PEHeaders.CorHeader!.ResourcesDirectory.Size);
+            Assert.Empty(ReadEmbeddedResource(pe, resource));
+        }
+
+        [Fact]
+        public void MissingEmbeddedManifestResource_DoesNotAliasFollowingResource()
+        {
+            string source = """
+                .assembly test { }
+                .mresource public Missing.Resource as MissingAlias
+                {
+                }
+                .mresource public Valid.Resource as ValidAlias
+                {
+                }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+            byte[] expectedResourceBytes = [0x10, 0x20, 0x30, 0x40];
+
+            var (diagnostics, imageBytes) = CompileAndGetImageBytes(
+                source,
+                new Options { ErrorTolerant = true },
+                resourceLocator: alias => alias switch
+                {
+                    "MissingAlias" => null,
+                    "ValidAlias" => expectedResourceBytes,
+                    _ => throw new InvalidOperationException($"Unexpected resource alias: {alias}")
+                });
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.FileNotFound, diagnostic.Id);
+            Assert.False(imageBytes.IsDefault);
+
+            using var pe = new PEReader(imageBytes);
+            var reader = pe.GetMetadataReader();
+            ManifestResource[] resources = reader.ManifestResources
+                .Select(reader.GetManifestResource)
+                .ToArray();
+
+            Assert.Equal(2, resources.Length);
+            Assert.Equal("Missing.Resource", reader.GetString(resources[0].Name));
+            Assert.Equal(0u, resources[0].Offset);
+            Assert.Empty(ReadEmbeddedResource(pe, resources[0]));
+            Assert.Equal("Valid.Resource", reader.GetString(resources[1].Name));
+            Assert.Equal(4u, resources[1].Offset);
+            Assert.Equal(expectedResourceBytes, ReadEmbeddedResource(pe, resources[1]));
         }
 
         [Fact]
@@ -220,7 +267,7 @@ namespace ILAssembler.Tests
             string source,
             Options options,
             Func<string, SourceText>? includedDocumentLoader = null,
-            Func<string, byte[]>? resourceLocator = null)
+            Func<string, byte[]?>? resourceLocator = null)
         {
             return CompileAndGetImageBytes(
                 ImmutableArray.Create(new SourceText(source, "test.il")),
@@ -233,7 +280,7 @@ namespace ILAssembler.Tests
             ImmutableArray<SourceText> documents,
             Options options,
             Func<string, SourceText>? includedDocumentLoader = null,
-            Func<string, byte[]>? resourceLocator = null)
+            Func<string, byte[]?>? resourceLocator = null)
         {
             var compiler = new DocumentCompiler();
             var (diagnostics, image) = compiler.Compile(

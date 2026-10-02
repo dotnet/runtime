@@ -63,7 +63,7 @@ public:
     void EnterCriticalRegion();
 
     // Exit a critical region. Must pair with EnterCriticalRegion.
-    void ExitCriticalRegion();
+    void ExitCriticalRegion() noexcept;
 
     // Queue an object for deferred deletion. Must be called from within a
     // critical region. The object will be deleted via pfnDelete once all
@@ -136,7 +136,7 @@ public:
             m_pCollector->EnterCriticalRegion();
     }
 
-    ~EbrCriticalRegionHolder()
+    ~EbrCriticalRegionHolder() noexcept
     {
         WRAPPER_NO_CONTRACT;
         if (m_pCollector != nullptr)

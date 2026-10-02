@@ -103,6 +103,36 @@
     </PropertyGroup>
   </Target>
 
+  <!-- The runtime pack's RuntimeList.xml lists its link-time inputs (static libraries, sources,
+       headers, response files, WIT definitions) as native assets, so the SDK would copy them into
+       the build and publish output of every self-contained app. The native link reads them from
+       the runtime pack directly, so drop them from the runtime pack assets before they reach
+       ReferenceCopyLocalPaths (build) and ResolvedFileToPublish (publish). Mirrors the browser
+       filtering in AssetsComputingHelper.ShouldFilterCandidate. For CoreCLR, the pack's stock
+       corerun is replaced in the bundle by the per-app linked host.
+       ResolveRuntimePackAssets can be requested (and skipped) before @(RuntimePack) is populated,
+       which still triggers its AfterTargets. The @(RuntimePackAsset) condition keeps this target
+       from being marked as done in that case, so it runs again after the real resolution. -->
+  <Target Name="_WasiRemoveRuntimePackLinkInputs"
+          AfterTargets="ResolveRuntimePackAssets"
+          Condition="'$(IsWasiProject)' == 'true' and '@(RuntimePackAsset)' != ''">
+    <ItemGroup>
+      <_WasiRuntimePackLinkInput Include="@(RuntimePackAsset)"
+                                 Condition="'%(RuntimePackAsset.AssetType)' == 'native' and
+                                            ('%(RuntimePackAsset.Extension)' == '.a' or
+                                             '%(RuntimePackAsset.Extension)' == '.o' or
+                                             '%(RuntimePackAsset.Extension)' == '.c' or
+                                             '%(RuntimePackAsset.Extension)' == '.h' or
+                                             '%(RuntimePackAsset.Extension)' == '.rsp' or
+                                             '%(RuntimePackAsset.Extension)' == '.props' or
+                                             '%(RuntimePackAsset.Extension)' == '.wit' or
+                                             ('%(RuntimePackAsset.Extension)' == '.json' and '%(RuntimePackAsset.FileName)' == 'wasm-props') or
+                                             ('$(WasmAppRuntimeFlavor)' == 'CoreCLR' and '%(RuntimePackAsset.FileName)%(RuntimePackAsset.Extension)' == 'corerun'))" />
+      <RuntimePackAsset Remove="@(_WasiRuntimePackLinkInput)" />
+      <ReferenceCopyLocalPaths Remove="@(_WasiRuntimePackLinkInput)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="_GetWasiGenerateAppBundleDependencies">
     <ItemGroup Condition="'$(InvariantGlobalization)' == 'true' or '$(WasmSingleFileBundle)' == 'true'">
       <ReferenceCopyLocalPaths Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat" />
@@ -165,7 +195,7 @@
     </ReadLinesFromFile>
     <PropertyGroup>
       <!-- In-tree builds override this from eng/wasm/wasi-sdk-version.txt via WasiApp.InTree.targets. -->
-      <_ExpectedWasiSdkVersion Condition="'$(_ExpectedWasiSdkVersion)' == ''">33.0</_ExpectedWasiSdkVersion>
+      <_ExpectedWasiSdkVersion Condition="'$(_ExpectedWasiSdkVersion)' == ''">34.0</_ExpectedWasiSdkVersion>
       <_FoundExpectedWasiSdkVersion Condition="$([System.String]::Copy('%(_WasiSdkVersionLines.Identity)').StartsWith('$(_ExpectedWasiSdkVersion)'))">true</_FoundExpectedWasiSdkVersion>
       <_ToolchainMissingErrorMessage Condition="'$(_FoundExpectedWasiSdkVersion)' == ''">Please use wasi-sdk version $(_ExpectedWasiSdkVersion) and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
       <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>

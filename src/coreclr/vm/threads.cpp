@@ -909,7 +909,6 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
-        // We can not call __SwitchToThread since we can not go back to host.
         minipal_sleep(10);
     }
     if (m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
@@ -4003,7 +4002,7 @@ DEBUG_NOINLINE void ThreadStore::Enter()
     m_Crst.Enter();
 }
 
-DEBUG_NOINLINE void ThreadStore::Leave()
+DEBUG_NOINLINE void ThreadStore::Leave() noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -4024,7 +4023,7 @@ void ThreadStore::LockThreadStore()
     ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 }
 
-void ThreadStore::UnlockThreadStore()
+void ThreadStore::UnlockThreadStore() noexcept
 {
     WRAPPER_NO_CONTRACT;
 
@@ -6261,7 +6260,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
 // frame's ExceptionUnwind method.  It will return the first
 // Frame that is above pvLimitSP.
 //
-Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP)
+Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP) noexcept
 {
     CONTRACTL
     {
