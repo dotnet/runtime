@@ -17,11 +17,9 @@
 }
 .assembly extern xunit.core {}
 
-
 .class public auto ansi beforefieldinit Test_badcodeinsidefinally
        extends [mscorlib]System.Object
 {
-
   .method static object GetObj() cil managed
   {
     .locals init (string str)

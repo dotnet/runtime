@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "appdomain.hpp"
+#include "externalmemoryhandle.h"
 #include "peimagelayout.inl"
 #include "field.h"
 #include "strongnameinternal.h"
@@ -1242,6 +1243,8 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
         CLASS__METHODBASEINVOKER,
+        CLASS__INSTANCE_CALLI_HELPER,
+        CLASS__INTRINSIC_INVOKE_HELPER,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,
     };
@@ -1688,10 +1691,6 @@ void AppDomain::Init()
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
 
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
-    if (!m_handleStore)
-    {
-        COMPlusThrowOM();
-    }
 
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_TypeEquivalenceCrst.Init(CrstTypeEquivalenceMap);

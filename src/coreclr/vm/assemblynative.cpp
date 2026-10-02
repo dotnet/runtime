@@ -1583,6 +1583,49 @@ namespace
         }
         return false;
     }
+
+    bool ProcessPrecachedTypeMapNamedEntries(
+        NativeFormat::NativeParser namedEntries,
+        BOOL (*callback)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+        CallbackContext* context)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (namedEntries.IsNull())
+        {
+            return true;
+        }
+
+        uint32_t count = namedEntries.GetUnsigned();
+        for (uint32_t i = 0; i < count; i++)
+        {
+            PTR_CBYTE string1;
+            uint32_t stringLength1;
+            namedEntries.GetString(&string1, &stringLength1);
+
+            PTR_CBYTE string2;
+            uint32_t stringLength2;
+            namedEntries.GetString(&string2, &stringLength2);
+
+            if (stringLength1 > INT32_MAX || stringLength2 > INT32_MAX)
+            {
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            }
+
+            ProcessAttributesCallbackArg arg;
+            arg.Utf8String1 = reinterpret_cast<LPCUTF8>(string1);
+            arg.Utf8String2 = reinterpret_cast<LPCUTF8>(string2);
+            arg.StringLen1 = static_cast<int32_t>(stringLength1);
+            arg.StringLen2 = static_cast<int32_t>(stringLength2);
+
+            if (!callback(context, &arg))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 #endif
 
     class AssemblyPtrCollectionTraits : public DefaultSHashTraits<Assembly*>
@@ -1755,6 +1798,16 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                     {
                         return FALSE;
                     }
+
+                    NativeFormat::NativeHashtable typeMap;
+                    NativeFormat::NativeParser namedEntries;
+                    bool found = pR2RInfo->TryGetPrecachedExternalTypeMap(groupTypeMT, &typeMap, &namedEntries);
+                    _ASSERTE(found);
+                    if (!ProcessPrecachedTypeMapNamedEntries(namedEntries, newExternalTypeEntry, context))
+                    {
+                        return FALSE;
+                    }
+
                     return newPrecachedExternalTypeMap(context);
                 },
                 currAssembly);
@@ -1765,7 +1818,19 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         {
             hasPrecachedProxy = ProcessPrecachedTypeMapInfo(
                 [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedProxyTypeMap(groupTypeMT); },
-                [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedProxyTypeMap(context); },
+                [=](PTR_ReadyToRunInfo pR2RInfo)
+                {
+                    NativeFormat::NativeHashtable typeMap;
+                    NativeFormat::NativeParser namedEntries;
+                    bool found = pR2RInfo->TryGetPrecachedProxyTypeMap(groupTypeMT, &typeMap, &namedEntries);
+                    _ASSERTE(found);
+                    if (!ProcessPrecachedTypeMapNamedEntries(namedEntries, newProxyTypeEntry, context))
+                    {
+                        return FALSE;
+                    }
+
+                    return newPrecachedProxyTypeMap(context);
+                },
                 currAssembly);
         }
 

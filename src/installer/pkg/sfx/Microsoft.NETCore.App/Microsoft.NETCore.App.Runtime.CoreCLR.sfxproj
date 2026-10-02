@@ -6,6 +6,8 @@
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+  <Import Project="$(WasmPInvokeModulesPropsPath)"
+          Condition="'$(TargetOS)' == 'browser'" />
 
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
@@ -35,7 +37,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' == 'true'">
-    <IncludeMibcFilesInReadyToRun>false</IncludeMibcFilesInReadyToRun>
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
     <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunEmitSymbols>false</PublishReadyToRunEmitSymbols>
@@ -113,6 +114,7 @@
     </ItemGroup>
     <PropertyGroup>
       <_WasmCrossgen2Exe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmCrossgen2Exe>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
     <Error Condition="'@(_RuntimeCoreLibFile)' == ''"
            Text="PublishReadyToRun is true but the System.Private.CoreLib project did not produce its IL assembly. Build CoreCLR first or set PublishReadyToRun=false." />
@@ -121,6 +123,7 @@
     <ItemGroup>
       <_ReadyToRunCompilerInputs Include="@(_WasmFrameworkR2RReference);@(_RuntimeCoreLibFile)" />
       <_ReadyToRunCompilerInputs Include="$(Crossgen2InBuildDir)*jit*.dll;$(Crossgen2InBuildDir)*jit*.dylib;$(Crossgen2InBuildDir)*jit*.so" />
+      <_ReadyToRunCompilerInputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)" />
     </ItemGroup>
   </Target>
 

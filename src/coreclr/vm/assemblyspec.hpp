@@ -153,7 +153,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     HRESULT CheckFriendAssemblyName();
 
-    HRESULT EmitToken(IMetaDataAssemblyEmit *pEmit,
+    HRESULT EmitToken(IMDInternalEmit *pEmit,
                       mdAssemblyRef *pToken);
 
     HRESULT Bind(

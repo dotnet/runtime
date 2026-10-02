@@ -58,7 +58,19 @@ public class Test_Rotate
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint rol32xor(uint value, int amount)
     {
-        return (value << amount) ^ (value >> (32 - amount));
+        return (value << (amount & 31)) ^ (value >> ((32 - amount) & 31));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static uint ror32xor(uint value, int amount)
+    {
+        return (value >> (amount & 31)) ^ (value << ((32 - amount) & 31));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static uint rol32xor_1(uint value)
+    {
+        return (value << 1) ^ (value >> 31);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -91,6 +103,24 @@ public class Test_Rotate
     static ulong rol64(ulong value, int amount)
     {
         return (value << amount) | (value >> (64 - amount));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ulong rol64xor(ulong value, int amount)
+    {
+        return (value << (amount & 63)) ^ (value >> ((64 - amount) & 63));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ulong ror64xor(ulong value, int amount)
+    {
+        return (value >> (amount & 63)) ^ (value << ((64 - amount) & 63));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ulong ror64xor_1(ulong value)
+    {
+        return (value >> 1) ^ (value << 63);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -207,6 +237,73 @@ public class Test_Rotate
     static uint rol32_and(uint value, int amount)
     { 
         return (value << amount) | (value >> ((32 - amount) & 31));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static uint rol32_checked(uint value, int amount)
+    {
+        return (value << (amount & 31)) | (value >> (checked(unchecked(-amount) + 32) & 31));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static uint ror32_checked(uint value, int amount)
+    {
+        return (value << checked(unchecked(-amount) + 32)) | (value >> amount);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static ulong rol64_checked(ulong value, int amount)
+    {
+        return (value >> (checked(unchecked(-amount) + 64) & 63)) | (value << (amount & 63));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static ulong ror64_checked(ulong value, int amount)
+    {
+        return (value >> amount) | (value << checked(unchecked(-amount) + 64));
+    }
+
+    [Theory]
+    [InlineData(int.MinValue, false, false)]
+    [InlineData(int.MinValue + 1, true, true)]
+    [InlineData(int.MinValue + 32, true, true)]
+    [InlineData(int.MinValue + 33, false, true)]
+    [InlineData(int.MinValue + 64, false, true)]
+    [InlineData(int.MinValue + 65, false, false)]
+    [InlineData(-1, false, false)]
+    [InlineData(0, false, false)]
+    [InlineData(1, false, false)]
+    [InlineData(31, false, false)]
+    [InlineData(32, false, false)]
+    [InlineData(63, false, false)]
+    [InlineData(64, false, false)]
+    [InlineData(int.MaxValue, false, false)]
+    public static void CheckedRotation(int amount, bool overflow32, bool overflow64)
+    {
+        const uint Value32 = 0x12345678;
+        const ulong Value64 = 0x123456789abcdef;
+
+        if (overflow32)
+        {
+            Assert.Throws<OverflowException>(() => rol32_checked(Value32, amount));
+            Assert.Throws<OverflowException>(() => ror32_checked(Value32, amount));
+        }
+        else
+        {
+            Assert.Equal(rol32(Value32, amount), rol32_checked(Value32, amount));
+            Assert.Equal(ror32(Value32, amount), ror32_checked(Value32, amount));
+        }
+
+        if (overflow64)
+        {
+            Assert.Throws<OverflowException>(() => rol64_checked(Value64, amount));
+            Assert.Throws<OverflowException>(() => ror64_checked(Value64, amount));
+        }
+        else
+        {
+            Assert.Equal(rol64(Value64, amount), rol64_checked(Value64, amount));
+            Assert.Equal(ror64(Value64, amount), ror64_checked(Value64, amount));
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -379,6 +476,16 @@ public class Test_Rotate
             return Fail;
         }
 
+        if (rol32xor_1(0x89abcdef) != 0x13579bdf)
+        {
+            return Fail;
+        }
+
+        if (ror64xor_1(0x123456789abcdef) != 0x8091a2b3c4d5e6f7)
+        {
+            return Fail;
+        }
+
         if (ror64sfield(7) != 0xde02468acf13579b)
         {
             return Fail;
@@ -402,5 +509,40 @@ public class Test_Rotate
         }
 
         return Pass;
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(31)]
+    [InlineData(32)]
+    [InlineData(33)]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(65)]
+    [InlineData(-1)]
+    [InlineData(-32)]
+    [InlineData(-64)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
+    public static void TestXor(int amount)
+    {
+        const uint Value32 = 0x89abcdef;
+        const ulong Value64 = 0xfedcba9876543210;
+
+        uint left32 = uint.RotateLeft(Value32, amount);
+        uint right32 = uint.RotateRight(Value32, amount);
+        ulong left64 = ulong.RotateLeft(Value64, amount);
+        ulong right64 = ulong.RotateRight(Value64, amount);
+
+        Assert.Equal(left32, rol32(Value32, amount));
+        Assert.Equal(right32, ror32(Value32, amount));
+        Assert.Equal(left64, rol64(Value64, amount));
+        Assert.Equal(right64, ror64(Value64, amount));
+
+        Assert.Equal((amount & 31) == 0 ? 0 : left32, rol32xor(Value32, amount));
+        Assert.Equal((amount & 31) == 0 ? 0 : right32, ror32xor(Value32, amount));
+        Assert.Equal((amount & 63) == 0 ? 0 : left64, rol64xor(Value64, amount));
+        Assert.Equal((amount & 63) == 0 ? 0 : right64, ror64xor(Value64, amount));
     }
 }

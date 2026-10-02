@@ -25,6 +25,11 @@ public class EnumIntrinsics
         TestGenericEnums();
         TestDifferentUnderlyingTypes();
         TestCornerCases();
+
+        TestNullableArgument(SimpleEnum.A, null, false);
+        TestNullableArgument(SimpleEnum.B, null, false);
+        TestNullableArgument(SimpleEnum.A, SimpleEnum.A, true);
+        TestNullableArgument(SimpleEnum.A, SimpleEnum.B, false);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -61,6 +66,22 @@ public class EnumIntrinsics
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool CheckGenericEquals<T>(T left, T right) where T : Enum => left.Equals(right);
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(0, 1)]
+    [InlineData(1, 0)]
+    [InlineData(1, 1)]
+    public static void TestNestedGenericEnums(int left, int right)
+    {
+        Assert.False(CheckNestedGenericEquals((GenericClass<string>.NestedEnum)left, (GenericClass<object>.NestedEnum)right));
+        Assert.Equal(left == right, CheckNestedGenericEquals((GenericClass<string>.NestedEnum)left, (GenericClass<string>.NestedEnum)right));
+        Assert.False(CheckNestedGenericEquals((GenericClass<int>.NestedEnum)left, (GenericClass<long>.NestedEnum)right));
+        Assert.Equal(left == right, CheckNestedGenericEquals((GenericClass<int>.NestedEnum)left, (GenericClass<int>.NestedEnum)right));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool CheckNestedGenericEquals<T, U>(GenericClass<T>.NestedEnum left, GenericClass<U>.NestedEnum right) => left.Equals(right);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void TestDifferentUnderlyingTypes()
@@ -103,6 +124,15 @@ public class EnumIntrinsics
         Assert.True(SimpleEnum.A.Equals(boxedB));
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestNullableArgument(SimpleEnum left, SimpleEnum? right, bool expected)
+    {
+        object boxedLeft = left;
+        object boxedRight = right;
+        Assert.Equal(expected, boxedLeft.Equals(boxedRight));
+    }
+
     public class GenericEnumClass<T> where T : Enum { public T field; }
+    public class GenericClass<T> { public enum NestedEnum { A, B } }
     public enum SimpleEnum { A, B, C }
 }

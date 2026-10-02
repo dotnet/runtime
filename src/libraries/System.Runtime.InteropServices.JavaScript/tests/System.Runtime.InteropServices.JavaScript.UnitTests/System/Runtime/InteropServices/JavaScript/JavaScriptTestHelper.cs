@@ -40,6 +40,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("reject", "JavaScriptTestHelper")]
         public static partial Task Reject([JSMarshalAs<JSType.Any>] object what);
 
+        [JSImport("throwBeforePromise", "JavaScriptTestHelper")]
+        internal static partial Task ThrowBeforePromise();
+
         [JSImport("intentionallyMissingImport", "JavaScriptTestHelper")]
         public static partial void IntentionallyMissingImport();
 
@@ -573,6 +576,82 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static Task ReturnCompletedTask()
         {
             return Task.CompletedTask;
+        }
+
+        [JSExport]
+        internal static Task<int> ReturnCompletedTaskOfInt()
+        {
+            return Task.FromResult(42);
+        }
+
+        [JSExport]
+        internal static Task ReturnFaultedTask()
+        {
+            return Task.FromException(new ArgumentException("ReturnFaultedTask"));
+        }
+
+        // throws during the invocation itself, so JS never gets the Task it eagerly created for it
+        [JSExport]
+        internal static Task ThrowBeforeTask()
+        {
+            throw new ArgumentException("ThrowBeforeTask");
+        }
+
+        [JSExport]
+        internal static void ReturnVoidSynchronously()
+        {
+        }
+
+        [JSExport]
+        internal static async Task ReturnGenuinelyAsyncTask()
+        {
+            await Task.Yield();
+        }
+
+        [JSExport]
+        internal static async Task<int> ReturnDelayedTaskOfInt()
+        {
+            await Task.Delay(1);
+            return 42;
+        }
+
+        [JSExport]
+        internal static async Task ReturnDelayedFaultedTask()
+        {
+            await Task.Delay(1);
+            throw new ArgumentException(nameof(ReturnDelayedFaultedTask));
+        }
+
+        private static readonly List<TaskCompletionSource<int>> s_pendingExports = new();
+
+        // hands JS a distinct Task that stays pending until CompletePendingExports settles them all
+        [JSExport]
+        internal static Task<int> ReturnPendingTaskOfInt()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            s_pendingExports.Add(tcs);
+            return tcs.Task;
+        }
+
+        internal static void CompletePendingExports()
+        {
+            foreach (var tcs in s_pendingExports)
+            {
+                tcs.TrySetResult(42);
+            }
+            s_pendingExports.Clear();
+        }
+
+        [JSExport]
+        internal static async Task AwaitPromiseParameter([JSMarshalAs<JSType.Promise<JSType.Number>>] Task<int> arg1)
+        {
+            await arg1;
+        }
+
+        // the managed side abandons the Task without ever observing it
+        [JSExport]
+        internal static void IgnorePromiseParameter([JSMarshalAs<JSType.Promise<JSType.Number>>] Task<int> arg1)
+        {
         }
 
         [JSExport]
@@ -1225,6 +1304,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [JSImport("INTERNAL.forceDisposeProxies")]
         internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
+
+        // [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
+        [JSImport("INTERNAL.getProxyCounts")]
+        internal static partial int[] GetProxyCounts();
+
+        [JSImport("forceJsGc", "JavaScriptTestHelper")]
+        internal static partial void ForceJsGc();
+
+        // mode is "await", "catch" or "drop"
+        [JSImport("invokeExportAsyncNTimes", "JavaScriptTestHelper")]
+        internal static partial Task InvokeExportAsyncNTimes(string exportName, int count, string mode);
+
+        [JSImport("invokeExportWithPromiseNTimes", "JavaScriptTestHelper")]
+        internal static partial Task InvokeExportWithPromiseNTimes(string exportName, int count, bool settled);
+
+        [JSImport("dropArg", "JavaScriptTestHelper")]
+        internal static partial void DropTask([JSMarshalAs<JSType.Promise<JSType.Void>>] Task arg1);
+
+        [JSImport("tryGetAssemblyExports", "JavaScriptTestHelper")]
+        internal static partial Task<string> TryGetAssemblyExports(string assemblyName);
 
         static JSObject _module;
         public static async Task InitializeAsync()

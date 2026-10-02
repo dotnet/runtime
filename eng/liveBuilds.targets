@@ -304,6 +304,7 @@
                              Include="
         $(HostSharedFrameworkDir)libBrowserHost.a;
         $(HostSharedFrameworkDir)dotnet.native.js;
+        $(HostSharedFrameworkDir)dotnet.native.js.symbols;
         $(HostSharedFrameworkDir)dotnet.native.wasm;
         "
         IsNative="true" />

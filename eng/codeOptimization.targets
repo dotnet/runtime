@@ -54,7 +54,7 @@
       <PublishReadyToRunPgoFiles Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'" Include="@(MergedMibcFile)"/>
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'">
+    <PropertyGroup Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true' and '$(TargetArchitecture)' != 'wasm'">
       <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--embed-pgo-data</PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
   </Target>

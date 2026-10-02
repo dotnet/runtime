@@ -196,6 +196,7 @@ CONFIG_INTEGER(JitProfileChecks, "JitProfileChecks", -1)
 CONFIG_INTEGER(JitRequired, "JITRequired", -1)
 CONFIG_INTEGER(JitStackAllocToLocalSize, "JitStackAllocToLocalSize", DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
 CONFIG_INTEGER(JitSkipArrayBoundCheck, "JitSkipArrayBoundCheck", 0)
+CONFIG_INTEGER(JitEnablePhaseChecks, "JitEnablePhaseChecks", 1) // Run the phase IR checks
 
 // On ARM, use this as the maximum function/funclet size for creating function fragments (and creating
 // multiple RUNTIME_FUNCTION entries)
@@ -687,6 +688,9 @@ CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 // Stress general runtime async inlining: forcibly inline async callees that may suspend,
 // with a probability that decays with inline depth. Nonzero enables; the value is the
 // external random seed. See AsyncStressPolicy.
+//
+// The stress is also enabled for roughly 50% of async methods under JitStress, in which
+// case the JitStress value is used as the external random seed.
 CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 0)
 CONFIG_INTEGER(JitStressAsyncInliningMaxDepth, "JitStressAsyncInliningMaxDepth", 8)
 // Probability, in percent, that the first async candidate of a body at depth 1 is inlined.

@@ -998,7 +998,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, (typeof(object) as RuntimeType)!, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(m_bakedRuntimeType, (typeof(object) as RuntimeType)!, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -1011,7 +1011,7 @@ namespace System.Reflection.Emit
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -1024,7 +1024,7 @@ namespace System.Reflection.Emit
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
 
         #endregion

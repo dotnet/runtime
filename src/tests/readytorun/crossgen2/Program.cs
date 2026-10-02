@@ -11,6 +11,7 @@ using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
+using TestLibrary;
 using Xunit;
 
 internal class ClassWithStatic
