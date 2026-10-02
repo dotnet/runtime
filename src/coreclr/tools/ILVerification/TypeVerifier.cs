@@ -128,7 +128,31 @@ namespace Internal.TypeVerifier
                             continue;
                         }
 
-                        if (type.ResolveInterfaceMethodTarget(method) is not MethodDesc resolvedMethod)
+                        // Validate the original MethodImpl body before slot resolution can replace it.
+                        bool invalidMethodImpl = false;
+                        MethodImplRecord[] methodImpls = type.FindMethodsImplWithMatchingDeclName(method.Name);
+                        if (methodImpls != null)
+                        {
+                            foreach (MethodImplRecord methodImpl in methodImpls)
+                            {
+                                if (methodImpl.Decl == method && !VerifyMethodImpl(method, methodImpl.Body))
+                                {
+                                    invalidMethodImpl = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (invalidMethodImpl)
+                        {
+                            continue;
+                        }
+
+                        MethodDesc resolvedMethod = method.Signature.IsStatic ?
+                            type.ResolveInterfaceMethodToStaticVirtualMethodOnType(method) :
+                            type.ResolveInterfaceMethodTarget(method);
+
+                        if (resolvedMethod is null)
                         {
                             type.ResolveInterfaceMethodToDefaultImplementationOnType(method, out resolvedMethod);
                         }
@@ -137,9 +161,33 @@ namespace Internal.TypeVerifier
                         {
                             VerificationError(VerifierError.InterfaceMethodNotImplemented, Format(type), Format(implementedInterface.InterfaceType, _module, implementedInterface.InterfaceImplementation), Format(method));
                         }
+                        else
+                        {
+                            VerifyMethodImpl(method, resolvedMethod);
+                        }
                     }
                 }
             }
+        }
+
+        private bool VerifyMethodImpl(MethodDesc declaration, MethodDesc body)
+        {
+            string reason;
+            if (body.Signature.IsStatic != declaration.Signature.IsStatic)
+            {
+                reason = "The body and declaration must both be static or both be instance methods.";
+            }
+            else if (!declaration.Signature.IsStatic && !body.IsVirtual)
+            {
+                reason = "An instance method body must be virtual.";
+            }
+            else
+            {
+                return true;
+            }
+
+            VerificationError(VerifierError.InvalidMethodImpl, Format(body), Format(declaration), reason);
+            return false;
         }
 
         private string Format(TypeDesc type)
