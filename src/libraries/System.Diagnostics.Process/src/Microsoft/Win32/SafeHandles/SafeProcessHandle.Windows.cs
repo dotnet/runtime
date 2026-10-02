@@ -20,7 +20,6 @@ namespace Microsoft.Win32.SafeHandles
         // Keep jobs with active children alive so they still terminate on parent exit, but replace incompatible jobs
         // and close retired jobs after their children have exited.
         private static readonly List<Interop.Kernel32.SafeJobHandle> s_killOnParentExitJobs = [];
-        private static readonly ReaderWriterLockSlim s_killOnParentExitJobsLock = new();
         private static Interop.Kernel32.SafeJobHandle? s_killOnParentExitJob;
 
         // When the process was started with StartSuspended, this holds the main thread handle
@@ -118,69 +117,54 @@ namespace Microsoft.Win32.SafeHandles
 
         private static Interop.Kernel32.SafeJobHandle GetKillOnParentExitJob()
         {
-            Debug.Assert(s_killOnParentExitJobsLock.IsReadLockHeld || s_killOnParentExitJobsLock.IsWriteLockHeld);
+            Debug.Assert(ProcessUtils.s_processStartLock.IsReadLockHeld || ProcessUtils.s_processStartLock.IsWriteLockHeld);
 
-            lock (s_killOnParentExitJobs)
+            if (s_killOnParentExitJob is null)
             {
-                if (s_killOnParentExitJob is null)
-                {
-                    s_killOnParentExitJob = CreateKillOnParentExitJob();
-                    s_killOnParentExitJobs.Add(s_killOnParentExitJob);
-                }
-
-                return s_killOnParentExitJob;
+                Debug.Assert(ProcessUtils.s_processStartLock.IsWriteLockHeld);
+                s_killOnParentExitJob = CreateKillOnParentExitJob();
+                s_killOnParentExitJobs.Add(s_killOnParentExitJob);
             }
+
+            return s_killOnParentExitJob;
         }
 
         private static unsafe Interop.Kernel32.SafeJobHandle ReplaceKillOnParentExitJob()
         {
-            Debug.Assert(s_killOnParentExitJobsLock.IsReadLockHeld);
+            Debug.Assert(ProcessUtils.s_processStartLock.IsWriteLockHeld);
 
-            // Process starts share the current job under the read lock. Rotation needs exclusive access so no
-            // concurrent start can assign a process to a retired job while it is being checked and possibly closed.
-            s_killOnParentExitJobsLock.ExitReadLock();
-            s_killOnParentExitJobsLock.EnterWriteLock();
-            try
+            // A retired job cannot accept children from the process's new job hierarchy. It must remain open
+            // while it has active processes so JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE continues to protect them.
+            for (int i = s_killOnParentExitJobs.Count - 1; i >= 0; i--)
             {
-                // A retired job cannot accept children from the process's new job hierarchy. It must remain open
-                // while it has active processes so JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE continues to protect them.
-                for (int i = s_killOnParentExitJobs.Count - 1; i >= 0; i--)
+                Interop.Kernel32.SafeJobHandle job = s_killOnParentExitJobs[i];
+                Interop.Kernel32.JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting;
+                if (!Interop.Kernel32.QueryInformationJobObject(
+                    job,
+                    Interop.Kernel32.JOBOBJECTINFOCLASS.JobObjectBasicAccountingInformation,
+                    out accounting,
+                    (uint)sizeof(Interop.Kernel32.JOBOBJECT_BASIC_ACCOUNTING_INFORMATION),
+                    IntPtr.Zero))
                 {
-                    Interop.Kernel32.SafeJobHandle job = s_killOnParentExitJobs[i];
-                    Interop.Kernel32.JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting;
-                    if (!Interop.Kernel32.QueryInformationJobObject(
-                        job,
-                        Interop.Kernel32.JOBOBJECTINFOCLASS.JobObjectBasicAccountingInformation,
-                        out accounting,
-                        (uint)sizeof(Interop.Kernel32.JOBOBJECT_BASIC_ACCOUNTING_INFORMATION),
-                        IntPtr.Zero))
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                    }
-
-                    if (accounting.ActiveProcesses == 0)
-                    {
-                        if (ReferenceEquals(job, s_killOnParentExitJob))
-                        {
-                            s_killOnParentExitJob = null;
-                        }
-
-                        job.Dispose();
-                        s_killOnParentExitJobs.RemoveAt(i);
-                    }
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                Interop.Kernel32.SafeJobHandle replacement = CreateKillOnParentExitJob();
-                s_killOnParentExitJobs.Add(replacement);
-                s_killOnParentExitJob = replacement;
-            }
-            finally
-            {
-                s_killOnParentExitJobsLock.ExitWriteLock();
-                s_killOnParentExitJobsLock.EnterReadLock();
+                if (accounting.ActiveProcesses == 0)
+                {
+                    if (ReferenceEquals(job, s_killOnParentExitJob))
+                    {
+                        s_killOnParentExitJob = null;
+                    }
+
+                    job.Dispose();
+                    s_killOnParentExitJobs.RemoveAt(i);
+                }
             }
 
-            return GetKillOnParentExitJob();
+            Interop.Kernel32.SafeJobHandle replacement = CreateKillOnParentExitJob();
+            s_killOnParentExitJobs.Add(replacement);
+            s_killOnParentExitJob = replacement;
+            return replacement;
         }
 
         private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
@@ -197,38 +181,23 @@ namespace Microsoft.Win32.SafeHandles
 
             Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All of the standard handles must be provided.");
 
-            if (!startInfo.KillOnParentExit)
-            {
-                return StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, jobHandle: null);
-            }
-
-            s_killOnParentExitJobsLock.EnterReadLock();
             try
             {
-                Interop.Kernel32.SafeJobHandle jobHandle = GetKillOnParentExitJob();
-                try
-                {
-                    return StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, jobHandle);
-                }
-                catch (Win32Exception exception) when (exception.NativeErrorCode == Interop.Errors.ERROR_ACCESS_DENIED)
-                {
-                    // The process may have joined another job after the current kill-on-parent-exit job was first
-                    // used. Windows cannot reparent that job into the new hierarchy, so retry once with a fresh job
-                    // while retaining any old jobs that still contain active children. This may also retry an
-                    // unrelated access-denied failure, but that should be very rare and is an intentional tradeoff
-                    // to keep the retry logic shared by all process creation paths.
-                    jobHandle = ReplaceKillOnParentExitJob();
-                    return StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, jobHandle);
-                }
+                return StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, replaceKillOnParentExitJob: false);
             }
-            finally
+            catch (Win32Exception exception) when (startInfo.KillOnParentExit && exception.NativeErrorCode == Interop.Errors.ERROR_ACCESS_DENIED)
             {
-                s_killOnParentExitJobsLock.ExitReadLock();
+                // The process may have joined another job after the current kill-on-parent-exit job was first
+                // used. Windows cannot reparent that job into the new hierarchy, so retry once with a fresh job
+                // while retaining any old jobs that still contain active children. This may also retry an
+                // unrelated access-denied failure, but that should be very rare and is an intentional tradeoff
+                // to keep the retry logic shared by all process creation paths.
+                return StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, replaceKillOnParentExitJob: true);
             }
         }
 
         private static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle,
-            SafeFileHandle stderrHandle, SafeHandle[]? inheritedHandles, Interop.Kernel32.SafeJobHandle? jobHandle)
+            SafeFileHandle stderrHandle, SafeHandle[]? inheritedHandles, bool replaceKillOnParentExitJob)
         {
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
@@ -247,14 +216,24 @@ namespace Microsoft.Win32.SafeHandles
             bool restrictInheritedHandles = inheritedHandles is not null;
             bool killOnParentExit = startInfo.KillOnParentExit;
             bool logon = !string.IsNullOrEmpty(startInfo.UserName);
+            bool processStartLockIsReadLock = restrictInheritedHandles && !replaceKillOnParentExitJob;
 
             // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance
             // or pass bInheritHandles=false when there are no valid handles to inherit.
             // For that, we need a reader lock (concurrent starts with different explicit lists are safe).
             // When InheritedHandles is not set, we use the existing approach with a writer lock.
-            if (restrictInheritedHandles)
+            if (processStartLockIsReadLock)
             {
                 ProcessUtils.s_processStartLock.EnterReadLock();
+
+                // Creating the initial job mutates shared state and requires exclusive access. Keep the writer
+                // lock for this first start; subsequent starts can use the reader lock.
+                if (killOnParentExit && s_killOnParentExitJob is null)
+                {
+                    ProcessUtils.s_processStartLock.ExitReadLock();
+                    processStartLockIsReadLock = false;
+                    ProcessUtils.s_processStartLock.EnterWriteLock();
+                }
             }
             else
             {
@@ -272,6 +251,14 @@ namespace Microsoft.Win32.SafeHandles
 
             try
             {
+                Interop.Kernel32.SafeJobHandle? jobHandle = null;
+                if (killOnParentExit)
+                {
+                    jobHandle = replaceKillOnParentExitJob ?
+                        ReplaceKillOnParentExitJob() :
+                        GetKillOnParentExitJob();
+                }
+
                 startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
 
                 ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref startupInfoEx.StartupInfo.hStdInput, ref stdinRefAdded);
@@ -495,7 +482,7 @@ namespace Microsoft.Win32.SafeHandles
                     DisableInheritanceAndRelease(handlesToRelease);
                 }
 
-                if (restrictInheritedHandles)
+                if (processStartLockIsReadLock)
                 {
                     ProcessUtils.s_processStartLock.ExitReadLock();
                 }
