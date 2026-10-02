@@ -239,6 +239,14 @@ namespace Internal.IL
                 var basicBlock = _basicBlocks[i];
                 var offset = basicBlock.StartOffset;
 
+                // Reject conflicting entry points even if the block is unreachable.
+                // ECMA-335 I.12.4.2.7
+                if (basicBlock.FilterStart && basicBlock.HandlerStart)
+                {
+                    _currentInstructionOffset = offset;
+                    VerificationError(VerifierError.FilterAndHandlerSameOffset);
+                }
+
                 for (int j = 0; j < _exceptionRegions.Length; j++)
                 {
                     var r = _exceptionRegions[j].ILRegion;
@@ -1355,17 +1363,17 @@ namespace Internal.IL
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
                 ExceptionRegion r;
-                if (basicBlock.HandlerIndex.HasValue)
-                {
-                    r = _exceptionRegions[basicBlock.HandlerIndex.Value];
-                }
-                else if (basicBlock.FilterIndex.HasValue)
+                if (basicBlock.FilterStart && basicBlock.FilterIndex.HasValue)
                 {
                     r = _exceptionRegions[basicBlock.FilterIndex.Value];
                 }
+                else if (basicBlock.HandlerStart && basicBlock.HandlerIndex.HasValue)
+                {
+                    r = _exceptionRegions[basicBlock.HandlerIndex.Value];
+                }
                 else
                 {
-                    Debug.Fail("Block marked as filter / handler start but no filter / handler index set.");
+                    Debug.Fail("Block marked as filter / handler start but no matching filter / handler index set.");
                     return;
                 }
 

@@ -826,4 +826,160 @@
         // Filter region starts at the same offset as handler region.
         .try 0 to 2 filter 2 handler 2 to 4
     }
+
+    .method public static void Filter.NestedInFinally_Valid() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            nop
+            leave MethodEnd
+        }
+        finally
+        {
+            .try
+            {
+                nop
+                leave HandlerEnd
+            }
+            filter
+            {
+                isinst [System.Runtime]System.Exception
+                pop
+                ldc.i4.1
+                endfilter
+            }
+            {
+                pop
+                leave HandlerEnd
+            }
+        HandlerEnd:
+            endfinally
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Filter.NestedInFault_Valid() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            nop
+            leave MethodEnd
+        }
+        fault
+        {
+            .try
+            {
+                nop
+                leave HandlerEnd
+            }
+            filter
+            {
+                pop
+                ldc.i4.1
+                endfilter
+            }
+            {
+                pop
+                leave HandlerEnd
+            }
+        HandlerEnd:
+            endfault
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Filter.NestedInCatchWithoutCast_Invalid_StackUnexpected() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            nop
+            leave MethodEnd
+        }
+        catch [System.Runtime]System.InvalidOperationException
+        {
+            pop
+            .try
+            {
+                nop
+                leave MethodEnd
+            }
+            filter
+            {
+                // This is object, not the enclosing catch's exception type.
+                callvirt instance string [System.Runtime]System.Exception::get_Message()
+                pop
+                ldc.i4.1
+                endfilter
+            }
+            {
+                pop
+                leave MethodEnd
+            }
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Filter.SharesFinallyStart_Invalid_FilterAndHandlerSameOffset() cil managed
+    {
+        .maxstack 1
+
+    OuterTry:
+        nop
+        leave MethodEnd
+    SharedStart:
+        pop
+        ldc.i4.1
+        endfilter
+    InnerHandler:
+        pop
+        leave FinallyEnd
+    InnerTry:
+        nop
+        leave FinallyEnd
+    FinallyEnd:
+        endfinally
+    MethodEnd:
+        ret
+
+        // The filter and the outer finally cannot share their entry point.
+        .try InnerTry to FinallyEnd filter SharedStart handler InnerHandler to InnerTry
+        .try OuterTry to SharedStart finally handler SharedStart to MethodEnd
+    }
+
+    .method public static void Filter.SharesUnreachableFinallyStart_Invalid_FilterAndHandlerSameOffset() cil managed
+    {
+        .maxstack 1
+
+        // The conflicting entry point must be rejected without importing it.
+        ret
+    OuterTry:
+        nop
+        leave MethodEnd
+    SharedStart:
+        pop
+        ldc.i4.1
+        endfilter
+    InnerHandler:
+        pop
+        leave FinallyEnd
+    InnerTry:
+        nop
+        leave FinallyEnd
+    FinallyEnd:
+        endfinally
+    MethodEnd:
+        ret
+
+        .try InnerTry to FinallyEnd filter SharedStart handler InnerHandler to InnerTry
+        .try OuterTry to SharedStart finally handler SharedStart to MethodEnd
+    }
 }
