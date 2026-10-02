@@ -1127,6 +1127,79 @@ public unsafe class StackWalkTests
         Assert.Equal(callerIsR2R ? r2rFrame : 0ul, context.FramePointer.Value);
     }
 
+    // A funclet's frame pointer is its establishing method's frame, not its own record (native
+    // GetWasmFramePointerFromStackPointer). Here the funclet was invoked by the VM through
+    // CallFuncletWith[out]Throwable, so a TERMINATE_R2R_STACK_WALK frame carrying the establishing
+    // frame pointer sits directly above it. Both frame kinds that seed from an R2R stack pointer
+    // (a transition helper's TransitionBlock and an R2R inlined P/Invoke) must report that pointer.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void UpdateContextFromFrame_WasmFuncletCaller_ReportsEstablishingFramePointer(bool transitionFrame)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const uint ParentIndex = 5;
+        const uint FuncletIndex = 6;
+        const ulong MinVirtualIP = 0x8001_0000;
+        const uint ParentBegin = 0x100;
+        const uint FuncletVipHalf = 0x21;
+        const byte FuncletFrameSize = 16; // AlignUp(2 * TARGET_POINTER_SIZE, STACK_ALIGN) on wasm32
+        const ulong EstablishingFp = 0x0021_0F00;
+
+        MockFramedMethodFrame? framedMethodFrame = null;
+        MockInlinedCallFrame? inlinedCallFrame = null;
+        ulong funcletFrame = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                if (transitionFrame)
+                    framedMethodFrame = frameBuilder.AddFramedMethodFrame(methodDescPtr: 0);
+                else
+                    inlinedCallFrame = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 1, datum: 0);
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                AddWasmR2RFunctions(targetBuilder, allocator, ParentIndex, MinVirtualIP,
+                    [(ParentBegin, 0x30), (0x8000_0000 | (ParentBegin + 0x40), FuncletFrameSize)]);
+
+                // The funclet's record, then the VM's terminator frame: [TERMINATE_R2R_STACK_WALK, establishing FP].
+                MockMemorySpace.HeapFragment stack = allocator.Allocate(FuncletFrameSize + 2 * sizeof(uint), "LinearStack");
+                helpers.Write(stack.Data.AsSpan(0, sizeof(uint)), FuncletIndex);
+                helpers.Write(stack.Data.AsSpan(4, sizeof(uint)), FuncletVipHalf);
+                helpers.Write(stack.Data.AsSpan(FuncletFrameSize, sizeof(uint)), 1u);
+                helpers.WritePointer(stack.Data.AsSpan(FuncletFrameSize + sizeof(uint), helpers.PointerSize), EstablishingFp);
+                funcletFrame = stack.Address;
+
+                if (transitionFrame)
+                {
+                    ulong transitionBlock = AddWasmTransitionBlock(helpers, allocator, returnAddress: 0, stackPointer: funcletFrame);
+                    helpers.WritePointer(
+                        framedMethodFrame!.Memory.Span.Slice(framedMethodFrame.Layout.GetField("TransitionBlockPtr").Offset, helpers.PointerSize),
+                        transitionBlock);
+                    targetBuilder.AddTypes(CreateWasmTransitionBlockTypes(helpers.PointerSize));
+                }
+                else
+                {
+                    inlinedCallFrame!.CallSiteSP = funcletFrame;
+                }
+            });
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        ulong frameAddress = transitionFrame ? framedMethodFrame!.Address : inlinedCallFrame!.Address;
+        frameHelpers.UpdateContextFromFrame(target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress), context);
+
+        // Funclet virtual IPs are relative to the controlling method's base.
+        Assert.Equal(MinVirtualIP + ParentBegin + FuncletVipHalf * 2, context.InstructionPointer.Value);
+        Assert.Equal(funcletFrame, context.StackPointer.Value);
+        Assert.Equal(EstablishingFp, context.FramePointer.Value);
+    }
+
     // R2R code that enters an interpreted method through a portable-entry-point thunk leaves an
     // InterpreterFrame whose TransitionBlock records only the R2R caller's linear-stack pointer.
     // When the interpreted chain is exhausted, the walk must continue into that R2R caller rather
@@ -1290,6 +1363,17 @@ public unsafe class StackWalkTests
         ulong minVirtualIP,
         uint functionBeginAddress,
         byte frameSize = 0)
+        => AddWasmR2RFunctions(targetBuilder, allocator, functionTableIndex, minVirtualIP, [(functionBeginAddress, frameSize)]);
+
+    // Registers one R2R module whose RUNTIME_FUNCTIONs occupy consecutive function-table indices
+    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet; a frame size of 0
+    // leaves the unwind data unset.
+    private static void AddWasmR2RFunctions(
+        TestPlaceholderTarget.Builder targetBuilder,
+        MockMemorySpace.BumpAllocator allocator,
+        uint minFunctionTableIndex,
+        ulong minVirtualIP,
+        (uint BeginAddress, byte FrameSize)[] functions)
     {
         MockTarget.Architecture arch = targetBuilder.MemoryBuilder.TargetTestHelpers.Arch;
         TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
@@ -1308,29 +1392,33 @@ public unsafe class StackWalkTests
             new(nameof(Data.FunctionTableIndexRangeSection.Next), DataType.pointer),
         ]);
 
-        MockMemorySpace.HeapFragment runtimeFunction = allocator.Allocate(runtimeFunctionLayout.Stride, "RuntimeFunction");
-        helpers.Write(runtimeFunction.Data.AsSpan(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functionBeginAddress);
-        if (frameSize != 0)
+        MockMemorySpace.HeapFragment runtimeFunctions = allocator.Allocate(runtimeFunctionLayout.Stride * (ulong)functions.Length, "RuntimeFunctions");
+        for (int i = 0; i < functions.Length; i++)
         {
-            // Unwind data is the ULEB128 frame size, addressed as LoadedImageBase (0 here) + UnwindData.
-            Assert.True(frameSize < 0x80);
-            MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
-            unwindData.Data[0] = frameSize;
-            helpers.Write(runtimeFunction.Data.AsSpan(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
+            Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
+            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);
+            if (functions[i].FrameSize != 0)
+            {
+                // Unwind data is the ULEB128 frame size, addressed as LoadedImageBase (0 here) + UnwindData.
+                Assert.True(functions[i].FrameSize < 0x80);
+                MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
+                unwindData.Data[0] = functions[i].FrameSize;
+                helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
+            }
         }
 
         MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
         r2rInfo.CompositeInfo = r2rInfo.Address;
-        r2rInfo.NumRuntimeFunctions = 1;
-        r2rInfo.RuntimeFunctions = runtimeFunction.Address;
+        r2rInfo.NumRuntimeFunctions = (uint)functions.Length;
+        r2rInfo.RuntimeFunctions = runtimeFunctions.Address;
         r2rInfo.MinVirtualIP = minVirtualIP;
 
         MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
         module.ReadyToRunInfo = r2rInfo.Address;
 
         MockMemorySpace.HeapFragment section = allocator.Allocate(rangeSectionLayout.Stride, "FunctionTableIndexRangeSection");
-        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), functionTableIndex);
-        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), 1u);
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), minFunctionTableIndex);
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), (uint)functions.Length);
         helpers.WritePointer(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RModule)].Offset, helpers.PointerSize), module.Address);
 
         MockMemorySpace.HeapFragment listSlot = allocator.Allocate((ulong)helpers.PointerSize, "FunctionTableIndexRangeListSlot");

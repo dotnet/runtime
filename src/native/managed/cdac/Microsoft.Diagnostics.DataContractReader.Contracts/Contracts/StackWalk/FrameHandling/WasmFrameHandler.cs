@@ -41,8 +41,8 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
             Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
             _holder.Context.StackPointer = inlinedCallFrame.CallSiteSP;
             _holder.Context.InstructionPointer = unwinder.GetVirtualIP(inlinedCallFrame.CallSiteSP);
-            // Root-function frame base; the funclet-aware logical frame pointer is not modeled yet.
-            _holder.Context.FramePointer = unwinder.TryGetFramePointer(inlinedCallFrame.CallSiteSP, out TargetPointer framePointer)
+            // Native GetWasmFramePointerFromStackPointer: a funclet reports its establishing method's frame.
+            _holder.Context.FramePointer = unwinder.TryGetLogicalFramePointer(inlinedCallFrame.CallSiteSP, out TargetPointer framePointer)
                 ? framePointer
                 : TargetPointer.Null;
         }
@@ -79,9 +79,9 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
         if (stackPointer != TargetPointer.Null && instructionPointer != TargetCodePointer.Null)
         {
             _holder.Context.StackPointer = stackPointer;
-            // Root-function frame base; the funclet-aware logical frame pointer is not modeled yet.
+            // Native GetWasmFramePointerFromStackPointer: a funclet reports its establishing method's frame.
             Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
-            _holder.Context.FramePointer = unwinder.TryGetFramePointer(stackPointer, out TargetPointer framePointer)
+            _holder.Context.FramePointer = unwinder.TryGetLogicalFramePointer(stackPointer, out TargetPointer framePointer)
                 ? framePointer
                 : TargetPointer.Null;
         }

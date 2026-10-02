@@ -196,6 +196,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
 | `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
 | `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 is the Thumb bit; on WebAssembly, bit 31 marks a funclet and is excluded from address arithmetic. |
+| `RuntimeFunction` | `UnwindData` | `uint32` | Pointer to the unwind info for the function |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
@@ -452,7 +453,7 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
-* On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is that shadow frame's base. If no virtual IP can be recovered, IP is set to null.
+* On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is the WASM logical frame pointer at `CallSiteSP` (see below). If no virtual IP can be recovered, IP is set to null.
 
 An active InlinedCallFrame stays the current Frame after its context update so the skipped-Frame check can step past it once the walk reaches the managed caller. If the updated IP is not managed code (for example, no WASM R2R virtual IP could be recovered), the walk fails, matching native `StackFrameIterator::NextRaw`; otherwise it would never advance past the Frame.
 
@@ -471,7 +472,9 @@ TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock hold
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
-* On WASM, a transition helper called from R2R code records the caller's R2R linear-stack pointer in `TransitionBlock.StackPointer`, and may leave `ReturnAddress` 0. When `ReturnAddress` is 0 and `StackPointer` is set, the return address is the R2R virtual IP of the frame at `StackPointer` (native `FramedMethodFrame::GetTransitionBlock_Impl`). When `StackPointer` is set and a return address is known, the caller's SP is `StackPointer` and its FP is that frame's base (native `TransitionFrame::GetSP`); otherwise the SP is the end of the TransitionBlock and the FP is null. This also applies when the interpreted chain under an `InterpreterFrame` is exhausted and the walker applies the `InterpreterFrame`'s transition.
+* On WASM, a transition helper called from R2R code records the caller's R2R linear-stack pointer in `TransitionBlock.StackPointer`, and may leave `ReturnAddress` 0. When `ReturnAddress` is 0 and `StackPointer` is set, the return address is the R2R virtual IP of the frame at `StackPointer` (native `FramedMethodFrame::GetTransitionBlock_Impl`). When `StackPointer` is set and a return address is known, the caller's SP is `StackPointer` and its FP is the WASM logical frame pointer at `StackPointer` (native `TransitionFrame::GetSP`); otherwise the SP is the end of the TransitionBlock and the FP is null. This also applies when the interpreted chain under an `InterpreterFrame` is exhausted and the walker applies the `InterpreterFrame`'s transition.
+
+**WASM logical frame pointer.** R2R frames on WASM keep a record on the linear stack: the function-table index, then the function-local virtual IP / 2. Unwinding one frame (`WasmContext.Unwind`) adds the function's frame size from its unwind data to the frame base, and sets the caller's FP as native `GetWasmFramePointerFromStackPointer` does. For a method, the FP is its own frame base. For a funclet (its `RUNTIME_FUNCTION.BeginAddress` has bit 31 set), the FP is the establishing method's frame. The walker unwinds out of the funclet: if the caller slot holds the `TERMINATE_R2R_STACK_WALK` marker, the funclet was invoked by the VM through `CallFuncletWith[out]Throwable`, and the establishing frame pointer is stored one pointer after the marker. Otherwise the funclet was called by its parent method or funclet, and the walker repeats from there. Each step must move toward the caller, or the frame pointer is unknown (null).
 
 **Return Address**: Read from `TransitionBlock.ReturnAddress` (on WASM, derived from `TransitionBlock.StackPointer` when it is 0, as above). This applies to all frame types that use the TransitionFrame mechanism.
 
