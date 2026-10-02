@@ -100,7 +100,8 @@ public readonly record struct GCInfoHeader(
     uint GSCookieValidRangeEnd,            // End (exclusive) of the GS cookie valid range
     SpecialSlot? PSPSym,                   // PSP sym stack slot, or null if none
     SpecialSlot? GenericsInstContext,      // Generics instantiation context stack slot, or null if none
-    GenericsContextKind GenericsInstContextKind); // Kind of the generics instantiation context
+    GenericsContextKind GenericsInstContextKind, // Kind of the generics instantiation context
+    bool HasReversePInvokeFrame);          // True if unwinding leaves managed code through reverse P/Invoke
 
 // Unified lifetime (live code range) of a GC slot, register or stack.
 public readonly record struct GCSlotLifetime(
@@ -389,9 +390,9 @@ Slots use delta encoding where consecutive entries encode only the difference fr
 | **Stack Slot** | `offset >> 2` | `offset << 2` |
 | **Stack Area Size** | `size >> 2` | `size << 2` |
 
-#### Interpreter (WASM / FEATURE_INTERPRETER)
+#### Interpreter (FEATURE_INTERPRETER)
 
-The interpreter uses a platform-independent encoding where all normalization and denormalization functions are identity (no transformation). This encoding is used for WASM targets (where `TargetGcInfoEncoding` is `InterpreterGcInfoEncoding`) and on any architecture when `FEATURE_INTERPRETER` is enabled.
+The interpreter uses a platform-independent encoding where all normalization and denormalization functions are identity (no transformation). This encoding is used by interpreted methods regardless of target architecture.
 
 | Encoding Base | Value | Purpose |
 | --- | --- | --- |

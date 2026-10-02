@@ -3,6 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
@@ -21,10 +24,35 @@ public class WasmR2RInfoTests
     private const uint FunctionBeginAddress = 0x100;
     private const uint FunctionUnwindData = 0x40;
 
+    private static IStackDataFrameHandle CreateStackDataFrameHandle(
+        IPlatformAgnosticContext context,
+        StackWalkState state = StackWalkState.Frameless)
+    {
+        Type handleType = typeof(WasmR2RInfo).Assembly.GetType(
+            "Microsoft.Diagnostics.DataContractReader.Contracts.StackWalk_1+StackDataFrameHandle",
+            throwOnError: true)!;
+        return (IStackDataFrameHandle)Activator.CreateInstance(
+            handleType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            [
+                context,
+                state,
+                TargetPointer.Null,
+                default(ThreadData),
+                false,
+                false,
+                false,
+                false,
+                false,
+            ],
+            culture: null)!;
+    }
+
     // Builds a target whose FunctionTableIndexRangeList global points at a *slot* (pointer-to-pointer),
     // matching the CDAC_GLOBAL_POINTER contract. WasmR2RInfo must dereference the slot to reach the
     // list head; walking from the slot address directly reads garbage and finds nothing.
-    private static TestPlaceholderTarget CreateTarget(bool emptyList = false)
+    private static TestPlaceholderTarget CreateTarget(bool emptyList = false, bool isFunclet = false)
     {
         TargetTestHelpers helpers = new(WasmArch);
         var targetBuilder = new TestPlaceholderTarget.Builder(WasmArch);
@@ -46,7 +74,8 @@ public class WasmR2RInfoTests
         ]);
 
         var runtimeFuncFrag = allocator.Allocate(runtimeFunctionLayout.Stride, "RuntimeFunction");
-        helpers.Write(runtimeFuncFrag.Data.AsSpan().Slice(runtimeFunctionLayout.Fields["BeginAddress"].Offset, sizeof(uint)), FunctionBeginAddress);
+        // RUNTIME_FUNCTION__IsFunclet: the funclet flag is the high bit of BeginAddress (clrnt.h).
+        helpers.Write(runtimeFuncFrag.Data.AsSpan().Slice(runtimeFunctionLayout.Fields["BeginAddress"].Offset, sizeof(uint)), isFunclet ? FunctionBeginAddress | 0x80000000u : FunctionBeginAddress);
         helpers.Write(runtimeFuncFrag.Data.AsSpan().Slice(runtimeFunctionLayout.Fields["UnwindData"].Offset, sizeof(uint)), FunctionUnwindData);
 
         MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
@@ -101,6 +130,151 @@ public class WasmR2RInfoTests
 
         Assert.True(info.TryGetUnwindData(FunctionTableIndex, out TargetPointer unwindData));
         Assert.Equal(LoadedImageBase + FunctionUnwindData, unwindData.Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TryGetFunctionIdentity_ReturnsOwningModuleRuntimeFunctionAndFuncletState(bool isFunclet)
+    {
+        WasmR2RInfo info = new(CreateTarget(isFunclet: isFunclet));
+
+        Assert.True(info.TryGetFunctionIdentity(
+            FunctionTableIndex,
+            out TargetPointer module,
+            out uint runtimeFunctionIndex,
+            out bool actualIsFunclet));
+
+        Assert.NotEqual(TargetPointer.Null, module);
+        Assert.Equal(0u, runtimeFunctionIndex);
+        Assert.Equal(isFunclet, actualIsFunclet);
+    }
+
+    [Fact]
+    public void TryGetFunctionIdentity_IndexNotInAnySection_PreservesCallerOwnedRawIndex()
+    {
+        WasmR2RInfo info = new(CreateTarget());
+
+        Assert.False(info.TryGetFunctionIdentity(
+            FunctionTableIndex + 100,
+            out TargetPointer module,
+            out uint runtimeFunctionIndex,
+            out bool isFunclet));
+        Assert.Equal(TargetPointer.Null, module);
+        Assert.Equal(0u, runtimeFunctionIndex);
+        Assert.False(isFunclet);
+    }
+
+    [Theory]
+    [InlineData(false, FunctionTableIndex, 0u)]
+    [InlineData(true, FunctionTableIndex, 0u)]
+    public void StackWalk_GetWasmFunctionIdentity_ReturnsResolvedIdentity(
+        bool isFunclet,
+        uint functionTableIndex,
+        uint expectedRuntimeFunctionIndex)
+    {
+        const ulong FrameAddress = 0x0020_0000;
+        Target target = WasmMockTarget.Create(FrameAddress, functionTableIndex, isFunclet);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.StackPointer = new TargetPointer(FrameAddress);
+        context.InstructionPointer = new TargetCodePointer(MinVirtualIP + FunctionBeginAddress);
+        IStackDataFrameHandle frame = CreateStackDataFrameHandle(context);
+
+        WasmFunctionIdentity identity = target.Contracts.StackWalk.GetWasmFunctionIdentity(frame);
+
+        Assert.Equal(functionTableIndex, identity.FunctionTableIndex);
+        Assert.NotNull(identity.Module);
+        Assert.NotEqual(TargetPointer.Null, identity.Module.Value);
+        Assert.Equal(expectedRuntimeFunctionIndex, identity.RuntimeFunctionIndex);
+        Assert.Equal(isFunclet, identity.IsFunclet);
+    }
+
+    [Fact]
+    public void StackWalk_GetWasmFunctionIdentity_UnregisteredIndexPreservesRawIdentity()
+    {
+        const ulong FrameAddress = 0x0020_0000;
+        const uint UnregisteredFunctionIndex = 0x1234;
+        Target target = WasmMockTarget.Create(FrameAddress, UnregisteredFunctionIndex, isFunclet: false);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.StackPointer = new TargetPointer(FrameAddress);
+        context.InstructionPointer = new TargetCodePointer(MinVirtualIP + FunctionBeginAddress);
+        IStackDataFrameHandle frame = CreateStackDataFrameHandle(context);
+
+        WasmFunctionIdentity identity = target.Contracts.StackWalk.GetWasmFunctionIdentity(frame);
+
+        Assert.Equal(UnregisteredFunctionIndex, identity.FunctionTableIndex);
+        Assert.Null(identity.Module);
+        Assert.Null(identity.RuntimeFunctionIndex);
+        Assert.Null(identity.IsFunclet);
+    }
+
+    [Fact]
+    public void StackWalk_GetWasmFunctionIdentity_MissingStackPointerThrows()
+    {
+        Target target = WasmMockTarget.Create(0x0020_0000, FunctionTableIndex, isFunclet: false);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.InstructionPointer = new TargetCodePointer(MinVirtualIP + FunctionBeginAddress);
+        IStackDataFrameHandle frame = CreateStackDataFrameHandle(context);
+
+        Assert.Throws<InvalidOperationException>(
+            () => target.Contracts.StackWalk.GetWasmFunctionIdentity(frame));
+    }
+
+    [Fact]
+    public void StackWalk_GetWasmFunctionIdentity_NativeMarkerRejectsFalseFrameBytes()
+    {
+        const ulong FrameAddress = 0x0020_0000;
+        Target target = WasmMockTarget.Create(FrameAddress, FunctionTableIndex, isFunclet: false);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.StackPointer = new TargetPointer(FrameAddress);
+        context.InstructionPointer = TargetCodePointer.Null;
+        IStackDataFrameHandle frame = CreateStackDataFrameHandle(
+            context,
+            StackWalkState.NativeMarker);
+
+        Assert.Throws<InvalidOperationException>(
+            () => target.Contracts.StackWalk.GetWasmFunctionIdentity(frame));
+    }
+
+    [Fact]
+    public void StackWalk_GetWasmFunctionIdentity_InterpreterFrameRejectsShadowLikeBytes()
+    {
+        const ulong FrameAddress = 0x0020_0000;
+        Target target = WasmMockTarget.Create(
+            FrameAddress,
+            FunctionTableIndex,
+            isFunclet: false,
+            codeKind: CodeKind.Interpreter);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.StackPointer = new TargetPointer(FrameAddress);
+        context.InstructionPointer = new TargetCodePointer(MinVirtualIP + FunctionBeginAddress);
+        IStackDataFrameHandle frame = CreateStackDataFrameHandle(context);
+
+        Assert.Throws<InvalidOperationException>(
+            () => target.Contracts.StackWalk.GetWasmFunctionIdentity(frame));
+    }
+
+    /// <summary>
+    /// Mirrors <c>ExecutionManager::IsFuncletFunctionIndex</c>, which reads
+    /// <c>RUNTIME_FUNCTION__IsFunclet</c> — the high bit of <c>BeginAddress</c>.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TryIsFunclet_ReadsHighBitOfBeginAddress(bool isFunclet)
+    {
+        WasmR2RInfo info = new(CreateTarget(isFunclet: isFunclet));
+
+        Assert.True(info.TryIsFunclet(FunctionTableIndex, out bool actual));
+        Assert.Equal(isFunclet, actual);
+    }
+
+    [Fact]
+    public void TryIsFunclet_IndexNotInAnySection_ReturnsFalse()
+    {
+        WasmR2RInfo info = new(CreateTarget());
+
+        Assert.False(info.TryIsFunclet(FunctionTableIndex + 100, out _));
     }
 
     [Fact]
