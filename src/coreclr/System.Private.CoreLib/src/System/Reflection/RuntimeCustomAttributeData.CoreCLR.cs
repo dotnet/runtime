@@ -253,7 +253,6 @@ namespace System.Reflection
         {
             private int _curr;
             private readonly ReadOnlySpan<byte> _blob;
-            private readonly bool _throwOnInvalidBlob;
 
             public CustomAttributeDataParser(ConstArray attributeBlob)
             {
@@ -262,14 +261,12 @@ namespace System.Reflection
                     _blob = new ReadOnlySpan<byte>((void*)attributeBlob.Signature, attributeBlob.Length);
                 }
                 _curr = 0;
-                _throwOnInvalidBlob = false;
             }
 
             internal CustomAttributeDataParser(ReadOnlySpan<byte> blob)
             {
                 _blob = blob;
                 _curr = 0;
-                _throwOnInvalidBlob = true;
             }
 
             internal int Consumed => _curr;
@@ -277,7 +274,7 @@ namespace System.Reflection
 
             private ReadOnlySpan<byte> PeekData(int size)
             {
-                if (_throwOnInvalidBlob && (uint)size > (uint)Remaining)
+                if ((uint)size > (uint)Remaining)
                 {
                     throw new CustomAttributeFormatException();
                 }
@@ -405,12 +402,7 @@ namespace System.Reflection
                     return len + data[3];
                 }
 
-                if (_throwOnInvalidBlob)
-                {
-                    throw new CustomAttributeFormatException();
-                }
-
-                throw new OverflowException();
+                throw new CustomAttributeFormatException();
             }
         }
     }
@@ -746,10 +738,10 @@ namespace System.Reflection
             }
 
             // Keep fixed primitives unboxed. Only the bounded common case uses stack storage.
-            const int MaxStackAttributeArguments = 16;
-            InlineArray16<object?> referenceStorage = default;
-            InlineArray16<ulong> primitiveStorage = default;
-            InlineArray16<IntPtr> byrefStorage = default;
+            const int MaxStackAttributeArguments = 4;
+            InlineArray4<object?> referenceStorage = default;
+            InlineArray4<ulong> primitiveStorage = default;
+            InlineArray4<IntPtr> byrefStorage = default;
             Span<object?> references = argumentCount <= MaxStackAttributeArguments
                 ? ((Span<object?>)referenceStorage).Slice(0, argumentCount)
                 : new object?[argumentCount];
@@ -913,14 +905,12 @@ namespace System.Reflection
 
             if (type == typeof(object))
             {
-                RuntimeHelpers.EnsureSufficientExecutionStack();
                 RuntimeType valueType = ReadAttributeType(ref parser, parser.GetTag(), module);
                 return ReadAttributeValue(ref parser, valueType, module);
             }
 
             if (type.IsSZArray)
             {
-                RuntimeHelpers.EnsureSufficientExecutionStack();
                 return ReadAttributeArray(ref parser, (RuntimeType)type.GetElementType()!, module);
             }
 
