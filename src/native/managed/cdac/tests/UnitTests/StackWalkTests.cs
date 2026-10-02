@@ -15,6 +15,52 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class StackWalkTests
 {
+    [Theory]
+    [InlineData(false, new byte[] { 0x04, 0x05, 0x21, 0x02 }, uint.MaxValue)]
+    [InlineData(false, new byte[] { 0x81, 0x08, 0x0a, 0x30, 0x42, 0x04 }, 8u)]
+    [InlineData(true, new byte[] { 0x04, 0x4a, 0x04 }, uint.MaxValue)]
+    [InlineData(true, new byte[] { 0x81, 0x08, 0x84, 0x11, 0x22, 0x00 }, 8u)]
+    public void GCInfo_Wasm_DecodesPlatformAndInterpreterFormats(
+        bool interpreter, byte[] encoded, uint stackBaseRegister)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
+        TestPlaceholderTarget.Builder builder = new(arch);
+        // Length 129 and safe point 17 distinguish the platform's six-bit encoding
+        // from the interpreter's eight-bit encoding and exercise header alignment.
+        byte[] gcInfo = new byte[32];
+        encoded.CopyTo(gcInfo, 0);
+        builder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = 0x1000,
+            Data = gcInfo,
+            Name = "Wasm GC info"
+        });
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(RuntimeInfoArchitecture.Wasm);
+        IGCInfo contract = builder
+            .AddMockContract(runtimeInfo)
+            .AddContract<IGCInfo>(version: "c1")
+            .Build().Contracts.GCInfo;
+        IGCInfoHandle handle = interpreter
+            ? contract.DecodeInterpreterGCInfo(new TargetPointer(0x1000), 4)
+            : contract.DecodePlatformSpecificGCInfo(new TargetPointer(0x1000), 4);
+
+        GCInfoHeader header = contract.GetHeader(handle);
+        Assert.Equal(129u, contract.GetCodeLength(handle));
+        Assert.Equal(129u, header.CodeSize);
+        Assert.Equal(stackBaseRegister, header.StackBaseRegister);
+        Assert.Equal(0u, header.SizeOfStackParameterArea);
+        Assert.Equal(new uint[] { 17 }, contract.GetSafePoints(handle));
+        Assert.Empty(contract.GetInterruptibleRanges(handle));
+        Assert.Equal(interpreter, contract.TryGetGenericContextStorage(
+            handle, GenericContextLoc.ThisPtr, 0, out GenericContextStorage storage));
+        if (interpreter)
+        {
+            Assert.Equal(GenericContextStorageKind.InterpreterArgumentRelative, storage.Kind);
+            Assert.Equal(0, storage.Offset);
+        }
+    }
+
     [Fact]
     public void LoongArch64Unwind_EpilogReturn_DoesNotRepeatStackAdjustment()
     {
