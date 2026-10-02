@@ -24,6 +24,11 @@ namespace LOHCompactAPI
             int retVal = 100;
             int iterations = 10;
 
+            if (!TestRoundTrip())
+            {
+                return false;
+            }
+
             if (args.Length > 0)
                 iterations = Int32.Parse(args[0]);
             Console.WriteLine("Running {0} iterations", iterations);
@@ -80,6 +85,11 @@ namespace LOHCompactAPI
             int GCCount = 0;
             int initialGCCount = GetBlockingGen2Count();
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            if (GCSettings.LargeObjectHeapCompactionMode != GCLargeObjectHeapCompactionMode.CompactOnce)
+            {
+                Console.WriteLine("Failed to set GCSettings.LargeObjectHeapCompactionMode = CompactOnce");
+                return false;
+            }
             GCCount = GetBlockingGen2Count();
             if (initialGCCount != GCCount)
             {
@@ -128,12 +138,36 @@ namespace LOHCompactAPI
 
             Console.WriteLine("Setting GCLargeObjectHeapCompactionMode.CompactOnce");
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            if (GCSettings.LargeObjectHeapCompactionMode != GCLargeObjectHeapCompactionMode.CompactOnce)
+            {
+                Console.WriteLine("Failed to set GCSettings.LargeObjectHeapCompactionMode = CompactOnce");
+                return false;
+            }
             GC.Collect();
             GCLargeObjectHeapCompactionMode mode = GCSettings.LargeObjectHeapCompactionMode;
             Console.WriteLine(mode);
             if (mode != GCLargeObjectHeapCompactionMode.Default)
             {
-                Console.WriteLine("GCLargeObjectHeapCompactionMode should be CompactOnce; instead it is " + mode);
+                Console.WriteLine("GCLargeObjectHeapCompactionMode should be Default; instead it is " + mode);
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool TestRoundTrip()
+        {
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            if (GCSettings.LargeObjectHeapCompactionMode != GCLargeObjectHeapCompactionMode.CompactOnce)
+            {
+                Console.WriteLine("Failed to set GCSettings.LargeObjectHeapCompactionMode = CompactOnce");
+                return false;
+            }
+
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.Default;
+            if (GCSettings.LargeObjectHeapCompactionMode != GCLargeObjectHeapCompactionMode.Default)
+            {
+                Console.WriteLine("Failed to set GCSettings.LargeObjectHeapCompactionMode = Default");
                 return false;
             }
 
