@@ -112,6 +112,12 @@ internal static partial class PseudoCustomAttributes
             _ => null,
         };
 
+    private static bool RequiresMemberReferenceResolution(
+        EntityRegistry registry,
+        EntityRegistry.EntityBase? entity) =>
+        entity is EntityRegistry.MemberReferenceEntity memberReference
+        && ResolveDeclaringType(registry, memberReference.Parent) is not null;
+
     private static KnownAttribute? TryFindKnownAttribute(EntityRegistry.EntityBase constructor, string @namespace, string name)
     {
         foreach (KnownAttribute candidate in s_knownAttributes)

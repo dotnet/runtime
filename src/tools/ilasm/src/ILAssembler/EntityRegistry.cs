@@ -2170,6 +2170,7 @@ namespace ILAssembler
 
             // FieldLayout table field (explicit field offset)
             public int? Offset { get; set; }
+            public bool HasExplicitOffset { get; set; }
 
             // Constant table entry
             public bool HasConstant { get; set; }

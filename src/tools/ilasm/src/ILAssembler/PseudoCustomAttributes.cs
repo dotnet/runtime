@@ -39,9 +39,10 @@ internal static partial class PseudoCustomAttributes
         }
 
         var lowered = new List<EntityRegistry.CustomAttributeEntity>();
+        var deferredFieldOffsets = new List<(LoweringContext Context, KnownAttribute Known)>();
+        var fieldOffsetsWithDeferredConstructors = new List<(LoweringContext Context, KnownAttribute Known)>();
 
-        // Attributes are processed in source order so that a later directive can override an
-        // earlier one, matching the native emitter which applies each attribute as it is defined.
+        // Preserve source order within each native emission phase.
         foreach (var attribute in attributes)
         {
             if (attribute.Owner is null)
@@ -63,6 +64,21 @@ internal static partial class PseudoCustomAttributes
             var context = new LoweringContext(registry, diagnostics, attribute, @namespace, name);
             if (known is not null)
             {
+                // COMPAT: Native ilasm applies attributes with unresolved local member references after
+                // field attributes and explicit layout, even if they appear earlier in the source.
+                if (known.Kind == KnownAttributeKind.FieldOffset && context.IsDeferred)
+                {
+                    if (RequiresMemberReferenceResolution(registry, attribute.Owner))
+                    {
+                        deferredFieldOffsets.Add((context, known));
+                    }
+                    else
+                    {
+                        fieldOffsetsWithDeferredConstructors.Add((context, known));
+                    }
+                    continue;
+                }
+
                 // The native emitter abandons the whole DefineCustomAttribute call when a known
                 // attribute fails validation, so the row is never written regardless of KeepAttribute.
                 if (!Apply(context, known) || !known.KeepAttribute)
@@ -78,6 +94,15 @@ internal static partial class PseudoCustomAttributes
             {
                 lowered.Add(attribute);
             }
+        }
+
+        // Explicit owners are queued during parsing; field attributes with local constructors
+        // are queued later, when native ilasm emits the field definitions.
+        deferredFieldOffsets.AddRange(fieldOffsetsWithDeferredConstructors);
+        foreach ((LoweringContext context, KnownAttribute known) in deferredFieldOffsets)
+        {
+            Apply(context, known);
+            lowered.Add(context.Attribute);
         }
 
         registry.RemoveCustomAttributes(lowered);
@@ -99,6 +124,10 @@ internal static partial class PseudoCustomAttributes
         /// owner recorded during parsing is resolved to the entity it designates here.
         /// </summary>
         public EntityRegistry.EntityBase Owner { get; } = ResolveOwner(registry, attribute.Owner!);
+
+        public bool IsDeferred { get; } =
+            RequiresMemberReferenceResolution(registry, attribute.Owner)
+            || RequiresMemberReferenceResolution(registry, attribute.Constructor);
 
         public string AttributeName { get; } = @namespace.Length == 0 ? name : @namespace + "." + name;
 

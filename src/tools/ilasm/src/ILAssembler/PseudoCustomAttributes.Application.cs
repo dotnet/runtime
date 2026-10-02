@@ -140,7 +140,13 @@ internal static partial class PseudoCustomAttributes
             return context.InvalidValue();
         }
 
-        ((EntityRegistry.FieldDefinitionEntity)context.Owner).Offset = (int)offset;
+        var field = (EntityRegistry.FieldDefinitionEntity)context.Owner;
+        // SetClassLayout follows field attributes, but precedes deferred attributes.
+        if (!field.HasExplicitOffset || context.IsDeferred)
+        {
+            field.Offset = (int)offset;
+        }
+
         return true;
     }
 

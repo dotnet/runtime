@@ -95,6 +95,7 @@ internal sealed partial class GrammarActions
         field.MarshallingDescriptor = MaterializeMarshallingDescriptor(declaration.Marshalling);
         field.DataDeclarationName = declaration.DataDeclarationName;
         field.Offset = declaration.Offset;
+        field.HasExplicitOffset = declaration.Offset is not null;
         if (declaration.Initializer.HasValue)
         {
             field.ConstantValue = declaration.Initializer.ConstantValue;
