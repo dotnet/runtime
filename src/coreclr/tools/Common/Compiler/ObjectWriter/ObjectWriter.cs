@@ -37,7 +37,10 @@ namespace ILCompiler.ObjectWriter
 
         private readonly Dictionary<ISymbolNode, Utf8String> _mangledNameMap = new();
 
+        private const uint Arm64BranchLinkInstruction = 0x94000000;
+        private const int Arm64BranchRegionSize = 0x04000000;
         private readonly byte _insPaddingByte;
+        private int _arm64BranchThunkId;
 
         // Standard sections
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
@@ -64,6 +67,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
         private protected virtual bool UsesSubsectionsViaSymbols => false;
+        private protected virtual bool UseArm64BranchRangeExtensionThunks => false;
 
         private protected abstract void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream);
 
@@ -356,6 +360,8 @@ namespace ILCompiler.ObjectWriter
             List<ISymbolRangeNode> symbolRangeNodes = [];
             List<BlockToRelocate> blocksToRelocate = [];
             List<ChecksumsToCalculate> checksumRelocations = [];
+            Dictionary<int, Arm64BranchRegion> arm64BranchRegions = null;
+            List<Arm64BranchRelocation> arm64BranchRelocations = null;
             foreach (DependencyNode depNode in nodes)
             {
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
@@ -462,13 +468,62 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                if (nodeContents.Relocs is not null)
+                Relocation[] relocations = nodeContents.Relocs;
+                if (relocations is not null && UseArm64BranchRangeExtensionThunks &&
+                    _nodeFactory.Target.Architecture == TargetArchitecture.ARM64)
                 {
-                    blocksToRelocate.Add(new BlockToRelocate(
-                        sectionWriter.SectionIndex,
-                        sectionWriter.Position,
-                        nodeContents.Data,
-                        nodeContents.Relocs));
+                    ArrayBuilder<Relocation> remainingRelocations = default;
+                    foreach (Relocation reloc in relocations)
+                    {
+                        // B relocations can represent intra-method hot/cold transitions where x16 may be live.
+                        // BL #0 identifies a direct call with no encoded addend that can safely use a call thunk.
+                        if (reloc.RelocType != RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 ||
+                            BinaryPrimitives.ReadUInt32LittleEndian(nodeContents.Data.AsSpan(reloc.Offset)) != Arm64BranchLinkInstruction)
+                        {
+                            remainingRelocations.Add(reloc);
+                            continue;
+                        }
+
+                        ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, reloc.Target);
+                        if (relocTarget is not IArm64BranchThunkTarget)
+                        {
+                            remainingRelocations.Add(reloc);
+                            continue;
+                        }
+
+                        Utf8String relocSymbolName = GetMangledName(relocTarget);
+                        arm64BranchRegions ??= new Dictionary<int, Arm64BranchRegion>();
+                        if (!arm64BranchRegions.TryGetValue(sectionWriter.SectionIndex, out Arm64BranchRegion region))
+                        {
+                            region = new Arm64BranchRegion(sectionWriter.Position);
+                            arm64BranchRegions.Add(sectionWriter.SectionIndex, region);
+                        }
+
+                        var branchRelocation = new Arm64BranchRelocation(
+                            sectionWriter.SectionIndex,
+                            sectionWriter.Position + reloc.Offset,
+                            nodeContents.Data,
+                            reloc.Offset,
+                            relocTarget,
+                            relocSymbolName);
+                        region.Relocations.Add(branchRelocation);
+                        arm64BranchRelocations ??= new List<Arm64BranchRelocation>();
+                        arm64BranchRelocations.Add(branchRelocation);
+                    }
+
+                    relocations = remainingRelocations.ToArray();
+                }
+
+                if (relocations is not null)
+                {
+                    if (relocations.Length != 0)
+                    {
+                        blocksToRelocate.Add(new BlockToRelocate(
+                            sectionWriter.SectionIndex,
+                            sectionWriter.Position,
+                            nodeContents.Data,
+                            relocations));
+                    }
 
 #if DEBUG
                     // Pointer relocs should be aligned at pointer boundaries within the image.
@@ -516,6 +571,23 @@ namespace ILCompiler.ObjectWriter
 
                 // Note that this has to be done last as not to advance the section writer position.
                 sectionWriter.EmitData(nodeContents.Data);
+
+                if (arm64BranchRegions is not null &&
+                    arm64BranchRegions.TryGetValue(sectionWriter.SectionIndex, out Arm64BranchRegion arm64BranchRegion) &&
+                    sectionWriter.Position - arm64BranchRegion.StartOffset >= Arm64BranchRegionSize)
+                {
+                    EmitArm64BranchThunks(sectionWriter, arm64BranchRegion, onlyIfRequired: false);
+                    arm64BranchRegion.Reset(sectionWriter.Position);
+                }
+            }
+
+            if (arm64BranchRegions is not null)
+            {
+                foreach ((int sectionIndex, Arm64BranchRegion region) in arm64BranchRegions)
+                {
+                    var sectionWriter = new SectionWriter(this, sectionIndex, _sectionIndexToData[sectionIndex]);
+                    EmitArm64BranchThunks(sectionWriter, region, onlyIfRequired: true);
+                }
             }
 
             foreach (ISymbolRangeNode range in symbolRangeNodes)
@@ -549,6 +621,45 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 EmitSymbolRangeDefinition(rangeNodeName, startNodeName, endNodeName, endSymbol);
+            }
+
+            if (arm64BranchRelocations is not null)
+            {
+                foreach (Arm64BranchRelocation branchRelocation in arm64BranchRelocations)
+                {
+                    bool canReachTarget = CanArm64BranchReach(
+                        branchRelocation.SectionIndex,
+                        branchRelocation.Offset,
+                        branchRelocation.TargetSymbolName,
+                        branchRelocation.Target.Offset);
+
+                    Utf8String targetSymbolName;
+                    long targetAddend;
+                    if (canReachTarget)
+                    {
+                        targetSymbolName = branchRelocation.TargetSymbolName;
+                        targetAddend = branchRelocation.Target.Offset;
+                    }
+                    else
+                    {
+                        Debug.Assert(branchRelocation.Thunk.HasValue);
+                        targetSymbolName = branchRelocation.Thunk.Value.ThunkSymbolName;
+                        targetAddend = 0;
+                    }
+
+                    EmitOrResolveRelocation(
+                        branchRelocation.SectionIndex,
+                        branchRelocation.Offset,
+                        branchRelocation.Data.AsSpan(branchRelocation.RelocationOffset),
+                        RelocType.IMAGE_REL_BASED_ARM64_BRANCH26,
+                        targetSymbolName,
+                        targetAddend);
+
+                    if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard))
+                    {
+                        HandleControlFlowForRelocation(branchRelocation.Target, branchRelocation.TargetSymbolName);
+                    }
+                }
             }
 
             foreach (BlockToRelocate blockToRelocate in blocksToRelocate)
@@ -664,6 +775,146 @@ namespace ILCompiler.ObjectWriter
             }
 
             return name;
+        }
+
+        private void EmitArm64BranchThunks(SectionWriter sectionWriter, Arm64BranchRegion region, bool onlyIfRequired)
+        {
+            if (region.Relocations.Count == 0)
+                return;
+
+            Dictionary<ISymbolNode, Arm64BranchThunk> thunks = new Dictionary<ISymbolNode, Arm64BranchThunk>();
+            foreach (Arm64BranchRelocation branchRelocation in region.Relocations)
+            {
+                if (onlyIfRequired && CanArm64BranchReach(
+                    branchRelocation.SectionIndex,
+                    branchRelocation.Offset,
+                    branchRelocation.TargetSymbolName,
+                    branchRelocation.Target.Offset))
+                {
+                    continue;
+                }
+
+                if (!thunks.ContainsKey(branchRelocation.Target))
+                {
+                    Utf8String thunkSymbolName = new Utf8StringBuilder()
+                        .Append("__arm64_branch_thunk_"u8)
+                        .Append(_arm64BranchThunkId++)
+                        .ToUtf8String();
+                    thunks.Add(
+                        branchRelocation.Target,
+                        new Arm64BranchThunk(
+                            thunkSymbolName,
+                            branchRelocation.TargetSymbolName,
+                            branchRelocation.Target.Offset));
+                }
+            }
+
+            if (thunks.Count == 0)
+                return;
+
+            sectionWriter.EmitAlignment(sizeof(uint));
+            foreach (Arm64BranchThunk thunk in thunks.Values)
+            {
+                const int ThunkSize = 3 * sizeof(uint);
+                const uint AdrpX16Instruction = 0x90000010;
+                const uint AddX16Instruction = 0x91000210;
+                const uint BranchX16Instruction = 0xD61F0200;
+                byte[] thunkData = new byte[ThunkSize];
+
+                BinaryPrimitives.WriteUInt32LittleEndian(thunkData, AdrpX16Instruction);
+                BinaryPrimitives.WriteUInt32LittleEndian(thunkData.AsSpan(sizeof(uint)), AddX16Instruction);
+                BinaryPrimitives.WriteUInt32LittleEndian(thunkData.AsSpan(2 * sizeof(uint)), BranchX16Instruction);
+
+                sectionWriter.EmitSymbolDefinition(thunk.ThunkSymbolName, size: ThunkSize);
+                EmitRelocation(
+                    sectionWriter.SectionIndex,
+                    sectionWriter.Position,
+                    thunkData,
+                    RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
+                    thunk.TargetSymbolName,
+                    thunk.TargetAddend);
+                EmitRelocation(
+                    sectionWriter.SectionIndex,
+                    sectionWriter.Position + sizeof(uint),
+                    thunkData.AsSpan(sizeof(uint)),
+                    RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
+                    thunk.TargetSymbolName,
+                    thunk.TargetAddend);
+                sectionWriter.EmitData(thunkData);
+            }
+
+            foreach (Arm64BranchRelocation branchRelocation in region.Relocations)
+            {
+                if (thunks.TryGetValue(branchRelocation.Target, out Arm64BranchThunk thunk))
+                {
+                    branchRelocation.Thunk = thunk;
+                }
+            }
+        }
+
+        private bool CanArm64BranchReach(int sectionIndex, long offset, Utf8String targetSymbolName, long targetAddend)
+        {
+            return _definedSymbols.TryGetValue(targetSymbolName, out SymbolDefinition definedSymbol) &&
+                definedSymbol.SectionIndex == sectionIndex &&
+                Relocation.FitsInArm64Rel28(definedSymbol.Value + targetAddend - offset);
+        }
+
+        private sealed class Arm64BranchRegion
+        {
+            public Arm64BranchRegion(long startOffset)
+            {
+                StartOffset = startOffset;
+            }
+
+            public long StartOffset { get; private set; }
+            public List<Arm64BranchRelocation> Relocations { get; } = new List<Arm64BranchRelocation>();
+
+            public void Reset(long startOffset)
+            {
+                StartOffset = startOffset;
+                Relocations.Clear();
+            }
+        }
+
+        private sealed class Arm64BranchRelocation
+        {
+            public Arm64BranchRelocation(
+                int sectionIndex,
+                long offset,
+                byte[] data,
+                int relocationOffset,
+                ISymbolNode target,
+                Utf8String targetSymbolName)
+            {
+                SectionIndex = sectionIndex;
+                Offset = offset;
+                Data = data;
+                RelocationOffset = relocationOffset;
+                Target = target;
+                TargetSymbolName = targetSymbolName;
+            }
+
+            public int SectionIndex { get; }
+            public long Offset { get; }
+            public byte[] Data { get; }
+            public int RelocationOffset { get; }
+            public ISymbolNode Target { get; }
+            public Utf8String TargetSymbolName { get; }
+            public Arm64BranchThunk? Thunk { get; set; }
+        }
+
+        private readonly struct Arm64BranchThunk
+        {
+            public Arm64BranchThunk(Utf8String thunkSymbolName, Utf8String targetSymbolName, long targetAddend)
+            {
+                ThunkSymbolName = thunkSymbolName;
+                TargetSymbolName = targetSymbolName;
+                TargetAddend = targetAddend;
+            }
+
+            public Utf8String ThunkSymbolName { get; }
+            public Utf8String TargetSymbolName { get; }
+            public long TargetAddend { get; }
         }
 
         private void EmitChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)

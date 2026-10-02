@@ -117,6 +117,9 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
+            if (context.Target.Architecture == TargetArchitecture.ARM)
+                return;
+
             var rootedMethods = new HashSet<MethodDesc>();
 
             foreach (ManagedHelperInfo helper in s_managedHelpers)

@@ -324,6 +324,9 @@ namespace ILCompiler
 
         internal bool IsDirectManagedHelperEligible(MethodDesc method)
         {
+            if (NodeFactory.Target.Architecture == TargetArchitecture.ARM)
+                return false;
+
             HashSet<MethodDesc> directManagedHelpers = Volatile.Read(ref _directManagedHelpers);
             return directManagedHelpers is not null && directManagedHelpers.Contains(method);
         }
