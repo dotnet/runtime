@@ -113,26 +113,15 @@ static ssize_t readSLEB(const uint8_t *&p, const uint8_t *end)
     return result;
 }
 
-struct PacFrameInfo
+static bool TryGetPacIsPacPresent(UnixNativeMethodInfo *pNativeMethodInfo, bool *pHasPac)
 {
-    bool hasPac;
-    int cfaOffset;
-    int lrOffset;
-    int pacCfaOffset;
-};
+    *pHasPac = false;
 
-static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
-                               PacFrameInfo *pPacFrameInfo)
-{
 #if defined(TARGET_APPLE)
     // PAC-enabled Apple ARM64 methods use DWARF to preserve negate_ra_state;
     // compact unwind has no PAC state to parse.
     if ((pNativeMethodInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF)
     {
-        pPacFrameInfo->hasPac = false;
-        pPacFrameInfo->cfaOffset = 0;
-        pPacFrameInfo->lrOffset = INT_MIN;
-        pPacFrameInfo->pacCfaOffset = 0;
         return true;
     }
 #endif // TARGET_APPLE
@@ -154,12 +143,6 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
         return false;
     p += augmentationLength;
 
-    constexpr int DataAlignFactor = -4;
-    constexpr uint8_t ReturnAddressRegister = 30;
-
-    int cfaOffset = 0;
-    int lrOffset = INT_MIN;
-    int pacCfaOffset = 0;
     bool hasPac = false;
 
     while (p < end)
@@ -168,7 +151,6 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
 
         if (op == DW_CFA_AARCH64_negate_ra_state)
         {
-            pacCfaOffset = cfaOffset;
             hasPac = true;
             continue;
         }
@@ -180,12 +162,7 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
 
         if ((op & 0xC0) == DW_CFA_offset)
         {
-            uint8_t dwarfReg = op & 0x3F;
-            ssize_t offsetFactor = (ssize_t)readULEB(p, end);
-            if (dwarfReg == ReturnAddressRegister)
-            {
-                lrOffset = cfaOffset + (int)(offsetFactor * DataAlignFactor);
-            }
+            readULEB(p, end); // offset
             continue;
         }
 
@@ -207,30 +184,18 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
                 break;
 
             case DW_CFA_offset_extended:
-            {
-                uint8_t dwarfReg = (uint8_t)readULEB(p, end);
-                ssize_t offsetFactor = (ssize_t)readULEB(p, end);
-                if (dwarfReg == ReturnAddressRegister)
-                {
-                    lrOffset = cfaOffset + (int)(offsetFactor * DataAlignFactor);
-                }
+                readULEB(p, end); // register
+                readULEB(p, end); // offset
                 break;
-            }
 
             case DW_CFA_offset_extended_sf:
-            {
-                uint8_t dwarfReg = (uint8_t)readULEB(p, end);
-                ssize_t offsetFactor = readSLEB(p, end);
-                if (dwarfReg == ReturnAddressRegister)
-                {
-                    lrOffset = cfaOffset + (int)(offsetFactor * DataAlignFactor);
-                }
+                readULEB(p, end); // register
+                readSLEB(p, end); // offset
                 break;
-            }
 
             case DW_CFA_def_cfa:
                 readULEB(p, end); // register
-                cfaOffset = (int)readULEB(p, end);
+                readULEB(p, end); // offset
                 break;
 
             case DW_CFA_def_cfa_register:
@@ -238,16 +203,16 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
                 break;
 
             case DW_CFA_def_cfa_offset:
-                cfaOffset = (int)readULEB(p, end);
+                readULEB(p, end); // offset
                 break;
 
             case DW_CFA_def_cfa_sf:
                 readULEB(p, end); // register
-                cfaOffset = (int)(readSLEB(p, end) * DataAlignFactor);
+                readSLEB(p, end); // offset
                 break;
 
             case DW_CFA_def_cfa_offset_sf:
-                cfaOffset = (int)(readSLEB(p, end) * DataAlignFactor);
+                readSLEB(p, end); // offset
                 break;
 
             default:
@@ -255,10 +220,7 @@ static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
         }
     }
 
-    pPacFrameInfo->hasPac = hasPac;
-    pPacFrameInfo->cfaOffset = cfaOffset;
-    pPacFrameInfo->lrOffset = lrOffset;
-    pPacFrameInfo->pacCfaOffset = pacCfaOffset;
+    *pHasPac = hasPac;
     return true;
 }
 
@@ -1098,6 +1060,13 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
     {
         uint32_t instr = *pInstr;
 
+        // Pointer authentication instructions are part of the epilog. Keep scanning
+        // backwards to find the LR restore or SP adjustment that precedes them.
+        if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
+        {
+            continue;
+        }
+
         // check for Branches, Exception Generating and System instruction group.
         // If we see such instruction before seeing FP or LR restored, we are not in an epilog.
         // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
@@ -1450,8 +1419,8 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
 #if defined(TARGET_ARM64)
-    PacFrameInfo pacFrameInfo;
-    if (!TryGetPacFrameInfo(pNativeMethodInfo, &pacFrameInfo))
+    bool hasPac;
+    if (!TryGetPacIsPacPresent(pNativeMethodInfo, &hasPac))
     {
         return false;
     }
@@ -1474,7 +1443,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
 #if defined(TARGET_ARM64)
-    if (pacFrameInfo.hasPac)
+    if (hasPac)
     {
         // Unwinding recovers the entry SP, which NativeAOT used to sign LR.
         *pSpForArm64PacSign = pRegisterSet->GetSP();
