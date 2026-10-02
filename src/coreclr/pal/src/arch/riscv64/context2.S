@@ -26,6 +26,7 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     //64-bits FPR.
     addi t0, t4, CONTEXT_FPU_OFFSET
 
+#if __riscv_flen >= 64
     fld  f0, (CONTEXT_F0)(t0)
     fld  f1, (CONTEXT_F1)(t0)
     fld  f2, (CONTEXT_F2)(t0)
@@ -58,9 +59,12 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     fld  f29, (CONTEXT_F29)(t0)
     fld  f30, (CONTEXT_F30)(t0)
     fld  f31, (CONTEXT_F31)(t0)
+#endif
 
     lw t1, (CONTEXT_FLOAT_CONTROL_OFFSET)(t0)
+#if __riscv_flen != 0
     fscsr x0, t1
+#endif
 
 LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
 
@@ -205,6 +209,7 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
 
     addi  a0, a0, CONTEXT_FPU_OFFSET
 
+#if __riscv_flen >= 64
     fsd  f0, (CONTEXT_F0)(a0)
     fsd  f1, (CONTEXT_F1)(a0)
     fsd  f2, (CONTEXT_F2)(a0)
@@ -237,8 +242,11 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     fsd  f29, (CONTEXT_F29)(a0)
     fsd  f30, (CONTEXT_F30)(a0)
     fsd  f31, (CONTEXT_F31)(a0)
+#endif
 
+#if __riscv_flen != 0
     frcsr t0
+#endif
     sd  t0, (CONTEXT_FLOAT_CONTROL_OFFSET)(a0)
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):

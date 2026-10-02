@@ -14,6 +14,9 @@ LEAF_END_MARKED StubPrecodeCode
 LEAF_ENTRY FixupPrecodeCode
     auipc t2, 0x4
     ld t2, (FixupPrecodeData__Target)(t2)
+    // Without the C extension the tail jump is 4 bytes instead of 2, shifting
+    // the rest of the thunk by 2. Keep in sync with FixupPrecode::FixupCodeOffset.
+#ifdef __riscv_compressed
     c.jr t2
 
     fence r,rw
@@ -21,6 +24,15 @@ LEAF_ENTRY FixupPrecodeCode
     ld t1, (FixupPrecodeData__PrecodeFixupThunk - 0xe)(t2)
     ld t2, (FixupPrecodeData__MethodDesc - 0xe)(t2)
     jr t1
+#else
+    jr t2
+
+    fence r,rw
+    auipc t2, 0x4
+    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 0x10)(t2)
+    ld t2, (FixupPrecodeData__MethodDesc - 0x10)(t2)
+    jr t1
+#endif
 LEAF_END_MARKED FixupPrecodeCode
 
 #ifdef FEATURE_TIERED_COMPILATION
