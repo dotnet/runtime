@@ -109,9 +109,9 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointe
 | `GCAllocContext` | `Pointer` | `pointer` | GC allocation pointer |
 | `IdDispenser` | `HighestId` | `uint32` | Highest possible small thread ID |
 | `IdDispenser` | `IdToThread` | `pointer` | Array mapping small thread IDs to thread pointers |
-| `InFlightTLSData` | `Next` | `pointer` | Pointer to next in-flight TLS data entry |
-| `InFlightTLSData` | `TLSData` | `ObjectHandle` | Object handle to the TLS data for the static field |
-| `InFlightTLSData` | `TlsIndex` | `TLSIndex` | TLS index for the in-flight static field |
+| `InFlightTLSData` | `Next` | `pointer` | Pointer to next in-flight TLS data entry (optional; absent on runtimes built without multithreading support) |
+| `InFlightTLSData` | `TLSData` | `ObjectHandle` | Object handle to the TLS data for the static field (optional; absent on runtimes built without multithreading support) |
+| `InFlightTLSData` | `TlsIndex` | `TLSIndex` | TLS index for the in-flight static field (optional; absent on runtimes built without multithreading support) |
 | `RuntimeThreadLocals` | `AllocContext` | `EEAllocContext` | GC allocation context for the thread |
 | `Thread` | `CachedStackBase` | `pointer` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | `pointer` | Pointer to the limit of the stack |
@@ -132,19 +132,19 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointe
 | `Thread` | `RuntimeThreadLocals` | `pointer` | Pointer to some thread-local storage |
 | `Thread` | `State` | `uint32` | Thread state flags |
 | `Thread` | `ThreadHandle` | `pointer` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
-| `Thread` | `ThreadLocalDataPtr` | `pointer` | Pointer to thread local data structure |
-| `ThreadLocalData` | `CollectibleTlsArrayData` | `pointer` | Pointer to collectible TLS array data |
-| `ThreadLocalData` | `CollectibleTlsDataCount` | `int32` | Count of collectible TLS data entries |
-| `ThreadLocalData` | `InFlightData` | `pointer` | Pointer to in-flight TLS data for fields being initialized |
-| `ThreadLocalData` | `NonCollectibleTlsArrayData` | `pointer` | Pointer to non-collectible TLS array data |
-| `ThreadLocalData` | `NonCollectibleTlsDataCount` | `int32` | Count of non-collectible TLS data entries |
+| `Thread` | `ThreadLocalDataPtr` | `pointer` | Pointer to thread local data structure (optional; absent on runtimes built without multithreading support, where `GetThreadLocalStaticBase` returns `TargetPointer.Null`) |
+| `ThreadLocalData` | `CollectibleTlsArrayData` | `pointer` | Pointer to collectible TLS array data (optional; absent on runtimes built without multithreading support) |
+| `ThreadLocalData` | `CollectibleTlsDataCount` | `int32` | Count of collectible TLS data entries (optional; absent on runtimes built without multithreading support) |
+| `ThreadLocalData` | `InFlightData` | `pointer` | Pointer to in-flight TLS data for fields being initialized (optional; absent on runtimes built without multithreading support) |
+| `ThreadLocalData` | `NonCollectibleTlsArrayData` | `pointer` | Pointer to non-collectible TLS array data (optional; absent on runtimes built without multithreading support) |
+| `ThreadLocalData` | `NonCollectibleTlsDataCount` | `int32` | Count of non-collectible TLS data entries (optional; absent on runtimes built without multithreading support) |
 | `ThreadStore` | `BackgroundCount` | `int32` | Number of background threads |
 | `ThreadStore` | `DeadCount` | `int32` | Number of dead threads |
 | `ThreadStore` | `FirstThreadLink` | `pointer` | Pointer to the first native thread; the single-threaded store has one entry |
 | `ThreadStore` | `PendingCount` | `int32` | Number of pending threads |
 | `ThreadStore` | `ThreadCount` | `int32` | Number of threads |
 | `ThreadStore` | `UnstartedCount` | `int32` | Number of unstarted threads |
-| `TLSIndex` | `TLSIndexRawIndex` | `uint32` | Raw index value containing type and offset |
+| `TLSIndex` | `TLSIndexRawIndex` | `uint32` | Raw index value containing type and offset (optional; absent on runtimes built without multithreading support) |
 
 ### Global variables used
 
@@ -152,7 +152,7 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointe
 | --- | --- | --- |
 | `FinalizerThread` | `pointer` | Pointer to the finalizer thread |
 | `GCThread` | `pointer` | Pointer to the GC thread |
-| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | `uint8` | Number of unused slots in the non-collectible TLS array |
+| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | `uint8` | Number of unused slots in the non-collectible TLS array (optional; absent on runtimes built without multithreading support) |
 | `PtrArrayOffsetToDataArray` | `pointer` | Offset from a pointer-array object to its enclosed data array |
 | `ThinlockThreadIdDispenser` | `pointer` | Pointer to the dispenser of thin-lock thread IDs |
 | `ThreadStore` | `pointer` | Pointer to the runtime thread store |
@@ -305,8 +305,11 @@ TargetPointer IThread.IdToThread(uint id)
 
 TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr)
 {
-    // Get the thread's TLS base address
-    TargetPointer threadLocalDataPtr = target.ReadPointer(threadPointer + /* Thread::ThreadLocalDataPtr offset */);
+    // Get the thread's TLS base address. Thread::ThreadLocalDataPtr is absent on runtimes built
+    // without multithreading support; treat a missing field as null.
+    TargetPointer threadLocalDataPtr = /* Thread::ThreadLocalDataPtr present */
+        ? target.ReadPointer(threadPointer + /* Thread::ThreadLocalDataPtr offset */)
+        : TargetPointer.Null;
     if (threadLocalDataPtr == TargetPointer.Null)
         return TargetPointer.Null;
 

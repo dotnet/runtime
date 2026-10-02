@@ -1550,7 +1550,9 @@ Thread::Thread()
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
+#ifdef FEATURE_MULTITHREADING
     m_ThreadLocalDataPtr = NULL;
+#endif // FEATURE_MULTITHREADING
 
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
@@ -2713,11 +2715,18 @@ void Thread::CooperativeCleanup()
     // Clear any outstanding stale EH state that maybe still active on the thread.
     ExInfo::PopTrackers((void*)-1);
 
+#ifdef FEATURE_MULTITHREADING
     if (m_ThreadLocalDataPtr != NULL)
     {
         FreeThreadStaticData(this);
         m_ThreadLocalDataPtr = NULL;
     }
+#else
+    if (t_ThreadStatics.pThread == this)
+    {
+        FreeThreadStaticData(this);
+    }
+#endif // FEATURE_MULTITHREADING
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
@@ -7008,8 +7017,10 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     m_ExceptionState.EnumChainMemoryRegions(flags);
 
+#ifdef FEATURE_MULTITHREADING
     if (GetThreadLocalDataPtr() != NULL)
         EnumThreadMemoryRegions(GetThreadLocalDataPtr(), flags);
+#endif // FEATURE_MULTITHREADING
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {

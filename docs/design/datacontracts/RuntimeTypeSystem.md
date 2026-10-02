@@ -649,9 +649,9 @@ static class RuntimeTypeSystem_1_Helpers
 | `SystemVEightByteRegistersInfo` | `EightByteSize0` | `uint8` | Byte size of the first eightbyte |
 | `SystemVEightByteRegistersInfo` | `EightByteSize1` | `uint8` | Byte size of the second eightbyte |
 | `SystemVEightByteRegistersInfo` | `NumEightBytes` | `uint8` | Number of eightbyte slots used to pass the value type in registers (0 if not passed in registers) |
-| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data |
-| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index |
-| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index |
+| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data (optional; absent on runtimes built without multithreading support) |
+| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index (optional; absent on runtimes built without multithreading support) |
+| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index (optional; absent on runtimes built without multithreading support) |
 | `TypedByRef` | `Data` | `pointer` | Managed pointer (the byref) stored in a System.TypedReference value |
 | `TypedByRef` | `Type` | `pointer` | Raw TypeHandle pointer of the referent type |
 | `TypeDesc` | `TypeAndFlags` | `uint32` | The lower 8 bits are the CorElementType of the TypeDesc, the upper 24 bits are reserved for flags |
@@ -1031,7 +1031,9 @@ static class RuntimeTypeSystem_1_Helpers
 
     public TargetPointer GetGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        // Also covers non-MethodTable handles, and runtimes without multithreading support,
+        // where [ThreadStatic] fields are regular statics and ThreadStaticsInfo is absent.
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         MethodTable_1 methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;
@@ -1044,7 +1046,7 @@ static class RuntimeTypeSystem_1_Helpers
 
     public TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         MethodTable_1 methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;

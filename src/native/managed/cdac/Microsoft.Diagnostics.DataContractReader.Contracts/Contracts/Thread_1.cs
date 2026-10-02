@@ -231,7 +231,9 @@ internal readonly struct Thread_1 : IThread
     {
         // Get the thread's TLS base address
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        TargetPointer threadLocalDataPtr = thread.ThreadLocalDataPtr;
+        // ThreadLocalDataPtr is absent on runtimes built without multithreading support,
+        // where thread statics are laid out as regular statics.
+        TargetPointer threadLocalDataPtr = thread.ThreadLocalDataPtr ?? TargetPointer.Null;
         if (threadLocalDataPtr == TargetPointer.Null)
             return TargetPointer.Null;
 

@@ -328,8 +328,8 @@ void InitializeCurrentThreadsStaticData(Thread* pThread)
     LIMITED_METHOD_CONTRACT;
 
     t_ThreadStatics.pThread = pThread;
-    t_ThreadStatics.pThread->m_ThreadLocalDataPtr = &t_ThreadStatics;
 #ifdef FEATURE_MULTITHREADING
+    t_ThreadStatics.pThread->m_ThreadLocalDataPtr = &t_ThreadStatics;
     t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, FALSE);
 #endif // FEATURE_MULTITHREADING
     t_ThreadStatics.managedThreadId = pThread->GetThreadId();

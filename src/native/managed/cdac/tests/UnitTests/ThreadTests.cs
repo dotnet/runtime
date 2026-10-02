@@ -13,10 +13,11 @@ public unsafe class ThreadTests
 {
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture arch,
-        Action<MockThreadBuilder> configure)
+        Action<MockThreadBuilder> configure,
+        bool includeThreadLocalDataPtr = true)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
-        MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
+        MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder, includeThreadLocalDataPtr);
         configure(threadBuilder);
 
         TestPlaceholderTarget target = targetBuilder
@@ -168,6 +169,27 @@ public unsafe class ThreadTests
         ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
         Assert.Equal(id, data.Id);
         Assert.Equal(new TargetNUInt(osId), data.OSId);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ThreadWithoutThreadLocalDataPtr(MockTarget.Architecture arch)
+    {
+        // Runtimes built without FEATURE_MULTITHREADING omit Thread::ThreadLocalDataPtr and the
+        // thread-local storage types; thread data must still be readable.
+        const uint id = 1;
+        const ulong osId = 1234;
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder => thread = threadBuilder.AddThread(id, osId),
+            includeThreadLocalDataPtr: false);
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.Equal(id, data.Id);
+        Assert.Equal(new TargetNUInt(osId), data.OSId);
+        Assert.Equal(TargetPointer.Null, contract.GetThreadLocalStaticBase(new TargetPointer(thread!.Address), new TargetPointer(0x1234)));
     }
 
     [Theory]

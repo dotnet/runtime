@@ -3191,13 +3191,13 @@ public:
     }
 #endif //DACCESS_COMPILE
 
-    PTR_ThreadLocalData m_ThreadLocalDataPtr;
 #ifdef FEATURE_MULTITHREADING
+    PTR_ThreadLocalData m_ThreadLocalDataPtr;
     int32_t cLoaderHandles = 0;
     PTR_LOADERHANDLE pLoaderHandles = 0;
     SpinLock m_TlsSpinLock;
-#endif // FEATURE_MULTITHREADING
     PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
+#endif // FEATURE_MULTITHREADING
 
 private:
     TailCallTls m_tailCallTls;
@@ -3808,7 +3808,9 @@ struct cdac_data<Thread>
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
     static constexpr size_t Link = offsetof(Thread, m_pNext);
+#ifdef FEATURE_MULTITHREADING
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+#endif // FEATURE_MULTITHREADING
     static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
