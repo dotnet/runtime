@@ -15,6 +15,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
+    <IsRoslynComponent>true</IsRoslynComponent>
   </PropertyGroup>
 
   <ItemGroup>
