@@ -86,7 +86,7 @@
     <DefaultSubsets Condition="'$(DotNetBuildPass)' == '2' and '$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86'">crossdacpack</DefaultSubsets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DotNetBuildMonoRuntimePacks)' != 'false' and ('$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(DotNetBuildAllRuntimePacks)' == 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true'))">
+  <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true'">
     <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
     <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
   </PropertyGroup>
@@ -724,7 +724,6 @@
 
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
             <_BuildCoreCLRRuntimePack Condition="'$(CoreCLRSupported)' == 'true' and '$(TargetsWasm)' != 'true'">true</_BuildCoreCLRRuntimePack>
-            <_BuildMonoRuntimePack Condition="'$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
           </PropertyGroup>
 
           <!-- In source build, mono is only supported as primary runtime flavor, and when Mono is the primary runtime flavor, CoreCLR is not supported. -->
@@ -737,10 +736,6 @@
             <_BuildNativeAOTRuntimePack Condition="'$(NativeAOTSupported)' == 'true'">true</_BuildNativeAOTRuntimePack>
             <_BuildHostPack Condition="'$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_BuildHostPack>
             <_BuildBundle Condition="'$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_BuildBundle>
-          </PropertyGroup>
-
-          <PropertyGroup Condition="'$(DotNetBuildMonoRuntimePacks)' == 'false'">
-            <_BuildMonoRuntimePack>false</_BuildMonoRuntimePack>
           </PropertyGroup>
 
           <ItemGroup>
