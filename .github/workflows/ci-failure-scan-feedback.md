@@ -1,6 +1,6 @@
 ---
 name: "CI Outer-Loop Failure Scanner — Feedback"
-description: "Periodic tick that reads the latest ci-failure-scan and ci-failure-fix runs and maintainer feedback on the issues/PRs/comments they produce, scores them against separate scanner/fixer rubrics, and proposes targeted edits to ci-failure-scan.md, ci-failure-fix.md, and/or shared/create-kbe.instructions.md as a single draft PR. Maintains the KPI tracker with separate scanner and fixer metrics."
+description: "Periodic tick that reads the latest ci-failure-scan and ci-failure-fix runs and maintainer feedback on the issues/PRs/comments they produce, scores them against separate scanner/fixer rubrics, and proposes targeted edits to ci-failure-scan.md, ci-failure-fix.md, and/or shared/create-kbe.instructions.md in the KPI tracker issue. Maintains the KPI tracker with separate scanner and fixer metrics."
 
 permissions:
   contents: read
@@ -9,7 +9,7 @@ permissions:
   actions: read
 
 on:
-  schedule: daily
+  schedule: bi-weekly
   workflow_dispatch:
   roles: [admin, maintainer, write]
   permissions: {}
@@ -51,35 +51,6 @@ checkout:
   fetch-depth: 1
 
 safe-outputs:
-  create-pull-request:
-    title-prefix: "[ci-scan-feedback] "
-    draft: true
-    max: 1
-    allowed-files:
-      - ".github/workflows/ci-failure-scan.md"
-      - ".github/workflows/ci-failure-fix.md"
-      - ".github/workflows/shared/create-kbe.instructions.md"
-    protected-files:
-      policy: blocked
-      exclude:
-        - .github/
-    labels: [agentic-workflows]
-    allowed-labels: [agentic-workflows]
-  push-to-pull-request-branch:
-    target: "*"
-    required-title-prefix: "[ci-scan-feedback] "
-    max: 1
-    allowed-files:
-      - ".github/workflows/ci-failure-scan.md"
-      - ".github/workflows/ci-failure-fix.md"
-      - ".github/workflows/shared/create-kbe.instructions.md"
-    protected-files:
-      policy: blocked
-      exclude:
-        - .github/
-  update-pull-request:
-    target: "*"
-    max: 1
   create-issue:
     max: 1
     labels: [agentic-workflows]
@@ -87,6 +58,7 @@ safe-outputs:
   update-issue:
     target: "*"
     max: 1
+  report-failure-as-issue: false
   noop:
     report-as-issue: false
 
@@ -100,9 +72,9 @@ network:
 
 # CI Failure Scanner — Feedback
 
-You evaluate two workflows — the [`CI Outer-Loop Failure Scanner`](ci-failure-scan.md) (detection: files KBEs) and the [`CI Outer-Loop Failure Fixer`](ci-failure-fix.md) (mitigation: opens confident `[ci-fix]` fix PRs, opens help-wanted `[ci-fix]` PRs when a fix is attempted but unverified, or posts a loop-in comment on the KBE when no diff is producible) — maintain a single KPI tracker issue with a running window of metrics, and propose targeted edits to the scanner prompt, the fixer prompt, or the shared KBE authoring instructions so the next runs produce tighter, more actionable artifacts. You run read-only; the only write paths are against `.github/workflows/ci-failure-scan.md`, `.github/workflows/ci-failure-fix.md`, `.github/workflows/shared/create-kbe.instructions.md`, and the tracker issue body.
+You evaluate two workflows — the [`CI Outer-Loop Failure Scanner`](ci-failure-scan.md) (detection: files KBEs) and the [`CI Outer-Loop Failure Fixer`](ci-failure-fix.md) (mitigation: opens confident `[ci-fix]` fix PRs, opens help-wanted `[ci-fix]` PRs when a fix is attempted but unverified, or posts a loop-in comment on the KBE when no diff is producible) — maintain a single KPI tracker issue with a running window of metrics, and propose targeted edits to the scanner prompt, the fixer prompt, or the shared KBE authoring instructions so the next runs produce tighter, more actionable artifacts. You run read-only; the only write path is the tracker issue body.
 
-Hard rules: no comments on issues/PRs, no edits outside the three prompt/instruction files above, max 1 PR + 1 tracker issue open at a time. Reading issue/PR/comment bodies (the user-supplied content the integrity gate exists to filter) MUST go through the `github` MCP tool with `min-integrity: approved`; `[Filtered]` results are skipped (record the count, do not chase them). `gh` calls are allowed for workflow-run metadata (`gh api .../actions/...`, `gh run view --log`) and for enumerating this workflow's own artifacts (finding the `[ci-scan-feedback]` PR/tracker by title or repository-owned label), but NOT for reading maintainer-supplied content — do not use `gh issue view`, `gh pr view`, or `gh api /repos/.../comments` to substitute for the integrity-gated reads.
+Hard rules: no comments on issues/PRs, no PRs, max 1 tracker issue open at a time. Reading issue/PR/comment bodies (the user-supplied content the integrity gate exists to filter) MUST go through the `github` MCP tool with `min-integrity: approved`; `[Filtered]` results are skipped (record the count, do not chase them). `gh` calls are allowed for workflow-run metadata (`gh api .../actions/...`, `gh run view --log`) and for enumerating this workflow's own artifacts (finding the `[ci-scan-feedback]` PR/tracker by title or repository-owned label), but NOT for reading maintainer-supplied content — do not use `gh issue view`, `gh pr view`, or `gh api /repos/.../comments` to substitute for the integrity-gated reads.
 
 The two workflows are evaluated on separate axes; do NOT merge their quality numbers. The scanner is judged on KBE precision (right classification, specific signature, valid JSON). The fixer is judged on fix-PR usefulness, help-wanted-PR honesty (a real attempt + a clear ask, never a disguised mute), and loop-in-comment quality. A `[ci-scan]` KBE closed wrong and a `[ci-fix]` PR closed wrong are different failure modes with different fixes. The fixer always prefers a PR (confident or help-wanted) over a comment; a rising share of loop-in comments where a help-wanted PR was feasible is itself a fixer-quality signal.
 
@@ -162,28 +134,9 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    - Loop-in comment (`kind: handoff`): at most one per KBE (flag duplicates), contains a concrete root cause, mentions at most one likely author + 1–2 individual owners, and is justified (no producible diff). Flag live `@dotnet/<team>` team mentions (should be inline code) and flag mis-attributed authors called out by maintainer replies.
    - Fixer skip-reason vocabulary: any fixer tally row using a `skipped:` reason NOT in the Step 7 'Recognized skip reasons' list in `ci-failure-fix.md` is flagged as `unknown-skip-reason: <verbatim string>`.
 
-5. Translate each failure mode into a targeted edit to whichever file owns the rule: scanner findings -> `.github/workflows/ci-failure-scan.md` or `.github/workflows/shared/create-kbe.instructions.md`; fixer findings -> `.github/workflows/ci-failure-fix.md`. Prefer rule-shaped edits (tighten a step, extend a keyword/phrase list, add a Bad/Good row, narrow a gate) over wholesale rewrites. Read the target file first; reuse the existing voice and section structure. A single PR may edit any combination of those files when the signals warrant it.
+5. Translate each failure mode into a targeted edit to whichever file owns the rule: scanner findings -> `.github/workflows/ci-failure-scan.md` or `.github/workflows/shared/create-kbe.instructions.md`; fixer findings -> `.github/workflows/ci-failure-fix.md`. Prefer rule-shaped edits (tighten a step, extend a keyword/phrase list, add a Bad/Good row, narrow a gate) over wholesale rewrites. Read the target file first; reuse the existing voice and section structure. One tick may propose edits to any combination of those files when the signals warrant it.
 
-6. Emit changes. Check for an existing open `[ci-scan-feedback]` PR first:
-
-   ```bash
-   gh pr list -R dotnet/runtime --state open --search 'in:title "[ci-scan-feedback]"' \
-     --json number,headRefName,url | tee /tmp/gh-aw/agent/open_feedback_prs.json
-   ```
-
-   Branch on the result:
-
-   - Existing PR found -> emit `push_to_pull_request_branch` (with the existing PR's `pull_request_number` from the search above, since this is a scheduled run with no triggering PR) to add the new edits as a commit on that PR's branch, then emit `update_pull_request` (same `pull_request_number`) to append a new dated section to its body. Do NOT call `create_pull_request`.
-   - No existing PR -> emit one `create_pull_request`. Title: `[ci-scan-feedback] <one-line summary>`.
-
-   **Emission order.** Emit the Step 7 tracker `update_issue` / `create_issue` BEFORE these PR safe-outputs. The safe-outputs processor runs messages in emission order and cancels every later message once one fails, so a PR-push or patch error here must never cancel the daily tracker snapshot.
-
-   The PR body (or the appended section, when updating) MUST contain:
-   - `## Triggering signals` — bullet list of `(issue/PR #, quoted maintainer comment or rubric finding, link)`.
-   - `## Proposed edits` — bullet list of `(file:line-range, one-line rationale tied to a signal above)`.
-   - `## Expected behavior change` — one paragraph naming the failure mode the next run will avoid.
-
-   If no signal warrants an edit, skip this step (do NOT call `noop` — Step 7 still emits the tracker update).
+6. Draft proposed edits for the tracker's `## Proposed prompt changes` section (Step 7). List at most 3, most important first, and write them for a maintainer who has not read this prompt. Each one has a one-line title, one or two plain sentences saying what goes wrong today with a link to the triggering issue, PR, or comment, and the exact edit as a unified diff of at most 40 lines inside a collapsed `<details>` block. To produce the diff, apply the edit with the `edit` tool, capture `git diff -- <file>`, then run `git checkout -- <file>`. Do not use internal shorthand such as rubric names, variation numbers, or step numbers without explaining them, and do not paste logs. If no signal warrants an edit, the section reads `None this period.`
 
 7. KPI tracker. Maintain a single `[ci-scan-feedback] KPI Tracker` issue whose body is rewritten every tick with a running window of metrics measured since the scanner was established. The body must be regenerated in full, not appended to — there is only one current snapshot. The workflow cannot pin issues; maintainers may pin the tracker manually if desired.
 
@@ -272,7 +225,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
 
    </details>
 
-   Tracking quality of `[ci-scan]` (detection) and `[ci-fix]` (mitigation) issues, PRs, and loop-in comments since <window_start>. Updated every tick of [ci-failure-scan-feedback.lock.yml](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.lock.yml). To raise a concern, comment here or on any `[ci-scan]`/`[ci-fix]` issue/PR; the next tick reads in-scope feedback and either opens a `[ci-scan-feedback]` PR with prompt edits or pushes to the existing one.
+   Tracking quality of `[ci-scan]` (detection) and `[ci-fix]` (mitigation) issues, PRs, and loop-in comments since <window_start>. Updated every tick of [ci-failure-scan-feedback.lock.yml](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.lock.yml). To raise a concern, comment here or on any `[ci-scan]`/`[ci-fix]` issue/PR; the next tick reads in-scope feedback and lists proposed prompt edits below.
 
    ## Snapshot — <UTC timestamp>
 
@@ -327,6 +280,10 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    ```
 
    Omit the details block entirely when no signal is 🔴.
+
+   ## Proposed prompt changes
+
+   <Step 6 proposals, or `None this period.`>
    ````
 
    Suppression rules:
@@ -337,7 +294,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    - Do NOT emit charts (mermaid or otherwise).
    - Do NOT emit historical weekly buckets. The body is a current snapshot.
 
-   If the tracker exists -> emit one `update_issue` with `operation: "replace"` and the new body as a full replacement, never an append. Omitting `operation` is forbidden because gh-aw defaults `update_issue` to append. If the tracker does not exist -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Preserve the collapsed workflow-metadata block and its three visible identity and window-start fields exactly on every rewrite; `update_issue` does not support `safe-outputs.data`, so these fields are the persisted state. This step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point). Emit this tracker output BEFORE the Step 6 PR safe-outputs (see the Step 6 "Emission order" note) so a PR-push failure cannot cancel the snapshot.
+   If the tracker exists -> emit one `update_issue` with `operation: "replace"` and the new body as a full replacement, never an append. Omitting `operation` is forbidden because gh-aw defaults `update_issue` to append. If the tracker does not exist -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Preserve the collapsed workflow-metadata block and its three visible identity and window-start fields exactly on every rewrite; `update_issue` does not support `safe-outputs.data`, so these fields are the persisted state. This step ALWAYS fires (never call `noop` for the tracker — a snapshot is the point).
 
 ## Output to agent log
 
