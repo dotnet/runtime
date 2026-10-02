@@ -374,9 +374,16 @@ namespace System.Threading
             SleepInternal(millisecondsTimeout);
         }
 
-#if !NATIVEAOT
         /// <summary>Returns the operating system identifier for the current thread.</summary>
-        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
+        // Windows thread IDs are 32-bit, so zero-extend; Unix IDs can be 64-bit (e.g. macOS).
+        // Mono keeps its own icall.
+        internal static ulong CurrentOSThreadId =>
+#if MONO
+            GetCurrentOSThreadId();
+#elif TARGET_WINDOWS
+            (uint)Interop.Kernel32.GetCurrentThreadId();
+#else
+            Interop.Sys.GetUInt64OSThreadId();
 #endif
 
 #if !MONO

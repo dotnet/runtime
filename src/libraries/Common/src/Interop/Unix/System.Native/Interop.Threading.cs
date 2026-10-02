@@ -12,10 +12,11 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CreateThread(IntPtr stackSize, delegate* unmanaged<IntPtr, IntPtr> startAddress, IntPtr parameter);
 
-#if TARGET_OSX
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUInt64OSThreadId")]
+        [SuppressGCTransition]
         internal static unsafe partial ulong GetUInt64OSThreadId();
-#else
+
+#if !TARGET_OSX
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetUInt32OSThreadId")]
         internal static unsafe partial uint TryGetUInt32OSThreadId();
 #endif

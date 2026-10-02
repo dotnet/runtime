@@ -1393,13 +1393,6 @@ FCIMPL0(uint8_t*, RhCurrentNativeThreadId)
 }
 FCIMPLEND
 
-// This function is used to get the OS thread identifier for the current thread.
-FCIMPL0(uint64_t, RhCurrentOSThreadId)
-{
-    return PalGetCurrentOSThreadId();
-}
-FCIMPLEND
-
 FCIMPL0(size_t, RhGetDefaultStackSize)
 {
     return GetDefaultStackSizeSetting();

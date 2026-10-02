@@ -85,8 +85,8 @@ void SystemNative_Abort(void)
 // Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
 uint64_t SystemNative_GetUInt64OSThreadId(void)
 {
-    assert(false);
-    return 0;
+    // Single-threaded WASI; matches minipal_get_current_thread_id.
+    return 1;
 }
 
 // Tries to get a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 32-bit ID.
