@@ -349,6 +349,18 @@ TEST(Import, OpenScopeReadsMetadataAndManagedPEFiles)
     EXPECT_EQ(COR_E_BADIMAGEFORMAT, dispenser->OpenScope(path.c_str(), ofRead,
         IID_IMetaDataImport, &invalid));
     EXPECT_EQ(nullptr, invalid);
+
+    std::vector<uint8_t> truncated(sizeof(IMAGE_DOS_HEADER));
+    IMAGE_DOS_HEADER dos{};
+    dos.e_magic = IMAGE_DOS_SIGNATURE;
+    dos.e_lfanew = static_cast<LONG>(truncated.size() - 1);
+    std::memcpy(truncated.data(), &dos, sizeof(dos));
+    ASSERT_TRUE(file.Write(truncated));
+    invalid = reinterpret_cast<IUnknown*>(1);
+    EXPECT_EQ(COR_E_BADIMAGEFORMAT, dispenser->OpenScope(path.c_str(), ofRead,
+        IID_IMetaDataImport, &invalid));
+    EXPECT_EQ(nullptr, invalid);
+
     EXPECT_EQ(E_INVALIDARG, dispenser->OpenScope(path.c_str(), ofTakeOwnership,
         IID_IMetaDataImport, &invalid));
     EXPECT_EQ(nullptr, invalid);

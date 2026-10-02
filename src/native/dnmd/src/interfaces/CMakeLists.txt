@@ -12,6 +12,7 @@ set(SOURCES
 
 set(HEADERS
   ../inc/dnmd_interfaces.hpp
+  ../inc/internal/dnmd_peimage.hpp
   ../inc/internal/span.hpp
   ./metadataimportro.hpp
   ./metadataemit.hpp
