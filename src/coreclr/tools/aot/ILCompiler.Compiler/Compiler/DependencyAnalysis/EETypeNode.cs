@@ -699,7 +699,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Emit VTable
                 Debug.Assert(objData.CountBytes - ((ISymbolDefinitionNode)this).Offset == GetVTableOffset(objData.TargetPointerSize));
                 SlotCounter virtualSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
-                OutputVirtualSlots(factory, ref objData, _type, _type, _type, relocsOnly);
+                OutputVirtualSlots(factory, ref objData, _type, _type, relocsOnly);
 
                 // Update slot count
                 int numberOfVtableSlots = virtualSlotCounter.CountSlots(ref /* readonly */ objData);
@@ -883,42 +883,19 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType, TypeDesc templateType, bool relocsOnly)
+        private void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType, bool relocsOnly)
         {
             Debug.Assert(EmitVirtualSlots);
 
             declType = declType.GetClosestDefType();
-            templateType = templateType.ConvertToCanonForm(CanonicalFormKind.Specific);
-
             var baseType = declType.BaseType;
             if (baseType != null)
             {
-                Debug.Assert(templateType.BaseType != null);
-                OutputVirtualSlots(factory, ref objData, implType, baseType, templateType.BaseType, relocsOnly);
+                OutputVirtualSlots(factory, ref objData, implType, baseType, relocsOnly);
             }
 
-            //
-            // In the universal canonical types case, we could have base types in the hierarchy that are partial universal canonical types.
-            // The presence of these types could cause incorrect vtable layouts, so we need to fully canonicalize them and walk the
-            // hierarchy of the template type of the original input type to detect these cases.
-            //
-            // Exmaple: we begin with Derived<__UniversalCanon> and walk the template hierarchy:
-            //
-            //    class Derived<T> : Middle<T, MyStruct> { }    // -> Template is Derived<__UniversalCanon> and needs a dictionary slot
-            //                                                  // -> Basetype tempalte is Middle<__UniversalCanon, MyStruct>. It's a partial
-            //                                                        Universal canonical type, so we need to fully canonicalize it.
-            //
-            //    class Middle<T, U> : Base<U> { }              // -> Template is Middle<__UniversalCanon, __UniversalCanon> and needs a dictionary slot
-            //                                                  // -> Basetype template is Base<__UniversalCanon>
-            //
-            //    class Base<T> { }                             // -> Template is Base<__UniversalCanon> and needs a dictionary slot.
-            //
-            // If we had not fully canonicalized the Middle class template, we would have ended up with Base<MyStruct>, which does not need
-            // a dictionary slot, meaning we would have created a vtable layout that the runtime does not expect.
-            //
-
             // The generic dictionary pointer occupies the first slot of each type vtable slice
-            if (declType.HasGenericDictionarySlot() || templateType.HasGenericDictionarySlot())
+            if (declType.HasGenericDictionarySlot())
             {
                 // All generic interface types have a dictionary slot, but only some of them have an actual dictionary.
                 bool isInterfaceWithAnEmptySlot = declType.IsInterface &&

@@ -124,7 +124,7 @@ RCW* InteropSyncBlockInfo::GetRCWAndIncrementUseCount()
         }
 
         // somebody else holds the lock, retry
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
     }
 }
 
@@ -164,7 +164,7 @@ void InteropSyncBlockInfo::SetRawRCW(RCW* pRCW)
             }
 
             // somebody else holds the lock, retry
-            __SwitchToThread(0, ++dwSwitchCount);
+            minipal_switch_to_thread(++dwSwitchCount);
         }
     }
 }
@@ -1212,7 +1212,7 @@ void SyncBlockCache::VerifySyncTableEntry()
                 {
                     break;
                 }
-                __SwitchToThread(0, CALLER_LIMITS_SPINNING);
+                minipal_switch_to_thread(0);
             }
 
             DWORD idx = o->GetHeader()->GetHeaderSyncBlockIndex();
@@ -1336,10 +1336,10 @@ namespace
                     YieldProcessorNormalized(); // indicate to the processor that we are spinning
                 }
                 if  (*pLock & BIT_SBLK_SPIN_LOCK)
-                    __SwitchToThread(0, ++dwSwitchCount);
+                    minipal_switch_to_thread(++dwSwitchCount);
             }
             else
-                __SwitchToThread(0, ++dwSwitchCount);
+                minipal_switch_to_thread(++dwSwitchCount);
         }
     }
 

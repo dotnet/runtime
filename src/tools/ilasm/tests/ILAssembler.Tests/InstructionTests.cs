@@ -733,6 +733,40 @@ namespace ILAssembler.Tests
             Assert.Equal(expected, BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(il.AsSpan(1))));
         }
 
+        [Theory]
+        [InlineData("01", 1)]
+        [InlineData("012", 10)]
+        [InlineData("-012", -10)]
+        public void LdcI4_MultiDigitOctalLiteral_EmitsExpectedValue(string literal, int expected)
+        {
+            string source = $$"""
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        ldc.i4 {{literal}}
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            byte[] il = GetMethodIL(pe, "F");
+
+            int actual = il[0] switch
+            {
+                0x15 => -1,
+                >= 0x16 and <= 0x1E => il[0] - 0x16,
+                0x1F => unchecked((sbyte)il[1]),
+                0x20 => BinaryPrimitives.ReadInt32LittleEndian(il.AsSpan(1)),
+                _ => throw new InvalidOperationException($"Unexpected ldc.i4 opcode 0x{il[0]:X2}"),
+            };
+
+            Assert.Equal(expected, actual);
+        }
+
         [Fact]
         public void LdcR4_IntegerLiteral_PreservesValue()
         {

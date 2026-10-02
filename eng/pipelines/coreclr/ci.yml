@@ -227,6 +227,23 @@ extends:
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - browser_wasm
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+            testGroup: outerloop
+            readyToRun: true
+            displayNameArgs: R2R_CG2
+            liveLibrariesBuildConfig: Release
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            extraBuildArgs: -os browser -p:HostConfiguration=Release
+
       #
       # PAL Tests
       #

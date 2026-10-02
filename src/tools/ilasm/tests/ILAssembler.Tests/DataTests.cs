@@ -370,6 +370,45 @@ namespace ILAssembler.Tests
                 BitConverter.ToInt32(ReadData(pe, fields["Value"], sizeof(int))));
         }
 
+        [Fact]
+        public void OutOfRangeDataRepeatCount_DoesNotAliasFollowingData()
+        {
+            string source = """
+                .assembly test { }
+                .data Broken = int8[999999999999999999999999]
+                .data Good = int32(0x12345678)
+                .class public auto ansi DataHolder
+                {
+                    .field public static int8 Missing at Broken
+                    .field public static int32 Value at Good
+                }
+                """;
+
+            var compiler = new DocumentCompiler();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LiteralOutOfRange, diagnostic.Id);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            Dictionary<string, FieldDefinition> fields = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .ToDictionary(field => reader.GetString(field.Name));
+
+            Assert.Equal(0, fields["Missing"].GetRelativeVirtualAddress());
+            Assert.Equal(
+                0x12345678,
+                BitConverter.ToInt32(ReadData(pe, fields["Value"], sizeof(int))));
+        }
+
         private static byte[] ReadData(PEReader pe, FieldDefinition field, int length)
         {
             int rva = field.GetRelativeVirtualAddress();

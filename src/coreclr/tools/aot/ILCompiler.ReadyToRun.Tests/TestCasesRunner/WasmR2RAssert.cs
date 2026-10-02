@@ -7,6 +7,8 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using ILCompiler.Reflection.ReadyToRun;
@@ -210,6 +212,50 @@ internal static class WasmR2RAssert
         }
 
         return false;
+    }
+
+    public static bool WasmImageHasFunctionNameSection(WebcilImageReader reader) =>
+        TryGetWasmFunctionNameSubsection(reader.GetEntireImage().AsSpan(), out _, out _);
+
+    public static bool WasmSymbolMapHasExpectedFunctionNames(ReadyToRunReader reader, out string diagnostic)
+    {
+        var webcilReader = (WebcilImageReader)reader.CompositeReader;
+        Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(webcilReader);
+        uint importedFunctionCount = CountWasmImports(imports, WasmImportKind.Function);
+        uint definedFunctionCount = ReadWasmSectionEntryCount(webcilReader, WasmSectionKind.Function);
+        uint expectedCount = importedFunctionCount + definedFunctionCount;
+        string symbolMapPath = Path.ChangeExtension(reader.Filename, ".symbols");
+
+        if (!File.Exists(symbolMapPath))
+        {
+            diagnostic = $"WASM symbol map was not found: {symbolMapPath}";
+            return false;
+        }
+
+        uint expectedIndex = 0;
+        foreach (string line in File.ReadLines(symbolMapPath))
+        {
+            int separator = line.IndexOf(':');
+            if (separator <= 0 ||
+                !uint.TryParse(line.AsSpan(0, separator), NumberStyles.None, CultureInfo.InvariantCulture, out uint index) ||
+                index != expectedIndex ||
+                separator == line.Length - 1)
+            {
+                diagnostic = $"Invalid WASM symbol map entry {expectedIndex}: '{line}'.";
+                return false;
+            }
+
+            expectedIndex++;
+        }
+
+        if (expectedIndex != expectedCount)
+        {
+            diagnostic = $"WASM symbol map contains {expectedIndex} functions; expected {expectedCount}.";
+            return false;
+        }
+
+        diagnostic = $"WASM symbol map contains the expected {expectedCount} indexed function names.";
+        return true;
     }
 
     /// <summary>
