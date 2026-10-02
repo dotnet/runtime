@@ -60,6 +60,10 @@ The `test/` directory contains all product tests. The native components for
 DNMD should be built first. See the Build section.
 
 Tests can be run using `ctest --test-dir artifacts`.
+On Windows, run the differential `regtest` executable from the build tree after
+building its target (for example, `artifacts\test\regtest\regtest.exe` with
+Ninja). Standard builds do not register it with CTest; it compares against
+the newest installed .NET runtime.
 
 To build the `regfuzz` target on Linux with Clang, configure with
 `-DDNMD_ENABLE_FUZZING=ON`. This also builds the native tests and fetches

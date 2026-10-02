@@ -1660,6 +1660,9 @@ TEST(ImportAssembly, MissingSourceAssemblyRejectsExternalTypeImports)
     ULONG count = 1;
     EXPECT_EQ(S_FALSE, targetImport->EnumTypeRefs(&enumeration, &typeRef, 1, &count));
     EXPECT_EQ(0u, count);
+    ASSERT_EQ(S_OK, targetImport->CountEnum(enumeration, &count));
+    EXPECT_EQ(0u, count);
+    EXPECT_EQ(S_OK, targetImport->ResetEnum(enumeration, 0));
     targetImport->CloseEnum(enumeration);
 }
 
@@ -1887,6 +1890,7 @@ TEST_P(MetadataImportTest, ImportAPIs)
 {
     auto param = GetParam();
     span<uint8_t> blob = GetMetadataForFile(param);
+    ASSERT_GT(blob.size(), 0u) << "Could not load metadata from " << param.pathOrKey;
     void const* data = blob.data();
     uint32_t dataLen = (uint32_t)blob.size();
 
@@ -2124,6 +2128,7 @@ TEST_P(MetaDataLongRunningTest, ImportAPIs)
 {
     auto param = GetParam();
     span<uint8_t> blob = GetMetadataForFile(param);
+    ASSERT_GT(blob.size(), 0u) << "Could not load metadata from " << param.pathOrKey;
     void const* data = blob.data();
     uint32_t dataLen = (uint32_t)blob.size();
 

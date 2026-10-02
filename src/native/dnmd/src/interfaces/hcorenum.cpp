@@ -369,7 +369,7 @@ HRESULT HCORENUMImpl::ResetTableEnum(_In_ uint32_t position) noexcept
         {
             // The current enumerator is consumed based on position
             position -= currData->Total;
-            if (!md_cursor_move(&newStart, currData->Total))
+            if (currData->Total != 0 && !md_cursor_move(&newStart, currData->Total))
                 return E_INVALIDARG;
             newReadIn = currData->Total;
         }

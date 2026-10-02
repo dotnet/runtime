@@ -2,6 +2,11 @@
 include(../configure.cmake)
 include(FindNetHost.cmake)
 
+if (WIN32)
+    # Test executables import dnmd_interfaces.dll and nethost.dll from their output directories.
+    string(REPLACE "/DEPENDENTLOADFLAG:0x800" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+endif()
+
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY
@@ -50,6 +55,18 @@ if (WIN32)
 endif()
 
 include(GoogleTest)
+
+if (WIN32)
+    function(stage_dnmd_test_dependencies target)
+        add_custom_target(${target}_runtime_dlls
+            COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${target}>
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:dnmd::interfaces> $<TARGET_FILE_DIR:${target}>
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:nethost> $<TARGET_FILE_DIR:${target}>
+            DEPENDS dnmd_interfaces
+            VERBATIM)
+        add_dependencies(${target} ${target}_runtime_dlls)
+    endfunction()
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

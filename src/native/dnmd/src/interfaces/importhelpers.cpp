@@ -820,29 +820,27 @@ HRESULT ImportReferenceToTypeDef(
     try
     {
         std::stack<mdcursor_t> typesForTypeRefs;
+        typesForTypeRefs.push(sourceTypeDef);
 
-        mdcursor_t importType;
-        if (!md_token_to_cursor(sourceModule, tdImport, &importType))
+        mdToken nestedTypeToken;
+        if (!md_cursor_to_token(sourceTypeDef, &nestedTypeToken))
             return CLDB_E_FILE_CORRUPT;
-
-        typesForTypeRefs.push(importType);
 
         mdcursor_t nestedClasses;
         uint32_t nestedClassCount;
-        if (!md_create_cursor(sourceModule, mdtid_NestedClass, &nestedClasses, &nestedClassCount))
-            return E_FAIL;
-
-        mdToken nestedTypeToken = tdImport;
         mdcursor_t nestedClass;
-        while (md_find_row_from_cursor(nestedClasses, mdtNestedClass_NestedClass, RidFromToken(nestedTypeToken), &nestedClass))
+        if (md_create_cursor(sourceModule, mdtid_NestedClass, &nestedClasses, &nestedClassCount))
         {
-            mdcursor_t enclosingClass;
-            if (!md_get_column_value_as_cursor(nestedClass, mdtNestedClass_EnclosingClass, &enclosingClass))
-                return E_FAIL;
+            while (md_find_row_from_cursor(nestedClasses, mdtNestedClass_NestedClass, RidFromToken(nestedTypeToken), &nestedClass))
+            {
+                mdcursor_t enclosingClass;
+                if (!md_get_column_value_as_cursor(nestedClass, mdtNestedClass_EnclosingClass, &enclosingClass))
+                    return E_FAIL;
 
-            typesForTypeRefs.push(enclosingClass);
-            if (!md_cursor_to_token(enclosingClass, &nestedTypeToken))
-                return E_FAIL;
+                typesForTypeRefs.push(enclosingClass);
+                if (!md_cursor_to_token(enclosingClass, &nestedTypeToken))
+                    return E_FAIL;
+            }
         }
 
         for (; !typesForTypeRefs.empty(); typesForTypeRefs.pop())

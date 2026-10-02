@@ -18,5 +18,9 @@ endif()
 
 target_link_libraries(regperf benchmark::benchmark)
 
+if(WIN32)
+  stage_dnmd_test_dependencies(regperf)
+endif()
+
 install(DIRECTORY ${RegressionLocatorDirectory} DESTINATION bin)
 install(TARGETS regperf DESTINATION bin)

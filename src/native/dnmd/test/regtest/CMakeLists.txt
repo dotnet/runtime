@@ -35,12 +35,13 @@ add_custom_target(Regression.TargetAssembly
 add_dependencies(regtest Regression.TargetAssembly)
 
 add_custom_command(TARGET regtest POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dnmd::interfaces> $<TARGET_FILE_DIR:regtest>
                     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/artifacts/managed/bin/Regression.TargetAssembly/$<LOWER_CASE:$<CONFIG>>/Regression.TargetAssembly.dll $<TARGET_FILE_DIR:regtest>)
 
 if(WIN32)
+    stage_dnmd_test_dependencies(regtest)
+else()
     add_custom_command(TARGET regtest POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nethost> $<TARGET_FILE_DIR:regtest>)
+                        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dnmd::interfaces> $<TARGET_FILE_DIR:regtest>)
 endif()
 
 if (DNMD_ENABLE_SANITIZERS)

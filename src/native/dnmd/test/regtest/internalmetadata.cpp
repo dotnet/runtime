@@ -1230,6 +1230,7 @@ TEST_P(InternalMetadataImportTest, ImportAPIs)
 {
     auto param = GetParam();
     span<uint8_t> blob = GetMetadataForFile(param);
+    ASSERT_GT(blob.size(), 0u) << "Could not load metadata from " << param.pathOrKey;
     void const* data = blob.data();
     uint32_t dataLen = (uint32_t)blob.size();
 
@@ -1498,6 +1499,7 @@ TEST_P(InternalMetaDataLongRunningTest, ImportAPIs)
 {
     auto param = GetParam();
     span<uint8_t> blob = GetMetadataForFile(param);
+    ASSERT_GT(blob.size(), 0u) << "Could not load metadata from " << param.pathOrKey;
     void const* data = blob.data();
     uint32_t dataLen = (uint32_t)blob.size();
 

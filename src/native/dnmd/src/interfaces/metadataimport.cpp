@@ -66,10 +66,10 @@ namespace
         HCORENUMImpl** pEnumImpl)
     {
         HRESULT hr;
-        mdcursor_t cursor;
-        uint32_t rows;
-        if (!md_create_cursor(mdhandle, mdtid, &cursor, &rows))
-            return CLDB_E_RECORD_NOTFOUND;
+        mdcursor_t cursor{};
+        uint32_t rows = 0;
+        // An empty table has no first row, so md_create_cursor returns false.
+        (void)md_create_cursor(mdhandle, mdtid, &cursor, &rows);
 
         HCORENUMImpl* enumImpl;
         RETURN_IF_FAILED(HCORENUMImpl::CreateTableEnum(1, &enumImpl));

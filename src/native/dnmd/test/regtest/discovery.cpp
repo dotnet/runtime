@@ -8,6 +8,7 @@
 #include "baseline.h"
 #include <pal.hpp>
 #include <algorithm>
+#include <filesystem>
 #include <unordered_map>
 
 #ifndef BUILD_WINDOWS
@@ -207,7 +208,7 @@ std::vector<MetadataFile> MetadataFilesInDirectory(pal::path directory)
         }
 
         std::wcout << "Found file: " << fileName << std::endl;
-        scenarios.emplace_back(MetadataFile::Kind::OnDisk, fileName);
+        scenarios.emplace_back(MetadataFile::Kind::OnDisk, directory + X("\\") + fileName);
     } while (FindNextFileW(findHandle, &findData));
 #else
     DIR* dirInfo;
@@ -243,7 +244,7 @@ std::vector<MetadataFile> MetadataFilesInDirectory(pal::path directory)
         }
 
         std::cout << "Found file: " << fileName << std::endl;
-        scenarios.emplace_back(MetadataFile::Kind::OnDisk, fileName);
+        scenarios.emplace_back(MetadataFile::Kind::OnDisk, directory + X("/") + fileName);
     }
 
 #endif
@@ -313,7 +314,7 @@ span<uint8_t> GetMetadataForFile(MetadataFile file)
 #endif
 
         pal::path path;
-        if (pathOrKey[0] == X('/'))
+        if (std::filesystem::path(pathOrKey).is_absolute())
         {
             path = pathOrKey;
         }
@@ -349,7 +350,9 @@ std::string PrintName(testing::TestParamInfo<MetadataFile> info)
     std::string name;
     if (info.param.kind == MetadataFile::Kind::OnDisk)
     {
-        name = info.param.pathOrKey.substr(0, info.param.pathOrKey.find_last_of('.'));
+        std::string::size_type separator = info.param.pathOrKey.find_last_of("/\\");
+        name = info.param.pathOrKey.substr(separator == std::string::npos ? 0 : separator + 1);
+        name = name.substr(0, name.find_last_of('.'));
         std::replace(name.begin(), name.end(), '.', '_');
     }
     else
