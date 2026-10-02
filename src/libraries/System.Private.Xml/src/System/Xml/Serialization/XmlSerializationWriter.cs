@@ -1230,9 +1230,10 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetArrayElementType")]
-        private void WriteArray(string name, string? ns, object o, Type type)
+        private (string arrayTypeName, string? arrayTypeNs, Type elementType) GetArrayTypes(Type type)
         {
             Type elementType = TypeScope.GetArrayElementType(type, null)!;
+
             string typeName;
             string? typeNs;
 
@@ -1298,6 +1299,14 @@ namespace System.Xml.Serialization
 
             if (arrayDims.Length > 0)
                 typeName += arrayDims.ToString();
+
+            return new(typeName, typeNs, elementType);
+        }
+
+        [RequiresUnreferencedCode("calls GetArrayElementType")]
+        private void WriteArray(string name, string? ns, object o, Type type)
+        {
+            (string typeName, string? typeNs, Type elementType) = GetArrayTypes(type);
 
             if (_soap12 && name != null && name.Length > 0)
                 WriteStartElement(name, ns, null, false);
@@ -1391,8 +1400,20 @@ namespace System.Xml.Serialization
                 {
                     if (n == null)
                     {
-                        TypeEntry entry = GetTypeEntry(t)!;
-                        WriteReferencingElement(entry.typeName!, entry.typeNs, o, isNullable);
+                        TypeEntry? entry = GetTypeEntry(t);
+                        if (entry != null)
+                        {
+                            WriteReferencingElement(entry.typeName!, entry.typeNs, o, isNullable);
+                        }
+                        else
+                        {
+                            // The type was never imported (e.g. an array instance passed as an
+                            // extra entry of a doc/bare members mapping). Unregistered arrays are
+                            // written inline as soap Array elements (WriteArray), so reference
+                            // them with the same element name; anything else falls back to the
+                            // soap ur-type.
+                            WriteReferencingElement(t.IsArray ? Soap.Array : Soap.UrType, Soap.Encoding, o, isNullable);
+                        }
                     }
                     else
                         WriteReferencingElement(n, ns, o, isNullable);
