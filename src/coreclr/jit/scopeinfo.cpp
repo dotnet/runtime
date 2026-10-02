@@ -732,9 +732,6 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             printf("%s-%s", getRegName(toJitReg(varLoc->vlRegReg.vlrrReg1)),
                    getRegName(toJitReg(varLoc->vlRegReg.vlrrReg2)));
         }
-#elif defined(TARGET_WASM)
-            printf("$%u-$%u", (unsigned)varLoc->vlRegReg.vlrrReg1 - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE,
-                   (unsigned)varLoc->vlRegReg.vlrrReg2 - ICorDebugInfo::WASM_LOCAL_REGNUM_BASE);
 #else
             printf("%s-%s", getRegName(varLoc->vlRegReg.vlrrReg1), getRegName(varLoc->vlRegReg.vlrrReg2));
 #endif
