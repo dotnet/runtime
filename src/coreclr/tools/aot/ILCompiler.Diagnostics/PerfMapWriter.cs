@@ -128,6 +128,7 @@ namespace ILCompiler.Diagnostics
                 TargetAbi.Unknown => PerfMapAbiToken.Unknown,
                 TargetAbi.NativeAot => PerfMapAbiToken.Default,
                 TargetAbi.NativeAotArmel => PerfMapAbiToken.Armel,
+                TargetAbi.NativeAotRiscV64SoftFloat => PerfMapAbiToken.Default,
                 _ => throw new NotImplementedException(details.Abi.ToString())
             };
 

@@ -1012,6 +1012,13 @@ void emitter::emitIns_R_R_R(
 bool emitter::tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
+    // Targets without the C extension (e.g. a zkVM guest on rv64im) must never
+    // receive a compressed encoding. This is the only place the JIT emits one.
+    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_C))
+    {
+        return false;
+    }
+
     // TODO-RISCV64-RVC: Disable this early return once compresed instructions are allowed in prolog / epilog
     if (emitGeneratingPrologOrFuncletProlog() || emitGeneratingEpilogOrFuncletEpilog())
     {
@@ -2191,6 +2198,29 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
     assert(dst != nullptr);
     static_assert(sizeof(code_t) == 4, "code_t must be 4 bytes");
+#ifdef DEBUG
+    // On rv64 these major opcodes decode exclusively to F/D-extension
+    // instructions, so a no-F target must never emit one. The compressed FP
+    // forms are unreachable once C is gated off; checked for completeness.
+    switch (GetMajorOpcode(code))
+    {
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::StoreFp:
+        case MajorOpcode::MAdd:
+        case MajorOpcode::MSub:
+        case MajorOpcode::NmSub:
+        case MajorOpcode::NmAdd:
+        case MajorOpcode::OpFp:
+        case MajorOpcode::Fld:
+        case MajorOpcode::Fsd:
+        case MajorOpcode::FldSp:
+        case MajorOpcode::FsdSp:
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_F));
+            break;
+        default:
+            break;
+    }
+#endif // DEBUG
     unsigned codeSize = Is32BitInstruction((WORD)code) ? 4 : 2;
     assert((codeSize == 4) || ((code >> 16) == 0));
     memcpy(dst + writeableOffset, &code, codeSize);
@@ -4964,7 +4994,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             }
             else
             {
-                bool needTemp = indir->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indir);
+                bool needTemp = indir->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeUsesFloatReg(indir);
                 if (addr->AsIntCon()->FitsInAddrBase(m_compiler) && addr->AsIntCon()->AddrNeedsReloc(m_compiler))
                 {
                     regNumber addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;

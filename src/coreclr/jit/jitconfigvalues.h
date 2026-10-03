@@ -456,6 +456,7 @@ RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",         
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbs,            "EnableRiscV64Zbs",          1) // Allows RiscV64 Zbs hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zicond,         "EnableRiscV64Zicond",       1) // Allows RiscV64 Zicond hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableRiscV64Compressed,     "EnableRiscV64Compressed",   1) // Allows RiscV64 compressed (C) instruction emission to be disabled
 #endif
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled

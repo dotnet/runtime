@@ -13,5 +13,9 @@ namespace ILCompiler.ObjectWriter
         ControlFlowGuard = 0x02,
         UseDwarf5 = 0x4,
         GenerateUnwindInfo = 0x8,
+        /// <summary>
+        /// RISC-V: the target supports the C (compressed instructions) extension
+        /// </summary>
+        RiscV64Compressed = 0x10,
     }
 }

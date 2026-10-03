@@ -41,7 +41,7 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
     {
         compLongUsed = true;
     }
-    else if (tree->TypeIs(TYP_FLOAT) || tree->TypeIs(TYP_DOUBLE))
+    else if (varTypeIsFloating(tree) && varTypeUsesFloatReg(tree))
     {
         compFloatingPointUsed = true;
     }

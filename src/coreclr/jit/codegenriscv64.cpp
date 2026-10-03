@@ -1008,6 +1008,26 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             emitAttr size       = emitActualTypeSize(tree);
             double   constValue = tree->AsDblCon()->DconValue();
 
+            if (m_compiler->opts.compUseSoftFP)
+            {
+                // No FP registers: the constant is its IEEE 754 bit pattern in an integer register.
+                assert(genIsValidIntReg(targetReg));
+                int64_t bits;
+                if (size == EA_4BYTE)
+                {
+                    float   fltValue = (float)constValue;
+                    int32_t fltBits;
+                    memcpy(&fltBits, &fltValue, sizeof(fltBits));
+                    bits = fltBits;
+                }
+                else
+                {
+                    memcpy(&bits, &constValue, sizeof(bits));
+                }
+                instGen_Set_Reg_To_Imm(size, targetReg, bits);
+                break;
+            }
+
             assert(emitter::isFloatReg(targetReg));
             int64_t bits;
             if (emitter::isSingleInstructionFpImm(constValue, size, &bits))
@@ -2187,7 +2207,55 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         default:
             noway_assert(!"Unexpected treeNode->gtOper");
     }
-    GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
+    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_A))
+    {
+        // Without the A extension the ISA has no atomic memory operation, so the
+        // only lowering available is a plain read/modify/write. That is correct
+        // only on a target with a single hart and no preemption, which is the
+        // condition under which a build may select an ISA without A.
+        //
+        // XCHG needs no scratch; the arithmetic and bitwise forms compute the new
+        // value in an internal register so the original stays live in targetReg.
+        // BuildNode in lsrariscv64 extends the address and data lifetimes so they
+        // are not reused across the sequence.
+        instruction insLoad  = is4 ? INS_lw : INS_ld;
+        instruction insStore = is4 ? INS_sw : INS_sd;
+        if (treeNode->OperIs(GT_XCHG))
+        {
+            if (targetReg != REG_ZERO)
+            {
+                GetEmitter()->emitIns_R_R_I(insLoad, dataSize, targetReg, addrReg, 0);
+            }
+            GetEmitter()->emitIns_R_R_I(insStore, dataSize, dataReg, addrReg, 0);
+        }
+        else
+        {
+            regNumber   tmpReg   = internalRegisters.GetSingle(treeNode);
+            regNumber   valueReg = (targetReg != REG_ZERO) ? targetReg : tmpReg;
+            instruction insOp;
+            switch (treeNode->gtOper)
+            {
+                case GT_XADD:
+                    insOp = is4 ? INS_addw : INS_add;
+                    break;
+                case GT_XAND:
+                    insOp = INS_and;
+                    break;
+                case GT_XORR:
+                    insOp = INS_or;
+                    break;
+                default:
+                    unreached();
+            }
+            GetEmitter()->emitIns_R_R_I(insLoad, dataSize, valueReg, addrReg, 0);
+            GetEmitter()->emitIns_R_R_R(insOp, dataSize, tmpReg, valueReg, dataReg);
+            GetEmitter()->emitIns_R_R_I(insStore, dataSize, tmpReg, addrReg, 0);
+        }
+    }
+    else
+    {
+        GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
+    }
 
     if (targetReg != REG_ZERO)
     {
@@ -2250,19 +2318,32 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     // so mark the location register as a GC pointer until code generation for this node is finished.
     gcInfo.gcMarkRegPtrVal(loc, locOp->TypeGet());
 
-    BasicBlock* retry = genCreateTempLabel();
-    BasicBlock* fail  = genCreateTempLabel();
+    BasicBlock* fail = genCreateTempLabel();
 
     emitter* e    = GetEmitter();
     emitAttr size = emitActualTypeSize(valOp);
     bool     is4  = (size == EA_4BYTE);
 
-    genDefineTempLabel(retry);
-    e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0); // load original value
-    e->emitIns_J_cond_la(INS_bne, fail, target, comparand);                 // fail if doesn’t match
-    e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
-    e->emitIns_J_cond_la(INS_bnez, retry, storeErr);                        // retry if update failed
-    genDefineTempLabel(fail);
+    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_A))
+    {
+        // No A extension, so no lr/sc reservation pair. Compare and swap without
+        // one: old = *loc; if (old == comparand) *loc = val; result = old. As
+        // above, this holds only on a single-hart target with no preemption.
+        e->emitIns_R_R_I(is4 ? INS_lw : INS_ld, size, target, loc, 0);
+        e->emitIns_J_cond_la(INS_bne, fail, target, comparand);
+        e->emitIns_R_R_I(is4 ? INS_sw : INS_sd, size, val, loc, 0);
+        genDefineTempLabel(fail);
+    }
+    else
+    {
+        BasicBlock* retry = genCreateTempLabel();
+        genDefineTempLabel(retry);
+        e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0); // load original value
+        e->emitIns_J_cond_la(INS_bne, fail, target, comparand);                 // fail if doesn't match
+        e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
+        e->emitIns_J_cond_la(INS_bnez, retry, storeErr);                        // retry if update failed
+        genDefineTempLabel(fail);
+    }
 
     gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask());
     genProduceReg(treeNode);

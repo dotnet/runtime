@@ -9,26 +9,22 @@
 // Floating point and 64-bit integer math helpers.
 //
 
+// The .NET semantics of the floating point to integer conversions (NaN -> 0,
+// saturation) are spelled out rather than left to the C cast: the cast only
+// happens to have them where the hardware instruction does, and a soft-float
+// build lowers it to a compiler-rt routine that has neither.
 FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
     const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
     return (val > 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
-#else
-    return (uint64_t)val;
-#endif
 }
 FCIMPLEND
 
 FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 {
-#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM)
     const double int64_min = -2147483648.0 * 4294967296.0;
     const double int64_max = 2147483648.0 * 4294967296.0;
     return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
-#else
-    return (int64_t)val;
-#endif
 }
 FCIMPLEND
 
@@ -60,6 +56,12 @@ FCIMPL2_LL(uint64_t, ModUInt64Internal, uint64_t i, uint64_t j)
     return i % j;
 }
 FCIMPLEND
+
+#endif
+
+// The int64 -> floating point conversion helpers are used where the JIT cannot
+// emit the conversion inline: 32-bit targets and the soft-float RISC-V ABI.
+#if !defined(HOST_64BIT) || defined(HOST_RISCV64)
 
 FCIMPL1_L(double, RhpLng2Dbl, int64_t val)
 {

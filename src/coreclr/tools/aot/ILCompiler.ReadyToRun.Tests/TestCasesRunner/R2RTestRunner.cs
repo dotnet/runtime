@@ -94,6 +94,21 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
 
+    /// <summary>
+    /// When set, crossgen2 is expected to fail and its standard error must contain this text.
+    /// </summary>
+    public string? ExpectedFailure { get; init; }
+
+    /// <summary>
+    /// Overrides the target OS passed to crossgen2; defaults to the test run's target.
+    /// </summary>
+    public string? TargetOS { get; init; }
+
+    /// <summary>
+    /// Overrides the target architecture passed to crossgen2; defaults to the test run's target.
+    /// </summary>
+    public string? TargetArchitecture { get; init; }
+
     public string Name => name;
 
     public bool IsComposite => Options.Contains(Crossgen2Option.Composite);
@@ -309,7 +324,7 @@ internal sealed class R2RTestRunner
         foreach (var option in compilation.Options)
             args.Add(option.ToArg());
 
-        args.AddRange(["--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture]);
+        args.AddRange(["--targetos", compilation.TargetOS ?? TestPaths.TargetOS, "--targetarch", compilation.TargetArchitecture ?? TestPaths.TargetArchitecture]);
 
         // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
         args.AddRange(compilation.AdditionalArgs);
@@ -324,6 +339,12 @@ internal sealed class R2RTestRunner
         args.Add($"--out");
         args.Add($"{outputFile}");
         var result = driver.Compile(args);
+        if (compilation.ExpectedFailure is string expectedFailure)
+        {
+            Assert.False(result.Success, $"crossgen2 unexpectedly succeeded for '{testName}'");
+            Assert.Contains(expectedFailure, result.StandardError);
+            return outputFile;
+        }
         Assert.True(result.Success,
             $"crossgen2 failed for '{testName}':\n{result.StandardError}\n{result.StandardOutput}");
 
