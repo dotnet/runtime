@@ -200,6 +200,7 @@ namespace System.IO.Hashing
             return XorShift(hash, 28);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void HashInternalLoop(ulong* accumulators, byte* source, uint length, byte* secret)
         {
             Debug.Assert(length > 240);
@@ -208,12 +209,18 @@ namespace System.IO.Hashing
             const int BlockLen = StripeLengthBytes * StripesPerBlock;
             int blocksNum = (int)((length - 1) / BlockLen);
 
-            Accumulate(accumulators, source, secret, StripesPerBlock, true, blocksNum);
+            if (blocksNum != 0)
+            {
+                AccumulateInlined(accumulators, source, secret, StripesPerBlock, true, blocksNum);
+            }
             int offset = BlockLen * blocksNum;
 
             int stripesNumber = (int)((length - 1 - offset) / StripeLengthBytes);
-            Accumulate(accumulators, source + offset, secret, stripesNumber);
-            Accumulate512(accumulators, source + length - StripeLengthBytes, secret + (SecretLengthBytes - StripeLengthBytes - SecretLastAccStartBytes));
+            if (stripesNumber != 0)
+            {
+                AccumulateInlined(accumulators, source + offset, secret, stripesNumber);
+            }
+            Accumulate512Inlined(accumulators, source + length - StripeLengthBytes, secret + (SecretLengthBytes - StripeLengthBytes - SecretLastAccStartBytes));
         }
 
         public static void ConsumeStripes(ulong* accumulators, ref ulong stripesSoFar, ulong stripesPerBlock, byte* source, ulong stripes, byte* secret)
@@ -418,6 +425,7 @@ namespace System.IO.Hashing
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong MergeAccumulators(ulong* accumulators, byte* secret, ulong start)
         {
             ulong result64 = start;
@@ -431,10 +439,22 @@ namespace System.IO.Hashing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong Mix16Bytes(byte* source, ulong secretLow, ulong secretHigh, ulong seed) =>
-            Multiply64To128ThenFold(
+        public static ulong Mix16Bytes(byte* source, ulong secretLow, ulong secretHigh, ulong seed)
+        {
+#if NET
+            if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
+            {
+                // Load the secret as a vector constant instead of materializing two scalar constants.
+                Vector128<ulong> secret = Vector128.Create(secretLow, secretHigh) + Vector128.Create(seed, 0UL - seed);
+                Vector128<ulong> keyed = Vector128.Load((ulong*)source) ^ secret;
+                return Multiply64To128ThenFold(keyed.GetElement(0), keyed.GetElement(1));
+            }
+#endif
+
+            return Multiply64To128ThenFold(
                 ReadUInt64LE(source) ^ (secretLow + seed),
                 ReadUInt64LE(source + sizeof(ulong)) ^ (secretHigh - seed));
+        }
 
         /// <summary>Calculates a 32-bit to 64-bit long multiply.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -511,7 +531,13 @@ namespace System.IO.Hashing
 
         /// <summary>Optimized version of looping over <see cref="Accumulate512"/>.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesToProcess, bool scramble = false, int blockCount = 1)
+        private static void Accumulate(ulong* accumulators, byte* source, byte* secret, int stripesToProcess)
+        {
+            AccumulateInlined(accumulators, source, secret, stripesToProcess);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void AccumulateInlined(ulong* accumulators, byte* source, byte* secret, int stripesToProcess, bool scramble = false, int blockCount = 1)
         {
             byte* secretForAccumulate = secret;
             byte* secretForScramble = secret + (SecretLengthBytes - StripeLengthBytes);
@@ -529,11 +555,10 @@ namespace System.IO.Hashing
                     {
                         Vector256<uint> secretVal = Vector256.Load((uint*)secret);
                         acc1 = Accumulate256(acc1, source, secretVal);
-                        source += Vector256<byte>.Count;
 
                         secretVal = Vector256.Load((uint*)secret + Vector256<uint>.Count);
-                        acc2 = Accumulate256(acc2, source, secretVal);
-                        source += Vector256<byte>.Count;
+                        acc2 = Accumulate256(acc2, source + Vector256<byte>.Count, secretVal);
+                        source += StripeLengthBytes;
 
                         secret += SecretConsumeRateBytes;
                     }
@@ -562,19 +587,16 @@ namespace System.IO.Hashing
                     {
                         Vector128<uint> secretVal = Vector128.Load((uint*)secret);
                         acc1 = Accumulate128(acc1, source, secretVal);
-                        source += Vector128<byte>.Count;
 
                         secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count);
-                        acc2 = Accumulate128(acc2, source, secretVal);
-                        source += Vector128<byte>.Count;
+                        acc2 = Accumulate128(acc2, source + Vector128<byte>.Count, secretVal);
 
                         secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count * 2);
-                        acc3 = Accumulate128(acc3, source, secretVal);
-                        source += Vector128<byte>.Count;
+                        acc3 = Accumulate128(acc3, source + Vector128<byte>.Count * 2, secretVal);
 
                         secretVal = Vector128.Load((uint*)secret + Vector128<uint>.Count * 3);
-                        acc4 = Accumulate128(acc4, source, secretVal);
-                        source += Vector128<byte>.Count;
+                        acc4 = Accumulate128(acc4, source + Vector128<byte>.Count * 3, secretVal);
+                        source += StripeLengthBytes;
 
                         secret += SecretConsumeRateBytes;
                     }
@@ -667,13 +689,12 @@ namespace System.IO.Hashing
             Vector256<uint> sourceVec = Vector256.Load((uint*)source);
             Vector256<uint> sourceKey = sourceVec ^ secret;
 
-            // TODO: Figure out how to unwind this shuffle and just use Vector256.Multiply
-            Vector256<uint> sourceKeyLow = Vector256.Shuffle(sourceKey, Vector256.Create(1u, 0, 3, 0, 5, 0, 7, 0));
+            Vector256<uint> sourceKeyHigh = (sourceKey.AsUInt64() >> 32).AsUInt32();
             Vector256<uint> sourceSwap = Vector256.Shuffle(sourceVec, Vector256.Create(2u, 3, 0, 1, 6, 7, 4, 5));
             Vector256<ulong> sum = accVec + sourceSwap.AsUInt64();
             Vector256<ulong> product = Avx2.IsSupported ?
-                Avx2.Multiply(sourceKey, sourceKeyLow) :
-                (sourceKey & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceKeyLow & Vector256.Create(~0u, 0u, ~0u, 0u, ~0u, 0u, ~0u, 0u)).AsUInt64();
+                Avx2.Multiply(sourceKey, sourceKeyHigh) :
+                (sourceKey.AsUInt64() & Vector256.Create((ulong)uint.MaxValue)) * sourceKeyHigh.AsUInt64();
 
             accVec = product + sum;
             return accVec;
@@ -685,9 +706,15 @@ namespace System.IO.Hashing
             Vector128<uint> sourceVec = Vector128.Load((uint*)source);
             Vector128<uint> sourceKey = sourceVec ^ secret;
 
-            // TODO: Figure out how to unwind this shuffle and just use Vector128.Multiply
             Vector128<uint> sourceSwap = Vector128.Shuffle(sourceVec, Vector128.Create(2u, 3, 0, 1));
             Vector128<ulong> sum = accVec + sourceSwap.AsUInt64();
+
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<uint> sourceLow = AdvSimd.ExtractNarrowingLower(sourceKey.AsUInt64());
+                Vector64<uint> sourceHigh = AdvSimd.ShiftRightLogicalNarrowingLower(sourceKey.AsUInt64(), 32);
+                return AdvSimd.MultiplyWideningLowerAndAdd(sum, sourceLow, sourceHigh);
+            }
 
             Vector128<ulong> product = MultiplyWideningLower(sourceKey);
             accVec = product + sum;
@@ -697,16 +724,10 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<ulong> MultiplyWideningLower(Vector128<uint> source)
         {
-            if (AdvSimd.IsSupported)
+            if (Sse2.IsSupported)
             {
-                Vector64<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(0u, 2, 0, 0)).GetLower();
-                Vector64<uint> sourceHigh = Vector128.Shuffle(source, Vector128.Create(1u, 3, 0, 0)).GetLower();
-                return AdvSimd.MultiplyWideningLower(sourceLow, sourceHigh);
-            }
-            else if (Sse2.IsSupported)
-            {
-                Vector128<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(1u, 0, 3, 0));
-                return Sse2.Multiply(source, sourceLow);
+                Vector128<uint> sourceHigh = (source.AsUInt64() >> 32).AsUInt32();
+                return Sse2.Multiply(source, sourceHigh);
             }
             else if (PackedSimd.IsSupported)
             {
@@ -720,8 +741,7 @@ namespace System.IO.Hashing
             }
             else
             {
-                Vector128<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(1u, 0, 3, 0));
-                return (source & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
+                return (source.AsUInt64() & Vector128.Create((ulong)uint.MaxValue)) * (source.AsUInt64() >> 32);
             }
         }
 #endif
@@ -772,6 +792,14 @@ namespace System.IO.Hashing
         {
             Vector256<ulong> xorShift = accVec ^ Vector256.ShiftRightLogical(accVec, 47);
             Vector256<ulong> xorWithKey = xorShift ^ secret;
+            if (Avx2.IsSupported && !Avx512DQ.VL.IsSupported)
+            {
+                Vector256<uint> prime = Vector256.Create(Prime32_1);
+                Vector256<ulong> lowProduct = Avx2.Multiply(xorWithKey.AsUInt32(), prime);
+                Vector256<ulong> highProduct = Avx2.Multiply((xorWithKey >> 32).AsUInt32(), prime);
+                return lowProduct + (highProduct << 32);
+            }
+
             accVec = xorWithKey * Vector256.Create((ulong)Prime32_1);
             return accVec;
         }
@@ -781,6 +809,22 @@ namespace System.IO.Hashing
         {
             Vector128<ulong> xorShift = accVec ^ Vector128.ShiftRightLogical(accVec, 47);
             Vector128<ulong> xorWithKey = xorShift ^ secret;
+            if (AdvSimd.IsSupported)
+            {
+                Vector64<uint> low = AdvSimd.ExtractNarrowingLower(xorWithKey);
+                Vector64<uint> high = AdvSimd.ShiftRightLogicalNarrowingLower(xorWithKey, 32);
+                Vector64<uint> prime = Vector64.Create(Prime32_1);
+                Vector128<ulong> highProduct = AdvSimd.MultiplyWideningLower(high, prime) << 32;
+                return AdvSimd.MultiplyWideningLowerAndAdd(highProduct, low, prime);
+            }
+            else if (Sse2.IsSupported && !Avx512DQ.VL.IsSupported)
+            {
+                Vector128<uint> prime = Vector128.Create(Prime32_1);
+                Vector128<ulong> lowProduct = Sse2.Multiply(xorWithKey.AsUInt32(), prime);
+                Vector128<ulong> highProduct = Sse2.Multiply((xorWithKey >> 32).AsUInt32(), prime);
+                return lowProduct + (highProduct << 32);
+            }
+
             accVec = xorWithKey * Vector128.Create((ulong)Prime32_1);
             return accVec;
         }

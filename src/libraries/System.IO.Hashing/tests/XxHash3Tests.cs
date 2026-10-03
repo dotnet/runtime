@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
@@ -144,6 +145,40 @@ namespace System.IO.Hashing.Tests
 
                     Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(0L)]
+        [InlineData(42L)]
+        [InlineData(long.MinValue)]
+        [InlineData(long.MaxValue)]
+        public void Hash_StripeAndBlockBoundaries_MatchesStreaming(long seed)
+        {
+            Random random = new Random(42);
+            foreach (int length in Enumerable.Range(17, 240).Concat(new[]
+            {
+                257, 511, 512, 513, 1023, 1024, 1025, 1087, 1088, 1089,
+                2047, 2048, 2049, 4095, 4096, 4097
+            }))
+            {
+                using BoundedMemory<byte> memory = BoundedMemory.Allocate<byte>(length);
+                byte[] data = new byte[length];
+                random.NextBytes(data);
+                data.AsSpan().CopyTo(memory.Span);
+                XxHash3 hash64 = new XxHash3(seed);
+                XxHash128 hash128 = new XxHash128(seed);
+                ReadOnlySpan<byte> remaining = memory.Span;
+                while (!remaining.IsEmpty)
+                {
+                    int chunkLength = Math.Min(remaining.Length, random.Next(1, 300));
+                    hash64.Append(remaining.Slice(0, chunkLength));
+                    hash128.Append(remaining.Slice(0, chunkLength));
+                    remaining = remaining.Slice(chunkLength);
+                }
+
+                Assert.Equal(XxHash3.HashToUInt64(memory.Span, seed), hash64.GetCurrentHashAsUInt64());
+                AssertExtensions.SequenceEqual(XxHash128.Hash(memory.Span, seed), hash128.GetCurrentHash());
             }
         }
 
