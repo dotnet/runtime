@@ -539,30 +539,37 @@ namespace System.Text.Json
         {
             Debug.Assert(span.Length > 0 && span[0] == literal[0] && literal.Length <= JsonConstants.MaximumLiteralLength);
 
+            // The exception message quotes the literal's bytes up to and including the first mismatch,
+            // or all of them if the data ends first, so at most literal.Length bytes are ever written.
             Span<byte> readSoFar = stackalloc byte[JsonConstants.MaximumLiteralLength];
-            int written = 0;
+            int written;
 
             long prevTotalConsumed = _totalConsumed;
+            int prevConsumed = _consumed;
             SequencePosition copy = _currentPosition;
             if (span.Length >= literal.Length || IsLastSpan)
             {
-                _bytePositionInLine += FindMismatch(span, literal);
+                int indexOfFirstMismatch = FindMismatch(span, literal);
+                _bytePositionInLine += indexOfFirstMismatch;
 
-                int amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
-                span.Slice(0, amountToWrite).CopyTo(readSoFar);
-                written += amountToWrite;
+                written = Math.Min(span.Length, indexOfFirstMismatch + 1);
+                span.Slice(0, written).CopyTo(readSoFar);
                 goto Throw;
             }
             else
             {
                 if (!literal.StartsWith(span))
                 {
-                    _bytePositionInLine += FindMismatch(span, literal);
-                    int amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
-                    span.Slice(0, amountToWrite).CopyTo(readSoFar);
-                    written += amountToWrite;
+                    int indexOfFirstMismatch = FindMismatch(span, literal);
+                    _bytePositionInLine += indexOfFirstMismatch;
+
+                    written = indexOfFirstMismatch + 1;
+                    span.Slice(0, written).CopyTo(readSoFar);
                     goto Throw;
                 }
+
+                span.CopyTo(readSoFar);
+                written = span.Length;
 
                 ReadOnlySpan<byte> leftToMatch = literal.Slice(span.Length);
 
@@ -585,10 +592,6 @@ namespace System.Text.Json
                         return false;
                     }
 
-                    int amountToWrite = Math.Min(span.Length, readSoFar.Length - written);
-                    span.Slice(0, amountToWrite).CopyTo(readSoFar.Slice(written));
-                    written += amountToWrite;
-
                     span = _buffer;
 
                     if (span.StartsWith(leftToMatch))
@@ -603,28 +606,25 @@ namespace System.Text.Json
 
                     if (!leftToMatch.StartsWith(span))
                     {
-                        _bytePositionInLine += FindMismatch(span, leftToMatch);
+                        int indexOfFirstMismatch = FindMismatch(span, leftToMatch);
+                        _bytePositionInLine += indexOfFirstMismatch;
 
-                        amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
-                        span.Slice(0, amountToWrite).CopyTo(readSoFar.Slice(written));
-                        written += amountToWrite;
-
+                        span.Slice(0, indexOfFirstMismatch + 1).CopyTo(readSoFar.Slice(written));
+                        written += indexOfFirstMismatch + 1;
                         goto Throw;
                     }
+
+                    span.CopyTo(readSoFar.Slice(written));
+                    written += span.Length;
 
                     leftToMatch = leftToMatch.Slice(span.Length);
                     alreadyMatched = span.Length;
                 }
             }
 
-            static int AmountToWrite(ReadOnlySpan<byte> span, long bytePositionInLine, ReadOnlySpan<byte> readSoFar, int written)
-            {
-                return Math.Min(
-                    readSoFar.Length - written,
-                    Math.Min(span.Length, (int)bytePositionInLine + 1));
-            }
         Throw:
             _totalConsumed = prevTotalConsumed;
+            _consumed = prevConsumed;
             consumed = default;
             _currentPosition = copy;
             throw GetInvalidLiteralMultiSegment(readSoFar.Slice(0, written).ToArray());
