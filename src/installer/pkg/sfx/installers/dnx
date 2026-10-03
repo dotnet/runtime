@@ -15,6 +15,33 @@ done
 DIR="$(cd "$(dirname "$SCRIPT")" && pwd -P)"
 
 DOTNET="$DIR/dotnet"
+
+case "$1" in
+  /*|*/*)
+    case "$1" in
+      /*) DNX_FILE="$1" ;;
+      *)  DNX_FILE="$PWD/$1" ;;
+    esac
+
+    if [ -f "$DNX_FILE" ]; then
+      case "$DNX_FILE" in
+        *.[cC][sS]) IS_FILE_BASED_APP=true ;;
+        *) [ "$(dd if="$DNX_FILE" bs=2 count=1 2>/dev/null)" = "#!" ] && IS_FILE_BASED_APP=true ;;
+      esac
+    fi
+    ;;
+esac
+
+if [ "$IS_FILE_BASED_APP" = true ]; then
+  DNX_WORKING_DIRECTORY="$PWD"
+
+  if ! cd "$(dirname "$DNX_FILE")"; then
+    exit 1
+  fi
+
+  exec "$DOTNET" run --file-mode --working-directory "$DNX_WORKING_DIRECTORY" -- "$@"
+fi
+
 SDK_VERSION=$("$DOTNET" --list-sdks | tail -n 1 | cut -d' ' -f1)
 if [ -z "$SDK_VERSION" ]; then
   echo "Error: dnx requires a .NET SDK to be installed, but none was found." >&2
