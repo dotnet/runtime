@@ -1014,11 +1014,13 @@ namespace System.Text
                     // performance wins vs. other patterns. See for more information:
                     // https://github.com/dotnet/runtime/issues/33002
 
+                    // pUtf16Buffer may be odd-aligned (e.g. MemoryMarshal.Cast<byte, char>), so it can't be
+                    // aligned to 16 bytes by advancing whole chars. Use unaligned stores to stay correct.
                     Vector128<byte> low = Sse2.UnpackLow(latin1Vector, zeroVector);
-                    Sse2.StoreAligned((byte*)pCurrentWriteAddress, low);
+                    Sse2.Store((byte*)pCurrentWriteAddress, low);
 
                     Vector128<byte> high = Sse2.UnpackHigh(latin1Vector, zeroVector);
-                    Sse2.StoreAligned((byte*)pCurrentWriteAddress + SizeOfVector128, high);
+                    Sse2.Store((byte*)pCurrentWriteAddress + SizeOfVector128, high);
 
                     currentOffset += SizeOfVector128;
                     pCurrentWriteAddress += SizeOfVector128;
