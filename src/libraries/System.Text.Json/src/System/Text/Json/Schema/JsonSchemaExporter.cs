@@ -238,9 +238,12 @@ namespace System.Text.Json.Schema
                     state.PushSchemaNode(JsonSchema.PropertiesPropertyName);
                     foreach (JsonPropertyInfo property in typeInfo.Properties)
                     {
-                        if (property is { Get: null, Set: null } or { IsExtensionData: true })
+                        if (property is { CanSerialize: false, CanDeserializeOrPopulate: false } or { IsExtensionData: true })
                         {
-                            continue; // Skip JsonIgnored properties and extension data
+                            // Skip properties that are ignored, are not serialized or deserialized
+                            // (e.g. due to the IgnoreReadOnlyProperties/IgnoreReadOnlyFields settings)
+                            // or that are used for extension data.
+                            continue;
                         }
 
                         state.PushSchemaNode(property.Name);
