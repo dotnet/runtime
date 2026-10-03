@@ -71,7 +71,7 @@ CORDB_ADDRESS IsEventDebuggerNotification(
 
     // TODO: We don't do this check in case of non-windows debugging now, because we don't support
     // multi-instance debugging.
-#if !defined(FEATURE_DBGIPC_TRANSPORT_VM) && !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
     // If base-address doesn't match, then it's likely an event from another version of the CLR
     // in the target.
     // We need to be careful here.  CORDB_ADDRESS is a ULONG64, whereas ExceptionInformation[1]
@@ -89,7 +89,7 @@ CORDB_ADDRESS IsEventDebuggerNotification(
     return ptrRemoteManagedEvent;
 }
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
 void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
                                       CORDB_ADDRESS      pClrBaseAddress,
                                       DebuggerIPCEvent * pIPCEvent)
@@ -116,7 +116,7 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
     _ASSERTE(IsEventDebuggerNotification(&(pDebugEvent->u.Exception.ExceptionRecord), pClrBaseAddress) ==
              PTR_TO_CORDB_ADDRESS(pIPCEvent));
 }
-#endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#endif // defined(HOST_UNIX)
 
 //-----------------------------------------------------------------------------
 // The 'internal' version of our IL to Native map (the DebuggerILToNativeMap struct)

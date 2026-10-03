@@ -156,6 +156,7 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize);
     HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer);
+    HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo);
 
 private:
     void SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob);

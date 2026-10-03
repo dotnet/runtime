@@ -5138,7 +5138,15 @@ ClrDataAccess::Initialize(void)
 #endif
 
     CorDebugPlatform targetPlatform;
-    IfFailRet(m_pTarget->GetPlatform(&targetPlatform));
+    hr = m_pTarget->GetPlatform(&targetPlatform);
+    if (hr == E_NOTIMPL)
+    {
+        targetPlatform = hostPlatform; // If the target doesn't implement GetPlatform, assume it matches the host platform.
+    }
+    else
+    {
+        IfFailRet(hr);
+    }
 
     if (targetPlatform != hostPlatform)
     {

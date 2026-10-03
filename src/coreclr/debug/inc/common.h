@@ -33,12 +33,12 @@ inline CORDB_ADDRESS PTR_TO_CORDB_ADDRESS(UINT_PTR ptr)
 
 // Determine if an exception record is for a CLR debug event, and get the payload.
 CORDB_ADDRESS IsEventDebuggerNotification(const EXCEPTION_RECORD * pRecord, CORDB_ADDRESS pClrBaseAddress);
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
+#if defined(HOST_UNIX)
 struct DebuggerIPCEvent;
 void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
                                       CORDB_ADDRESS      pClrBaseAddress,
                                       DebuggerIPCEvent * pIPCEvent);
-#endif // (FEATURE_DBGIPC_TRANSPORT_DI || FEATURE_DBGIPC_TRANSPORT_VM)
+#endif // HOST_UNIX
 
 //
 // This macro is used in CORDbgCopyThreadContext().
