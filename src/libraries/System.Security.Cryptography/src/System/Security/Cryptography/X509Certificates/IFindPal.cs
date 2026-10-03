@@ -15,9 +15,9 @@ namespace System.Security.Cryptography.X509Certificates
         void FindByIssuerName(string issuerName);
         void FindByIssuerDistinguishedName(string issuerDistinguishedName);
         void FindBySerialNumber(BigInteger hexValue, BigInteger decimalValue);
-        void FindByTimeValid(DateTime dateTime);
-        void FindByTimeNotYetValid(DateTime dateTime);
-        void FindByTimeExpired(DateTime dateTime);
+        void FindByTimeValid(DateTimeOffset instant);
+        void FindByTimeNotYetValid(DateTimeOffset instant);
+        void FindByTimeExpired(DateTimeOffset instant);
         void FindByTemplateName(string templateName);
         void FindByApplicationPolicy(string oidValue);
         void FindByCertificatePolicy(string oidValue);
