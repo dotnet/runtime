@@ -55,6 +55,8 @@ namespace System.Net.Mail.Tests
         public ParsedMailMessage Message { get; private set; }
         public bool IsEncrypted { get; private set; }
         public string TlsHostName { get; private set; }
+        public System.Security.Authentication.SslProtocols TlsProtocol { get; private set; }
+        public SslApplicationProtocol ApplicationProtocol { get; private set; }
 
         public int ConnectionCount { get; private set; }
         public int MessagesReceived { get; private set; }
@@ -263,6 +265,8 @@ namespace System.Net.Mail.Tests
                             await sslStream.AuthenticateAsServerAsync(SslOptions);
                             IsEncrypted = true;
                             TlsHostName = sslStream.TargetHostName;
+                            TlsProtocol = sslStream.SslProtocol;
+                            ApplicationProtocol = sslStream.NegotiatedApplicationProtocol;
 
                             stream = sslStream;
                             break;
