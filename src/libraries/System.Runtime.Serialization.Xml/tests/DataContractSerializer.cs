@@ -1330,6 +1330,66 @@ public static partial class DataContractSerializerTests
         Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
         Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
         Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+        Assert.False(input.OnDeserializingMethodInvoked, "input.OnDeserializingMethodInvoked is true");
+        Assert.False(input.OnDeserializedMethodInvoked, "input.OnDeserializedMethodInvoked is true");
+        Assert.False(output.OnSerializingMethodInvoked, "output.OnSerializingMethodInvoked is true");
+        Assert.False(output.OnSerializedMethodInvoked, "output.OnSerializedMethodInvoked is true");
+    }
+
+    [Fact]
+    public static void DCS_MyDataContractResolver_NoStreamingContext()
+    {
+        var myresolver = new MyResolver();
+        var settings = new DataContractSerializerSettings() { DataContractResolver = myresolver, KnownTypes = new Type[] { typeof(MyOtherType) } };
+        var input = new MyType_NoStreamingContext() { Value = new MyOtherType() { Str = "Hello World" } };
+        var output = DataContractSerializerHelper.SerializeAndDeserialize<MyType_NoStreamingContext>(input, @"<MyType_NoStreamingContext xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Value i:type=""MyOtherType""><Str>Hello World</Str></Value></MyType_NoStreamingContext>", settings);
+
+        Assert.True(myresolver.ResolveNameInvoked, "myresolver.ResolveNameInvoked is false");
+        Assert.True(myresolver.TryResolveTypeInvoked, "myresolver.TryResolveTypeInvoked is false");
+        Assert.True(myresolver.DeclaredTypeIsNotNull, "myresolver.DeclaredTypeIsNotNull is false");
+        Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
+        Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
+        Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
+        Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+        Assert.False(input.OnDeserializingMethodInvoked, "input.OnDeserializingMethodInvoked is true");
+        Assert.False(input.OnDeserializedMethodInvoked, "input.OnDeserializedMethodInvoked is true");
+        Assert.False(output.OnSerializingMethodInvoked, "output.OnSerializingMethodInvoked is true");
+        Assert.False(output.OnSerializedMethodInvoked, "output.OnSerializedMethodInvoked is true");
+    }
+
+    [Fact]
+    public static void DCS_InvalidEventMethods()
+    {
+        IMyType_InvalidEventMethods[] objs = [
+            new MyType_InvalidEventMethods_Type_OnSerializing(),
+            new MyType_InvalidEventMethods_Type_OnSerialized(),
+            new MyType_InvalidEventMethods_Type_OnDeserializing(),
+            new MyType_InvalidEventMethods_Type_OnDeserialized(),
+            new MyType_InvalidEventMethods_Length_OnSerializing(),
+            new MyType_InvalidEventMethods_Length_OnSerialized(),
+            new MyType_InvalidEventMethods_Length_OnDeserializing(),
+            new MyType_InvalidEventMethods_Length_OnDeserialized()
+        ];
+
+        using var ms = new MemoryStream();
+
+        // The deserialization API is "ReadObject", but an error is also thrown at "WriteObject".
+        // By doing this, it saves time and effort to create sample XML data manually.
+
+        for (int i = 0; i < objs.Length; ++i)
+        {
+            var obj = objs[i];
+            var t = obj.GetType();
+            var dcs = new DataContractSerializer(t);
+            Console.WriteLine("Testing [{0}/{1}] {2}...", i + 1, objs.Length, t);
+            var ex = Assert.Throws<InvalidDataContractException>(() =>
+            {
+                dcs.WriteObject(ms, obj);
+            });
+            Assert.Contains(t.FullName, ex.Message);
+            Assert.Contains(obj.MethodName, ex.Message);
+            Console.WriteLine("Testing [{0}/{1}] {2} is OK!", i + 1, objs.Length, t);
+        }
     }
 
     [Fact]
