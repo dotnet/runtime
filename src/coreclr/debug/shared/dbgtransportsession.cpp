@@ -434,11 +434,11 @@ void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPC
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
-    pOut->m_leftSideProtocolCurrent =         pIn->m_leftSideProtocolCurrent;
-    pOut->m_leftSideProtocolMinSupported =    pIn->m_leftSideProtocolMinSupported;
+    pOut->m_runtimeProtocol =                 pIn->m_runtimeProtocol;
+    pOut->m_runtimeProtocolMinSupported =     pIn->m_runtimeProtocolMinSupported;
 
-    pOut->m_rightSideProtocolCurrent =        pIn->m_rightSideProtocolCurrent;
-    pOut->m_rightSideProtocolMinSupported =   pIn->m_rightSideProtocolMinSupported;
+    pOut->m_debuggerProtocolCurrent =         pIn->m_debuggerProtocolCurrent;
+    pOut->m_debuggerProtocolMinSupported =    pIn->m_debuggerProtocolMinSupported;
 
     pOut->m_errorHR =                         pIn->m_errorHR;
     pOut->m_errorCode =                       pIn->m_errorCode;
@@ -487,11 +487,11 @@ void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBl
     pOut->padding2 =                          pIn->padding2;
     pOut->padding3 =                          pIn->padding3;
 
-    pOut->m_leftSideProtocolCurrent =         pIn->m_leftSideProtocolCurrent;
-    pOut->m_leftSideProtocolMinSupported =    pIn->m_leftSideProtocolMinSupported;
+    pOut->m_runtimeProtocol =                 pIn->m_runtimeProtocol;
+    pOut->m_runtimeProtocolMinSupported =     pIn->m_runtimeProtocolMinSupported;
 
-    pOut->m_rightSideProtocolCurrent =        pIn->m_rightSideProtocolCurrent;
-    pOut->m_rightSideProtocolMinSupported =   pIn->m_rightSideProtocolMinSupported;
+    pOut->m_debuggerProtocolCurrent =         pIn->m_debuggerProtocolCurrent;
+    pOut->m_debuggerProtocolMinSupported =    pIn->m_debuggerProtocolMinSupported;
 
     pOut->m_errorHR =                         pIn->m_errorHR;
     pOut->m_errorCode =                       pIn->m_errorCode;

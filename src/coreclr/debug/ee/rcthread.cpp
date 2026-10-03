@@ -370,18 +370,18 @@ HRESULT DebuggerRCThread::Init(void)
         // before we really need the patch table.
         NeedRuntimeOffsetsReInit(IPC_TARGET_OUTOFPROC);
 
-        m_pDCB->m_helperThreadStartAddr = (void *) DebuggerRCThread::ThreadProcStatic;
-        m_pDCB->m_helperRemoteStartAddr = (void *) DebuggerRCThread::ThreadProcRemote;
-        m_pDCB->m_leftSideProtocolCurrent = CorDB_LeftSideProtocolCurrent;
-        m_pDCB->m_leftSideProtocolMinSupported = CorDB_LeftSideProtocolMinSupported;
+        m_pDCB->m_helperThreadStartAddr        = (void *) DebuggerRCThread::ThreadProcStatic;
+        m_pDCB->m_helperRemoteStartAddr        = (void *) DebuggerRCThread::ThreadProcRemote;
+        m_pDCB->m_runtimeProtocol              = CorDB_RuntimeProtocol;
+        m_pDCB->m_runtimeProtocolMinSupported  = CorDB_RuntimeProtocol;
 
         LOG((LF_CORDB, LL_INFO10,
              "DRCT::I: version info: %d.%d.%d current protocol=%d, min protocol=%d\n",
              m_pDCB->m_verMajor,
              m_pDCB->m_verMinor,
              m_pDCB->m_checkedBuild,
-             m_pDCB->m_leftSideProtocolCurrent,
-             m_pDCB->m_leftSideProtocolMinSupported));
+             m_pDCB->m_runtimeProtocol,
+             m_pDCB->m_runtimeProtocolMinSupported));
 
         // Left-side always creates helper-thread.
         // @dbgtodo  inspection - by end of V3, LS will never create helper-thread :)
