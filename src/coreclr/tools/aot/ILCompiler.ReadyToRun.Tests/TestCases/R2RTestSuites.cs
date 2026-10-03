@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
@@ -134,6 +135,12 @@ public class R2RTestSuites
 
         static void ValidateDefault(ReadyToRunReader reader)
         {
+            const byte WasmI32 = 0x7F;
+            const byte WasmF64 = 0x7C;
+            const byte WasmV128 = 0x7B;
+            const int WasmEncodedFrameBase = 2;
+            const int WasmLocalRegisterBase = 3;
+
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
@@ -142,18 +149,387 @@ public class R2RTestSuites
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+
+            // The variable debug-info checks validate the encoding contract rather than exact
+            // codegen: register records must name a declared wasm local of the expected type, and
+            // stack records must be frame-relative slots. Native offsets, frame layout, and
+            // instruction selection are deliberately not pinned.
+            foreach (ReadyToRunMethod method in methods)
+            {
+                foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
+                {
+                    if (runtimeFunction.DebugInfo is DebugInfo debugInfo)
+                    {
+                        AssertValidRecords(debugInfo.VariablesList, ResolveWasmBody(reader, webcilReader, runtimeFunction));
+                    }
+                }
+            }
+
+            // Optimized code keeps tracked variables, including vectors, in wasm locals.
+            ReadyToRunMethod optimizedTrackedVariables = GetMethod(methods, "OptimizedTrackedVariables");
+            RuntimeFunction optimizedRoot = GetRoot(optimizedTrackedVariables);
+            WebcilImageReader.WasmFunctionInfo optimizedBody = ResolveWasmBody(reader, webcilReader, optimizedRoot);
+            AssertRegisterRecord(optimizedRoot, optimizedBody, VariableType.Parameter, 0, WasmI32);
+            AssertRegisterRecord(optimizedRoot, optimizedBody, VariableType.Parameter, 1, WasmI32);
+            AssertRegisterRecord(optimizedRoot, optimizedBody, VariableType.Local, 0, WasmI32);
+            ReadyToRunMethod optimizedVectorVariables = GetMethod(methods, "OptimizedVectorVariables");
+            RuntimeFunction optimizedVectorRoot = GetRoot(optimizedVectorVariables);
+            WebcilImageReader.WasmFunctionInfo optimizedVectorBody =
+                ResolveWasmBody(reader, webcilReader, optimizedVectorRoot);
+            AssertRegisterRecord(optimizedVectorRoot, optimizedVectorBody, VariableType.Parameter, 0, WasmV128);
+            AssertRegisterRecord(optimizedVectorRoot, optimizedVectorBody, VariableType.Parameter, 1, WasmV128);
+            AssertRegisterRecord(optimizedVectorRoot, optimizedVectorBody, VariableType.Local, 0, WasmV128);
+
+            // Unoptimized code receives parameters in wasm locals and then homes them to the frame.
+            ReadyToRunMethod leafFrameLocal = GetMethod(methods, "LeafFrameLocal");
+            Assert.Equal(new[] { "int" }, leafFrameLocal.LocalSignature);
+            RuntimeFunction leafRoot = GetRoot(leafFrameLocal);
+            WebcilImageReader.WasmFunctionInfo leafBody = ResolveWasmBody(reader, webcilReader, leafRoot);
+            AssertHomedParameter(leafRoot, leafBody, 0, WasmI32, VarLocType.VLT_STK);
+            NativeVarInfo leafLocal = AssertStackRecord(leafRoot, VariableType.Local, 0, VarLocType.VLT_STK);
+            AssertReferencesFrameOffset(leafBody, leafLocal.VariableLocation.Data2);
+
+            // localloc gives the root a frame pointer distinct from SP; stack records remain
+            // relative to the logical frame.
+            ReadyToRunMethod locallocFrameLocal = GetMethod(methods, "LocallocFrameLocal");
+            Assert.Equal(new[] { "int" }, locallocFrameLocal.LocalSignature);
+            RuntimeFunction locallocRoot = GetRoot(locallocFrameLocal);
+            WebcilImageReader.WasmFunctionInfo locallocBody = ResolveWasmBody(reader, webcilReader, locallocRoot);
+            NativeVarInfo locallocParameter = AssertHomedParameter(locallocRoot, locallocBody, 0, WasmI32, VarLocType.VLT_STK);
+            AssertReferencesFrameOffset(locallocBody, locallocParameter.VariableLocation.Data2);
+            AssertStackRecord(locallocRoot, VariableType.Local, 0, VarLocType.VLT_STK);
+
+            // Floating-point values use the same local encoding, and a double homed to the frame
+            // occupies two 32-bit slots.
+            ReadyToRunMethod addDoubles = GetMethod(methods, "AddDoubles");
+            RuntimeFunction addDoublesRoot = GetRoot(addDoubles);
+            WebcilImageReader.WasmFunctionInfo addDoublesBody = ResolveWasmBody(reader, webcilReader, addDoublesRoot);
+            AssertHomedParameter(addDoublesRoot, addDoublesBody, 0, WasmF64, VarLocType.VLT_STK2);
+            AssertHomedParameter(addDoublesRoot, addDoublesBody, 1, WasmF64, VarLocType.VLT_STK2);
+
             // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
-            Assert.True(methods.Exists(method =>
-                method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));
+            ReadyToRunMethod sumStaticData = GetMethod(methods, "SumStaticData");
+            RuntimeFunction sumStaticRoot = GetRoot(sumStaticData);
+            AssertRegisterRecord(
+                sumStaticRoot,
+                ResolveWasmBody(reader, webcilReader, sumStaticRoot),
+                VariableType.Parameter,
+                0,
+                WasmI32);
+
             // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
-            Assert.True(methods.Exists(method =>
-                method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal)));
+            // Variable records describe the root method's frame; funclets do not report scopes.
+            ReadyToRunMethod sumWithFinally = GetMethod(methods, "SumWithFinally");
+            RuntimeFunction sumWithFinallyRoot = GetRoot(sumWithFinally);
+            AssertHomedParameter(
+                sumWithFinallyRoot,
+                ResolveWasmBody(reader, webcilReader, sumWithFinallyRoot),
+                0,
+                WasmI32,
+                VarLocType.VLT_STK);
+            AssertStackRecord(sumWithFinallyRoot, VariableType.Local, 0, VarLocType.VLT_STK);
+            Assert.Single(sumWithFinally.RuntimeFunctions, runtimeFunction =>
+                runtimeFunction.WasmIsFunclet && runtimeFunction.DebugInfo is null);
+
+            // A GC reference kept live in the parent frame across a GC reached from a finally
+            // funclet. The funclet addresses the same frame slot through the parent frame.
+            ReadyToRunMethod gcLocalAcrossFinally = GetMethod(methods, "GcLocalAcrossFinally");
+            Assert.Equal(
+                new[] { "Webcil.WasmWebcilModule+GcMarker", "int" },
+                gcLocalAcrossFinally.LocalSignature);
+            RuntimeFunction gcLocalRoot = GetRoot(gcLocalAcrossFinally);
+            AssertHomedParameter(
+                gcLocalRoot,
+                ResolveWasmBody(reader, webcilReader, gcLocalRoot),
+                0,
+                WasmI32,
+                VarLocType.VLT_STK);
+            NativeVarInfo gcMarker = AssertStackRecord(gcLocalRoot, VariableType.Local, 0, VarLocType.VLT_STK);
+            AssertStackRecord(gcLocalRoot, VariableType.Local, 1, VarLocType.VLT_STK);
+            AssertFrameGcSlot(gcLocalAcrossFinally, gcMarker);
+            AssertSafepointCovered(gcLocalAcrossFinally, gcLocalRoot, gcMarker);
+            RuntimeFunction gcLocalFunclet = Assert.Single(gcLocalAcrossFinally.RuntimeFunctions, runtimeFunction =>
+                runtimeFunction.WasmIsFunclet && runtimeFunction.DebugInfo is null);
+            AssertReferencesFrameOffset(
+                ResolveWasmBody(reader, webcilReader, gcLocalFunclet),
+                gcMarker.VariableLocation.Data2);
+
+            ReadyToRunMethod locallocAcrossFinally = GetMethod(methods, "LocallocAcrossFinally");
+            Assert.Equal(new[] { "int", "int*", "int" }, locallocAcrossFinally.LocalSignature);
+            RuntimeFunction locallocFinallyRoot = GetRoot(locallocAcrossFinally);
+            WebcilImageReader.WasmFunctionInfo locallocFinallyBody =
+                ResolveWasmBody(reader, webcilReader, locallocFinallyRoot);
+            NativeVarInfo locallocFinallyParameter =
+                AssertHomedParameter(locallocFinallyRoot, locallocFinallyBody, 0, WasmI32, VarLocType.VLT_STK);
+            AssertReferencesFrameOffset(locallocFinallyBody, locallocFinallyParameter.VariableLocation.Data2);
+            for (int localIndex = 0; localIndex < 3; localIndex++)
+            {
+                AssertStackRecord(locallocFinallyRoot, VariableType.Local, localIndex, VarLocType.VLT_STK);
+            }
+            Assert.Single(locallocAcrossFinally.RuntimeFunctions, runtimeFunction =>
+                runtimeFunction.WasmIsFunclet && runtimeFunction.DebugInfo is null);
+
+            // Same-typed GC locals, including a null reference, keep distinct frame slots. Wasm opens
+            // every method-wide scope in the first emitted block, so the locals share one range.
+            ReadyToRunMethod gcSlotIdentity = GetMethod(methods, "GcSlotIdentity");
+            Assert.Equal(
+                new[]
+                {
+                    "Webcil.WasmWebcilModule+GcMarker",
+                    "Webcil.WasmWebcilModule+GcMarker",
+                    "Webcil.WasmWebcilModule+GcMarker",
+                    "int",
+                },
+                gcSlotIdentity.LocalSignature);
+            RuntimeFunction gcSlotRoot = GetRoot(gcSlotIdentity);
+            NativeVarInfo[] slotLocals = new NativeVarInfo[4];
+            for (int localIndex = 0; localIndex < slotLocals.Length; localIndex++)
+            {
+                slotLocals[localIndex] = AssertStackRecord(gcSlotRoot, VariableType.Local, localIndex, VarLocType.VLT_STK);
+            }
+            Assert.All(slotLocals, local =>
+            {
+                Assert.Equal(slotLocals[0].StartOffset, local.StartOffset);
+                Assert.Equal(slotLocals[0].EndOffset, local.EndOffset);
+            });
+            Assert.Equal(slotLocals.Length, slotLocals.Select(local => local.VariableLocation.Data2).Distinct().Count());
+            NativeVarInfo[] markers = slotLocals[..3];
+            foreach (NativeVarInfo marker in markers)
+            {
+                AssertFrameGcSlot(gcSlotIdentity, marker);
+            }
+            AssertSafepointCovered(gcSlotIdentity, gcSlotRoot, markers);
+
             // Has a catch clause, so the JIT emits a try_table catch_ref that references the
             // imported restore-context exception tag.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("CatchException", StringComparison.Ordinal)));
 
             Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
+
+            static ReadyToRunMethod GetMethod(List<ReadyToRunMethod> methods, string name)
+                => Assert.Single(methods, method => method.SignatureString.Contains(name, StringComparison.Ordinal));
+
+            static RuntimeFunction GetRoot(ReadyToRunMethod method)
+                => Assert.Single(method.RuntimeFunctions, runtimeFunction => runtimeFunction.DebugInfo is not null);
+
+            static void AssertValidRecords(List<NativeVarInfo> records, WebcilImageReader.WasmFunctionInfo body)
+            {
+                foreach (NativeVarInfo record in records)
+                {
+                    Assert.True(
+                        record.StartOffset < record.EndOffset,
+                        $"Variable {record.VariableNumber} has an empty range [{record.StartOffset:X}, {record.EndOffset:X}).");
+                    switch (record.VariableLocation.VarLocType)
+                    {
+                        case VarLocType.VLT_REG:
+                            Assert.True(record.VariableLocation.Data1 >= WasmLocalRegisterBase);
+                            GetWasmLocalType(body, record.VariableLocation.Data1 - WasmLocalRegisterBase);
+                            break;
+                        case VarLocType.VLT_STK:
+                        case VarLocType.VLT_STK2:
+                            Assert.Equal(WasmEncodedFrameBase, record.VariableLocation.Data1);
+                            break;
+                        default:
+                            Assert.Fail($"Unexpected wasm variable location {record.VariableLocation.VarLocType}.");
+                            break;
+                    }
+                }
+
+                foreach (IGrouping<uint, NativeVarInfo> variable in records.GroupBy(record => record.VariableNumber))
+                {
+                    NativeVarInfo[] ranges = variable.OrderBy(record => record.StartOffset).ToArray();
+                    for (int i = 1; i < ranges.Length; i++)
+                    {
+                        Assert.True(
+                            ranges[i - 1].EndOffset <= ranges[i].StartOffset,
+                            $"Variable {variable.Key} has overlapping ranges.");
+                    }
+                }
+            }
+
+            static NativeVarInfo AssertRegisterRecord(
+                RuntimeFunction root,
+                WebcilImageReader.WasmFunctionInfo body,
+                VariableType variableType,
+                int variableIndex,
+                byte wasmType)
+            {
+                NativeVarInfo[] records = root.DebugInfo!.VariablesList
+                    .Where(record => record.Variable.Type == variableType
+                        && record.Variable.Index == variableIndex
+                        && record.VariableLocation.VarLocType == VarLocType.VLT_REG)
+                    .OrderBy(record => record.StartOffset)
+                    .ToArray();
+                Assert.NotEmpty(records);
+                Assert.All(records, record => Assert.Equal(
+                    wasmType,
+                    GetWasmLocalType(body, record.VariableLocation.Data1 - WasmLocalRegisterBase)));
+                return records[0];
+            }
+
+            static NativeVarInfo AssertStackRecord(
+                RuntimeFunction root,
+                VariableType variableType,
+                int variableIndex,
+                VarLocType locationType)
+                => Assert.Single(root.DebugInfo!.VariablesList, record =>
+                    record.Variable.Type == variableType
+                    && record.Variable.Index == variableIndex
+                    && record.VariableLocation.VarLocType == locationType);
+
+            static NativeVarInfo AssertHomedParameter(
+                RuntimeFunction root,
+                WebcilImageReader.WasmFunctionInfo body,
+                int parameterIndex,
+                byte wasmType,
+                VarLocType stackLocationType)
+            {
+                NativeVarInfo inLocal = AssertRegisterRecord(root, body, VariableType.Parameter, parameterIndex, wasmType);
+                Assert.Equal(0u, inLocal.StartOffset);
+                NativeVarInfo onFrame = AssertStackRecord(root, VariableType.Parameter, parameterIndex, stackLocationType);
+                Assert.True(inLocal.EndOffset <= onFrame.StartOffset);
+                return onFrame;
+            }
+
+            static byte GetWasmLocalType(WebcilImageReader.WasmFunctionInfo body, int localIndex)
+            {
+                if (localIndex < body.ParamTypes.Count)
+                {
+                    return body.ParamTypes[localIndex];
+                }
+
+                int remaining = localIndex - body.ParamTypes.Count;
+                foreach ((uint count, byte valType) in body.Locals)
+                {
+                    if (remaining < count)
+                    {
+                        return valType;
+                    }
+
+                    remaining -= (int)count;
+                }
+
+                Assert.Fail($"Wasm local {localIndex} is not declared by the function.");
+                return 0;
+            }
+
+            static void AssertReferencesFrameOffset(WebcilImageReader.WasmFunctionInfo body, int frameOffset)
+            {
+                // Look for a load or store whose memarg offset addresses the frame slot.
+                const byte FirstMemoryAccess = 0x28;
+                const byte LastMemoryAccess = 0x3E;
+                ReadOnlySpan<byte> code = body.Image.AsSpan(body.InstructionOffset, body.InstructionLength);
+                for (int i = 0; i < code.Length; i++)
+                {
+                    if (code[i] is >= FirstMemoryAccess and <= LastMemoryAccess
+                        && TryReadUnsignedLeb128(code, i + 1, out _, out int offsetPosition)
+                        && TryReadUnsignedLeb128(code, offsetPosition, out ulong memoryOffset, out _)
+                        && memoryOffset == (ulong)frameOffset)
+                    {
+                        return;
+                    }
+                }
+
+                Assert.Fail($"Expected a wasm load or store at frame offset 0x{frameOffset:X}.");
+            }
+
+            static bool TryReadUnsignedLeb128(ReadOnlySpan<byte> code, int position, out ulong value, out int next)
+            {
+                value = 0;
+                for (int shift = 0; position < code.Length && shift < 64; shift += 7)
+                {
+                    byte b = code[position++];
+                    value |= (ulong)(b & 0x7F) << shift;
+                    if ((b & 0x80) == 0)
+                    {
+                        next = position;
+                        return true;
+                    }
+                }
+
+                next = position;
+                return false;
+            }
+
+            static void AssertFrameGcSlot(ReadyToRunMethod method, NativeVarInfo record)
+            {
+                ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo =
+                    Assert.IsType<ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo>(method.GcInfo);
+                Assert.Equal(0u, gcInfo.SlotTable.NumRegisters);
+                ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot slot = Assert.Single(
+                    gcInfo.SlotTable.GcSlots,
+                    candidate => candidate.StackSlot?.SpOffset == record.VariableLocation.Data2);
+                Assert.Equal(GcStackSlotBase.GC_FRAMEREG_REL, slot.StackSlot.Base);
+            }
+
+            static void AssertSafepointCovered(ReadyToRunMethod method, RuntimeFunction root, params NativeVarInfo[] records)
+            {
+                uint callILOffset = FindCallILOffset(method, "CollectAtGcSafepoint");
+                DebugInfoBoundsEntry call = Assert.Single(
+                    root.DebugInfo!.BoundsList,
+                    bound => bound.ILOffset == callILOffset);
+                Assert.All(records, record => Assert.True(
+                    record.StartOffset <= call.NativeOffset && call.NativeOffset < record.EndOffset,
+                    $"Variable {record.VariableNumber} range [{record.StartOffset:X}, {record.EndOffset:X}) does not cover the safepoint at {call.NativeOffset:X}."));
+            }
+
+            static uint FindCallILOffset(ReadyToRunMethod method, string calleeName)
+            {
+                const byte CallOpcode = 0x28;
+                const int MethodDefTable = 0x06;
+                byte[] il = GetMethodILBytes(method);
+                System.Reflection.Metadata.MetadataReader metadata = method.ComponentReader.MetadataReader;
+                int callOffset = -1;
+                for (int i = 0; i + sizeof(int) < il.Length; i++)
+                {
+                    if (il[i] != CallOpcode)
+                    {
+                        continue;
+                    }
+
+                    int token = BitConverter.ToInt32(il, i + 1);
+                    int row = token & 0xFFFFFF;
+                    if ((token >> 24) != MethodDefTable || row == 0 || row > metadata.MethodDefinitions.Count)
+                    {
+                        continue;
+                    }
+
+                    MethodDefinitionHandle callee = System.Reflection.Metadata.Ecma335.MetadataTokens.MethodDefinitionHandle(row);
+                    if (metadata.StringComparer.Equals(metadata.GetMethodDefinition(callee).Name, calleeName))
+                    {
+                        Assert.Equal(-1, callOffset);
+                        callOffset = i;
+                    }
+                }
+
+                Assert.True(callOffset >= 0, $"Expected a call to {calleeName}.");
+                return (uint)callOffset;
+            }
+
+            static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
+                ReadyToRunReader reader,
+                WebcilImageReader webcilReader,
+                RuntimeFunction runtimeFunction)
+            {
+                uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)runtimeFunction.Id);
+                int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+                Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+                WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+                Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
+                return body.Value;
+            }
+
+            static byte[] GetMethodILBytes(ReadyToRunMethod method)
+            {
+                MethodDefinition methodDefinition =
+                    method.ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)method.MethodHandle);
+                byte[]? ilBytes = null;
+                method.ComponentReader.GetSectionData(
+                    methodDefinition.RelativeVirtualAddress,
+                    sectionData => ilBytes = MethodBodyBlock.Create(sectionData).GetILBytes());
+                return Assert.IsType<byte[]>(ilBytes);
+            }
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve to the fixed global
@@ -513,6 +889,18 @@ public class R2RTestSuites
                     metadata.MetadataReader.GetString(metadata.MetadataReader.GetAssemblyDefinition().Name));
             }
         }
+    }
+
+    [Theory]
+    [InlineData(0, "PC")]
+    [InlineData(2, "ambient SP")]
+    [InlineData(3, "$0")]
+    [InlineData(4, "$1")]
+    [InlineData(0x2000_0002, "$536870911")]
+    [InlineData(-1, "Unknown '-1'")]
+    public void WasmDebugRegisterIsDecoded(int register, string expected)
+    {
+        Assert.Equal(expected, DebugInfo.GetPlatformSpecificRegister(WasmMachine.Wasm32, register));
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]

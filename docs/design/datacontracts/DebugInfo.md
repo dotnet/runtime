@@ -223,6 +223,45 @@ Each variable entry in the Vars section is nibble-encoded as follows:
 
 Signed integers are encoded using the same unsigned scheme, with the sign bit stored in bit 0 (`value = unsigned >> 1`, negate if `unsigned & 1`). On x86, stack offsets are DWORD-aligned and stored divided by `sizeof(DWORD)`.
 
+### WebAssembly Variable Register Encoding
+
+WASM has no physical registers. Every register field in the Vars stream holds a WebAssembly local
+index biased past the reserved register numbers:
+
+```text
+register = localIndex + WASM_LOCAL_REGNUM_BASE
+```
+
+`WASM_LOCAL_REGNUM_BASE` is `3`, one past `REGNUM_AMBIENT_SP`. Values `0` through `2` remain
+`REGNUM_PC`, `REGNUM_COUNT`, and `REGNUM_AMBIENT_SP`. As on other targets, the value type is not
+encoded: it is implied by the variable's type and by the local's declaration in the WebAssembly
+function.
+
+### WebAssembly Stack Base Encoding
+
+WASM `VLT_STK` and `VLT_STK2` records currently encode base register `2`.
+`REG_FPBASE`, `REG_SPBASE`, and `REGNUM_AMBIENT_SP` all have that value on this target, so the
+debug record identifies a logical frame-relative stack home; it does not identify a particular
+WebAssembly engine local.
+
+The absolute logical frame address is reconstructed by the runtime stack-walk and unwind
+protocol from shadow-stack linear memory. The engine's current per-function SP/FP local allocation
+is a separate code-generation detail:
+
+* Frame access allocates an FP value when a method has frame locals, uses `localloc`, or has
+  funclets.
+* Without `localloc`, the root function's FP aliases its SP, including methods that make calls.
+* `localloc` gives the root a distinct FP so later SP movement does not change frame-relative
+  addresses.
+* Funclets receive a distinct parent establishing FP; with `localloc`, that remains the root's
+  pre-adjustment frame base.
+
+The numeric WebAssembly local indices holding those values can vary with function parameters and
+compiler-created locals and are not part of this debug-info format. Readers must not infer the
+logical frame address from a hardcoded `$varN`, and the producer does not advertise SP/FP engine
+local indices. A future producer that changes stack records away from base `2` requires a
+coordinated, fail-loud reader update.
+
 ### Async Suspension Point APIs
 
 We also support decoding async suspension points (and their captured continuation-object locals) from the `AsyncInfo` chunk of the debug info blob. The chunk is present only for methods that the JIT compiled with runtime-async suspension points; for all other methods, `AsyncInfoSize` is `0` in the FAT header and the API returns an empty list.

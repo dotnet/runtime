@@ -740,6 +740,12 @@ protected:
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
 
+#if defined(TARGET_WASM)
+    // Wasm opens its method-wide scopes in the first emitted block rather than relying on the
+    // monotonic enter/exit cursors used by other targets.
+    bool siWasmScopesOpened;
+#endif // defined(TARGET_WASM)
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
