@@ -744,6 +744,14 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal abstract object? GetValueAsObject(object obj);
 
+        // Used instead of the public untyped Set property by internal call sites (e.g. extension
+        // data population) that may hand 'obj' a StrongBox<TDeclaringType> wrapper: it goes
+        // through the typed, StrongBox-compatibility-aware Set implementation instead of
+        // whatever raw delegate a caller assigned to the public Set property, since that public
+        // property must preserve the exact delegate instance it was given (see JsonPropertyInfo<T>
+        // SetSetter for details).
+        internal abstract void SetValueAsObject(object obj, object? value);
+
         internal bool HasGetter => _untypedGet is not null;
         internal bool HasSetter => _untypedSet is not null;
         internal bool IgnoreNullTokensOnRead { get; private protected set; }
@@ -959,7 +967,12 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(EffectiveConverter.CanPopulate, "Property is marked with Populate but converter cannot populate. This should have been validated in Configure");
             Debug.Assert(state.Parent.ReturnValue is not null, "Parent object is null");
             Debug.Assert(!state.Current.IsPopulating, "We've called TryGetPrePopulatedValue more than once");
-            object? value = Get!(state.Parent.ReturnValue);
+            // Use GetValueAsObject rather than Get! directly: state.Parent.ReturnValue may be a
+            // StrongBox<TDeclaringType> wrapper (source-generated struct types), and Get's public
+            // contract must preserve whatever raw delegate a caller assigned to it (see
+            // JsonPropertyInfo<T>.SetGetter), so the StrongBox-compatibility handling lives behind
+            // GetValueAsObject instead.
+            object? value = GetValueAsObject(state.Parent.ReturnValue);
             state.Current.ReturnValue = value;
             state.Current.IsPopulating = value is not null;
             return value is not null;

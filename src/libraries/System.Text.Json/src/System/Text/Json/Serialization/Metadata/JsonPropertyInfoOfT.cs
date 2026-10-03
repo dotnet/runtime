@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -15,6 +16,19 @@ namespace System.Text.Json.Serialization.Metadata
     {
         private Func<object, T>? _typedGet;
         private Action<object, T>? _typedSet;
+
+        // Whether the compiled Get/Set delegates supplied for this property understand
+        // 'obj' being a StrongBox<TDeclaringType> wrapper (used internally for source-generated
+        // struct types so their members can be mutated without Unsafe.Unbox). This starts out
+        // unknown ('false') and is determined lazily, the first time 'obj' is actually a
+        // StrongBox<TDeclaringType>, by InvokeGetter/InvokeSetter below. Delegates compiled by a
+        // source generator version that predates StrongBox-based struct accessors (or a resolver
+        // modifier written against that historical "obj is a boxed TDeclaringType" contract) still
+        // expect a plain boxed TDeclaringType, so we detect that case, cache it, and bridge
+        // into/out of the box via a one-time unbox/rebox instead of permanently breaking those
+        // delegates.
+        private bool _getterRequiresLegacyUnbox;
+        private bool _setterRequiresLegacyUnbox;
 
         internal JsonPropertyInfo(Type declaringType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
             : base(declaringType, propertyType: typeof(T), declaringTypeInfo, options)
@@ -42,18 +56,23 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 _typedGet = null;
                 _untypedGet = null;
+                return;
             }
-            else if (getter is Func<object, T> typedGetter)
-            {
-                _typedGet = typedGetter;
-                _untypedGet = getter is Func<object, object?> untypedGet ? untypedGet : obj => typedGetter(obj);
-            }
-            else
-            {
-                Func<object, object?> untypedGet = (Func<object, object?>)getter;
-                _typedGet = (obj => (T)untypedGet(obj)!);
-                _untypedGet = untypedGet;
-            }
+
+            Func<object, T> rawGetter = getter is Func<object, T> typedGetter
+                ? typedGetter
+                : (obj => (T)((Func<object, object?>)getter)(obj)!);
+
+            // _untypedGet keeps the exact delegate instance the caller supplied so that the
+            // public JsonPropertyInfo.Get getter/setter pair (below in the base class) preserves
+            // reference identity, e.g. 'propertyInfo.Get = someDelegate; Assert.Same(someDelegate,
+            // propertyInfo.Get)'. Only _typedGet (used internally by GetValueAsObject and by
+            // serialization/deserialization) is routed through InvokeGetter for StrongBox
+            // compatibility; the untyped accessor is bridged separately through
+            // JsonPropertyInfo.GetValueAsObject wherever internal code needs the compatibility
+            // handling (e.g. TryGetPrePopulatedValue).
+            _typedGet = obj => InvokeGetter(rawGetter, obj);
+            _untypedGet = getter is Func<object, object?> untypedGetter ? untypedGetter : obj => rawGetter(obj);
         }
 
         private protected override void SetSetter(Delegate? setter)
@@ -65,18 +84,87 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 _typedSet = null;
                 _untypedSet = null;
+                return;
             }
-            else if (setter is Action<object, T> typedSetter)
+
+            Action<object, T> rawSetter = setter is Action<object, T> typedSetter
+                ? typedSetter
+                : (obj, value) => ((Action<object, object?>)setter)(obj, value);
+
+            // See the identity-preservation comment in SetGetter above: _untypedSet keeps the
+            // exact delegate instance the caller supplied whenever that shape is untyped, and
+            // internal StrongBox-compatibility handling is applied via _typedSet (used by
+            // GetValueAsObject/SetValueAsObject wherever internal code needs it) instead.
+            _typedSet = (obj, value) => InvokeSetter(rawSetter, obj, value);
+            _untypedSet = setter is Action<object, object?> untypedSetter ? untypedSetter : (obj, value) => rawSetter(obj, (T)value!);
+        }
+
+        // See the comment on _getterRequiresLegacyUnbox for background.
+        private T InvokeGetter(Func<object, T> rawGetter, object obj)
+        {
+            if (_getterRequiresLegacyUnbox)
             {
-                _typedSet = typedSetter;
-                _untypedSet = setter is Action<object, object?> untypedSet ? untypedSet : (obj, value) => typedSetter(obj, (T)value!);
+                return rawGetter(((IStrongBox)obj).Value!);
             }
-            else
+
+            if (obj is not IStrongBox strongBox)
             {
-                Action<object, object?> untypedSet = (Action<object, object?>)setter;
-                _typedSet = ((obj, value) => untypedSet(obj, value));
-                _untypedSet = untypedSet;
+                // The overwhelmingly common case: 'obj' is either a reference-type instance or a
+                // plain boxed value type (e.g. reflection-based accessors always pass this shape).
+                return rawGetter(obj);
             }
+
+            try
+            {
+                // The common source-generated struct case: the compiled getter was itself
+                // generated to understand StrongBox<TDeclaringType>.
+                return rawGetter(obj);
+            }
+            catch (InvalidCastException)
+            {
+                // 'rawGetter' does not understand StrongBox<TDeclaringType> and expects a plain
+                // boxed TDeclaringType instead. Remember this so future calls skip straight to the
+                // compatible path below.
+                _getterRequiresLegacyUnbox = true;
+                return rawGetter(strongBox.Value!);
+            }
+        }
+
+        // See the comment on _setterRequiresLegacyUnbox for background.
+        private void InvokeSetter(Action<object, T> rawSetter, object obj, T value)
+        {
+            if (_setterRequiresLegacyUnbox)
+            {
+                SetViaLegacyUnbox(rawSetter, (IStrongBox)obj, value);
+                return;
+            }
+
+            if (obj is not IStrongBox strongBox)
+            {
+                rawSetter(obj, value);
+                return;
+            }
+
+            try
+            {
+                rawSetter(obj, value);
+            }
+            catch (InvalidCastException)
+            {
+                _setterRequiresLegacyUnbox = true;
+                SetViaLegacyUnbox(rawSetter, strongBox, value);
+            }
+        }
+
+        private static void SetViaLegacyUnbox(Action<object, T> rawSetter, IStrongBox strongBox, T value)
+        {
+            // 'rawSetter' can only mutate a genuine boxed TDeclaringType in place (that's the only
+            // reason it predates StrongBox<TDeclaringType> support), so box/rebox once here to
+            // bridge into and out of the StrongBox<TDeclaringType> that the runtime already
+            // maintains for tracking mutations to source-generated struct types.
+            object boxed = strongBox.Value!;
+            rawSetter(boxed, value);
+            strongBox.Value = boxed;
         }
 
         internal new Func<object, T?, bool>? ShouldSerialize
@@ -166,6 +254,12 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(HasGetter);
             return Get!(obj);
+        }
+
+        internal override void SetValueAsObject(object obj, object? value)
+        {
+            Debug.Assert(HasSetter);
+            Set!(obj, (T)value!);
         }
 
         internal override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
