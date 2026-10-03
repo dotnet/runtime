@@ -263,6 +263,88 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ResolveLinkTarget_ReturnFinalTarget_RelativeIntermediateDirectoryLink(bool targetExists)
+        {
+            string rootPath = GetRandomDirPath();
+            Directory.CreateDirectory(rootPath);
+
+            const string versionDirectoryName = "..2025_08_14_07_17_19.1395403829";
+            string versionDirectoryPath = Path.Join(rootPath, versionDirectoryName);
+            Directory.CreateDirectory(versionDirectoryPath);
+
+            string targetName = IsDirectoryTest ? "target-directory" : "target-file";
+            string targetPath = Path.Join(versionDirectoryPath, targetName);
+            if (targetExists)
+            {
+                CreateFileOrDirectory(targetPath);
+            }
+
+            Directory.CreateSymbolicLink(Path.Join(rootPath, "..data"), versionDirectoryName);
+
+            string linkPath = Path.Join(rootPath, "link");
+            CreateSymbolicLink(linkPath, Path.Join("..data", targetName));
+
+            FileSystemInfo targetInfo = ResolveLinkTarget(linkPath, returnFinalTarget: true);
+            Assert.Equal(targetExists ? GetExpectedFinalLinkTarget(targetPath) : targetPath, targetInfo.FullName);
+            Assert.Equal(targetExists, targetInfo.Exists);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ResolveLinkTarget_ReturnFinalTarget_DanglingTargetThroughIntermediateDirectoryLink()
+        {
+            string rootPath = GetRandomDirPath();
+            string targetDirectoryPath = Path.Join(rootPath, "deep", "deeper");
+            Directory.CreateDirectory(targetDirectoryPath);
+
+            Directory.CreateSymbolicLink(Path.Join(rootPath, "a"), Path.Join("deep", "deeper"));
+
+            string linkPath = Path.Join(targetDirectoryPath, "link");
+            CreateSymbolicLink(linkPath, Path.Join("..", "missing"));
+
+            FileSystemInfo targetInfo = ResolveLinkTarget(Path.Join(rootPath, "a", "link"), returnFinalTarget: true);
+            Assert.Equal(Path.Join(rootPath, "deep", "missing"), targetInfo.FullName);
+            Assert.False(targetInfo.Exists);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ResolveLinkTarget_ReturnFinalTarget_IntermediateDirectoryLinkCycle_Throws()
+        {
+            string rootPath = GetRandomDirPath();
+            Directory.CreateDirectory(rootPath);
+
+            Directory.CreateSymbolicLink(Path.Join(rootPath, "cycle"), "cycle");
+
+            string linkPath = Path.Join(rootPath, "link");
+            CreateSymbolicLink(linkPath, Path.Join("cycle", "target"));
+
+            Assert.Throws<IOException>(() => ResolveLinkTarget(linkPath, returnFinalTarget: true));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ResolveLinkTarget_ReturnFinalTarget_IntermediateComponentNotDirectory()
+        {
+            string rootPath = GetRandomDirPath();
+            Directory.CreateDirectory(rootPath);
+
+            string filePath = Path.Join(rootPath, "file");
+            File.Create(filePath).Dispose();
+
+            string targetPath = Path.Join(filePath, "target");
+            string linkPath = Path.Join(rootPath, "link");
+            CreateSymbolicLink(linkPath, Path.Join("file", "target"));
+
+            FileSystemInfo targetInfo = ResolveLinkTarget(linkPath, returnFinalTarget: true);
+            Assert.Equal(targetPath, targetInfo.FullName);
+            Assert.False(targetInfo.Exists);
+        }
+
+        [Theory]
         [InlineData(1, false)]
         [InlineData(10, false)]
         [InlineData(20, false)]
@@ -276,7 +358,7 @@ namespace System.IO.Tests
 
             string tail = CreateChainOfLinks(target, length, relative);
             FileSystemInfo targetInfo = ResolveLinkTarget(tail, returnFinalTarget: true);
-            Assert.Equal(target, targetInfo.FullName);
+            Assert.Equal(GetExpectedFinalLinkTarget(target), targetInfo.FullName);
         }
 
         [Theory]
@@ -356,7 +438,7 @@ namespace System.IO.Tests
 
             FileSystemInfo secondLinkInfo = CreateSymbolicLink(secondLinkPath, firstLinkPath);
             Assert.Equal(firstLinkPath, secondLinkInfo.LinkTarget);
-            Assert.Equal(targetPath, secondLinkInfo.ResolveLinkTarget(true).FullName);
+            Assert.Equal(GetExpectedFinalLinkTarget(targetPath), secondLinkInfo.ResolveLinkTarget(true).FullName);
         }
 
         private void VerifySymbolicLinkAndResolvedTarget(string linkPath, string expectedLinkTarget, string targetPath = null)
@@ -431,7 +513,7 @@ namespace System.IO.Tests
             Assert.True(finalTarget.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(finalTarget);
             Assert.False(finalTarget.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            Assert.Equal(filePath, finalTarget.FullName);
+            Assert.Equal(GetExpectedFinalLinkTarget(filePath), finalTarget.FullName);
 
             void AssertPathEquals_RelativeSegments(string expected, string actual)
             {
