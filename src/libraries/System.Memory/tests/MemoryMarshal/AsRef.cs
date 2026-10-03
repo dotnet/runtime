@@ -18,8 +18,7 @@ namespace System.SpanTests
             Assert.Equal(0x11222211, asInt);
             Assert.True(Unsafe.AreSame<byte>(ref Unsafe.As<int, byte>(ref asInt), ref MemoryMarshal.GetReference(span)));
 
-            var array = new byte[100];
-            Array.Fill<byte>(array, 0x42);
+            var array = Array.CreateFilled<byte>(100, 0x42);
             ref TestHelpers.TestStructExplicit asStruct = ref MemoryMarshal.AsRef<TestHelpers.TestStructExplicit>(new Span<byte>(array));
 
             Assert.Equal((uint)0x42424242, asStruct.UI1);

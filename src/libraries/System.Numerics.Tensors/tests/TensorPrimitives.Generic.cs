@@ -2628,11 +2628,8 @@ namespace System.Numerics.Tensors.Tests
             T value42 = T.CreateTruncating(42);
             T value84 = T.CreateTruncating(84);
 
-            T[] values1 = new T[100];
-            T[] values2 = new T[100];
-
-            Array.Fill(values1, value42);
-            Array.Fill(values2, value84);
+            T[] values1 = Array.CreateFilled(100, value42);
+            T[] values2 = Array.CreateFilled(100, value84);
 
             Assert.Equal(0, TensorPrimitives.HammingBitDistance<T>(values1, values1));
             Assert.Equal(600, TensorPrimitives.HammingBitDistance<T>(values1, values2));
@@ -2805,10 +2802,9 @@ namespace System.Numerics.Tensors.Tests
             {
                 // Span x, span min, span max
                 {
-                    T[] min = new T[length];
-                    T[] max = new T[length];
-                    Array.Fill(min, zero);
-                    Array.Fill(max, two);
+                    T[] min = Array.CreateFilled(length, zero);
+                    T[] max = Array.CreateFilled(length, two);
+                    
                     min[offendingIndex] = two;
                     max[offendingIndex] = zero;
 
@@ -2822,8 +2818,7 @@ namespace System.Numerics.Tensors.Tests
 
                 // Span x, span min, scalar max
                 {
-                    T[] min = new T[length];
-                    Array.Fill(min, zero);
+                    T[] min = Array.CreateFilled(length, zero);
                     min[offendingIndex] = two;
 
                     TensorPrimitives.Clamp<T>(x, min, one, destination);
@@ -2836,8 +2831,7 @@ namespace System.Numerics.Tensors.Tests
 
                 // Span x, scalar min, span max
                 {
-                    T[] max = new T[length];
-                    Array.Fill(max, two);
+                    T[] max = Array.CreateFilled(length, two);
                     max[offendingIndex] = zero;
 
                     TensorPrimitives.Clamp<T>(x, one, max, destination);
@@ -2860,10 +2854,8 @@ namespace System.Numerics.Tensors.Tests
 
                 // Scalar x, span min, span max
                 {
-                    T[] min = new T[length];
-                    T[] max = new T[length];
-                    Array.Fill(min, zero);
-                    Array.Fill(max, two);
+                    T[] min = Array.CreateFilled(length, zero);
+                    T[] max = Array.CreateFilled(length, two);
                     min[offendingIndex] = two;
                     max[offendingIndex] = zero;
 
@@ -2877,8 +2869,7 @@ namespace System.Numerics.Tensors.Tests
 
                 // Scalar x, span min, scalar max
                 {
-                    T[] min = new T[length];
-                    Array.Fill(min, zero);
+                    T[] min = Array.CreateFilled(length, zero);
                     min[offendingIndex] = two;
 
                     TensorPrimitives.Clamp<T>(one, min, one, destination);
@@ -2891,8 +2882,7 @@ namespace System.Numerics.Tensors.Tests
 
                 // Scalar x, scalar min, span max
                 {
-                    T[] max = new T[length];
-                    Array.Fill(max, two);
+                    T[] max = Array.CreateFilled(length, two);
                     max[offendingIndex] = zero;
 
                     TensorPrimitives.Clamp<T>(one, one, max, destination);

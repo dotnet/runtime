@@ -204,8 +204,7 @@ public class OffsetLimit
     [InlineData(ushort.MaxValue, 66535)]
     public static void UShortVarPlusKTest(ushort src, int expected)
     {
-        int[] a = new int[70000];
-        Array.Fill(a, 1);
+        int[] a = Array.CreateFilled(70000, 1);
         Assert.Equal(expected, UShortVarPlusK(a, src));
         Assert.Throws<IndexOutOfRangeException>(() => UShortVarPlusK(new int[expected - 1], src));
     }

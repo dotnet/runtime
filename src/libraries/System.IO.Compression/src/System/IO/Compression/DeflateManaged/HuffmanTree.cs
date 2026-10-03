@@ -89,8 +89,7 @@ namespace System.IO.Compression
 
         private static byte[] GetStaticDistanceTreeLength()
         {
-            byte[] staticDistanceTreeLength = new byte[MaxDistTreeElements];
-            Array.Fill(staticDistanceTreeLength, (byte)5);
+            byte[] staticDistanceTreeLength = Array.CreateFilled<byte>(MaxDistTreeElements, 5);
             return staticDistanceTreeLength;
         }
 

@@ -17,12 +17,10 @@ public class PredicateInstructions
     [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestMaskElementGranularity()
     {
-        int[] integers = new int[Vector<int>.Count];
-        Array.Fill(integers, 1);
+        int[] integers = Array.CreateFilled(Vector<int>.Count, 1);
         integers[0] = 0;
 
-        short[] shorts = new short[Vector<short>.Count];
-        Array.Fill(shorts, (short)1);
+        short[] shorts = Array.CreateFilled<short>(Vector<short>.Count, 1);
         shorts[0] = 0;
 
         Vector<int> right = new Vector<int>(integers);

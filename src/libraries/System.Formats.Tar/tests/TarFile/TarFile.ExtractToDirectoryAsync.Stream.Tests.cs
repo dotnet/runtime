@@ -219,8 +219,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(512 + 512 - 1)]
         public async Task Extract_UnseekableStream_BlockAlignmentPadding_DoesNotAffectNextEntries_Async(int contentSize)
         {
-            byte[] fileContents = new byte[contentSize];
-            Array.Fill<byte>(fileContents, 0x1);
+            byte[] fileContents = Array.CreateFilled<byte>(contentSize, 0x1);
 
             using var archive = new MemoryStream();
             using (var compressor = new GZipStream(archive, CompressionMode.Compress, leaveOpen: true))
