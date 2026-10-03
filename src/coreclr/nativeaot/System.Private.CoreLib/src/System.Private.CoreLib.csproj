@@ -178,7 +178,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
     <Compile Include="System\CrashInfo.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComAwareWeakReference.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true' OR '$(FeatureComInterop)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComAwareWeakReference.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\Java\JavaMarshal.NativeAot.cs" Condition="'$(FeatureJavaMarshal)' == 'true'" />
     <Compile Include="System\Activator.NativeAot.cs" />
