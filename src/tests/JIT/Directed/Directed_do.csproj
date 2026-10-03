@@ -10,6 +10,7 @@
     <MergedWrapperProjectReference Include="Convert\out_of_range_fp_to_int_conversions.csproj" />
     <MergedWrapperProjectReference Include="LoopAlignment\LoopsToProcess.csproj" />
     <MergedWrapperProjectReference Include="physicalpromotion\addressinterference.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\CopyPromotedArguments.csproj" />
     <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn1.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn2.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\mixedpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
