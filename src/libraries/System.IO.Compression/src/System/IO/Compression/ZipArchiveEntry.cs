@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -523,6 +524,108 @@ namespace System.IO.Compression
             return OpenCore(access, password);
         }
 
+        /// <summary>
+        /// Asynchronously opens the entry. If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support SetLength.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A Stream that represents the contents of the entry.</returns>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        public Task<Stream> OpenAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfInvalidArchive();
+            return OpenCoreAsync<AsyncReadWriteAdapter>(InferAccessFromMode(), default, cancellationToken).AsTask();
+        }
+
+        /// <summary>
+        /// Asynchronously opens the entry with the specified access mode. This allows for more granular control over the returned stream's capabilities.
+        /// </summary>
+        /// <param name="access">The file access mode for the returned stream.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A <see cref="Task{Stream}"/> that represents the asynchronous open operation.</returns>
+        /// <remarks>
+        /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+        /// <list type="bullet">
+        /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> provides a read-only stream over the entry's current content, including any modifications made in the current session. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="OpenAsync(CancellationToken)"/>).</description></item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+        /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        public Task<Stream> OpenAsync(FileAccess access, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfInvalidArchive();
+            ValidateAccessForMode(access);
+            return OpenCoreAsync<AsyncReadWriteAdapter>(access, default, cancellationToken).AsTask();
+        }
+
+        /// <summary>
+        /// Asynchronously opens the entry with the specified access mode and password for decrypting encrypted entries.
+        /// </summary>
+        /// <param name="access">The file access mode for the returned stream.</param>
+        /// <param name="password">The password used to decrypt the encrypted entry.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A <see cref="Task{Stream}"/> that represents the asynchronous open operation.</returns>
+        /// <remarks>
+        /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+        /// <list type="bullet">
+        /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed; <see cref="FileAccess.Read"/> is not allowed. The <paramref name="password"/> is only used when decrypting existing encrypted entries and is not used when opening a newly created entry for writing.</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed for encrypted entries.</description></item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+        /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        public Task<Stream> OpenAsync(FileAccess access, ReadOnlySpan<char> password, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfInvalidArchive();
+            ValidateAccessForMode(access);
+
+            if (IsEncrypted && password.IsEmpty)
+            {
+                throw new ArgumentException(SR.PasswordRequired, nameof(password));
+            }
+
+            return OpenCoreAsync<AsyncReadWriteAdapter>(access, password, cancellationToken).AsTask();
+        }
+
+        /// <summary>
+        /// Asynchronously opens the entry and uses the specified password to decrypt it if it is encrypted.
+        /// If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support <see cref="Stream.SetLength(long)" />.
+        /// </summary>
+        /// <param name="password">The password used to decrypt the encrypted entry.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task whose result is a stream that represents the contents of the entry.</returns>
+        /// <remarks>
+        /// <para>If the entry is not encrypted, <paramref name="password" /> is ignored.</para>
+        /// </remarks>
+        /// <exception cref="ArgumentException">The entry is encrypted and <paramref name="password" /> is empty.</exception>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in <see cref="ZipArchiveMode.Create" />, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="ZipArchive" /> that this entry belongs to has been disposed.</exception>
+        public Task<Stream> OpenAsync(ReadOnlySpan<char> password, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfInvalidArchive();
+
+            if (IsEncrypted && password.IsEmpty)
+            {
+                throw new ArgumentException(SR.PasswordRequired, nameof(password));
+            }
+
+            return OpenCoreAsync<AsyncReadWriteAdapter>(InferAccessFromMode(), password, cancellationToken).AsTask();
+        }
+
         private FileAccess InferAccessFromMode() => _archive.Mode switch
         {
             ZipArchiveMode.Read => FileAccess.Read,
@@ -556,25 +659,41 @@ namespace System.IO.Compression
 
         private Stream OpenCore(FileAccess access, ReadOnlySpan<char> password = default)
         {
+            ValueTask<Stream> vt = OpenCoreAsync<SyncReadWriteAdapter>(access, password, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous Open completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask<Stream> OpenCoreAsync<TAdapter>(FileAccess access, ReadOnlySpan<char> password, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            bool usePassword = IsEncrypted && !password.IsEmpty;
+
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
-                    return OpenInReadMode(checkOpenable: true, password);
+                    return OpenInReadModeCoreAsync<TAdapter>(checkOpenable: true, password, cancellationToken);
                 case ZipArchiveMode.Create:
-                    return OpenInWriteMode();
+                    return ValueTask.FromResult<Stream>(OpenInWriteMode());
                 case ZipArchiveMode.Update:
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                    if (IsEncrypted && password.IsEmpty && access != FileAccess.Read)
+                    {
+                        throw new ArgumentException(SR.PasswordRequired, nameof(password));
+                    }
+
                     return access switch
                     {
-                        // Reads in Update mode must observe content written earlier in this session and
-                        // treat a newly created entry as empty. Only an unmodified entry that already
-                        // exists in the archive can be read directly without loading it into memory.
                         FileAccess.Read => _storedUncompressedData is not null || !_originallyInArchive
-                            ? OpenInUpdateModeForRead()
-                            : OpenInReadMode(checkOpenable: true, password),
-                        FileAccess.Write => OpenInUpdateMode(loadExistingContent: false, password),
-                        _ => OpenInUpdateMode(loadExistingContent: true, password),
+                            ? OpenInUpdateModeForReadCoreAsync<TAdapter>(cancellationToken)
+                            : OpenInReadModeCoreAsync<TAdapter>(checkOpenable: true, password, cancellationToken),
+                        FileAccess.Write => usePassword
+                            ? OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(loadExistingContent: false, password, cancellationToken)
+                            : OpenInUpdateModeCoreAsync<TAdapter>(loadExistingContent: false, cancellationToken),
+                        _ => usePassword
+                            ? OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(loadExistingContent: true, password, cancellationToken)
+                            : OpenInUpdateModeCoreAsync<TAdapter>(loadExistingContent: true, cancellationToken),
                     };
             }
         }
@@ -600,14 +719,24 @@ namespace System.IO.Compression
 
         internal long GetOffsetOfCompressedData()
         {
+            ValueTask<long> vt = GetOffsetOfCompressedDataCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous GetOffsetOfCompressedData completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
+
+        internal Task<long> GetOffsetOfCompressedDataAsync(CancellationToken cancellationToken) =>
+            GetOffsetOfCompressedDataCoreAsync<AsyncReadWriteAdapter>(cancellationToken).AsTask();
+
+        private async ValueTask<long> GetOffsetOfCompressedDataCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (_storedOffsetOfCompressedData == null)
             {
-                // Seek to local header
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
 
-                // Skip the local file header to get to the compressed data
-                // TrySkipBlock handles both AES and non-AES cases correctly
-                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
+                if (!await TrySkipLocalFileHeaderBlockCoreAsync<TAdapter>(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false))
                 {
                     throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
                 }
@@ -624,6 +753,17 @@ namespace System.IO.Compression
         /// the salt is available for key derivation without additional I/O at open time.
         /// </summary>
         internal void ReadEncryptionSaltIfNeeded()
+        {
+            ValueTask vt = ReadEncryptionSaltIfNeededCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous ReadEncryptionSaltIfNeeded completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        internal Task ReadEncryptionSaltIfNeededAsync(CancellationToken cancellationToken) =>
+            ReadEncryptionSaltIfNeededCoreAsync<AsyncReadWriteAdapter>(cancellationToken).AsTask();
+
+        internal async ValueTask ReadEncryptionSaltIfNeededCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
             {
@@ -642,19 +782,16 @@ namespace System.IO.Compression
             long savedPosition = _archive.ArchiveStream.Position;
             try
             {
-                long offset = GetOffsetOfCompressedData();
+                long offset = await GetOffsetOfCompressedDataCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
                 _archive.ArchiveStream.Seek(offset, SeekOrigin.Begin);
 
                 int keySizeBits = GetAesKeySizeBits(Encryption);
                 int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
                 _aesSalt = new byte[saltSize];
-                _archive.ArchiveStream.ReadExactly(_aesSalt);
+                await TAdapter.ReadExactlyAsync(_archive.ArchiveStream, _aesSalt, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException)
             {
-                // These are the only exceptions GetOffsetOfCompressedData() and ReadExactly()
-                // can throw for corrupt or truncated data. Swallow them here and defer the error
-                // to when the entry is actually opened.
                 _aesSalt = null;
             }
             finally
@@ -665,41 +802,76 @@ namespace System.IO.Compression
 
         private MemoryStream GetUncompressedData(ReadOnlySpan<char> password = default)
         {
-            if (_storedUncompressedData == null)
+            ValueTask<MemoryStream> vt = GetUncompressedDataCoreAsync<SyncReadWriteAdapter>(password, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous GetUncompressedData completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
+
+        private Task<MemoryStream> GetUncompressedDataAsync(CancellationToken cancellationToken) =>
+            GetUncompressedDataCoreAsync<AsyncReadWriteAdapter>(default, cancellationToken).AsTask();
+
+        private ValueTask<MemoryStream> GetUncompressedDataCoreAsync<TAdapter>(ReadOnlySpan<char> password, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (_storedUncompressedData is not null)
             {
-                // this means we have never opened it before
+                return ValueTask.FromResult(_storedUncompressedData);
+            }
 
+            if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+            {
+                _currentlyOpenForWrite = false;
+                throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
+            }
 
-                // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
-                // Validate up front before attempting the (int) cast.
-                if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
-                {
-                    _currentlyOpenForWrite = false;
-                    throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
-                }
+            GetReadModeDecryptionState(password, out WinZipAesKeyMaterial? aesKeys, out ZipCryptoKeys? zipCryptoKeys, out byte zipCryptoCheckByte);
+            return GetUncompressedDataCoreAsync<TAdapter>(aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken);
+        }
 
+        private ValueTask<MemoryStream> GetUncompressedDataCoreAsync<TAdapter>(WinZipAesKeyMaterial? aesKeys, ZipCryptoKeys? zipCryptoKeys, byte zipCryptoCheckByte, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (_storedUncompressedData is not null)
+            {
+                return ValueTask.FromResult(_storedUncompressedData);
+            }
+
+            if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+            {
+                _currentlyOpenForWrite = false;
+                throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
+            }
+
+            ValueTask<Stream> decompressorTask = default;
+            bool readOriginalData = _originallyInArchive;
+            if (readOriginalData)
+            {
+                decompressorTask = OpenInReadModeCoreAsync<TAdapter>(checkOpenable: false, aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken);
+            }
+
+            return GetUncompressedDataCoreAsync(decompressorTask, readOriginalData, cancellationToken);
+
+            async ValueTask<MemoryStream> GetUncompressedDataCoreAsync(ValueTask<Stream> streamTask, bool readOriginalData, CancellationToken token)
+            {
                 _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
-                if (_originallyInArchive)
+                if (readOriginalData)
                 {
-                    Stream decompressor = !password.IsEmpty
-                        ? OpenInReadMode(checkOpenable: false, password)
-                        : OpenInReadMode(checkOpenable: false);
-
-                    using (decompressor)
+                    Stream decompressor = await streamTask.ConfigureAwait(false);
+                    try
                     {
                         try
                         {
-                            decompressor.CopyTo(_storedUncompressedData);
+                            await TAdapter.CopyToAsync(decompressor, _storedUncompressedData, token).ConfigureAwait(false);
                         }
                         catch (InvalidDataException)
                         {
-                            // this is the case where the archive say the entry is deflate, but deflateStream
-                            // throws an InvalidDataException. This property should only be getting accessed in
-                            // Update mode, so we want to make sure _storedUncompressedData stays null so
-                            // that later when we dispose the archive, this entry loads the compressedBytes, and
-                            // copies them straight over
-                            _storedUncompressedData.Dispose();
+                            MemoryStream storedUncompressedData = _storedUncompressedData;
+                            await TAdapter.DisposeAsync(storedUncompressedData).ConfigureAwait(false);
                             _storedUncompressedData = null;
                             _currentlyOpenForWrite = false;
                             _everOpenedForWrite = false;
@@ -708,16 +880,14 @@ namespace System.IO.Compression
                             throw;
                         }
                     }
+                    finally
+                    {
+                        await TAdapter.DisposeAsync(decompressor).ConfigureAwait(false);
+                    }
                 }
 
-                // NOTE: CompressionMethod normalization is deferred to MarkAsModified() to avoid
-                // corrupting entries that are opened in Update mode but not actually written to.
-                // If we normalized here and the entry wasn't modified, we'd write a header with
-                // CompressionMethod=Deflate but the original _compressedBytes would still be in
-                // their original format (e.g., Deflate64), producing an invalid entry.
+                return _storedUncompressedData;
             }
-
-            return _storedUncompressedData;
         }
         // does almost everything you need to do to forget about this entry
         // writes the local header/data, gets rid of all the data,
@@ -730,9 +900,21 @@ namespace System.IO.Compression
         // should only throw an exception in extremely exceptional cases because it is called from dispose
         internal void WriteAndFinishLocalEntry(bool forceWrite)
         {
-            CloseStreams();
-            WriteLocalFileHeaderAndDataIfNeeded(forceWrite);
-            UnloadStreams();
+            ValueTask vt = WriteAndFinishLocalEntryCoreAsync<SyncReadWriteAdapter>(forceWrite, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteAndFinishLocalEntry completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        internal Task WriteAndFinishLocalEntryAsync(bool forceWrite, CancellationToken cancellationToken) =>
+            WriteAndFinishLocalEntryCoreAsync<AsyncReadWriteAdapter>(forceWrite, cancellationToken).AsTask();
+
+        internal async ValueTask WriteAndFinishLocalEntryCoreAsync<TAdapter>(bool forceWrite, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await CloseStreamsCoreAsync<TAdapter>().ConfigureAwait(false);
+            await WriteLocalFileHeaderAndDataIfNeededCoreAsync<TAdapter>(forceWrite, cancellationToken).ConfigureAwait(false);
+            await UnloadStreamsCoreAsync<TAdapter>().ConfigureAwait(false);
         }
 
         private bool WriteCentralDirectoryFileHeaderInitialize(bool forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint offsetOfLocalHeaderTruncated)
@@ -887,36 +1069,55 @@ namespace System.IO.Compression
         }
 
         // should only throw an exception in extremely exceptional cases because it is called from dispose
-        internal unsafe void WriteCentralDirectoryFileHeader(bool forceWrite)
+        internal void WriteCentralDirectoryFileHeader(bool forceWrite)
         {
+            ValueTask vt = WriteCentralDirectoryFileHeaderCoreAsync<SyncReadWriteAdapter>(forceWrite, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteCentralDirectoryFileHeader completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        internal Task WriteCentralDirectoryFileHeaderAsync(bool forceWrite, CancellationToken cancellationToken) =>
+            WriteCentralDirectoryFileHeaderCoreAsync<AsyncReadWriteAdapter>(forceWrite, cancellationToken).AsTask();
+
+        internal async ValueTask WriteCentralDirectoryFileHeaderCoreAsync<TAdapter>(bool forceWrite, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (WriteCentralDirectoryFileHeaderInitialize(forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint offsetOfLocalHeaderTruncated))
             {
-                Span<byte> cdStaticHeader = stackalloc byte[ZipCentralDirectoryFileHeader.BlockConstantSectionSize];
-                WriteCentralDirectoryFileHeaderPrepare(cdStaticHeader, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength, offsetOfLocalHeaderTruncated);
-
-                _archive.ArchiveStream.Write(cdStaticHeader);
-                _archive.ArchiveStream.Write(_storedEntryNameBytes);
-
-                // only write zip64ExtraField if we decided we need it (it's not null)
-                zip64ExtraField?.WriteBlock(_archive.ArchiveStream);
-
-                // Write AES extra field if using AES encryption
-                if (UseAesEncryption)
+                byte[] rented = ArrayPool<byte>.Shared.Rent(ZipCentralDirectoryFileHeader.BlockConstantSectionSize);
+                try
                 {
-                    CreateAesExtraField().WriteBlock(_archive.ArchiveStream);
+                    Memory<byte> cdStaticHeader = rented.AsMemory(0, ZipCentralDirectoryFileHeader.BlockConstantSectionSize);
+                    WriteCentralDirectoryFileHeaderPrepare(cdStaticHeader.Span, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength, offsetOfLocalHeaderTruncated);
 
-                    // write extra fields excluding existing AES extra field (and any malformed trailing data).
-                    ZipGenericExtraField.WriteAllBlocksExcludingTag(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId);
+                    await TAdapter.WriteAsync(_archive.ArchiveStream, cdStaticHeader, cancellationToken).ConfigureAwait(false);
+                    await TAdapter.WriteAsync(_archive.ArchiveStream, _storedEntryNameBytes, cancellationToken).ConfigureAwait(false);
+
+                    if (zip64ExtraField is not null)
+                    {
+                        await WriteZip64ExtraFieldCoreAsync<TAdapter>(zip64ExtraField, _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (UseAesEncryption)
+                    {
+                        await WriteWinZipAesExtraFieldCoreAsync<TAdapter>(CreateAesExtraField(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+                        await WriteGenericExtraFieldsExcludingTagCoreAsync<TAdapter>(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await WriteGenericExtraFieldsCoreAsync<TAdapter>(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (_fileComment.Length > 0)
+                    {
+                        await TAdapter.WriteAsync(_archive.ArchiveStream, _fileComment, cancellationToken).ConfigureAwait(false);
+                    }
                 }
-                else
+                finally
                 {
-                    // write extra fields (and any malformed trailing data).
-                    ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream);
-                }
-
-                if (_fileComment.Length > 0)
-                {
-                    _archive.ArchiveStream.Write(_fileComment);
+                    ArrayPool<byte>.Shared.Return(rented);
                 }
             }
         }
@@ -925,14 +1126,24 @@ namespace System.IO.Compression
         // can throw InvalidDataException
         internal void LoadLocalHeaderExtraFieldIfNeeded()
         {
-            // we should have made this exact call in _archive.Init through ThrowIfOpenable
-            Debug.Assert(IsOpenable(false, true, out _));
+            ValueTask vt = LoadLocalHeaderExtraFieldIfNeededCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous LoadLocalHeaderExtraFieldIfNeeded completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
 
-            // load local header's extra fields. it will be null if we couldn't read for some reason
+        internal Task LoadLocalHeaderExtraFieldIfNeededAsync(CancellationToken cancellationToken) =>
+            LoadLocalHeaderExtraFieldIfNeededCoreAsync<AsyncReadWriteAdapter>(cancellationToken).AsTask();
+
+        internal async ValueTask LoadLocalHeaderExtraFieldIfNeededCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Debug.Assert((await IsOpenableCoreAsync<TAdapter>(false, true, cancellationToken).ConfigureAwait(false)).Openable);
+
             if (_originallyInArchive)
             {
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream, out _lhTrailingExtraFieldData);
+                (_lhUnknownExtraFields, _lhTrailingExtraFieldData) = await GetLocalHeaderExtraFieldsCoreAsync<TAdapter>(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -955,26 +1166,51 @@ namespace System.IO.Compression
         // can throw InvalidDataException
         internal void LoadCompressedBytesIfNeeded()
         {
-            // we should have made this exact call in _archive.Init through ThrowIfOpenable
-            Debug.Assert(IsOpenable(false, true, out _));
+            ValueTask vt = LoadCompressedBytesIfNeededCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous LoadCompressedBytesIfNeeded completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        internal Task LoadCompressedBytesIfNeededAsync(CancellationToken cancellationToken) =>
+            LoadCompressedBytesIfNeededCoreAsync<AsyncReadWriteAdapter>(cancellationToken).AsTask();
+
+        internal async ValueTask LoadCompressedBytesIfNeededCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Debug.Assert((await IsOpenableCoreAsync<TAdapter>(false, true, cancellationToken).ConfigureAwait(false)).Openable);
 
             if (!_everOpenedForWrite && _originallyInArchive)
             {
                 _compressedBytes = LoadCompressedBytesIfNeededInitialize(out int maxSingleBufferSize);
 
-                _archive.ArchiveStream.Seek(GetOffsetOfCompressedData(), SeekOrigin.Begin);
+                _archive.ArchiveStream.Seek(await GetOffsetOfCompressedDataCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false), SeekOrigin.Begin);
 
                 for (int i = 0; i < _compressedBytes.Length - 1; i++)
                 {
-                    _archive.ArchiveStream.ReadAtLeast(_compressedBytes[i], maxSingleBufferSize, throwOnEndOfStream: true);
+                    await TAdapter.ReadAtLeastAsync(_archive.ArchiveStream, _compressedBytes[i], maxSingleBufferSize, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
                 }
-                _archive.ArchiveStream.ReadAtLeast(_compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize), throwOnEndOfStream: true);
+
+                await TAdapter.ReadAtLeastAsync(_archive.ArchiveStream, _compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize), throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
             }
         }
 
         internal void ThrowIfNotOpenable(bool needToUncompress, bool needToLoadIntoMemory)
         {
-            if (!IsOpenable(needToUncompress, needToLoadIntoMemory, out string? message))
+            ValueTask vt = ThrowIfNotOpenableCoreAsync<SyncReadWriteAdapter>(needToUncompress, needToLoadIntoMemory, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous ThrowIfNotOpenable completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        internal Task ThrowIfNotOpenableAsync(bool needToUncompress, bool needToLoadIntoMemory, CancellationToken cancellationToken) =>
+            ThrowIfNotOpenableCoreAsync<AsyncReadWriteAdapter>(needToUncompress, needToLoadIntoMemory, cancellationToken).AsTask();
+
+        private async ValueTask ThrowIfNotOpenableCoreAsync<TAdapter>(bool needToUncompress, bool needToLoadIntoMemory, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            (bool openable, string? message) = await IsOpenableCoreAsync<TAdapter>(needToUncompress, needToLoadIntoMemory, cancellationToken).ConfigureAwait(false);
+            if (!openable)
             {
                 throw new InvalidDataException(message);
             }
@@ -1072,6 +1308,54 @@ namespace System.IO.Compression
             };
         }
 
+        private void GetReadModeDecryptionState(ReadOnlySpan<char> password, out WinZipAesKeyMaterial? aesKeys, out ZipCryptoKeys? zipCryptoKeys, out byte zipCryptoCheckByte)
+        {
+            aesKeys = null;
+            zipCryptoKeys = null;
+            zipCryptoCheckByte = 0;
+
+            if (!IsEncrypted)
+            {
+                return;
+            }
+
+            if (Encryption == ZipEncryptionMethod.Unknown)
+            {
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
+
+            if (password.IsEmpty)
+            {
+                throw new InvalidDataException(SR.PasswordRequired);
+            }
+
+            if (IsAesEncrypted)
+            {
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+                {
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
+                }
+
+                if (_aesSalt is null)
+                {
+                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                }
+
+                int keySizeBits = GetAesKeySizeBits(Encryption);
+                aesKeys = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
+                return;
+            }
+
+            if (IsZipCryptoEncrypted)
+            {
+                zipCryptoCheckByte = CalculateZipCryptoCheckByte();
+                zipCryptoKeys = ZipCryptoStream.CreateKey(password);
+                return;
+            }
+
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+        }
+
         /// <summary>
         /// Creates the appropriate decryption stream for an encrypted entry.
         /// For AES entries, uses the salt that was pre-read during central directory parsing.
@@ -1144,21 +1428,42 @@ namespace System.IO.Compression
 
         private Stream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
         {
-            if (checkOpenable)
-            {
-                ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
-            }
-            return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData(), password);
+            ValueTask<Stream> vt = OpenInReadModeCoreAsync<SyncReadWriteAdapter>(checkOpenable, password, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous OpenInReadMode completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
         }
 
-        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
-        {
-            Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
-            Stream streamToDecompress;
+        private Task<Stream> OpenInReadModeAsync(bool checkOpenable, ReadOnlySpan<char> password, CancellationToken cancellationToken) =>
+            OpenInReadModeCoreAsync<AsyncReadWriteAdapter>(checkOpenable, password, cancellationToken).AsTask();
 
-            if (IsEncrypted)
+        private ValueTask<Stream> OpenInReadModeCoreAsync<TAdapter>(bool checkOpenable, ReadOnlySpan<char> password, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            GetReadModeDecryptionState(password, out WinZipAesKeyMaterial? aesKeys, out ZipCryptoKeys? zipCryptoKeys, out byte zipCryptoCheckByte);
+
+            return OpenInReadModeCoreAsync<TAdapter>(checkOpenable, aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken);
+        }
+
+        private async ValueTask<Stream> OpenInReadModeCoreAsync<TAdapter>(bool checkOpenable, WinZipAesKeyMaterial? aesKeys, ZipCryptoKeys? zipCryptoKeys, byte zipCryptoCheckByte, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            if (checkOpenable)
             {
-                streamToDecompress = WrapWithDecryptionIfNeeded(compressedStream, password);
+                await ThrowIfNotOpenableCoreAsync<TAdapter>(needToUncompress: true, needToLoadIntoMemory: false, cancellationToken).ConfigureAwait(false);
+            }
+
+            long offset = await GetOffsetOfCompressedDataCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
+            Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
+
+            Stream streamToDecompress;
+            if (aesKeys is not null)
+            {
+                streamToDecompress = await CreateWinZipAesReadStreamCoreAsync<TAdapter>(compressedStream, aesKeys.Value, cancellationToken).ConfigureAwait(false);
+            }
+            else if (zipCryptoKeys is not null)
+            {
+                streamToDecompress = await CreateZipCryptoReadStreamCoreAsync<TAdapter>(compressedStream, zipCryptoKeys.Value, zipCryptoCheckByte, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -1260,8 +1565,10 @@ namespace System.IO.Compression
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
-        private WrappedStream OpenInUpdateMode(bool loadExistingContent = true, ReadOnlySpan<char> password = default)
+        private async ValueTask<Stream> OpenInUpdateModeCoreAsync<TAdapter>(bool loadExistingContent, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (_currentlyOpenForWrite)
             {
                 throw new IOException(SR.UpdateModeOneStream);
@@ -1272,35 +1579,85 @@ namespace System.IO.Compression
                 throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
             }
 
-            // Encrypted entries always require a password for re-encryption,
-            // even when discarding existing content (write-only access).
+            if (loadExistingContent)
+            {
+                await ThrowIfNotOpenableCoreAsync<TAdapter>(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+            }
+
+            _currentlyOpenForWrite = true;
+
+            if (loadExistingContent)
+            {
+                _storedUncompressedData = await GetUncompressedDataCoreAsync<TAdapter>(default, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                if (_storedUncompressedData is not null)
+                {
+                    await TAdapter.DisposeAsync(_storedUncompressedData).ConfigureAwait(false);
+                }
+
+                _storedUncompressedData = new MemoryStream();
+                MarkAsModified();
+            }
+
+            _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+
+            return new WrappedStream(_storedUncompressedData, this,
+                onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
+                notifyEntryOnWrite: true);
+        }
+
+        private ValueTask<Stream> OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(bool loadExistingContent, ReadOnlySpan<char> password, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_currentlyOpenForWrite)
+            {
+                throw new IOException(SR.UpdateModeOneStream);
+            }
+
+            if (Encryption == ZipEncryptionMethod.Unknown)
+            {
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
+
             if (IsEncrypted && password.IsEmpty)
             {
                 throw new ArgumentException(SR.PasswordRequired, nameof(password));
             }
 
-            if (loadExistingContent)
-            {
-                ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
-            }
-
-            _currentlyOpenForWrite = true;
-
-            // Set up re-encryption key material so that the rewritten entry has valid encryption headers.
             if (IsEncrypted)
             {
                 SetupEncryptionKeyMaterial(password);
             }
 
+            GetReadModeDecryptionState(password, out WinZipAesKeyMaterial? aesKeys, out ZipCryptoKeys? zipCryptoKeys, out byte zipCryptoCheckByte);
+            return OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(loadExistingContent, aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken);
+        }
+
+        private async ValueTask<Stream> OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(bool loadExistingContent, WinZipAesKeyMaterial? aesKeys, ZipCryptoKeys? zipCryptoKeys, byte zipCryptoCheckByte, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             if (loadExistingContent)
             {
-                _storedUncompressedData = GetUncompressedData(password);
+                await ThrowIfNotOpenableCoreAsync<TAdapter>(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+            }
+
+            _currentlyOpenForWrite = true;
+
+            if (loadExistingContent)
+            {
+                _storedUncompressedData = await GetUncompressedDataCoreAsync<TAdapter>(aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                _storedUncompressedData?.Dispose();
+                if (_storedUncompressedData is not null)
+                {
+                    await TAdapter.DisposeAsync(_storedUncompressedData).ConfigureAwait(false);
+                }
+
                 _storedUncompressedData = new MemoryStream();
-                // Opening with loadExistingContent: false discards existing content, which is a modification
                 MarkAsModified();
             }
 
@@ -1316,12 +1673,25 @@ namespace System.IO.Compression
         // entry), unlike OpenInReadMode which reads the original bytes directly from the archive. The stream
         // shares the underlying buffer with the entry rather than copying it, so it is not isolated from later
         // in-place writes; callers are expected to finish reading before reopening the entry for writing.
-        private MemoryStream OpenInUpdateModeForRead()
+        private Stream OpenInUpdateModeForRead()
+        {
+            ValueTask<Stream> vt = OpenInUpdateModeForReadCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous OpenInUpdateModeForRead completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
+
+        private Task<Stream> OpenInUpdateModeForReadAsync(CancellationToken cancellationToken) =>
+            OpenInUpdateModeForReadCoreAsync<AsyncReadWriteAdapter>(cancellationToken).AsTask();
+
+        private async ValueTask<Stream> OpenInUpdateModeForReadCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             if (_currentlyOpenForWrite)
+            {
                 throw new IOException(SR.UpdateModeOneStream);
+            }
 
-            MemoryStream uncompressedData = GetUncompressedData();
+            MemoryStream uncompressedData = await GetUncompressedDataCoreAsync<TAdapter>(default, cancellationToken).ConfigureAwait(false);
             return new MemoryStream(uncompressedData.GetBuffer(), 0, (int)uncompressedData.Length, writable: false);
         }
 
@@ -1413,47 +1783,162 @@ namespace System.IO.Compression
             };
         }
 
-        private bool IsOpenable(bool needToUncompress, bool needToLoadIntoMemory, out string? message)
+        private static ValueTask<bool> TrySkipLocalFileHeaderBlockCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter =>
+            typeof(TAdapter) == typeof(SyncReadWriteAdapter)
+                ? ValueTask.FromResult(ZipLocalFileHeader.TrySkipBlock(stream))
+                : ZipLocalFileHeader.TrySkipBlockAsync(stream, cancellationToken);
+
+        private static ValueTask<(List<ZipGenericExtraField> Fields, byte[] TrailingData)> GetLocalHeaderExtraFieldsCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
-            message = null;
-
-            if (_originallyInArchive)
+            if (typeof(TAdapter) == typeof(SyncReadWriteAdapter))
             {
-                if (!IsOpenableInitialVerifications(needToUncompress, out message))
-                {
-                    return false;
-                }
-
-                if (!IsEncrypted && !ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
-                {
-                    message = SR.LocalFileHeaderCorrupt;
-                    return false;
-                }
-                else if (IsEncrypted && IsAesEncrypted)
-                {
-                    _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                    // AES case - skip the local file header and validate it exists.
-                    // The AES metadata (encryption strength, actual compression method) was already
-                    // parsed from the central directory in the constructor
-                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
-                    {
-                        message = SR.LocalFileHeaderCorrupt;
-                        return false;
-                    }
-                }
-
-                // Pass the detected encryption method to GetOffsetOfCompressedData
-                long offsetOfCompressedData = GetOffsetOfCompressedData();
-
-                if (!IsOpenableFinalVerifications(needToLoadIntoMemory, offsetOfCompressedData, out message))
-                {
-                    return false;
-                }
-
-                return true;
+                List<ZipGenericExtraField> fields = ZipLocalFileHeader.GetExtraFields(stream, out byte[] trailingData);
+                return ValueTask.FromResult((fields, trailingData));
             }
 
-            return true;
+            return ZipLocalFileHeader.GetExtraFieldsAsync(stream, cancellationToken);
+        }
+
+        private static ValueTask<Stream> CreateZipCryptoReadStreamCoreAsync<TAdapter>(Stream compressedStream, ZipCryptoKeys keyMaterial, byte expectedCheckByte, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            if (typeof(TAdapter) == typeof(SyncReadWriteAdapter))
+            {
+                return ValueTask.FromResult<Stream>(ZipCryptoStream.Create(compressedStream, keyMaterial, expectedCheckByte, encrypting: false));
+            }
+
+            return CreateZipCryptoReadStreamAsync(compressedStream, keyMaterial, expectedCheckByte, cancellationToken);
+
+            static async ValueTask<Stream> CreateZipCryptoReadStreamAsync(Stream compressedStream, ZipCryptoKeys keyMaterial, byte expectedCheckByte, CancellationToken cancellationToken)
+            {
+                return await ZipCryptoStream.CreateAsync(compressedStream, keyMaterial, expectedCheckByte, encrypting: false, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private ValueTask<Stream> CreateWinZipAesReadStreamCoreAsync<TAdapter>(Stream compressedStream, WinZipAesKeyMaterial keyMaterial, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            if (typeof(TAdapter) == typeof(SyncReadWriteAdapter))
+            {
+                return ValueTask.FromResult<Stream>(WinZipAesStream.Create(
+                    baseStream: compressedStream,
+                    keyMaterial: keyMaterial,
+                    totalStreamSize: _compressedSize,
+                    encrypting: false));
+            }
+
+            return CreateWinZipAesReadStreamAsync(compressedStream, keyMaterial, cancellationToken);
+
+            async ValueTask<Stream> CreateWinZipAesReadStreamAsync(Stream compressedStream, WinZipAesKeyMaterial keyMaterial, CancellationToken cancellationToken)
+            {
+                return await WinZipAesStream.CreateAsync(
+                    baseStream: compressedStream,
+                    keyMaterial: keyMaterial,
+                    totalStreamSize: _compressedSize,
+                    encrypting: false,
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private static ValueTask WriteZip64ExtraFieldCoreAsync<TAdapter>(Zip64ExtraField field, Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter =>
+            typeof(TAdapter) == typeof(SyncReadWriteAdapter)
+                ? WriteZip64ExtraFieldSync(field, stream)
+                : field.WriteBlockAsync(stream, cancellationToken);
+
+        private static ValueTask WriteWinZipAesExtraFieldCoreAsync<TAdapter>(WinZipAesExtraField field, Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter =>
+            typeof(TAdapter) == typeof(SyncReadWriteAdapter)
+                ? WriteWinZipAesExtraFieldSync(field, stream)
+                : field.WriteBlockAsync(stream, cancellationToken);
+
+        private static ValueTask WriteGenericExtraFieldsCoreAsync<TAdapter>(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter =>
+            typeof(TAdapter) == typeof(SyncReadWriteAdapter)
+                ? WriteGenericExtraFieldsSync(fields, trailingExtraFieldData, stream)
+                : ZipGenericExtraField.WriteAllBlocksAsync(fields, trailingExtraFieldData, stream, cancellationToken);
+
+        private static ValueTask WriteGenericExtraFieldsExcludingTagCoreAsync<TAdapter>(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter =>
+            typeof(TAdapter) == typeof(SyncReadWriteAdapter)
+                ? WriteGenericExtraFieldsExcludingTagSync(fields, trailingExtraFieldData, stream, excludeTag)
+                : ZipGenericExtraField.WriteAllBlocksExcludingTagAsync(fields, trailingExtraFieldData, stream, excludeTag, cancellationToken);
+
+        private static ValueTask WriteZip64ExtraFieldSync(Zip64ExtraField field, Stream stream)
+        {
+            field.WriteBlock(stream);
+            return default;
+        }
+
+        private static ValueTask WriteWinZipAesExtraFieldSync(WinZipAesExtraField field, Stream stream)
+        {
+            field.WriteBlock(stream);
+            return default;
+        }
+
+        private static ValueTask WriteGenericExtraFieldsSync(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream)
+        {
+            ZipGenericExtraField.WriteAllBlocks(fields, trailingExtraFieldData, stream);
+            return default;
+        }
+
+        private static ValueTask WriteGenericExtraFieldsExcludingTagSync(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag)
+        {
+            ZipGenericExtraField.WriteAllBlocksExcludingTag(fields, trailingExtraFieldData, stream, excludeTag);
+            return default;
+        }
+
+        private bool IsOpenable(bool needToUncompress, bool needToLoadIntoMemory, out string? message)
+        {
+            ValueTask<(bool Openable, string? Message)> vt = IsOpenableCoreAsync<SyncReadWriteAdapter>(needToUncompress, needToLoadIntoMemory, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous IsOpenable completed asynchronously.");
+            (bool openable, message) = vt.GetAwaiter().GetResult();
+            return openable;
+        }
+
+        private async ValueTask<(bool Openable, string? Message)> IsOpenableCoreAsync<TAdapter>(bool needToUncompress, bool needToLoadIntoMemory, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string? message = null;
+
+            if (!_originallyInArchive)
+            {
+                return (true, message);
+            }
+
+            if (!IsOpenableInitialVerifications(needToUncompress, out message))
+            {
+                return (false, message);
+            }
+
+            if (!IsEncrypted)
+            {
+                if (!await TrySkipLocalFileHeaderBlockCoreAsync<TAdapter>(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false))
+                {
+                    message = SR.LocalFileHeaderCorrupt;
+                    return (false, message);
+                }
+            }
+            else if (IsAesEncrypted)
+            {
+                _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
+                if (!await TrySkipLocalFileHeaderBlockCoreAsync<TAdapter>(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false))
+                {
+                    message = SR.LocalFileHeaderCorrupt;
+                    return (false, message);
+                }
+            }
+
+            long offsetOfCompressedData = await GetOffsetOfCompressedDataCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
+            if (!IsOpenableFinalVerifications(needToLoadIntoMemory, offsetOfCompressedData, out message))
+            {
+                return (false, message);
+            }
+
+            return (true, message);
         }
 
         private bool IsOpenableInitialVerifications(bool needToUncompress, out string? message)
@@ -1576,7 +2061,7 @@ namespace System.IO.Compression
         private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
         internal ZipEncryptionMethod Encryption { get => _encryptionMethod; private set => _encryptionMethod = value; }
 
-        private unsafe bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
+        private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
         {
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             // reading in should not be able to produce an entryname longer than ushort.MaxValue
@@ -1749,122 +2234,160 @@ namespace System.IO.Compression
         }
 
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-        private unsafe bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
+        private bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
         {
+            ValueTask<bool> vt = WriteLocalFileHeaderCoreAsync<SyncReadWriteAdapter>(isEmptyFile, forceWrite, preserveDataDescriptor, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteLocalFileHeader completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
+
+        private Task<bool> WriteLocalFileHeaderAsync(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, CancellationToken cancellationToken) =>
+            WriteLocalFileHeaderCoreAsync<AsyncReadWriteAdapter>(isEmptyFile, forceWrite, preserveDataDescriptor, cancellationToken).AsTask();
+
+        private async ValueTask<bool> WriteLocalFileHeaderCoreAsync<TAdapter>(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite))
             {
-                Span<byte> lfStaticHeader = stackalloc byte[ZipLocalFileHeader.SizeOfLocalHeader];
-                WriteLocalFileHeaderPrepare(lfStaticHeader, crc32ToWrite, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
-
-                // write header
-                _archive.ArchiveStream.Write(lfStaticHeader);
-                _archive.ArchiveStream.Write(_storedEntryNameBytes);
-
-                // Write Zip64 extra field if needed
-                zip64ExtraField?.WriteBlock(_archive.ArchiveStream);
-
-                // Write AES extra field if using AES encryption
-                if (UseAesEncryption)
+                byte[] rented = ArrayPool<byte>.Shared.Rent(ZipLocalFileHeader.SizeOfLocalHeader);
+                try
                 {
-                    CreateAesExtraField().WriteBlock(_archive.ArchiveStream);
+                    Memory<byte> lfStaticHeader = rented.AsMemory(0, ZipLocalFileHeader.SizeOfLocalHeader);
+                    WriteLocalFileHeaderPrepare(lfStaticHeader.Span, crc32ToWrite, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
 
-                    // Write other extra fields, excluding any existing AES extra field to avoid duplication
-                    ZipGenericExtraField.WriteAllBlocksExcludingTag(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId);
+                    await TAdapter.WriteAsync(_archive.ArchiveStream, lfStaticHeader, cancellationToken).ConfigureAwait(false);
+                    await TAdapter.WriteAsync(_archive.ArchiveStream, _storedEntryNameBytes, cancellationToken).ConfigureAwait(false);
+
+                    if (zip64ExtraField is not null)
+                    {
+                        await WriteZip64ExtraFieldCoreAsync<TAdapter>(zip64ExtraField, _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (UseAesEncryption)
+                    {
+                        await WriteWinZipAesExtraFieldCoreAsync<TAdapter>(CreateAesExtraField(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+                        await WriteGenericExtraFieldsExcludingTagCoreAsync<TAdapter>(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await WriteGenericExtraFieldsCoreAsync<TAdapter>(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+                    }
                 }
-                else
+                finally
                 {
-                    // Write other extra fields
-                    ZipGenericExtraField.WriteAllBlocks(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream);
+                    ArrayPool<byte>.Shared.Return(rented);
                 }
             }
 
-            return zip64ExtraField != null;
+            return zip64ExtraField is not null;
         }
 
-        private unsafe void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
+        private void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
         {
-            // Check if the entry's stored data was actually modified (StoredData flag is set).
-            // If _storedUncompressedData is loaded but StoredData is not set, it means the entry
-            // was opened for update but no writes occurred - we should use the original compressed bytes.
+            ValueTask vt = WriteLocalFileHeaderAndDataIfNeededCoreAsync<SyncReadWriteAdapter>(forceWrite, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteLocalFileHeaderAndDataIfNeeded completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private async ValueTask WriteLocalFileHeaderAndDataIfNeededCoreAsync<TAdapter>(bool forceWrite, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             bool storedDataModified = (Changes & ZipArchive.ChangeState.StoredData) != 0;
 
-            // If _storedUncompressedData is loaded but not modified, clear it so we use _compressedBytes
-            if (_storedUncompressedData != null && !storedDataModified)
+            if (_storedUncompressedData is not null && !storedDataModified)
             {
-                _storedUncompressedData.Dispose();
+                await TAdapter.DisposeAsync(_storedUncompressedData).ConfigureAwait(false);
                 _storedUncompressedData = null;
             }
 
-            // _storedUncompressedData gets frozen here, and is what gets written to the file
-            if (_storedUncompressedData != null || _compressedBytes != null)
+            if (_storedUncompressedData is not null || _compressedBytes is not null)
             {
-                if (_storedUncompressedData != null)
+                if (_storedUncompressedData is not null)
                 {
-                    _uncompressedSize = _storedUncompressedData.Length;
+                    MemoryStream storedUncompressedData = _storedUncompressedData;
+                    _uncompressedSize = storedUncompressedData.Length;
 
-                    // Check if we need to re-encrypt with ZipCrypto (only if we have cached key material)
                     if (Encryption == ZipEncryptionMethod.ZipCrypto && _derivedZipCryptoKeyMaterial is not null)
                     {
-                        WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
+                        await WriteLocalFileHeaderCoreAsync<TAdapter>(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
                         long startPosition = _archive.ArchiveStream.Position;
-
                         ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                        using (Stream encryptionStream = ZipCryptoStream.Create(
+                        Stream encryptionStream = ZipCryptoStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keys: _derivedZipCryptoKeyMaterial.Value,
                             passwordVerifierLow2Bytes: verifierLow2Bytes,
                             encrypting: true,
                             crc32: null,
-                            leaveOpen: true))
+                            leaveOpen: true);
+                        try
                         {
-                            using (CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
+                            CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
+                            try
                             {
-                                _storedUncompressedData.Seek(0, SeekOrigin.Begin);
-                                _storedUncompressedData.CopyTo(crcStream);
+                                storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                                await TAdapter.CopyToAsync(storedUncompressedData, crcStream, cancellationToken).ConfigureAwait(false);
                             }
+                            finally
+                            {
+                                await TAdapter.DisposeAsync(crcStream).ConfigureAwait(false);
+                            }
+                        }
+                        finally
+                        {
+                            await TAdapter.DisposeAsync(encryptionStream).ConfigureAwait(false);
                         }
 
                         _compressedSize = _archive.ArchiveStream.Position - startPosition;
-
-                        WriteDataDescriptor();
-
-                        _storedUncompressedData.Dispose();
+                        await WriteDataDescriptorCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
+                        await TAdapter.DisposeAsync(storedUncompressedData).ConfigureAwait(false);
                         _storedUncompressedData = null;
                     }
                     else if (UseAesEncryption && _derivedAesKeyMaterial is not null)
                     {
+                        if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+                        {
+                            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
+                        }
 
-                        bool usedZip64InLH = WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
-
+                        bool usedZip64InLH = await WriteLocalFileHeaderCoreAsync<TAdapter>(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
                         long startPosition = _archive.ArchiveStream.Position;
-
                         bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                        using (Stream encryptionStream = WinZipAesStream.Create(
+                        Stream encryptionStream = WinZipAesStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keyMaterial: _derivedAesKeyMaterial.Value,
                             totalStreamSize: -1,
                             encrypting: true,
-                            leaveOpen: true))
+                            leaveOpen: true);
+                        try
                         {
-                            if (_storedUncompressedData.Length > 0)
+                            if (storedUncompressedData.Length > 0)
                             {
                                 ZipCompressionMethod savedMethod = CompressionMethod;
                                 CompressionMethod = useDeflate ? ZipCompressionMethod.Deflate : ZipCompressionMethod.Stored;
 
                                 try
                                 {
-                                    using (CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
+                                    CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
+                                    try
                                     {
-                                        _storedUncompressedData.Seek(0, SeekOrigin.Begin);
-                                        _storedUncompressedData.CopyTo(crcStream);
+                                        storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                                        await TAdapter.CopyToAsync(storedUncompressedData, crcStream, cancellationToken).ConfigureAwait(false);
+                                    }
+                                    finally
+                                    {
+                                        await TAdapter.DisposeAsync(crcStream).ConfigureAwait(false);
                                     }
                                 }
                                 finally
                                 {
-                                    CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
+                                    CompressionMethod = savedMethod;
                                 }
                             }
                             else
@@ -1873,61 +2396,55 @@ namespace System.IO.Compression
                                 _uncompressedSize = 0;
                             }
                         }
+                        finally
+                        {
+                            await TAdapter.DisposeAsync(encryptionStream).ConfigureAwait(false);
+                        }
 
                         _compressedSize = _archive.ArchiveStream.Position - startPosition;
-
-                        WriteCrcAndSizesInLocalHeader(usedZip64InLH);
-
-                        _storedUncompressedData.Dispose();
+                        await WriteCrcAndSizesInLocalHeaderCoreAsync<TAdapter>(usedZip64InLH, cancellationToken).ConfigureAwait(false);
+                        await TAdapter.DisposeAsync(storedUncompressedData).ConfigureAwait(false);
                         _storedUncompressedData = null;
                     }
                     else
                     {
-                        // Non-encrypted: use standard path
-                        using (DirectToArchiveWriterStream entryWriter = new(GetDataCompressor(_archive.ArchiveStream, true, null, null), this))
+                        DirectToArchiveWriterStream entryWriter = new(GetDataCompressor(_archive.ArchiveStream, true, null, null), this);
+                        try
                         {
-                            _storedUncompressedData.Seek(0, SeekOrigin.Begin);
-                            _storedUncompressedData.CopyTo(entryWriter);
+                            storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                            await TAdapter.CopyToAsync(storedUncompressedData, entryWriter, cancellationToken).ConfigureAwait(false);
                         }
-                        _storedUncompressedData.Dispose();
+                        finally
+                        {
+                            await TAdapter.DisposeAsync(entryWriter).ConfigureAwait(false);
+                        }
+
+                        await TAdapter.DisposeAsync(storedUncompressedData).ConfigureAwait(false);
                         _storedUncompressedData = null;
                     }
                 }
-                else // _compressedBytes path - copying unchanged entry data
+                else
                 {
                     bool emptyEncryptedEntry = _uncompressedSize == 0 && Encryption != ZipEncryptionMethod.None;
                     if (_uncompressedSize == 0 && !emptyEncryptedEntry)
                     {
-                        // reset size to ensure proper central directory size header
                         _compressedSize = 0;
                     }
 
-                    // For unchanged entries, we need to write the header correctly but avoid
-                    // WriteLocalFileHeader creating NEW encryption structures (which would have
-                    // wrong compression method from _compressionLevel).
-                    // The original AES extra field is preserved in _lhUnknownExtraFields.
                     BitFlagValues savedFlags = _generalPurposeBitFlag;
                     ZipEncryptionMethod savedEncryption = Encryption;
                     ZipCompressionMethod savedCompressionMethod = CompressionMethod;
 
                     try
                     {
-                        // For AES entries: set CompressionMethod to Aes so header writes method 99,
-                        // but clear _encryptionMethod so WriteLocalFileHeader doesn't create a new
-                        // AES extra field (the original one in _lhUnknownExtraFields will be used).
                         if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
                         {
                             CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
                             Encryption = ZipEncryptionMethod.None;
                         }
 
-                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true);
+                        await WriteLocalFileHeaderCoreAsync<TAdapter>(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
-                        // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
-                        // (because Encryption was temporarily set to None and the stream is seekable).
-                        // If the original entry had a data descriptor, patch the general-purpose bit
-                        // flags in the already-written local header to match, so the header on disk
-                        // is consistent with the data descriptor we conditionally write below.
                         if ((savedFlags & BitFlagValues.DataDescriptor) != 0 &&
                             (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
                         {
@@ -1935,54 +2452,53 @@ namespace System.IO.Compression
                             _archive.ArchiveStream.Seek(
                                 _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
                                 SeekOrigin.Begin);
-                            Span<byte> flagBytes = stackalloc byte[2];
-                            BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
-                            _archive.ArchiveStream.Write(flagBytes);
+
+                            byte[] rented = ArrayPool<byte>.Shared.Rent(sizeof(ushort));
+                            try
+                            {
+                                BinaryPrimitives.WriteUInt16LittleEndian(rented.AsSpan(0, sizeof(ushort)), (ushort)savedFlags);
+                                await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, sizeof(ushort)), cancellationToken).ConfigureAwait(false);
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(rented);
+                            }
+
                             _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
                         }
                     }
                     finally
                     {
-                        // Restore original state
                         _generalPurposeBitFlag = savedFlags;
                         Encryption = savedEncryption;
                         CompressionMethod = savedCompressionMethod;
                     }
 
-                    // according to ZIP specs, zero-byte unencrypted files MUST NOT include file data
                     if (_uncompressedSize != 0 || emptyEncryptedEntry)
                     {
-                        Debug.Assert(_compressedBytes != null);
+                        Debug.Assert(_compressedBytes is not null);
                         foreach (byte[] compressedBytes in _compressedBytes)
                         {
-                            _archive.ArchiveStream.Write(compressedBytes, 0, compressedBytes.Length);
+                            await TAdapter.WriteAsync(_archive.ArchiveStream, compressedBytes, cancellationToken).ConfigureAwait(false);
                         }
                     }
 
-                    // Write data descriptor if the original entry had one
                     if ((savedFlags & BitFlagValues.DataDescriptor) != 0)
                     {
-                        WriteDataDescriptor();
+                        await WriteDataDescriptorCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
-            else // there is no data in the file (or the data in the file has not been loaded), but if we are in update mode, we may still need to write a header
+            else if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
             {
-                if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
-                {
-                    _everOpenedForWrite = true;
-                    // Preserve the data descriptor flag for entries that originally had one,
-                    // since the descriptor bytes remain on disk after the compressed data.
-                    bool preserveDataDescriptor = _originallyInArchive
-                        && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
-                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor);
+                _everOpenedForWrite = true;
+                bool preserveDataDescriptor = _originallyInArchive
+                    && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+                await WriteLocalFileHeaderCoreAsync<TAdapter>(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor, cancellationToken).ConfigureAwait(false);
 
-                    // Advance the stream past the compressed data and any trailing data descriptor
-                    // by seeking to the pre-computed end-of-entry boundary.
-                    if (_endOfLocalEntryData > _archive.ArchiveStream.Position)
-                    {
-                        _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
-                    }
+                if (_endOfLocalEntryData > _archive.ArchiveStream.Position)
+                {
+                    _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
                 }
             }
         }
@@ -1996,50 +2512,53 @@ namespace System.IO.Compression
         // Using _offsetOfLocalHeader, seeks back to where CRC and sizes should be in the header,
         // writes them, then seeks back to where you started
         // Assumes that the stream is currently at the end of the data
-        private unsafe void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
+        private void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
         {
-            // Buffer has been sized to the largest data payload required: the 64-bit data descriptor.
-            Span<byte> writeBuffer = stackalloc byte[Zip64DataDescriptorCrcAndSizesBufferLength];
+            ValueTask vt = WriteCrcAndSizesInLocalHeaderCoreAsync<SyncReadWriteAdapter>(zip64HeaderUsed, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteCrcAndSizesInLocalHeader completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
 
-            WriteCrcAndSizesInLocalHeaderInitialize(zip64HeaderUsed, out long finalPosition, out bool pretendStreaming, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated);
+        private Task WriteCrcAndSizesInLocalHeaderAsync(bool zip64HeaderUsed, CancellationToken cancellationToken) =>
+            WriteCrcAndSizesInLocalHeaderCoreAsync<AsyncReadWriteAdapter>(zip64HeaderUsed, cancellationToken).AsTask();
 
-            // first step is, if we need zip64, but didn't allocate it, pretend we did a stream write, because
-            // we can't go back and give ourselves the space that the extra field needs.
-            // we do this by setting the correct property in the bit flag to indicate we have a data descriptor
-            // and setting the version to Zip64 to indicate that descriptor contains 64-bit values
-            if (pretendStreaming)
+        private async ValueTask WriteCrcAndSizesInLocalHeaderCoreAsync<TAdapter>(bool zip64HeaderUsed, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            byte[] rented = ArrayPool<byte>.Shared.Rent(Zip64DataDescriptorCrcAndSizesBufferLength);
+            try
             {
-                WriteCrcAndSizesInLocalHeaderPrepareForZip64PretendStreaming(writeBuffer);
-                _archive.ArchiveStream.Write(writeBuffer[..MetadataBufferLength]);
+                Span<byte> writeBuffer = rented.AsSpan(0, Zip64DataDescriptorCrcAndSizesBufferLength);
+
+                WriteCrcAndSizesInLocalHeaderInitialize(zip64HeaderUsed, out long finalPosition, out bool pretendStreaming, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated);
+
+                if (pretendStreaming)
+                {
+                    WriteCrcAndSizesInLocalHeaderPrepareForZip64PretendStreaming(writeBuffer);
+                    await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, MetadataBufferLength), cancellationToken).ConfigureAwait(false);
+                }
+
+                WriteCrcAndSizesInLocalHeaderPrepareFor32bitValuesWriting(pretendStreaming, writeBuffer, compressedSizeTruncated, uncompressedSizeTruncated);
+                await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, CrcAndSizesBufferLength), cancellationToken).ConfigureAwait(false);
+
+                if (zip64HeaderUsed)
+                {
+                    WriteCrcAndSizesInLocalHeaderPrepareForWritingWhenZip64HeaderUsed(writeBuffer);
+                    await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, Zip64SizesBufferLength), cancellationToken).ConfigureAwait(false);
+                }
+
+                _archive.ArchiveStream.Seek(finalPosition, SeekOrigin.Begin);
+
+                if (pretendStreaming)
+                {
+                    WriteCrcAndSizesInLocalHeaderPrepareForWritingDataDescriptor(writeBuffer);
+                    await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, Zip64DataDescriptorCrcAndSizesBufferLength), cancellationToken).ConfigureAwait(false);
+                }
             }
-
-            // next step is fill out the 32-bit size values in the normal header. we can't assume that
-            // they are correct. we also write the CRC
-            WriteCrcAndSizesInLocalHeaderPrepareFor32bitValuesWriting(pretendStreaming, writeBuffer, compressedSizeTruncated, uncompressedSizeTruncated);
-            _archive.ArchiveStream.Write(writeBuffer[..CrcAndSizesBufferLength]);
-
-            // next step: if we wrote the 64 bit header initially, a different implementation might
-            // try to read it, even if the 32-bit size values aren't masked. thus, we should always put the
-            // correct size information in there. note that order of uncomp/comp is switched, and these are
-            // 64-bit values
-            // also, note that in order for this to be correct, we have to ensure that the zip64 extra field
-            // is always the first extra field that is written
-            if (zip64HeaderUsed)
+            finally
             {
-                WriteCrcAndSizesInLocalHeaderPrepareForWritingWhenZip64HeaderUsed(writeBuffer);
-                _archive.ArchiveStream.Write(writeBuffer[..Zip64SizesBufferLength]);
-            }
-
-            // now go to the where we were. assume that this is the end of the data
-            _archive.ArchiveStream.Seek(finalPosition, SeekOrigin.Begin);
-
-            // if we are pretending we did a stream write, we want to write the data descriptor out
-            // the data descriptor can have 32-bit sizes or 64-bit sizes. In this case, we always use
-            // 64-bit sizes
-            if (pretendStreaming)
-            {
-                WriteCrcAndSizesInLocalHeaderPrepareForWritingDataDescriptor(writeBuffer);
-                _archive.ArchiveStream.Write(writeBuffer[..Zip64DataDescriptorCrcAndSizesBufferLength]);
+                ArrayPool<byte>.Shared.Return(rented);
             }
         }
 
@@ -2122,11 +2641,31 @@ namespace System.IO.Compression
         // signature is optional but recommended by the spec
         private const int MaxSizeOfDataDescriptor = 24;
 
-        private unsafe void WriteDataDescriptor()
+        private void WriteDataDescriptor()
         {
-            Span<byte> dataDescriptor = stackalloc byte[MaxSizeOfDataDescriptor];
-            int bytesToWrite = PrepareToWriteDataDescriptor(dataDescriptor);
-            _archive.ArchiveStream.Write(dataDescriptor[..bytesToWrite]);
+            ValueTask vt = WriteDataDescriptorCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteDataDescriptor completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask WriteDataDescriptorAsync(CancellationToken cancellationToken) =>
+            WriteDataDescriptorCoreAsync<AsyncReadWriteAdapter>(cancellationToken);
+
+        private async ValueTask WriteDataDescriptorCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            byte[] rented = ArrayPool<byte>.Shared.Rent(MaxSizeOfDataDescriptor);
+            try
+            {
+                Span<byte> dataDescriptor = rented.AsSpan(0, MaxSizeOfDataDescriptor);
+                int bytesToWrite = PrepareToWriteDataDescriptor(dataDescriptor);
+                await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, bytesToWrite), cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         private int PrepareToWriteDataDescriptor(Span<byte> dataDescriptor)
@@ -2161,15 +2700,43 @@ namespace System.IO.Compression
 
         internal void UnloadStreams()
         {
-            _storedUncompressedData?.Dispose();
+            ValueTask vt = UnloadStreamsCoreAsync<SyncReadWriteAdapter>();
+            Debug.Assert(vt.IsCompleted, "Synchronous UnloadStreams completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        internal Task UnloadStreamsAsync() =>
+            UnloadStreamsCoreAsync<AsyncReadWriteAdapter>().AsTask();
+
+        private async ValueTask UnloadStreamsCoreAsync<TAdapter>()
+            where TAdapter : IReadWriteAdapter
+        {
+            if (_storedUncompressedData is not null)
+            {
+                await TAdapter.DisposeAsync(_storedUncompressedData).ConfigureAwait(false);
+            }
+
             _compressedBytes = null;
             _outstandingWriteStream = null;
         }
 
         private void CloseStreams()
         {
-            // if the user left the stream open, close the underlying stream for them
-            _outstandingWriteStream?.Dispose();
+            ValueTask vt = CloseStreamsCoreAsync<SyncReadWriteAdapter>();
+            Debug.Assert(vt.IsCompleted, "Synchronous CloseStreams completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private Task CloseStreamsAsync() =>
+            CloseStreamsCoreAsync<AsyncReadWriteAdapter>().AsTask();
+
+        private async ValueTask CloseStreamsCoreAsync<TAdapter>()
+            where TAdapter : IReadWriteAdapter
+        {
+            if (_outstandingWriteStream is not null)
+            {
+                await TAdapter.DisposeAsync(_outstandingWriteStream).ConfigureAwait(false);
+            }
         }
 
         private void VersionToExtractAtLeast(ZipVersionNeededValues value)
