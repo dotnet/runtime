@@ -484,6 +484,7 @@ private:
     void     LowerShift(GenTreeOp* shift);
     void     TryRemoveShiftRotateMask(GenTreeOp* op);
     bool     TryFoldBinop(GenTreeOp* node);
+    bool     TryContainFunnelShift(GenTreeOp* node);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
