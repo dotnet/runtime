@@ -91,7 +91,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
     std::vector<uint64_t> segment_starts;
     std::vector<uint64_t> segment_ends;
-    const int MAX_SEGMENTS = 16;
+    const int MAX_SEGMENTS = 256;
     COR_PRF_NONGC_HEAP_RANGE nongc_segments[MAX_SEGMENTS];
     COR_PRF_GC_GENERATION_RANGE gc_segments[MAX_SEGMENTS];
     ULONG segCount;
