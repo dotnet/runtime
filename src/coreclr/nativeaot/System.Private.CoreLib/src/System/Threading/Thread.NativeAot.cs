@@ -418,7 +418,7 @@ namespace System.Threading
             {
                 thread._startException = e;
 
-#if TARGET_UNIX
+#if !TARGET_WINDOWS
                 // This should go away once OnThreadExit stops using t_currentThread to signal
                 // shutdown of the thread on Unix.
                 thread._stopped!.Set();
