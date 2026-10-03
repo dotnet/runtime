@@ -36,6 +36,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <!-- Set up default feature switches -->
   <PropertyGroup>
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
+    <CreatedumpSupport Condition="$(CreatedumpSupport) == ''">false</CreatedumpSupport>
     <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
     <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>

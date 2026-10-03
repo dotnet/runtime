@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef DUMPWRITERELF_H
+#define DUMPWRITERELF_H
+
 #ifdef HOST_64BIT
 #define ELF_CLASS ELFCLASS64
 #else
@@ -41,35 +44,38 @@ class DumpWriter
 {
 private:
     int m_fd;
-    CrashInfo& m_crashInfo;
-    BYTE m_tempBuffer[0x4000];
+    uint8_t m_tempBuffer[0x4000];
+    ProcessInfo& m_processInfo;
+    const DynamicArray<ModuleRegion>& m_moduleMappings;
+    const DynamicArray<MemoryRegion>& m_dumpRegions;
 
     // no public copy constructor
     DumpWriter(const DumpWriter&) = delete;
     void operator=(const DumpWriter&) = delete;
 
 public:
-    DumpWriter(CrashInfo& crashInfo);
+    DumpWriter(ProcessInfo& processInfo, const DynamicArray<ModuleRegion>& moduleMappings, const DynamicArray<MemoryRegion>& dumpRegions);
     virtual ~DumpWriter();
-    bool OpenDump(const char* dumpFileName);
-    bool WriteDump();
+    bool OpenAndWriteDump(const char* dumpFileName);
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
+    bool OpenDump(const char* dumpFileName);
+    bool WriteDump();
     bool WriteDiagInfo(size_t size);
     bool WriteProcessInfo();
     bool WriteAuxv();
     size_t GetNTFileInfoSize(size_t* alignmentBytes = nullptr);
     bool WriteNTFileInfo();
-    bool WriteThread(const ThreadInfo& thread);
+    bool WriteThread(const ThreadSnapshot& thread);
     bool WriteData(const void* buffer, size_t length) { return WriteData(m_fd, buffer, length); }
 
     size_t GetProcessInfoSize() const { return sizeof(Nhdr) + 8 + sizeof(prpsinfo_t); }
-    size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_crashInfo.GetAuxvSize(); }
+    size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_processInfo.GetAuxvSize(); }
     size_t GetThreadInfoSize() const
     {
-        return (m_crashInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
-              + (m_crashInfo.Threads().size() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
+        return (m_processInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
+              + (m_processInfo.Threads().Count() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
               + (sizeof(Nhdr) + 8 + sizeof(user_fpregs_struct))
 #if defined(__i386__)
               + (sizeof(Nhdr) + 8 + sizeof(user_fpxregs_struct))
@@ -80,3 +86,5 @@ private:
         ));
     }
 };
+
+#endif // DUMPWRITERELF_H

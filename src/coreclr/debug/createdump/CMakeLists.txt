@@ -15,7 +15,8 @@ if(CLR_CMAKE_HOST_WIN32)
     set(CREATEDUMP_SOURCES
         main.cpp
         createdumpmain.cpp
-        dumpname.cpp
+        shared/createdumpcore.cpp
+        shared/dumpname.cpp
         createdumpwindows.cpp
         createdump.rc
     )
@@ -59,15 +60,21 @@ else(CLR_CMAKE_HOST_WIN32)
     # This is so we can include "version.c"
     include_directories(${CMAKE_BINARY_DIR})
 
+    set(CREATEDUMP_SHARED_SOURCES
+        shared/createdumpcore.cpp
+        shared/dumpname.cpp
+        shared/crashinfocore.cpp
+        shared/dumpwriter.cpp
+    )
+
     set(CREATEDUMP_SOURCES
         createdumpmain.cpp
-        dumpname.cpp
         createdumpunix.cpp
         crashinfo.cpp
         threadinfo.cpp
         datatarget.cpp
-        dumpwriter.cpp
         crashreportwriter.cpp
+        ${CREATEDUMP_SHARED_SOURCES}
     )
 
 if(CLR_CMAKE_HOST_OSX)
@@ -75,15 +82,22 @@ if(CLR_CMAKE_HOST_OSX)
         STATIC
         crashinfomac.cpp
         threadinfomac.cpp
-        dumpwritermacho.cpp
+        shared/dumpwritermacho.cpp
         ${CREATEDUMP_SOURCES}
     )
 else()
+    set(CREATEDUMP_SHARED_LINUX_SOURCES
+        shared/crashinfounixcore.cpp
+        shared/createdumpunixcore.cpp
+        shared/dumpwriterelf.cpp
+        shared/threadsnapshot.cpp
+    )
+
     add_library_clr(createdump_static
         STATIC
         crashinfounix.cpp
         threadinfounix.cpp
-        dumpwriterelf.cpp
+        ${CREATEDUMP_SHARED_LINUX_SOURCES}
         ${CREATEDUMP_SOURCES}
     )
 endif(CLR_CMAKE_HOST_OSX)
@@ -112,3 +126,7 @@ if (CLR_CMAKE_HOST_APPLE)
 endif()
 
 install_clr(TARGETS createdump DESTINATIONS . sharedFramework COMPONENT runtime)
+
+if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_OSX)
+    install_clr(TARGETS createdump DESTINATIONS . COMPONENT nativeaot)
+endif()
