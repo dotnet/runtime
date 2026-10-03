@@ -606,6 +606,210 @@ namespace System.Net.Quic.Tests
             await serverConnection.DisposeAsync();
         }
 
+        public enum CertificateChainProvisioning
+        {
+            Original,
+            Server,
+            Client,
+            Both
+        }
+
+        public static IEnumerable<object[]> LoopbackCertificateExperimentData()
+        {
+            string selectedArm = Environment.GetEnvironmentVariable("DOTNET_TEST_QUIC_CERTIFICATE_ARM");
+            string selectedCase = Environment.GetEnvironmentVariable("DOTNET_TEST_QUIC_CERTIFICATE_CASE");
+            CertificateChainProvisioning[] arms = Enum.GetValues<CertificateChainProvisioning>();
+            (string Name, string Address, bool ExpectsError)[] cases =
+            [
+                ("IPv4Mismatch", "127.0.0.1", true),
+                ("IPv6Mismatch", "::1", true),
+                ("IPv4Match", "127.0.0.1", false),
+                ("IPv6Match", "::1", false)
+            ];
+
+            if (selectedArm is not null)
+            {
+                Assert.Contains(selectedArm, arms.Select(arm => arm.ToString()));
+            }
+            if (selectedCase is not null)
+            {
+                Assert.Contains(selectedCase, cases.Select(testCase => testCase.Name));
+            }
+
+            foreach (CertificateChainProvisioning arm in arms)
+            {
+                foreach (var testCase in cases)
+                {
+                    if ((selectedArm is null || selectedArm == arm.ToString()) &&
+                        (selectedCase is null || selectedCase == testCase.Name))
+                    {
+                        yield return new object[] { testCase.Address, testCase.ExpectsError, arm };
+                    }
+                }
+            }
+        }
+
+        private static X509ChainPolicy CreateLoopbackCertificateChainPolicy(X509Certificate2Collection issuers)
+        {
+            var policy = new X509ChainPolicy
+            {
+                RevocationMode = X509RevocationMode.NoCheck,
+                DisableCertificateDownloads = true
+            };
+            policy.ExtraStore.AddRange(issuers);
+            return policy;
+        }
+
+        [OuterLoop]
+        [ConditionalTheory]
+        [MemberData(nameof(LoopbackCertificateExperimentData))]
+        public async Task ConnectWithCertificateForLoopbackIP_ChainProvisioningExperiment(string ipString, bool expectsError, CertificateChainProvisioning provisioning)
+        {
+            var ipAddress = IPAddress.Parse(ipString);
+            if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6 && !IsIPv6Available)
+            {
+                throw new SkipTestException("IPv6 is not available on this platform");
+            }
+
+            long startTimestamp = Stopwatch.GetTimestamp();
+            using var eventListener = new TestEventListener(Log, "Private.InternalDiagnostics.System.Net.Quic", "Private.InternalDiagnostics.System.Net.Security", "Private.InternalDiagnostics.System.Net.HttpListener");
+
+            Log($"PKI generation start: {ipString}, expectsError={expectsError}, provisioning={provisioning}, process={Environment.ProcessId}");
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(expectsError ? "badhost" : "localhost",
+                // Use the original test's certificate key-factory seed for paired comparisons.
+                testName: nameof(ConnectWithCertificateForLoopbackIP_IndicatesExpectedError),
+                forceRsaCertificate: !PlatformDetection.IsWindows);
+            X509Certificate2 certificate = pkiHolder.EndEntity;
+            Log($"PKI generation complete: algorithm={certificate.GetKeyAlgorithm()}, responder={pkiHolder.Responder.UriPrefix}");
+
+            SslStreamCertificateContext serverContext = null;
+            try
+            {
+                if (provisioning is CertificateChainProvisioning.Server or CertificateChainProvisioning.Both)
+                {
+                    Log("Offline server context start");
+                    serverContext = SslStreamCertificateContext.Create(certificate, pkiHolder.IssuerChain, offline: true);
+                    Log($"Offline server context complete: {serverContext.IntermediateCertificates.Count} issuers");
+                }
+
+                var listenerOptions = new QuicListenerOptions()
+                {
+                    ListenEndPoint = new IPEndPoint(ipAddress, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (connection, clientHello, _) =>
+                    {
+                        Log($"Server options callback start: {connection}, SNI={clientHello.ServerName}");
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
+                        serverOptions.ServerAuthenticationOptions.ServerCertificateContext = serverContext;
+                        Log($"Server options callback complete: {connection}, handshakeTimeout={serverOptions.HandshakeTimeout}");
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+
+                // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
+                if (provisioning is CertificateChainProvisioning.Client or CertificateChainProvisioning.Both)
+                {
+                    clientOptions.ClientAuthenticationOptions.CertificateChainPolicy = CreateLoopbackCertificateChainPolicy(pkiHolder.IssuerChain);
+                }
+
+                int callbackCount = 0;
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                {
+                    Log($"Client validation callback start (after chain build): {sender}, errors={errors}, chainElements={chain?.ChainElements.Count}");
+                    Interlocked.Increment(ref callbackCount);
+                    Assert.Equal(certificate.Subject, cert.Subject);
+                    Assert.Equal(certificate.Issuer, cert.Issuer);
+                    Assert.Equal(expectsError ? SslPolicyErrors.RemoteCertificateNameMismatch : SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                    Log($"Client validation callback accepting: {sender}");
+                    return true;
+                };
+
+                Log($"Connect helper start: TargetHost={clientOptions.ClientAuthenticationOptions.TargetHost}, handshakeTimeout={clientOptions.HandshakeTimeout}");
+                (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
+                try
+                {
+                    Log($"Both connections established: client={clientConnection}, server={serverConnection}");
+                    Assert.Equal(1, Volatile.Read(ref callbackCount));
+                }
+                finally
+                {
+                    Log("Connection disposal start");
+                    try
+                    {
+                        await clientConnection.DisposeAsync();
+                    }
+                    finally
+                    {
+                        await serverConnection.DisposeAsync();
+                    }
+                    Log("Connection disposal complete");
+                }
+            }
+            catch (Exception exception)
+            {
+                Log($"Experiment failed, HResult=0x{exception.HResult:X8}: {exception}");
+                throw;
+            }
+            finally
+            {
+                if (serverContext is not null)
+                {
+                    foreach (X509Certificate2 intermediate in serverContext.IntermediateCertificates)
+                    {
+                        intermediate.Dispose();
+                    }
+                }
+            }
+
+            void Log(string message)
+            {
+                _output.WriteLine($"[{Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds:F3} ms] [thread {Environment.CurrentManagedThreadId}] {message}");
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalTheory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        public void LoopbackCertificateChain_BuildExperiment(bool expectsError, bool supplyIssuers)
+        {
+            using var eventListener = new TestEventListener(_output, "Private.InternalDiagnostics.System.Net.HttpListener");
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(expectsError ? "badhost" : "localhost",
+                testName: nameof(ConnectWithCertificateForLoopbackIP_IndicatesExpectedError),
+                forceRsaCertificate: !PlatformDetection.IsWindows);
+            using var chain = new X509Chain();
+            chain.ChainPolicy = supplyIssuers
+                ? CreateLoopbackCertificateChainPolicy(pkiHolder.IssuerChain)
+                : new X509ChainPolicy { RevocationMode = X509RevocationMode.NoCheck };
+            chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.3.6.1.5.5.7.3.1"));
+
+            _output.WriteLine($"Standalone chain build: expectsError={expectsError}, supplyIssuers={supplyIssuers}, algorithm={pkiHolder.EndEntity.GetKeyAlgorithm()}, responder={pkiHolder.Responder.UriPrefix}");
+            long startTimestamp = Stopwatch.GetTimestamp();
+            try
+            {
+                bool result = chain.Build(pkiHolder.EndEntity);
+                _output.WriteLine($"Chain build took {Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds:F3} ms: result={result}, elements={chain.ChainElements.Count}, status={string.Join(", ", chain.ChainStatus.Select(status => status.Status))}");
+
+                Assert.False(result);
+                if (supplyIssuers)
+                {
+                    Assert.Equal(pkiHolder.IssuerChain.Count + 1, chain.ChainElements.Count);
+                    Assert.Contains(chain.ChainStatus, status => status.Status.HasFlag(X509ChainStatusFlags.UntrustedRoot));
+                }
+            }
+            finally
+            {
+                foreach (X509ChainElement element in chain.ChainElements)
+                {
+                    element.Certificate.Dispose();
+                }
+            }
+        }
+
         public enum ClientCertSource
         {
             ClientCertificate,
