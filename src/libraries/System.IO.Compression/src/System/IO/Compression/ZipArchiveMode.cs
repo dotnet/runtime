@@ -26,6 +26,12 @@ namespace System.IO.Compression
         /// The underlying file or stream must be readable, writable and seekable.
         /// No data will be written to the underlying file or stream until the archive is disposed.
         /// </summary>
-        Update
+        Update,
+        /// <summary>
+        /// Reads entries sequentially from local headers without buffering the archive.
+        /// Requires a readable stream, but not seeking. Entries can be opened only once,
+        /// before advancing to the next entry.
+        /// </summary>
+        ForwardRead = 3
     }
 }

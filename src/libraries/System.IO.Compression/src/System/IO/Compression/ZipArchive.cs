@@ -14,6 +14,13 @@ using System.Text;
 
 namespace System.IO.Compression
 {
+    /// <summary>Represents a collection of entries in a ZIP archive.</summary>
+    /// <remarks>
+    /// In <see cref="ZipArchiveMode.ForwardRead"/> mode, only a readable stream is required.
+    /// Construction performs no I/O; local-header parsing begins with <see cref="GetNextEntry"/>
+    /// or <see cref="GetNextEntryAsync"/>. Disposal does not drain or validate remaining input.
+    /// Random access and central-directory metadata are unavailable.
+    /// </remarks>
     public partial class ZipArchive : IDisposable, IAsyncDisposable
     {
         private const int ReadCentralDirectoryReadBufferSize = 4096;
@@ -144,6 +151,8 @@ namespace System.IO.Compression
 
                 switch (mode)
                 {
+                    case ZipArchiveMode.ForwardRead:
+                        break;
                     case ZipArchiveMode.Create:
                         _readEntries = true;
                         break;
@@ -211,9 +220,14 @@ namespace System.IO.Compression
         [AllowNull]
         public string Comment
         {
-            get => (EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_archiveComment);
+            get
+            {
+                ThrowIfForwardRead();
+                return (EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_archiveComment);
+            }
             set
             {
+                ThrowIfForwardRead();
                 _archiveComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, EntryNameAndCommentEncoding, ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength, out _);
                 Changed |= ChangeState.DynamicLengthMetadata;
             }
@@ -229,6 +243,7 @@ namespace System.IO.Compression
         {
             get
             {
+                ThrowIfForwardRead();
                 if (_mode == ZipArchiveMode.Create)
                 {
                     throw new NotSupportedException(SR.EntriesInCreateMode);
@@ -344,6 +359,9 @@ namespace System.IO.Compression
                 {
                     switch (_mode)
                     {
+                        case ZipArchiveMode.ForwardRead:
+                            DisposeForwardReader();
+                            break;
                         case ZipArchiveMode.Read:
                             break;
                         case ZipArchiveMode.Create:
@@ -393,6 +411,7 @@ namespace System.IO.Compression
         public ZipArchiveEntry? GetEntry(string entryName)
         {
             ArgumentNullException.ThrowIfNull(entryName);
+            ThrowIfForwardRead();
 
             if (_mode == ZipArchiveMode.Create)
             {
@@ -483,7 +502,7 @@ namespace System.IO.Compression
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
 
-            if (_mode == ZipArchiveMode.Read)
+            if (_mode is ZipArchiveMode.Read or ZipArchiveMode.ForwardRead)
             {
                 throw new NotSupportedException(SR.CreateInReadMode);
             }
@@ -1033,6 +1052,12 @@ namespace System.IO.Compression
 
             switch (mode)
             {
+                case ZipArchiveMode.ForwardRead:
+                    if (!stream.CanRead)
+                    {
+                        throw new ArgumentException(SR.ReadModeCapabilities);
+                    }
+                    break;
                 case ZipArchiveMode.Create:
                     if (!stream.CanWrite)
                     {
