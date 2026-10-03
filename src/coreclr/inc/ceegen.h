@@ -193,7 +193,6 @@ class CCeeGen : public ICeeGenInternal {
 
     HRESULT addSection(CeeSection *section, short *sectionIdx);
 
-// Init process: Call static CreateNewInstance() , not operator new
   protected:
     HRESULT Init();
     CCeeGen();
@@ -201,8 +200,6 @@ class CCeeGen : public ICeeGenInternal {
   public:
 
     virtual ~CCeeGen() {}
-
-    static HRESULT CreateNewInstance(CCeeGen* & pCeeFileGen); // call this to instantiate
 
     virtual HRESULT Cleanup();
 

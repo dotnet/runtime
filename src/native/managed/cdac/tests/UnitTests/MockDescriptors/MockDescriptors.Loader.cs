@@ -166,6 +166,12 @@ internal sealed class MockLoaderModule : TypedView
         set => WritePointerField(GrowableSymbolStreamFieldName, value);
     }
 
+    public ulong DynamicILBlobTable
+    {
+        get => ReadPointerField(DynamicILBlobTableFieldName);
+        set => WritePointerField(DynamicILBlobTableFieldName, value);
+    }
+
     public int MemberRefToDescMapOffset => Layout.GetField(MemberRefToDescMapFieldName).Offset;
 }
 
@@ -288,8 +294,10 @@ internal sealed class MockLoaderBuilder
     internal Layout<MockLoaderHeapBlock> LoaderHeapBlockLayout { get; }
     internal Layout<MockCGrowableSymbolStream> CGrowableSymbolStreamLayout { get; }
     internal Layout<MockModuleLookupMap> ModuleLookupMapLayout { get; }
+    internal Layout DynamicILBlobTableLayout { get; }
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
+    private readonly Layout _dynamicILBlobTableHeaderLayout;
 
     public MockLoaderBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -310,6 +318,21 @@ internal sealed class MockLoaderBuilder
         LoaderHeapBlockLayout = MockLoaderHeapBlock.CreateLayout(builder.TargetTestHelpers.Arch);
         CGrowableSymbolStreamLayout = MockCGrowableSymbolStream.CreateLayout(builder.TargetTestHelpers.Arch);
         ModuleLookupMapLayout = MockModuleLookupMap.CreateLayout(builder.TargetTestHelpers.Arch);
+
+        _dynamicILBlobTableHeaderLayout = new SequentialLayoutBuilder("DynamicILBlobTable header", builder.TargetTestHelpers.Arch)
+            .AddPointerField("Table")
+            .AddUInt32Field("TableSize")
+            .Build();
+        Layout entryLayout = new SequentialLayoutBuilder("DynamicILBlobTable entry", builder.TargetTestHelpers.Arch)
+            .AddUInt32Field("EntryMethodToken")
+            .AddPointerField("EntryIL")
+            .Build();
+        // The descriptor combines container offsets with entry offsets and the entry size.
+        DynamicILBlobTableLayout = new Layout(
+            "DynamicILBlobTable",
+            builder.TargetTestHelpers.Arch,
+            entryLayout.Size,
+            [.. _dynamicILBlobTableHeaderLayout.Fields, .. entryLayout.Fields]);
     }
 
     internal MockLoaderHeap AddLoaderHeap(ulong firstBlockAddress = 0)
@@ -390,6 +413,30 @@ internal sealed class MockLoaderBuilder
         map.TableData = table.Address;
         map.Count = (uint)entries.Length + 1;
         map.SupportedFlagsMask = 3;
+    }
+
+    // Entries are supplied in SHash bucket order, including empty slots.
+    internal void SetDynamicILBlobTable(MockLoaderModule module, params (uint Token, ulong IL)[] entries)
+    {
+        TargetTestHelpers helpers = Builder.TargetTestHelpers;
+        MockMemorySpace.HeapFragment header = _allocator.Allocate((ulong)_dynamicILBlobTableHeaderLayout.Size, "DynamicILBlobTable");
+        helpers.Write(header.Data.AsSpan(_dynamicILBlobTableHeaderLayout.GetField("TableSize").Offset), (uint)entries.Length);
+
+        if (entries.Length > 0)
+        {
+            int entrySize = DynamicILBlobTableLayout.Size;
+            MockMemorySpace.HeapFragment table = _allocator.Allocate(checked((ulong)entries.Length * (ulong)entrySize), "DynamicILBlobTable entries");
+            helpers.WritePointer(header.Data.AsSpan(_dynamicILBlobTableHeaderLayout.GetField("Table").Offset), table.Address);
+
+            for (int i = 0; i < entries.Length; i++)
+            {
+                Span<byte> entry = table.Data.AsSpan(i * entrySize, entrySize);
+                helpers.Write(entry.Slice(DynamicILBlobTableLayout.GetField("EntryMethodToken").Offset), entries[i].Token);
+                helpers.WritePointer(entry.Slice(DynamicILBlobTableLayout.GetField("EntryIL").Offset), entries[i].IL);
+            }
+        }
+
+        module.DynamicILBlobTable = header.Address;
     }
 
     /// <summary>

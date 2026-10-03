@@ -367,6 +367,7 @@
 #define REG_UNKBASE REG_R19
 #define RBM_UNKBASE RBM_R19
 
+#define MIN_SVE_REGSIZE_BYTES 16
 #define MAX_SVE_REGSIZE_BYTES 256
 
 // clang-format on

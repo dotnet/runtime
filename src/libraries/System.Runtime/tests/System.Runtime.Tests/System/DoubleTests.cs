@@ -282,6 +282,10 @@ namespace System.Tests
             yield return new object[] { "0", defaultStyle, null, 0.0 };
             yield return new object[] { "123", defaultStyle, null, 123.0 };
             yield return new object[] { "  123  ", defaultStyle, null, 123.0 };
+
+            // Whitespace between a leading sign and the digits (mirrors trailing sign + AllowTrailingWhite)
+            yield return new object[] { "- 123", NumberStyles.AllowLeadingWhite | NumberStyles.AllowLeadingSign, invariantFormat, -123.0 };
+            yield return new object[] { "  -  123  ", NumberStyles.Float, invariantFormat, -123.0 };
             yield return new object[] { (567.89).ToString(), defaultStyle, null, 567.89 };
             yield return new object[] { (-567.89).ToString(), defaultStyle, null, -567.89 };
             yield return new object[] { "1E23", defaultStyle, null, 1E23 };
@@ -467,6 +471,11 @@ namespace System.Tests
             yield return new object[] { "0xFFp0", NumberStyles.HexFloat, invariantFormat, 255.0 };
             yield return new object[] { "0x1p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
             yield return new object[] { "0x100p0", NumberStyles.HexFloat, invariantFormat, 256.0 };
+
+            // Whitespace between a leading sign and the "0x" prefix (AllowLeadingWhite)
+            yield return new object[] { "- 0x1p0", NumberStyles.HexFloat, invariantFormat, -1.0 };
+            yield return new object[] { "  -  0x1p0  ", NumberStyles.HexFloat, invariantFormat, -1.0 };
+            yield return new object[] { "+ 0x1p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
 
             // Large significand (many hex digits)
             yield return new object[] { "0xFFFFFFFFFFFFFFp0", NumberStyles.HexFloat, invariantFormat, (double)0xFFFFFFFFFFFFFF };
@@ -1402,6 +1411,46 @@ namespace System.Tests
             Assert.True(double.IsNaN(double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format)));
         }
 
+        public static IEnumerable<object[]> Parse_CustomSigns_TestData()
+        {
+            // Non-ASCII signs that are 3 bytes in UTF-8, e.g. U+2212 MINUS SIGN (sv-SE) and U+061C ARABIC LETTER MARK + '-' (ar)
+            yield return new object[] { "\u2212NaN", "+", "\u2212", true, double.NaN };
+            yield return new object[] { "\u2212nan", "+", "\u2212", true, double.NaN };
+            yield return new object[] { "\u061C-NaN", "+", "\u061C-", true, double.NaN };
+            yield return new object[] { "A\u00C9Infinity", "a\u00E9", "-", true, double.PositiveInfinity };
+            yield return new object[] { "B\u00C9Infinity", "a\u00E9", "-", false, 0.0 };
+
+            // Non-ASCII and supplementary signs are matched ignoring case
+            yield return new object[] { "\u00C9Infinity", "\u00E9", "-", true, double.PositiveInfinity };
+            // NLS doesn't case-fold supplementary characters
+            yield return new object[] { "\U00010400Infinity", "\U00010428", "-", !PlatformDetection.IsNlsGlobalization, PlatformDetection.IsNlsGlobalization ? 0.0 : double.PositiveInfinity };
+            yield return new object[] { "\u200E+\u200EInfinity", "\u200E+\u200E", "\u200E-\u200E", true, double.PositiveInfinity };
+            yield return new object[] { "\u200E-\u200ENaN", "\u200E+\u200E", "\u200E-\u200E", true, double.NaN };
+
+            // A sign longer than the input
+            yield return new object[] { "CONTENT-LENGTH: 1234", "content-length: 1234x", "-", false, 0.0 };
+
+            // U+017F LATIN SMALL LETTER LONG S doesn't match 's' under ordinal casing, for short and 16+ byte signs.
+            // The last two signs end with 'i', so a wrong match would parse the remaining "Infinity".
+            yield return new object[] { "\u017FInfinity", "s", "-", false, 0.0 };
+            yield return new object[] { "SInfinity", "\u017F", "-", false, 0.0 };
+            yield return new object[] { "\u017F\u00C9Infinity", "s\u00E9i", "-", false, 0.0 };
+            yield return new object[] { "\u017F\u00C9ABCDEFGHIJKLMInfinity", "s\u00E9abcdefghijklmi", "-", false, 0.0 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_CustomSigns_TestData))]
+        public static void Parse_CustomSigns(string value, string positiveSign, string negativeSign, bool expectedSuccess, double expected)
+        {
+            NumberFormatInfo format = new() { PositiveSign = positiveSign, NegativeSign = negativeSign };
+
+            Assert.Equal(expectedSuccess, double.TryParse(value, NumberStyles.Float, format, out double result));
+            Assert.Equal(expected, result);
+
+            Assert.Equal(expectedSuccess, double.TryParse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format, out result));
+            Assert.Equal(expected, result);
+        }
+
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
         public static void MaxMagnitudeNumberTest(double x, double y, double expectedResult)
@@ -2017,6 +2066,7 @@ namespace System.Tests
             // With signs
             yield return new object[] { "+123.45abc", NumberStyles.Float, CultureInfo.InvariantCulture, 123.45, 7 };
             yield return new object[] { "-456.78xyz", NumberStyles.Float, CultureInfo.InvariantCulture, -456.78, 7 };
+            yield return new object[] { "  -  123.5xyz", NumberStyles.Float, CultureInfo.InvariantCulture, -123.5, 10 };
 
             // With exponent
             yield return new object[] { "1.23e10abc", NumberStyles.Float, CultureInfo.InvariantCulture, 1.23e10, 7 };
@@ -2046,6 +2096,7 @@ namespace System.Tests
             yield return new object[] { "0x1.8p0xyz", NumberStyles.HexFloat, CultureInfo.InvariantCulture, 1.5, 7 };
             yield return new object[] { "0x1.0p10!!", NumberStyles.HexFloat, CultureInfo.InvariantCulture, 1024.0, 8 };
             yield return new object[] { "0x1.8p0  x", NumberStyles.HexFloat, CultureInfo.InvariantCulture, 1.5, 9 };
+            yield return new object[] { "- 0x1.8p0xyz", NumberStyles.HexFloat, CultureInfo.InvariantCulture, -1.5, 9 };
 
             // Hex-float special values (Infinity/NaN) with trailing invalid characters
             yield return new object[] { "Infinityxyz", NumberStyles.HexFloat, CultureInfo.InvariantCulture, double.PositiveInfinity, 8 };
