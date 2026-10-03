@@ -895,7 +895,7 @@ namespace System.DirectoryServices.Protocols
                     NewDN = LdapPal.PtrToString(NewDNPtr);
                 }
 
-                string target = $"{Marshal.PtrToStringUni(HostNamePtr)}:{PortNumber}";
+                string target = $"{Marshal.PtrToStringAnsi(HostNamePtr)}:{PortNumber}";
                 var identifier = new LdapDirectoryIdentifier(target);
 
                 NetworkCredential cred = ProcessSecAuthIdentity(SecAuthIdentity);
@@ -959,7 +959,7 @@ namespace System.DirectoryServices.Protocols
                     newDN = LdapPal.PtrToString(newDNPtr);
                 }
 
-                string target = $"{Marshal.PtrToStringUni(hostNamePtr)}:{portNumber}";
+                string target = $"{Marshal.PtrToStringAnsi(hostNamePtr)}:{portNumber}";
                 var identifier = new LdapDirectoryIdentifier(target);
 
                 NetworkCredential cred = ProcessSecAuthIdentity(SecAuthIdentity);
