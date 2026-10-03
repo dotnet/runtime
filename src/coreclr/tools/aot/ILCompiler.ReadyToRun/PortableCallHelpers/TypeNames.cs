@@ -36,10 +36,7 @@ namespace ILCompiler.PortableCallHelpers
             if (type is not MetadataType metadataType)
                 return string.Empty;
 
-            while (metadataType.ContainingType is MetadataType containingType)
-                metadataType = containingType;
-
-            return metadataType.Namespace.ToString();
+            return metadataType.GetOutermostType().Namespace.ToString();
         }
     }
 }

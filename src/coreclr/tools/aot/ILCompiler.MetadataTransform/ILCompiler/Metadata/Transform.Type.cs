@@ -239,11 +239,10 @@ namespace ILCompiler.Metadata
 
                 // Nested types inherit the namespace of the outermost containing type.
                 // The enclosing metadata record may still be initializing, so walk the type system.
-                while (containingType.ContainingType != null)
-                    containingType = (Cts.MetadataType)containingType.ContainingType;
+                Cts.MetadataType outermostType = Cts.TypeSystemHelpers.GetOutermostType(containingType);
 
                 var namespaceDefinition =
-                    HandleNamespaceDefinition(containingType.Module, containingType.GetNamespace());
+                    HandleNamespaceDefinition(outermostType.Module, outermostType.GetNamespace());
                 record.NamespaceDefinition = namespaceDefinition;
             }
             else

@@ -16,6 +16,17 @@ namespace Internal.TypeSystem
             return type == type.Context.GetWellKnownType(wellKnownType, false);
         }
 
+        /// <summary>
+        /// Gets the outermost containing type, or the type itself if it is not nested.
+        /// </summary>
+        public static MetadataType GetOutermostType(this MetadataType type)
+        {
+            while (type.ContainingType is MetadataType containingType)
+                type = containingType;
+
+            return type;
+        }
+
         public static InstantiatedType MakeInstantiatedType(this MetadataType typeDef, Instantiation instantiation)
         {
             return typeDef.Context.GetInstantiatedType(typeDef, instantiation);

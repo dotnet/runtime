@@ -46,6 +46,22 @@ namespace TypeSystemTests
             _coreAssemblyQualifier = ((IAssemblyDesc)_testModule).GetName().FullName;
         }
 
+        [Theory]
+        [InlineData("NonNamespaceQualifiedType", "NonNamespaceQualifiedType")]
+        [InlineData("TypeNameParsing.Simple", "TypeNameParsing.Simple")]
+        [InlineData("TypeNameParsing.Simple+Nested", "TypeNameParsing.Simple")]
+        [InlineData("TypeNameParsing.Simple+Nested+NestedTwice", "TypeNameParsing.Simple")]
+        [InlineData("TypeNameParsing.Generic`1", "TypeNameParsing.Generic`1")]
+        [InlineData("TypeNameParsing.Generic`1+NestedNongeneric", "TypeNameParsing.Generic`1")]
+        [InlineData("TypeNameParsing.Generic`1+NestedGeneric`1", "TypeNameParsing.Generic`1")]
+        public void TestOutermostType(string typeName, string expectedTypeName)
+        {
+            var type = (MetadataType)_testModule.GetTypeByCustomAttributeTypeName(typeName);
+            TypeDesc expected = _testModule.GetTypeByCustomAttributeTypeName(expectedTypeName);
+
+            Assert.Same(expected, type.GetOutermostType());
+        }
+
         [Fact]
         public void TestSimpleNames()
         {
