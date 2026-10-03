@@ -129,4 +129,22 @@
   <data name="StreamConfigurationSourceStreamCannotBeNull" xml:space="preserve">
     <value>Source.Stream cannot be null.</value>
   </data>
+  <data name="Error_ReferenceChainLimit" xml:space="preserve">
+    <value>The value of configuration key '{0}' was not resolved after following {1} references: {2}.</value>
+  </data>
+  <data name="Error_ReferenceCycle" xml:space="preserve">
+    <value>The value of configuration key '{0}' cannot be resolved because the configuration references form a cycle: {1}.</value>
+  </data>
+  <data name="Error_ReferenceNestingLimit" xml:space="preserve">
+    <value>The value of configuration key '{0}' nests configuration references more than {1} levels deep: {2}.</value>
+  </data>
+  <data name="Error_ReferenceExpansionLimit" xml:space="preserve">
+    <value>The value of configuration key '{0}' expands more than {1} configuration sub-references, which usually means a value brings back the sub-reference that read it: {2}.</value>
+  </data>
+  <data name="Error_MalformedReference" xml:space="preserve">
+    <value>The value of configuration key '{0}' is a malformed configuration reference.</value>
+  </data>
+  <data name="Error_NestedSubReference" xml:space="preserve">
+    <value>The value of configuration key '{0}' nests one configuration sub-reference inside another, which is not supported. Name the inner one with its own configuration key and refer to that instead.</value>
+  </data>
 </root>
