@@ -95,6 +95,8 @@ steps:
       path: /tmp/gh-aw/agent
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-pull-request:
     title-prefix: "[ci-fix] "
     draft: true
