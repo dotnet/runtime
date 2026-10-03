@@ -696,6 +696,7 @@
     "TransitionBlock.FirstGCRefMapSlot": "Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset",
     "TransitionBlock.ReturnAddress": "Return address associated with the TransitionBlock",
     "TransitionBlock.Size": "Size in bytes of the transition block, used to restore the caller's stack pointer",
+    "TransitionBlock.StackPointer": "WASM only: R2R linear-stack pointer of the caller, saved by the transition helper",
     "TypedByRef.Data": "Managed pointer (the byref) stored in a System.TypedReference value",
     "TypedByRef.Type": "Raw TypeHandle pointer of the referent type",
     "type.Size": "Size in bytes of each SHash table entry",
