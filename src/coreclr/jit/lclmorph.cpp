@@ -271,30 +271,6 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
 
             m_map->Set(lcl->GetLclNum(), true, LocalDefinitionsMap::Overwrite);
 
-            LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lcl);
-            if (m_compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()) && lclDsc->lvPromoted)
-            {
-                // fgRetypeImplicitByRefArgs created a new promoted
-                // struct local to represent this arg. The stores will
-                // be rewritten by morph.
-                assert(lclDsc->lvFieldLclStart != 0);
-                m_map->Set(lclDsc->lvFieldLclStart, true, LocalDefinitionsMap::Overwrite);
-                lclDsc = m_compiler->lvaGetDesc(lclDsc->lvFieldLclStart);
-            }
-
-            if (lclDsc->lvPromoted)
-            {
-                for (unsigned i = 0; i < lclDsc->lvFieldCnt; i++)
-                {
-                    unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
-                    m_map->Set(fieldLclNum, true, LocalDefinitionsMap::Overwrite);
-                }
-            }
-            else if (lclDsc->lvIsStructField)
-            {
-                m_map->Set(lclDsc->lvParentLcl, true, LocalDefinitionsMap::Overwrite);
-            }
-
             return Compiler::WALK_CONTINUE;
         }
 
