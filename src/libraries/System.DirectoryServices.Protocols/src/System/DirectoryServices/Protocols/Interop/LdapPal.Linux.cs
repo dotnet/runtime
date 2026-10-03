@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -100,8 +102,117 @@ namespace System.DirectoryServices.Protocols
                 //-1 means no time limit
                 searchTimeout.tv_sec = -1;
 
+            // Windows LDAP accepts redundant parentheses and backslash-escaped spaces that OpenLDAP rejects.
+            filter = NormalizeFilter(filter);
             return Interop.Ldap.ldap_search(ldapHandle, dn, scope, filter, attributes, attributeOnly, servercontrol, clientcontrol, searchTimeout, sizelimit, ref messageNumber);
         }
+
+        private static string NormalizeFilter(string filter)
+        {
+            if (string.IsNullOrEmpty(filter))
+            {
+                return filter;
+            }
+
+            bool hasEscapedSpace = filter.Contains("\\ ", StringComparison.Ordinal);
+            bool hasNestedParentheses = filter.Contains("((", StringComparison.Ordinal);
+
+            if (!hasEscapedSpace && !hasNestedParentheses)
+            {
+                return filter;
+            }
+
+            bool[] redundantParentheses = hasNestedParentheses ? FindRedundantParentheses(filter) : null;
+
+            if (!hasEscapedSpace && redundantParentheses is null)
+            {
+                return filter;
+            }
+
+            var builder = new StringBuilder(filter.Length);
+
+            for (int i = 0; i < filter.Length; i++)
+            {
+                if (redundantParentheses?[i] == true)
+                {
+                    continue;
+                }
+
+                char current = filter[i];
+
+                if (current == '\\' && i + 1 < filter.Length)
+                {
+                    char escaped = filter[++i];
+
+                    if (escaped != ' ')
+                    {
+                        builder.Append(current);
+                    }
+
+                    builder.Append(escaped);
+                }
+                else
+                {
+                    builder.Append(current);
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static bool[] FindRedundantParentheses(string filter)
+        {
+            var openParentheses = new Stack<int>();
+            int[] closingParentheses = new int[filter.Length];
+
+            for (int i = 0; i < filter.Length; i++)
+            {
+                char current = filter[i];
+
+                if (current == '\\' && i + 1 < filter.Length)
+                {
+                    i++;
+                }
+                else if (current == '(')
+                {
+                    openParentheses.Push(i);
+                }
+                else if (current == ')')
+                {
+                    if (openParentheses.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    closingParentheses[openParentheses.Pop()] = i;
+                }
+            }
+
+            if (openParentheses.Count != 0)
+            {
+                return null;
+            }
+
+            bool[] redundantParentheses = null;
+
+            for (int i = 0; i + 1 < filter.Length; i++)
+            {
+                int closingParenthesis = closingParentheses[i];
+
+                if (filter[i] == '(' &&
+                    filter[i + 1] == '(' &&
+                    closingParenthesis > i + 2 &&
+                    closingParentheses[i + 1] == closingParenthesis - 1)
+                {
+                    redundantParentheses ??= new bool[filter.Length];
+                    redundantParentheses[i] = true;
+                    redundantParentheses[closingParenthesis] = true;
+                }
+            }
+
+            return redundantParentheses;
+        }
+
         internal static int SetBoolOption(ConnectionHandle ld, LdapOption option, bool value) => Interop.Ldap.ldap_set_option_bool(ld, option, value);
 
         // This option is not supported in Linux, so it would most likely throw.
