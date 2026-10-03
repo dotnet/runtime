@@ -620,6 +620,7 @@ public class MethodDescTests
         TargetPointer asyncThunkWithNativeCodeSlotMethod = TargetPointer.Null;
         TargetPointer asyncVariantThunkMethod = TargetPointer.Null;
         TargetPointer asyncReturnDroppingThunkMethod = TargetPointer.Null;
+        TargetPointer asyncCovariantForwardingThunkMethod = TargetPointer.Null;
 
         IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
         {
@@ -773,6 +774,23 @@ public class MethodDescTests
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
                 helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk | RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant | RuntimeTypeSystem_1.AsyncMethodFlags_1.ReturnDroppingThunk));
             }
+
+            // Async covariant forwarding thunk method
+            {
+                uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
+                uint totalSize = mdBaseSize + methodDescBuilder.AsyncMethodDataSize;
+                byte chunkSize = (byte)(totalSize / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncCovariantForwardingThunk", chunkSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = chunkSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+                md.Slot = 5;
+                asyncCovariantForwardingThunkMethod = new TargetPointer(md.Address);
+                int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk | RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant | RuntimeTypeSystem_1.AsyncMethodFlags_1.CovariantForwardingThunk));
+            }
         });
 
         // Normal IL method: not hidden by any primitive
@@ -842,6 +860,12 @@ public class MethodDescTests
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncReturnDroppingThunkMethod);
             Assert.Equal(AsyncMethodFlags.Thunk | AsyncMethodFlags.IsAsyncVariant | AsyncMethodFlags.ReturnDroppingThunk, rts.GetAsyncMethodFlags(handle));
+        }
+
+        // Async covariant forwarding thunk: Thunk | IsAsyncVariant | CovariantForwardingThunk
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(asyncCovariantForwardingThunkMethod);
+            Assert.Equal(AsyncMethodFlags.Thunk | AsyncMethodFlags.IsAsyncVariant | AsyncMethodFlags.CovariantForwardingThunk, rts.GetAsyncMethodFlags(handle));
         }
     }
 

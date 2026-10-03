@@ -1537,13 +1537,10 @@ DWORD MethodDesc::GetAttrs() const
         _ASSERTE(!"If this ever fires, then this method should return HRESULT");
         return 0;
     }
-
-    if (IsReturnDroppingThunk())
+    if (IsReturnDroppingThunk() || IsCovariantForwardingThunk())
     {
-        // A return-dropping thunk is synthesized by the runtime and always has an implementation -
-        // it calls the ordinary async variant virtually and drops the result.
-        // The metadata method that the thunk is derived from may be abstract (i.e. when the covariant
-        // override that needs the thunk is abstract), but the thunk itself never is.
+        // These thunks are synthesized by the runtime and always have an implementation,
+        // even when the covariant override that needs the thunk is abstract.
         dwAttributes &= ~mdAbstract;
     }
 
