@@ -5499,8 +5499,8 @@ bool Compiler::gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile,
 // gtCanSwapOrder: Returns true iff the secondNode can be swapped with firstNode.
 //
 // Arguments:
-//    firstNode  - An operand of a tree that can have GTF_REVERSE_OPS set.
-//    secondNode - The other operand of the tree.
+//    firstNode  - The operand that is evaluated first.
+//    secondNode - The operand that is evaluated second.
 //
 // Return Value:
 //    Returns a boolean indicating whether it is safe to reverse the execution
@@ -5509,91 +5509,29 @@ bool Compiler::gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile,
 //
 bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 {
-    bool canSwap = true;
-
-    // Don't swap "CONST_HDL op CNS"
-    if (firstNode->IsIconHandle() && secondNode->IsIntegralConst())
-    {
-        canSwap = false;
-    }
-
-    // Relative of order of global / side effects can't be swapped.
-
-    if (optValnumCSE_phase)
-    {
-        canSwap = optCSE_canSwap(firstNode, secondNode);
-    }
-
-    // We cannot swap in the presence of special side effects such as GT_CATCH_ARG.
-
-    if (canSwap && (firstNode->gtFlags & GTF_ORDER_SIDEEFF))
-    {
-        canSwap = false;
-    }
-
-    // When strict side effect order is disabled we allow GTF_REVERSE_OPS to be set
-    // when one or both sides contains a GTF_CALL or GTF_EXCEPT.
-    // Currently only the C and C++ languages allow non strict side effect order.
-
-    unsigned strictEffects = GTF_GLOB_EFFECT;
-
-    if (canSwap && (firstNode->gtFlags & strictEffects))
-    {
-        // op1 has side efects that can't be reordered.
-        // Check for some special cases where we still may be able to swap.
-
-        if (secondNode->gtFlags & strictEffects)
-        {
-            // op2 has also has non reorderable side effects - can't swap.
-            canSwap = false;
-        }
-        else
-        {
-            // No side effects in op2 - we can swap iff op1 has no way of modifying op2,
-            // i.e. through indirect stores or calls or op2 is a constant.
-
-            if (firstNode->gtFlags & strictEffects & GTF_PERSISTENT_SIDE_EFFECTS)
-            {
-                // We have to be conservative - can swap iff op2 is constant.
-                if (!secondNode->IsInvariant())
-                {
-                    canSwap = false;
-                }
-            }
-        }
-    }
-    return canSwap;
-}
-
-//------------------------------------------------------------------------
-// gtCanReorderWithoutTemp: Check whether operands can be evaluated in either order.
-//
-// Arguments:
-//    firstOp  - The operand that must be evaluated first
-//    secondOp - The operand that may be evaluated first in the resulting tree
-//
-// Notes:
-//    A pure read in firstOp can observe secondOp's writes even when gtCanSwapOrder
-//    permits swapping the operands.
-//
-bool Compiler::gtCanReorderWithoutTemp(GenTree* firstOp, GenTree* secondOp)
-{
     // Rationalization sequences replacement trees before the compilation enters LIR.
-    assert((fgOrder == FGOrderTree) || ((fgNodeThreading == NodeThreading::AllTrees) && !compRationalIRForm));
+    assert((fgOrder == FGOrderTree) || (mostRecentlyActivePhase == PHASE_RATIONALIZE));
 
-    if (impIsInvariant(firstOp) || impIsInvariant(secondOp))
+    if (impIsInvariant(firstNode) || impIsInvariant(secondNode))
     {
         // Invariant operands need no sequencing.
         return true;
     }
 
-    if ((secondOp->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    if (optValnumCSE_phase && !optCSE_canSwap(firstNode, secondNode))
     {
-        // The second operand may change the value read by the first.
         return false;
     }
 
-    return gtCanSwapOrder(firstOp, secondOp);
+    // Neither operand is invariant, so the first must not modify the second
+    // or carry ordering constraints such as those imposed by GT_CATCH_ARG.
+    if ((firstNode->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+
+    // Relative order of global effects and exceptions must be preserved.
+    return ((firstNode->gtFlags & GTF_GLOB_EFFECT) == 0) || ((secondNode->gtFlags & GTF_GLOB_EFFECT) == 0);
 }
 
 //------------------------------------------------------------------------
@@ -5610,7 +5548,7 @@ bool Compiler::gtCanReorderWithoutTemp(GenTree* firstOp, GenTree* secondOp)
 //
 void Compiler::gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp)
 {
-    if (gtCanReorderWithoutTemp(*firstOp, *secondOp))
+    if (gtCanSwapOrder(*firstOp, *secondOp))
     {
         return;
     }
