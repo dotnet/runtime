@@ -118,6 +118,42 @@ namespace System.Formats.Cbor
             }
         }
 
+        private void WriteUnsignedInteger(CborMajorType type, ulong value, int additionalCapacity)
+        {
+            if (value < (byte)CborAdditionalInfo.Additional8BitData)
+            {
+                EnsureWriteCapacity(checked(1 + additionalCapacity));
+                WriteInitialByte(new CborInitialByte(type, (CborAdditionalInfo)value));
+            }
+            else if (value <= byte.MaxValue)
+            {
+                EnsureWriteCapacity(checked(1 + sizeof(byte) + additionalCapacity));
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional8BitData));
+                _buffer[_offset++] = (byte)value;
+            }
+            else if (value <= ushort.MaxValue)
+            {
+                EnsureWriteCapacity(checked(1 + sizeof(ushort) + additionalCapacity));
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional16BitData));
+                BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset), (ushort)value);
+                _offset += sizeof(ushort);
+            }
+            else if (value <= uint.MaxValue)
+            {
+                EnsureWriteCapacity(checked(1 + sizeof(uint) + additionalCapacity));
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional32BitData));
+                BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset), (uint)value);
+                _offset += sizeof(uint);
+            }
+            else
+            {
+                EnsureWriteCapacity(checked(1 + sizeof(ulong) + additionalCapacity));
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional64BitData));
+                BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset), value);
+                _offset += sizeof(ulong);
+            }
+        }
+
         private static int GetIntegerEncodingLength(ulong value)
         {
             if (value < (byte)CborAdditionalInfo.Additional8BitData)
