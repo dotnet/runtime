@@ -8,13 +8,13 @@ using System.Text.Json.Serialization;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that source generated metadata for (de)serializing IDictionary is trimming-safe.
+    /// Tests that source generated metadata for (de)serializing Queue is trimming-safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            if (!TestHelper.RoundtripCollection("""{"Key":1}""", typeof(IDictionary), Context.Default))
+            if (!TestHelper.RoundtripCollection("[1]", typeof(Queue), Context.Default))
             {
                 return -1;
             }
@@ -23,7 +23,7 @@ namespace SerializerTrimmingTest
         }
     }
 
-    [JsonSerializable(typeof(IDictionary))]
+    [JsonSerializable(typeof(Queue))]
     [JsonSerializable(typeof(JsonElement))]
     internal partial class Context : JsonSerializerContext;
 }

@@ -2,20 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that the serializer's warm up routine for (de)serializing IReadOnlyDictionary<TKey, TValue> is trimming-safe.
+    /// Tests that source generated metadata for (de)serializing IReadOnlyDictionary<TKey, TValue> is trimming-safe.
     /// </summary>
     internal class Program
     {
         static int Main(string[] args)
         {
-            string json = """{"Key":1}""";
-            object obj = JsonSerializer.Deserialize(json, typeof(IReadOnlyDictionary<string, int>));
-            if (!(TestHelper.AssertCollectionAndSerialize<IReadOnlyDictionary<string, int>>(obj, json)))
+            if (!TestHelper.RoundtripCollection("""{"Key":1}""", typeof(IReadOnlyDictionary<string, int>), Context.Default))
             {
                 return -1;
             }
@@ -23,4 +21,7 @@ namespace SerializerTrimmingTest
             return 100;
         }
     }
+
+    [JsonSerializable(typeof(IReadOnlyDictionary<string, int>))]
+    internal partial class Context : JsonSerializerContext;
 }
