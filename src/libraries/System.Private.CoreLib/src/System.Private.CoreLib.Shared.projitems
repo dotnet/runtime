@@ -2966,6 +2966,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Results.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Operation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.DelegateOperation.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Unix.cs" />
@@ -2984,6 +2985,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Results.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Operation.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.DelegateOperation.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.cs" />
