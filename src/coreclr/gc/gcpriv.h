@@ -6766,6 +6766,7 @@ dynamic_data* gc_heap::dynamic_data_of (int gen_number)
     return &dynamic_data_table[gen_number];
 }
 
+// Logical GC/card-table granularity; this is independent of the OS virtual memory page size.
 #define GC_PAGE_SIZE 0x1000
 
 #define card_word_width ((size_t)32)

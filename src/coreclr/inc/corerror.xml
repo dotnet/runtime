@@ -2098,8 +2098,8 @@
 
 <HRESULT NumericValue="0x8013200F">
 	<SymbolicName>CLR_E_GC_BAD_REGION_SIZE</SymbolicName>
-	<Message>"GC Region Size must be less than 2GB."</Message>
-	<Comment>During a GC initialization, GC Region Size must be less than 2GB.</Comment>
+	<Message>"GC Region Size configuration is invalid."</Message>
+	<Comment>During a GC initialization, the GC Region Size configuration is invalid.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="E_ACCESSDENIED">
