@@ -1156,6 +1156,14 @@ namespace System
             private IntPtr _handle;
             private readonly bool _useFileAPIs;
 
+            // The console APIs read and write whole UTF-16 code units. The byte left over by a one-byte read or
+            // an odd-length write is held here for the next call, so reading or writing one byte at a time
+            // sees the same bytes as larger buffers do.
+            private byte _pendingReadByte;
+            private bool _hasPendingReadByte;
+            private byte _pendingWriteByte;
+            private bool _hasPendingWriteByte;
+
             internal WindowsConsoleStream(IntPtr handle, FileAccess access, bool useFileAPIs)
                 : base(access)
             {
@@ -1178,6 +1186,38 @@ namespace System
 
             public override int Read(Span<byte> buffer)
             {
+                if (!_useFileAPIs && !buffer.IsEmpty)
+                {
+                    if (_hasPendingReadByte)
+                    {
+                        // Return only the held byte: reading another code unit could wait for more input.
+                        buffer[0] = _pendingReadByte;
+                        _hasPendingReadByte = false;
+                        return 1;
+                    }
+
+                    if (buffer.Length == 1)
+                    {
+                        Span<byte> codeUnit = stackalloc byte[BytesPerWChar];
+                        int bytesRead = ReadCore(codeUnit);
+                        Debug.Assert(bytesRead is 0 or BytesPerWChar, "ReadConsole reports whole code units.");
+                        if (bytesRead == 0)
+                        {
+                            return 0;
+                        }
+
+                        buffer[0] = codeUnit[0];
+                        _pendingReadByte = codeUnit[1];
+                        _hasPendingReadByte = true;
+                        return 1;
+                    }
+                }
+
+                return ReadCore(buffer);
+            }
+
+            private int ReadCore(Span<byte> buffer)
+            {
                 int errCode = ReadFileNative(_handle, buffer, _isPipe, out int bytesRead, _useFileAPIs);
                 if (Interop.Errors.ERROR_SUCCESS != errCode)
                 {
@@ -1188,6 +1228,30 @@ namespace System
             }
 
             public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                if (!_useFileAPIs)
+                {
+                    if (_hasPendingWriteByte && !buffer.IsEmpty)
+                    {
+                        // Clear the flag only once the write has gone through, so a failed write keeps the byte.
+                        WriteCore([_pendingWriteByte, buffer[0]]);
+                        _hasPendingWriteByte = false;
+                        buffer = buffer.Slice(1);
+                    }
+
+                    if ((buffer.Length & 1) != 0)
+                    {
+                        WriteCore(buffer.Slice(0, buffer.Length - 1));
+                        _pendingWriteByte = buffer[^1];
+                        _hasPendingWriteByte = true;
+                        return;
+                    }
+                }
+
+                WriteCore(buffer);
+            }
+
+            private void WriteCore(ReadOnlySpan<byte> buffer)
             {
                 int errCode = WriteFileNative(_handle, buffer, _useFileAPIs);
                 if (Interop.Errors.ERROR_SUCCESS != errCode)
