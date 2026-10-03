@@ -84,6 +84,12 @@ FCIMPL0(void, RhpValidateExInfoStack)
 }
 FCIMPLEND
 
+FCIMPL0(ExInfo *, RhpGetCurrentExInfo)
+{
+    return ThreadStore::GetCurrentThread()->GetCurExInfo();
+}
+FCIMPLEND
+
 #ifdef TARGET_WINDOWS
 FCIMPL0(void, RhpFirstChanceExceptionNotification)
 {

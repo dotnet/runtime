@@ -3321,6 +3321,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 
         OBJECTREF throwable = exInfo->GetThrowable();
         throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
+        exInfo->m_kind = (ExKind)((uint8_t)exInfo->m_kind | (uint8_t)ExKind::CatchHandlerRunningFlag);
         dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
 
         FixContext(pvRegDisplay->pCurrentContext);
@@ -3609,6 +3610,13 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     StackFrameIterator *pFrameIter;
     unsigned EHCount;
 };
+
+extern "C" ExInfo* QCALLTYPE GetCurrentExInfo()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (ExInfo*)GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+}
 
 extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {

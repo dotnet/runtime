@@ -486,7 +486,9 @@ namespace System.Runtime
 
             SupersededFlag = 8,
 
-            InstructionFaultFlag = 0x10
+            InstructionFaultFlag = 0x10,
+
+            CatchHandlerRunningFlag = 0x20
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -516,7 +518,7 @@ namespace System.Runtime
                 // _frameIter      -- initialized explicitly during dispatch
 
                 _exception = exceptionObj;
-                _kind = rethrownExInfo._kind | ExKind.RethrowFlag;
+                _kind = (rethrownExInfo._kind & ~ExKind.CatchHandlerRunningFlag) | ExKind.RethrowFlag;
                 _notifyDebuggerSP = UIntPtr.Zero;
             }
 
@@ -578,6 +580,20 @@ namespace System.Runtime
 #endif // TARGET_UNIX
 
 #endif // !NATIVEAOT
+        }
+
+        // Returns the exception that is currently in flight on the current thread, starting the search from
+        // the given ExInfo (the head of the thread's ExInfo chain). Exceptions that are being handled by
+        // a catch handler and exceptions that were superseded by a nested exception are skipped.
+        internal static object? GetCurrentException(ExInfo* pExInfo)
+        {
+            for (; pExInfo != null; pExInfo = (ExInfo*)pExInfo->_pPrevExInfo)
+            {
+                if ((pExInfo->_kind & (ExKind.SupersededFlag | ExKind.CatchHandlerRunningFlag)) == 0)
+                    return pExInfo->ThrownException;
+            }
+
+            return null;
         }
 
         //
@@ -958,6 +974,7 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
+            exInfo._kind |= ExKind.CatchHandlerRunningFlag;
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
             // currently, RhpCallCatchFunclet will resume after the catch

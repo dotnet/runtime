@@ -615,6 +615,10 @@ namespace System.Runtime
         internal static extern int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpGetCurrentExInfo")]
+        internal static extern unsafe EH.ExInfo* RhpGetCurrentExInfo();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCurrentThreadStackBounds")]
         internal static extern void RhGetCurrentThreadStackBounds(out IntPtr pStackLow, out IntPtr pStackHigh);
 
