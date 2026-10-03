@@ -124,6 +124,36 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Null(Converter.ConvertFromString(value));
         }
 
+        [Theory]
+        [InlineData("1,2,3,4", 1, 2, 3, 4)]
+        [InlineData(" 1,2,3,4", 1, 2, 3, 4)]
+        [InlineData("1 ,2,3,4", 1, 2, 3, 4)]
+        [InlineData("1, 2,3,4", 1, 2, 3, 4)]
+        [InlineData("1,2 ,3,4", 1, 2, 3, 4)]
+        [InlineData("1,2, 3,4", 1, 2, 3, 4)]
+        [InlineData("1,2,3 ,4", 1, 2, 3, 4)]
+        [InlineData("1,2,3, 4", 1, 2, 3, 4)]
+        [InlineData("1,2,3,4 ", 1, 2, 3, 4)]
+        [InlineData("1 ,2 ,3 ,4", 1, 2, 3, 4)]
+        [InlineData("1, 2, 3, 4", 1, 2, 3, 4)]
+        [InlineData("1 , 2 , 3 , 4", 1, 2, 3, 4)]
+        [InlineData(" 1,2,3,4 ", 1, 2, 3, 4)]
+        [InlineData("  1  ,  2  ,  3  ,  4  ", 1, 2, 3, 4)]
+        [InlineData("\t1\t,\t2\t,\t3\t,\t4\t", 1, 2, 3, 4)]
+        [InlineData("\r\n1,2,3,4\r\n", 1, 2, 3, 4)]
+        [InlineData(" 0 , 0 , 0 , 0 ", 0, 0, 0, 0)]
+        [InlineData(" -5 , -10 , 100 , 200 ", -5, -10, 100, 200)]
+        [InlineData(" 1920 , 1080 , 3840 , 2160 ", 1920, 1080, 3840, 2160)]
+        public void ConvertFrom_ContainsWhitespace(string value, int x, int y, int width, int height)
+        {
+            var rect = (Rectangle)Converter.ConvertFromInvariantString(value);
+
+            Assert.Equal(x, rect.X);
+            Assert.Equal(y, rect.Y);
+            Assert.Equal(width, rect.Width);
+            Assert.Equal(height, rect.Height);
+        }
+
         public static IEnumerable<object[]> ConvertFrom_NotSupportedData =>
             new[]
             {
