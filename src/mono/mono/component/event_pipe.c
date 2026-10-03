@@ -107,6 +107,7 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_add_rundown_execution_checkpoint_2,
 	&event_pipe_convert_100ns_ticks_to_timestamp_t,
 	&ep_create_provider,
+	&ep_create_provider_2,
 	&ep_delete_provider,
 	&ep_get_provider,
 	&ep_provider_add_event,

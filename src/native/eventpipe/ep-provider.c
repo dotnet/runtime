@@ -83,9 +83,6 @@ provider_prepare_callback_data (
 
 	ep_requires_lock_held ();
 
-	if (provider->callback_func != NULL)
-		provider->callbacks_pending++;
-
 	return ep_provider_callback_data_init (
 		provider_callback_data,
 		filter_data,
@@ -95,6 +92,7 @@ provider_prepare_callback_data (
 		provider_level,
 		provider->sessions != 0,
 		session_id,
+		0,
 		provider);
 }
 
@@ -185,7 +183,8 @@ ep_provider_alloc (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	void *callback_data)
+	void *callback_data,
+	bool callback_data_includes_generation)
 {
 	EP_ASSERT (config != NULL);
 	EP_ASSERT (provider_name != NULL);
@@ -212,6 +211,8 @@ ep_provider_alloc (
 	instance->config = config;
 	instance->delete_deferred = false;
 	instance->sessions = 0;
+	instance->configuration_generation = 0;
+	instance->callback_data_includes_generation = callback_data_includes_generation;
 	instance->callbacks_pending = 0;
 
 ep_on_exit:
@@ -373,6 +374,20 @@ provider_unset_config (
 }
 
 void
+provider_callback_data_queued (EventPipeProviderCallbackData *provider_callback_data)
+{
+	EP_ASSERT (provider_callback_data != NULL);
+
+	ep_requires_lock_held ();
+
+	EventPipeProvider *provider = provider_callback_data->provider;
+	if (provider_callback_data->callback_function != NULL) {
+		provider->callbacks_pending++;
+		provider_callback_data->configuration_generation = ++provider->configuration_generation;
+	}
+}
+
+void
 provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 {
 	EP_ASSERT (provider_callback_data != NULL);
@@ -389,6 +404,7 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	EventPipeEventLevel provider_level = ep_provider_callback_data_get_provider_level (provider_callback_data);
 	void *callback_data = ep_provider_callback_data_get_callback_data (provider_callback_data);
 	EventPipeSessionID session_id = ep_provider_callback_data_get_session_id (provider_callback_data);
+	uint64_t configuration_generation = ep_provider_callback_data_get_configuration_generation (provider_callback_data);
 
 	bool is_event_filter_desc_init = false;
 	EventFilterDescriptor event_filter_desc;
@@ -404,37 +420,41 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 		uint32_t buffer_size = filter_data_len + 1;
 
 		buffer = ep_rt_byte_array_alloc (buffer_size);
-		ep_raise_error_if_nok (buffer != NULL);
+		if (buffer != NULL) {
+			bool is_quoted_value = false;
+			uint32_t j = 0;
 
-		bool is_quoted_value = false;
-		uint32_t j = 0;
-
-		for (uint32_t i = 0; i < buffer_size; ++i) {
-			// if a value is a quoted string, leave the quotes out from the destination
-			// and don't replace `=` or `;` characters until leaving the quoted section
-			// e.g., key="a;value=";foo=bar --> { key\0a;value=\0foo\0bar\0 }
-			if (filter_data [i] == '"') {
-				is_quoted_value = !is_quoted_value;
-				continue;
+			for (uint32_t i = 0; i < buffer_size; ++i) {
+				// if a value is a quoted string, leave the quotes out from the destination
+				// and don't replace `=` or `;` characters until leaving the quoted section
+				// e.g., key="a;value=";foo=bar --> { key\0a;value=\0foo\0bar\0 }
+				if (filter_data [i] == '"') {
+					is_quoted_value = !is_quoted_value;
+					continue;
+				}
+				buffer [j++] = ((filter_data [i] == '=' || filter_data [i] == ';') && !is_quoted_value) ? '\0' : filter_data [i];
 			}
-			buffer [j++] = ((filter_data [i] == '=' || filter_data [i] == ';') && !is_quoted_value) ? '\0' : filter_data [i];
+
+			// In case we skipped over quotes in the filter string, shrink the buffer size accordingly
+			if (j < filter_data_len)
+				buffer_size = j + 1;
+
+			ep_event_filter_desc_init (&event_filter_desc, (uint64_t)buffer, buffer_size, /* EventFilterType.StringKeyValueEncoding */ 0);
+			is_event_filter_desc_init = true;
 		}
-
-		// In case we skipped over quotes in the filter string, shrink the buffer size accordingly
-		if (j < filter_data_len)
-			buffer_size = j + 1;
-
-		ep_event_filter_desc_init (&event_filter_desc, (uint64_t)buffer, buffer_size, /* EventFilterType.StringKeyValueEncoding */ 0);
-		is_event_filter_desc_init = true;
 	}
 
 	// NOTE: When we call the callback, we pass in enabled (which is either 1 or 0) as the ControlCode.
 	// If we want to add new ControlCode, we have to make corresponding change in ETW callback signature
 	// to address this. See https://github.com/dotnet/runtime/pull/36733 for more discussions on this.
 	if (callback_function && !ep_rt_process_shutdown ()) {
+		uint64_t source_data [2] = { (uint64_t)session_id, configuration_generation };
+		const uint8_t *source_id = provider_callback_data->provider->callback_data_includes_generation ?
+			(const uint8_t *)source_data :
+			(uint8_t *)(session_id == 0 ? NULL : &session_id);
 		ep_rt_provider_invoke_callback (
 			callback_function,
-			(uint8_t *)(session_id == 0 ? NULL : &session_id), /* session_id */
+			source_id,
 			enabled ? 1 : 0, /* ControlCode */
 			(uint8_t)provider_level,
 			(uint64_t)keywords,
@@ -443,18 +463,18 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 			callback_data /* CallbackContext */);
 	}
 
-	// The callback completed, can take the lock again.
-	EP_LOCK_ENTER (section1)
-		if (callback_function != NULL) {
-			EventPipeProvider *provider = provider_callback_data->provider;
+	if (callback_function != NULL) {
+		// The callback completed or was skipped after a preparation failure; update the provider lifetime state.
+		EventPipeProvider *provider = provider_callback_data->provider;
+		EP_LOCK_ENTER (section1)
 			provider->callbacks_pending--;
 			if (provider->callbacks_pending == 0 && provider->callback_func == NULL) {
 				// ep_delete_provider deferred provider deletion and is waiting for all in-flight callbacks
 				// to complete. This is the last callback, so signal completion.
 				ep_rt_wait_event_set (&provider->callbacks_complete_event);
 			}
-		}
-	EP_LOCK_EXIT (section1)
+		EP_LOCK_EXIT (section1)
+	}
 
 ep_on_exit:
 	if (is_event_filter_desc_init)
@@ -475,7 +495,7 @@ provider_create_register (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	ep_requires_lock_held ();
-	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue);
+	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, false, provider_callback_data_queue);
 }
 
 void
