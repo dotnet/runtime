@@ -12,26 +12,17 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3A
 ## Deployment
 `System.Diagnostics.Process` is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.
 
-## Temporary hang diagnostics
+## Helix test partitions
 
-This investigation branch enables xUnit's verbose start/finish reporting on Windows, including
-theory arguments, without changing test selection or parallelism. These messages are independent
-of `XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS`.
+Windows x86 CoreCLR console-runner test archives are divided into six Helix work items.
+Each archive contains the same test assembly and supporting files, with a class filter in its
+generated runner script. Each work item has its own payload, results, temporary files, and
+test process. The existing assembly-level collection behavior is unchanged within each process.
 
-For Windows x86 CoreCLR Helix runs, an eight-minute background watchdog in the xUnit test host
-launches that runtime's `createdump.exe --full`. On Windows, this tool dumps its parent process;
-it is not launched through a shell and no PID lookup or WER registry configuration is needed.
-RemoteExecutor children do not arm the watchdog, and normal runner exit ends the background thread.
-An in-flight dump child is terminated and reaped if the runner exits during capture.
-Local runs without `HELIX_WORKITEM_UPLOAD_ROOT` do not arm it.
+The partitions are balanced using matched x86 CI timings, with headroom for slower executions
+and work-item setup. The goal is five minutes or less per work item; the normal Helix timeout
+is not reduced or increased. All rows of a theory stay together with their class.
+The final partition excludes the classes in the first five, so new classes remain covered.
 
-The dump is written directly to `HELIX_WORKITEM_UPLOAD_ROOT` for Helix artifact collection.
-Dump capture has a two-minute budget, followed by at most 30 seconds to terminate the dumper.
-This is a snapshot only: successful capture and diagnostic failures do not terminate the test host
-or change its exit status. Capture and cleanup failures are logged explicitly to standard error.
-The full suite continues until ordinary completion or Helix's original 15-minute deadline,
-allowing slow progress to be distinguished from a whole-work-item timeout.
-
-These diagnostics investigate the unexplained Process-suite timeout independently of earlier
-investigations. They are temporary, not a production fix, and do not establish that different
-timeout reports share a root cause.
+The ordinary local runner still executes the full suite. Other architectures, Mono, mobile,
+NativeAOT, and other single-file runners keep their existing unpartitioned archives.

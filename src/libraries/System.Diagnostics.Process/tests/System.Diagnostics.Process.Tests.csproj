@@ -10,11 +10,7 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
-    <XUnitShowProgress Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</XUnitShowProgress>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetArchitecture)' == 'x86'">
-    <Compile Include="ProcessTestHangDiagnostics.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\IO\StringParser.cs"
              Link="Common\System\IO\StringParser.cs" />
@@ -123,4 +119,5 @@
     <!-- This is a bug in the SDK tracked here: https://github.com/dotnet/sdk/issues/30718 -->
     <PublishReadyToRunExclude Include="LongPath.dll" />
   </ItemGroup>
+  <Import Project="ProcessTestShards.targets" />
 </Project>
