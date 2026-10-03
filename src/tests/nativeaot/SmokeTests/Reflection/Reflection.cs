@@ -1679,6 +1679,46 @@ internal static class ReflectionTest
             TestRefReturnInvokeNullable<BigStruct>(new BigStruct { X = 987, D = 543 });
         }
 
+        public static ref object RefReturningArgument(ref object value) => ref value;
+
+        public static ref object RefReturningArgumentFew(ref object value, object a, object b, object c) => ref value;
+
+        public static ref object RefReturningArgumentMany(ref object value, object a, object b, object c, object d) => ref value;
+
+        public static void TestRefReturnArgument()
+        {
+            foreach (MethodInfo method in new[]
+            {
+                typeof(TestByRefReturnInvoke).GetMethod(nameof(RefReturningArgument)),
+                typeof(TestByRefReturnInvoke).GetMethod(nameof(RefReturningArgumentFew)),
+                typeof(TestByRefReturnInvoke).GetMethod(nameof(RefReturningArgumentMany)),
+            })
+            {
+                MethodInvoker invoker = MethodInvoker.Create(method);
+                object[] arguments = new object[method.GetParameters().Length];
+                Array.Fill(arguments, new object());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    object expected = i % 2 == 0 ? new object() : null;
+                    arguments[0] = expected;
+                    Assert.Same(expected, method.Invoke(null, arguments));
+                    Assert.Same(expected, arguments[0]);
+                    Assert.Same(expected, invoker.Invoke(null, arguments.AsSpan()));
+                    Assert.Same(expected, arguments[0]);
+
+                    if (arguments.Length == 1)
+                    {
+                        Assert.Same(expected, invoker.Invoke(null, arguments[0]));
+                    }
+                    else if (arguments.Length == 4)
+                    {
+                        Assert.Same(expected, invoker.Invoke(null, arguments[0], arguments[1], arguments[2], arguments[3]));
+                    }
+                }
+            }
+        }
+
         public static void TestRefReturnNullableNoValue()
         {
             TestRefReturnInvokeNullable<int>(default(int?));
@@ -1784,6 +1824,7 @@ internal static class ReflectionTest
             Console.WriteLine(nameof(TestByRefReturnInvoke));
             TestRefReturnPropertyGetValue();
             TestRefReturnMethodInvoke();
+            TestRefReturnArgument();
             TestRefReturnNullable();
             TestRefReturnNullableNoValue();
             TestRefReturnOfPointer();
