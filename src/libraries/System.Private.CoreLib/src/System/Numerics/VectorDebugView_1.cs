@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -21,6 +22,16 @@ namespace System.Numerics
             {
                 var items = new byte[Vector<byte>.Count];
                 Unsafe.WriteUnaligned(ref items[0], _value);
+                return items;
+            }
+        }
+
+        public char[] CharView
+        {
+            get
+            {
+                var items = new char[Vector<char>.Count];
+                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref items[0]), _value);
                 return items;
             }
         }

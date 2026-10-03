@@ -283,11 +283,11 @@ namespace JIT.HardwareIntrinsics.General
                     Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr),
                     Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray3Ptr)
                 ),
-                {RetVectorType}.Create<{RetBaseType}>(1)
+                {RetVectorType}<{RetBaseType}>.One
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr, mask: 1);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr, mask: ({RetBaseType})1);
         }
 
         public void RunMaskingZeroScenario()
@@ -307,7 +307,7 @@ namespace JIT.HardwareIntrinsics.General
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr, mask: 0);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr, mask: ({RetBaseType})0);
         }
 
         public void RunBroadcastAndMaskingScenario()
@@ -327,7 +327,7 @@ namespace JIT.HardwareIntrinsics.General
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr, isBroadcast: true, mask: 0);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr, isBroadcast: true, mask: ({RetBaseType})0);
         }
 
         public void RunClsVarScenario()

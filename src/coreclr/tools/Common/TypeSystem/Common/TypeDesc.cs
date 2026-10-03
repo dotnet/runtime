@@ -210,6 +210,7 @@ namespace Internal.TypeSystem
             {
                 switch (GetTypeFlags(TypeFlags.CategoryMask))
                 {
+                    case TypeFlags.Char:
                     case TypeFlags.SByte:
                     case TypeFlags.Byte:
                     case TypeFlags.Int16:
