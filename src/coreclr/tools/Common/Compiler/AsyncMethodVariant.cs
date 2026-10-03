@@ -159,7 +159,18 @@ namespace ILCompiler
         /// </summary>
         public static bool IsAsyncThunk(this MethodDesc method)
         {
+            if (method.IsNonTaskReturningAsyncMethod())
+                return false;
+
             return (method.IsAsyncVariant() ^ method.IsAsync) || method.IsReturnDroppingAsyncThunk();
+        }
+
+        public static bool IsNonTaskReturningAsyncMethod(this MethodDesc method)
+        {
+            bool isNonTaskReturningAsyncMethod = method.GetTypicalMethodDefinition() is EcmaMethod && method.IsAsync && !method.Signature.ReturnsTaskOrValueTask();
+            // non-task-returning async methods should only be in corelib
+            Debug.Assert(!isNonTaskReturningAsyncMethod || (method.GetTypicalMethodDefinition() is EcmaMethod methodDef && methodDef.Context.SystemModule == methodDef.Module));
+            return isNonTaskReturningAsyncMethod;
         }
 
         /// <summary>
@@ -179,6 +190,7 @@ namespace ILCompiler
         public static MethodDesc GetAsyncVariant(this MethodDesc method)
         {
             Debug.Assert(!method.IsAsyncVariant());
+            Debug.Assert(!method.IsNonTaskReturningAsyncMethod());
             return ((CompilerTypeSystemContext)method.Context).GetAsyncVariantMethod(method);
         }
 
