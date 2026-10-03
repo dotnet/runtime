@@ -116,27 +116,61 @@ LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
     ldr x1, [x0, CONTEXT_XSTATEFEATURESMASK_OFFSET]
     tbz x1, #XSTATE_ARM64_SVE_BIT, LOCAL_LABEL(Done_CONTEXT_SVE)
 
-    add x0, x0,   CONTEXT_SVE_OFFSET
-    str p0, [x0, CONTEXT_P0_VL, MUL VL]
-    str p1, [x0, CONTEXT_P1_VL, MUL VL]
-    str p2, [x0, CONTEXT_P2_VL, MUL VL]
-    str p3, [x0, CONTEXT_P3_VL, MUL VL]
-    str p4, [x0, CONTEXT_P4_VL, MUL VL]
-    str p5, [x0, CONTEXT_P5_VL, MUL VL]
-    str p6, [x0, CONTEXT_P6_VL, MUL VL]
-    str p7, [x0, CONTEXT_P7_VL, MUL VL]
-    str p8, [x0, CONTEXT_P8_VL, MUL VL]
-    str p9, [x0, CONTEXT_P9_VL, MUL VL]
-    str p10, [x0, CONTEXT_P10_VL, MUL VL]
-    str p11, [x0, CONTEXT_P11_VL, MUL VL]
-    str p12, [x0, CONTEXT_P12_VL, MUL VL]
-    str p13, [x0, CONTEXT_P13_VL, MUL VL]
-    str p14, [x0, CONTEXT_P14_VL, MUL VL]
-    str p15, [x0, CONTEXT_P15_VL, MUL VL]
-    rdffr p0.b
-    str p0, [x0, CONTEXT_FFR_VL, MUL VL]
-    ldr p0, [x0, 0, MUL VL]
-    sub x0, x0,   CONTEXT_SVE_OFFSET
+    add x2, x0, CONTEXT_Size + CONTEXT_SVE_STATE_HEADER_Size
+    str z0, [x2, 0, MUL VL]
+    str z1, [x2, 1, MUL VL]
+    str z2, [x2, 2, MUL VL]
+    str z3, [x2, 3, MUL VL]
+    str z4, [x2, 4, MUL VL]
+    str z5, [x2, 5, MUL VL]
+    str z6, [x2, 6, MUL VL]
+    str z7, [x2, 7, MUL VL]
+    str z8, [x2, 8, MUL VL]
+    str z9, [x2, 9, MUL VL]
+    str z10, [x2, 10, MUL VL]
+    str z11, [x2, 11, MUL VL]
+    str z12, [x2, 12, MUL VL]
+    str z13, [x2, 13, MUL VL]
+    str z14, [x2, 14, MUL VL]
+    str z15, [x2, 15, MUL VL]
+    str z16, [x2, 16, MUL VL]
+    str z17, [x2, 17, MUL VL]
+    str z18, [x2, 18, MUL VL]
+    str z19, [x2, 19, MUL VL]
+    str z20, [x2, 20, MUL VL]
+    str z21, [x2, 21, MUL VL]
+    str z22, [x2, 22, MUL VL]
+    str z23, [x2, 23, MUL VL]
+    str z24, [x2, 24, MUL VL]
+    str z25, [x2, 25, MUL VL]
+    str z26, [x2, 26, MUL VL]
+    str z27, [x2, 27, MUL VL]
+    str z28, [x2, 28, MUL VL]
+    str z29, [x2, 29, MUL VL]
+    str z30, [x2, 30, MUL VL]
+    str z31, [x2, 31, MUL VL]
+    rdvl x3, #1
+    add x2, x2, x3, lsl #5
+
+    str p0, [x2, 0, MUL VL]
+    str p1, [x2, 1, MUL VL]
+    str p2, [x2, 2, MUL VL]
+    str p3, [x2, 3, MUL VL]
+    str p4, [x2, 4, MUL VL]
+    str p5, [x2, 5, MUL VL]
+    str p6, [x2, 6, MUL VL]
+    str p7, [x2, 7, MUL VL]
+    str p8, [x2, 8, MUL VL]
+    str p9, [x2, 9, MUL VL]
+    str p10, [x2, 10, MUL VL]
+    str p11, [x2, 11, MUL VL]
+    str p12, [x2, 12, MUL VL]
+    str p13, [x2, 13, MUL VL]
+    str p14, [x2, 14, MUL VL]
+    str p15, [x2, 15, MUL VL]
+    rdffr p15.b
+    str p15, [x2, 16, MUL VL]
+    ldr p15, [x2, 15, MUL VL]
 
 LOCAL_LABEL(Done_CONTEXT_SVE):
 
@@ -192,34 +226,6 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     mov x16, x0
 
     ldr w17, [x16, CONTEXT_ContextFlags]
-    tbz w17, #CONTEXT_XSTATE_BIT, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
-
-    ldr w17, [x16, CONTEXT_XSTATEFEATURESMASK_OFFSET]
-    tbz w17, #XSTATE_ARM64_SVE_BIT, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
-
-    add x16, x16,   CONTEXT_SVE_OFFSET
-    ldr p0, [x16, CONTEXT_FFR_VL, MUL VL]
-    wrffr p0.b
-    ldr p0, [x16, CONTEXT_P0_VL, MUL VL]
-    ldr p1, [x16, CONTEXT_P1_VL, MUL VL]
-    ldr p2, [x16, CONTEXT_P2_VL, MUL VL]
-    ldr p3, [x16, CONTEXT_P3_VL, MUL VL]
-    ldr p4, [x16, CONTEXT_P4_VL, MUL VL]
-    ldr p5, [x16, CONTEXT_P5_VL, MUL VL]
-    ldr p6, [x16, CONTEXT_P6_VL, MUL VL]
-    ldr p7, [x16, CONTEXT_P7_VL, MUL VL]
-    ldr p8, [x16, CONTEXT_P8_VL, MUL VL]
-    ldr p9, [x16, CONTEXT_P9_VL, MUL VL]
-    ldr p10, [x16, CONTEXT_P10_VL, MUL VL]
-    ldr p11, [x16, CONTEXT_P11_VL, MUL VL]
-    ldr p12, [x16, CONTEXT_P12_VL, MUL VL]
-    ldr p13, [x16, CONTEXT_P13_VL, MUL VL]
-    ldr p14, [x16, CONTEXT_P14_VL, MUL VL]
-    ldr p15, [x16, CONTEXT_P15_VL, MUL VL]
-    sub x16, x16,   CONTEXT_SVE_OFFSET
-
-LOCAL_LABEL(No_Restore_CONTEXT_SVE):
-    ldr w17, [x16, CONTEXT_ContextFlags]
     tbz w17, #CONTEXT_FLOATING_POINT_BIT, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
 
     add x16, x16,   CONTEXT_NEON_OFFSET
@@ -246,6 +252,69 @@ LOCAL_LABEL(No_Restore_CONTEXT_SVE):
     sub x16, x16,   CONTEXT_FLOAT_CONTROL_OFFSET + CONTEXT_NEON_OFFSET
 
 LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
+    ldr w17, [x16, CONTEXT_ContextFlags]
+    tbz w17, #CONTEXT_XSTATE_BIT, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
+
+    ldr x0, [x16, CONTEXT_XSTATEFEATURESMASK_OFFSET]
+    tbz x0, #XSTATE_ARM64_SVE_BIT, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
+
+    add x1, x16, CONTEXT_Size + CONTEXT_SVE_STATE_HEADER_Size
+    ldr z0, [x1, 0, MUL VL]
+    ldr z1, [x1, 1, MUL VL]
+    ldr z2, [x1, 2, MUL VL]
+    ldr z3, [x1, 3, MUL VL]
+    ldr z4, [x1, 4, MUL VL]
+    ldr z5, [x1, 5, MUL VL]
+    ldr z6, [x1, 6, MUL VL]
+    ldr z7, [x1, 7, MUL VL]
+    ldr z8, [x1, 8, MUL VL]
+    ldr z9, [x1, 9, MUL VL]
+    ldr z10, [x1, 10, MUL VL]
+    ldr z11, [x1, 11, MUL VL]
+    ldr z12, [x1, 12, MUL VL]
+    ldr z13, [x1, 13, MUL VL]
+    ldr z14, [x1, 14, MUL VL]
+    ldr z15, [x1, 15, MUL VL]
+    ldr z16, [x1, 16, MUL VL]
+    ldr z17, [x1, 17, MUL VL]
+    ldr z18, [x1, 18, MUL VL]
+    ldr z19, [x1, 19, MUL VL]
+    ldr z20, [x1, 20, MUL VL]
+    ldr z21, [x1, 21, MUL VL]
+    ldr z22, [x1, 22, MUL VL]
+    ldr z23, [x1, 23, MUL VL]
+    ldr z24, [x1, 24, MUL VL]
+    ldr z25, [x1, 25, MUL VL]
+    ldr z26, [x1, 26, MUL VL]
+    ldr z27, [x1, 27, MUL VL]
+    ldr z28, [x1, 28, MUL VL]
+    ldr z29, [x1, 29, MUL VL]
+    ldr z30, [x1, 30, MUL VL]
+    ldr z31, [x1, 31, MUL VL]
+    rdvl x2, #1
+    add x1, x1, x2, lsl #5
+
+    ldr p0, [x1, 16, MUL VL]
+    wrffr p0.b
+    ldr p0, [x1, 0, MUL VL]
+    ldr p1, [x1, 1, MUL VL]
+    ldr p2, [x1, 2, MUL VL]
+    ldr p3, [x1, 3, MUL VL]
+    ldr p4, [x1, 4, MUL VL]
+    ldr p5, [x1, 5, MUL VL]
+    ldr p6, [x1, 6, MUL VL]
+    ldr p7, [x1, 7, MUL VL]
+    ldr p8, [x1, 8, MUL VL]
+    ldr p9, [x1, 9, MUL VL]
+    ldr p10, [x1, 10, MUL VL]
+    ldr p11, [x1, 11, MUL VL]
+    ldr p12, [x1, 12, MUL VL]
+    ldr p13, [x1, 13, MUL VL]
+    ldr p14, [x1, 14, MUL VL]
+    ldr p15, [x1, 15, MUL VL]
+
+LOCAL_LABEL(No_Restore_CONTEXT_SVE):
+    ldr w17, [x16, CONTEXT_ContextFlags]
     tbz w17, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
 
     ldp x0, x1,   [x16, CONTEXT_X0]
@@ -295,4 +364,3 @@ LEAF_ENTRY RestoreCompleteContext, _TEXT
 LEAF_END RestoreCompleteContext, _TEXT
 
 #endif // __APPLE__
-
