@@ -68,12 +68,9 @@ namespace ILCompiler.DependencyAnalysis
             });
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.InjectStringThunksImport, "StringDiscoverableAssemblyStubNode requires InjectStringThunks fixup");
-
-            return dependencies;
+            sink.Add(factory.InjectStringThunksImport, "StringDiscoverableAssemblyStubNode requires InjectStringThunks fixup");
         }
 
         protected override void OnMarked(NodeFactory factory)

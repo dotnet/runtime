@@ -503,7 +503,6 @@ namespace Internal.JitInterface
 
         private void AddAdditionalDependency(ISymbolNode node, string reason)
         {
-            _additionalDependencies ??= new DependencyList();
             _additionalDependencies.Add(node, reason);
         }
 

@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -66,20 +67,18 @@ namespace ILCompiler.DependencyAnalysis
             return factory.GCStaticEEType(map, requiresAlign8);
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList result = new DependencyList();
-
-            result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic MethodTable"));
+            sink.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic MethodTable"));
 
             if (_type != null)
             {
                 if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
                 {
-                    result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
+                    sink.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
                 }
 
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, _type.Module);
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(sink, factory, _type.Module);
             }
             else
             {
@@ -87,17 +86,15 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (factory.PreinitializationManager.HasEagerStaticConstructor(type))
                     {
-                        result.Add(new DependencyListEntry(factory.EagerCctorIndirection(type.GetStaticConstructor()), "Eager .cctor"));
+                        sink.Add(new DependencyListEntry(factory.EagerCctorIndirection(type.GetStaticConstructor()), "Eager .cctor"));
                     }
 
                     // inlined threadstatics do not need the index for execution, but may need it for debug visualization.
-                    result.Add(new DependencyListEntry(factory.TypeThreadStaticIndex(type), "ThreadStatic index for debug visualization"));
+                    sink.Add(new DependencyListEntry(factory.TypeThreadStaticIndex(type), "ThreadStatic index for debug visualization"));
 
-                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, type.Module);
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(sink, factory, type.Module);
                 }
             }
-
-            return result;
         }
 
         public override bool HasConditionalStaticDependencies =>
@@ -105,18 +102,16 @@ namespace ILCompiler.DependencyAnalysis
                 _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type:
                 false;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
             Debug.Assert(_type != null);
 
             // If we have a type loader template for this type, we need to keep track of the generated
             // bases in the type info hashtable. The type symbol node does such accounting.
-            return new CombinedDependencyListEntry[]
-            {
+            sink.Add(
                 new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
                     factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                    "Keeping track of template-constructable type static bases"),
-            };
+                    "Keeping track of template-constructable type static bases"));
         }
 
         public override bool StaticDependenciesAreComputed => true;
