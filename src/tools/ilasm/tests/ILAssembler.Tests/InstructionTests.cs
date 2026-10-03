@@ -46,8 +46,10 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
-        [Fact]
-        public void UndefinedBranchTarget_WithErrorTolerantOption_PreservesNativeFatHeaderBehavior()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UndefinedBranchTarget_WithErrorTolerantOption_PreservesNativeFatHeaderBehavior(bool fold)
         {
             string source = """
                 .assembly extern mscorlib { }
@@ -61,6 +63,12 @@ namespace ILAssembler.Tests
                         br UndefinedLabel
                         ret
                     }
+                    .method public static void OtherMethod() cil managed
+                    {
+                        .maxstack 3
+                        br UndefinedLabel
+                        ret
+                    }
                 }
                 """;
 
@@ -69,7 +77,7 @@ namespace ILAssembler.Tests
                 new SourceText(source, "test.il"),
                 _ => throw new InvalidOperationException("Unexpected include"),
                 _ => throw new InvalidOperationException("Unexpected resource"),
-                new Options { ErrorTolerant = true });
+                new Options { ErrorTolerant = true, Fold = fold });
 
             Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.LabelNotFound);
             Assert.NotNull(result);
@@ -82,9 +90,14 @@ namespace ILAssembler.Tests
                 .Select(reader.GetMethodDefinition)
                 .Single(method => reader.GetString(method.Name) == "TestMethod");
             MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            MethodDefinition otherMethod = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "OtherMethod");
 
             Assert.Equal(3, body.MaxStack);
             Assert.True(body.LocalVariablesInitialized);
+            Assert.Equal(fold, method.RelativeVirtualAddress == otherMethod.RelativeVirtualAddress);
+            Assert.Equal(body.GetILBytes(), pe.GetMethodBody(otherMethod.RelativeVirtualAddress).GetILBytes());
         }
 
         [Fact]
@@ -731,6 +744,40 @@ namespace ILAssembler.Tests
 
             Assert.Equal(0x23, il[0]);
             Assert.Equal(expected, BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(il.AsSpan(1))));
+        }
+
+        [Theory]
+        [InlineData("01", 1)]
+        [InlineData("012", 10)]
+        [InlineData("-012", -10)]
+        public void LdcI4_MultiDigitOctalLiteral_EmitsExpectedValue(string literal, int expected)
+        {
+            string source = $$"""
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        ldc.i4 {{literal}}
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            byte[] il = GetMethodIL(pe, "F");
+
+            int actual = il[0] switch
+            {
+                0x15 => -1,
+                >= 0x16 and <= 0x1E => il[0] - 0x16,
+                0x1F => unchecked((sbyte)il[1]),
+                0x20 => BinaryPrimitives.ReadInt32LittleEndian(il.AsSpan(1)),
+                _ => throw new InvalidOperationException($"Unexpected ldc.i4 opcode 0x{il[0]:X2}"),
+            };
+
+            Assert.Equal(expected, actual);
         }
 
         [Fact]

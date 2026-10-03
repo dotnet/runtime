@@ -165,7 +165,6 @@ export type LoaderHelpers = {
     err(message: string): void;
 
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     installUnhandledErrorHandler: () => void;
 
     loadBootResource?: LoadBootResourceCallback;
@@ -445,7 +444,6 @@ export declare interface EmscriptenModuleInternal {
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
-    onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
     safeSetTimeout(func: Function, timeout: number): number;
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;

@@ -71,7 +71,7 @@
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
-    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*;--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">true</WasiEnableCompositeR2R>
   </PropertyGroup>
 
@@ -131,9 +131,17 @@
   <Target Name="_WasiCoreCLRInspectReadyToRunComposite"
           DependsOnTargets="CreateReadyToRunImages"
           Condition="'$(PublishReadyToRun)' == 'true'">
+    <ItemGroup>
+      <!-- The ReadyToRun tasks name the composite (the owner every component stub records); take
+           the path they planned rather than assuming a name. The composer bakes that file name
+           into the host. -->
+      <_WasiR2RCompositeCompilation Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true'))" />
+    </ItemGroup>
+    <Error Condition="'@(_WasiR2RCompositeCompilation->Count())' != '1'"
+           Text="CoreCLR ReadyToRun publishing for wasi-wasm expected exactly one composite compilation, found @(_WasiR2RCompositeCompilation->Count())." />
     <PropertyGroup>
       <_WasiR2ROutputDir>$([MSBuild]::NormalizeDirectory('$(_ReadyToRunOutputPath)'))</_WasiR2ROutputDir>
-      <_WasiR2RCompositePath>$(_WasiR2ROutputDir)composite-r2r.wasm</_WasiR2RCompositePath>
+      <_WasiR2RCompositePath>@(_WasiR2RCompositeCompilation->'%(OutputR2RImage)')</_WasiR2RCompositePath>
       <_WasiR2RImageBufferSource>$([MSBuild]::NormalizePath('$(_WasmIntermediateOutputPath)', 'corerun-relink', 'r2r-image-buffer.cpp'))</_WasiR2RImageBufferSource>
     </PropertyGroup>
     <Error Condition="!Exists('$(_WasiR2RCompositePath)')"
@@ -207,6 +215,12 @@
          find it. -->
     <Copy Condition="'$(InvariantGlobalization)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat')"
           SourceFiles="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
+          DestinationFolder="$(WasmAppDir)managed"
+          SkipUnchangedFiles="true" />
+    <!-- The wasihost corehost reads the app's runtimeconfig properties from runtimeconfig.bin
+         next to the entry assembly and passes them to the runtime. -->
+    <Copy Condition="'$(_ParsedRuntimeConfigFilePath)' != '' and Exists('$(_ParsedRuntimeConfigFilePath)')"
+          SourceFiles="$(_ParsedRuntimeConfigFilePath)"
           DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
   </Target>

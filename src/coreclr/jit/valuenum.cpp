@@ -15705,7 +15705,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 }
             }
 
-            if (isAlloc && ((call->gtCallMoreFlags & GTF_CALL_M_STACK_ARRAY) != 0))
+            if (isAlloc && (call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal) != nullptr))
             {
                 if (vnf == VNF_JitNewArr)
                 {

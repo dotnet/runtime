@@ -52,6 +52,7 @@ public static class CoreCLRContracts
         registry.Register<IFeatureFlags>("c1", static t => new FeatureFlags_1(t));
 
         registry.Register<IPrecodeStubs>("c1", static t => new PrecodeStubs_1(t));
+        registry.Register<IPrecodeStubs>("c2", static t => new PrecodeStubs_2(t));
 
         registry.Register<IReJIT>("c1", static t => new ReJIT_1(t));
 
@@ -68,6 +69,7 @@ public static class CoreCLRContracts
                 RuntimeInfoArchitecture.Arm => new GCInfo_1<ARMGCInfoTraits>(t),
                 RuntimeInfoArchitecture.LoongArch64 => new GCInfo_1<LoongArch64GCInfoTraits>(t),
                 RuntimeInfoArchitecture.RiscV64 => new GCInfo_1<RISCV64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.Wasm => new GCInfo_1<WasmGCInfoTraits>(t),
                 _ => default(GCInfo),
             };
         });

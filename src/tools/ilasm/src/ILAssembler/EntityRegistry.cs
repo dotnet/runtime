@@ -55,6 +55,19 @@ namespace ILAssembler
             }
         }
 
+        private sealed class MethodBodyContentEqualityComparer : IEqualityComparer<byte[]>
+        {
+            public bool Equals(byte[]? x, byte[]? y) =>
+                x is null ? y is null : y is not null && x.AsSpan().SequenceEqual(y);
+
+            public int GetHashCode(byte[] obj)
+            {
+                HashCode hash = default;
+                hash.AddBytes(obj);
+                return hash.ToHashCode();
+            }
+        }
+
         private sealed class MethodSpecEqualityComparer : IEqualityComparer<(EntityBase, BlobBuilder)>
         {
             public bool Equals((EntityBase, BlobBuilder) x, (EntityBase, BlobBuilder) y)
@@ -92,7 +105,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic, bool fold)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -342,6 +355,7 @@ namespace ILAssembler
             }
 
             var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
+            Dictionary<byte[], int>? foldedBodies = fold ? new(new MethodBodyContentEqualityComparer()) : null;
 
             for (int i = 0; i < GetSeenEntities(TableIndex.MethodDef).Count; i++)
             {
@@ -350,6 +364,9 @@ namespace ILAssembler
                 int bodyOffset = -1;
                 if (methodDef.MethodBody.CodeBuilder.Count != 0)
                 {
+                    BlobBuilder? serializedBody = fold ? new BlobBuilder() : null;
+                    MethodBodyStreamEncoder encoder = fold ? new(serializedBody!) : bodyStreamEncoder;
+
                     // Add deferred exception regions now that TypeRef-to-TypeDef resolution is complete.
                     // Catch clause type handles are read here, after resolution has set the real handle.
                     foreach (var region in methodDef.ExceptionRegions)
@@ -394,7 +411,7 @@ namespace ILAssembler
 
                     try
                     {
-                        bodyOffset = bodyStreamEncoder.AddMethodBody(
+                        bodyOffset = encoder.AddMethodBody(
                             methodDef.MethodBody,
                             methodDef.MaxStack,
                             localsSigHandle,
@@ -406,7 +423,7 @@ namespace ILAssembler
                         // Method has unresolved labels or other body errors.
                         // Emit a minimal valid method body containing the raw IL bytes so
                         // the PE can still be emitted (error diagnostics are already recorded).
-                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
+                        var fallbackBody = encoder.AddMethodBody(
                             methodDef.MethodBody.CodeBuilder.Count,
                             methodDef.MaxStack,
                             exceptionRegionCount: 0,
@@ -424,7 +441,7 @@ namespace ILAssembler
                         // errors that produced malformed control flow). Emit the IL in a
                         // minimal valid method body and omit exception regions in fallback.
                         // TODO-COMPAT: Emit the invalid exception regions manually
-                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
+                        var fallbackBody = encoder.AddMethodBody(
                             methodDef.MethodBody.CodeBuilder.Count,
                             methodDef.MaxStack,
                             exceptionRegionCount: 0,
@@ -435,6 +452,31 @@ namespace ILAssembler
                         bodyOffset = fallbackBody.Offset;
                         var writer2 = new BlobWriter(fallbackBody.Instructions);
                         methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer2);
+                    }
+
+                    if (fold)
+                    {
+                        byte[] content = serializedBody!.ToArray();
+                        // The encoder may have written a partial body before falling back.
+                        if (bodyOffset != 0)
+                        {
+                            content = content.AsSpan(bodyOffset).ToArray();
+                        }
+                        if (foldedBodies!.TryGetValue(content, out int existingOffset))
+                        {
+                            bodyOffset = existingOffset;
+                        }
+                        else
+                        {
+                            // Fat method headers must be aligned relative to the IL stream.
+                            if ((content[0] & 0x3) == 0x3)
+                            {
+                                ilStream.Align(4);
+                            }
+                            bodyOffset = ilStream.Count;
+                            ilStream.WriteBytes(content);
+                            foldedBodies.Add(content, bodyOffset);
+                        }
                     }
                 }
 
@@ -569,7 +611,7 @@ namespace ILAssembler
                 builder.AddEvent(
                     evt.Attributes,
                     builder.GetOrAddString(evt.Name),
-                    evt.Type?.Handle ?? (EntityHandle)default(TypeDefinitionHandle));
+                    evt.Type?.Handle ?? default(TypeDefinitionHandle));
 
                 foreach (var accessor in evt.Accessors)
                 {
@@ -2232,6 +2274,7 @@ namespace ILAssembler
         public sealed class MethodDebugInfo
         {
             public string? DocumentPath { get; set; }
+            public Guid LanguageGuid { get; set; }
             public List<SequencePoint> SequencePoints { get; } = new();
         }
 

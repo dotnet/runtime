@@ -49,7 +49,6 @@ public:
               DWORD dwFlags);
 
     HRESULT Init(mdToken tkAssemblyRef, IMDInternalImport *pImport);
-    HRESULT Init(mdAssembly tkAssemblyRef, IMetaDataAssemblyImport* pImport);
 
     void Init(SString& assemblyDisplayName);
     HRESULT InitNoThrow(SString& assemblyDisplayName);
