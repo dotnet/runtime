@@ -97,6 +97,12 @@ namespace System.Net.Tests
                 yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header\t: value" }, null, "Bad Request" };
             }
 
+            // Bare CR, i.e. a CR that isn't immediately followed by a LF
+            yield return new object[] { "GET {path}a\rb HTTP/1.1", null, null, null, "Bad Request" };
+            yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Le\rngth: 0" }, "\r\n", "Bad Request" };
+            yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header: val\rue" }, "\r\n", "Bad Request" };
+            yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header: value\r" }, "\r\n", "Bad Request" };
+
             yield return new object[] { "GET {path} HTTP/1.1", "", null, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", "Host: \r\n", null, null, "Bad Request" };
 
