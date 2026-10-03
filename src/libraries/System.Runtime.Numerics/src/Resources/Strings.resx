@@ -63,6 +63,9 @@
   <data name="Argument_BadFormatSpecifier" xml:space="preserve">
     <value>Format specifier was invalid.</value>
   </data>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
   <data name="Argument_InvalidNumberStyles" xml:space="preserve">
     <value>An undefined NumberStyles value is being used.</value>
   </data>

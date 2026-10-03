@@ -1001,6 +1001,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<byte>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out byte value) { throw null; }
         bool System.Numerics.IBinaryInteger<byte>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<byte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<byte>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<byte>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<byte>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<byte>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<byte>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<byte>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator &(byte left, byte right) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator |(byte left, byte right) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator ^(byte left, byte right) { throw null; }
@@ -1192,6 +1198,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<char>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out char value) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<char>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<char>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<char>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<char>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<char>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<char>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static bool System.Numerics.IBinaryNumber<char>.IsPow2(char value) { throw null; }
         static char System.Numerics.IBinaryNumber<char>.Log2(char value) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator &(char left, char right) { throw null; }
@@ -3742,6 +3754,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<System.Int128>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Int128 value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Int128>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Int128>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Int128>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Int128>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Int128>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Int128>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsCanonical(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsComplexNumber(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsFinite(System.Int128 value) { throw null; }
@@ -3860,6 +3878,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<short>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out short value) { throw null; }
         bool System.Numerics.IBinaryInteger<short>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<short>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<short>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<short>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<short>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<short>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<short>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<short>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator &(short left, short right) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator |(short left, short right) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator ^(short left, short right) { throw null; }
@@ -4005,6 +4029,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<int>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out int value) { throw null; }
         bool System.Numerics.IBinaryInteger<int>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<int>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<int>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<int>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<int>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<int>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<int>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<int>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator &(int left, int right) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator |(int left, int right) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator ^(int left, int right) { throw null; }
@@ -4150,6 +4180,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<long>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out long value) { throw null; }
         bool System.Numerics.IBinaryInteger<long>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<long>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<long>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<long>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<long>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<long>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<long>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<long>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator &(long left, long right) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator |(long left, long right) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator ^(long left, long right) { throw null; }
@@ -4299,6 +4335,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<nint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nint value) { throw null; }
         bool System.Numerics.IBinaryInteger<nint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<nint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<nint>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<nint>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<nint>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<nint>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<nint>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<nint>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static nint System.Numerics.IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right) { throw null; }
         static nint System.Numerics.IBitwiseOperators<nint, nint, nint>.operator |(nint left, nint right) { throw null; }
         static nint System.Numerics.IBitwiseOperators<nint, nint, nint>.operator ^(nint left, nint right) { throw null; }
@@ -5321,6 +5363,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<sbyte>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out sbyte value) { throw null; }
         bool System.Numerics.IBinaryInteger<sbyte>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<sbyte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<sbyte>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<sbyte>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<sbyte>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<sbyte>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<sbyte>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<sbyte>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator &(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator |(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator ^(sbyte left, sbyte right) { throw null; }
@@ -7061,6 +7109,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<System.UInt128>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.UInt128 value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<System.UInt128>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.UInt128>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<System.UInt128>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.UInt128>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.UInt128>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<System.UInt128>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.Abs(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsCanonical(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsComplexNumber(System.UInt128 value) { throw null; }
@@ -7179,6 +7233,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<ushort>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ushort value) { throw null; }
         bool System.Numerics.IBinaryInteger<ushort>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<ushort>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<ushort>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<ushort>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<ushort>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<ushort>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<ushort>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<ushort>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator &(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator |(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator ^(ushort left, ushort right) { throw null; }
@@ -7324,6 +7384,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<uint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out uint value) { throw null; }
         bool System.Numerics.IBinaryInteger<uint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<uint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<uint>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<uint>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<uint>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<uint>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<uint>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<uint>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator &(uint left, uint right) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator |(uint left, uint right) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator ^(uint left, uint right) { throw null; }
@@ -7469,6 +7535,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<ulong>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out ulong value) { throw null; }
         bool System.Numerics.IBinaryInteger<ulong>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<ulong>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<ulong>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<ulong>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<ulong>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<ulong>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<ulong>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<ulong>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator &(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator |(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator ^(ulong left, ulong right) { throw null; }
@@ -7615,6 +7687,12 @@ namespace System
         static bool System.Numerics.IBinaryInteger<nuint>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out nuint value) { throw null; }
         bool System.Numerics.IBinaryInteger<nuint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<nuint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<nuint>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<nuint>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<nuint>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<nuint>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<nuint>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<nuint>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static nuint System.Numerics.IBitwiseOperators<nuint, nuint, nuint>.operator &(nuint left, nuint right) { throw null; }
         static nuint System.Numerics.IBitwiseOperators<nuint, nuint, nuint>.operator |(nuint left, nuint right) { throw null; }
         static nuint System.Numerics.IBitwiseOperators<nuint, nuint, nuint>.operator ^(nuint left, nuint right) { throw null; }
