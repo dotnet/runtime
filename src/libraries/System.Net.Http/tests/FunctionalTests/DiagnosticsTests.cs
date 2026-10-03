@@ -1540,11 +1540,13 @@ namespace System.Net.Http.Functional.Tests
         private sealed class SendMultipleTimesHandler : DelegatingHandler
         {
             private readonly Activity[] _parentActivities;
+            private readonly Action<string> _log;
 
-            public SendMultipleTimesHandler(HttpMessageHandler innerHandler, params Activity[] parentActivities) : base(innerHandler)
+            public SendMultipleTimesHandler(HttpMessageHandler innerHandler, Action<string> log, params Activity[] parentActivities) : base(innerHandler)
             {
                 Assert.NotEmpty(parentActivities);
                 _parentActivities = parentActivities;
+                _log = log;
             }
 
             protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -1560,11 +1562,15 @@ namespace System.Net.Http.Functional.Tests
                 {
                     parent.Start();
                     Assert.Equal(ActivityIdFormat.W3C, parent.IdFormat);
+                    _log($"{parent.OperationName}: Sending request.");
                     response = testAsync ? await base.SendAsync(request, cancellationToken) : base.Send(request, cancellationToken);
+                    _log($"{parent.OperationName}: Received response {(int)response.StatusCode}.");
                     parent.Stop();
                     if (parent != _parentActivities.Last())
                     {
+                        _log($"{parent.OperationName}: Disposing response.");
                         response.Dispose(); // only keep the last response
+                        _log($"{parent.OperationName}: Response disposed.");
                     }
                 }
                 return response;
@@ -1581,34 +1587,64 @@ namespace System.Net.Http.Functional.Tests
             const string FirstTraceParent = "00-F";
             const string FirstTraceState = "first";
 
-            await GetFactoryForVersion(UseVersion).CreateServerAsync(async (server, uri) =>
+            var log = new ConcurrentQueue<string>();
+            long startTime = Environment.TickCount64;
+            Task clientTask = null;
+            try
             {
-                SendMultipleTimesHandler handler = new SendMultipleTimesHandler(CreateSocketsHttpHandler(allowAllCertificates: true), parent0, parent1, parent2);
-                using HttpClient client = new HttpClient(handler);
-                HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                await GetFactoryForVersion(UseVersion).CreateServerAsync(async (server, uri) =>
+                {
+                    SendMultipleTimesHandler handler = new SendMultipleTimesHandler(CreateSocketsHttpHandler(allowAllCertificates: true), Log, parent0, parent1, parent2);
+                    using HttpClient client = new HttpClient(handler);
+                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
 
-                request.Headers.Add("traceparent", FirstTraceParent);
-                request.Headers.Add("tracestate", FirstTraceState);
+                    request.Headers.Add("traceparent", FirstTraceParent);
+                    request.Headers.Add("tracestate", FirstTraceState);
 
-                Task clientTask = TestAsync ? client.SendAsync(request) : Task.Run(() => client.Send(request));
+                    Volatile.Write(ref clientTask, TestAsync ? client.SendAsync(request) : Task.Run(() => client.Send(request)));
 
-                HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+                    Log("Server: Handling request 1.");
+                    HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
 
-                // On the first send DiagnosticsHandler should keep user-supplied headers.
-                string traceparent = GetHeaderValue(requestData, "traceparent");
-                string tracestate = GetHeaderValue(requestData, "tracestate");
-                Assert.Equal(FirstTraceParent, traceparent);
-                Assert.Equal(FirstTraceState, tracestate);
+                    Log("Server: Checking request 1 headers.");
+                    // On the first send DiagnosticsHandler should keep user-supplied headers.
+                    string traceparent = GetHeaderValue(requestData, "traceparent");
+                    string tracestate = GetHeaderValue(requestData, "tracestate");
+                    Assert.Equal(FirstTraceParent, traceparent);
+                    Assert.Equal(FirstTraceState, tracestate);
 
-                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+                    Log("Server: Handling request 2.");
+                    requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
 
-                // Headers should be overridden on each subsequent send.
-                AssertHeadersAreInjected(requestData, parent1);
-                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.OK);
-                AssertHeadersAreInjected(requestData, parent2);
+                    Log("Server: Checking request 2 headers.");
+                    // Headers should be overridden on each subsequent send.
+                    AssertHeadersAreInjected(requestData, parent1);
+                    Log("Server: Handling request 3.");
+                    requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.OK);
+                    Log("Server: Checking request 3 headers.");
+                    AssertHeadersAreInjected(requestData, parent2);
 
-                await clientTask;
-            });
+                    Log("Awaiting client task.");
+                    await clientTask;
+                    Log("Client task completed.");
+                }, options: UseVersion == HttpVersion30 ? new Http3Options { Log = Log } : null);
+            }
+            finally
+            {
+                // The factory timeout does not stop the callback, so snapshot its diagnostics without writing from that callback to the test output.
+                Task task = Volatile.Read(ref clientTask);
+                _output.WriteLine($"Client task status: {task?.Status.ToString() ?? "not started"}");
+                if (task?.Exception is Exception exception)
+                {
+                    _output.WriteLine($"Client task exception: {exception}");
+                }
+                foreach (string message in log.ToArray())
+                {
+                    _output.WriteLine(message);
+                }
+            }
+
+            void Log(string message) => log.Enqueue($"{Environment.TickCount64 - startTime} ms: {message}");
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
