@@ -65,6 +65,7 @@
     <Compile Include="System\Data\DataTableReaderTest.cs" />
     <Compile Include="System\Data\DataTableReadWriteXmlTest.cs" />
     <Compile Include="System\Data\DataTableReadXmlSchemaTest.cs" />
+    <Compile Include="System\Data\DataTableSelectTests.cs" />
     <Compile Include="System\Data\DataTableTest.cs" />
     <Compile Include="System\Data\DataTableTest2.cs" />
     <Compile Include="System\Data\DataTableTest3.cs" />
