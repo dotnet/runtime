@@ -112,17 +112,8 @@ namespace System.Net.NameResolution.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IPAndIncorrectFamily_Data), false)]
-        public Task DnsGetHostAddresses_IPStringAndIncorrectFamily_ReturnsNoIPs(bool useAsync, IPAddress address, AddressFamily family) =>
-            VerifyIPStringAndIncorrectFamilyReturnsNoIPs(useAsync, address, family);
-
-        [Theory]
-        [MemberData(nameof(IPAndIncorrectFamily_Data), true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/135030", TestPlatforms.Wasi)]
-        public Task DnsGetHostAddressesAsync_IPStringAndIncorrectFamily_ReturnsNoIPs(bool useAsync, IPAddress address, AddressFamily family) =>
-            VerifyIPStringAndIncorrectFamilyReturnsNoIPs(useAsync, address, family);
-
-        private static async Task VerifyIPStringAndIncorrectFamilyReturnsNoIPs(bool useAsync, IPAddress address, AddressFamily family)
+        [MemberData(nameof(IPAndIncorrectFamily_Data))]
+        public async Task DnsGetHostAddresses_IPStringAndIncorrectFamily_ReturnsNoIPs(bool useAsync, IPAddress address, AddressFamily family)
         {
             IPAddress[] addresses =
                 useAsync ? await Dns.GetHostAddressesAsync(address.ToString(), family) :
@@ -131,11 +122,13 @@ namespace System.Net.NameResolution.Tests
             Assert.Empty(addresses);
         }
 
-        public static TheoryData<bool, IPAddress, AddressFamily> IPAndIncorrectFamily_Data(bool useAsync) => new TheoryData<bool, IPAddress, AddressFamily>
+        public static TheoryData<bool, IPAddress, AddressFamily> IPAndIncorrectFamily_Data => new TheoryData<bool, IPAddress, AddressFamily>
         {
             // useAsync, IP, family
-            { useAsync, IPAddress.Loopback, AddressFamily.InterNetworkV6 },
-            { useAsync, IPAddress.IPv6Loopback, AddressFamily.InterNetwork }
+            { false, IPAddress.Loopback, AddressFamily.InterNetworkV6 },
+            { false, IPAddress.IPv6Loopback, AddressFamily.InterNetwork },
+            { true, IPAddress.Loopback, AddressFamily.InterNetworkV6 },
+            { true, IPAddress.IPv6Loopback, AddressFamily.InterNetwork }
         };
 
         [Fact]
