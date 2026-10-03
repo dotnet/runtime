@@ -344,7 +344,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetErrNo) // System.Net.NameResolution, System.Private.CoreLib
+    DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives, System.Net.Sockets
@@ -369,7 +369,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetSystemTimeAsTicks) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimeZoneData) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimestamp) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetWasiSocketDescriptor) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetWasiSocketDescriptor) // System.Private.CoreLib
     DllImportEntry(SystemNative_IsMemfdSupported) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_LChflags) // System.Private.CoreLib
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag) // System.Private.CoreLib
@@ -446,7 +446,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_TryGetIPPacketInformation) // System.Net.Sockets
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
-    DllImportEntry(SystemNative_WasiSubscribeSocketPollable) // System.Net.Sockets
+    DllImportEntry(SystemNative_WasiSubscribeSocketPollable) // System.Private.CoreLib
     DllImportEntry(SystemNative_Write) // System.Console, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
