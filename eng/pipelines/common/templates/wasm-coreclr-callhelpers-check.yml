@@ -1,0 +1,53 @@
+# Regenerates the checked-in CoreCLR WebAssembly call helpers for this leg's target OS
+# (src/coreclr/vm/wasm/<os>/callhelpers-*.cpp) from the testhost and crossgen2 the leg just built,
+# and fails if they differ from what is committed. A stale table builds fine but crashes the
+# corerun that links it, for example with "GetUnmanagedCallersOnlyThunk: unknown thunk" when a
+# new [UnmanagedCallersOnly] method is missing. See src/coreclr/vm/wasm/generate-coreclr-helpers.md.
+#
+# Must run after a clr+libs build of osGroup (browser or wasi) in buildConfig on a Linux host.
+parameters:
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  buildConfig: ''
+  runtimeFlavor: ''
+  runtimeVariant: ''
+  helixQueues: ''
+  targetRid: ''
+  nameSuffix: ''
+  platform: ''
+  shouldContinueOnError: false
+
+steps:
+  - bash: |
+      set -u
+      target_os='${{ parameters.osGroup }}'
+      configuration='$(_BuildConfig)'
+      table_dir="src/coreclr/vm/wasm/$target_os/"
+
+      src/coreclr/vm/wasm/generate-coreclr-helpers.sh -c "$configuration" --target-os "$target_os"
+      generator_exit=$?
+      if [[ $generator_exit -ne 0 ]]; then
+        echo "##vso[task.logissue type=error]Regenerating the $target_os CoreCLR WebAssembly call helpers failed (exit $generator_exit)."
+        exit $generator_exit
+      fi
+
+      if [[ -z "$(git status --porcelain -- "$table_dir")" ]]; then
+        echo "The checked-in $target_os call helpers are up to date."
+        exit 0
+      fi
+
+      echo "##vso[task.logissue type=error]The checked-in CoreCLR WebAssembly call helpers in $table_dir are out of date. Regenerate them and commit the result; see the step log for the diff and the commands."
+      git --no-pager status --short -- "$table_dir"
+      git --no-pager diff -- "$table_dir"
+      echo
+      echo "The managed code that feeds these tables ([UnmanagedCallersOnly] methods, P/Invokes, QCalls)"
+      echo "changed without the tables being regenerated. To fix, run from the repository root:"
+      echo
+      echo "  ./build.sh clr+libs -os $target_os -c $configuration"
+      echo "  src/coreclr/vm/wasm/generate-coreclr-helpers.sh -c $configuration --target-os $target_os"
+      echo
+      echo "and commit the changes under $table_dir."
+      exit 1
+    displayName: Check ${{ parameters.osGroup }} CoreCLR call helpers are up to date
+    condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))

@@ -32,6 +32,7 @@ jobs:
       timeoutInMinutes: 120
       condition: ${{ parameters.condition }}
       postBuildSteps:
+        - template: /eng/pipelines/common/templates/wasm-coreclr-callhelpers-check.yml
         - template: /eng/pipelines/common/wasm-post-build-steps.yml
           parameters:
             publishArtifactsForWorkload: ${{ parameters.publishArtifactsForWorkload }}
