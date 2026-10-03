@@ -712,7 +712,10 @@ namespace System.Security.Cryptography
             int bytesRequired = Interop.Crypto.GetEvpPKeySizeBytes(key);
             byte[] signature = new byte[bytesRequired];
 
-            int written = Interop.Crypto.RsaSignHash(key, padding.Mode, hashAlgorithm, hash, signature);
+            int pssSaltLength = padding.Mode == RSASignaturePaddingMode.Pss
+                ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
+                : 0;
+            int written = Interop.Crypto.RsaSignHash(key, padding.Mode, pssSaltLength, hashAlgorithm, hash, signature);
 
             if (written != signature.Length)
             {
@@ -743,7 +746,10 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            bytesWritten = Interop.Crypto.RsaSignHash(key, padding.Mode, hashAlgorithm, hash, destination);
+            int pssSaltLength = padding.Mode == RSASignaturePaddingMode.Pss
+                ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
+                : 0;
+            bytesWritten = Interop.Crypto.RsaSignHash(key, padding.Mode, pssSaltLength, hashAlgorithm, hash, destination);
             Debug.Assert(bytesWritten == bytesRequired);
             return true;
         }
@@ -768,9 +774,13 @@ namespace System.Security.Cryptography
 
             SafeEvpPKeyHandle key = GetKey();
 
+            int pssSaltLength = padding.Mode == RSASignaturePaddingMode.Pss
+                ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
+                : 0;
             return Interop.Crypto.RsaVerifyHash(
                 key,
                 padding.Mode,
+                pssSaltLength,
                 hashAlgorithm,
                 hash,
                 signature);
@@ -830,20 +840,15 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(padding);
 
-            // RSASignaturePadding currently only has the mode property, so
-            // there's no need for a runtime check that PKCS#1 doesn't use
-            // nonsensical options like with RSAEncryptionPadding.
-            //
-            // This would change if we supported PSS with an MGF other than MGF-1,
-            // or with a custom salt size, or with a different MGF digest algorithm
-            // than the data digest algorithm.
+            // PKCS#1 does not currently have anything to validate.
             if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
             {
                 Debug.Assert(padding == RSASignaturePadding.Pkcs1);
             }
             else if (padding.Mode == RSASignaturePaddingMode.Pss)
             {
-                Debug.Assert(padding == RSASignaturePadding.Pss);
+                // PSS salt length is validated in the RsaSignaturePaddingMode constructor.
+                Debug.Assert(padding.PssSaltLength >= RSASignaturePadding.PssSaltLengthMax);
             }
             else
             {
