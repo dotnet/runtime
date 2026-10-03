@@ -50,6 +50,10 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal class EventProvider : IDisposable
     {
+        private const int UnregisterPending = 0;
+        private const int UnregisterInProgress = 1;
+        private const int UnregisterComplete = 2;
+
         // This is the windows EVENT_DATA_DESCRIPTOR structure.  We expose it because this is what
         // subclasses of EventProvider use when creating efficient (but unsafe) version of
         // EventWrite.   We do make it a nested type because we really don't expect anyone to use
@@ -65,7 +69,8 @@ namespace System.Diagnostics.Tracing
         internal EventProviderImpl _eventProvider;      // The implementation of the specific logging mechanism functions.
         private string? _providerName;                  // Control name
         private Guid _providerId;                       // Control Guid
-        internal bool _disposed;                        // when true provider has unregistered
+        internal bool _disposed;                        // when true provider disposal has started
+        private int _unregisterState;
 
         [ThreadStatic]
         private static WriteEventErrorCode s_returnCode; // The last return code
@@ -124,7 +129,10 @@ namespace System.Diagnostics.Tracing
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
+            if (Volatile.Read(ref _unregisterState) == UnregisterComplete)
+            {
+                GC.SuppressFinalize(this);
+            }
         }
 
         protected virtual void Dispose(bool disposing)
@@ -140,7 +148,14 @@ namespace System.Diagnostics.Tracing
             // check if the object has been already disposed
             //
             if (_disposed)
+            {
+                if (!disposing)
+                {
+                    _ = TryCompleteUnregister(throwOnFailure: false);
+                }
+
                 return;
+            }
 
             // Disable the provider.
             _eventProvider.Disable();
@@ -156,16 +171,51 @@ namespace System.Diagnostics.Tracing
                 _disposed = true;
             }
 
-            // We do the Unregistration outside the EventListenerLock because there is a lock
-            // inside the ETW routines.   This lock is taken before ETW issues commands
-            // Thus the ETW lock gets taken first and then our EventListenersLock gets taken
-            // in SendCommand(), and also here.  If we called EventUnregister after taking
-            // the EventListenersLock then the take-lock order is reversed and we can have
-            // deadlocks in race conditions (dispose racing with an ETW command).
-            //
-            // We solve by Unregistering after releasing the EventListenerLock.
-            Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
-            _eventProvider.Unregister();
+            if (EventSource.IsExecutingCallback)
+            {
+                // Native unregistration may wait for callbacks queued behind the current callback.
+                ThreadPool.UnsafeQueueUserWorkItem(
+                    static eventProvider =>
+                    {
+                        if (eventProvider.TryCompleteUnregister(throwOnFailure: false))
+                        {
+                            GC.SuppressFinalize(eventProvider);
+                        }
+                    },
+                    this,
+                    preferLocal: false);
+            }
+            else
+            {
+                Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
+                _ = TryCompleteUnregister(throwOnFailure: disposing);
+            }
+        }
+
+        private bool TryCompleteUnregister(bool throwOnFailure)
+        {
+            if (Interlocked.CompareExchange(ref _unregisterState, UnregisterInProgress, UnregisterPending) == UnregisterPending)
+            {
+                try
+                {
+                    _eventProvider.Unregister();
+                }
+                catch
+                {
+                    Volatile.Write(ref _unregisterState, UnregisterPending);
+                    if (throwOnFailure)
+                    {
+                        throw;
+                    }
+
+                    return false;
+                }
+
+                Volatile.Write(ref _unregisterState, UnregisterComplete);
+                return true;
+            }
+
+            return Volatile.Read(ref _unregisterState) == UnregisterComplete;
         }
 
         /// <summary>
