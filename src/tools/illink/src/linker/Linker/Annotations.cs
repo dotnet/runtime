@@ -56,6 +56,7 @@ namespace Mono.Linker
         protected readonly HashSet<IMetadataTokenProvider> processed = new HashSet<IMetadataTokenProvider>();
         protected readonly Dictionary<TypeDefinition, (TypePreserve preserve, bool applied)> preserved_types = new Dictionary<TypeDefinition, (TypePreserve, bool)>();
         protected readonly HashSet<TypeDefinition> pending_preserve = new HashSet<TypeDefinition>();
+        readonly HashSet<TypeDefinition> _pendingPreservedTypeMembers = new();
         protected readonly Dictionary<TypeDefinition, TypePreserveMembers> preserved_type_members = new();
         protected readonly Dictionary<ExportedType, TypePreserveMembers> preserved_exportedtype_members = new();
         protected readonly Dictionary<IMemberDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<IMemberDefinition, List<MethodDefinition>>();
@@ -315,6 +316,16 @@ namespace Mono.Linker
             return pending_preserve.ToArray();
         }
 
+        internal TypeDefinition[] GetPendingPreservedMembers()
+        {
+            return _pendingPreservedTypeMembers.ToArray();
+        }
+
+        internal void ClearPendingPreservedMembers(TypeDefinition type)
+        {
+            _pendingPreservedTypeMembers.Remove(type);
+        }
+
         public bool SetAppliedPreserve(TypeDefinition type, TypePreserve preserve)
         {
             if (!preserved_types.TryGetValue(type, out (TypePreserve preserve, bool applied) existing))
@@ -396,9 +407,20 @@ namespace Mono.Linker
         public void SetMembersPreserve(TypeDefinition type, TypePreserveMembers preserve)
         {
             if (preserved_type_members.TryGetValue(type, out TypePreserveMembers existing))
-                preserved_type_members[type] = CombineMembers(existing, preserve);
+            {
+                TypePreserveMembers combined = CombineMembers(existing, preserve);
+                if (combined == existing)
+                    return;
+
+                preserved_type_members[type] = combined;
+            }
             else
+            {
                 preserved_type_members.Add(type, preserve);
+            }
+
+            if (IsProcessed(type))
+                _pendingPreservedTypeMembers.Add(type);
         }
 
         static TypePreserveMembers CombineMembers(TypePreserveMembers left, TypePreserveMembers right)
