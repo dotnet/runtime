@@ -40,7 +40,9 @@ namespace System.Threading
         // The number of synchronously waiting threads, it is set to zero in the constructor and increments before blocking the
         // threading and decrements it back after that. It is used as flag for the release call to know if there are
         // waiting threads in the monitor or not.
-        private int m_waitCount;
+        // Volatile so the lock-free WaitAsync fast path observes the increment via release/acquire pairing rather than
+        // depending on the lock release of the writer (which the fast path bypasses).
+        private volatile int m_waitCount;
 
         /// <summary>
         /// This is used to help prevent waking more waiters than necessary. It's not perfect and sometimes more waiters than
@@ -57,7 +59,9 @@ namespace System.Threading
         private volatile ManualResetEvent? m_waitHandle;
 
         // Head of list representing asynchronous waits on the semaphore.
-        private TaskNode? m_asyncHead;
+        // Volatile for the same reason as m_waitCount: the lock-free WaitAsync fast path reads it without the lock
+        // and must see writes published by the lock-holding enqueue/dequeue paths.
+        private volatile TaskNode? m_asyncHead;
 
         // Tail of list representing asynchronous waits on the semaphore.
         private TaskNode? m_asyncTail;
@@ -106,9 +110,23 @@ namespace System.Threading
                     // lock the count to avoid multiple threads initializing the handle if it is null
                     lock (m_lockObjAndDisposed)
                     {
-                        // The initial state for the wait handle is true if the count is greater than zero
-                        // false otherwise
-                        m_waitHandle ??= new ManualResetEvent(m_currentCount != 0);
+                        if (m_waitHandle is null)
+                        {
+                            // Publish the handle in the unsignaled state first, then reflect the current count.
+                            // Once m_waitHandle is non-null, the lock-free WaitAsync fast path is excluded (it gates
+                            // on m_waitHandle being null). The barrier prevents the m_currentCount read from being
+                            // reordered before the publish on weakly-ordered architectures: without it, a concurrent
+                            // fast-path CAS that already happened could be missed here, leaving the handle Set when
+                            // count == 0. Any fast path that completes between the publish and the count read is
+                            // covered by its own post-CAS recovery branch.
+                            var handle = new ManualResetEvent(false);
+                            m_waitHandle = handle;
+                            Interlocked.MemoryBarrier();
+                            if (m_currentCount > 0)
+                            {
+                                handle.Set();
+                            }
+                        }
                     }
                 }
 
@@ -373,42 +391,49 @@ namespace System.Threading
                 // There are no async waiters, so we can proceed with normal synchronous waiting.
                 else
                 {
-                    // If the count > 0 we are good to move on.
-                    // If not, then wait if we were given allowed some wait duration
-
-                    OperationCanceledException? oce = null;
-
-                    if (m_currentCount == 0)
+                    // Loop to handle the case where the lock-free WaitAsync fast path raced and decremented the
+                    // count between our wait/check and TryDecrementCount. With m_waitCount visibly > 0 the fast
+                    // path defers, so the loop typically runs once; the residual race during m_waitCount's
+                    // publication makes the retry necessary for correctness.
+                    while (true)
                     {
-                        if (millisecondsTimeout == 0)
+                        OperationCanceledException? oce = null;
+                        bool timedOut = false;
+                        if (m_currentCount == 0)
                         {
-                            return false;
+                            if (millisecondsTimeout == 0)
+                            {
+                                return false;
+                            }
+
+                            // Prepare for the main wait...
+                            // wait until the count becomes greater than zero or the timeout is expired
+                            try
+                            {
+                                timedOut = !WaitUntilCountOrTimeout(millisecondsTimeout, startTime, cancellationToken);
+                            }
+                            catch (OperationCanceledException e) { oce = e; }
                         }
 
-                        // Prepare for the main wait...
-                        // wait until the count become greater than zero or the timeout is expired
-                        try
+                        // Now try to acquire.  We prioritize acquisition over cancellation/timeout so that we don't
+                        // lose any counts when there are asynchronous waiters in the mix.  Asynchronous waiters
+                        // defer to synchronous waiters in priority, which means that if it's possible an asynchronous
+                        // waiter didn't get released because a synchronous waiter was present, we need to ensure
+                        // that synchronous waiter succeeds so that they have a chance to release.
+                        if (TryDecrementCount() > 0)
                         {
-                            waitSuccessful = WaitUntilCountOrTimeout(millisecondsTimeout, startTime, cancellationToken);
+                            waitSuccessful = true;
+                            break;
                         }
-                        catch (OperationCanceledException e) { oce = e; }
-                    }
 
-                    // Now try to acquire.  We prioritize acquisition over cancellation/timeout so that we don't
-                    // lose any counts when there are asynchronous waiters in the mix.  Asynchronous waiters
-                    // defer to synchronous waiters in priority, which means that if it's possible an asynchronous
-                    // waiter didn't get released because a synchronous waiter was present, we need to ensure
-                    // that synchronous waiter succeeds so that they have a chance to release.
-                    Debug.Assert(!waitSuccessful || m_currentCount > 0,
-                        "If the wait was successful, there should be count available.");
-                    if (m_currentCount > 0)
-                    {
-                        waitSuccessful = true;
-                        m_currentCount--;
-                    }
-                    else if (oce is not null)
-                    {
-                        throw oce;
+                        if (oce is not null)
+                        {
+                            throw oce;
+                        }
+                        if (timedOut)
+                        {
+                            break;
+                        }
                     }
 
                     // Exposing wait handle which is lazily initialized if needed
@@ -678,12 +703,37 @@ namespace System.Threading
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<bool>(cancellationToken);
 
+            // Fast path: try a lock-free acquire; falls through to the lock if it fails.
+            // Skipped when m_waitHandle is non-null to keep its state consistent under the lock.
+            if (m_waitHandle is null)
+            {
+                int current = m_currentCount;
+                // Best-effort waiter checks (m_asyncHead and m_waitCount are volatile, so plain reads
+                // are acquire-ordered): they may be updated after this read, but the CAS will fail if
+                // m_currentCount was concurrently decremented.
+                if (current > 0
+                    && m_asyncHead is null
+                    && m_waitCount == 0
+                    && Interlocked.CompareExchange(ref m_currentCount, current - 1, current) == current)
+                {
+                    // Handle the rare race where AvailableWaitHandle was initialized concurrently.
+                    if (current == 1 && m_waitHandle is not null)
+                    {
+                        lock (m_lockObjAndDisposed)
+                        {
+                            if (m_waitHandle is not null && m_currentCount == 0)
+                                m_waitHandle.Reset();
+                        }
+                    }
+                    return Task.FromResult(true);
+                }
+            }
+
             lock (m_lockObjAndDisposed)
             {
                 // If there are counts available, allow this waiter to succeed.
-                if (m_currentCount > 0)
+                if (TryDecrementCount() > 0)
                 {
-                    --m_currentCount;
                     if (m_waitHandle is not null && m_currentCount == 0) m_waitHandle.Reset();
                     return Task.FromResult(true);
                 }
@@ -757,6 +807,21 @@ namespace System.Threading
 
             // Return whether the task was in the list
             return wasInList;
+        }
+
+        /// <summary>
+        /// Atomically decrements <see cref="m_currentCount"/> if it is positive, using a CAS loop
+        /// rather than a plain decrement because the lock-free fast path in <see cref="WaitAsyncCore"/>
+        /// can decrement <see cref="m_currentCount"/> concurrently without holding the lock.
+        /// </summary>
+        /// <returns>The pre-decrement value. A return value of 0 means no count was available.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int TryDecrementCount()
+        {
+            int count = m_currentCount;
+            while (count > 0 && Interlocked.CompareExchange(ref m_currentCount, count - 1, count) != count)
+                count = m_currentCount;
+            return count;
         }
 
         /// <summary>Performs the asynchronous wait.</summary>
@@ -842,21 +907,36 @@ namespace System.Threading
 
             lock (m_lockObjAndDisposed)
             {
-                // Read the m_currentCount into a local variable to avoid unnecessary volatile accesses inside the lock.
-                int currentCount = m_currentCount;
-                returnCount = currentCount;
+                // Snapshot the live count. A lock-free WaitAsync fast path can decrement m_currentCount
+                // concurrently (it bypasses this lock); nothing increments it concurrently (every increment
+                // path holds this lock). So the real count can only be <= this snapshot until we update it.
+                int observed = m_currentCount;
 
-                // If the release count would result exceeding the maximum count, throw SemaphoreFullException.
-                if (m_maxCount - currentCount < releaseCount)
+                // Validate against m_maxCount. Re-read on a mismatch so a racing fast-path decrement (which
+                // only lowers the real count) can't make us throw SemaphoreFullException spuriously off a
+                // stale, too-high snapshot. Because only decrements race, once observed + releaseCount <=
+                // m_maxCount holds for a snapshot >= the real count, the real count + releaseCount can't
+                // exceed m_maxCount either, so the bound we enforce on the atomic add below still holds.
+                while (m_maxCount - observed < releaseCount)
                 {
-                    throw new SemaphoreFullException();
+                    int reread = m_currentCount;
+                    if (reread == observed)
+                    {
+                        throw new SemaphoreFullException();
+                    }
+                    observed = reread;
                 }
+                returnCount = observed;
 
-                // Increment the count by the actual release count
-                currentCount += releaseCount;
+                // Compute the post-release count in a LOCAL only. We must never store this inflated value into
+                // m_currentCount: it includes permits earmarked for the waiters released below, and the
+                // lock-free fast path (which reads m_currentCount without the lock) would observe and steal
+                // them in the window before we corrected the count. Instead we apply only the net delta once,
+                // atomically, at the end. Whenever waiters are present the count is 0 and no fast path can be
+                // racing (it requires count > 0 and no waiters), so this snapshot is stable here.
+                int currentCount = observed + releaseCount;
 
-                // Signal to any synchronous waiters, taking into account how many waiters have previously been pulsed to wake
-                // but have not yet woken
+                // Signal synchronous waiters, accounting for those already pulsed but not yet woken.
                 int waitCount = m_waitCount;
                 Debug.Assert(m_countOfWaitersPulsedToWake <= waitCount);
                 int waitersToNotify = Math.Min(currentCount, waitCount) - m_countOfWaitersPulsedToWake;
@@ -884,31 +964,38 @@ namespace System.Threading
                 // asynchronous waiters, we assume that all synchronous waiters will eventually
                 // acquire the semaphore.  That could be a faulty assumption if those synchronous
                 // waits are canceled, but the wait code path will handle that.
+                // Permits handed to async waiters go straight to their tasks rather than into
+                // m_currentCount, so they're excluded from the net delta applied below.
+                int asyncReleased = 0;
                 if (m_asyncHead is not null)
                 {
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't null");
                     int maxAsyncToRelease = currentCount - waitCount;
-                    while (maxAsyncToRelease > 0 && m_asyncHead is not null)
+                    while (asyncReleased < maxAsyncToRelease && m_asyncHead is not null)
                     {
-                        --currentCount;
-                        --maxAsyncToRelease;
+                        ++asyncReleased;
 
-                        // Get the next async waiter to release and queue it to be completed
                         TaskNode waiterTask = m_asyncHead;
                         RemoveAsyncWaiter(waiterTask); // ensures waiterTask.Next/Prev are null
                         waiterTask.TrySetResult(result: true);
                     }
+                    currentCount -= asyncReleased;
                 }
-                m_currentCount = currentCount;
 
-                // Exposing wait handle if it is not null
-                if (m_waitHandle is not null && returnCount == 0 && currentCount > 0)
+                // Apply the net change (permits released minus those handed straight to async waiters) in a
+                // single atomic add. A relative add (not an absolute store) folds in any fast-path decrements
+                // that raced since we snapshotted, and we never publish a count above the number of genuinely
+                // free permits, so the fast path can never observe a permit reserved for a waiter. The
+                // pre-validated snapshot bounds the result at or below m_maxCount.
+                int delta = releaseCount - asyncReleased;
+                int newCount = delta != 0 ? Interlocked.Add(ref m_currentCount, delta) : observed;
+
+                if (m_waitHandle is not null && observed == 0 && newCount > 0)
                 {
                     m_waitHandle.Set();
                 }
             }
 
-            // And return the count
             return returnCount;
         }
 
