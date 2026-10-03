@@ -130,7 +130,7 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
-            // Fast path for Overlaps when other is IReadOnlySet with fast lookup and same equality comparer
+            // Fast path for Overlaps when other is ISet with fast lookup and same equality comparer
             if (other is ISet<T> otherAsSet && HasFastLookupAndComparersAreCompatible(otherAsSet))
             {
                 return otherAsSet.Count > Count
