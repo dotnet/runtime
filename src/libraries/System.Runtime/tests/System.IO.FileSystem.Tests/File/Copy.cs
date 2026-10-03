@@ -141,8 +141,12 @@ namespace System.IO.Tests
                 AssertExtensions.Equal(data, readData);
             }
 
-            // Ensure last write/access time on the new file is appropriate
-            Assert.InRange(File.GetLastWriteTimeUtc(testFileDest), lastWriteTime.AddSeconds(-1), lastWriteTime.AddSeconds(1));
+            // Ensure last write/access time on the new file is appropriate.
+            TimeSpan tolerance = IsTempPathOnFat32 ? TimeSpan.FromSeconds(3) : TimeSpan.FromSeconds(1);
+            Assert.InRange(
+                File.GetLastWriteTimeUtc(testFileDest),
+                lastWriteTime.Subtract(tolerance),
+                lastWriteTime.Add(tolerance));
 
             Assert.Equal(readOnly, (File.GetAttributes(testFileDest) & FileAttributes.ReadOnly) != 0);
             if (readOnly)
@@ -203,11 +207,11 @@ namespace System.IO.Tests
             Assert.True(File.Exists(Path.Combine(TestDirectory, valid)));
         }
 
-        [Theory,
-            InlineData("", ":bar"),
-            InlineData("", ":bar:$DATA"),
-            InlineData("::$DATA", ":bar"),
-            InlineData("::$DATA", ":bar:$DATA")]
+        [ConditionalTheory(typeof(FileSystemTest), nameof(FileSystemTest.SupportsAlternateDataStreams))]
+        [InlineData("", ":bar")]
+        [InlineData("", ":bar:$DATA")]
+        [InlineData("::$DATA", ":bar")]
+        [InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream(string defaultStream, string alternateStream)
         {
@@ -347,11 +351,11 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory,
-            InlineData("", ":bar"),
-            InlineData("", ":bar:$DATA"),
-            InlineData("::$DATA", ":bar"),
-            InlineData("::$DATA", ":bar:$DATA")]
+        [ConditionalTheory(typeof(FileSystemTest), nameof(FileSystemTest.SupportsAlternateDataStreams))]
+        [InlineData("", ":bar")]
+        [InlineData("", ":bar:$DATA")]
+        [InlineData("::$DATA", ":bar")]
+        [InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83659", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsArm64Process))]
         public void WindowsAlternateDataStreamOverwrite(string defaultStream, string alternateStream)
