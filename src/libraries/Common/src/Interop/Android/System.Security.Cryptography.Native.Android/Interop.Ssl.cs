@@ -60,9 +60,15 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateKeyManagersFromKeyStoreEntry")]
         internal static partial IntPtr SSLStreamCreateKeyManagersFromKeyStoreEntry(IntPtr privateKeyEntryHandle);
 
-        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RegisterRemoteCertificateValidationCallback")]
-        internal static unsafe partial void RegisterRemoteCertificateValidationCallback(
-            delegate* unmanaged<IntPtr, IntPtr, bool> verifyRemoteCertificate);
+        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateKeyManagersForSelection")]
+        private static partial IntPtr SSLStreamCreateKeyManagersForSelection(IntPtr sslStreamProxyHandle);
+        internal static IntPtr SSLStreamCreateKeyManagersForSelection(SslStream.JavaProxy sslStreamProxy)
+            => SSLStreamCreateKeyManagersForSelection(sslStreamProxy.Handle);
+
+        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RegisterSslStreamCallbacks")]
+        internal static unsafe partial void RegisterSslStreamCallbacks(
+            delegate* unmanaged<IntPtr, IntPtr, bool> verifyRemoteCertificate,
+            delegate* unmanaged<IntPtr, int, IntPtr*, IntPtr> selectLocalCertificate);
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_GetPlatformValidationError")]
         private static partial int GetPlatformValidationError(
