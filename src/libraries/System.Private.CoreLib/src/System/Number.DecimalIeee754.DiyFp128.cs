@@ -28,8 +28,8 @@ internal static partial class Number
     // finite computation.
 
     /// <summary>
-    /// An unpacked software binary128 value (Intel's <c>UX_FLOAT</c>); the 128-bit-significand analogue
-    /// of <see cref="DiyFp"/>. This is a working type, not a storage encoding: the represented value is
+    /// An unpacked software binary128 value (Intel's <c>UX_FLOAT</c>) with a 128-bit significand.
+    /// This is a working type, not a storage encoding: the represented value is
     /// <c>(-1)^sign * fraction * 2^(exponent - 128)</c>, where the 128-bit <c>fraction</c> is held in
     /// two 64-bit limbs and, when normalized, lies in <c>[2^127, 2^128)</c> (its high bit is set). It
     /// carries the full 128-bit fraction (15 guard bits beyond the binary128 significand) and a wide
