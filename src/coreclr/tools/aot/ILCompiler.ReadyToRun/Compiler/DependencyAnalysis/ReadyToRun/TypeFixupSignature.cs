@@ -46,7 +46,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, targetModule, factory.SignatureContext);
+                // The global module type has a fixed token even outside the version bubble.
+                bool hasStableToken = fixupKind == ReadyToRunFixupKind.TypeHandle && _typeDesc is EcmaType { IsModuleType: true };
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, targetModule, factory.SignatureContext, hasStableToken);
                 if ((fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
                     (fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {

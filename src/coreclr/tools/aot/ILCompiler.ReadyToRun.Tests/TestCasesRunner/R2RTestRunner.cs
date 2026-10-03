@@ -208,6 +208,7 @@ internal sealed class R2RTestRunner
             // Step 2: Run each crossgen2 compilation and validate
             var driver = new R2RDriver(_output);
             List<string> refPaths = BuildReferencePaths();
+            refPaths.AddRange(assemblyPaths.Values);
 
             foreach(var compilation in testCase.Compilations)
             {

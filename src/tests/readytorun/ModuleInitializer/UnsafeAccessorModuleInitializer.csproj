@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Preserve separate modules and run the test through composite ReadyToRun. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnsafeAccessorModuleInitializer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="FieldLibrary.csproj" />
+    <ProjectReference Include="InitializerLibrary.csproj" />
+    <ProjectReference Include="RvaFieldLibrary.ilproj" />
+    <ProjectReference Include="ValueTypeLibrary.csproj" />
+  </ItemGroup>
+</Project>
