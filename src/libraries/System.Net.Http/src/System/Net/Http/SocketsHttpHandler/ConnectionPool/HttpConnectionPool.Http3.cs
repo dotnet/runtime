@@ -144,6 +144,7 @@ namespace System.Net.Http
                         // We have a connection that we can attempt to use.
                         // Validate it below outside the lock, to avoid doing expensive operations while holding the lock.
                         connection = _availableHttp3Connections![availableConnectionCount - 1];
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace($"Selected pooled connection: requestId={request.GetHashCode()}, availableConnections={availableConnectionCount}");
                     }
                     else
                     {
@@ -428,6 +429,7 @@ namespace System.Net.Http
                             added = true;
                             _availableHttp3Connections ??= new List<Http3Connection>();
                             _availableHttp3Connections.Add(connection);
+                            if (NetEventSource.Log.IsEnabled()) connection.Trace($"Added to available list: availableConnections={_availableHttp3Connections.Count}, associatedConnections={_associatedHttp3ConnectionCount}");
                         }
                     }
 
@@ -435,10 +437,13 @@ namespace System.Net.Http
                     {
                         Debug.Assert(!added);
 
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Publishing connection to request waiter.");
                         if (waiter.TrySignal(connection))
                         {
+                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Request waiter accepted connection.");
                             break;
                         }
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Request waiter declined connection.");
 
                         // Loop and process the queue again
                     }
@@ -545,6 +550,7 @@ namespace System.Net.Http
                     }
                 }
 
+                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Invalidation: found={found}, dispose={dispose}, availableConnections={_availableHttp3Connections?.Count ?? 0}, associatedConnections={_associatedHttp3ConnectionCount}");
                 CheckForHttp3ConnectionInjection();
             }
 

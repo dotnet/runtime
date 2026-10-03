@@ -133,6 +133,8 @@ namespace System.Net.Http
             Debug.Assert(Monitor.IsEntered(SyncObj));
             Debug.Assert(ShuttingDown);
 
+            if (NetEventSource.Log.IsEnabled()) Trace($"Checking shutdown: activeRequests={_activeRequests.Count}, firstRejectedStreamId={_firstRejectedStreamId}, hasConnection={_connection is not null}");
+
             if (_activeRequests.Count != 0)
             {
                 return;
@@ -192,7 +194,7 @@ namespace System.Net.Http
                 // For the single connection case, we allow the counter to go below zero.
                 Debug.Assert(singleConnection || _availableRequestStreamsCount >= 0);
 
-                if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}, firstRejectedStreamId={_firstRejectedStreamId}, hasConnection={_connection is not null}");
 
                 bool streamAvailable = _availableRequestStreamsCount > 0;
 
@@ -266,6 +268,7 @@ namespace System.Net.Http
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamAvailable, CancellationToken cancellationToken)
         {
             request.ConnectionId = Id;
+            if (NetEventSource.Log.IsEnabled()) Trace($"HTTP3 send start: requestId={request.GetHashCode()}, streamAvailable={streamAvailable}, canceled={cancellationToken.IsCancellationRequested}");
 
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -315,6 +318,7 @@ namespace System.Net.Http
 
                 if (quicStream == null)
                 {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"HTTP3 retry path: no request stream. Suppressed exception: {exception}");
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
@@ -324,10 +328,12 @@ namespace System.Net.Http
                 lock (SyncObj)
                 {
                     goAway = _firstRejectedStreamId != -1 && requestStream.StreamId >= _firstRejectedStreamId;
+                    if (NetEventSource.Log.IsEnabled()) Trace(requestStream.StreamId, $"Opened request stream: requestId={request.GetHashCode()}, firstRejectedStreamId={_firstRejectedStreamId}, goAway={goAway}");
                 }
 
                 if (goAway)
                 {
+                    if (NetEventSource.Log.IsEnabled()) Trace(requestStream.StreamId, "HTTP3 retry path: stream at or above GOAWAY boundary.");
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
@@ -344,6 +350,7 @@ namespace System.Net.Http
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
             {
+                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP3 retry path: local OperationAborted. Exception: {ex}; connection abort: {_abortException}");
                 // This will happen if we aborted _connection somewhere and we have pending OpenOutboundStreamAsync call.
                 // note that _abortException may be null if we closed the connection in response to a GOAWAY frame
                 throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
@@ -436,6 +443,7 @@ namespace System.Net.Http
                 }
 
                 _firstRejectedStreamId = firstRejectedStreamId;
+                if (NetEventSource.Log.IsEnabled()) Trace($"Applied GOAWAY boundary: firstRejectedStreamId={_firstRejectedStreamId}, activeRequests={_activeRequests.Count}");
 
                 foreach (KeyValuePair<QuicStream, Http3RequestStream> request in _activeRequests)
                 {
@@ -483,7 +491,7 @@ namespace System.Net.Http
                 GetHashCode(),                // connection ID
                 (int)streamId,                // stream ID
                 memberName,                   // method name
-                message);                     // message
+                $"connectionId={Id}: {message}"); // message
 
         private async Task SendSettingsAsync()
         {
