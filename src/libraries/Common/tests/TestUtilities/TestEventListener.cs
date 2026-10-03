@@ -7,7 +7,11 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Text;
+#if XUNIT_V3
+using Xunit;
+#else
 using Xunit.Abstractions;
+#endif
 
 namespace TestUtilities;
 
