@@ -36,6 +36,12 @@ turns on hooks in `src/coreclr/vm/cdacstress.cpp`. The native hook:
 3. Writes structured per-frame results (with resolved method names) to
    `DOTNET_CdacStressLogFile`.
 
+The runtime oracle retains interior references into the live stack, including ordinary
+byref arguments that `PromoteCarefully` normally excludes. This applies only to the
+stress collector callback; real GC callbacks keep their existing behavior. Neither
+reference set is filtered for stack interiors, so the comparison covers stack-backed
+byrefs as well as interior references into the GC heap.
+
 ### `DOTNET_CdacStress` flag layout
 
 The DWORD is split into byte-wide regions:
@@ -159,6 +165,7 @@ $env:CORE_ROOT = "path\to\Core_Root"
 | **DynamicMethods** | DynamicMethod / IL emit |
 | **InlineArrayByRefLike** | IL-defined byref-like inline array containing two `int32&` values, passed by value |
 | **CallSignatures** | Wide signature surface for the ARGITER sub-check (primitives, byref/ptr, structs, generics) |
+| **ByRefArguments** | Stack- and heap-backed Spans plus ordinary out parameters, including allocation while a Span-bearing prestub frame is live |
 | **CrossModule** | Calls across multiple assemblies exercising cross-module type references |
 | **NotYetLoadedArgType** | Regression coverage for the cDAC dropping a GC-root whose argument type is not yet loaded when a `PrestubMethodFrame` is scanned. |
 | **VarArgs** | `__arglist` / VASigCookie validation for ARGITER (Windows x86/x64/ARM64 only; excluded from GCREFS until GetStackReferences walks the cookie signature) |

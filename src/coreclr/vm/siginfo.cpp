@@ -25,6 +25,7 @@
 #include "multicorejit.h"
 #include "callconvbuilder.hpp"
 #include "dynamicmethod.h"
+#include "cdacstress.h"
 
 /*******************************************************************/
 const CorTypeInfo::CorTypeInfoEntry CorTypeInfo::info[ELEMENT_TYPE_MAX] =
@@ -5154,6 +5155,11 @@ void PromoteCarefully(promote_func   fn,
     // Even on Windows, we care just about the stack above the stack_limit.
     if (sc->thread_under_crawl != NULL && sc->thread_under_crawl->IsAddressInStack(*ppObj) && (PTR_TO_TADDR(*ppObj) >= sc->stack_limit))
     {
+#ifdef CDAC_STRESS
+        // The stress oracle compares raw slots; real GC callbacks still exclude stack interiors.
+        if (CdacStressPolicy::IsStackRefCollectionCallback(fn))
+            (*fn)(ppObj, sc, flags);
+#endif // CDAC_STRESS
         return;
     }
 
