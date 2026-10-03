@@ -38,7 +38,7 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | CCW | COM callable wrappers (CCW) on Windows | Heap |
 | RCWCleanupList | STA-context RCW entries in g_pRCWCleanupList on Windows | Heap |
 | RCW | COM RCW with populated interface entry cache on Windows | Heap |
-| ComWrappers | ComWrappers-based MOW and RCW | Heap |
+| ComWrappers | ComWrappers-based MOW and RCW, including field-backed associations | Full |
 | ExceptionHandlingInfo | EH clause reading test | Heap |
 | LocalVariables | Info about local variables | Heap |
 | AsyncContinuation | Reading async continuation method tables | Heap |

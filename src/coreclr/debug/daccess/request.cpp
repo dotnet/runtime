@@ -5179,11 +5179,32 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
     }
 
     FieldDesc* pRcwTableField = (&g_CoreLib)->GetField(FIELD__COMWRAPPERS__NAITVE_OBJECT_WRAPPER_TABLE);
-    CONDITIONAL_WEAK_TABLE_REF rcwTable = *(DPTR(CONDITIONAL_WEAK_TABLE_REF))PTR_TO_TADDR(pRcwTableField->GetStaticAddressHandle(pRcwTableField->GetBase()));
-    if (rcwTable != nullptr)
+    if (rcw != nullptr)
     {
+        OBJECTREF object = OBJECTREF(TO_TADDR(objAddr));
         NATIVEOBJECTWRAPPERREF pNativeObjectWrapperRef = nullptr;
-        if (rcwTable->TryGetValue(OBJECTREF(TO_TADDR(objAddr)), &pNativeObjectWrapperRef))
+        MethodTable* pComWrappersObjectMT = (&g_CoreLib)->GetClassIfExist(CLASS__COMWRAPPERS_OBJECT);
+        MethodTable* pCurrentMT = pComWrappersObjectMT != nullptr ? object->GetMethodTable() : nullptr;
+        while (pCurrentMT != nullptr && pCurrentMT != pComWrappersObjectMT)
+        {
+            pCurrentMT = pCurrentMT->GetParentMethodTable();
+        }
+
+        if (pCurrentMT != nullptr)
+        {
+            FieldDesc* pWrapperField = (&g_CoreLib)->GetField(FIELD__COMWRAPPERS_OBJECT__NATIVE_OBJECT_WRAPPER);
+            pNativeObjectWrapperRef = static_cast<NATIVEOBJECTWRAPPERREF>(pWrapperField->GetRefValue(object));
+        }
+        else
+        {
+            CONDITIONAL_WEAK_TABLE_REF rcwTable = *(DPTR(CONDITIONAL_WEAK_TABLE_REF))PTR_TO_TADDR(pRcwTableField->GetStaticAddressHandle(pRcwTableField->GetBase()));
+            if (rcwTable != nullptr)
+            {
+                rcwTable->TryGetValue(object, &pNativeObjectWrapperRef);
+            }
+        }
+
+        if (pNativeObjectWrapperRef != nullptr)
         {
             // Tag this RCW as a ComWrappers RCW.
             *rcw = TO_CDADDR(dac_cast<TADDR>(pNativeObjectWrapperRef)) | 0x1;

@@ -3,14 +3,13 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 /// <summary>
 /// Debuggee for cDAC dump tests — exercises the ComWrappers contract.
-/// Creates exactly one MOW (via GetOrCreateComInterfaceForObject) and exactly one
-/// RCW (via GetOrCreateObjectForComInstance) for a single managed object, then
-/// crashes via FailFast.
+/// Creates table-backed and field-backed RCWs and CCWs, then crashes via FailFast.
 /// </summary>
 internal static class Program
 {
@@ -18,6 +17,8 @@ internal static class Program
     private static IntPtr s_mowPtr;
     private static object? s_rcwObject;
     private static GCHandle s_rcwGcHandle;
+    private static readonly List<GCHandle> s_additionalHandles = [];
+    private static IntPtr s_fieldBackedMow;
 
     private static void Main()
     {
@@ -33,6 +34,15 @@ internal static class Program
         s_rcwObject = wrappers.GetOrCreateObjectForComInstance(s_mowPtr, CreateObjectFlags.None);
         s_rcwGcHandle = GCHandle.Alloc(s_rcwObject, GCHandleType.Normal);
 
+#if NET11_0_OR_GREATER
+        object directProxy = new FieldBackedComWrappers(indirect: false).GetOrCreateObjectForComInstance(s_mowPtr, CreateObjectFlags.None);
+        object indirectProxy = new FieldBackedComWrappers(indirect: true).GetOrCreateObjectForComInstance(s_mowPtr, CreateObjectFlags.None);
+        s_additionalHandles.Add(GCHandle.Alloc(directProxy));
+        s_additionalHandles.Add(GCHandle.Alloc(indirectProxy));
+        s_additionalHandles.Add(GCHandle.Alloc(new FieldBackedProxy()));
+        s_fieldBackedMow = wrappers.GetOrCreateComInterfaceForObject(directProxy, CreateComInterfaceFlags.None);
+#endif
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
@@ -41,6 +51,8 @@ internal static class Program
         GC.KeepAlive(s_mowPtr);
         GC.KeepAlive(s_rcwObject);
         GC.KeepAlive(s_rcwGcHandle);
+        GC.KeepAlive(s_additionalHandles);
+        GC.KeepAlive(s_fieldBackedMow);
 
         Environment.FailFast("cDAC dump test: ComWrappers debuggee intentional crash");
     }
@@ -63,6 +75,19 @@ internal class NativeObjectWrapper
         Pointer = ptr;
     }
 }
+
+#if NET11_0_OR_GREATER
+internal class FieldBackedProxy : ComWrappersObject { }
+internal sealed class IndirectFieldBackedProxy : FieldBackedProxy { }
+
+internal sealed class FieldBackedComWrappers(bool indirect) : TestComWrappers
+{
+    protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+    {
+        return indirect ? new IndirectFieldBackedProxy() : new FieldBackedProxy();
+    }
+}
+#endif
 
 /// <summary>
 /// Minimal <see cref="ComWrappers"/> subclass that can produce both MOWs and RCWs.
