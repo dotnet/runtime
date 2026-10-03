@@ -19,6 +19,8 @@ namespace System.Tests
             "Windows",
             "Linux",
             "FreeBSD",
+            "illumos",
+            "Solaris",
             "Browser",
             "Wasi",
         };
@@ -168,6 +170,18 @@ namespace System.Tests
 
         [Fact, PlatformSpecific(TestPlatforms.Windows)]
         public static void TestIsOSVersionAtLeast_Windows() => TestIsOSVersionAtLeast("Windows");
+
+        [Fact, PlatformSpecific(TestPlatforms.illumos)]
+        public static void TestIsOSPlatform_Illumos() => TestIsOSPlatform("illumos", OperatingSystem.IsIllumos);
+
+        [Fact, PlatformSpecific(TestPlatforms.illumos)]
+        public static void TestIsOSVersionAtLeast_Illumos() => TestIsOSVersionAtLeast("illumos");
+
+        [Fact, PlatformSpecific(TestPlatforms.Solaris)]
+        public static void TestIsOSPlatform_Solaris() => TestIsOSPlatform("Solaris", OperatingSystem.IsSolaris);
+
+        [Fact, PlatformSpecific(TestPlatforms.Solaris)]
+        public static void TestIsOSVersionAtLeast_Solaris() => TestIsOSVersionAtLeast("Solaris");
 
         private static void TestIsOSPlatform(string currentOSName, Func<bool> currentOSCheck)
         {
