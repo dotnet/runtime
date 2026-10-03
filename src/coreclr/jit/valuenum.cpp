@@ -14403,6 +14403,29 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
+#if defined(TARGET_XARCH)
+    // Vector division can throw both arithmetic overflow, if signed, and divide by zero exceptions
+    if (intrinsicId == NI_Vector_op_Division)
+    {
+        assert(opCount == 2);
+        assert(varTypeIsInt(tree->GetSimdBaseType()));
+
+        ValueNumPair dividendVNP = vnStore->VNPNormalPair(tree->Op(1)->gtVNPair);
+        ValueNumPair divisorVNP  = vnStore->VNPNormalPair(tree->Op(2)->gtVNPair);
+
+        ValueNumPair divideByZeroExc =
+            vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_DivideByZeroExc, divisorVNP));
+        excSetPair = vnStore->VNPExcSetUnion(excSetPair, divideByZeroExc);
+
+        if (varTypeIsSigned(tree->GetSimdBaseType()))
+        {
+            ValueNumPair arithmeticExc = vnStore->VNPExcSetSingleton(
+                vnStore->VNPairForFuncNoFolding(TYP_REF, VNF_ArithmeticExc, dividendVNP, divisorVNP));
+            excSetPair = vnStore->VNPExcSetUnion(excSetPair, arithmeticExc);
+        }
+    }
+#endif // TARGET_XARCH
+
     // Some intrinsics should always be unique
     bool makeUnique = false;
 
