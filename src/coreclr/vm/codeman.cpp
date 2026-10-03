@@ -1943,6 +1943,12 @@ void EEJitManager::SetCpuInfo()
 #endif // TARGET_X86 || TARGET_AMD64
 
     m_CPUCompileFlags = CPUCompileFlags;
+
+#ifdef TARGET_AMD64
+    // Read from the final CPUCompileFlags, not the cpuFeatures check above, so that a
+    // config-driven clearing of APX (DOTNET_EnableAPX=0) is honoured.
+    g_isJmpAbsAvailable = CPUCompileFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_APX);
+#endif // TARGET_AMD64
 }
 
 // Define some data that we can use to get a better idea of what happened when we get a Watson dump that indicates the JIT failed to load.
