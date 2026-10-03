@@ -348,18 +348,21 @@ namespace JSImportGenerator.Unit.Tests
                                 {
                                     [global::System.ThreadStaticAttribute]
                                     static bool initialized;
-                                    [global::System.Runtime.CompilerServices.ModuleInitializerAttribute, global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.__GeneratedInitializer", "TestProject")]
+                                    [global::System.Runtime.CompilerServices.ModuleInitializerAttribute]
                                     static internal void __TrimmingPreserve_()
                                     {
+                                        global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.RegisterAssemblyExports("TestProject", __Register_);
                                     }
 
-                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute("__Wrapper_AnnotatedExport_2034238666", "Basic", "TestProject")]
                                     static void __Register_()
                                     {
                                         if (initialized || global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture != global::System.Runtime.InteropServices.Architecture.Wasm)
                                             return;
                                         initialized = true;
-                                        global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.BindManagedFunction("[TestProject]Basic:AnnotatedExport", 2034238666, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Discard, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int52, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.BigInt64, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Action(), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Function(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Span(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Byte), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.ArraySegment(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Byte), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Array(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTime, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTimeOffset, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTime), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTimeOffset), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int52), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.BigInt64), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.ArraySegment(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Single)]);
+                                        unsafe
+                                        {
+                                            global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.BindManagedFunction("[TestProject]Basic:AnnotatedExport", 2034238666, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Discard, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int52, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.BigInt64, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Action(), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Function(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Span(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Byte), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.ArraySegment(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Byte), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Array(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Object), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTime, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTimeOffset, global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTime), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.DateTimeOffset), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int52), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.BigInt64), global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.ArraySegment(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Single)], &global::Basic.__Wrapper_AnnotatedExport_2034238666);
+                                        }
                                     }
                                 }
                             }
@@ -521,18 +524,21 @@ namespace JSImportGenerator.Unit.Tests
                                 {
                                     [global::System.ThreadStaticAttribute]
                                     static bool initialized;
-                                    [global::System.Runtime.CompilerServices.ModuleInitializerAttribute, global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.__GeneratedInitializer", "TestProject")]
+                                    [global::System.Runtime.CompilerServices.ModuleInitializerAttribute]
                                     static internal void __TrimmingPreserve_()
                                     {
+                                        global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.RegisterAssemblyExports("TestProject", __Register_);
                                     }
 
-                                    [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute("__Wrapper_Export1_622134597", "Basic", "TestProject")]
                                     static void __Register_()
                                     {
                                         if (initialized || global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture != global::System.Runtime.InteropServices.Architecture.Wasm)
                                             return;
                                         initialized = true;
-                                        global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.BindManagedFunction("[TestProject]Basic:Export1", 622134597, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32)]);
+                                        unsafe
+                                        {
+                                            global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.BindManagedFunction("[TestProject]Basic:Export1", 622134597, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32)], &global::Basic.__Wrapper_Export1_622134597);
+                                        }
                                     }
                                 }
                             }

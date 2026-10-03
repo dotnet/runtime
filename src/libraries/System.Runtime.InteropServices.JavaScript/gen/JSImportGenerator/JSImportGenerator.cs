@@ -182,7 +182,6 @@ namespace Microsoft.Interop.JavaScript
             writer.WriteLine($"{string.Join(" ", context.StubMethodSyntaxTemplate.Modifiers)} {signature.StubReturnType} {context.StubMethodSyntaxTemplate.Identifier}({string.Join(", ", signature.StubParameters.Select(static parameter => parameter.Declaration))})");
             using (writer.WriteBlock())
             {
-                // Under the updated rules a type-level modifier does not establish an unsafe context.
                 writer.WriteLine("unsafe");
                 using (writer.WriteBlock())
                 {

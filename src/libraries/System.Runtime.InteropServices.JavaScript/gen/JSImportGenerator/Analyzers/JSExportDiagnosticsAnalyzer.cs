@@ -21,6 +21,9 @@ namespace Microsoft.Interop.JavaScript
         protected override DiagnosticDescriptor RequiresAllowUnsafeBlocksDescriptor => GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks;
         protected override bool RequiresImplementation => true;
 
+        protected override ImmutableArray<DiagnosticDescriptor> AdditionalDescriptors =>
+            ImmutableArray.Create(GeneratorDiagnostics.JSExportInaccessibleNestedType);
+
         protected override ImmutableArray<DiagnosticInfo> CalculateDiagnostics(
             MethodDeclarationSyntax originalSyntax,
             IMethodSymbol symbol,
@@ -41,6 +44,14 @@ namespace Microsoft.Interop.JavaScript
                 new CompositeMarshallingGeneratorResolver(
                     new NoSpanAndTaskMixingResolver(),
                     new JSGeneratorResolver()));
+
+            if (!JSExportGenerator.IsReferenceableByMethodGroup(symbol.ContainingType))
+            {
+                generatorDiagnostics.ReportDiagnostic(DiagnosticInfo.Create(
+                    GeneratorDiagnostics.JSExportInaccessibleNestedType,
+                    locations.FallbackLocation,
+                    symbol.Name));
+            }
 
             return generatorDiagnostics.Diagnostics.ToImmutableArray();
         }

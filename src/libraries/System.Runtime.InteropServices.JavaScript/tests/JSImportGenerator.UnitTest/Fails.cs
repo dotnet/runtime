@@ -92,6 +92,82 @@ namespace JSImportGenerator.Unit.Tests
             Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1075") != null);
         }
 
+        [Fact]
+        public async Task JSExportInInaccessibleNestedTypeWarns()
+        {
+            string source = """
+                using System.Runtime.InteropServices.JavaScript;
+                partial class Outer
+                {
+                    private partial class Inner
+                    {
+                        [JSExport]
+                        internal static void Export() { }
+                    }
+                }
+                """;
+            Compilation comp = TestUtils.CreateCompilation(new[] { source });
+            ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
+
+            Assert.NotEmpty(analyzerDiags.Where(d => d.Id == "SYSLIB1076"));
+        }
+
+        public static IEnumerable<object[]> NonReferenceableExportSources()
+        {
+            yield return
+            [
+                """
+                using System.Runtime.InteropServices.JavaScript;
+                partial class Outer<T>
+                {
+                    [JSExport]
+                    internal static void Export() { }
+                }
+                """,
+            ];
+            yield return
+            [
+                """
+                using System.Runtime.InteropServices.JavaScript;
+                file partial class FileLocal
+                {
+                    [JSExport]
+                    internal static void Export() { }
+                }
+                """,
+            ];
+        }
+
+        [Theory]
+        [MemberData(nameof(NonReferenceableExportSources))]
+        public async Task JSExportInNonReferenceableTypeWarns(string source)
+        {
+            Compilation comp = TestUtils.CreateCompilation(new[] { source });
+            ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
+
+            Assert.NotEmpty(analyzerDiags.Where(d => d.Id == "SYSLIB1076"));
+        }
+
+        [Fact]
+        public async Task JSExportInAccessibleNestedTypeDoesNotWarn()
+        {
+            string source = """
+                using System.Runtime.InteropServices.JavaScript;
+                public partial class Outer
+                {
+                    internal partial class Inner
+                    {
+                        [JSExport]
+                        internal static void Export() { }
+                    }
+                }
+                """;
+            Compilation comp = TestUtils.CreateCompilation(new[] { source });
+            ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
+
+            Assert.Empty(analyzerDiags.Where(d => d.Id == "SYSLIB1076"));
+        }
+
         private static Task<ImmutableArray<Diagnostic>> RunAnalyzerAsync(Compilation comp)
         {
             var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(

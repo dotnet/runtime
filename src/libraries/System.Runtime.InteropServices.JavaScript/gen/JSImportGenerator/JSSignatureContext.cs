@@ -71,6 +71,7 @@ namespace Microsoft.Interop.JavaScript
                 SignatureContext = sigContext,
                 TypesHash = typesHash,
                 StubTypeFullName = stubTypeFullName,
+                StubTypeQualifiedName = method.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 MethodName = fullName,
                 QualifiedMethodName = qualifiedName,
                 BindingName = "__signature_" + method.Name + "_" + typesHashString,
@@ -90,6 +91,9 @@ namespace Microsoft.Interop.JavaScript
             return $"[{env.Compilation.AssemblyName}]{typeName}:{method.Name}";
         }
         public string StubTypeFullName { get; init; }
+
+        /// <summary>The containing type, qualified so it can be referenced from generated code.</summary>
+        public string StubTypeQualifiedName { get; init; }
         public int TypesHash { get; init; }
 
         public string MethodName { get; init; }
