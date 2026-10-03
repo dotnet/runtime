@@ -846,9 +846,13 @@ namespace System.Text.RegularExpressions
                         }
 
                         // Force a re-reduction if we know we've exposed new opportunities that'll be handled.
+                        // If either side of the alternation is empty and the other side doesn't contain captures,
+                        // the alternation can be transformed into a ? or ??. When captures are present, that
+                        // transformation can change capture semantics (e.g., repeated captures), so avoid it.
                         reordered |=
                             child.ChildCount() == 2 &&
-                            (child.Child(0).Kind is RegexNodeKind.Empty || child.Child(1).Kind is RegexNodeKind.Empty); // can be transformed into a ? or ??
+                            ((child.Child(0).Kind is RegexNodeKind.Empty && ContainsKind(child.Child(1), [RegexNodeKind.Capture]) is false) ||
+                             (child.Child(1).Kind is RegexNodeKind.Empty && ContainsKind(child.Child(0), [RegexNodeKind.Capture]) is false));
 
                         // If anything was reordered, there may be new optimization opportunities inside
                         // of the alternation, so reduce it again.
@@ -1099,11 +1103,11 @@ namespace System.Text.RegularExpressions
                                 // Such "optional" nodes are processed more efficiently, including being able to be better coalesced with surrounding nodes.
                                 if (node.Kind is RegexNodeKind.Alternate && node.ChildCount() == 2)
                                 {
-                                    if (node.Child(1).Kind is RegexNodeKind.Empty)
+                                    if (node.Child(1).Kind is RegexNodeKind.Empty && ContainsKind(node.Child(0), [RegexNodeKind.Capture]) is false)
                                     {
                                         node = node.Child(0).MakeQuantifier(lazy: false, min: 0, max: 1);
                                     }
-                                    else if (node.Child(0).Kind is RegexNodeKind.Empty)
+                                    else if (node.Child(0).Kind is RegexNodeKind.Empty && ContainsKind(node.Child(1), [RegexNodeKind.Capture]) is false)
                                     {
                                         node = node.Child(1).MakeQuantifier(lazy: true, min: 0, max: 1);
                                     }
