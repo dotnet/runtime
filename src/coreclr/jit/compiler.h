@@ -1863,6 +1863,15 @@ struct FuncInfoDsc
     BYTE     unwindCodes[offsetof(UNWIND_INFO, UnwindCode) + (0xFF * sizeof(UNWIND_CODE))];
     unsigned unwindCodeSlot;
 
+    // Unwind Information V3. Like the V1 codes above, the prolog WODs and their IP offsets are
+    // filled from the end of their arrays backwards, which leaves them in the reverse execution
+    // order V3 requires. Maximum of 31 prolog WODs, each at most the size of WOD_ALLOC_HUGE.
+    UNWIND_INFO_V3 unwindHeaderV3;
+    BYTE           unwindWodsV3[UNWIND_INFO_V3_MAX_OPS * sizeof(WOD_ALLOC_HUGE)];
+    unsigned       unwindWodSlotV3;
+    BYTE           unwindIpOffsetsV3[UNWIND_INFO_V3_MAX_OPS];
+    unsigned       unwindIpOffsetSlotV3;
+
 #elif defined(TARGET_X86)
 
     emitLocation* startLoc;
@@ -10101,6 +10110,14 @@ private:
     void unwindAllocStackWindows(unsigned size);
     void unwindSetFrameRegWindows(regNumber reg, unsigned offset);
     void unwindSaveRegWindows(regNumber reg, unsigned offset);
+
+    void  unwindBegPrologV3();
+    BYTE* unwindAllocWodV3(FuncInfoDsc* func, unsigned size);
+    void  unwindPushV3(regNumber reg);
+    void  unwindPush2V3(regNumber reg1, regNumber reg2);
+    void  unwindAllocStackV3(unsigned size);
+    void  unwindSetFrameRegV3(regNumber reg, unsigned offset);
+    void  unwindSaveRegV3(regNumber reg, unsigned offset);
 
 #ifdef UNIX_AMD64_ABI
     void unwindSaveRegCFI(regNumber reg, unsigned offset);

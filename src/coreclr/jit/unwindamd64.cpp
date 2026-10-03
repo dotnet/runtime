@@ -504,6 +504,219 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
     }
 }
 
+//------------------------------------------------------------------------
+// Unwind Information V3 prolog encoding.
+//
+// These mirror the unwind*Windows functions above, encoding the same prolog operations as V3
+// winding operation descriptors (WODs, see win64unwindv3.h). Two differences matter to callers:
+//
+//   * A V3 IP offset is the offset of the instruction that performs the operation, where V1's
+//     CodeOffset is the offset of the instruction after it. So these must be called immediately
+//     before the instruction is emitted, where the V1 functions are called after.
+//   * V3 can describe PUSH2 and the APX registers R16-R31, which V1 cannot.
+//
+
+void Compiler::unwindBegPrologV3()
+{
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+
+    FuncInfoDsc* func = funCurrentFunc();
+
+    // The code locations are set up by unwindBegPrologWindows, which runs for every prolog.
+
+    func->unwindWodSlotV3                = sizeof(func->unwindWodsV3);
+    func->unwindIpOffsetSlotV3           = sizeof(func->unwindIpOffsetsV3);
+    func->unwindHeaderV3.Version         = 3;
+    func->unwindHeaderV3.Flags           = 0;
+    func->unwindHeaderV3.SizeOfProlog    = 0;
+    func->unwindHeaderV3.PayloadWords    = 0;
+    func->unwindHeaderV3.NumberOfOps     = 0;
+    func->unwindHeaderV3.NumberOfEpilogs = 0;
+}
+
+//------------------------------------------------------------------------
+// unwindAllocWodV3: Allocate the next prolog WOD, and record its IP offset.
+//
+// Arguments:
+//    func - the function or funclet whose prolog is being encoded
+//    size - the encoded size of the WOD, in bytes
+//
+// Return Value:
+//    Where to write the WOD.
+//
+BYTE* Compiler::unwindAllocWodV3(FuncInfoDsc* func, unsigned size)
+{
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(func->unwindHeaderV3.Version == 3); // Can't call this before unwindBegPrologV3
+
+    // Can't call this after unwindReserve.
+    // TODO-Unwind-V3: Nothing sets NumberOfOps yet, so this holds trivially until the V3
+    // reserve path fills it in, as unwindReserveFuncHelper does CountOfUnwindCodes for V1.
+    assert(func->unwindHeaderV3.NumberOfOps == 0);
+    assert(func->unwindIpOffsetSlotV3 > 0);
+    assert(func->unwindWodSlotV3 >= size);
+
+    unsigned int cbProlog = unwindGetCurrentOffset(func);
+    noway_assert((BYTE)cbProlog == cbProlog);
+    func->unwindIpOffsetsV3[--func->unwindIpOffsetSlotV3] = (BYTE)cbProlog;
+
+    return &func->unwindWodsV3[func->unwindWodSlotV3 -= size];
+}
+
+void Compiler::unwindPushV3(regNumber reg)
+{
+    FuncInfoDsc* func = funCurrentFunc();
+
+    if ((RBM_CALLEE_SAVED & genRegMask(reg))
+#if ETW_EBP_FRAMED
+        // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
+        // is excluded from the callee-save register list.
+        // Make sure the register gets PUSH unwind info in this case,
+        // since it is pushed as a frame register.
+        || (reg == REG_FPBASE)
+#endif // ETW_EBP_FRAMED
+    )
+    {
+        assert(genIsValidIntReg(reg));
+        WOD_PUSH* wod = (WOD_PUSH*)unwindAllocWodV3(func, sizeof(WOD_PUSH));
+        wod->OpCode   = WOD_OP_PUSH;
+        wod->Register = (UCHAR)reg;
+        assert((regNumber)wod->Register == reg);
+    }
+    else
+    {
+        // Push of a volatile register is just a small stack allocation
+        WOD_ALLOC_SMALL* wod = (WOD_ALLOC_SMALL*)unwindAllocWodV3(func, sizeof(WOD_ALLOC_SMALL));
+        wod->OpCode          = WOD_OP_ALLOC_SMALL;
+        wod->Size            = 0;
+    }
+}
+
+void Compiler::unwindPush2V3(regNumber reg1, regNumber reg2)
+{
+    FuncInfoDsc* func = funCurrentFunc();
+
+    assert(genIsValidIntReg(reg1) && genIsValidIntReg(reg2));
+
+    if (((RBM_CALLEE_SAVED & genRegMask(reg1)) == RBM_NONE) || ((RBM_CALLEE_SAVED & genRegMask(reg2)) == RBM_NONE))
+    {
+        // A volatile register is not saved, so describe the PUSH2 as its two pushes, in push
+        // order. unwindPushV3 turns the push of a volatile register into a small stack allocation.
+        // Both WODs get this instruction's IP offset.
+        unwindPushV3(reg1);
+        unwindPushV3(reg2);
+        return;
+    }
+
+    // PUSH2 pushes reg1 first, so it ends up at [rsp + 8] and reg2 at [rsp]. WOD_PUSH2's
+    // Register1 and Register2 follow the same convention. Register1 straddles the WOD's two bytes.
+    WOD_PUSH2* wod     = (WOD_PUSH2*)unwindAllocWodV3(func, sizeof(WOD_PUSH2));
+    wod->OpCode        = WOD_OP_PUSH2;
+    wod->Register1Low  = (UCHAR)(reg1 & 0x3);
+    wod->Register1High = (UCHAR)(reg1 >> 2);
+    wod->Register2     = (UCHAR)reg2;
+    assert((regNumber)((wod->Register1High << 2) | wod->Register1Low) == reg1);
+    assert((regNumber)wod->Register2 == reg2);
+}
+
+void Compiler::unwindAllocStackV3(unsigned size)
+{
+    FuncInfoDsc* func = funCurrentFunc();
+
+    assert(size % 8 == 0); // Stack size is *always* 8 byte aligned
+    if (size <= 128) // largest WOD_ALLOC_SMALL, 16 * 8
+    {
+        WOD_ALLOC_SMALL* wod = (WOD_ALLOC_SMALL*)unwindAllocWodV3(func, sizeof(WOD_ALLOC_SMALL));
+        wod->OpCode          = WOD_OP_ALLOC_SMALL;
+        wod->Size            = (size - 8) / 8;
+    }
+    else if (size <= 0x7FFF8) // largest WOD_ALLOC_LARGE, 0xFFFF * 8
+    {
+        WOD_ALLOC_LARGE* wod = (WOD_ALLOC_LARGE*)unwindAllocWodV3(func, sizeof(WOD_ALLOC_LARGE));
+        wod->OpCode          = WOD_OP_ALLOC_LARGE;
+        wod->Size            = (USHORT)(size / 8);
+    }
+    else
+    {
+        WOD_ALLOC_HUGE* wod = (WOD_ALLOC_HUGE*)unwindAllocWodV3(func, sizeof(WOD_ALLOC_HUGE));
+        wod->OpCode         = WOD_OP_ALLOC_HUGE;
+        wod->Size           = size;
+    }
+}
+
+void Compiler::unwindSetFrameRegV3(regNumber reg, unsigned offset)
+{
+    FuncInfoDsc* func = funCurrentFunc();
+
+    // V3 has no FrameRegister or FrameOffset in its header; both are carried by WOD_SET_FPREG,
+    // in 4 bits each. There is no V3 counterpart to the Unix-only UWOP_SET_FPREG_LARGE.
+    assert(genIsValidIntReg(reg) && (reg <= REG_R15)); // WOD_SET_FPREG.Register is 4 bits
+    assert(offset <= 240);                             // largest WOD_SET_FPREG, 15 * 16
+    assert(offset % 16 == 0);
+
+    WOD_SET_FPREG* wod = (WOD_SET_FPREG*)unwindAllocWodV3(func, sizeof(WOD_SET_FPREG));
+    wod->OpCode        = WOD_OP_SET_FPREG;
+    wod->Register      = (UCHAR)reg;
+    wod->Offset        = (UCHAR)(offset / 16);
+    assert((regNumber)wod->Register == reg);
+    assert((unsigned)wod->Offset * 16 == offset);
+}
+
+void Compiler::unwindSaveRegV3(regNumber reg, unsigned offset)
+{
+    FuncInfoDsc* func = funCurrentFunc();
+
+    if (RBM_CALLEE_SAVED & genRegMask(reg))
+    {
+        if (genIsValidFloatReg(reg))
+        {
+            unsigned unwindRegNum = reg - XMMBASE;
+            assert(unwindRegNum <= 15); // WOD_SAVE_XMM128.Register is 4 bits
+
+            // As per AMD64 ABI, if saving entire xmm reg, then offset need to be scaled by 16.
+            if (offset < 0x80000) // same limit as V1; WOD_SAVE_XMM128 reaches 0xFFFF * 16
+            {
+                assert(offset % 16 == 0);
+                WOD_SAVE_XMM128* wod = (WOD_SAVE_XMM128*)unwindAllocWodV3(func, sizeof(WOD_SAVE_XMM128));
+                wod->OpCode          = WOD_OP_SAVE_XMM128;
+                wod->Register        = (UCHAR)unwindRegNum;
+                wod->Displacement    = (USHORT)(offset / 16);
+                assert((unsigned)wod->Register == unwindRegNum);
+            }
+            else
+            {
+                WOD_SAVE_XMM128_FAR* wod = (WOD_SAVE_XMM128_FAR*)unwindAllocWodV3(func, sizeof(WOD_SAVE_XMM128_FAR));
+                wod->OpCode              = WOD_OP_SAVE_XMM128_FAR;
+                wod->Register            = (UCHAR)unwindRegNum;
+                wod->Displacement        = offset;
+                assert((unsigned)wod->Register == unwindRegNum);
+            }
+        }
+        else
+        {
+            assert(genIsValidIntReg(reg));
+
+            if (offset < 0x80000) // largest WOD_SAVE_NONVOL, 0xFFFF * 8
+            {
+                assert(offset % 8 == 0);
+                WOD_SAVE_NONVOL* wod = (WOD_SAVE_NONVOL*)unwindAllocWodV3(func, sizeof(WOD_SAVE_NONVOL));
+                wod->OpCode          = WOD_OP_SAVE_NONVOL;
+                wod->Register        = (UCHAR)reg;
+                wod->Displacement    = (USHORT)(offset / 8);
+                assert((regNumber)wod->Register == reg);
+            }
+            else
+            {
+                WOD_SAVE_NONVOL_FAR* wod = (WOD_SAVE_NONVOL_FAR*)unwindAllocWodV3(func, sizeof(WOD_SAVE_NONVOL_FAR));
+                wod->OpCode              = WOD_OP_SAVE_NONVOL_FAR;
+                wod->Register            = (UCHAR)reg;
+                wod->Displacement        = offset;
+                assert((regNumber)wod->Register == reg);
+            }
+        }
+    }
+}
+
 #ifdef UNIX_AMD64_ABI
 void Compiler::unwindSaveRegCFI(regNumber reg, unsigned offset)
 {
