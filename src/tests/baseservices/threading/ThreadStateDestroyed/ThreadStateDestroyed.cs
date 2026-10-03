@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using TestLibrary;
 
@@ -84,21 +85,47 @@ public static unsafe class ThreadStateDestroyed
         psi.Environment["DOTNET_DbgEnableMiniDump"] = "0";
         psi.Environment["DOTNET_EnableCrashReport"] = "0";
 
-        ProcessTextOutput subprocess;
+        long startTimestamp = Stopwatch.GetTimestamp();
+        using Process subprocess = Process.Start(psi);
+        StringBuilder outputBuilder = new StringBuilder();
+        bool outputComplete = false;
         try
         {
-            subprocess = Process.RunAndCaptureText(psi, s_subprocessTimeout);
+            // Retain output incrementally so it is available even if reading times out.
+            foreach (ProcessOutputLine line in subprocess.ReadAllLines(s_subprocessTimeout))
+            {
+                outputBuilder.AppendLine(line.Content);
+            }
+
+            outputComplete = true;
+            TimeSpan remaining = s_subprocessTimeout - Stopwatch.GetElapsedTime(startTimestamp);
+            if (!subprocess.WaitForExit(remaining >= TimeSpan.Zero ? remaining : TimeSpan.Zero))
+            {
+                throw new TimeoutException();
+            }
         }
         catch (TimeoutException)
         {
+            bool hasExited = subprocess.HasExited;
             Console.WriteLine($"Subprocess timed out after {s_subprocessTimeout}.");
+            Console.WriteLine($"Subprocess PID: {subprocess.Id}; exited: {hasExited}; output complete: {outputComplete}.");
+            if (hasExited)
+            {
+                Console.WriteLine($"Subprocess exit code: {subprocess.ExitCode}.");
+            }
+            Console.WriteLine(outputBuilder.ToString());
             return Fail;
         }
+        finally
+        {
+            if (!subprocess.HasExited)
+            {
+                subprocess.Kill();
+            }
+        }
 
-        string output = subprocess.StandardOutput + subprocess.StandardError;
-        int exitCode = subprocess.ExitStatus.ExitCode;
-
-        Console.WriteLine($"Subprocess exited with {exitCode}:");
+        string output = outputBuilder.ToString();
+        Console.WriteLine($"Subprocess exited with {subprocess.ExitCode}:");
         Console.WriteLine(output);
 
         if (output.Contains(SecondCallbackMarker))
