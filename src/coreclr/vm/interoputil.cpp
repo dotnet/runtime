@@ -1952,9 +1952,9 @@ HRESULT TryGetDefaultInterfaceForClass(TypeHandle hndClass, TypeHandle *pHndDefC
     return hr;
 }
 
-// Returns the default interface for a class if it's an explicit interface or the AutoDual
-// class interface. Sets *pbDispatch otherwise. This is the logic used by array marshaling
-// in code:OleVariant::MarshalInterfaceArrayComToOleHelper.
+// Returns the default interface for a class if it's an explicit interface.
+// Sets *pbDispatch for a generated class interface; a class MethodTable cannot
+// be passed to the managed typed interface array marshaler.
 MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
 {
     CONTRACTL
@@ -1974,7 +1974,6 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
     switch (DefItfType)
     {
         case DefaultInterfaceType_Explicit:
-        case DefaultInterfaceType_AutoDual:
         {
             return hndDefItfClass.GetMethodTable();
         }
@@ -1986,6 +1985,7 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
             return NULL;
         }
 
+        case DefaultInterfaceType_AutoDual:
         case DefaultInterfaceType_AutoDispatch:
         {
             *pbDispatch = TRUE;

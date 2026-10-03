@@ -1270,7 +1270,8 @@ DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMar
 DEFINE_CLASS(CURRENCY_ARRAY_ELEMENT_MARSHALER, StubHelpers,  CurrencyArrayElementMarshaler)
 DEFINE_CLASS(INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, InterfaceArrayElementMarshaler`1)
 DEFINE_CLASS(TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedInterfaceArrayElementMarshaler`1)
-DEFINE_CLASS(HETEROGENEOUS_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, HeterogeneousInterfaceArrayElementMarshaler)
+DEFINE_CLASS(TYPED_CLASS_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedClassInterfaceArrayElementMarshaler`2)
+DEFINE_CLASS(TYPED_CLASS_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedClassArrayElementMarshaler`2)
 DEFINE_CLASS(VARIANT_ARRAY_ELEMENT_MARSHALER,  StubHelpers,  VariantArrayElementMarshaler`1)
 #endif // FEATURE_COMINTEROP
 DEFINE_CLASS(MARSHALER_OPTION_ENABLED,  StubHelpers,         IMarshalerOption+EnabledOption)
