@@ -33,6 +33,10 @@ add_executable_clr(corerun
 
 target_link_libraries(corerun PRIVATE minipal)
 
+if(CLR_CMAKE_TARGET_OSX)
+    set_macos_bundle_identifier(corerun com.microsoft.dotnet.corerun)
+endif()
+
 if(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun
         PRIVATE
