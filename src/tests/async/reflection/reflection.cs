@@ -42,12 +42,9 @@ public class Async2Reflection
         Assert.NotNull(mi);
         Assert.Throws<NotSupportedException>(() => mi.Invoke(null, new object[] { FooTask() }));
 
-        // Sadly the following does not throw and results in UB
-        // We cannot completely prevent putting a token of an Async method into IL stream.
-        // CONSIDER: perhaps JIT could throw?
-        //
-        // dynamic d = FooTask();
-        // System.Runtime.CompilerServices.AsyncHelpers.Await(d);
+        // Emitting a direct call to an async helper from a non-async caller
+        // is invalid IL. The JIT rejects it deterministically with an
+        // InvalidProgramException; see TypeBuilder_DefineMethod_NonAsyncCallerThrows.
     }
 
     private static async Task<int> Foo()
@@ -188,6 +185,57 @@ public class Async2Reflection
         // the following should not crash
         del(Task.CompletedTask);
         del(FooTask());
+    }
+
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsReflectionEmitSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
+    public static void TypeBuilder_DefineMethod_NonAsyncCallerThrows()
+    {
+        //  we will be compiling a dynamic version of this method, which is NOT
+        //  marked with `MethodImpl.Async` yet calls the async-only `Await`
+        //  helper. Calling an async method from a non-async caller is invalid
+        //  IL and the JIT should reject it deterministically.
+        //
+        //  public static void StaticMethod(Task arg)
+        //  {
+        //    Await(arg);
+        //  }
+
+        // Define a dynamic assembly and module
+        AssemblyName assemblyName = new AssemblyName("DynamicAssemblyNonAsync");
+        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+        ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModuleNonAsync");
+
+        // Define a type
+        TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicTypeNonAsync", TypeAttributes.Public);
+
+        // Define a method
+        MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+            "DynamicMethod",
+            MethodAttributes.Public | MethodAttributes.Static,
+            typeof(void),
+            new Type[] { typeof(Task) });
+
+        // Note: intentionally NOT setting the `MethodImpl.Async` flag here.
+
+        // {
+        //   Await(arg_0);
+        //   ret;
+        // }
+        ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+        ilGenerator.Emit(OpCodes.Ldarg_0);
+        var mi = typeof(System.Runtime.CompilerServices.AsyncHelpers).GetMethod("Await", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Task) })!;
+        ilGenerator.EmitCall(OpCodes.Call, mi, new Type[] { typeof(Task) });
+        ilGenerator.Emit(OpCodes.Ret);
+
+        // Create the type and invoke the method
+        Type dynamicType = typeBuilder.CreateType();
+        MethodInfo dynamicMethod = dynamicType.GetMethod("DynamicMethod");
+        var del = dynamicMethod.CreateDelegate<Action<Task>>();
+
+        // Calling an async helper from a non-async caller is invalid IL; the JIT
+        // rejects it with an InvalidProgramException rather than producing UB.
+        Assert.Throws<InvalidProgramException>(() => del(Task.CompletedTask));
     }
 
     public class PrivateAsync1<T>
