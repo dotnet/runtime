@@ -64,11 +64,9 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
         }
     }
 
-    // Mirrors TransitionFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp. A transition
-    // helper called from R2R code records the caller's linear-stack pointer; when it is set and a
-    // return address is known (stored, or derived from that stack pointer), the caller is the R2R
-    // frame at that stack pointer (native TransitionFrame::GetSP). Otherwise the frame was entered
-    // from interpreted or native code and the caller's stack pointer is the end of the TransitionBlock.
+    // Mirrors TransitionFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp. With a recorded
+    // R2R stack pointer and a known return address, the caller is the R2R frame at that stack pointer
+    // (TransitionFrame::GetSP); otherwise the caller's stack pointer is the end of the TransitionBlock.
     public override void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
     {
         Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);

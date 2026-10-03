@@ -235,6 +235,7 @@ internal sealed class WasmUnwinder
                 return false;
 
             uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
+            // Native treats an unknown index as a root function; report no frame pointer instead.
             if (!_r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet))
                 return false;
 
