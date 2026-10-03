@@ -319,15 +319,16 @@ namespace ILLink.Tasks
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(ExtraArgs))
-            {
-                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
-                return false;
-            }
-
             try
             {
                 var files = new SortedSet<string>(StringComparer.Ordinal);
+                var directories = new SortedSet<string>(StringComparer.Ordinal);
+                if (!TryAddCacheableExtraArgsInputs(files, directories))
+                {
+                    Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
+                    return false;
+                }
+
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
                 foreach (ITaskItem assembly in AssemblyPaths)
                     AddAssembly(assembly.ItemSpec);
@@ -335,6 +336,22 @@ namespace ILLink.Tasks
                     AddAssembly(assembly.ItemSpec);
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
                     AddFile(descriptor.ItemSpec);
+
+                // Preserve AssemblyResolver's search behavior instead of replacing -d with
+                // explicit references. Include every candidate so additions and shadowing invalidate.
+                foreach (string directory in directories)
+                {
+                    foreach (string file in Directory.EnumerateFiles(directory))
+                    {
+                        string extension = Path.GetExtension(file);
+                        if (extension.Equals(".dll", StringComparison.OrdinalIgnoreCase) ||
+                            extension.Equals(".exe", StringComparison.OrdinalIgnoreCase) ||
+                            extension.Equals(".winmd", StringComparison.OrdinalIgnoreCase))
+                        {
+                            AddAssembly(file);
+                        }
+                    }
+                }
 
 #pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
                 AddFile(typeof(ILLink).Assembly.Location);
@@ -414,6 +431,80 @@ namespace ILLink.Tasks
             {
                 Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: input identity could not be computed: {ex.Message}");
                 return false;
+            }
+        }
+
+        private bool TryAddCacheableExtraArgsInputs(SortedSet<string> files, SortedSet<string> directories)
+        {
+            ReadOnlySpan<char> arguments = ExtraArgs.AsSpan().Trim();
+            if (arguments.IsEmpty)
+                return true;
+
+            // The runtime library builds pass this policy through ExtraArgs. Keep the
+            // supported shape narrow so arbitrary linker arguments continue to bypass caching.
+            if (!TryReadArgument(ref arguments, out string option) ||
+                option != "--ignore-link-attributes" ||
+                !TryReadArgument(ref arguments, out string value) ||
+                value != "true")
+            {
+                return false;
+            }
+
+            while (!arguments.TrimStart().IsEmpty)
+            {
+                if (!TryReadArgument(ref arguments, out option) ||
+                    option is not ("--link-attributes" or "--substitutions" or "-d") ||
+                    !TryReadArgument(ref arguments, out string path) ||
+                    string.IsNullOrEmpty(path))
+                {
+                    return false;
+                }
+
+                if (option == "-d")
+                    directories.Add(Path.GetFullPath(path));
+                else
+                    files.Add(Path.GetFullPath(path));
+            }
+
+            return true;
+
+            static bool TryReadArgument(ref ReadOnlySpan<char> arguments, out string argument)
+            {
+                arguments = arguments.TrimStart();
+                if (arguments.IsEmpty)
+                {
+                    argument = string.Empty;
+                    return false;
+                }
+
+                if (arguments[0] == '"')
+                {
+                    int closingQuote = arguments.Slice(1).IndexOf('"');
+                    if (closingQuote < 0)
+                    {
+                        argument = string.Empty;
+                        return false;
+                    }
+
+                    argument = arguments.Slice(1, closingQuote).ToString();
+                    arguments = arguments.Slice(closingQuote + 2);
+                    return arguments.IsEmpty || char.IsWhiteSpace(arguments[0]);
+                }
+
+                int end = 0;
+                while (end < arguments.Length && !char.IsWhiteSpace(arguments[end]))
+                    end++;
+
+                ReadOnlySpan<char> token = arguments.Slice(0, end);
+                if (token.IndexOf('"') >= 0)
+                {
+                    argument = string.Empty;
+                    return false;
+                }
+
+                argument = token.ToString();
+                arguments = arguments.Slice(end);
+                return true;
             }
         }
 
