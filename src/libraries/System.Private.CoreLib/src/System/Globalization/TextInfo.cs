@@ -579,8 +579,35 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void PopulateIsAsciiCasingSameAsInvariant()
         {
+            // Turkish (tr / tr-*) and Azerbaijani (az / az-*) cultures have an ASCII
+            // casing relationship that differs from invariant (e.g. U+0049 ↔ U+0131,
+            // U+0069 ↔ U+0130). The CompareInfo.Compare probe below is unreliable on
+            // platforms whose collation data is incomplete (notably the system ICU
+            // on Android), where it can incorrectly report the two alphabets as
+            // case-equal. Derive the answer from the locale name for those
+            // languages instead, the same way IcuChangeCase decides whether to
+            // dispatch through the Turkish PAL.
+            if (IsLocaleWithNonInvariantAsciiCasing(_textInfoName))
+            {
+                _isAsciiCasingSameAsInvariant = NullableBool.False;
+                return;
+            }
+
             bool compareResult = CultureInfo.GetCultureInfo(_textInfoName).CompareInfo.Compare("abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", CompareOptions.IgnoreCase) == 0;
             _isAsciiCasingSameAsInvariant = compareResult ? NullableBool.True : NullableBool.False;
+        }
+
+        private static bool IsLocaleWithNonInvariantAsciiCasing(string localeName)
+        {
+            ReadOnlySpan<char> language = localeName.AsSpan();
+            int separatorIndex = language.IndexOfAny('-', '_');
+            if (separatorIndex >= 0)
+            {
+                language = language.Slice(0, separatorIndex);
+            }
+
+            return language.Equals("tr", StringComparison.OrdinalIgnoreCase) ||
+                   language.Equals("az", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
