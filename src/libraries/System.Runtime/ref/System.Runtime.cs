@@ -4966,6 +4966,8 @@ namespace System
         public static bool IsBrowser() { throw null; }
         public static bool IsFreeBSD() { throw null; }
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsIllumos() { throw null; }
+        public static bool IsIllumosVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
         public static bool IsIOS() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
@@ -4975,10 +4977,14 @@ namespace System
         public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsMacOS() { throw null; }
         public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsNetBSD() { throw null; }
+        public static bool IsNetBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsOpenBSD() { throw null; }
         public static bool IsOpenBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsOSPlatform(string platform) { throw null; }
         public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsSolaris() { throw null; }
+        public static bool IsSolarisVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsTvOS() { throw null; }
         public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsWasi() { throw null; }
