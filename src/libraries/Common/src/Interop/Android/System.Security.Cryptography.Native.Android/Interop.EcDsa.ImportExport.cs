@@ -35,6 +35,78 @@ internal static partial class Interop
             return key;
         }
 
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyExportPkcs8PrivateKey")]
+        private static partial int EcKeyExportPkcs8PrivateKey(
+            SafeEcKeyHandle key,
+            Span<byte> destination,
+            int destinationLength,
+            out int bytesWrittenOrRequired);
+
+        internal static bool TryExportEcKeyPkcs8PrivateKey(SafeEcKeyHandle key, out ArraySegment<byte> pkcs8)
+        {
+            // Leaves enough room for a P-521 PKCS#8 encoding including the public point.
+            const int InitialBufferSize = 256;
+            const int Success = 1;
+            const int InsufficientBuffer = -1;
+
+            pkcs8 = default;
+            byte[] buffer = CryptoPool.Rent(InitialBufferSize);
+
+            try
+            {
+                int result = EcKeyExportPkcs8PrivateKey(
+                    key,
+                    buffer,
+                    buffer.Length,
+                    out int bytesWrittenOrRequired);
+
+                if (result == InsufficientBuffer)
+                {
+                    int requiredSize = bytesWrittenOrRequired;
+
+                    if (requiredSize <= buffer.Length)
+                    {
+                        throw new CryptographicException();
+                    }
+
+                    // Our opportunistic buffer size wasn't large enough - try one more time with a larger buffer.
+                    byte[] tempBuffer = CryptoPool.Rent(requiredSize);
+                    CryptoPool.Return(buffer);
+                    buffer = tempBuffer;
+
+                    result = EcKeyExportPkcs8PrivateKey(
+                        key,
+                        buffer.AsSpan(0, requiredSize),
+                        requiredSize,
+                        out bytesWrittenOrRequired);
+
+                    if (result != Success || bytesWrittenOrRequired != requiredSize)
+                    {
+                        throw new CryptographicException();
+                    }
+                }
+                else if (result != Success)
+                {
+                    return false;
+                }
+                else if (bytesWrittenOrRequired <= 0 || bytesWrittenOrRequired > buffer.Length)
+                {
+                    throw new CryptographicException();
+                }
+
+                pkcs8 = new ArraySegment<byte>(buffer, 0, bytesWrittenOrRequired);
+                return true;
+            }
+            finally
+            {
+                // Return what we rented if we didn't assign the `out pkcs8`.
+                if (pkcs8.Array is null)
+                {
+                    CryptoPool.Return(buffer);
+                }
+            }
+        }
+
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByExplicitParameters")]
         internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,

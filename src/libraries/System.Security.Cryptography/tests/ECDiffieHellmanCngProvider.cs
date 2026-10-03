@@ -38,7 +38,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        public override bool CanDeriveNewPublicKey => true;
         public override bool SupportsRawDerivation => PlatformDetection.IsWindows10OrLater;
         public override bool SupportsSha3 => PlatformDetection.SupportsSha3;
 
