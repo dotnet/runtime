@@ -51,10 +51,15 @@ namespace ILLink.Tasks
 
         /// <summary>
         ///   The directory in which to place linked assemblies.
+        ///   The task deletes and recreates this directory before running ILLink.
+        ///   It must not contain inputs or files that need to be preserved.
         ///    Maps to '-out'.
         /// </summary>
         [Required]
         public ITaskItem OutputDirectory { get; set; }
+
+        // Unsupported compatibility escape hatch for callers that share their output directory.
+        public bool ClearOutputDirectory { get; set; } = true;
 
         /// <summary>
         /// The subset of warnings that have to be turned off.
@@ -260,6 +265,28 @@ namespace ILLink.Tasks
 
         protected override string GenerateFullPathToTool() => DotNetPath;
 
+        protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
+        {
+            if (!ClearOutputDirectory)
+                return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+
+            try
+            {
+                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
+                if (Directory.Exists(outputDirectory))
+                    Directory.Delete(outputDirectory, recursive: true);
+
+                Directory.CreateDirectory(outputDirectory);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
+                return -1;
+            }
+
+            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+        }
+
         private string _illinkPath = "";
 
         public string ILLinkPath
@@ -439,7 +466,7 @@ namespace ILLink.Tasks
                 }
             }
 
-            if (OutputDirectory != null)
+            if (!ClearOutputDirectory && OutputDirectory is not null)
                 args.Append("-out ").AppendLine(Quote(OutputDirectory.ItemSpec));
 
             if (NoWarn != null)
@@ -549,6 +576,10 @@ namespace ILLink.Tasks
             {
                 args.Append("--dependencies-file-format ").AppendLine(DependenciesFileFormat);
             }
+
+            // Keep the tool's output directory consistent with the directory owned by the task.
+            if (ClearOutputDirectory && OutputDirectory is not null)
+                args.Append("-out ").AppendLine(Quote(OutputDirectory.ItemSpec));
 
             return args.ToString();
         }
