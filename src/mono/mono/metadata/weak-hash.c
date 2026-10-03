@@ -268,6 +268,7 @@ rehash (MonoWeakHashTable *hash)
 		g_free (old_keys);
 	if (!(hash->gc_type & MONO_HASH_VALUE_GC))
 		g_free (old_values);
+	g_free (data.values);
 }
 
 /**
