@@ -100,6 +100,18 @@ jobs:
         scenarios:
           - WasmTestOnChrome
 
+    - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-library-tests.yml
+      parameters:
+        platforms:
+          - wasi_wasm
+        nameSuffix: _R2R
+        readyToRun: true
+        timeoutInMinutes: 480
+        isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+        isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+        alwaysRun: true
+        useHelixMonitor: ${{ parameters.useHelixMonitor }}
+
   # Library tests with full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:

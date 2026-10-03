@@ -16,7 +16,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 {
     public class OptionsRuntimeTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestValidationSuccessResults()
         {
             MyOptions options = new()
@@ -57,7 +57,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.True(result.Succeeded);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestBasicDataAnnotationFailures()
         {
             MyOptions options = new();
@@ -402,7 +402,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.Equal(results.Count(), generatorResult.Failures.Count());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestGeneratedRangeAttributeThreadSafety()
         {
             OptionsWithTimeSpanRangeAttribute options = new OptionsWithTimeSpanRangeAttribute() { Name = "T1", Period = TimeSpan.FromHours(1) };
