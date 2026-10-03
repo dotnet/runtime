@@ -9368,7 +9368,25 @@ public:
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     bool optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget = 10);
+    struct NonNullPhiResult
+    {
+        uint16_t completed = 0;
+        uint16_t nonNull   = 0;
+    };
+
+    using NonNullPhiMap = JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, NonNullPhiResult>;
+
+    struct NonNullPhiMemo
+    {
+        NonNullPhiMap* map = nullptr;
+
+        bool TryGet(ValueNum vn, int depth, bool* result) const;
+        void Record(Compiler* comp, ValueNum vn, int depth, bool result);
+    };
+
     bool optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
+    bool optAssertionVNIsNonNullImpl(ValueNum vn, ASSERT_VALARG_TP assertions, int depth, NonNullPhiMemo& memo);
+    bool optAssertionVNIsNonNullPhiWalk(ValueNum vn, int depth, NonNullPhiMemo& memo);
     bool optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
