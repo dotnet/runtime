@@ -147,7 +147,7 @@ namespace System.Numerics.Tensors
                 Vector512<T> current;
 
                 Vector512<T> nanMask;
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     // Check for NaNs
                     nanMask = Vector512.IsNaN(result);
@@ -166,7 +166,7 @@ namespace System.Numerics.Tensors
                     // Load the next vector, and early exit on NaN.
                     current = Vector512.LoadUnsafe(ref xRef, (uint)i);
 
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                     {
                         // Check for NaNs
                         nanMask = ~Vector512.Equals(current, current);
@@ -185,7 +185,7 @@ namespace System.Numerics.Tensors
                 {
                     current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<T>.Count));
 
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                     {
                         // Check for NaNs
                         nanMask = ~Vector512.Equals(current, current);
@@ -212,7 +212,7 @@ namespace System.Numerics.Tensors
                 Vector256<T> current;
 
                 Vector256<T> nanMask;
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     // Check for NaNs
                     nanMask = ~Vector256.Equals(result, result);
@@ -231,7 +231,7 @@ namespace System.Numerics.Tensors
                     // Load the next vector, and early exit on NaN.
                     current = Vector256.LoadUnsafe(ref xRef, (uint)i);
 
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                     {
                         // Check for NaNs
                         nanMask = ~Vector256.Equals(current, current);
@@ -251,7 +251,7 @@ namespace System.Numerics.Tensors
                     current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<T>.Count));
 
 
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                     {
                         // Check for NaNs
                         nanMask = ~Vector256.Equals(current, current);
@@ -278,7 +278,7 @@ namespace System.Numerics.Tensors
                 Vector128<T> current;
 
                 Vector128<T> nanMask;
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     // Check for NaNs
                     nanMask = Vector128.IsNaN(result);
@@ -297,7 +297,7 @@ namespace System.Numerics.Tensors
                     // Load the next vector, and early exit on NaN.
                     current = Vector128.LoadUnsafe(ref xRef, (uint)i);
 
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                     {
                         // Check for NaNs
                         nanMask = Vector128.IsNaN(current);
@@ -316,7 +316,7 @@ namespace System.Numerics.Tensors
                 {
                     current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<T>.Count));
 
-                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    if (TMinMaxOperator.PropagatesNaNs && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                     {
                         // Check for NaNs
                         nanMask = Vector128.IsNaN(current);
@@ -335,7 +335,7 @@ namespace System.Numerics.Tensors
 
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
             T curResult = x[0];
-            if (T.IsNaN(curResult))
+            if (TMinMaxOperator.PropagatesNaNs && T.IsNaN(curResult))
             {
                 return curResult;
             }
@@ -343,7 +343,7 @@ namespace System.Numerics.Tensors
             for (int i = 1; i < x.Length; i++)
             {
                 T current = x[i];
-                if (T.IsNaN(current))
+                if (TMinMaxOperator.PropagatesNaNs && T.IsNaN(current))
                 {
                     return current;
                 }
