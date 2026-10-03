@@ -1190,7 +1190,14 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
     }
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
-    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, 0, &schemaArray))
+
+    // Lay the schema out exactly as allocPgoInstrumentationBySchemaInstance did, keeping every
+    // Offset relative to the start of the header's data region. Rebasing the offsets onto the
+    // counts region instead would only be valid if countsOffset were aligned to the largest
+    // alignment any entry can ask for (8 bytes). countsOffset is only aligned to sizeof(size_t),
+    // so on 32 bit targets an 8 byte aligned entry such as ValueHistogram would be placed 4 bytes
+    // away from where it was written, shifting it and every entry after it.
+    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, found->header.countsOffset, &schemaArray))
     {
         size_t schemaDataSize = AlignUp(schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema), sizeof(size_t));
         size_t instrumentationDataSize = 0;
@@ -1205,10 +1212,14 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaDataSize);
         schemaArray.CloseRawBuffer();
 
+        // The copy mirrors the whole data region starting at GetData(), so that the offsets
+        // computed above index into it directly. The leading countsOffset bytes hold the
+        // compressed schema rather than counts; they are copied along with the rest to keep the
+        // copy a single aligned loop.
         size_t* pInstrumentationDataDst = (size_t*)((*pAllocatedData) + schemaDataSize);
         size_t* pInstrumentationDataDstEnd = (size_t*)((*pAllocatedData) + schemaDataSize + instrumentationDataSize);
         *pInstrumentationData = (BYTE*)pInstrumentationDataDst;
-        volatile size_t*pSrc = (volatile size_t*)(found->header.GetData() + found->header.countsOffset);
+        volatile size_t*pSrc = (volatile size_t*)found->header.GetData();
         // Use a volatile memcpy to copy the instrumentation data into a temporary buffer
         // This allows the instrumentation data to be made stable for reading during the execution of the jit
         // and since the copy moves through a volatile pointer, there will be no tearing of individual data elements
