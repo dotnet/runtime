@@ -1179,25 +1179,62 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
 {
-    siginfo_t siginfo;
-    memset(&siginfo, 0, sizeof(siginfo));
     int32_t result;
-    while (CheckInterrupted(result = waitid(P_ALL, 0, &siginfo, WEXITED | WNOHANG | WNOWAIT)));
-    if (result == 0)
+    while (true)
     {
-        // When there are no waitable children and WNOHANG is specified,
-        // waitid may return zero with si_pid unchanged.
-        assert(siginfo.si_pid == 0 ||        // no waitable child
-               siginfo.si_signo == SIGCHLD); // waitable child
+        siginfo_t siginfo;
+        memset(&siginfo, 0, sizeof(siginfo));
+        while (CheckInterrupted(result = waitid(P_ALL, 0, &siginfo, WEXITED | WNOHANG | WNOWAIT)));
+        if (result == 0)
+        {
+            // When there are no waitable children and WNOHANG is specified,
+            // waitid may return zero with si_pid unchanged.
+            assert(siginfo.si_pid == 0 ||        // no waitable child
+                   siginfo.si_signo == SIGCHLD); // waitable child
 
-        result = siginfo.si_pid;
+            if (siginfo.si_pid == 0)
+            {
+                // No waitable child.
+                return 0;
+            }
+
+            // We requested WEXITED only, but some platforms (notably macOS) also report
+            // children that have stopped (SIGSTOP) or continued (SIGCONT). Because WNOWAIT
+            // was specified, such a notification is not consumed and would be returned again
+            // on every call, causing the SIGCHLD handler (CheckChildren) to spin indefinitely
+            // while a process tree is temporarily stopped by Process.Kill(entireProcessTree: true).
+            // Only report children that have actually exited.
+            if (siginfo.si_code == CLD_EXITED ||
+                siginfo.si_code == CLD_KILLED ||
+                siginfo.si_code == CLD_DUMPED)
+            {
+                return siginfo.si_pid;
+            }
+
+            // Consume the stopped/continued notification so it isn't observed again, then keep
+            // looking for a child that has exited. This is a no-op on platforms that correctly
+            // honor WEXITED (e.g. Linux), where this branch is never reached.
+            siginfo_t drain;
+            memset(&drain, 0, sizeof(drain));
+            while (CheckInterrupted(result = waitid(P_PID, (id_t)siginfo.si_pid, &drain, WSTOPPED | WCONTINUED | WNOHANG)));
+            if (result != 0)
+            {
+                // Unable to consume the notification (e.g. the child changed state concurrently).
+                // Avoid spinning: report no exited child for now. A real exit will be observed on
+                // a subsequent SIGCHLD.
+                return 0;
+            }
+            continue;
+        }
+        else if (errno == ECHILD)
+        {
+            // The calling process has no existing unwaited-for child processes.
+            return 0;
+        }
+
+        // Unexpected error.
+        return result;
     }
-    else if (errno == ECHILD)
-    {
-        // The calling process has no existing unwaited-for child processes.
-        result = 0;
-    }
-    return result;
 }
 
 int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)

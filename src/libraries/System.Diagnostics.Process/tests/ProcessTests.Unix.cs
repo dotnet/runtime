@@ -1164,5 +1164,57 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
             });
         }
+
+        // Repro attempt for https://github.com/dotnet/runtime/issues/131944:
+        // Process.Kill(entireProcessTree: true) can hang indefinitely on macOS.
+        // The two-phase KillTree (SIGSTOP the whole tree, then SIGKILL) opens a window in which a
+        // direct child is SIGSTOP'd. On macOS, waitid(P_ALL, WEXITED|WNOHANG|WNOWAIT) also reports
+        // SIGSTOP'd children, so the SIGCHLD handler's CheckChildren loop spins forever (waitpid
+        // WNOHANG never reaps a stopped child, WNOWAIT keeps it waitable) while holding
+        // s_childProcessWaitStates. Any concurrent Process construction (e.g. the tree enumeration in
+        // another Kill) then blocks on that lock, so the stopped child is never SIGKILL'd -> deadlock.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void Kill_EntireProcessTree_Concurrent_DoesNotHang()
+        {
+            const int TreeCount = 8;
+            const int Iterations = 30;
+
+            for (int iteration = 0; iteration < Iterations; iteration++)
+            {
+                var roots = new Process[TreeCount];
+                for (int i = 0; i < TreeCount; i++)
+                {
+                    // Each direct child spawns a grandchild and then blocks forever, producing a
+                    // small process tree rooted at a direct child of this test host.
+                    Process root = CreateProcess(() =>
+                    {
+                        using Process grandChild = Process.Start("/bin/sleep", "1000");
+                        Thread.Sleep(Timeout.Infinite);
+                        return RemoteExecutor.SuccessExitCode;
+                    });
+                    root.Start();
+                    roots[i] = root;
+                }
+
+                // Give the grandchildren time to start so the trees are fully formed.
+                Thread.Sleep(500);
+
+                var tasks = new Task[TreeCount];
+                for (int i = 0; i < TreeCount; i++)
+                {
+                    Process root = roots[i];
+                    tasks[i] = Task.Run(() => root.Kill(entireProcessTree: true));
+                }
+
+                bool completed = Task.WaitAll(tasks, TimeSpan.FromSeconds(60));
+                Assert.True(completed, $"Kill(entireProcessTree: true) hung on iteration {iteration}.");
+
+                foreach (Process root in roots)
+                {
+                    Assert.True(root.WaitForExit(WaitInMS));
+                }
+            }
+        }
     }
 }
