@@ -6,7 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Numerics.Tensors.Tests
@@ -1086,6 +1089,1218 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal([0.0, 0.0, 0.0], backing.AsSpan(row * (columns + 3) + columns, 3).ToArray());
             }
+        }
+
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(1, false)]
+        [InlineData(2, false)]
+        [InlineData(3, false)]
+        [InlineData(4, false)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        public static void TensorCopyToIndependentContiguousRuns(int layout, bool highRank)
+        {
+            Verify<int>(i => i + 1, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i + 1, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                T[] sourceData = Enumerable.Range(0, 220).Select(createValue).ToArray();
+                nint[] lengths = [2, 3, 16];
+                nint[] sourceLengths = layout == 2 ? [16] : lengths;
+                nint[] sourceStrides = layout switch
+                {
+                    0 => [],
+                    1 => [55, 16, 1],
+                    2 => [1],
+                    3 => [17, 36, 1],
+                    _ => [110, 34, 2],
+                };
+                nint[] destinationStrides = [64, 19, 1];
+                if (highRank)
+                {
+                    lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                    destinationStrides = [0, 0, 0, 0, 0, 0, 0, 0, .. destinationStrides];
+                }
+                ReadOnlyTensorSpan<T> source = new ReadOnlyTensorSpan<T>(sourceData, 1, sourceLengths, sourceStrides);
+                T[] destinationData = new T[130];
+                Array.Fill(destinationData, sentinel);
+                TensorSpan<T> destination = new TensorSpan<T>(destinationData, 1, lengths, destinationStrides);
+
+                Assert.True(source.TryCopyTo(destination));
+
+                T[] expected = new T[destinationData.Length];
+                Array.Fill(expected, sentinel);
+                for (int i = 0; i < 96; i++)
+                {
+                    int sourceOffset = layout switch
+                    {
+                        0 => i,
+                        1 => i / 48 * 55 + i % 48,
+                        2 => i % 16,
+                        3 => i / 48 * 17 + i / 16 % 3 * 36 + i % 16,
+                        _ => i / 48 * 110 + i / 16 % 3 * 34 + i % 16 * 2,
+                    };
+                    expected[1 + i / 48 * 64 + i / 16 % 3 * 19 + i % 16] = sourceData[1 + sourceOffset];
+                }
+                Assert.Equal(expected, destinationData);
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public static void TensorValueReductionsPreserveScalarOrder(int layout)
+        {
+            Verify([1e16, 1, -1e16, 3, -2, 0.5]);
+            Verify([double.NegativeInfinity, double.PositiveInfinity, -0.0, 0.0, double.NaN, -3]);
+            Verify([-0.0, 0.0]);
+
+            void Verify(double[] values)
+            {
+                nint[] lengths = [3, 32];
+                nint[] strides = layout switch
+                {
+                    0 => [32, 1],
+                    1 or 5 => [35, 1],
+                    2 => [70, 2],
+                    3 => [0, 1],
+                    _ => [1, 3],
+                };
+                double[] backing = new double[220];
+                for (int i = 0; i < 96; i++)
+                {
+                    backing[1 + i / 32 * (int)strides[0] + i % 32 * (int)strides[1]] = values[i % values.Length];
+                }
+                if (layout == 5)
+                {
+                    lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                    strides = [0, 0, 0, 0, 0, 0, 0, 0, .. strides];
+                }
+                ReadOnlyTensorSpan<double> source = new ReadOnlyTensorSpan<double>(backing, 1, lengths, strides);
+                double[] logical = new double[96];
+                source.FlattenTo(logical);
+                double sum = 0;
+                double product = 1;
+                double squares = 0;
+                double[] extrema = Enumerable.Repeat(logical[0], 8).ToArray();
+                foreach (double value in logical)
+                {
+                    sum += value;
+                    product *= value;
+                    squares += value * value;
+                    extrema[0] = double.Max(value, extrema[0]);
+                    extrema[1] = double.Min(value, extrema[1]);
+                    extrema[2] = double.MaxMagnitude(value, extrema[2]);
+                    extrema[3] = double.MinMagnitude(value, extrema[3]);
+                    extrema[4] = double.MaxNumber(value, extrema[4]);
+                    extrema[5] = double.MinNumber(value, extrema[5]);
+                    extrema[6] = double.MaxMagnitudeNumber(value, extrema[6]);
+                    extrema[7] = double.MinMagnitudeNumber(value, extrema[7]);
+                }
+                AssertBits(sum, Tensor.Sum(source));
+                AssertBits(product, Tensor.Product(source));
+                AssertBits(Math.Sqrt(squares), Tensor.Norm(source));
+                AssertBits(sum / logical.Length, Tensor.Average(source));
+                AssertBits(extrema[0], Tensor.Max(source));
+                AssertBits(extrema[1], Tensor.Min(source));
+                AssertBits(extrema[2], Tensor.MaxMagnitude(source));
+                AssertBits(extrema[3], Tensor.MinMagnitude(source));
+                AssertBits(extrema[4], Tensor.MaxNumber(source));
+                AssertBits(extrema[5], Tensor.MinNumber(source));
+                AssertBits(extrema[6], Tensor.MaxMagnitudeNumber(source));
+                AssertBits(extrema[7], Tensor.MinMagnitudeNumber(source));
+                double mean = sum / logical.Length;
+                double variance = 0;
+                foreach (double value in logical)
+                {
+                    double difference = double.Abs(value - mean);
+                    variance += difference * difference;
+                }
+                AssertBits(Math.Sqrt(variance / logical.Length), Tensor.StdDev(source));
+
+                foreach (bool broadcast in new[] { false, true })
+                {
+                    double[] otherData = Enumerable.Range(0, broadcast ? 32 : 96).Select(i => (double)(i % 7 - 3)).ToArray();
+                    ReadOnlyTensorSpan<double> other = new ReadOnlyTensorSpan<double>(otherData, broadcast ? [32] : lengths);
+                    double dot = 0;
+                    double otherSquares = 0;
+                    double differences = 0;
+                    for (int i = 0; i < logical.Length; i++)
+                    {
+                        double x = logical[i];
+                        double y = otherData[i % otherData.Length];
+                        dot += x * y;
+                        otherSquares += y * y;
+                        differences += (x - y) * (x - y);
+                    }
+                    AssertBits(dot, Tensor.Dot(source, other));
+                    AssertBits(dot, Tensor.Dot(other, source));
+                    AssertBits(Math.Sqrt(differences), Tensor.Distance(source, other));
+                    AssertBits(dot / (Math.Sqrt(squares) * Math.Sqrt(otherSquares)), Tensor.CosineSimilarity(source, other));
+                }
+            }
+
+            static void AssertBits(double expected, double actual)
+            {
+                Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 96)]
+        [InlineData(1, 96)]
+        [InlineData(2, 96)]
+        [InlineData(3, 96)]
+        [InlineData(4, 96)]
+        [InlineData(5, 0)]
+        [InlineData(5, 1)]
+        [InlineData(5, 96)]
+        public static void TensorPredicatesPreserveOrderAndShortCircuit(int layout, int count)
+        {
+            int rows = count == 96 ? 3 : count;
+            int columns = count == 96 ? 32 : 1;
+            nint[] lengths = [rows, columns];
+            nint[] strides = layout switch
+            {
+                0 => [columns, 1],
+                1 or 5 => [columns + 3, 1],
+                2 => [(columns + 3) * 2, 2],
+                3 => [0, 1],
+                _ => [1, rows],
+            };
+            if (count <= 1)
+            {
+                Array.Clear(strides);
+            }
+            if (layout == 5)
+            {
+                lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                strides = [0, 0, 0, 0, 0, 0, 0, 0, .. strides];
+            }
+
+            for (int operation = 0; operation < 10; operation++)
+            {
+                for (int operand = 0; operand < 3; operand++)
+                {
+                    List<(int, int)> trace = [];
+                    PredicateValue[] backing = new PredicateValue[220];
+                    int normal = operation switch { 0 or 4 or 8 => 3, 1 or 2 or 7 or 9 => 4, _ => 2 };
+                    int decisive = operation switch { 0 or 3 or 6 or 8 => 4, 1 or 5 or 9 => 3, _ => 2 };
+                    for (int i = 0; i < count; i++)
+                    {
+                        nint offset = 1 + i / columns * strides[^2] + i % columns * strides[^1];
+                        backing[offset] = new PredicateValue(i == Math.Min(count - 1, 65) ? decisive : normal, i, trace);
+                    }
+                    ReadOnlyTensorSpan<PredicateValue> source = new ReadOnlyTensorSpan<PredicateValue>(backing, 1, lengths, strides);
+                    PredicateValue[] logical = new PredicateValue[count];
+                    source.FlattenTo(logical);
+                    PredicateValue[] rightData = Enumerable.Range(0, operand == 1 ? columns : count)
+                        .Select(i => new PredicateValue(3, 1000 + i, trace)).ToArray();
+                    ReadOnlyTensorSpan<PredicateValue> right = new ReadOnlyTensorSpan<PredicateValue>(rightData, operand == 1 ? [columns] : lengths);
+                    PredicateValue scalar = new PredicateValue(3, -1, trace);
+                    List<(int, int)> expectedTrace = [];
+                    bool all = operation % 2 == 0;
+                    bool expected = all;
+                    for (int i = 0; i < count; i++)
+                    {
+                        PredicateValue left = logical[i];
+                        PredicateValue other = operand == 2 ? scalar : rightData[i % rightData.Length];
+                        expectedTrace.Add((left.Index, other.Index));
+                        bool condition = operation switch
+                        {
+                            0 or 1 => left.Value == other.Value,
+                            2 or 3 => left.Value > other.Value,
+                            4 or 5 => left.Value >= other.Value,
+                            6 or 7 => left.Value < other.Value,
+                            _ => left.Value <= other.Value,
+                        };
+                        if (condition != all)
+                        {
+                            expected = condition;
+                            break;
+                        }
+                    }
+                    bool actual = operand == 2 ? operation switch
+                    {
+                        0 => Tensor.EqualsAll(source, scalar),
+                        1 => Tensor.EqualsAny(source, scalar),
+                        2 => Tensor.GreaterThanAll(source, scalar),
+                        3 => Tensor.GreaterThanAny(source, scalar),
+                        4 => Tensor.GreaterThanOrEqualAll(source, scalar),
+                        5 => Tensor.GreaterThanOrEqualAny(source, scalar),
+                        6 => Tensor.LessThanAll(source, scalar),
+                        7 => Tensor.LessThanAny(source, scalar),
+                        8 => Tensor.LessThanOrEqualAll(source, scalar),
+                        _ => Tensor.LessThanOrEqualAny(source, scalar),
+                    } : operation switch
+                    {
+                        0 => Tensor.EqualsAll(source, right),
+                        1 => Tensor.EqualsAny(source, right),
+                        2 => Tensor.GreaterThanAll(source, right),
+                        3 => Tensor.GreaterThanAny(source, right),
+                        4 => Tensor.GreaterThanOrEqualAll(source, right),
+                        5 => Tensor.GreaterThanOrEqualAny(source, right),
+                        6 => Tensor.LessThanAll(source, right),
+                        7 => Tensor.LessThanAny(source, right),
+                        8 => Tensor.LessThanOrEqualAll(source, right),
+                        _ => Tensor.LessThanOrEqualAny(source, right),
+                    };
+                    Assert.Equal(expected, actual);
+                    Assert.Equal(expectedTrace, trace);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TensorPredicatesPreserveNaNComparisons(bool padded)
+        {
+            double[] samples = [-0.0, 0.0, double.NaN, -1, 1, double.PositiveInfinity, double.NegativeInfinity];
+            double[] backing = new double[105];
+            int stride = padded ? 35 : 32;
+            double[] logical = new double[96];
+            for (int i = 0; i < logical.Length; i++)
+            {
+                logical[i] = samples[i % samples.Length];
+                backing[i / 32 * stride + i % 32] = logical[i];
+            }
+            ReadOnlyTensorSpan<double> source = new ReadOnlyTensorSpan<double>(backing, [3, 32], [stride, 1]);
+            foreach (double value in samples)
+            {
+                double[] row = new double[32];
+                Array.Fill(row, value);
+                ReadOnlyTensorSpan<double> other = new ReadOnlyTensorSpan<double>(row);
+                Assert.Equal(logical.All(x => x == value), Tensor.EqualsAll(source, other));
+                Assert.Equal(logical.Any(x => x == value), Tensor.EqualsAny(source, other));
+                Assert.Equal(logical.All(x => x > value), Tensor.GreaterThanAll(source, other));
+                Assert.Equal(logical.Any(x => x > value), Tensor.GreaterThanAny(source, other));
+                Assert.Equal(logical.All(x => x >= value), Tensor.GreaterThanOrEqualAll(source, other));
+                Assert.Equal(logical.Any(x => x >= value), Tensor.GreaterThanOrEqualAny(source, other));
+                Assert.Equal(logical.All(x => x < value), Tensor.LessThanAll(source, other));
+                Assert.Equal(logical.Any(x => x < value), Tensor.LessThanAny(source, other));
+                Assert.Equal(logical.All(x => x <= value), Tensor.LessThanOrEqualAll(source, other));
+                Assert.Equal(logical.Any(x => x <= value), Tensor.LessThanOrEqualAny(source, other));
+                Assert.Equal(logical.All(x => x == value), Tensor.EqualsAll(source, value));
+                Assert.Equal(logical.Any(x => x == value), Tensor.EqualsAny(source, value));
+                Assert.Equal(logical.All(x => x > value), Tensor.GreaterThanAll(source, value));
+                Assert.Equal(logical.Any(x => x > value), Tensor.GreaterThanAny(source, value));
+                Assert.Equal(logical.All(x => x >= value), Tensor.GreaterThanOrEqualAll(source, value));
+                Assert.Equal(logical.Any(x => x >= value), Tensor.GreaterThanOrEqualAny(source, value));
+                Assert.Equal(logical.All(x => x < value), Tensor.LessThanAll(source, value));
+                Assert.Equal(logical.Any(x => x < value), Tensor.LessThanAny(source, value));
+                Assert.Equal(logical.All(x => x <= value), Tensor.LessThanOrEqualAll(source, value));
+                Assert.Equal(logical.Any(x => x <= value), Tensor.LessThanOrEqualAny(source, value));
+                Assert.Equal(logical.All(x => value > x), Tensor.GreaterThanAll(value, source));
+                Assert.Equal(logical.Any(x => value > x), Tensor.GreaterThanAny(value, source));
+            }
+        }
+
+        private readonly struct PredicateValue(int value, int index, List<(int, int)> trace) : IComparisonOperators<PredicateValue, PredicateValue, bool>
+        {
+            public int Value => value;
+            public int Index => index;
+
+            private List<(int, int)> Trace => trace;
+            private static void Track(PredicateValue left, PredicateValue right) => left.Trace.Add((left.Index, right.Index));
+
+            public static bool operator ==(PredicateValue left, PredicateValue right)
+            {
+                Track(left, right);
+                return left.Value == right.Value;
+            }
+            public static bool operator !=(PredicateValue left, PredicateValue right)
+            {
+                Track(left, right);
+                return left.Value != right.Value;
+            }
+            public static bool operator >(PredicateValue left, PredicateValue right)
+            {
+                Track(left, right);
+                return left.Value > right.Value;
+            }
+            public static bool operator >=(PredicateValue left, PredicateValue right)
+            {
+                Track(left, right);
+                return left.Value >= right.Value;
+            }
+            public static bool operator <(PredicateValue left, PredicateValue right)
+            {
+                Track(left, right);
+                return left.Value < right.Value;
+            }
+            public static bool operator <=(PredicateValue left, PredicateValue right)
+            {
+                Track(left, right);
+                return left.Value <= right.Value;
+            }
+            public override bool Equals(object? obj) => obj is PredicateValue other && Value == other.Value;
+            public override int GetHashCode() => Value;
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        public static void TensorReverseIndependentContiguousRuns(int layout)
+        {
+            Verify<int>(i => i + 1, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i + 1, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                nint[] lengths = [2, 3, 16];
+                nint[] sourceLengths = layout is 4 or 8 ? [16] : lengths;
+                nint[] sourceStrides = layout switch
+                {
+                    0 or 7 => [],
+                    1 or 5 => [55, 16, 1],
+                    2 => [60, 19, 1],
+                    3 => [17, 36, 1],
+                    4 or 8 => [1],
+                    _ => [110, 34, 2],
+                };
+                nint[] destinationStrides = layout switch
+                {
+                    0 => [64, 19, 1],
+                    1 => [],
+                    7 => [110, 34, 2],
+                    8 => [0, 0, 1],
+                    _ => [55, 16, 1],
+                };
+                if (layout == 5)
+                {
+                    lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                    sourceLengths = lengths;
+                    sourceStrides = [0, 0, 0, 0, 0, 0, 0, 0, .. sourceStrides];
+                    destinationStrides = [0, 0, 0, 0, 0, 0, 0, 0, .. destinationStrides];
+                }
+                T[] sourceData = Enumerable.Range(0, 220).Select(createValue).ToArray();
+                ReadOnlyTensorSpan<T> source = new ReadOnlyTensorSpan<T>(sourceData, 1, sourceLengths, sourceStrides);
+                T[] destinationData = new T[220];
+                Array.Fill(destinationData, sentinel);
+                TensorSpan<T> destination = new TensorSpan<T>(destinationData, 1, lengths, destinationStrides);
+                Tensor.Reverse(source, destination);
+
+                T[] expected = new T[destinationData.Length];
+                Array.Fill(expected, sentinel);
+                for (int i = 0; i < 96; i++)
+                {
+                    int reversed = 95 - i;
+                    int sourceOffset = layout switch
+                    {
+                        0 or 7 => reversed,
+                        1 or 5 => reversed / 48 * 55 + reversed % 48,
+                        2 => reversed / 48 * 60 + reversed / 16 % 3 * 19 + reversed % 16,
+                        3 => reversed / 48 * 17 + reversed / 16 % 3 * 36 + reversed % 16,
+                        4 or 8 => reversed % 16,
+                        _ => reversed / 48 * 110 + reversed / 16 % 3 * 34 + reversed % 16 * 2,
+                    };
+                    int targetOffset = layout switch
+                    {
+                        0 => i / 48 * 64 + i / 16 % 3 * 19 + i % 16,
+                        1 => i,
+                        7 => i / 48 * 110 + i / 16 % 3 * 34 + i % 16 * 2,
+                        8 => i % 16,
+                        _ => i / 48 * 55 + i % 48,
+                    };
+                    expected[1 + targetOffset] = sourceData[1 + sourceOffset];
+                }
+                Assert.Equal(expected, destinationData);
+                Assert.Equal(Enumerable.Range(0, 220).Select(createValue), sourceData);
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        [InlineData(16)]
+        [InlineData(65)]
+        [InlineData(256)]
+        public static void TensorDenseReversePreservesExtentAndReferences(int columns)
+        {
+            Verify<int>(i => i + 1, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                int count = 3 * columns;
+                T[] sourceData = Enumerable.Range(0, count + 2).Select(createValue).ToArray();
+                T[] destinationData = new T[count + 2];
+                Array.Fill(destinationData, sentinel);
+                ReadOnlyTensorSpan<T> source = new ReadOnlyTensorSpan<T>(sourceData, 1, [3, columns], []);
+                TensorSpan<T> destination = new TensorSpan<T>(destinationData, 1, [3, columns], []);
+                Tensor.Reverse(source, destination);
+                Assert.Equal(sourceData.Skip(1).Take(count).Reverse(), destinationData.Skip(1).Take(count));
+                Assert.Equal(sentinel, destinationData[0]);
+                Assert.Equal(sentinel, destinationData[count + 1]);
+
+                Tensor.Reverse(destination.AsReadOnlyTensorSpan(), destination);
+                Assert.Equal(sourceData.Skip(1).Take(count), destinationData.Skip(1).Take(count));
+                Tensor.ReverseDimension(destination.AsReadOnlyTensorSpan(), destination, 1);
+                for (int row = 0; row < 3; row++)
+                {
+                    Assert.Equal(sourceData.Skip(1 + row * columns).Take(columns).Reverse(),
+                        destinationData.Skip(1 + row * columns).Take(columns));
+                }
+                Assert.Equal(sentinel, destinationData[0]);
+                Assert.Equal(sentinel, destinationData[count + 1]);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(16, 0)]
+        [InlineData(31, 0)]
+        [InlineData(32, 0)]
+        [InlineData(33, 0)]
+        [InlineData(255, 0)]
+        [InlineData(256, 0)]
+        [InlineData(257, 0)]
+        [InlineData(1025, 0)]
+        [InlineData(8193, 0)]
+        [InlineData(0, 1)]
+        [InlineData(1, 1)]
+        [InlineData(16, 1)]
+        [InlineData(31, 1)]
+        [InlineData(32, 1)]
+        [InlineData(33, 1)]
+        [InlineData(255, 1)]
+        [InlineData(256, 1)]
+        [InlineData(257, 1)]
+        [InlineData(1025, 1)]
+        [InlineData(8193, 1)]
+        public static void TensorDenseReverseBlocksPreservesExtentAndReferences(int columns, int dimension)
+        {
+            Verify<int>(i => i + 1, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i + 1, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                int count = 4 * 5 * columns;
+                T[] backing = new T[count + 2];
+                Array.Fill(backing, sentinel);
+                for (int i = 0; i < count; i++)
+                {
+                    backing[i + 1] = createValue(i);
+                }
+                TensorSpan<T> tensor = new TensorSpan<T>(backing, 1, [4, 5, columns], []);
+                Tensor.ReverseDimension(tensor.AsReadOnlyTensorSpan(), tensor, dimension);
+                for (int i = 0; i < count; i++)
+                {
+                    int row = i / (5 * columns);
+                    int middle = i / columns % 5;
+                    int column = i % columns;
+                    int source = dimension == 0
+                        ? ((3 - row) * 5 + middle) * columns + column
+                        : (row * 5 + 4 - middle) * columns + column;
+                    Assert.Equal(createValue(source), backing[i + 1]);
+                }
+                Tensor.ReverseDimension(tensor.AsReadOnlyTensorSpan(), tensor, dimension);
+                Assert.Equal(Enumerable.Range(0, count).Select(createValue), backing.Skip(1).Take(count));
+                Assert.Equal(sentinel, backing[0]);
+                Assert.Equal(sentinel, backing[count + 1]);
+            }
+        }
+
+        [Fact]
+        public static void TensorDenseReverseBlocksWithLargeElements()
+        {
+            LargeReverseValue[] values = new LargeReverseValue[514];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i].Value = i;
+            }
+            TensorSpan<LargeReverseValue> tensor = new TensorSpan<LargeReverseValue>(values, 1, [2, 256], []);
+            Tensor.ReverseDimension(tensor.AsReadOnlyTensorSpan(), tensor, 0);
+            for (int i = 0; i < 512; i++)
+            {
+                Assert.Equal((i + 256) % 512 + 1, values[i + 1].Value);
+            }
+            Assert.Equal(0, values[0].Value);
+            Assert.Equal(513, values[513].Value);
+        }
+
+        [StructLayout(LayoutKind.Sequential, Size = 8192)]
+        private struct LargeReverseValue
+        {
+            public int Value;
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TensorOrderedReductionsPreserveDecimalOverflow(bool padded)
+        {
+            nint[] lengths = [2, 32];
+            nint[] strides = [padded ? 35 : 32, 1];
+            decimal[] backing = new decimal[70];
+            backing[31] = decimal.MaxValue;
+            backing[padded ? 35 : 32] = -decimal.MaxValue;
+            backing[padded ? 36 : 33] = 1;
+            Assert.Equal(1, Tensor.Sum(new ReadOnlyTensorSpan<decimal>(backing, lengths, strides)));
+            backing[padded ? 35 : 32] = 1;
+            Assert.Throws<OverflowException>(() => Tensor.Sum(new ReadOnlyTensorSpan<decimal>(backing, lengths, strides)));
+
+            Array.Fill(backing, 1);
+            backing[31] = decimal.MaxValue;
+            backing[padded ? 35 : 32] = 0;
+            Assert.Equal(0, Tensor.Product(new ReadOnlyTensorSpan<decimal>(backing, lengths, strides)));
+            backing[padded ? 35 : 32] = 2;
+            backing[padded ? 36 : 33] = 0;
+            Assert.Throws<OverflowException>(() => Tensor.Product(new ReadOnlyTensorSpan<decimal>(backing, lengths, strides)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public static void TensorStreamingIndexReductionsPreservePrimitiveSemantics(int layout)
+        {
+            Verify<double>([0.0, -0.0]);
+            Verify<double>([-0.0, 0.0]);
+            Verify<double>([double.NegativeInfinity, double.PositiveInfinity, -1, 1]);
+            Verify<double>([1, -1, 1, -1]);
+            Verify<double>([double.NaN, 3, double.NaN]);
+            Verify<double>([3, double.NaN, 4, double.NaN]);
+            Verify<double>([3, 3, 3]);
+            Verify<double>([]);
+            Verify<int>([int.MinValue, int.MaxValue, 0, -1, 1]);
+            Verify<long>([long.MinValue, long.MaxValue, 0, -1, 1]);
+            Verify<decimal>([decimal.MinValue, decimal.MaxValue, 0, -1, 1]);
+            Verify<Half>([Half.NegativeZero, Half.Zero, Half.NaN]);
+            double[] acrossRuns = new double[96];
+            Array.Fill(acrossRuns, -0.0);
+            acrossRuns[48] = 0.0;
+            acrossRuns[64] = 0.0;
+            Verify(acrossRuns);
+            Array.Fill(acrossRuns, 0.0);
+            acrossRuns[48] = -0.0;
+            acrossRuns[64] = -0.0;
+            Verify(acrossRuns);
+            Array.Fill(acrossRuns, -3.0);
+            acrossRuns[48] = 3.0;
+            acrossRuns[64] = 3.0;
+            Verify(acrossRuns);
+            Array.Fill(acrossRuns, 1.0);
+            acrossRuns[48] = double.NaN;
+            acrossRuns[64] = double.NaN;
+            Verify(acrossRuns);
+
+            void Verify<T>(T[] values) where T : INumber<T>
+            {
+                int count = values.Length == 0 ? 0 : 96;
+                T[] logical = new T[count];
+                T[] backing = new T[250];
+                nint[] lengths = layout == 0 ? [count] : layout is 1 or 4 ? [2, count / 2] : layout == 2 ? [3, count / 3] : [count];
+                nint[] strides = count == 0 ? [] : layout switch
+                {
+                    0 => [2],
+                    1 => [55, 1],
+                    2 => [36, 1],
+                    4 => [55, 1],
+                    _ => [0],
+                };
+                for (int i = 0; i < count; i++)
+                {
+                    T value = values[i % values.Length];
+                    int offset = layout switch
+                    {
+                        0 => i * 2,
+                        1 or 4 => i / 48 * 55 + i % 48,
+                        2 => i / 32 * 36 + i % 32,
+                        _ => 0,
+                    };
+                    backing[offset + 1] = value;
+                    logical[i] = layout == 3 ? values[(count - 1) % values.Length] : value;
+                }
+                if (layout == 4)
+                {
+                    lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                    strides = count == 0 ? [] : [0, 0, 0, 0, 0, 0, 0, 0, .. strides];
+                }
+                ReadOnlyTensorSpan<T> source = new ReadOnlyTensorSpan<T>(backing, 1, lengths, strides);
+
+                Assert.Equal((nint)TensorPrimitives.IndexOfMax<T>(logical), Tensor.IndexOfMax(source));
+                Assert.Equal((nint)TensorPrimitives.IndexOfMin<T>(logical), Tensor.IndexOfMin(source));
+                Assert.Equal((nint)TensorPrimitives.IndexOfMaxMagnitude<T>(logical), Tensor.IndexOfMaxMagnitude(source));
+                Assert.Equal((nint)TensorPrimitives.IndexOfMinMagnitude<T>(logical), Tensor.IndexOfMinMagnitude(source));
+            }
+        }
+
+        [Fact]
+        public static void TensorCopyToBroadcastDestinationPreservesCompatibility()
+        {
+            int[] sourceData = Enumerable.Range(1, 96).ToArray();
+            int[] backing = new int[59];
+            Array.Fill(backing, -1);
+            ReadOnlyTensorSpan<int> source = new ReadOnlyTensorSpan<int>(sourceData, [2, 3, 16]);
+            TensorSpan<int> destination = new TensorSpan<int>(backing, 1, [2, 3, 16], [0, 19, 1]);
+
+            Assert.False(source.TryCopyTo(destination));
+            ReadOnlyTensorSpan<int> broadcastSource = new ReadOnlyTensorSpan<int>(sourceData, [1, 3, 16], [0, 16, 1]);
+            broadcastSource.CopyTo(destination);
+
+            int[] expected = new int[backing.Length];
+            Array.Fill(expected, -1);
+            for (int i = 0; i < 48; i++)
+            {
+                expected[1 + i / 16 * 19 + i % 16] = sourceData[i];
+            }
+            Assert.Equal(expected, backing);
+        }
+
+        private const int LargeMemoryOutOfMemoryExitCode = 3;
+        private const int LargeMemorySigKillExitCode = 128 + 9;
+        private static bool s_isLargeMemoryTestChild;
+
+        private static bool RunLargeMemoryTest(long peakMemoryBytes, string testName, params string[] arguments)
+        {
+            if (s_isLargeMemoryTestChild)
+            {
+                return false;
+            }
+
+            if (IntPtr.Size != sizeof(long))
+            {
+                throw new SkipTestException("Unable to allocate enough memory in a 32-bit process.");
+            }
+
+            long availableMemoryBytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+            // Match the established large-allocation test policy of requiring memory for the peak plus equal headroom.
+            long requiredMemoryBytes = checked(peakMemoryBytes * 2);
+            if (availableMemoryBytes < requiredMemoryBytes)
+            {
+                throw new SkipTestException($"Prone to OOM killer. {availableMemoryBytes} bytes are available; {requiredMemoryBytes} bytes are required.");
+            }
+
+            string serializedArguments = string.Join(",", arguments);
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static (string testName, string serializedArguments) =>
+            {
+                // The child re-enters the existing body so test assertions and cleanup are not duplicated.
+                s_isLargeMemoryTestChild = true;
+                try
+                {
+                    MethodInfo? method = typeof(TensorTests).GetMethod(testName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                    if (method is null)
+                    {
+                        throw new InvalidOperationException($"Could not find large-memory test '{testName}'.");
+                    }
+
+                    ParameterInfo[] parameters = method.GetParameters();
+                    string[] values = serializedArguments.Length == 0 ? [] : serializedArguments.Split(',');
+                    if (values.Length != parameters.Length)
+                    {
+                        throw new InvalidOperationException($"Invalid arguments for large-memory test '{testName}'.");
+                    }
+
+                    object?[] invokeArguments = new object?[parameters.Length];
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        invokeArguments[i] = parameters[i].ParameterType == typeof(bool)
+                            ? bool.Parse(values[i])
+                            : parameters[i].ParameterType == typeof(int)
+                                ? int.Parse(values[i], CultureInfo.InvariantCulture)
+                                : throw new InvalidOperationException($"Unsupported argument type for large-memory test '{testName}'.");
+                    }
+
+                    method.Invoke(null, invokeArguments);
+                    return RemoteExecutor.SuccessExitCode;
+                }
+                catch (OutOfMemoryException)
+                {
+                    return LargeMemoryOutOfMemoryExitCode;
+                }
+                catch (TargetInvocationException exception) when (exception.InnerException is OutOfMemoryException)
+                {
+                    return LargeMemoryOutOfMemoryExitCode;
+                }
+            }, testName, serializedArguments, new RemoteInvokeOptions { CheckExitCode = false });
+
+            handle.Process.WaitForExit();
+            int exitCode = handle.Process.ExitCode;
+            if (exitCode is LargeMemoryOutOfMemoryExitCode or LargeMemorySigKillExitCode)
+            {
+                throw new SkipTestException($"Ran out of memory allocating the large tensor test buffers. Exit code {exitCode}.");
+            }
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitCode);
+            return true;
+        }
+
+        private static unsafe void* AllocateNativeMemory(nuint elementCount, nuint elementSize = 1, bool zeroInitialize = false)
+        {
+            void* allocation = zeroInitialize
+                ? NativeMemory.AllocZeroed(elementCount, elementSize)
+                : NativeMemory.Alloc(elementCount, elementSize);
+            if (allocation is null)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            return allocation;
+        }
+
+        internal static unsafe void TensorLargeDenseQueries(bool singletonDimensions, int query)
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            long peakMemoryBytes = (long)(length + 130) * (query is 0 or 3 ? 2 : 1);
+            if (RunLargeMemoryTest(peakMemoryBytes, nameof(TensorLargeDenseQueries), singletonDimensions.ToString(), query.ToString(CultureInfo.InvariantCulture)))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(length + 130), zeroInitialize: true);
+            byte* equalBacking = query is 0 or 3 ? (byte*)AllocateNativeMemory((nuint)(length + 130), zeroInitialize: true) : null;
+            try
+            {
+                if (query == 2)
+                {
+                    NativeMemory.Fill(backing, (nuint)(length + 130), 7);
+                }
+
+                backing[0] = 7;
+                backing[length + 1] = 7;
+                nint[] lengths = singletonDimensions ? [1, length, 1] : [length];
+                ReadOnlyTensorSpan<byte> source = new ReadOnlyTensorSpan<byte>(backing + 1, length, lengths);
+                nint extremeIndex = length - 33;
+                if (query == 0)
+                {
+                    backing[1] = 7;
+                    equalBacking[1] = 7;
+                    // Different trailing guards ensure comparison stops at the logical extent.
+                    equalBacking[length + 1] = 8;
+                    ReadOnlyTensorSpan<byte> equal = new ReadOnlyTensorSpan<byte>(equalBacking + 1, length, lengths);
+                    Assert.True(source.SequenceEqual(equal));
+                    ReadOnlyTensorSpan<byte> different = new ReadOnlyTensorSpan<byte>(backing, length, lengths);
+                    backing[length] = 8;
+                    Assert.False(source.SequenceEqual(different));
+                }
+                else if (query == 1)
+                {
+                    backing[extremeIndex + 1] = 9;
+                    Assert.Equal(extremeIndex, Tensor.IndexOfMax(source));
+                    Assert.Equal(extremeIndex, Tensor.IndexOfMaxMagnitude(source));
+                }
+                else if (query == 2)
+                {
+                    backing[extremeIndex + 1] = 0;
+                    Assert.Equal(extremeIndex, Tensor.IndexOfMin(source));
+                    Assert.Equal(extremeIndex, Tensor.IndexOfMinMagnitude(source));
+                }
+                else
+                {
+                    backing[1] = 7;
+                    equalBacking[1] = 7;
+                    ReadOnlyTensorSpan<EqualityByte> customSource = new ReadOnlyTensorSpan<EqualityByte>((EqualityByte*)(backing + 1), length, lengths);
+                    ReadOnlyTensorSpan<EqualityByte> equal = new ReadOnlyTensorSpan<EqualityByte>((EqualityByte*)(equalBacking + 1), length, lengths);
+                    Assert.True(customSource.SequenceEqual(equal));
+                    equalBacking[extremeIndex + 1] = 8;
+                    Assert.False(customSource.SequenceEqual(equal));
+                }
+                Assert.Equal(7, backing[0]);
+                Assert.Equal(7, backing[length + 1]);
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+                NativeMemory.Free(equalBacking);
+            }
+        }
+
+        internal static unsafe void TensorCopyToLargeDenseOverlap(int shift)
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            if (RunLargeMemoryTest((long)length + 128, nameof(TensorCopyToLargeDenseOverlap), shift.ToString(CultureInfo.InvariantCulture)))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(length + 128), zeroInitialize: true);
+            try
+            {
+                backing[0] = byte.MaxValue;
+                backing[length + 127] = byte.MaxValue;
+                byte* sourceData = backing + 64;
+                sourceData[0] = 1;
+                sourceData[int.MaxValue] = 2;
+                sourceData[length - 1] = 3;
+                ReadOnlyTensorSpan<byte> source = new ReadOnlyTensorSpan<byte>(sourceData, length);
+                TensorSpan<byte> destination = new TensorSpan<byte>(sourceData + shift, length);
+
+                source.CopyTo(destination);
+
+                Assert.Equal(1, sourceData[shift]);
+                Assert.Equal(0, sourceData[shift + 1]);
+                Assert.Equal(2, sourceData[shift + (nint)int.MaxValue]);
+                Assert.Equal(0, sourceData[shift + (nint)int.MaxValue + 1]);
+                Assert.Equal(3, sourceData[shift + length - 1]);
+                Assert.Equal(byte.MaxValue, backing[0]);
+                Assert.Equal(byte.MaxValue, backing[length + 127]);
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+            }
+        }
+
+        internal static unsafe void TensorLargeDenseElementwiseOperations(bool singletonDimensions)
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            if (RunLargeMemoryTest((long)length + 2, nameof(TensorLargeDenseElementwiseOperations), singletonDimensions.ToString()))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(length + 2), zeroInitialize: true);
+            try
+            {
+                backing[0] = 7;
+                backing[length + 1] = 7;
+                TensorSpan<byte> destination = new TensorSpan<byte>(backing + 1, length, singletonDimensions ? [1, length, 1] : [length]);
+
+                Tensor.OnesComplement(destination.AsReadOnlyTensorSpan(), destination);
+                Verify(255);
+                Tensor.Add(destination.AsReadOnlyTensorSpan(), (byte)2, destination);
+                Verify(1);
+                Tensor.Subtract((byte)20, destination.AsReadOnlyTensorSpan(), destination);
+                Verify(19);
+                Tensor.Add(destination.AsReadOnlyTensorSpan(), destination.AsReadOnlyTensorSpan(), destination);
+                Verify(38);
+
+                void Verify(byte expected)
+                {
+                    Assert.Equal(expected, backing[1]);
+                    Assert.Equal(expected, backing[int.MaxValue]);
+                    Assert.Equal(expected, backing[unchecked((nint)int.MaxValue + 1)]);
+                    Assert.Equal(expected, backing[length]);
+                    Assert.Equal(7, backing[0]);
+                    Assert.Equal(7, backing[length + 1]);
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+            }
+        }
+
+        internal static unsafe void TensorLargeDenseConversionPreservesElementOffsets()
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            if (RunLargeMemoryTest(((long)(length + 2) * (1 + sizeof(short))), nameof(TensorLargeDenseConversionPreservesElementOffsets)))
+            {
+                return;
+            }
+
+            byte* sourceData = (byte*)AllocateNativeMemory((nuint)(length + 2), zeroInitialize: true);
+            short* destinationData = (short*)AllocateNativeMemory((nuint)(length + 2), (nuint)sizeof(short), zeroInitialize: true);
+            try
+            {
+                sourceData[0] = 7;
+                sourceData[length + 1] = 7;
+                sourceData[length - 64] = 8;
+                destinationData[0] = -1;
+                destinationData[length + 1] = -1;
+                ReadOnlyTensorSpan<byte> source = new ReadOnlyTensorSpan<byte>(sourceData + 1, length, [1, length, 1]);
+                TensorSpan<short> destination = new TensorSpan<short>(destinationData + 1, length, [1, length, 1]);
+
+                Tensor.ConvertChecked<byte, short>(source, destination);
+
+                Assert.Equal((short)0, destinationData[1]);
+                Assert.Equal((short)0, destinationData[int.MaxValue]);
+                Assert.Equal(8, destinationData[length - 64]);
+                Assert.Equal((short)0, destinationData[length - 63]);
+                Assert.Equal(-1, destinationData[0]);
+                Assert.Equal(-1, destinationData[length + 1]);
+                Assert.Equal(7, sourceData[0]);
+                Assert.Equal(7, sourceData[length + 1]);
+            }
+            finally
+            {
+                NativeMemory.Free(sourceData);
+                NativeMemory.Free(destinationData);
+            }
+        }
+
+        internal static unsafe void TensorLargeDenseReductionAndReversal(bool singletonDimensions)
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            if (RunLargeMemoryTest(((long)(length + 2) * 2), nameof(TensorLargeDenseReductionAndReversal), singletonDimensions.ToString()))
+            {
+                return;
+            }
+
+            byte* sourceData = (byte*)AllocateNativeMemory((nuint)(length + 2), zeroInitialize: true);
+            byte* destinationData = (byte*)AllocateNativeMemory((nuint)(length + 2), zeroInitialize: true);
+            try
+            {
+                destinationData[0] = 99;
+                destinationData[length + 1] = 99;
+                sourceData[0] = 7;
+                sourceData[length + 1] = 7;
+                sourceData[1] = 1;
+                sourceData[length - 64] = 2;
+                sourceData[length] = 3;
+                nint[] lengths = singletonDimensions ? [1, length, 1] : [length];
+                ReadOnlyTensorSpan<byte> source = new ReadOnlyTensorSpan<byte>(sourceData + 1, length, lengths);
+                TensorSpan<byte> destination = new TensorSpan<byte>(destinationData + 1, length, lengths);
+                Assert.Equal((byte)6, Tensor.Sum(source));
+                Assert.Equal((byte)0, Tensor.Product(source));
+                Assert.Equal((byte)14, Tensor.Dot(source, source));
+                Assert.Equal((byte)3, Tensor.Max(source));
+                Assert.Equal((byte)0, Tensor.Min(source));
+                Assert.True(Tensor.EqualsAll(source, source));
+                Assert.False(Tensor.GreaterThanAll(source, (byte)0));
+                Assert.True(Tensor.EqualsAny(source, (byte)0));
+
+                Assert.True(Tensor.EqualsAny(source, (byte)3));
+                Tensor.Reverse(source, destination);
+                Assert.Equal(3, destinationData[1]);
+                Assert.Equal(0, destinationData[2]);
+                Assert.Equal(2, destinationData[65]);
+                Assert.Equal(0, destinationData[66]);
+                Assert.Equal(1, destinationData[length]);
+
+                Tensor.Reverse(destination.AsReadOnlyTensorSpan(), destination);
+                Assert.Equal(1, destinationData[1]);
+                Assert.Equal(2, destinationData[length - 64]);
+                Assert.Equal(3, destinationData[length]);
+                Assert.Equal(99, destinationData[0]);
+                Assert.Equal(99, destinationData[length + 1]);
+                Assert.Equal(7, sourceData[0]);
+                Assert.Equal(7, sourceData[length + 1]);
+            }
+            finally
+            {
+                NativeMemory.Free(sourceData);
+                NativeMemory.Free(destinationData);
+            }
+        }
+
+        internal static unsafe void TensorLargeDenseReverseIndependentRuns(bool sourcePadded)
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            nint columns = length / 4;
+            nint sourceRowStride = 2 * columns + (sourcePadded ? 3 : 0);
+            nint destinationRowStride = columns + 5;
+            nint sourceExtent = sourceRowStride + 2 * columns;
+            nint destinationExtent = 3 * destinationRowStride + columns;
+            if (RunLargeMemoryTest((long)(sourceExtent + destinationExtent + 4), nameof(TensorLargeDenseReverseIndependentRuns), sourcePadded.ToString()))
+            {
+                return;
+            }
+
+            byte* sourceData = (byte*)AllocateNativeMemory((nuint)(sourceExtent + 2), zeroInitialize: true);
+            byte* destinationData = (byte*)AllocateNativeMemory((nuint)(destinationExtent + 2), zeroInitialize: true);
+            try
+            {
+                sourceData[0] = 7;
+                sourceData[sourceExtent + 1] = 7;
+                destinationData[0] = 99;
+                destinationData[destinationExtent + 1] = 99;
+                sourceData[1] = 1;
+                sourceData[1 + sourceRowStride] = 2;
+                sourceData[sourceExtent] = 3;
+                for (int row = 0; row < 3; row++)
+                {
+                    new Span<byte>(destinationData + 1 + row * destinationRowStride + columns, 5).Fill(99);
+                }
+
+                if (sourcePadded)
+                {
+                    new Span<byte>(sourceData + 1 + 2 * columns, 3).Fill(7);
+                }
+
+                ReadOnlyTensorSpan<byte> source = new ReadOnlyTensorSpan<byte>(sourceData + 1, sourceExtent,
+                    [2, 2, columns], [sourceRowStride, columns, 1]);
+                TensorSpan<byte> destination = new TensorSpan<byte>(destinationData + 1, destinationExtent,
+                    [2, 2, columns], [2 * destinationRowStride, destinationRowStride, 1]);
+
+                Tensor.Reverse(source, destination);
+
+                for (int row = 0; row < 4; row++)
+                {
+                    byte* target = destinationData + 1 + row * destinationRowStride;
+                    if (row == 0)
+                    {
+                        Assert.Equal(3, target[0]);
+                    }
+                    if (row is 1 or 3)
+                    {
+                        Assert.Equal(row == 1 ? 2 : 1, target[columns - 1]);
+                    }
+                    Assert.Equal(0, target[columns / 2]);
+                    if (row != 3)
+                    {
+                        Assert.Equal(-1, new ReadOnlySpan<byte>(target + columns, 5).IndexOfAnyExcept((byte)99));
+                    }
+                }
+                Assert.Equal(99, destinationData[0]);
+                Assert.Equal(99, destinationData[destinationExtent + 1]);
+                Assert.Equal(7, sourceData[0]);
+                Assert.Equal(7, sourceData[sourceExtent + 1]);
+                if (sourcePadded)
+                {
+                    Assert.Equal(-1, new ReadOnlySpan<byte>(sourceData + 1 + 2 * columns, 3).IndexOfAnyExcept((byte)7));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(sourceData);
+                NativeMemory.Free(destinationData);
+            }
+        }
+
+        internal static unsafe void TensorLargeDenseInPlaceReverseChunks(int layout)
+        {
+            nint columns = int.MaxValue;
+            columns += 66;
+            int rows = layout == 0 ? 1 : layout == 1 ? 2 : 3;
+            nint length = rows * columns;
+            if (RunLargeMemoryTest((long)length + 2, nameof(TensorLargeDenseInPlaceReverseChunks), layout.ToString(CultureInfo.InvariantCulture)))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(length + 2), zeroInitialize: true);
+            try
+            {
+                backing[0] = 99;
+                backing[length + 1] = 99;
+                nint[] markers = [0, 4095, 4096, columns / 2, columns - 4097, columns - 4096, columns - 1];
+                for (int row = 0; row < rows; row++)
+                {
+                    byte* data = backing + 1 + row * columns;
+                    for (int i = 0; i < markers.Length; i++)
+                    {
+                        data[markers[i]] = (byte)(10 * (row + 1) + i);
+                    }
+                }
+                TensorSpan<byte> tensor = new TensorSpan<byte>(backing + 1, length, [rows, columns]);
+                int dimension = layout == 2 ? 0 : 1;
+                Tensor.ReverseDimension(tensor.AsReadOnlyTensorSpan(), tensor, dimension);
+                for (int row = 0; row < rows; row++)
+                {
+                    int sourceRow = layout == 2 ? rows - row - 1 : row;
+                    byte* data = backing + 1 + row * columns;
+                    for (int i = 0; i < markers.Length; i++)
+                    {
+                        int sourceMarker = layout == 2 ? i : markers.Length - i - 1;
+                        nint marker = layout == 2 ? markers[i] : columns - markers[sourceMarker] - 1;
+                        Assert.Equal((byte)(10 * (sourceRow + 1) + sourceMarker), data[marker]);
+                    }
+                    Assert.Equal(0, data[2048]);
+                    Assert.Equal(0, data[columns / 3]);
+                }
+                Assert.Equal(99, backing[0]);
+                Assert.Equal(99, backing[length + 1]);
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+            }
+
+        }
+
+        internal static unsafe void TensorLargeDenseRandomFillPreservesDrawOrder(bool gaussian)
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            if (RunLargeMemoryTest(((long)(length + 2) * sizeof(Half)), nameof(TensorLargeDenseRandomFillPreservesDrawOrder), gaussian.ToString()))
+            {
+                return;
+            }
+
+            Half* backing = (Half*)AllocateNativeMemory((nuint)(length + 2), (nuint)sizeof(Half), zeroInitialize: true);
+            try
+            {
+                backing[0] = (Half)99;
+                backing[length + 1] = (Half)99;
+                TensorSpan<Half> destination = new TensorSpan<Half>(backing + 1, length);
+                BoundaryRandom random = new BoundaryRandom((long)int.MaxValue * (gaussian ? 2 : 1));
+                Half expected;
+                Half boundaryExpected;
+                if (gaussian)
+                {
+                    Tensor.FillGaussianNormalDistribution(destination, random);
+                    expected = (Half)(Math.Sqrt(-2.0 * Math.Log(0.75)) * Math.Sin(2.0 * Math.PI * 0.75));
+                    boundaryExpected = (Half)(Math.Sqrt(-2.0 * Math.Log(0.25)) * Math.Sin(2.0 * Math.PI * 0.75));
+                }
+                else
+                {
+                    Tensor.FillUniformDistribution(destination, random);
+                    expected = (Half)0.25;
+                    boundaryExpected = (Half)0.75;
+                }
+
+                Assert.Equal((long)length * (gaussian ? 2 : 1), random.Calls);
+                Assert.Equal(expected, backing[1]);
+                Assert.Equal(expected, backing[int.MaxValue]);
+                Assert.Equal(boundaryExpected, backing[length - 64]);
+                Assert.Equal(expected, backing[unchecked((nint)int.MaxValue + 2)]);
+                Assert.Equal(expected, backing[length]);
+                Assert.Equal((Half)99, backing[0]);
+                Assert.Equal((Half)99, backing[length + 1]);
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public static void TensorLargeBroadcastIndexOfNaN()
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            ReadOnlyTensorSpan<double> source = new ReadOnlyTensorSpan<double>(new double[] { double.NaN }, [length], [0]);
+
+            Assert.Equal(0, Tensor.IndexOfMax(source));
+            Assert.Equal(0, Tensor.IndexOfMin(source));
+            Assert.Equal(0, Tensor.IndexOfMaxMagnitude(source));
+            Assert.Equal(0, Tensor.IndexOfMinMagnitude(source));
+        }
+
+        private readonly struct EqualityByte(byte value) : IEquatable<EqualityByte>
+        {
+            private readonly byte _value = value;
+
+            public bool Equals(EqualityByte other) => _value == other._value;
+        }
+
+        private sealed class BoundaryRandom(long boundary) : Random
+        {
+            public long Calls { get; private set; }
+
+            public override double NextDouble() => Calls++ == boundary ? 0.75 : 0.25;
         }
 
         [Theory]
@@ -2510,6 +3725,42 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorEnumeratorsApplyRankOneStrides()
+        {
+            Tensor<int> tensor = Tensor.Create([10, 99, 20, 99, 30], [3], [2]);
+            Assert.Equal(30, tensor.AsTensorSpan().GetDimensionSpan(0)[2][0]);
+            Assert.Equal(30, tensor.AsReadOnlyTensorSpan().GetDimensionSpan(0)[2][0]);
+
+            Tensor<int>.Enumerator tensorEnumerator = tensor.GetEnumerator();
+            TensorSpan<int>.Enumerator spanEnumerator = tensor.AsTensorSpan().GetEnumerator();
+            ReadOnlyTensorSpan<int>.Enumerator readOnlySpanEnumerator = tensor.AsReadOnlyTensorSpan().GetEnumerator();
+
+            for (int i = 0; i < 3; i++)
+            {
+                int expected = (i + 1) * 10;
+                Assert.True(tensorEnumerator.MoveNext());
+                Assert.Equal(expected, tensorEnumerator.Current);
+                Assert.True(spanEnumerator.MoveNext());
+                Assert.Equal(expected, spanEnumerator.Current);
+                Assert.True(readOnlySpanEnumerator.MoveNext());
+                Assert.Equal(expected, readOnlySpanEnumerator.Current);
+            }
+
+            Assert.False(tensorEnumerator.MoveNext());
+            Assert.False(spanEnumerator.MoveNext());
+            Assert.False(readOnlySpanEnumerator.MoveNext());
+
+            ReadOnlyTensorSpan<int> broadcast = Tensor.Create([42], [3], [0]).AsReadOnlyTensorSpan();
+            ReadOnlyTensorSpan<int>.Enumerator broadcastEnumerator = broadcast.GetEnumerator();
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.True(broadcastEnumerator.MoveNext());
+                Assert.Equal(42, broadcastEnumerator.Current);
+            }
+            Assert.False(broadcastEnumerator.MoveNext());
+        }
+
+        [Fact]
         public static void TensorSqueezeAllSingletonDimensionsRetainsElement()
         {
             Tensor<int> tensor = Tensor.Create([42], [1, 1]);
@@ -2595,18 +3846,70 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([7, 0, 0], resized.ToArray());
         }
 
-        [Fact]
-        public static void TensorResizeToClearsUnwrittenElements()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(2)]
+        public static void TensorResizeToClearsUnwrittenElements(int sourceLength)
         {
-            ReadOnlyTensorSpan<int> source = new ReadOnlyTensorSpan<int>(new int[] { 1, 2 });
+            ReadOnlyTensorSpan<int> source = new ReadOnlyTensorSpan<int>(new int[] { 1, 2 }.AsSpan(0, sourceLength));
             int[] dense = [9, 9, 9, 9];
             Tensor.ResizeTo(source, new TensorSpan<int>(dense));
-            Assert.Equal([1, 2, 0, 0], dense);
+            Assert.Equal(sourceLength == 0 ? [0, 0, 0, 0] : [1, 2, 0, 0], dense);
 
             int[] strided = [9, 9, 9, 9, 9, 9];
             TensorSpan<int> destination = new TensorSpan<int>(strided, [2, 2], [3, 1]);
             Tensor.ResizeTo(source, destination);
-            Assert.Equal([1, 2, 9, 0, 0, 9], strided);
+            Assert.Equal(sourceLength == 0 ? [0, 0, 9, 0, 0, 9] : [1, 2, 9, 0, 0, 9], strided);
+        }
+
+        [Theory]
+        [InlineData(0, false, false)]
+        [InlineData(0, false, true)]
+        [InlineData(0, true, false)]
+        [InlineData(0, true, true)]
+        [InlineData(2, false, false)]
+        [InlineData(2, false, true)]
+        [InlineData(2, true, false)]
+        [InlineData(2, true, true)]
+        [InlineData(4, false, false)]
+        [InlineData(4, false, true)]
+        [InlineData(4, true, false)]
+        [InlineData(4, true, true)]
+        [InlineData(7, false, false)]
+        [InlineData(7, false, true)]
+        [InlineData(7, true, false)]
+        [InlineData(7, true, true)]
+        [InlineData(64, false, false)]
+        [InlineData(64, false, true)]
+        [InlineData(64, true, false)]
+        [InlineData(64, true, true)]
+        public static void TensorResizeToNonDenseSourceClearsUnwrittenElements(int destinationLength, bool denseDestination, bool broadcastSource)
+        {
+            Verify<int>([1, 2, 9, 3, 4, 9], 9);
+            Verify<string>(["one", "two", "sentinel", "three", "four", "sentinel"], "sentinel");
+            Verify<(int, string)>([(1, "one"), (2, "two"), (9, "sentinel"), (3, "three"), (4, "four"), (9, "sentinel")], (9, "sentinel"));
+
+            void Verify<T>(T[] sourceData, T sentinel)
+            {
+                ReadOnlyTensorSpan<T> source = new ReadOnlyTensorSpan<T>(sourceData, [2, 2], [broadcastSource ? 0 : 3, 1]);
+                Assert.False(source.IsDense);
+
+                int stride = denseDestination ? 1 : 2;
+                T[] destinationData = new T[(destinationLength * stride) + 2];
+                Array.Fill(destinationData, sentinel);
+                TensorSpan<T> destination = new TensorSpan<T>(destinationData, 1, [1, destinationLength, 1], destinationLength == 0 ? [] : [0, stride, 0]);
+                Assert.Equal(denseDestination || destinationLength == 0, destination.IsDense);
+
+                Tensor.ResizeTo(source, destination);
+
+                T[] expected = new T[destinationData.Length];
+                Array.Fill(expected, sentinel);
+                for (int i = 0; i < destinationLength; i++)
+                {
+                    expected[1 + (i * stride)] = i < 4 ? sourceData[broadcastSource ? i % 2 : (i / 2 * 3) + (i % 2)] : default!;
+                }
+                Assert.Equal(expected, destinationData);
+            }
         }
 
         [Fact]
@@ -2623,6 +3926,416 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentException>(() =>
                 Tensor.ResizeTo(new ReadOnlyTensorSpan<int>(data.AsSpan(0, 2)), new TensorSpan<int>(data, 1, [2, 2], [3, 1])));
             Assert.Equal([1, 2, 3, 4, 5, 6], data);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(17)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(33)]
+        [InlineData(47)]
+        [InlineData(48)]
+        [InlineData(49)]
+        [InlineData(80)]
+        [InlineData(96)]
+        [InlineData(97)]
+        [InlineData(160)]
+        public static void TensorResizeToCopiesContiguousSourceRuns(int destinationLength)
+        {
+            Verify<int>(i => i + 1, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i + 1, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                T[] sourceData = Enumerable.Range(0, 110).Select(createValue).ToArray();
+                for (int layout = 0; layout < 4; layout++)
+                {
+                    nint[] lengths = layout == 2 ? [3, 2, 16] : [2, 3, 16];
+                    nint[] strides = layout == 2 ? [16, 53, 1] : [layout == 1 ? 0 : 53, 16, 1];
+                    if (layout == 3)
+                    {
+                        lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                        strides = [0, 0, 0, 0, 0, 0, 0, 0, .. strides];
+                    }
+                    ReadOnlyTensorSpan<T> source = new ReadOnlyTensorSpan<T>(sourceData, 1, lengths, strides);
+                    Assert.False(source.IsDense);
+                    T[] destinationData = new T[destinationLength + 2];
+                    Array.Fill(destinationData, sentinel);
+                    TensorSpan<T> destination = new TensorSpan<T>(destinationData, 1, [destinationLength], []);
+
+                    Tensor.ResizeTo(source, destination);
+
+                    T[] expected = new T[destinationData.Length];
+                    Array.Fill(expected, sentinel);
+                    for (int i = 0; i < destinationLength; i++)
+                    {
+                        int offset = layout == 2
+                            ? (i / 32 * 16) + (i / 16 % 2 * 53) + (i % 16)
+                            : (layout == 1 ? 0 : i / 48 * 53) + (i % 48);
+                        expected[i + 1] = i < 96 ? sourceData[offset + 1] : default!;
+                    }
+                    Assert.Equal(expected, destinationData);
+
+                    Tensor<T> resized = Tensor.Resize(Tensor.Create(sourceData, 1, lengths, strides), [destinationLength]);
+                    Assert.Equal(expected.AsSpan(1, destinationLength).ToArray(), resized.ToArray());
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(1, 16)]
+        [InlineData(1, 32)]
+        [InlineData(1, 65)]
+        [InlineData(2, 16)]
+        [InlineData(2, 17)]
+        [InlineData(2, 24)]
+        [InlineData(2, 31)]
+        [InlineData(2, 32)]
+        [InlineData(3, 16)]
+        [InlineData(3, 24)]
+        [InlineData(3, 32)]
+        [InlineData(3, 33)]
+        [InlineData(6, 32)]
+        [InlineData(32, 1)]
+        [InlineData(64, 1)]
+        [InlineData(65, 1)]
+        public static void TensorResizeToCopiesIntoContiguousDestinationRuns(int rows, int columns)
+        {
+            Verify<int>(i => i + 1, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i + 1, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                T[] sourceData = Enumerable.Range(0, 130).Select(createValue).ToArray();
+                for (int layout = 0; layout < 6; layout++)
+                {
+                    nint[] lengths = layout is 0 or 5 ? [64] : layout == 3 ? [2, 2, 16] : [4, 16];
+                    nint[] strides = layout == 0 ? [] : layout == 5 ? [2] : layout == 3 ? [19, 38, 1] : [layout == 2 ? 0 : 19, 1];
+                    if (layout == 4)
+                    {
+                        lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                        strides = [0, 0, 0, 0, 0, 0, 0, 0, .. strides];
+                    }
+                    ReadOnlyTensorSpan<T> source = new ReadOnlyTensorSpan<T>(sourceData, 1, lengths, strides);
+                    T[] destinationData = new T[rows * (columns + 3) + 2];
+                    Array.Fill(destinationData, sentinel);
+                    TensorSpan<T> destination = new TensorSpan<T>(destinationData, 1, [rows, columns], [rows == 1 ? 0 : columns + 3, columns == 1 ? 0 : 1]);
+
+                    Tensor.ResizeTo(source, destination);
+
+                    T[] expected = new T[destinationData.Length];
+                    Array.Fill(expected, sentinel);
+                    for (int i = 0; i < rows * columns; i++)
+                    {
+                        int sourceOffset = layout switch
+                        {
+                            0 => i,
+                            2 => i % 16,
+                            3 => i / 32 * 19 + i / 16 % 2 * 38 + i % 16,
+                            5 => i * 2,
+                            _ => i / 16 * 19 + i % 16,
+                        };
+                        expected[1 + i / columns * (columns + 3) + i % columns] = i < 64 ? sourceData[sourceOffset + 1] : default!;
+                    }
+                    Assert.Equal(expected, destinationData);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(16)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(33)]
+        [InlineData(63)]
+        [InlineData(64)]
+        [InlineData(65)]
+        [InlineData(95)]
+        [InlineData(96)]
+        [InlineData(97)]
+        [InlineData(160)]
+        [InlineData(161)]
+        [InlineData(191)]
+        [InlineData(192)]
+        [InlineData(193)]
+        public static void TensorResizeToClearsContiguousDestinationRuns(int sourceLength)
+        {
+            Verify<int>(i => i + 1, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i + 1, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                T[] sourceData = Enumerable.Range(0, sourceLength * 2).Select(createValue).ToArray();
+                for (int layout = 0; layout < 6; layout++)
+                {
+                    ReadOnlyTensorSpan<T> source = new ReadOnlyTensorSpan<T>(sourceData, [sourceLength], [sourceLength <= 1 ? 0 : layout % 2 + 1]);
+                    nint[] lengths = layout >= 4 ? [3, 2, 32, 1] : [2, 3, 32, 1];
+                    nint[] strides = layout >= 4 ? [35, 110, 1, 0] : [110, 35, 1, 0];
+                    if (layout is 2 or 3)
+                    {
+                        lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                        strides = [0, 0, 0, 0, 0, 0, 0, 0, .. strides];
+                    }
+                    T[] destinationData = new T[215];
+                    Array.Fill(destinationData, sentinel);
+                    TensorSpan<T> destination = new TensorSpan<T>(destinationData, 1, lengths, strides);
+                    Assert.False(destination.IsDense);
+
+                    Tensor.ResizeTo(source, destination);
+
+                    T[] expected = new T[destinationData.Length];
+                    Array.Fill(expected, sentinel);
+                    for (int i = 0; i < 192; i++)
+                    {
+                        int offset = layout >= 4
+                            ? (i / 64 * 35) + (i / 32 % 2 * 110) + (i % 32)
+                            : (i / 96 * 110) + (i / 32 % 3 * 35) + (i % 32);
+                        expected[offset + 1] = i < sourceLength ? sourceData[i * (layout % 2 + 1)] : default!;
+                    }
+                    Assert.Equal(expected, destinationData);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TensorResizeToRejectsOverlappingContiguousRuns(bool denseDestination)
+        {
+            int[] data = Enumerable.Range(1, 160).ToArray();
+            int[] expected = (int[])data.Clone();
+
+            Assert.Throws<ArgumentException>(() =>
+                Tensor.ResizeTo(
+                    new ReadOnlyTensorSpan<int>(data, [2, 32], [40, 1]),
+                    new TensorSpan<int>(data, 16, [3, 32], denseDestination ? [] : [40, 1])));
+
+            Assert.Equal(expected, data);
+        }
+
+        internal static unsafe void TensorResizeToDenseDestinationLongerThanSpan(int sourceLayout)
+        {
+            nint destinationLength = int.MaxValue;
+            destinationLength += 65;
+            nint rowLength = (int.MaxValue / 2) + 2;
+            nint sourceStorageLength = rowLength * 2 + 2;
+            long peakMemoryBytes = (long)(destinationLength + 2) + (sourceLayout is 1 or 3 ? (long)sourceStorageLength : 0);
+            if (RunLargeMemoryTest(peakMemoryBytes, nameof(TensorResizeToDenseDestinationLongerThanSpan), sourceLayout.ToString(CultureInfo.InvariantCulture)))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(destinationLength + 2), zeroInitialize: true);
+            byte* sourceBacking = null;
+            try
+            {
+                backing[0] = byte.MaxValue;
+                backing[destinationLength + 1] = byte.MaxValue;
+                ReadOnlyTensorSpan<byte> source = sourceLayout == 4
+                    ? new ReadOnlyTensorSpan<byte>(Array.Empty<byte>())
+                    : sourceLayout == 2
+                    ? new ReadOnlyTensorSpan<byte>(new byte[] { 1, 2 })
+                    : new ReadOnlyTensorSpan<byte>(new byte[] { 1, 99, 2 }, [2], [2]);
+                if (sourceLayout is 1 or 3)
+                {
+                    sourceBacking = (byte*)AllocateNativeMemory((nuint)sourceStorageLength, zeroInitialize: true);
+                    sourceBacking[0] = 1;
+                    sourceBacking[rowLength / 2] = 1;
+                    sourceBacking[rowLength - 1] = 1;
+                    int gap = sourceLayout == 1 ? 1 : 0;
+                    sourceBacking[rowLength + gap] = 2;
+                    sourceBacking[rowLength + gap + rowLength / 2] = 2;
+                    sourceBacking[rowLength + gap + rowLength - 1] = 2;
+                    if (gap != 0)
+                    {
+                        sourceBacking[rowLength] = 99;
+                    }
+
+                    source = new ReadOnlyTensorSpan<byte>(sourceBacking, sourceStorageLength, [2, rowLength], sourceLayout == 1 ? [rowLength + 1, 1] : []);
+                }
+
+                nint tailStart = source.FlattenedLength;
+                if (tailStart < destinationLength)
+                {
+                    backing[tailStart + 1] = byte.MaxValue;
+                    if (int.MaxValue > tailStart && int.MaxValue < destinationLength)
+                    {
+                        backing[unchecked((nint)int.MaxValue + 1)] = byte.MaxValue;
+                    }
+                    backing[destinationLength] = byte.MaxValue;
+                }
+
+                TensorSpan<byte> destination = new TensorSpan<byte>(backing + 1, destinationLength);
+
+                Tensor.ResizeTo(source, destination);
+
+                Assert.Equal(byte.MaxValue, backing[0]);
+                if (sourceLayout is 1 or 3)
+                {
+                    Assert.Equal(1, backing[1]);
+                    Assert.Equal(1, backing[rowLength / 2 + 1]);
+                    Assert.Equal(1, backing[rowLength]);
+                    Assert.Equal(2, backing[rowLength + 1]);
+                    Assert.Equal(2, backing[rowLength + rowLength / 2 + 1]);
+                    Assert.Equal(2, backing[2 * rowLength]);
+                    if (sourceLayout == 1)
+                    {
+                        Assert.Equal(99, sourceBacking[rowLength]);
+                    }
+                }
+                else
+                {
+                    Assert.Equal(sourceLayout == 4 ? 0 : 1, backing[1]);
+                    Assert.Equal(sourceLayout == 4 ? 0 : 2, backing[2]);
+                }
+                if (tailStart < destinationLength)
+                {
+                    Assert.Equal(0, backing[tailStart + 1]);
+                    if (int.MaxValue > tailStart && int.MaxValue < destinationLength)
+                    {
+                        Assert.Equal(0, backing[unchecked((nint)int.MaxValue + 1)]);
+                    }
+                    Assert.Equal(0, backing[destinationLength]);
+                }
+                Assert.Equal(byte.MaxValue, backing[destinationLength + 1]);
+            }
+            finally
+            {
+                NativeMemory.Free(sourceBacking);
+                NativeMemory.Free(backing);
+            }
+        }
+
+        internal static unsafe void TensorResizeToLargeDenseSourceSmallDestination()
+        {
+            nint sourceLength = int.MaxValue;
+            sourceLength += 65;
+            if (RunLargeMemoryTest((long)sourceLength + 66, nameof(TensorResizeToLargeDenseSourceSmallDestination)))
+            {
+                return;
+            }
+
+            byte* sourceData = (byte*)AllocateNativeMemory((nuint)sourceLength);
+            try
+            {
+                new Span<byte>(sourceData, 64).Fill(7);
+                byte[] destinationData = new byte[66];
+                Array.Fill(destinationData, byte.MaxValue);
+                ReadOnlyTensorSpan<byte> source = new ReadOnlyTensorSpan<byte>(sourceData, sourceLength);
+                TensorSpan<byte> destination = new TensorSpan<byte>(destinationData, 1, [64], []);
+
+                Tensor.ResizeTo(source, destination);
+
+                Assert.Equal(byte.MaxValue, destinationData[0]);
+                Assert.Equal(-1, destinationData.AsSpan(1, 64).IndexOfAnyExcept((byte)7));
+                Assert.Equal(byte.MaxValue, destinationData[^1]);
+            }
+            finally
+            {
+                NativeMemory.Free(sourceData);
+            }
+        }
+
+        internal static unsafe void TensorResizeToLargeDenseOverlap(int shift, int lengthDifference)
+        {
+            nint sourceLength = int.MaxValue;
+            sourceLength += 257;
+            nint destinationLength = sourceLength + lengthDifference;
+            if (RunLargeMemoryTest((long)sourceLength + 128, nameof(TensorResizeToLargeDenseOverlap), shift.ToString(CultureInfo.InvariantCulture), lengthDifference.ToString(CultureInfo.InvariantCulture)))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(sourceLength + 128), zeroInitialize: true);
+            try
+            {
+                backing[0] = byte.MaxValue;
+                backing[sourceLength + 127] = byte.MaxValue;
+                byte* sourceData = backing + 64;
+                nint boundary = (nint)int.MaxValue - 32;
+                sourceData[0] = 1;
+                sourceData[boundary] = 2;
+                sourceData[unchecked((nint)int.MaxValue + 1)] = 4;
+                sourceData[sourceLength - 64] = 3;
+                byte* destinationData = sourceData + shift;
+                ReadOnlyTensorSpan<byte> source = new ReadOnlyTensorSpan<byte>(sourceData, sourceLength);
+                TensorSpan<byte> destination = new TensorSpan<byte>(destinationData, destinationLength);
+                if (destinationLength > sourceLength)
+                {
+                    destinationData[destinationLength - 1] = byte.MaxValue;
+                }
+
+                Tensor.ResizeTo(source, destination);
+
+                Assert.Equal(1, destinationData[0]);
+                Assert.Equal(0, destinationData[1]);
+                Assert.Equal(2, destinationData[boundary]);
+                Assert.Equal(0, destinationData[boundary + 1]);
+                Assert.Equal(4, destinationData[unchecked((nint)int.MaxValue + 1)]);
+                Assert.Equal(3, destinationData[sourceLength - 64]);
+                if (destinationLength > sourceLength)
+                {
+                    Assert.Equal(0, destinationData[sourceLength]);
+                    Assert.Equal(0, destinationData[destinationLength - 1]);
+                }
+                Assert.Equal(byte.MaxValue, backing[0]);
+                Assert.Equal(byte.MaxValue, backing[sourceLength + 127]);
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+            }
+
+        }
+
+        internal static unsafe void TensorClearAndFillDenseLongerThanSpan(bool singletonDimensions)
+        {
+            nint length = int.MaxValue;
+            length += 65;
+            if (RunLargeMemoryTest((long)length + 2, nameof(TensorClearAndFillDenseLongerThanSpan), singletonDimensions.ToString()))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(length + 2), zeroInitialize: true);
+            try
+            {
+                backing[0] = byte.MaxValue;
+                backing[length + 1] = byte.MaxValue;
+                nint[] markers = [0, 4095, 4096, int.MaxValue - 1, int.MaxValue, length - 1];
+                foreach (nint marker in markers)
+                {
+                    backing[marker + 1] = byte.MaxValue;
+                }
+
+                TensorSpan<byte> destination = new TensorSpan<byte>(backing + 1, length, singletonDimensions ? [1, length, 1] : [length]);
+
+                destination.Fill(7);
+                Verify(7);
+                destination.Clear();
+                Verify(0);
+
+                void Verify(byte expected)
+                {
+                    foreach (nint marker in markers)
+                    {
+                        Assert.Equal(expected, backing[marker + 1]);
+                    }
+
+                    Assert.Equal(byte.MaxValue, backing[0]);
+                    Assert.Equal(byte.MaxValue, backing[length + 1]);
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+            }
         }
 
         [Fact]
@@ -3009,6 +4722,129 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(40, resultTensor2[1, 1, 1]);
         }
 
+        public static IEnumerable<object[]> TensorStackLayoutsData()
+        {
+            foreach (int rank in new[] { 2, 6 })
+            {
+                for (int dimension = 0; dimension <= rank; dimension++)
+                {
+                    for (int layout = 0; layout < 4; layout++)
+                    {
+                        yield return new object[] { rank, dimension, layout, false };
+                        yield return new object[] { rank, dimension, layout, true };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorStackLayoutsData))]
+        public static void TensorStackPreservesLayoutsAndGuards(int rank, int dimension, int layout, bool gappedDestination)
+        {
+            Verify<int>(i => i, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                nint[] lengths = Enumerable.Repeat((nint)1, rank).ToArray();
+                lengths[^2] = 2;
+                lengths[^1] = 3;
+                nint[] strides = new nint[rank];
+                strides[^2] = layout switch { 1 => 4, 2 => 6, 3 => 0, _ => 3 };
+                strides[^1] = layout == 2 ? 2 : 1;
+                Tensor<T>[] sources = new Tensor<T>[3];
+                T[][] logical = new T[3][];
+                for (int s = 0; s < sources.Length; s++)
+                {
+                    T[] data = Enumerable.Range(s * 100, 15).Select(createValue).ToArray();
+                    sources[s] = Tensor.Create(data, 1, lengths, strides);
+                    logical[s] = Enumerable.Range(0, 6)
+                        .Select(i => data[1 + i / 3 * (int)strides[^2] + i % 3 * (int)strides[^1]]).ToArray();
+                }
+
+                nint[] outputLengths = [.. lengths[..dimension], sources.Length, .. lengths[dimension..]];
+                int blockLength = (int)CalculateTotalLength(lengths[dimension..]);
+                if (dimension == rank)
+                {
+                    blockLength = 1;
+                }
+                T[] expected = new T[18];
+                for (int i = 0; i < expected.Length; i++)
+                {
+                    int outer = i / (sources.Length * blockLength);
+                    int source = i / blockLength % sources.Length;
+                    expected[i] = logical[source][outer * blockLength + i % blockLength];
+                }
+
+                Tensor<T> allocated = Tensor.StackAlongDimension(dimension, sources);
+                Assert.Equal(outputLengths, allocated.Lengths);
+                Assert.Equal(expected, allocated.ToArray());
+
+                T[] backing = new T[expected.Length * 2 + 2];
+                Array.Fill(backing, sentinel);
+                nint[] outputStrides = new nint[outputLengths.Length];
+                nint stride = gappedDestination ? 2 : 1;
+                for (int i = outputLengths.Length - 1; i >= 0; i--)
+                {
+                    outputStrides[i] = outputLengths[i] == 1 ? 0 : stride;
+                    stride *= outputLengths[i];
+                }
+                TensorSpan<T> destination = new TensorSpan<T>(backing, 1, outputLengths, outputStrides);
+                Tensor.StackAlongDimension(sources, destination, dimension);
+
+                T[] expectedBacking = new T[backing.Length];
+                Array.Fill(expectedBacking, sentinel);
+                for (int i = 0; i < expected.Length; i++)
+                {
+                    expectedBacking[1 + i * (gappedDestination ? 2 : 1)] = expected[i];
+                }
+                Assert.Equal(expectedBacking, backing);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 2)]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(1, 2)]
+        public static void TensorStackEmptyInputs(int emptyDimension, int dimension)
+        {
+            nint[] lengths = [2, 3];
+            lengths[emptyDimension] = 0;
+            Tensor<int> empty = Tensor.Create(Array.Empty<int>(), lengths);
+            Tensor<int> output = Tensor.StackAlongDimension(dimension, [empty, empty]);
+            Assert.Equal([.. lengths[..dimension], (nint)2, .. lengths[dimension..]], output.Lengths);
+            Assert.Equal(0, output.FlattenedLength);
+            int[] backing = [-1];
+            Tensor.StackAlongDimension([empty, empty],
+                new TensorSpan<int>(backing, output.Lengths, []), dimension);
+            Assert.Equal([-1], backing);
+        }
+
+        [Fact]
+        public static void TensorStackValidatesBeforeWriting()
+        {
+            Tensor<int> first = Tensor.Create([1, 2], [2]);
+            int[] backing = [9, 9, 9, 9, 9];
+            Tensor<int> overlapping = Tensor.Create(backing, 1, [2], []);
+
+            Assert.Throws<ArgumentException>(() =>
+                Tensor.StackAlongDimension([first, overlapping], new TensorSpan<int>(backing, [2, 2]), 1));
+            Assert.Throws<ArgumentException>(() =>
+                Tensor.StackAlongDimension([first, first], new TensorSpan<int>(backing, [2, 2], [0, 1]), 0));
+            Assert.Throws<ArgumentException>(() =>
+                Tensor.StackAlongDimension([first, first], new TensorSpan<int>(backing, [4]), 0));
+            Assert.Throws<ArgumentException>(() =>
+                Tensor.StackAlongDimension([first, Tensor.Create([3])], new TensorSpan<int>(backing, [2, 2]), 0));
+            Assert.Throws<ArgumentException>(() => Tensor.StackAlongDimension(-1, [first, first]));
+            Assert.Throws<ArgumentException>(() => Tensor.StackAlongDimension(2, [first, first]));
+            Assert.Throws<ArgumentException>(() => Tensor.StackAlongDimension(0, [first]));
+            Assert.Equal([9, 9, 9, 9, 9], backing);
+        }
+
         public static IEnumerable<object[]> StdDevFloatTestData()
         {
             // Test case where Abs doesn't change the result (real numbers, positive values)
@@ -3384,6 +5220,57 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [InlineData(2, 1, false)]
+        [InlineData(2, 1, true)]
+        [InlineData(3, 1, false)]
+        [InlineData(3, 2, false)]
+        [InlineData(6, 1, false)]
+        [InlineData(6, 5, false)]
+        [InlineData(6, 5, true)]
+        public static void TensorConcatenateDenseInnerBlocks(int rank, int dimension, bool emptySource)
+        {
+            Verify<int>(i => i, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                nint[] lengths = Enumerable.Repeat((nint)2, rank).ToArray();
+                int innerLength = 1 << (rank - dimension - 1);
+                int outerLength = 1 << dimension;
+                int[] axisLengths = [1, emptySource ? 0 : 3, 2];
+                Tensor<T>[] sources = new Tensor<T>[axisLengths.Length];
+                T[][] logical = new T[sources.Length][];
+                for (int s = 0; s < sources.Length; s++)
+                {
+                    lengths[dimension] = axisLengths[s];
+                    logical[s] = Enumerable.Range(s * 1000, outerLength * axisLengths[s] * innerLength)
+                        .Select(createValue).ToArray();
+                    T[] data = [sentinel, .. logical[s], sentinel];
+                    sources[s] = Tensor.Create(data, 1, lengths, []);
+                }
+                lengths[dimension] = axisLengths.Sum();
+                T[] expected = new T[outerLength * axisLengths.Sum() * innerLength];
+                int copied = 0;
+                for (int outer = 0; outer < outerLength; outer++)
+                {
+                    for (int s = 0; s < sources.Length; s++)
+                    {
+                        int count = axisLengths[s] * innerLength;
+                        logical[s].AsSpan(outer * count, count).CopyTo(expected.AsSpan(copied));
+                        copied += count;
+                    }
+                }
+                Tensor<T> allocated = Tensor.ConcatenateOnDimension(dimension, sources);
+                Assert.Equal(expected, allocated.ToArray());
+                T[] backing = new T[expected.Length + 2];
+                Array.Fill(backing, sentinel);
+                Tensor.ConcatenateOnDimension(dimension, sources, new TensorSpan<T>(backing, 1, lengths, []));
+                Assert.Equal([sentinel, .. expected, sentinel], backing);
+            }
+        }
+
+        [Theory]
         [InlineData(2)]
         [InlineData(6)]
         public static void TensorConcatenateNonDenseDestinationAlongAxis(int rank)
@@ -3415,6 +5302,174 @@ namespace System.Numerics.Tensors.Tests
             Tensor.ConcatenateOnDimension(-1, [first, second], destination);
 
             Assert.Equal(["_", "a", "b", "_", "c", "d"], backing.ToArray());
+        }
+
+        [Theory]
+        [InlineData(16, false)]
+        [InlineData(17, false)]
+        [InlineData(32, false)]
+        [InlineData(17, true)]
+        public static void TensorConcatenateContiguousDestinationRuns(int columns, bool highRank)
+        {
+            Verify<int>(i => i + 1, -1);
+            Verify<string>(i => i.ToString(CultureInfo.InvariantCulture), "sentinel");
+            Verify<(int, string)>(i => (i + 1, i.ToString(CultureInfo.InvariantCulture)), (-1, "sentinel"));
+
+            void Verify<T>(Func<int, T> createValue, T sentinel)
+            {
+                int[] sourceLengths = [0, 1, 31, 32, 33, 8 * columns - 97, 0];
+                Tensor<T>[] sources = new Tensor<T>[sourceLengths.Length];
+                T[] logical = new T[8 * columns];
+                int copied = 0;
+                for (int s = 0; s < sources.Length; s++)
+                {
+                    int length = sourceLengths[s];
+                    T[] data = Enumerable.Range(s * 100, Math.Max(length * 2, 40)).Select(createValue).ToArray();
+                    if (s == 3)
+                    {
+                        sources[s] = Tensor.Create(data, [2, 16], [highRank ? 0 : 19, 1]);
+                    }
+                    else if (s == 4)
+                    {
+                        sources[s] = Tensor.Create(data, [length], [2]);
+                    }
+                    else
+                    {
+                        sources[s] = Tensor.Create(data.AsSpan(0, length).ToArray());
+                    }
+                    for (int i = 0; i < length; i++)
+                    {
+                        int offset = s == 3 ? (highRank ? 0 : i / 16 * 19) + i % 16 : s == 4 ? i * 2 : i;
+                        logical[copied++] = data[offset];
+                    }
+                }
+
+                nint[] lengths = [8, columns];
+                nint[] strides = [columns + 3, 1];
+                if (highRank)
+                {
+                    lengths = [1, 1, 1, 1, 1, 1, 1, 1, .. lengths];
+                    strides = [0, 0, 0, 0, 0, 0, 0, 0, .. strides];
+                }
+                T[] destinationData = new T[8 * (columns + 3) + 2];
+                Array.Fill(destinationData, sentinel);
+                TensorSpan<T> destination = new TensorSpan<T>(destinationData, 1, lengths, strides);
+
+                Tensor.ConcatenateOnDimension(-1, sources, destination);
+
+                T[] expected = new T[destinationData.Length];
+                Array.Fill(expected, sentinel);
+                for (int i = 0; i < logical.Length; i++)
+                {
+                    expected[1 + i / columns * (columns + 3) + i % columns] = logical[i];
+                }
+                Assert.Equal(expected, destinationData);
+            }
+        }
+
+        internal static unsafe void TensorConcatenateDenseDestinationLongerThanSpan(int dimension)
+        {
+            int rowLength = int.MaxValue / 2 + 33;
+            nint length = (nint)rowLength * 2 + (dimension == -1 ? 34 : 0);
+            if (RunLargeMemoryTest((long)(length + 2 + (nint)rowLength * 2), nameof(TensorConcatenateDenseDestinationLongerThanSpan), dimension.ToString(CultureInfo.InvariantCulture)))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(length + 2), zeroInitialize: true);
+            try
+            {
+                byte[] firstData = GC.AllocateUninitializedArray<byte>(rowLength);
+                byte[] secondData = GC.AllocateUninitializedArray<byte>(rowLength);
+                firstData[0] = 1;
+                firstData[rowLength / 2] = 11;
+                firstData[^1] = 12;
+                secondData[0] = 2;
+                secondData[rowLength / 2] = 22;
+                secondData[^1] = 23;
+                Tensor<byte> first = Tensor.Create(firstData, [1, rowLength]);
+                Tensor<byte> second = Tensor.Create(secondData, [1, rowLength]);
+                backing[0] = byte.MaxValue;
+                backing[length + 1] = byte.MaxValue;
+                TensorSpan<byte> destination = new TensorSpan<byte>(backing + 1, length, dimension == -1 ? [length] : [2, rowLength]);
+                byte[] thirdData = new byte[33];
+                thirdData.AsSpan().Fill(3);
+                Tensor<byte>[] sources = dimension == -1
+                    ? [first, second, Tensor.Create(thirdData), Tensor.Create<byte>(new byte[] { 4 })]
+                    : [first, second];
+
+                Tensor.ConcatenateOnDimension(dimension, sources, destination);
+
+                Assert.Equal(1, backing[1]);
+                Assert.Equal(11, backing[rowLength / 2 + 1]);
+                Assert.Equal(12, backing[rowLength]);
+                Assert.Equal(2, backing[rowLength + 1]);
+                Assert.Equal(22, backing[rowLength + rowLength / 2 + 1]);
+                Assert.Equal(23, backing[(nint)rowLength * 2]);
+                if (dimension == -1)
+                {
+                    Assert.Equal(3, backing[(nint)rowLength * 2 + 1]);
+                    Assert.Equal(3, backing[(nint)rowLength * 2 + 33]);
+                    Assert.Equal(4, backing[length]);
+                }
+                Assert.Equal(byte.MaxValue, backing[0]);
+                Assert.Equal(byte.MaxValue, backing[length + 1]);
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+            }
+        }
+
+        internal static unsafe void TensorLargeDenseJoinInnerBlocks(bool stack)
+        {
+            int rows = int.MaxValue / 2 + 33;
+            nint length = (nint)rows * 2;
+            if (RunLargeMemoryTest((long)(length + 2 + (nint)rows * 2), nameof(TensorLargeDenseJoinInnerBlocks), stack.ToString()))
+            {
+                return;
+            }
+
+            byte* backing = (byte*)AllocateNativeMemory((nuint)(length + 2), zeroInitialize: true);
+            try
+            {
+                byte[] firstData = GC.AllocateUninitializedArray<byte>(rows);
+                byte[] secondData = GC.AllocateUninitializedArray<byte>(rows);
+                firstData[0] = 1;
+                firstData[rows / 2] = 11;
+                firstData[^1] = 12;
+                secondData[0] = 2;
+                secondData[rows / 2] = 22;
+                secondData[^1] = 23;
+                Tensor<byte>[] sources =
+                [
+                    Tensor.Create(firstData, stack ? [rows] : [rows, 1]),
+                    Tensor.Create(secondData, stack ? [rows] : [rows, 1]),
+                ];
+                backing[0] = byte.MaxValue;
+                backing[length + 1] = byte.MaxValue;
+                TensorSpan<byte> destination = new TensorSpan<byte>(backing + 1, length, [rows, 2]);
+                if (stack)
+                {
+                    Tensor.StackAlongDimension(sources, destination, 1);
+                }
+                else
+                {
+                    Tensor.ConcatenateOnDimension(1, sources, destination);
+                }
+                Assert.Equal(1, backing[1]);
+                Assert.Equal(2, backing[2]);
+                Assert.Equal(11, backing[(nint)rows + 1]);
+                Assert.Equal(22, backing[(nint)rows + 2]);
+                Assert.Equal(12, backing[length - 1]);
+                Assert.Equal(23, backing[length]);
+                Assert.Equal(byte.MaxValue, backing[0]);
+                Assert.Equal(byte.MaxValue, backing[length + 1]);
+            }
+            finally
+            {
+                NativeMemory.Free(backing);
+            }
         }
 
         [Fact]
@@ -6197,6 +8252,119 @@ namespace System.Numerics.Tensors.Tests
                 """;
             Assert.Equal(expected, tensor.ToString([2, 0, 2]));
         }
+    }
+
+    [Collection(nameof(DisableParallelization))]
+    public class TensorLargeMemoryTests
+    {
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false, 0)]
+        [InlineData(true, 0)]
+        [InlineData(false, 1)]
+        [InlineData(true, 1)]
+        [InlineData(false, 2)]
+        [InlineData(true, 2)]
+        [InlineData(false, 3)]
+        [InlineData(true, 3)]
+        [OuterLoop]
+        public static void TensorLargeDenseQueries(bool singletonDimensions, int query) =>
+            TensorTests.TensorLargeDenseQueries(singletonDimensions, query);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-17)]
+        [InlineData(17)]
+        [OuterLoop]
+        public static void TensorCopyToLargeDenseOverlap(int shift) =>
+            TensorTests.TensorCopyToLargeDenseOverlap(shift);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public static void TensorLargeDenseElementwiseOperations(bool singletonDimensions) =>
+            TensorTests.TensorLargeDenseElementwiseOperations(singletonDimensions);
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [OuterLoop]
+        public static void TensorLargeDenseConversionPreservesElementOffsets() =>
+            TensorTests.TensorLargeDenseConversionPreservesElementOffsets();
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public static void TensorLargeDenseReductionAndReversal(bool singletonDimensions) =>
+            TensorTests.TensorLargeDenseReductionAndReversal(singletonDimensions);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public static void TensorLargeDenseReverseIndependentRuns(bool sourcePadded) =>
+            TensorTests.TensorLargeDenseReverseIndependentRuns(sourcePadded);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [OuterLoop]
+        public static void TensorLargeDenseInPlaceReverseChunks(int layout) =>
+            TensorTests.TensorLargeDenseInPlaceReverseChunks(layout);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public static void TensorLargeDenseRandomFillPreservesDrawOrder(bool gaussian) =>
+            TensorTests.TensorLargeDenseRandomFillPreservesDrawOrder(gaussian);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [OuterLoop]
+        public static void TensorResizeToDenseDestinationLongerThanSpan(int sourceLayout) =>
+            TensorTests.TensorResizeToDenseDestinationLongerThanSpan(sourceLayout);
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [OuterLoop]
+        public static void TensorResizeToLargeDenseSourceSmallDestination() =>
+            TensorTests.TensorResizeToLargeDenseSourceSmallDestination();
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-17, -32)]
+        [InlineData(-17, 0)]
+        [InlineData(-17, 32)]
+        [InlineData(0, 0)]
+        [InlineData(17, -32)]
+        [InlineData(17, 0)]
+        [InlineData(17, 32)]
+        [OuterLoop]
+        public static void TensorResizeToLargeDenseOverlap(int shift, int lengthDifference) =>
+            TensorTests.TensorResizeToLargeDenseOverlap(shift, lengthDifference);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public static void TensorClearAndFillDenseLongerThanSpan(bool singletonDimensions) =>
+            TensorTests.TensorClearAndFillDenseLongerThanSpan(singletonDimensions);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [OuterLoop]
+        public static void TensorConcatenateDenseDestinationLongerThanSpan(int dimension) =>
+            TensorTests.TensorConcatenateDenseDestinationLongerThanSpan(dimension);
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public static void TensorLargeDenseJoinInnerBlocks(bool stack) =>
+            TensorTests.TensorLargeDenseJoinInnerBlocks(stack);
     }
 
     /// <summary>
