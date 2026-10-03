@@ -292,10 +292,6 @@ namespace System.Threading
             }
         }
 
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
-        private static partial ulong GetCurrentOSThreadId();
-
         /// <summary>
         /// Return the thread state as a consistent set of bits.  This is more
         /// general then IsAlive or IsBackground.

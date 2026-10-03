@@ -374,11 +374,6 @@ namespace System.Threading
             SleepInternal(millisecondsTimeout);
         }
 
-#if !NATIVEAOT
-        /// <summary>Returns the operating system identifier for the current thread.</summary>
-        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
-#endif
-
 #if !MONO
         [Intrinsic]
         internal static void FastPollGC() => FastPollGC();
