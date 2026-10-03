@@ -5394,10 +5394,13 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
 
     //
     // SyncClean::CleanUp reclaims resources that are safe to free only
-    // when no threads are running managed code. Since the EE is
-    // suspended at this point, we know it's safe to clean up here.
+    // when no threads are running managed code, so it can only run after
+    // the EE was successfully suspended.
     //
-    SyncClean::CleanUp();
+    if (SuspendSucceeded)
+    {
+        SyncClean::CleanUp();
+    }
 
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track suspend events, notify it.  This notification
