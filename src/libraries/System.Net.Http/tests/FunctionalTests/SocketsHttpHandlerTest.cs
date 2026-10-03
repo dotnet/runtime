@@ -4758,7 +4758,20 @@ namespace System.Net.Http.Functional.Tests
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             string guid = $"{Guid.NewGuid():N}";
-            string socketPath = Path.Combine(Path.GetTempPath(), guid);
+            string socketDirectory = Path.GetTempPath();
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                // Keep the name short for app container paths, and avoid an all-numeric URI host.
+                guid = "s" + guid.Substring(0, 7);
+
+                // Simulator app container paths can exceed the native socket path limit.
+                string relativeDirectory = Path.GetRelativePath(Environment.CurrentDirectory, socketDirectory);
+                if (Encoding.UTF8.GetByteCount(relativeDirectory) < Encoding.UTF8.GetByteCount(socketDirectory))
+                {
+                    socketDirectory = relativeDirectory;
+                }
+            }
+            string socketPath = Path.Combine(socketDirectory, guid);
             UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(socketPath);
             using Socket listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             listenSocket.Bind(serverEP);
@@ -4771,7 +4784,7 @@ namespace System.Net.Http.Functional.Tests
                 socketsHandler.ConnectCallback = async (context, token) =>
                 {
                     string hostname = context.DnsEndPoint.Host;
-                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
+                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(socketDirectory, hostname));
 
                     Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
                     await clientSocket.ConnectAsync(clientEP);
