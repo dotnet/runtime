@@ -757,6 +757,45 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 exception.Message);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void EmptyValueLeavesThePropertyAtItsExistingValue(bool errorOnUnknownConfiguration)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "IntegerValue": "" }""");
+            Action<BinderOptions> configureOptions = o => o.ErrorOnUnknownConfiguration = errorOnUnknownConfiguration;
+
+            Assert.Equal(11, config.Get<OptionsWithPresetIntegerValue>(configureOptions).IntegerValue);
+
+            OptionsWithPresetIntegerValue instance = new() { IntegerValue = 7 };
+            config.Bind(instance, configureOptions);
+
+            Assert.Equal(7, instance.IntegerValue);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MalformedValueAlwaysThrows(bool errorOnUnknownConfiguration)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "IntegerValue": "not-an-integer" }""");
+            Action<BinderOptions> configureOptions = o => o.ErrorOnUnknownConfiguration = errorOnUnknownConfiguration;
+
+            Assert.Throws<InvalidOperationException>(() => config.Get<OptionsWithPresetIntegerValue>(configureOptions));
+            Assert.Throws<InvalidOperationException>(() => config.Bind(new OptionsWithPresetIntegerValue(), configureOptions));
+        }
+
+        [Fact]
+        public void EmptyValueOnAStringPropertyStillOverwritesTheExistingValue()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Name": "" }""");
+
+            OptionsWithPresetStringValue instance = new();
+            config.Bind(instance);
+
+            Assert.Equal(string.Empty, instance.Name);
+        }
+
         [Fact]
         public void BinderIgnoresIndexerProperties()
         {

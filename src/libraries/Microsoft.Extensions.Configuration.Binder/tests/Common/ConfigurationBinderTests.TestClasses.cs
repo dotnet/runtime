@@ -511,6 +511,16 @@ namespace Microsoft.Extensions
             public byte[] MyByteArray { get; set; }
         }
 
+        public class OptionsWithPresetIntegerValue
+        {
+            public int IntegerValue { get; set; } = 11;
+        }
+
+        public class OptionsWithPresetStringValue
+        {
+            public string Name { get; set; } = "preset";
+        }
+
         public enum TestSettingsEnum
         {
             Option1,
