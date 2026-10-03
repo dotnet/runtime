@@ -151,6 +151,7 @@ namespace System.Net.Security
             SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
 
             ProtocolToken token = default;
+            token.RentBuffer = true;
 
             try
             {
@@ -357,6 +358,7 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             ProtocolToken token = default;
+            token.RentBuffer = true;
             consumed = 0;
 
             try
