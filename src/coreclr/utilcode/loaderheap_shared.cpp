@@ -46,7 +46,7 @@ UnlockedLoaderHeapBase::~UnlockedLoaderHeapBase()
 }
 
 
-void ReleaseReservedMemory(BYTE* value)
+void ReleaseReservedMemory(BYTE* value) noexcept
 {
     if (value)
     {

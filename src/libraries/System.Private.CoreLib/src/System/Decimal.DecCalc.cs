@@ -863,7 +863,6 @@ PosRem:
                     goto HaveScale;
                 }
 
-                PowerOvfl[] powerOvfl = PowerOvflValues;
                 if (scale > DEC_SCALE_MAX - 9)
                 {
                     // We can't scale by 10^9 without exceeding the max scale factor.
@@ -871,7 +870,7 @@ PosRem:
                     // standard search for scale factor.
                     //
                     curScale = DEC_SCALE_MAX - scale;
-                    if (resHi < powerOvfl[curScale - 1].Hi)
+                    if (resHi < PowerOvflHi[curScale - 1])
                         goto HaveScale;
                 }
                 else if (resHi < OVFL_MAX_9_HI || resHi == OVFL_MAX_9_HI && resMidLo <= OVFL_MAX_9_MIDLO)
@@ -915,7 +914,7 @@ PosRem:
                 // we can't use this power, the one below it is correct for all cases
                 // unless it's 10^1 -- we might have to go to 10^0 (no scaling).
                 //
-                if (resHi == powerOvfl[curScale - 1].Hi && resMidLo > powerOvfl[curScale - 1].MidLo)
+                if (resHi == PowerOvflHi[curScale - 1] && resMidLo > PowerOvflMidLo[curScale - 1])
                     curScale--;
 
                 HaveScale:
@@ -2519,34 +2518,35 @@ done:
                 return (uint)num - div * TenToPowerNine;
             }
 
-            private readonly struct PowerOvfl
-            {
-                public readonly uint Hi;
-                public readonly ulong MidLo;
-
-                public PowerOvfl(uint hi, uint mid, uint lo)
-                {
-                    Hi = hi;
-                    MidLo = ((ulong)mid << 32) + lo;
-                }
-            }
-
-            private static readonly PowerOvfl[] PowerOvflValues =
+            // This is a table of the largest values that can be in the upper two
+            // uints of a 96-bit number that will not overflow when multiplied
+            // by a given power.  For the upper word, this is a table of
+            // 2^32 / 10^n for 1 <= n <= 8.  For the lower word, this is the
+            // remaining fraction part * 2^32.  2^32 = 4294967296.
+            //
+            private static ReadOnlySpan<uint> PowerOvflHi =>
             [
-                // This is a table of the largest values that can be in the upper two
-                // uints of a 96-bit number that will not overflow when multiplied
-                // by a given power.  For the upper word, this is a table of
-                // 2^32 / 10^n for 1 <= n <= 8.  For the lower word, this is the
-                // remaining fraction part * 2^32.  2^32 = 4294967296.
-                //
-                new PowerOvfl(429496729, 2576980377, 2576980377),  // 10^1 remainder 0.6
-                new PowerOvfl(42949672,  4123168604, 687194767),   // 10^2 remainder 0.16
-                new PowerOvfl(4294967,   1271310319, 2645699854),  // 10^3 remainder 0.616
-                new PowerOvfl(429496,    3133608139, 694066715),   // 10^4 remainder 0.1616
-                new PowerOvfl(42949,     2890341191, 2216890319),  // 10^5 remainder 0.51616
-                new PowerOvfl(4294,      4154504685, 2369172679),  // 10^6 remainder 0.551616
-                new PowerOvfl(429,       2133437386, 4102387834),  // 10^7 remainder 0.9551616
-                new PowerOvfl(42,        4078814305, 410238783),   // 10^8 remainder 0.09991616
+                429496729,  // 10^1 remainder 0.6
+                42949672,   // 10^2 remainder 0.16
+                4294967,    // 10^3 remainder 0.616
+                429496,     // 10^4 remainder 0.1616
+                42949,      // 10^5 remainder 0.51616
+                4294,       // 10^6 remainder 0.551616
+                429,        // 10^7 remainder 0.9551616
+                42,         // 10^8 remainder 0.09991616
+            ];
+
+            // ((ulong)mid << 32) + lo for each entry of PowerOvflHi
+            private static ReadOnlySpan<ulong> PowerOvflMidLo =>
+            [
+                (2576980377UL << 32) + 2576980377,
+                (4123168604UL << 32) + 687194767,
+                (1271310319UL << 32) + 2645699854,
+                (3133608139UL << 32) + 694066715,
+                (2890341191UL << 32) + 2216890319,
+                (4154504685UL << 32) + 2369172679,
+                (2133437386UL << 32) + 4102387834,
+                (4078814305UL << 32) + 410238783,
             ];
 
             [StructLayout(LayoutKind.Explicit, Pack = sizeof(uint))]

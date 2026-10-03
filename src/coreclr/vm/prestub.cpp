@@ -3140,19 +3140,23 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 }
 #endif // !TARGET_WASM
 
-                GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
-
                 // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
+                MethodTable* objectType;
+                {
+                    GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
+                    objectType = (*protectedObj)->GetMethodTable();
+                }
+
                 DispatchToken token;
                 if (pMT->IsInterface())
                 {
+                    GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
                     token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-                    MethodTable* objectType = (*protectedObj)->GetMethodTable();
                     VirtualCallStubManager::Resolver(objectType, token, protectedObj, &pCode, TRUE /* throwOnConflict */);
                 }
                 else
                 {
-                    pCode = (*protectedObj)->GetMethodTable()->GetRestoredSlot(slot); // Ensure that the target slot has an entrypoint
+                    pCode = objectType->GetRestoredSlot(slot); // Ensure that the target slot has an entrypoint
                 }
             }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
