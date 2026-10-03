@@ -25,6 +25,19 @@ namespace System.Net.Sockets.Tests
             _log = output;
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.tvOS)]
+        public void Socket_OSSupportsUnixDomainSockets_OnAppleMobile()
+        {
+            Assert.True(Socket.OSSupportsUnixDomainSockets);
+
+            using Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            UnixDomainSocketEndPoint endPoint = new("socket");
+            Assert.Equal(AddressFamily.Unix, socket.AddressFamily);
+            Assert.Equal(AddressFamily.Unix, endPoint.AddressFamily);
+            Assert.Equal("socket", endPoint.ToString());
+        }
+
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
@@ -639,11 +652,34 @@ namespace System.Net.Sockets.Tests
 
         internal static string GetRandomNonExistingFilePath()
         {
+            string directory = Path.GetTempPath();
+            bool isAppleMobile = PlatformDetection.IsiOS || PlatformDetection.IstvOS;
+            if (isAppleMobile)
+            {
+                // Simulator app container paths can exceed the native socket path limit.
+                string relativeDirectory = Path.GetRelativePath(Environment.CurrentDirectory, directory);
+                if (Encoding.UTF8.GetByteCount(relativeDirectory) < Encoding.UTF8.GetByteCount(directory))
+                {
+                    directory = relativeDirectory;
+                }
+            }
+
             string result;
             do
             {
-                // get random name and append random number of characters to get variable name length.
-                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', Random.Shared.Next(1, 32)));
+                string fileName = Path.GetRandomFileName();
+                if (isAppleMobile)
+                {
+                    // App container paths are long; leave room for the socket name and test-specific suffixes.
+                    fileName = fileName.Substring(0, 8);
+                }
+                else
+                {
+                    // Append a random number of characters to get variable name length.
+                    fileName += new string('A', Random.Shared.Next(1, 32));
+                }
+
+                result = Path.Combine(directory, fileName);
             }
             while (File.Exists(result));
 
