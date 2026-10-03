@@ -2171,7 +2171,9 @@ namespace System.Xml.Serialization
                         _arraySource = arraySource;
                     else
                         _arraySource = outerClass.GetArraySource(mapping.TypeDesc, _arrayName, multiRef);
-                    _isArray = mapping.TypeDesc.IsArray;
+                    // A collection built from its complete contents accumulates into an array first, so from
+                    // here on it is read exactly like one.
+                    _isArray = mapping.TypeDesc.IsArray || mapping.TypeDesc.UsesCollectionBuilder;
                     _isList = !_isArray;
                     if (mapping.ChoiceIdentifier != null)
                     {
@@ -3180,7 +3182,7 @@ namespace System.Xml.Serialization
                     }
                     else if (m is ArrayMapping arrayMapping)
                     {
-                        if (arrayMapping.TypeDesc!.HasDefaultConstructor)
+                        if (arrayMapping.TypeDesc!.HasDefaultConstructor || arrayMapping.TypeDesc.UsesCollectionBuilder)
                         {
                             Writer.Write("if (");
                             WriteQNameEqual("xsiType", arrayMapping.TypeName, arrayMapping.Namespace);
@@ -3622,6 +3624,11 @@ namespace System.Xml.Serialization
 
         private void WriteAddCollectionFixup(TypeDesc typeDesc, bool readOnly, string memberSource, string targetSource)
         {
+            // Encoded serialization populates a collection after the fact, through a fixup, which a collection
+            // that has to be created from its complete contents cannot support.
+            if (typeDesc.UsesCollectionBuilder)
+                throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyCollection, typeDesc.CSharpName));
+
             Writer.WriteLine("// get array of the collection items");
             CreateCollectionInfo? create = (CreateCollectionInfo?)_createMethods[typeDesc];
             if (create == null)
@@ -3979,10 +3986,32 @@ namespace System.Xml.Serialization
                     TypeDesc typeDesc = member.Mapping.TypeDesc!;
                     string typeDescFullName = typeDesc.CSharpName;
 
-                    if (member.Mapping.TypeDesc!.IsArray)
+                    if (member.Mapping.TypeDesc!.IsArray || typeDesc.UsesCollectionBuilder)
                     {
-                        WriteArrayLocalDecl(typeDesc.CSharpName,
-                                            a, "null", typeDesc);
+                        if (typeDesc.IsArray)
+                        {
+                            WriteArrayLocalDecl(typeDesc.CSharpName,
+                                                a, "null", typeDesc);
+                        }
+                        else
+                        {
+                            // The collection is created from the elements once they have all been read, so
+                            // they accumulate in an array of the element type in the meantime.
+                            WriteArrayLocalDecl($"{typeDesc.ArrayElementTypeDesc!.CSharpName}[]",
+                                                a, "null", typeDesc.ArrayElementTypeDesc);
+
+                            // The collection is also created up front, the way one that is populated in place
+                            // is, so that a member the document never mentions still comes back as an empty
+                            // collection rather than as null.
+                            if (!member.Mapping.ReadOnly && !member.Source.EndsWith('(') && !member.Source.EndsWith('{'))
+                            {
+                                WriteSourceBegin(member.Source);
+                                WriteBuildCollection(typeDesc, null);
+                                WriteSourceEnd(member.Source);
+                                Writer.WriteLine(";");
+                            }
+                        }
+
                         Writer.Write("int ");
                         Writer.Write(c);
                         Writer.WriteLine(" = 0;");
@@ -4484,7 +4513,7 @@ namespace System.Xml.Serialization
                 init = $"soap = (System.Object[])EnsureArrayIndex(soap, {c}+2, typeof(System.Object)); ";
             }
             bool useReflection = typeDesc.UseReflection;
-            if (typeDesc.IsArray)
+            if (typeDesc.IsArray || typeDesc.UsesCollectionBuilder)
             {
                 string arrayTypeFullName = typeDesc.ArrayElementTypeDesc!.CSharpName;
                 bool arrayUseReflection = typeDesc.ArrayElementTypeDesc.UseReflection;
@@ -4510,6 +4539,29 @@ namespace System.Xml.Serialization
             WriteMemberEnd(members, false);
         }
 
+        /// <summary>
+        /// Writes the expression that creates a collection from the elements accumulated in
+        /// <paramref name="arrayName"/>, or an empty collection when <paramref name="arrayName"/> is null.
+        /// </summary>
+        private void WriteBuildCollection(TypeDesc typeDesc, string? arrayName)
+        {
+            bool arrayUseReflection = typeDesc.ArrayElementTypeDesc!.UseReflection;
+            string arrayTypeFullName = typeDesc.ArrayElementTypeDesc.CSharpName;
+
+            Writer.Write(typeDesc.CollectionBuilder!.GetCSharpFactoryCall());
+            if (!arrayUseReflection)
+                Writer.Write($"({arrayTypeFullName}[])");
+            Writer.Write("ShrinkArray(");
+            Writer.Write(arrayName ?? "null");
+            Writer.Write(", ");
+            Writer.Write(arrayName == null ? "0" : $"c{arrayName}");
+            Writer.Write(", ");
+            Writer.Write(RaCodeGen.GetStringForTypeof(arrayTypeFullName, arrayUseReflection));
+            // A collection built from its contents is never left null: a nil collection hydrates to an empty
+            // one, which is how a collection populated in place has always behaved.
+            Writer.Write(", false))");
+        }
+
         private void WriteMemberEnd(Member[] members, bool soapRefs)
         {
             for (int i = 0; i < members.Length; i++)
@@ -4520,7 +4572,14 @@ namespace System.Xml.Serialization
                 {
                     TypeDesc typeDesc = member.Mapping.TypeDesc!;
 
-                    if (typeDesc.IsArray)
+                    // A collection built from its complete contents cannot be populated in place, so a member
+                    // with no setter has nowhere to put the collection that would be created. Leave whatever the
+                    // getter returns alone, which is how a get-only collection that cannot be added to has
+                    // always behaved.
+                    if (typeDesc.UsesCollectionBuilder && member.Mapping.ReadOnly)
+                        continue;
+
+                    if (typeDesc.IsArray || typeDesc.UsesCollectionBuilder)
                     {
                         WriteSourceBegin(member.Source);
 
@@ -4532,17 +4591,24 @@ namespace System.Xml.Serialization
 
                         bool arrayUseReflection = typeDesc.ArrayElementTypeDesc!.UseReflection;
                         string arrayTypeFullName = typeDesc.ArrayElementTypeDesc.CSharpName;
-                        if (!arrayUseReflection)
-                            Writer.Write($"({arrayTypeFullName}[])");
-                        Writer.Write("ShrinkArray(");
-                        Writer.Write(a);
-                        Writer.Write(", ");
-                        Writer.Write(c);
-                        Writer.Write(", ");
-                        Writer.Write(RaCodeGen.GetStringForTypeof(arrayTypeFullName, arrayUseReflection));
-                        Writer.Write(", ");
-                        WriteBooleanValue(member.IsNullable);
-                        Writer.Write(")");
+                        if (typeDesc.IsArray)
+                        {
+                            if (!arrayUseReflection)
+                                Writer.Write($"({arrayTypeFullName}[])");
+                            Writer.Write("ShrinkArray(");
+                            Writer.Write(a);
+                            Writer.Write(", ");
+                            Writer.Write(c);
+                            Writer.Write(", ");
+                            Writer.Write(RaCodeGen.GetStringForTypeof(arrayTypeFullName, arrayUseReflection));
+                            Writer.Write(", ");
+                            WriteBooleanValue(member.IsNullable);
+                            Writer.Write(")");
+                        }
+                        else
+                        {
+                            WriteBuildCollection(typeDesc, a);
+                        }
                         WriteSourceEnd(member.Source);
                         Writer.WriteLine(";");
 
@@ -4721,8 +4787,11 @@ namespace System.Xml.Serialization
 
                 Writer.Indent--;
                 Writer.WriteLine("}");
-                if (isNullable)
+                if (isNullable || arrayMapping.TypeDesc!.UsesCollectionBuilder)
                 {
+                    // A collection that is created from its contents is always created, even when the element is
+                    // nil, which is how a collection populated in place has always behaved. Collections that are
+                    // value types are never nillable, so without this they would be left at their default value.
                     Writer.WriteLine("else {");
                     Writer.Indent++;
                     member.IsNullable = true;
