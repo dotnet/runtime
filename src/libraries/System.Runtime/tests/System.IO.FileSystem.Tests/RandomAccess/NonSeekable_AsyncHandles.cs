@@ -13,7 +13,7 @@ namespace System.IO.Tests
     {
         protected override bool AsyncHandles => true;
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Theory]
         [InlineData(FileAccess.Read)]
         [InlineData(FileAccess.Write)]
         public async Task CancellationIsSupported(FileAccess access)
