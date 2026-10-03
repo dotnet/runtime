@@ -121,7 +121,12 @@ namespace System.Collections.Immutable
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
-        public int BinarySearch(int index, int count, T item, IComparer<T>? comparer) => _root.BinarySearch(index, count, item, comparer);
+        public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
+        {
+            Requires.ValidateRange(index, count, this.Count);
+
+            return _root.BinarySearch(index, count, item, comparer);
+        }
 
         #region IImmutableList<T> Properties
 
@@ -170,7 +175,15 @@ namespace System.Collections.Immutable
         /// <param name="index">The 0-based index of the element in the set to return.</param>
         /// <returns>The element at the given position.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
-        public T this[int index] => _root.ItemRef(index);
+        public T this[int index]
+        {
+            get
+            {
+                Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
+                return _root.ItemRef(index);
+            }
+        }
 
         /// <summary>
         /// Gets a read-only reference to the element of the set at the given index.
@@ -178,7 +191,12 @@ namespace System.Collections.Immutable
         /// <param name="index">The 0-based index of the element in the set to return.</param>
         /// <returns>A read-only reference to the element at the given position.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
-        public ref readonly T ItemRef(int index) => ref _root.ItemRef(index);
+        public ref readonly T ItemRef(int index)
+        {
+            Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
+            return ref _root.ItemRef(index);
+        }
 
         #endregion
 
@@ -259,6 +277,7 @@ namespace System.Collections.Immutable
         public ImmutableList<T> Insert(int index, T item)
         {
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+
             return this.Wrap(_root.Insert(index, item));
         }
 
@@ -361,6 +380,7 @@ namespace System.Collections.Immutable
         public ImmutableList<T> RemoveAt(int index)
         {
             Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
             ImmutableList<T>.Node result = _root.RemoveAt(index);
             return this.Wrap(result);
         }
@@ -386,7 +406,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        public ImmutableList<T> SetItem(int index, T value) => this.Wrap(_root.ReplaceAt(index, value));
+        public ImmutableList<T> SetItem(int index, T value)
+        {
+            Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
+            return this.Wrap(_root.ReplaceAt(index, value));
+        }
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
@@ -419,7 +444,12 @@ namespace System.Collections.Immutable
         /// <param name="index">The zero-based starting index of the range to reverse.</param>
         /// <param name="count">The number of elements in the range to reverse.</param>
         /// <returns>The reversed list.</returns>
-        public ImmutableList<T> Reverse(int index, int count) => this.Wrap(_root.Reverse(index, count));
+        public ImmutableList<T> Reverse(int index, int count)
+        {
+            Requires.ValidateRange(index, count, this.Count);
+
+            return this.Wrap(_root.Reverse(index, count));
+        }
 
         /// <summary>
         /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
@@ -439,6 +469,7 @@ namespace System.Collections.Immutable
         public ImmutableList<T> Sort(Comparison<T> comparison)
         {
             Requires.NotNull(comparison, nameof(comparison));
+
             return this.Wrap(_root.Sort(comparison));
         }
 
@@ -470,9 +501,7 @@ namespace System.Collections.Immutable
         /// <returns>The sorted list.</returns>
         public ImmutableList<T> Sort(int index, int count, IComparer<T>? comparer)
         {
-            Requires.Range(index >= 0, nameof(index));
-            Requires.Range(count >= 0, nameof(count));
-            Requires.Range(index + count <= this.Count, nameof(count));
+            Requires.ValidateRange(index, count, this.Count);
 
             return this.Wrap(_root.Sort(index, count, comparer));
         }
@@ -504,7 +533,13 @@ namespace System.Collections.Immutable
         /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
         /// zero-based indexing.
         /// </param>
-        public void CopyTo(T[] array) => _root.CopyTo(array);
+        public void CopyTo(T[] array)
+        {
+            Requires.NotNull(array, nameof(array));
+            Requires.Range(array.Length >= this.Count, nameof(array));
+
+            _root.CopyTo(array);
+        }
 
         /// <summary>
         /// Copies the entire <see cref="ImmutableList{T}"/> to a compatible one-dimensional
@@ -518,7 +553,13 @@ namespace System.Collections.Immutable
         /// <param name="arrayIndex">
         /// The zero-based index in array at which copying begins.
         /// </param>
-        public void CopyTo(T[] array, int arrayIndex) => _root.CopyTo(array, arrayIndex);
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            Requires.NotNull(array, nameof(array));
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
+
+            _root.CopyTo(array, arrayIndex);
+        }
 
         /// <summary>
         /// Copies a range of elements from the <see cref="ImmutableList{T}"/> to
@@ -536,7 +577,14 @@ namespace System.Collections.Immutable
         /// </param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
         /// <param name="count">The number of elements to copy.</param>
-        public void CopyTo(int index, T[] array, int arrayIndex, int count) => _root.CopyTo(index, array, arrayIndex, count);
+        public void CopyTo(int index, T[] array, int arrayIndex, int count)
+        {
+            Requires.NotNull(array, nameof(array));
+            Requires.ValidateRange(index, count, this.Count);
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + count) <= (uint)array.Length, nameof(arrayIndex));
+
+            _root.CopyTo(index, array, arrayIndex, count);
+        }
 
         /// <summary>
         /// Creates a shallow copy of a range of elements in the source <see cref="ImmutableList{T}"/>.
@@ -553,9 +601,8 @@ namespace System.Collections.Immutable
         /// </returns>
         public ImmutableList<T> GetRange(int index, int count)
         {
-            Requires.Range(index >= 0, nameof(index));
-            Requires.Range(count >= 0, nameof(count));
-            Requires.Range(index + count <= this.Count, nameof(count));
+            Requires.ValidateRange(index, count, this.Count);
+
             return this.Wrap(Node.NodeTreeFromList(this, index, count));
         }
 
@@ -577,6 +624,7 @@ namespace System.Collections.Immutable
         public ImmutableList<TOutput> ConvertAll<TOutput>(Func<T, TOutput> converter)
         {
             Requires.NotNull(converter, nameof(converter));
+
             return ImmutableList<TOutput>.WrapNode(_root.ConvertAll(converter));
         }
 
@@ -593,7 +641,12 @@ namespace System.Collections.Immutable
         /// that match the conditions defined by the specified predicate; otherwise,
         /// false.
         /// </returns>
-        public bool Exists(Predicate<T> match) => _root.Exists(match);
+        public bool Exists(Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+
+            return _root.Exists(match);
+        }
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
@@ -607,7 +660,12 @@ namespace System.Collections.Immutable
         /// The first element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
-        public T? Find(Predicate<T> match) => _root.Find(match);
+        public T? Find(Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+
+            return _root.Find(match);
+        }
 
         /// <summary>
         /// Retrieves all the elements that match the conditions defined by the specified
@@ -622,7 +680,12 @@ namespace System.Collections.Immutable
         /// the conditions defined by the specified predicate, if found; otherwise, an
         /// empty <see cref="ImmutableList{T}"/>.
         /// </returns>
-        public ImmutableList<T> FindAll(Predicate<T> match) => _root.FindAll(match);
+        public ImmutableList<T> FindAll(Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+
+            return _root.FindAll(match);
+        }
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
@@ -637,7 +700,12 @@ namespace System.Collections.Immutable
         /// The zero-based index of the first occurrence of an element that matches the
         /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
-        public int FindIndex(Predicate<T> match) => _root.FindIndex(match);
+        public int FindIndex(Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+
+            return _root.FindIndex(match);
+        }
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
@@ -651,7 +719,13 @@ namespace System.Collections.Immutable
         /// The zero-based index of the first occurrence of an element that matches the
         /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
-        public int FindIndex(int startIndex, Predicate<T> match) => _root.FindIndex(startIndex, match);
+        public int FindIndex(int startIndex, Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+            Requires.Range(startIndex >= 0 && startIndex <= this.Count, nameof(startIndex));
+
+            return _root.FindIndex(startIndex, match);
+        }
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
@@ -666,7 +740,13 @@ namespace System.Collections.Immutable
         /// The zero-based index of the first occurrence of an element that matches the
         /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
-        public int FindIndex(int startIndex, int count, Predicate<T> match) => _root.FindIndex(startIndex, count, match);
+        public int FindIndex(int startIndex, int count, Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+            Requires.ValidateRange(startIndex, count, this.Count, nameof(startIndex));
+
+            return _root.FindIndex(startIndex, count, match);
+        }
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
@@ -680,7 +760,12 @@ namespace System.Collections.Immutable
         /// The last element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
-        public T? FindLast(Predicate<T> match) => _root.FindLast(match);
+        public T? FindLast(Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+
+            return _root.FindLast(match);
+        }
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
@@ -695,7 +780,12 @@ namespace System.Collections.Immutable
         /// The zero-based index of the last occurrence of an element that matches the
         /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
-        public int FindLastIndex(Predicate<T> match) => _root.FindLastIndex(match);
+        public int FindLastIndex(Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+
+            return _root.FindLastIndex(match);
+        }
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
@@ -710,7 +800,13 @@ namespace System.Collections.Immutable
         /// The zero-based index of the last occurrence of an element that matches the
         /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
-        public int FindLastIndex(int startIndex, Predicate<T> match) => _root.FindLastIndex(startIndex, match);
+        public int FindLastIndex(int startIndex, Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+            Requires.Range(startIndex == 0 || (uint)startIndex < (uint)this.Count, nameof(startIndex));
+
+            return _root.FindLastIndex(startIndex, match);
+        }
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
@@ -728,7 +824,13 @@ namespace System.Collections.Immutable
         /// The zero-based index of the last occurrence of an element that matches the
         /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
-        public int FindLastIndex(int startIndex, int count, Predicate<T> match) => _root.FindLastIndex(startIndex, count, match);
+        public int FindLastIndex(int startIndex, int count, Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+            Requires.ValidateReverseRange(startIndex, count, this.Count, nameof(startIndex));
+
+            return _root.FindLastIndex(startIndex, count, match);
+        }
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
@@ -754,7 +856,12 @@ namespace System.Collections.Immutable
         /// elements in the <see cref="ImmutableList{T}"/> that starts at <paramref name="index"/> and
         /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
         /// </returns>
-        public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) => _root.IndexOf(item, index, count, equalityComparer);
+        public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
+        {
+            Requires.ValidateRange(index, count, this.Count);
+
+            return _root.IndexOf(item, index, count, equalityComparer);
+        }
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
@@ -776,7 +883,12 @@ namespace System.Collections.Immutable
         /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
         /// and ends at <paramref name="index"/>, if found; otherwise, -1.
         /// </returns>
-        public int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) => _root.LastIndexOf(item, index, count, equalityComparer);
+        public int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
+        {
+            Requires.ValidateReverseRange(index, count, this.Count);
+
+            return _root.LastIndexOf(item, index, count, equalityComparer);
+        }
 
         /// <summary>
         /// Determines whether every element in the <see cref="ImmutableList{T}"/>
@@ -791,7 +903,12 @@ namespace System.Collections.Immutable
         /// conditions defined by the specified predicate; otherwise, false. If the list
         /// has no elements, the return value is true.
         /// </returns>
-        public bool TrueForAll(Predicate<T> match) => _root.TrueForAll(match);
+        public bool TrueForAll(Predicate<T> match)
+        {
+            Requires.NotNull(match, nameof(match));
+
+            return _root.TrueForAll(match);
+        }
 
         #endregion
 
@@ -982,7 +1099,13 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="ICollection"/> interface.
         /// </summary>
-        void System.Collections.ICollection.CopyTo(Array array, int arrayIndex) => _root.CopyTo(array, arrayIndex);
+        void System.Collections.ICollection.CopyTo(Array array, int arrayIndex)
+        {
+            Requires.NotNull(array, nameof(array));
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
+
+            _root.CopyTo(array, arrayIndex);
+        }
 
         #endregion
 
