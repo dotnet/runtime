@@ -131,11 +131,11 @@ namespace System.Collections.Frozen
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
             // Fast path for Overlaps when other is IReadOnlySet with fast lookup and same equality comparer
-            if (other is IReadOnlySet<T> otherAsSet && ComparersAreCompatible(otherAsSet))
+            if (other is ISet<T> otherAsSet && HasFastLookupAndComparersAreCompatible(otherAsSet))
             {
                 return otherAsSet.Count > Count
-                    ? SmallerFrozenSetOverlapsLargerCompatibleReadOnlySetImpl(this, otherAsSet)
-                    : LargerFrozenSetOverlapsSmallerCompatibleReadOnlySetImpl(otherAsSet, this);
+                    ? SmallerSetOverlapsLargerCompatibleSetImpl(this, otherAsSet)
+                    : SmallerSetOverlapsLargerCompatibleSetImpl(otherAsSet, this);
             }
 
             return OverlapsEnumerableImpl(other);
@@ -154,20 +154,7 @@ namespace System.Collections.Frozen
             return false;
         }
 
-        private static bool SmallerFrozenSetOverlapsLargerCompatibleReadOnlySetImpl(FrozenSet<T> smaller, IReadOnlySet<T> larger)
-        {
-            foreach (T element in smaller)
-            {
-                if (larger.Contains(element))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool LargerFrozenSetOverlapsSmallerCompatibleReadOnlySetImpl(IReadOnlySet<T> smaller, FrozenSet<T> larger)
+        private static bool SmallerSetOverlapsLargerCompatibleSetImpl(ISet<T> smaller, ISet<T> larger)
         {
             foreach (T element in smaller)
             {
@@ -206,6 +193,17 @@ namespace System.Collections.Frozen
                 FrozenSet<T> fs => _thisSet.Comparer.Equals(fs.Comparer),
                 _ => false
             };
+
+        private bool HasFastLookupAndComparersAreCompatible(ISet<T> other) =>
+                    other switch
+                    {
+                        HashSet<T> hs => _thisSet.Comparer.Equals(hs.Comparer),
+                        SortedSet<T> sortedSet => _thisSet.Comparer.Equals(sortedSet.Comparer),
+                        ImmutableHashSet<T> ihs => _thisSet.Comparer.Equals(ihs.KeyComparer),
+                        ImmutableSortedSet<T> iss => _thisSet.Comparer.Equals(iss.KeyComparer),
+                        FrozenSet<T> fs => _thisSet.Comparer.Equals(fs.Comparer),
+                        _ => false
+                    };
 
         /// <summary>
         /// Determines counts that can be used to determine equality, subset, and superset.
