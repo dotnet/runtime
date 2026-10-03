@@ -307,6 +307,7 @@ typedef ptrdiff_t ssize_t;
 // Include the AMD64 unwind codes when appropriate.
 #if defined(TARGET_AMD64)
 #include "win64unwind.h"
+#include "win64unwindv3.h"
 #endif
 
 #include "corhdr.h"
