@@ -67,6 +67,7 @@ public class Async2TaskAdapters
     //     to the ValueTask<TResult>(TResult result) constructor, wrapping the Task<int> as a value.
     //   - return new ValueTask<Task<int>>(TaskOfTaskOfIntReturningFunction()) passes a Task<Task<int>>,
     //     which binds to the ValueTask<TResult>(Task<TResult> task) constructor, an actual async call.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133953", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
     [Fact]
     public static async Task WrapValueVersusAsync()
     {

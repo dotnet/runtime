@@ -204,6 +204,7 @@ namespace GenericVirtualMethod
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static async Task CallInstanceValueType(Base b) => await b.InstanceMethod<int>();
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134660", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
         [Fact]
         public static async Task TestGenericVirtualMethod()
         {
