@@ -59,7 +59,7 @@ extends:
       jobs:
 
       - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
-        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        - template: /eng/pipelines/common/templates/helix-job-monitor.yml
           parameters:
             helixAccessToken: $(HelixApiAccessToken)
             timeoutInMinutes: 540

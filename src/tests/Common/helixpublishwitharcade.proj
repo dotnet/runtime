@@ -132,6 +132,8 @@
         Configuration=$(Configuration);
         Creator=$(_Creator);
         HelixAccessToken=$(_HelixAccessToken);
+        HelixBaseUri=$(HelixBaseUri);
+        HelixUseEntraAuthentication=$(HelixUseEntraAuthentication);
         HelixBuild=$(_HelixBuild);
         HelixSource=$(_HelixSource);
         HelixTargetQueues=$(_HelixTargetQueues);
