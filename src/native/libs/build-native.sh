@@ -29,7 +29,7 @@ handle_arguments() {
 __TargetArch=x64
 __TargetOS=linux
 __BuildType=Debug
-__CMakeArgs=""
+__CMakeArgs=()
 __Compiler=clang
 __CrossBuild=0
 __PortableBuild=1
@@ -55,8 +55,8 @@ elif [[ "$__TargetOS" == android && -z "$ROOTFS_DIR" ]]; then
     # nothing to do here
     true
 else
-    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
-    __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
+    __CMakeArgs=("-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
+    __CMakeArgs=("-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 
     if [[ "$__TargetOS" != linux-bionic && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
         __CrossBuild=1
@@ -66,20 +66,20 @@ fi
 
 if [[ "$__TargetOS" == android && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
-    __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
+    __CMakeArgs=(-DANDROID_STL=none ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 elif [[ "$__TargetOS" == linux-bionic && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
-    __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none -DANDROID_FORCE_ICU_DATA_DIR=1 $__CMakeArgs"
+    __CMakeArgs=(-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none -DANDROID_FORCE_ICU_DATA_DIR=1 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 elif [[ "$__TargetOS" == iossimulator ]]; then
     # set default iOS simulator deployment target
     # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $__CMakeArgs"
+    __CMakeArgs=(-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     if [[ "$__TargetArch" == x64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+        __CMakeArgs=(-DCMAKE_OSX_ARCHITECTURES=x86_64 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     elif [[ "$__TargetArch" == x86 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"i386\" $__CMakeArgs"
+        __CMakeArgs=(-DCMAKE_OSX_ARCHITECTURES=i386 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     elif [[ "$__TargetArch" == arm64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        __CMakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     else
         echo "Error: Unknown iOS Simulator architecture $__TargetArch."
         exit 1
@@ -87,11 +87,11 @@ elif [[ "$__TargetOS" == iossimulator ]]; then
 elif [[ "$__TargetOS" == ios ]]; then
     # set default iOS device deployment target
     # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $__CMakeArgs"
+    __CMakeArgs=(-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     if [[ "$__TargetArch" == arm64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        __CMakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     elif [[ "$__TargetArch" == arm ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
+        __CMakeArgs=("-DCMAKE_OSX_ARCHITECTURES=armv7;armv7s" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     else
         echo "Error: Unknown iOS architecture $__TargetArch."
         exit 1
@@ -99,11 +99,11 @@ elif [[ "$__TargetOS" == ios ]]; then
 elif [[ "$__TargetOS" == tvossimulator ]]; then
     # set default tvOS simulator deployment target
     # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $__CMakeArgs"
+    __CMakeArgs=(-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     if [[ "$__TargetArch" == x64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+        __CMakeArgs=(-DCMAKE_OSX_ARCHITECTURES=x86_64 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     elif [[ "$__TargetArch" == arm64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        __CMakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     else
         echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
         exit 1
@@ -111,9 +111,9 @@ elif [[ "$__TargetOS" == tvossimulator ]]; then
 elif [[ "$__TargetOS" == tvos ]]; then
     # set default tvOS device deployment target
     # keep in sync with the root Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 $__CMakeArgs"
+    __CMakeArgs=(-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     if [[ "$__TargetArch" == arm64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        __CMakeArgs=(-DCMAKE_OSX_ARCHITECTURES=arm64 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
     else
         echo "Error: Unknown tvOS architecture $__TargetArch."
         exit 1
@@ -137,4 +137,4 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
-build_native "$__TargetOS" "$__TargetArch" "$__nativeroot" "$__IntermediatesDir" "install" "$__CMakeArgs" "native libraries component"
+build_native "$__TargetOS" "$__TargetArch" "$__nativeroot" "$__IntermediatesDir" "install" "native libraries component" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"}

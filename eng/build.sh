@@ -622,8 +622,10 @@ initDistroRid "$os" "$arch" "$crossBuild"
 # The later changes are ignored when using the cache.
 export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
-# URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
-# In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
+# Preserve the command fragment through MSBuild's command-line property parsing.
+cmakeargs="${cmakeargs//%/%25}"
+cmakeargs="${cmakeargs//\"/%22}"
+cmakeargs="${cmakeargs//;/%3B}"
 cmakeargs="${cmakeargs// /%20}"
 arguments+=("/p:TargetArchitecture=$arch" "/p:BuildArchitecture=$hostArch")
 arguments+=("/p:CMakeArgs=\"$cmakeargs\"" ${extraargs[@]+"${extraargs[@]}"})

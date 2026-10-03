@@ -100,7 +100,7 @@ __SourceDir="$__ProjectDir/src"
 __StaticAnalyzer=0
 __UnprocessedBuildArgs=
 __VerboseBuild=0
-__CMakeArgs=""
+__CMakeArgs=()
 __RequestedBuildComponents=""
 __SubDir=""
 
@@ -154,10 +154,10 @@ export MSBUILDDEBUGPATH
 check_prereqs
 
 # Build the coreclr (native) components.
-__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" $__CMakeArgs"
+__CMakeArgs=("-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument" "-DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath" "-DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize" "-DCLI_CMAKE_FALLBACK_OS=$__HostFallbackOS" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
-    __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
+    __CMakeArgs=(-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 fi
 
 __CMakeTarget=""
@@ -170,12 +170,12 @@ if [[ -z "$__CMakeTarget" ]]; then
 fi
 
 if [[ "$__TargetArch" != "$__HostArch" ]]; then
-    __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__TargetArch $__CMakeArgs"
+    __CMakeArgs=("-DCLR_CMAKE_TARGET_ARCH=$__TargetArch" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 fi
 
-eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+"$__RepoRootDir/eng/native/version/copy_version_files.sh"
 
-build_native "$__HostOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
+build_native "$__HostOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "CoreCLR component" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"}
 
 # Build complete
 
