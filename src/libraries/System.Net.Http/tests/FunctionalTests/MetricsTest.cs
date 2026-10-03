@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -210,7 +211,8 @@ namespace System.Net.Http.Functional.Tests
 
             private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state)
             {
-                _values.Enqueue(new Measurement<T>(measurement, tags));
+                KeyValuePair<string, object?>[] newTags = [..tags, new ("stack", Environment.StackTrace)];
+                _values.Enqueue(new Measurement<T>(measurement, newTags));
                 MeasurementRecorded?.Invoke();
                 if (VerifyHistogramBucketBoundaries is not null)
                 {
@@ -224,6 +226,7 @@ namespace System.Net.Http.Functional.Tests
             public void RecordObservableInstruments() => _meterListener.RecordObservableInstruments();
             public IReadOnlyList<Measurement<T>> GetMeasurements() => _values.ToArray();
             public void Dispose() => _meterListener.Dispose();
+            public void Clear() => _values.Clear();
         }
 
         protected record RecordedCounter(string InstrumentName, object Value, KeyValuePair<string, object?>[] Tags)
@@ -279,6 +282,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [Collection(nameof(DisableParallelization))]
     public abstract class HttpMetricsTest : HttpMetricsTestBase
     {
         public static readonly bool SupportsSeparateHttpSpansForRedirects = PlatformDetection.IsNotMobile && PlatformDetection.IsNotBrowser;
@@ -903,15 +907,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
-        public Task TimeInQueue_RecordedForNewConnectionsOnly()
+        public async Task TimeInQueue_RecordedForNewConnectionsOnly()
         {
-            const int RequestCount = 3;
+            //using var _ = new TestEventListener(_output, "Private.InternalDiagnostics.System.Net.Http");
+            using HttpMessageInvoker client = CreateHttpMessageInvoker();
+            using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+            for (int ii = 0; ii < 3_000; ii++) {
+            const int RequestCount = 5;
+            timeInQueueRecorder.Clear();
 
-            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using HttpMessageInvoker client = CreateHttpMessageInvoker();
-                using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
-
                 for (int i = 0; i < RequestCount; i++)
                 {
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
@@ -920,8 +926,20 @@ namespace System.Net.Http.Functional.Tests
 
                 // Only the first request is supposed to record time_in_queue.
                 // For follow up requests, the connection should be immediately available.
+                if (timeInQueueRecorder.MeasurementCount > 1)
+                {
+                    foreach (var v in timeInQueueRecorder.GetMeasurements())
+                    {
+                        foreach (var t in v.Tags)
+                        {
+                            if (t.Key == "stack")
+                            {
+                                Console.WriteLine(t.Value);
+                            }
+                        }
+                    }
+                }
                 Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
-
             }, async server =>
             {
                 await server.AcceptConnectionAsync(async conn =>
@@ -934,6 +952,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
             });
+            }
         }
 
         [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
