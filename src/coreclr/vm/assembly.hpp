@@ -584,6 +584,7 @@ public:
         {
             THROWS;
             GC_TRIGGERS;
+            MODE_ANY;
             PRECONDITION(CheckPointer(pAccessingAssembly));
         }
         CONTRACTL_END;

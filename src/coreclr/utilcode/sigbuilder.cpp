@@ -167,6 +167,12 @@ void SigBuilder::Grow(SIZE_T cbMin)
 
 SigBuilder::~SigBuilder()
 {
+    CONTRACTL
+    {
+        NOTHROW;
+    }
+    CONTRACTL_END;
+
     if (m_pBuffer != m_prealloc)
         delete [] m_pBuffer;
 }

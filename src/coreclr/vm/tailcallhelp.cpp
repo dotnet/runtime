@@ -118,6 +118,7 @@ MethodDesc* TailCallHelp::GetOrLoadTailCallDispatcherMD()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

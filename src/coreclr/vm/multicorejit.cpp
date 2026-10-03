@@ -1320,13 +1320,7 @@ LONG g_nMulticoreAutoStart = 0;
 // Threading: calls into StartProfile
 void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CLRConfigStringHolder wszProfile(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitProfile));
 
@@ -1349,11 +1343,7 @@ void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
 
 MulticoreJitManager::MulticoreJitManager()
 {
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     m_pMulticoreJitRecorder = NULL;
     m_fSetProfileRootCalled = 0;

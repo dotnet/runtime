@@ -538,8 +538,9 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
 {
     CONTRACTL
     {
-       THROWS;
-       GC_TRIGGERS;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -668,11 +669,7 @@ Dictionary::PopulateEntry(
     DWORD              dictionaryIndexAndSlot, /* = -1 */
     Module *           pModule /* = NULL */)
 {
-     CONTRACTL {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+     STANDARD_VM_CONTRACT;
 
     CORINFO_GENERIC_HANDLE result = NULL;
     *ppSlot = NULL;

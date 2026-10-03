@@ -1058,9 +1058,7 @@ namespace
     {
         CONTRACTL
         {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
+            STANDARD_VM_CHECK;
             PRECONDITION(CheckPointer(pMT));
         }
         CONTRACTL_END;

@@ -70,6 +70,7 @@ void StringLiteralMap::Init()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(this));
     }
     CONTRACTL_END;
@@ -297,6 +298,7 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 }
@@ -675,6 +677,4 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
     pEntry->m_pNext = s_FreeEntryList;
     s_FreeEntryList = pEntry;
 }
-
-
 

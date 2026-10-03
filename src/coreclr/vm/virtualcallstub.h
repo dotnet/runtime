@@ -1526,10 +1526,13 @@ private:
     // does not throw on OOM. **YOU MUST CHECK FOR NULL RETURN**
     static FastTable* MakeTable(size_t numberOfEntries)
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             THROWS;
             GC_TRIGGERS;
-        } CONTRACTL_END;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
 
         size_t size = CALL_STUB_MIN_ENTRIES;
         while (size < numberOfEntries) {size = size<<1;}

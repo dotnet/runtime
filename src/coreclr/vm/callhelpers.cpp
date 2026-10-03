@@ -71,10 +71,13 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     // out-of-order destruction of the contract object, resulting in very odd crashes later.
     //
 #if 0
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 #endif // 0
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;

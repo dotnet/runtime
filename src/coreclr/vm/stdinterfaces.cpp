@@ -633,9 +633,7 @@ static bool TryDeferToMscorlib(MethodTable* pClass, ITypeInfo** ppTI)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(pClass != NULL);
         PRECONDITION(pClass->IsBlittable());
         PRECONDITION(ppTI != NULL);
@@ -828,9 +826,7 @@ MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(recInfo != NULL);
     }
     CONTRACTL_END;
@@ -1283,9 +1279,7 @@ Dispatch_Invoke
 {
     CONTRACTL
     {
-        THROWS; // InternalDispatchImpl_Invoke can throw if it encounters CE
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK; // InternalDispatchImpl_Invoke can throw if it encounters CE
         PRECONDITION(CheckPointer(pDisp));
         PRECONDITION(IsInProcCCWTearOff(pDisp));
     }
