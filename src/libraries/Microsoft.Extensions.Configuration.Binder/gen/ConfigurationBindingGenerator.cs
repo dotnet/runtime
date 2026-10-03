@@ -10,6 +10,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -37,6 +38,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
+            IncrementalValueProvider<GeneratorOptions> generatorOptions = context.AnalyzerConfigOptionsProvider
+                .Select(static (provider, _) => new GeneratorOptions(
+                    IsEnabled(provider.GlobalOptions, "build_property.EnableConfigurationBindingGeneratorTypeConverters"),
+                    IsEnabled(provider.GlobalOptions, "build_property.PublishAot") ||
+                        IsEnabled(provider.GlobalOptions, "build_property.PublishTrimmed")));
+
             IncrementalValueProvider<(SourceGenerationSpec?, ImmutableArray<Diagnostic>)> genSpec = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
@@ -44,17 +51,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 .Where(invocation => invocation is not null)
                 .Collect()
                 .Combine(compilationData)
+                .Combine(generatorOptions)
                 .Select((tuple, cancellationToken) =>
                 {
-                    if (tuple.Right is not CompilationData compilationData)
+                    if (tuple.Left.Right is not CompilationData compilationData)
                     {
                         return (null, ImmutableArray<Diagnostic>.Empty);
                     }
 
                     try
                     {
-                        Parser parser = new(compilationData);
-                        SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(tuple.Left, cancellationToken);
+                        Parser parser = new(compilationData, tuple.Right);
+                        SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(tuple.Left.Left, cancellationToken);
                         ImmutableArray<Diagnostic> diagnostics = parser.Diagnostics is { } diags
                             ? diags.ToImmutableArray()
                             : ImmutableArray<Diagnostic>.Empty;
@@ -94,6 +102,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 s_hasInitializedInterceptorVersion = true;
             }
         }
+
+        private static bool IsEnabled(AnalyzerConfigOptions options, string name) =>
+            options.TryGetValue(name, out string? value) && bool.TryParse(value, out bool enabled) && enabled;
+
+        internal readonly record struct GeneratorOptions(bool EnableTypeConverters, bool RequireAotCompatibleBinding);
 
         internal static int InterceptorVersion { get; private set; }
 
