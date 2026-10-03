@@ -512,6 +512,10 @@ void CordbModule::RefreshMetaData()
 
         _ASSERTE(event.type == DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT);
 
+        // The runtime reports a serialization failure in the reply's hr, with no buffer,
+        // so check it before using the buffer or arming the cleanup.
+        IfFailThrow(event.hr);
+
         //
         // Update it on the RS
         //
