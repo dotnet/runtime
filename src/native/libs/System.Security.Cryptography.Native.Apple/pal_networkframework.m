@@ -51,6 +51,39 @@ static nw_endpoint_t _endpoint;
 #define LOG_ERROR(context, ...) LOG_IMPL_(context, 1, __VA_ARGS__)
 
 #define MANAGED_CONTEXT_KEY "GCHANDLE"
+#define SESSION_QUEUE_KEY "SESSIONQUEUE"
+
+static void* FramerCopyPointerValue(nw_framer_t framer, const char* key)
+{
+    void* ptr = NULL;
+
+    // Options are unavailable once the framer is being torn down, which is exactly when the
+    // cleanup handler runs, so a missing value here is expected rather than a programming error.
+    nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
+    if (framer_options == NULL)
+    {
+        return NULL;
+    }
+
+    NSNumber* num = nw_framer_options_copy_object_value(framer_options, key);
+    if (num != NULL)
+    {
+        [num getValue:&ptr];
+        [num release];
+    }
+
+    nw_release(framer_options);
+
+    return ptr;
+}
+
+// The connection delivers its state changed handler on the session queue, while
+// nw_framer_async runs on the framer's own queue. Work that has to observe a state
+// change caused by delivered input must therefore be posted to this queue.
+static dispatch_queue_t FramerGetSessionQueue(nw_framer_t framer)
+{
+    return (dispatch_queue_t)FramerCopyPointerValue(framer, SESSION_QUEUE_KEY);
+}
 
 static void* FramerGetManagedContext(nw_framer_t framer)
 {
@@ -73,6 +106,15 @@ static void FramerOptionsSetManagedContext(nw_protocol_options_t framer_options,
 {
     NSNumber *ref = [NSNumber numberWithLong:(long)context];
     nw_framer_options_set_object_value(framer_options, MANAGED_CONTEXT_KEY, ref);
+    [ref release];
+}
+
+static void FramerOptionsSetSessionQueue(nw_protocol_options_t framer_options, dispatch_queue_t sessionQueue)
+{
+    // Retained for the lifetime of the connection that owns this framer.
+    dispatch_retain(sessionQueue);
+    NSNumber *ref = [NSNumber numberWithLong:(long)sessionQueue];
+    nw_framer_options_set_object_value(framer_options, SESSION_QUEUE_KEY, ref);
     [ref release];
 }
 
@@ -163,7 +205,7 @@ static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFra
 // (connectionless semantics mean the inbound has no upstream peer to depend on).
 static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const char* targetName, void* serverIdentity,
     const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol,
-    uint32_t* cipherSuites, int cipherSuitesLength, dispatch_queue_t sessionQueue)
+    uint32_t* cipherSuites, int cipherSuitesLength, dispatch_queue_t sessionQueue, int32_t requireClientCert)
 {
     nw_parameters_t parameters = nw_parameters_create_secure_udp(
         NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -174,6 +216,25 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
     if (!isServer && targetName != NULL)
     {
         sec_protocol_options_set_tls_server_name(sec_options, targetName);
+    }
+
+    if (isServer && requireClientCert)
+    {
+        // Without this the server never sends a CertificateRequest, so SslServerAuthenticationOptions
+        // .ClientCertificateRequired would be silently ignored and the peer would stay unauthenticated.
+        //
+        // This is stricter than the other PALs. .NET treats ClientCertificateRequired as "request a
+        // certificate and let RemoteCertificateValidationCallback decide", so a callback may accept a
+        // client that sent none (SslPolicyErrors.RemoteCertificateNotAvailable). Network.framework
+        // enforces the requirement itself and aborts the handshake with errSSLCertificateRequired
+        // before any verify block runs, so there is no point at which managed code can accept the
+        // absence. sec_protocol_options_set_peer_authentication_optional() expresses exactly the
+        // semantics .NET wants, but it is declared API_UNAVAILABLE(macos, ios, watchos, tvos), and
+        // per its own documentation it is disregarded whenever peer_authentication_required is set.
+        //
+        // Net effect: with Network.framework a server that requires a client certificate rejects a
+        // client that provides none, even when the validation callback would have allowed it.
+        sec_protocol_options_set_peer_authentication_required(sec_options, true);
     }
 
     if (isServer && serverIdentity != NULL)
@@ -310,6 +371,7 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
 
     nw_protocol_options_t framer_options = nw_framer_create_options(_framerDefinition);
     FramerOptionsSetManagedContext(framer_options, context);
+    FramerOptionsSetSessionQueue(framer_options, sessionQueue);
 
     nw_protocol_stack_t protocol_stack = nw_parameters_copy_default_protocol_stack(parameters);
     nw_protocol_stack_prepend_application_protocol(protocol_stack, framer_options);
@@ -323,14 +385,14 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
 }
 
 // Forward declaration for server bootstrap.
-static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength,
+static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength, int32_t requireClientCert,
     PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength);
 
-PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength, void* serverIdentity)
+PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength, void* serverIdentity, int32_t requireClientCert)
 {
     if (isServer != 0)
     {
-        return CreateServerConnection(context, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength);
+        return CreateServerConnection(context, serverIdentity, alpnBuffer, alpnLength, requireClientCert, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength);
     }
 
     // Per-session serial queue targeting the concurrent root. NW serializes all
@@ -339,7 +401,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     dispatch_queue_t sessionQueue = dispatch_queue_create_with_target(
         "com.dotnet.networkframework.session", DISPATCH_QUEUE_SERIAL, _tlsQueue);
 
-    nw_parameters_t parameters = BuildTlsParameters(0, context, targetName, NULL, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue);
+    nw_parameters_t parameters = BuildTlsParameters(0, context, targetName, NULL, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue, 0);
     if (parameters == NULL)
     {
         LOG_ERROR(context, "Failed to build TLS parameters");
@@ -378,7 +440,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
 // be torn down immediately after the inbound is delivered — the inbound
 // connection survives independently. Net cost: 1 fd per session (the inbound),
 // vs the 3 fds (listener+TCP-trigger+inbound) we held alive previously.
-static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength,
+static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength, int32_t requireClientCert,
     PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength)
 {
     if (serverIdentity == NULL)
@@ -393,7 +455,7 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
     dispatch_queue_t sessionQueue = dispatch_queue_create_with_target(
         "com.dotnet.networkframework.session", DISPATCH_QUEUE_SERIAL, _tlsQueue);
 
-    nw_parameters_t listenerParams = BuildTlsParameters(1, context, NULL, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue);
+    nw_parameters_t listenerParams = BuildTlsParameters(1, context, NULL, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue, requireClientCert);
     if (listenerParams == NULL)
     {
         LOG_ERROR(context, "Failed to build server TLS parameters");
@@ -568,11 +630,6 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer)
     return TRUE;
 };
 
-static nw_framer_cleanup_handler_t framer_cleanup_handler = ^(nw_framer_t framer)
-{
-    (void)framer;
-};
-
 // This is called when connection start to set up framer
 static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_framer_t framer)
 {
@@ -586,7 +643,19 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
     nw_framer_set_output_handler(framer, framer_output_handler);
 
     nw_framer_set_stop_handler(framer, framer_stop_handler);
-    nw_framer_set_cleanup_handler(framer, framer_cleanup_handler);
+
+    // Balance the retain taken in FramerOptionsSetSessionQueue. The queue is captured here, while
+    // the framer options are still readable, rather than looked up from the cleanup handler: options
+    // are gone once teardown starts, and a lookup that returns NULL there would leak the retain.
+    dispatch_queue_t sessionQueue = FramerGetSessionQueue(framer);
+    nw_framer_set_cleanup_handler(framer, ^(nw_framer_t cleanupFramer)
+    {
+        (void)cleanupFramer;
+        if (sessionQueue != NULL)
+        {
+            dispatch_release(sessionQueue);
+        }
+    });
 
     return nw_framer_start_result_ready;
 };
@@ -614,8 +683,28 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, voi
     nw_framer_async(framer, ^(void)
     {
         nw_framer_deliver_input(framer, buffer, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
-        completionCallback(context, NULL);
-        nw_release(message);
+
+        // Delivering the input can drive the connection to nw_connection_state_ready, which
+        // queues the state changed handler that reports HandshakeFinished. That handler runs on
+        // the connection's session queue, not on the framer queue, so completing inline (or via
+        // another nw_framer_async hop) races it. Managed code uses this completion to decide
+        // whether to keep reading from the transport and must not read past the final handshake
+        // record, so hand the completion to the session queue where it is ordered behind any
+        // state change the delivered bytes produced.
+        dispatch_queue_t sessionQueue = FramerGetSessionQueue(framer);
+        if (sessionQueue != NULL)
+        {
+            dispatch_async(sessionQueue, ^(void)
+            {
+                completionCallback(context, NULL);
+                nw_release(message);
+            });
+        }
+        else
+        {
+            completionCallback(context, NULL);
+            nw_release(message);
+        }
     });
 
     return 0;
@@ -752,8 +841,30 @@ PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection,
     });
 }
 
-// This wil get TLS details after handshake is finished
-PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength)
+static bool TryCopyMetadataString(const char* source, char* destination, int32_t* destinationLength)
+{
+    int32_t destinationCapacity = *destinationLength;
+    *destinationLength = 0;
+
+    if (source == NULL)
+    {
+        return true;
+    }
+
+    size_t sourceLength = strlen(source);
+    if (destinationCapacity <= 0 || sourceLength >= (size_t)destinationCapacity)
+    {
+        return false;
+    }
+
+    memcpy(destination, source, sourceLength);
+    destination[sourceLength] = '\0';
+    *destinationLength = (int32_t)sourceLength;
+    return true;
+}
+
+// This will get TLS details after handshake is finished
+PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength, char* serverName, int32_t* serverNameLength)
 {
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
 
@@ -766,15 +877,24 @@ PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection
     sec_protocol_metadata_t secMeta = nw_tls_copy_sec_protocol_metadata(meta);
 
     const char* alpn = sec_protocol_metadata_get_negotiated_protocol(secMeta);
-    if (alpn != NULL)
+    if (!TryCopyMetadataString(alpn, negotiatedAlpn, negotiatedAlpnLength))
     {
-        strcpy(negotiatedAlpn, alpn);
-        *negotiatedAlpnLength = (int32_t)strlen(alpn);
+        LOG_ERROR(context, "Negotiated ALPN exceeds the supplied buffer");
+        nw_release(meta);
+        sec_release(secMeta);
+        return -1;
     }
-    else
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    const char* negotiatedServerName = sec_protocol_metadata_get_server_name(secMeta);
+#pragma clang diagnostic pop
+    if (!TryCopyMetadataString(negotiatedServerName, serverName, serverNameLength))
     {
-        negotiatedAlpn[0] = '\0';
-        *negotiatedAlpnLength = 0;
+        LOG_ERROR(context, "Server name exceeds the supplied buffer");
+        nw_release(meta);
+        sec_release(secMeta);
+        return -1;
     }
 
     tls_protocol_version_t version = sec_protocol_metadata_get_negotiated_tls_protocol_version(secMeta);
