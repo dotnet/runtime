@@ -1,16 +1,39 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <_Net8TargetFramework Condition="'$(NetCoreAppCurrent)' != 'net8.0' and '$(NetCoreAppPrevious)' != 'net8.0' and '$(NetCoreAppMinimum)' != 'net8.0'">net8.0;</_Net8TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);$(_Net8TargetFramework)netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>File system globbing to find files matching a specified pattern.</PackageDescription>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <UseToukiGlobbing>true</UseToukiGlobbing>
+    <DefineConstants>$(DefineConstants);USE_TOUKI_GLOBBING</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Internal\Touki\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseToukiGlobbing)' == 'true'">
+    <Compile Include="Internal\Touki\**\*.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Internal\Touki\Text\ValueStringBuilder.cs" />
+  </ItemGroup>
+
+  <Target Name="IncludeNet8PackageValidationBaseline" BeforeTargets="RunPackageValidation">
+    <ItemGroup>
+      <PackageValidationBaselineFrameworkToIgnore Remove="net8.0" />
+    </ItemGroup>
+  </Target>
 
 </Project>

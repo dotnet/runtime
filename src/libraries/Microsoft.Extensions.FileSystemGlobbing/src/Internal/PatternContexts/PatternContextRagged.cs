@@ -75,7 +75,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 frame.BacktrackAvailable += 1;
             }
 
+#if USE_TOUKI_GLOBBING
+            if (TrackStem && frame.InStem)
+#else
             if (frame.InStem)
+#endif
             {
                 frame.StemItems.Add(directory.Name);
                 frame.AddedStemItem = true;
@@ -139,6 +143,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         }
 
         protected IRaggedPattern Pattern { get; }
+
+    #if USE_TOUKI_GLOBBING
+        internal bool TrackStem { get; set; } = true;
+    #endif
 
         protected bool IsStartingGroup()
         {

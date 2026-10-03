@@ -1,7 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Microsoft.Extensions.FileSystemGlobbing.Internal;
+using Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns;
 using Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility;
 using Xunit;
 
@@ -434,6 +439,285 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 new FilePatternMatch(path: "../files/sub/one.txt", stem: "one.txt"),
                 new FilePatternMatch(path: "../files/sub/two.txt", stem: "two.txt")
             }, scenario.Result.Files.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(SequentialSeparatorOracleData))]
+        public void SequentialSeparatorsMatchLegacyOracle(string pattern, string input)
+        {
+            AssertMatchesLegacy(pattern, input);
+        }
+
+        [Theory]
+        [MemberData(nameof(MultipleAsteriskOracleData))]
+        public void MultipleAsterisksMatchLegacyOracle(string pattern, string input)
+        {
+            AssertMatchesLegacy(pattern, input);
+        }
+
+        [Theory]
+        [MemberData(nameof(FileSystemGlobbingParityOracleData))]
+        public void CurrentToukiScenariosMatchLegacyOracle(string pattern, string input)
+        {
+            AssertMatchesLegacy(pattern, input);
+        }
+
+        [Theory]
+        [InlineData("a?b", "a?b")]
+        [InlineData("a?b", "axb")]
+        [InlineData("[abc].txt", "[abc].txt")]
+        [InlineData("[abc].txt", "a.txt")]
+        [InlineData("!important.txt", "!important.txt")]
+        public void UnsupportedGlobCharactersMatchLegacyOracle(string pattern, string input)
+        {
+            AssertMatchesLegacy(pattern, input);
+        }
+
+        [Fact]
+        public void MatcherCanExecuteRepeatedlyAndAddPatterns()
+        {
+            var matcher = new Matcher(StringComparison.Ordinal);
+
+            Assert.False(matcher.Match("src/Program.cs").HasMatches);
+
+            matcher.AddInclude("**/*.cs");
+
+            Assert.True(matcher.Match("src/Program.cs").HasMatches);
+            Assert.True(matcher.Match("src/Program.cs").HasMatches);
+
+            matcher.AddInclude("**/*.txt");
+
+            Assert.True(matcher.Match("docs/README.txt").HasMatches);
+            Assert.True(matcher.Match("src/Program.cs").HasMatches);
+        }
+
+        [Fact]
+        public void CultureComparisonLiteralRetainsLegacyBehavior()
+        {
+            var matcher = new Matcher(StringComparison.InvariantCultureIgnoreCase);
+            matcher.AddInclude("FILE.TXT");
+
+            Assert.True(matcher.Match("file.txt").HasMatches);
+        }
+
+        [Fact]
+        public void CultureComparisonWildcardRetainsLegacyException()
+        {
+            var matcher = new Matcher(StringComparison.InvariantCultureIgnoreCase);
+
+            Assert.Throws<InvalidOperationException>(() => matcher.AddInclude("*.txt"));
+        }
+
+        [Fact]
+        public void PatternBeyondToukiEncodingLimitFallsBackToLegacy()
+        {
+            string prefix = new('a', char.MaxValue + 1);
+            string fileName = "x/" + prefix + "/y";
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
+                .Include("*/" + prefix + "/*")
+                .Files(fileName)
+                .Execute();
+
+            scenario.AssertExact(fileName);
+        }
+
+        [Theory]
+        [InlineData("*", "root.txt", "sub/leak.txt")]
+        [InlineData("*.txt", "root.txt", "sub/leak.txt")]
+        [InlineData("a*", "alpha", "sub/alpha")]
+        [InlineData("*a*", "alpha", "sub/alpha")]
+        [InlineData("a*b", "acb", "sub/acb")]
+        public void RootScopedPatternDoesNotMatchNestedFiles(string pattern, string rootMatch, string nestedMatch)
+        {
+            new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
+                .Include(pattern, "sub/keep.cs")
+                .Files(rootMatch, nestedMatch, "sub/keep.cs")
+                .Execute()
+                .AssertExact(rootMatch, "sub/keep.cs");
+
+            FileSystemGlobbingTestContext excludeScenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
+                .Include("**")
+                .Exclude(pattern)
+                .Files(rootMatch, nestedMatch, "sub/keep.cs")
+                .Execute();
+
+            if (pattern == "*")
+            {
+                excludeScenario.AssertExact();
+            }
+            else
+            {
+                excludeScenario.AssertExact(nestedMatch, "sub/keep.cs");
+            }
+        }
+
+        [Fact]
+        public void DeterministicGeneratedPatternsMatchLegacyOracle()
+        {
+            string[] atoms = ["a", "b", "*", "*.cs", "a*b", "**", "?", "[x]", "***.cs", "**.cs"];
+            string[] files =
+            [
+                "a", "b", "x", "a.cs", "b.cs", "ab", "axb", "[x]",
+                "a/a", "a/b.cs", "a/x/ab", "b/a.cs", "x/a/b.cs", "x/y/a.cs"
+            ];
+            string root = Path.Combine(Directory.GetCurrentDirectory(), "generated-oracle-root");
+            var directory = new InMemoryDirectoryInfo(root, files);
+            var patterns = new List<string>(atoms.Length + (atoms.Length * atoms.Length * 3));
+
+            patterns.AddRange(atoms);
+            foreach (string first in atoms)
+            {
+                foreach (string last in atoms)
+                {
+                    patterns.Add(first + "/" + last);
+                    patterns.Add(first + "/**/" + last);
+                    patterns.Add(first + "/*/" + last);
+                }
+            }
+
+            foreach (string pattern in patterns)
+            {
+                var matcher = new Matcher(StringComparison.Ordinal, PreserveFilterOrder);
+                matcher.AddInclude(pattern);
+
+                PatternMatchingResult expected = MatchLegacy(directory, pattern);
+                PatternMatchingResult actual = matcher.Execute(directory);
+
+                Assert.True(
+                    expected.HasMatches == actual.HasMatches,
+                    $"HasMatches differed for '{pattern}'. Expected [{string.Join(", ", expected.Files.Select(file => file.Path))}], actual [{string.Join(", ", actual.Files.Select(file => file.Path))}].");
+                Assert.True(
+                    expected.Files.SequenceEqual(actual.Files),
+                    $"Files differed for '{pattern}'. Expected [{string.Join(", ", expected.Files.Select(file => file.Path))}], actual [{string.Join(", ", actual.Files.Select(file => file.Path))}].");
+            }
+        }
+
+        public static IEnumerable<object[]> SequentialSeparatorOracleData()
+        {
+            yield return new object[] { "a//b", "a/b" };
+            yield return new object[] { "a//b", "a//b" };
+            yield return new object[] { "a//b", "ab" };
+            yield return new object[] { "a//b", "a/x/b" };
+            yield return new object[] { "a///b", "a/b" };
+            yield return new object[] { "a///b", "a//b" };
+            yield return new object[] { "a////b", "a/b" };
+            yield return new object[] { "//a", "a" };
+            yield return new object[] { "//a", "/a" };
+            yield return new object[] { "a//", "a" };
+            yield return new object[] { "a//", "a/" };
+            yield return new object[] { "a//*", "a/b" };
+            yield return new object[] { "*//b", "a/b" };
+            yield return new object[] { "*//b", "x/b" };
+            yield return new object[] { "**//*.cs", "Foo.cs" };
+            yield return new object[] { "**//*.cs", "src/Foo.cs" };
+            yield return new object[] { "**//*.cs", "src/sub/Foo.cs" };
+            yield return new object[] { "a//**//b", "a/b" };
+            yield return new object[] { "a//**//b", "a/x/b" };
+            yield return new object[] { "a//**//b", "a/x/y/b" };
+            yield return new object[] { "a//.", "a/file.txt" };
+            yield return new object[] { ".//*a/*.*", ".hidden/a/A" };
+        }
+
+        public static IEnumerable<object[]> MultipleAsteriskOracleData()
+        {
+            yield return new object[] { "***", "" };
+            yield return new object[] { "***", "a" };
+            yield return new object[] { "***", "abc" };
+            yield return new object[] { "***", "a/b" };
+            yield return new object[] { "****", "a" };
+            yield return new object[] { "****", "a/b" };
+            yield return new object[] { "a***b", "ab" };
+            yield return new object[] { "a***b", "axb" };
+            yield return new object[] { "a***b", "axyzb" };
+            yield return new object[] { "a***b", "a/b" };
+            yield return new object[] { "a****b", "axyzb" };
+            yield return new object[] { "***.cs", "foo.cs" };
+            yield return new object[] { "***.cs", "a/foo.cs" };
+            yield return new object[] { "a***", "a" };
+            yield return new object[] { "a***", "abc" };
+            yield return new object[] { "***b", "b" };
+            yield return new object[] { "***b", "ab" };
+            yield return new object[] { "a/***", "a/" };
+            yield return new object[] { "a/***", "a/b" };
+            yield return new object[] { "a/***", "a/b/c" };
+            yield return new object[] { "***/foo", "foo" };
+            yield return new object[] { "***/foo", "a/foo" };
+            yield return new object[] { "***/foo", "a/b/foo" };
+            yield return new object[] { "a/***/b", "a/b" };
+            yield return new object[] { "a/***/b", "a/x/b" };
+            yield return new object[] { "a/***/b", "a/x/y/b" };
+        }
+
+        public static IEnumerable<object[]> FileSystemGlobbingParityOracleData()
+        {
+            yield return new object[] { "a?b", "a?b" };
+            yield return new object[] { "a?b", "axb" };
+            yield return new object[] { "a?b", "ab" };
+            yield return new object[] { "a/?/b", "a/?/b" };
+            yield return new object[] { "a/?/b", "a/x/b" };
+            yield return new object[] { "a/", "a/file.txt" };
+            yield return new object[] { "a/", "a/b/file.txt" };
+            yield return new object[] { "a/", "a" };
+            yield return new object[] { "a\\", "a/file.txt" };
+            yield return new object[] { "/", "file.txt" };
+            yield return new object[] { "/", "a/file.txt" };
+            yield return new object[] { "///", "file.txt" };
+            yield return new object[] { "///", "a/file.txt" };
+            yield return new object[] { "a///", "a/file.txt" };
+            yield return new object[] { "a///", "a" };
+            yield return new object[] { "**.cs", "file.cs" };
+            yield return new object[] { "**.cs", "dir/file.cs" };
+            yield return new object[] { "**.cs", "a/b/file.cs" };
+            yield return new object[] { "**.cs", "a/b/file.txt" };
+            yield return new object[] { "ab/**.suffix", "ab/file.suffix" };
+            yield return new object[] { "ab/**.suffix", "ab/x/file.suffix" };
+            yield return new object[] { "ab/**.suffix", "x/file.suffix" };
+            yield return new object[] { "src/**.*", "src/file.txt" };
+            yield return new object[] { "src/**.*", "src/a/file.txt" };
+            yield return new object[] { "**/a/b/*.cs", "a/a/b/source.cs" };
+            yield return new object[] { "**/a/a/*.cs", "a/a/a/source.cs" };
+            yield return new object[] { "**/a/**/a/*.cs", "a/a/source.cs" };
+            yield return new object[] { "**/a/**/a/*.cs", "x/a/x/y/a/source.cs" };
+        }
+
+        private void AssertMatchesLegacy(string pattern, string input)
+        {
+            string root = Path.Combine(Directory.GetCurrentDirectory(), "oracle-root");
+            var matcher = new Matcher(StringComparison.Ordinal, PreserveFilterOrder);
+            matcher.AddInclude(pattern);
+
+            PatternMatchingResult expected;
+            PatternMatchingResult actual;
+            if (input.IndexOf('?') >= 0)
+            {
+                const string mockRoot = @"c:\files\";
+                var directory = new MockDirectoryInfo(
+                    parentDirectory: null,
+                    fullName: mockRoot,
+                    name: ".",
+                    paths: input.Length == 0 ? Array.Empty<string>() : new[] { mockRoot + input });
+                expected = MatchLegacy(directory, pattern);
+                actual = matcher.Execute(directory);
+            }
+            else
+            {
+                expected = MatchLegacy(new InMemoryDirectoryInfo(root, new[] { input }), pattern);
+                actual = matcher.Match(root, input);
+            }
+
+            Assert.Equal(expected.HasMatches, actual.HasMatches);
+            Assert.Equal(expected.Files, actual.Files);
+        }
+
+        private PatternMatchingResult MatchLegacy(Abstractions.DirectoryInfoBase directory, string pattern)
+        {
+            IPattern legacyPattern = new PatternBuilder(StringComparison.Ordinal).Build(pattern);
+
+            return new MatcherContext(
+                new[] { legacyPattern },
+                Array.Empty<IPattern>(),
+                directory,
+                StringComparison.Ordinal).Execute();
         }
 
         // exclude: **/.*/**

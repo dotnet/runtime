@@ -101,6 +101,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         private readonly List<IncludeOrExcludeValue<IPattern>>? _includeOrExcludePatterns;
         private readonly PatternBuilder _builder;
         private readonly bool _preserveFilterOrder;
+    #if USE_TOUKI_GLOBBING
+        private ToukiMatcherPlan? _toukiPlan;
+        private bool _toukiUnavailable;
+    #endif
 
         internal StringComparison ComparisonType { get; }
 
@@ -134,6 +138,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             ComparisonType = comparisonType;
             _builder = new PatternBuilder(comparisonType);
             _preserveFilterOrder = preserveFilterOrder;
+#if USE_TOUKI_GLOBBING
+            _toukiUnavailable = comparisonType is not (StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase);
+#endif
 
             if (preserveFilterOrder)
             {
@@ -160,10 +167,15 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>The matcher</returns>
         public virtual Matcher AddInclude(string pattern)
         {
+            IPattern builtPattern = _builder.Build(pattern);
             if (_preserveFilterOrder)
-                _includeOrExcludePatterns!.Add(new IncludeOrExcludeValue<IPattern> { Value = _builder.Build(pattern), IsInclude = true });
+                _includeOrExcludePatterns!.Add(new IncludeOrExcludeValue<IPattern> { Value = builtPattern, IsInclude = true });
             else
-                _includePatterns!.Add(_builder.Build(pattern));
+                _includePatterns!.Add(builtPattern);
+
+#if USE_TOUKI_GLOBBING
+            _toukiPlan = null;
+#endif
 
             return this;
         }
@@ -182,10 +194,15 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>The matcher</returns>
         public virtual Matcher AddExclude(string pattern)
         {
+            IPattern builtPattern = _builder.Build(pattern);
             if (_preserveFilterOrder)
-                _includeOrExcludePatterns!.Add(new IncludeOrExcludeValue<IPattern> { Value = _builder.Build(pattern), IsInclude = false });
+                _includeOrExcludePatterns!.Add(new IncludeOrExcludeValue<IPattern> { Value = builtPattern, IsInclude = false });
             else
-                _excludePatterns!.Add(_builder.Build(pattern));
+                _excludePatterns!.Add(builtPattern);
+
+#if USE_TOUKI_GLOBBING
+            _toukiPlan = null;
+#endif
 
             return this;
         }
@@ -199,9 +216,46 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         {
             ArgumentNullException.ThrowIfNull(directoryInfo);
 
+#if USE_TOUKI_GLOBBING
+            bool hasInclude = _preserveFilterOrder
+                ? _includeOrExcludePatterns!.Exists(item => item.IsInclude)
+                : _includePatterns!.Count != 0;
+            if (!_toukiUnavailable && hasInclude)
+            {
+                ToukiMatcherPlan? plan = _toukiPlan;
+                if (plan is null)
+                {
+                    bool created = _preserveFilterOrder
+                        ? ToukiMatcherPlan.TryCreate(
+                            _includeOrExcludePatterns!,
+                            ComparisonType,
+                            out plan)
+                        : ToukiMatcherPlan.TryCreate(
+                            _includePatterns!,
+                            _excludePatterns!,
+                            ComparisonType,
+                            out plan);
+                    if (!created)
+                    {
+                        _toukiUnavailable = true;
+                    }
+                    else
+                    {
+                        _toukiPlan = plan;
+                    }
+                }
+
+                if (plan is not null)
+                {
+                    return plan.Execute(directoryInfo, ComparisonType);
+                }
+            }
+#endif
+
             return _preserveFilterOrder ?
                 new MatcherContext(_includeOrExcludePatterns!, directoryInfo, ComparisonType).Execute() :
                 new MatcherContext(_includePatterns!, _excludePatterns!, directoryInfo, ComparisonType).Execute();
         }
+
     }
 }
