@@ -50,6 +50,8 @@ Starting .NET 6.0, native Mach-O core files get generated and the variable COMPl
 
 As of .NET 5.0, createdump and the below configuration environment variables are supported on Windows. It is implemented using the Windows MiniDumpWriteDump API. This allows consistent crash/unhandled exception dumps across all of our platforms.
 
+The runtime also passes the crashing thread id (`--crashthread`) and the address of the crash `EXCEPTION_POINTERS` (`--exception-pointers`) to createdump on Windows, which forwards them to MiniDumpWriteDump (as `MINIDUMP_EXCEPTION_INFORMATION` with `ClientPointers`). The minidump then contains an exception stream, so debuggers and analysis tools (WinDbg, Visual Studio, ClrMD, dotnet-dump) open it on the faulting thread and show the exception record and context. Dumps written by older runtimes (or from paths where the runtime has no exception information) do not have this stream and open on the thread that was waiting for createdump.
+
 # Configuration/Policy #
 
 NOTE: Core dump generation in docker containers require the ptrace capability (--cap-add=SYS_PTRACE or --privileged run/exec options).
