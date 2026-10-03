@@ -18,28 +18,28 @@ internal sealed partial class VoterNotifyShim : NotificationShimBase, ITransacti
 
     public void VoteRequest()
     {
-        NotificationType = ShimNotificationType.VoteRequestNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.VoteRequestNotify;
         ShimFactory.NewNotification(this);
     }
 
     public void Committed([MarshalAs(UnmanagedType.Bool)] bool fRetaining, IntPtr pNewUOW, uint hresult)
     {
-        NotificationType = ShimNotificationType.CommittedNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.CommittedNotify;
         ShimFactory.NewNotification(this);
     }
 
     public void Aborted(IntPtr pboidReason, [MarshalAs(UnmanagedType.Bool)] bool fRetaining, IntPtr pNewUOW, uint hresult)
     {
-        NotificationType = ShimNotificationType.AbortedNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.AbortedNotify;
         ShimFactory.NewNotification(this);
     }
 
-    public void HeuristicDecision([MarshalAs(UnmanagedType.U4)] OletxTransactionHeuristic dwDecision, IntPtr pboidReason, uint hresult)
+    public void HeuristicDecision([MarshalAs(UnmanagedType.U4)] Interop.Xolehlp.OletxTransactionHeuristic dwDecision, IntPtr pboidReason, uint hresult)
     {
         NotificationType = dwDecision switch {
-            OletxTransactionHeuristic.XACTHEURISTIC_ABORT => ShimNotificationType.AbortedNotify,
-            OletxTransactionHeuristic.XACTHEURISTIC_COMMIT => ShimNotificationType.CommittedNotify,
-            _ => ShimNotificationType.InDoubtNotify
+            Interop.Xolehlp.OletxTransactionHeuristic.XACTHEURISTIC_ABORT => Interop.Xolehlp.ShimNotificationType.AbortedNotify,
+            Interop.Xolehlp.OletxTransactionHeuristic.XACTHEURISTIC_COMMIT => Interop.Xolehlp.ShimNotificationType.CommittedNotify,
+            _ => Interop.Xolehlp.ShimNotificationType.InDoubtNotify
         };
 
         ShimFactory.NewNotification(this);
@@ -47,7 +47,7 @@ internal sealed partial class VoterNotifyShim : NotificationShimBase, ITransacti
 
     public void Indoubt()
     {
-        NotificationType = ShimNotificationType.InDoubtNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.InDoubtNotify;
         ShimFactory.NewNotification(this);
     }
 }
