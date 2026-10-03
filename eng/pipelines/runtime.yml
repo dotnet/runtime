@@ -231,6 +231,8 @@ extends:
                   testBuildArgs: -os browser /p:HostConfiguration=Release
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              # CrossgenFramework skips wasm, so this regenerates CORE_ROOT from the same BCL
+              # bits as the normal run and enables Crossgen2 only for test assemblies on Helix.
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
