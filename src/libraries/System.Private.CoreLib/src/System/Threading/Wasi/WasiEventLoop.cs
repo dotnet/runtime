@@ -56,6 +56,10 @@ namespace System.Threading
                 s_mainTask = mainTask;
                 while (!mainTask.IsCompleted)
                 {
+#if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
+                    // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
+                    WasiEventPipeJobs.EnsurePumpIfPending();
+#endif
                     ThreadPoolWorkQueue.Dispatch();
                     WasiFinalizerScheduler.DrainIfPending();
                 }
@@ -78,6 +82,10 @@ namespace System.Threading
                 s_mainTask = mainTask;
                 while (!mainTask.IsCompleted)
                 {
+#if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
+                    // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
+                    WasiEventPipeJobs.EnsurePumpIfPending();
+#endif
                     ThreadPoolWorkQueue.Dispatch();
                     WasiFinalizerScheduler.DrainIfPending();
                 }

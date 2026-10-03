@@ -489,6 +489,10 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_GetNextEvent)
     DllImportEntry(EventPipeInternal_SignalSession)
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+    DllImportEntry(EventPipeInternal_WasiHasPendingJobs)
+    DllImportEntry(EventPipeInternal_WasiRunJobs)
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 #endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
     DllImportEntry(FreeEnvironmentStringsW)

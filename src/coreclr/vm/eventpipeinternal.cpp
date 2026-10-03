@@ -296,4 +296,86 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(UINT64 sessionI
     return result;
 }
 
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+// WASI has no host event loop to schedule EventPipe jobs (session streaming, diagnostic server) on,
+// so they are kept on this list and run by the managed WasiEventLoop (WasiEventPipeJobs.cs).
+// A job returns non-zero when it is done; otherwise it stays queued and runs again on the next pump.
+// Single-threaded by construction, so no locking.
+struct WasiEventPipeJob
+{
+    size_t (*Callback)(void *data);
+    void *Data;
+    WasiEventPipeJob *Next;
+};
+
+static WasiEventPipeJob *s_wasiJobsHead = nullptr;
+static WasiEventPipeJob *s_wasiJobsTail = nullptr;
+
+static void WasiAppendJob(WasiEventPipeJob *job)
+{
+    job->Next = nullptr;
+    if (s_wasiJobsTail != nullptr)
+        s_wasiJobsTail->Next = job;
+    else
+        s_wasiJobsHead = job;
+    s_wasiJobsTail = job;
+}
+
+bool ep_rt_coreclr_wasi_queue_job(size_t (*cb)(void *data), void *data)
+{
+    _ASSERTE(cb != nullptr);
+    WasiEventPipeJob *job = new (nothrow) WasiEventPipeJob();
+    if (job == nullptr)
+        return false;
+
+    job->Callback = cb;
+    job->Data = data;
+    WasiAppendJob(job);
+    return true;
+}
+
+extern "C" CLR_BOOL QCALLTYPE EventPipeInternal_WasiHasPendingJobs(QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    CLR_BOOL pending = FALSE;
+
+    BEGIN_QCALL;
+
+    pending = s_wasiJobsHead != nullptr ? TRUE : FALSE;
+
+    END_QCALL;
+    return pending;
+}
+
+void ep_rt_coreclr_wasi_run_jobs()
+{
+    // Detach the current list so jobs queued while running are picked up on the next pump.
+    WasiEventPipeJob *job = s_wasiJobsHead;
+    s_wasiJobsHead = nullptr;
+    s_wasiJobsTail = nullptr;
+
+    while (job != nullptr)
+    {
+        WasiEventPipeJob *next = job->Next;
+        if (job->Callback(job->Data) != 0)
+            delete job;
+        else
+            WasiAppendJob(job);
+        job = next;
+    }
+}
+
+extern "C" void QCALLTYPE EventPipeInternal_WasiRunJobs(QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ep_rt_coreclr_wasi_run_jobs();
+
+    END_QCALL;
+}
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
+
 #endif // FEATURE_PERFTRACING
