@@ -38,7 +38,7 @@ namespace System.Net.Security.Tests
             _clientCertificate.Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true, true)]
         [InlineData(false, true)]
         [InlineData(true, false)]
