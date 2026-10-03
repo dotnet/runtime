@@ -37,5 +37,8 @@ internal sealed class WasmGCInfoTraits : IGCInfoTraits
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => false;
     public static bool HAS_INTERRUPTIBLE_RANGES => false;
-    public static bool IsScratchRegister(uint regNum) => false;
+
+    // Valid Wasm GC info has no register slots. Treat unexpected ones as scratch
+    // so they are omitted from non-active frames.
+    public static bool IsScratchRegister(uint regNum) => true;
 }

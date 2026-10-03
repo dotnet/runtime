@@ -665,6 +665,8 @@ For encodings without interruptible ranges (`HAS_INTERRUPTIBLE_RANGES` is false,
 
 **Slot filtering**: Before reporting any slot, the algorithm checks:
 - **Scratch registers**: Only reported for the active/leaf frame (`ActiveStackFrame` flag).
+  The WebAssembly platform decoder treats every register as scratch because
+  valid Wasm GC info does not encode register slots.
 - **Scratch stack slots**: Only reported for the active/leaf frame (slots in the outgoing/scratch area).
 - **FP-based-only mode** (`ReportFPBasedSlotsOnly`): Only frame-register-relative stack slots are reported; all register slots and non-frame-relative stack slots are skipped.
 
