@@ -73,7 +73,16 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
     fprintf(stderr, message, arg1);
 }
 
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited, int32_t* isPtraceStop)
+{
+    assert(isExited != NULL);
+    assert(isPtraceStop != NULL);
+    *isExited = 0;
+    *isPtraceStop = 0;
+    return -1;
+}
+
+int32_t SystemNative_WaitIdDrainNonExited(int32_t pid)
 {
     return -1;
 }

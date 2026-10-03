@@ -1164,5 +1164,182 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
             });
         }
+
+        // Repro attempt for https://github.com/dotnet/runtime/issues/131944:
+        // Process.Kill(entireProcessTree: true) can hang indefinitely on macOS.
+        // The two-phase KillTree (SIGSTOP the whole tree, then SIGKILL) opens a window in which a
+        // direct child is SIGSTOP'd. On macOS, waitid(P_ALL, WEXITED|WNOHANG|WNOWAIT) also reports
+        // SIGSTOP'd children, so the SIGCHLD handler's CheckChildren loop spins forever (waitpid
+        // WNOHANG never reaps a stopped child, WNOWAIT keeps it waitable) while holding
+        // s_childProcessWaitStates. Any concurrent Process construction (e.g. the tree enumeration in
+        // another Kill) then blocks on that lock, so the stopped child is never SIGKILL'd -> deadlock.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [OuterLoop("Spawns a large number of processes.")]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void Kill_EntireProcessTree_Concurrent_DoesNotHang()
+        {
+            const int TreeCount = 8;
+            const int Iterations = 30;
+
+            for (int iteration = 0; iteration < Iterations; iteration++)
+            {
+                var roots = new Process[TreeCount];
+                var grandChildren = new Process[TreeCount];
+                try
+                {
+                    for (int i = 0; i < TreeCount; i++)
+                    {
+                        // Each direct child spawns a grandchild and then blocks forever, producing a
+                        // small process tree rooted at a direct child of this test host.
+                        Process root = CreateProcess(() =>
+                        {
+                            using Process grandChild = Process.Start("/bin/sleep", "1000");
+                            Console.WriteLine(grandChild.Id);
+                            Thread.Sleep(Timeout.Infinite);
+                            return RemoteExecutor.SuccessExitCode;
+                        });
+                        root.StartInfo.RedirectStandardOutput = true;
+                        root.Start();
+                        roots[i] = root;
+                    }
+
+                    for (int i = 0; i < TreeCount; i++)
+                    {
+                        // Obtain a Process instance for the grandchild before killing the tree, to avoid
+                        // PID reuse issues.
+                        int grandChildPid = int.Parse(roots[i].StandardOutput.ReadLine());
+                        grandChildren[i] = Process.GetProcessById(grandChildPid);
+                    }
+
+                    var tasks = new Task[TreeCount];
+                    for (int i = 0; i < TreeCount; i++)
+                    {
+                        Process root = roots[i];
+                        tasks[i] = Task.Run(() => root.Kill(entireProcessTree: true));
+                    }
+
+                    bool completed = Task.WaitAll(tasks, TimeSpan.FromSeconds(60));
+                    Assert.True(completed, $"Kill(entireProcessTree: true) hung on iteration {iteration}.");
+
+                    for (int i = 0; i < TreeCount; i++)
+                    {
+                        Assert.True(roots[i].WaitForExit(WaitInMS));
+                        Assert.True(grandChildren[i].WaitForExit(WaitInMS), $"Grandchild {grandChildren[i].Id} was not killed on iteration {iteration}.");
+                    }
+                }
+                finally
+                {
+                    // Ensure grandchildren don't leak as long-running /bin/sleep processes if setup or an
+                    // assertion above fails, e.g. because Kill(entireProcessTree: true) hung or didn't reach
+                    // a grandchild, or a grandchild's pid wasn't read/looked up yet. Unlike roots, grandchildren
+                    // aren't tracked by ProcessTestBase's automatic cleanup, and this loop must be null-safe
+                    // since not every slot may have been populated.
+                    foreach (Process? grandChild in grandChildren)
+                    {
+                        if (grandChild is null)
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            grandChild.Kill();
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            // Already exited.
+                        }
+
+                        grandChild.Dispose();
+                    }
+                }
+            }
+        }
+
+        // Repro for https://github.com/dotnet/runtime/issues/133736:
+        // On Linux, when this process is the ptrace tracer of a Process.Start child (e.g. as ClrMD does to
+        // inspect a child process), a waitid(P_ALL, WEXITED, WNOWAIT) peek also observes the tracee's ptrace
+        // stop (si_code == CLD_TRAPPED), and a plain waitpid(pid, WNOHANG) -- with no WUNTRACED requested --
+        // still reports it as WIFSTOPPED, because those are always visible to a tracer. Neither
+        // SystemNative_WaitIdAnyExitedNoHangNoWait nor SystemNative_WaitPidExitedNoHang used to check for
+        // this, so the stop notification could be treated as if the child had exited (with exit code 0),
+        // causing HasExited/WaitForExit(0) to incorrectly report true while the child is alive in a ptrace
+        // stop. SIGCHLD is registered with SA_NOCLDSTOP, so the stop itself does not trigger a check; the
+        // misclassification is only observed when unrelated child activity causes CheckChildren to run, so
+        // this test spawns short-lived "trigger" children concurrently to force that.
+        // Two tracees are ptrace-attached (not just one) so that CheckChildren's fallback CheckAll scan --
+        // triggered when one tracee's stop notification is peeked -- reaches into TryReapChild for the
+        // *other*, still-stopped tracee. That's the only way to drive SystemNative_WaitPidExitedNoHang's
+        // WIFSTOPPED/WIFCONTINUED retry path with a specific, currently-stopped pid: CheckAll always skips
+        // the pid whose notification triggered it, so a single tracee's own stop is never passed to
+        // WaitPidExitedNoHang in this test.
+        [Fact]
+        [OuterLoop("Spawns a large number of processes.")]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void ChildProcess_PtraceStopped_IsNotReportedAsExited()
+        {
+            using Process child = CreateProcessLong();
+            child.Start();
+            using Process child2 = CreateProcessLong();
+            child2.Start();
+            try
+            {
+                Assert.False(child.HasExited);
+                Assert.False(child2.HasExited);
+
+                int attachResult = ptrace(PTRACE_ATTACH, child.Id, IntPtr.Zero, IntPtr.Zero);
+                Assert.True(attachResult == 0, $"PTRACE_ATTACH failed, errno={Marshal.GetLastWin32Error()}");
+                int attachResult2 = ptrace(PTRACE_ATTACH, child2.Id, IntPtr.Zero, IntPtr.Zero);
+                Assert.True(attachResult2 == 0, $"PTRACE_ATTACH failed, errno={Marshal.GetLastWin32Error()}");
+                try
+                {
+                    // Give the kernel time to deliver and report both tracees' stops.
+                    Thread.Sleep(200);
+
+                    // SIGCHLD is installed with SA_NOCLDSTOP, so the stops above do not by themselves wake
+                    // up CheckChildren. Spawn unrelated short-lived children concurrently: each real exit
+                    // delivers a SIGCHLD that runs CheckChildren, which (via waitid(P_ALL, ...)) will also
+                    // observe -- and, without the fix, misclassify -- one of the stopped tracees.
+                    for (int i = 0; i < 50 && !child.HasExited && !child2.HasExited; i++)
+                    {
+                        using Process trigger = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+                        trigger.Start();
+                        trigger.WaitForExit();
+                        Thread.Sleep(10);
+                    }
+
+                    Assert.False(child.HasExited);
+                    Assert.False(child2.HasExited);
+                    Assert.False(child.WaitForExit(0));
+                    Assert.False(child2.WaitForExit(0));
+                }
+                finally
+                {
+                    ptrace(PTRACE_DETACH, child.Id, IntPtr.Zero, IntPtr.Zero);
+                    ptrace(PTRACE_DETACH, child2.Id, IntPtr.Zero, IntPtr.Zero);
+                }
+
+                Assert.False(child.HasExited);
+                Assert.False(child2.HasExited);
+            }
+            finally
+            {
+                // If the bug being tested for reproduces, HasExited may already be (incorrectly) cached as
+                // true, which would make Process.Kill() a no-op and leak the still-running child. Signal
+                // directly via the handle instead, which doesn't consult that cached state.
+                child.SafeHandle.Signal(PosixSignal.SIGKILL);
+                child2.SafeHandle.Signal(PosixSignal.SIGKILL);
+                Assert.True(child.WaitForExit(WaitInMS));
+                Assert.True(child2.WaitForExit(WaitInMS));
+            }
+        }
+
+        // request is declared as int (not long) to match glibc's ptrace(2) signature, which takes
+        // enum __ptrace_request (a 32-bit type). Using a 64-bit C# long here would corrupt the ABI on
+        // 32-bit native targets, where the subsequent arguments are laid out assuming a 32-bit request.
+        [DllImport("libc", SetLastError = true)]
+        private static extern int ptrace(int request, int pid, IntPtr addr, IntPtr data);
+        private const int PTRACE_ATTACH = 16;
+        private const int PTRACE_DETACH = 17;
     }
 }
