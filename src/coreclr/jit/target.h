@@ -71,7 +71,7 @@ inline bool compUnixX86Abi()
 // with static const members of Target
 #if defined(TARGET_AMD64)
 #define REGMASK_BITS              64
-#define CSE_CONST_SHARED_LOW_BITS 16
+#define CSE_CONST_SHARED_LOW_BITS 8
 
 #elif defined(TARGET_X86)
 #define REGMASK_BITS              32
