@@ -39,13 +39,7 @@ if /i "%~1"=="-w" goto :set_wasi_scan_path
 if /i "%~1"=="--wasi-scan-path" goto :set_wasi_scan_path
 if /i "%~1"=="-t" goto :set_target_os
 if /i "%~1"=="--target-os" goto :set_target_os
-if /i "%~1"=="-h" goto :set_target_os
-set target_os=%~2
-shift
-shift
-goto :parse_args
-
-:show_help
+if /i "%~1"=="-h" goto :show_help
 if /i "%~1"=="--help" goto :show_help
 
 echo Unknown option: %~1
@@ -66,6 +60,12 @@ goto :parse_args
 
 :set_wasi_scan_path
 set wasi_scan_path_override=%~2
+shift
+shift
+goto :parse_args
+
+:set_target_os
+set target_os=%~2
 shift
 shift
 goto :parse_args
