@@ -206,6 +206,55 @@ public class CBoolTest
     {
         return x <= 0 && x != 0;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Or10Or5(int x, int y)
+    {
+        return (x | 10) | (y | 5);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Or15(int x, int y)
+    {
+        return (x | y) | 15;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long LongOr10Or5(long x, long y)
+    {
+        return (x | 10) | (y | 5);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long LongOr15(long x, long y)
+    {
+        return (x | y) | 15;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ByteOr10Or5(byte x, byte y)
+    {
+        return (x | 10) | (y | 5);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ByteOr15(byte x, byte y)
+    {
+        return (x | y) | 15;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ShortOr10Or5(short x, short y)
+    {
+        return (x | 10) | (y | 5);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ShortOr15(short x, short y)
+    {
+        return (x | y) | 15;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool AreBothGreatThanZero(int x, int y)
     {
@@ -1113,6 +1162,54 @@ public class CBoolTest
         if (IsEitherOne(2, 0))
         {
             Console.WriteLine("CBoolTest:IsEitherOne(2, 0) failed");
+            return 101;
+        }
+
+        if (Or10Or5(14, 23) != Or15(14, 23))
+        {
+            Console.WriteLine("CBoolTest:Or10Or5(14, 23) failed");
+            return 101;
+        }
+
+        if (Or10Or5(78, 11) != Or15(78, 11))
+        {
+            Console.WriteLine("CBoolTest:Or10Or5(78, 11) failed");
+            return 101;
+        }
+
+        if (LongOr10Or5(14, 23) != LongOr15(14, 23))
+        {
+            Console.WriteLine("CBoolTest:LongOr10Or5(14, 23) failed");
+            return 101;
+        }
+
+        if (LongOr10Or5(78, 11) != LongOr15(78, 11))
+        {
+            Console.WriteLine("CBoolTest:LongOr10Or5(78, 11) failed");
+            return 101;
+        }
+
+        if (ByteOr10Or5(14, 23) != ByteOr15(14, 23))
+        {
+            Console.WriteLine("CBoolTest:ByteOr10Or5(14, 23) failed");
+            return 101;
+        }
+
+        if (ByteOr10Or5(78, 11) != ByteOr15(78, 11))
+        {
+            Console.WriteLine("CBoolTest:ByteOr10Or5(78, 11) failed");
+            return 101;
+        }
+
+        if (ShortOr10Or5(14, 23) != ShortOr15(14, 23))
+        {
+            Console.WriteLine("CBoolTest:ShortOr10Or5(14, 23) failed");
+            return 101;
+        }
+
+        if (ShortOr10Or5(78, 11) != ShortOr15(78, 11))
+        {
+            Console.WriteLine("CBoolTest:ShortOr10Or5(78, 11) failed");
             return 101;
         }
 
