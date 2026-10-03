@@ -669,8 +669,10 @@ handle_enum:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_BOOLEAN: {
-		if (!bcheck_blob (p, 0, boundp, error))
+		if (!bcheck_blob (p, 0, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 		MonoBoolean *bval = (MonoBoolean *)g_malloc (sizeof (MonoBoolean));
 		*bval = *p;
 		*end = p + 1;
@@ -680,8 +682,10 @@ handle_enum:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I2: {
-		if (!bcheck_blob (p, 1, boundp, error))
+		if (!bcheck_blob (p, 1, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 		guint16 *val = (guint16 *)g_malloc (sizeof (guint16));
 		*val = read16 (p);
 		*end = p + 2;
@@ -695,8 +699,10 @@ handle_enum:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4: {
-		if (!bcheck_blob (p, 3, boundp, error))
+		if (!bcheck_blob (p, 3, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 		guint32 *val = (guint32 *)g_malloc (sizeof (guint32));
 		*val = read32 (p);
 		*end = p + 4;
@@ -709,8 +715,10 @@ handle_enum:
 #endif
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8: {
-		if (!bcheck_blob (p, 7, boundp, error))
+		if (!bcheck_blob (p, 7, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 		guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
 		*val = read64 (p);
 		*end = p + 8;
@@ -718,8 +726,10 @@ handle_enum:
 		return result;
 	}
 	case MONO_TYPE_R8: {
-		if (!bcheck_blob (p, 7, boundp, error))
+		if (!bcheck_blob (p, 7, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 		double *val = (double *)g_malloc (sizeof (double));
 		readr8 (p, val);
 		*end = p + 8;
@@ -740,18 +750,25 @@ handle_enum:
 	case MONO_TYPE_STRING: {
 		const char *start = p;
 
-		if (!bcheck_blob (p, 0, boundp, error))
+		if (!bcheck_blob (p, 0, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 MONO_DISABLE_WARNING (4310) // cast truncates constant value
 		if (*p == (char)0xFF) {
 			*end = p + 1;
+			g_free(result);
 			return NULL;
 		}
 MONO_RESTORE_WARNING
-		if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
+		if (!decode_blob_value_checked (p, boundp, &slen, &p, error)) {
+			g_free(result);
 			return NULL;
-		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
+		}
+		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 		*end = p + slen;
 		result->value.primitive = (gpointer)start;
 		return result;
@@ -761,8 +778,10 @@ MONO_RESTORE_WARNING
 		return result;
 	}
 	case MONO_TYPE_OBJECT: {
-		if (!bcheck_blob (p, 0, boundp, error))
+		if (!bcheck_blob (p, 0, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 		char subt = *p++;
 		MonoClass *subc = NULL;
 
@@ -774,8 +793,10 @@ MONO_RESTORE_WARNING
 			goto handle_enum;
 		} else if (subt == 0x1D) {
 			MonoType simple_type = {{0}};
-			if (!bcheck_blob (p, 0, boundp, error))
+			if (!bcheck_blob (p, 0, boundp, error)) {
+				g_free(result);
 				return NULL;
+			}
 			int etype = *p;
 			p ++;
 
@@ -784,8 +805,10 @@ MONO_RESTORE_WARNING
 				tklass = mono_defaults.systemtype_class;
 			} else if (etype == MONO_TYPE_ENUM) {
 				tklass = load_cattr_enum_type (image, p, boundp, &p, error);
-				if (!is_ok (error))
+				if (!is_ok (error)) {
+					g_free(result);
 					return NULL;
+				}
 			} else {
 				if (etype == CATTR_BOXED_VALUETYPE_PREFIX)
 					/* See Partition II, Appendix B3 */
@@ -797,10 +820,14 @@ MONO_RESTORE_WARNING
 		} else if (subt == MONO_TYPE_ENUM) {
 			char *n;
 			MonoType *enum_type;
-			if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
+			if (!decode_blob_value_checked (p, boundp, &slen, &p, error)) {
+				g_free(result);
 				return NULL;
-			if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
+			}
+			if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error)) {
+				g_free(result);
 				return NULL;
+			}
 			n = (char *)g_memdup (p, slen + 1);
 			n [slen] = 0;
 			enum_type = cattr_type_from_name (n, image, FALSE, error);
@@ -821,12 +848,15 @@ MONO_RESTORE_WARNING
 	case MONO_TYPE_SZARRAY: {
 		guint32 i, alen;
 
-		if (!bcheck_blob (p, 3, boundp, error))
+		if (!bcheck_blob (p, 3, boundp, error)) {
+			g_free(result);
 			return NULL;
+		}
 		alen = read32 (p);
 		p += 4;
 		if (alen == 0xffffffff) {
 			*end = p;
+			g_free(result);
 			return NULL;
 		}
 
@@ -835,8 +865,11 @@ MONO_RESTORE_WARNING
 
 		for (i = 0; i < alen; i++) {
 			MonoCustomAttrValue* array_element = load_cattr_value_noalloc (image, m_class_get_byval_arg (tklass), p, boundp, &p, error);
-			if (!is_ok (error))
+			if (!is_ok (error)) {
+				g_free(result->value.array);
+				g_free(result);
 				return NULL;
+			}
 			result->value.array->values[i] = *array_element;
 		}
 		*end = p;
@@ -845,6 +878,7 @@ MONO_RESTORE_WARNING
 	default:
 		g_error ("Type 0x%02x not handled in custom attr value decoding", type);
 	}
+	g_free(result);
 	return NULL;
 }
 
