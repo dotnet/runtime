@@ -1382,17 +1382,6 @@ FCIMPL2(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* typ
 }
 FCIMPLEND
 
-// This is function is used to quickly query a value that can uniquely identify a thread
-FCIMPL0(uint8_t*, RhCurrentNativeThreadId)
-{
-#ifndef TARGET_UNIX
-    return PalNtCurrentTeb();
-#else
-    return (uint8_t*)ThreadStore::RawGetCurrentThread();
-#endif // TARGET_UNIX
-}
-FCIMPLEND
-
 FCIMPL0(size_t, RhGetDefaultStackSize)
 {
     return GetDefaultStackSizeSetting();

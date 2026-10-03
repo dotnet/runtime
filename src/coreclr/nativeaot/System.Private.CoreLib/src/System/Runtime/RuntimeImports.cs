@@ -560,10 +560,6 @@ namespace System.Runtime
         internal static extern void RhRegisterInlinedThreadStaticRoot(ref object? root, TypeManagerHandle module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetDefaultStackSize")]
         internal static extern unsafe IntPtr RhGetDefaultStackSize();
 
