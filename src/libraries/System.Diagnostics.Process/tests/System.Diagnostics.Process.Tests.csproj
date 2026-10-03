@@ -119,4 +119,5 @@
     <!-- This is a bug in the SDK tracked here: https://github.com/dotnet/sdk/issues/30718 -->
     <PublishReadyToRunExclude Include="LongPath.dll" />
   </ItemGroup>
+  <Import Project="ProcessTestShards.targets" />
 </Project>

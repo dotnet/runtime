@@ -1,0 +1,73 @@
+<Project>
+  <PropertyGroup>
+    <_ProcessTestShardDefinition>$(MSBuildThisFileFullPath)</_ProcessTestShardDefinition>
+    <_ShardProcessTests Condition="'$(ArchiveTests)' == 'true' and
+                                  '$(TargetPlatformIdentifier)' == 'windows' and
+                                  '$(TargetArchitecture)' == 'x86' and
+                                  '$(RuntimeFlavor)' == 'CoreCLR' and
+                                  '$(TestSingleFile)' != 'true'">true</_ShardProcessTests>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_ProcessTestShard Include="1" Arguments="-class System.Diagnostics.Tests.ProcessMultiplexingTests" />
+    <_ProcessTestShard Include="2" Arguments="-class System.Diagnostics.Tests.ProcessStreamingTests -class System.Diagnostics.Tests.SafeProcessHandleTests" />
+    <_ProcessTestShard Include="3" Arguments="-class System.Diagnostics.Tests.ProcessTests -class System.Diagnostics.Tests.StartSuspendedTests -class System.Diagnostics.Tests.StartAndForgetTests -class System.Diagnostics.Tests.ProcessCollectionTests -class System.Diagnostics.Tests.ProcessExitStatusTests" />
+    <_ProcessTestShard Include="4" Arguments="-class System.Diagnostics.Tests.ProcessHandlesTests -class System.Diagnostics.Tests.ProcessStartInfoTests" />
+    <_ProcessTestShard Include="5" Arguments="-class System.Diagnostics.Tests.RunTests -class System.Diagnostics.Tests.ProcessWaitingTests -class System.Diagnostics.Tests.ProcessOpenTests -class System.Diagnostics.Tests.ProcessStandardConsoleTests -class System.Diagnostics.Tests.ProcessModuleTests -class System.Diagnostics.Tests.ProcessThreadTests" />
+    <!-- The complement includes new classes automatically, without duplicating the earlier shards. -->
+    <_ProcessTestShard Include="6" Arguments="-noclass System.Diagnostics.Tests.ProcessMultiplexingTests -noclass System.Diagnostics.Tests.ProcessStreamingTests -noclass System.Diagnostics.Tests.SafeProcessHandleTests -noclass System.Diagnostics.Tests.ProcessTests -noclass System.Diagnostics.Tests.StartSuspendedTests -noclass System.Diagnostics.Tests.StartAndForgetTests -noclass System.Diagnostics.Tests.ProcessCollectionTests -noclass System.Diagnostics.Tests.ProcessExitStatusTests -noclass System.Diagnostics.Tests.ProcessHandlesTests -noclass System.Diagnostics.Tests.ProcessStartInfoTests -noclass System.Diagnostics.Tests.RunTests -noclass System.Diagnostics.Tests.ProcessWaitingTests -noclass System.Diagnostics.Tests.ProcessOpenTests -noclass System.Diagnostics.Tests.ProcessStandardConsoleTests -noclass System.Diagnostics.Tests.ProcessModuleTests -noclass System.Diagnostics.Tests.ProcessThreadTests" />
+  </ItemGroup>
+
+  <Target Name="_PrepareProcessTestShards"
+          AfterTargets="ZipTestArchive"
+          Condition="'$(_ShardProcessTests)' == 'true'">
+    <ItemGroup>
+      <_ProcessTestPayload Include="$(OutDir)**\*" Exclude="$(RunScriptOutputPath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_ArchiveProcessTestShard"
+          AfterTargets="_PrepareProcessTestShards"
+          Condition="'$(_ShardProcessTests)' == 'true'"
+          Inputs="$(MSBuildProjectFullPath);$(_ProcessTestShardDefinition);$(RunScriptOutputPath);@(_ProcessTestPayload)"
+          Outputs="$(TestArchiveTestsDir)$(TestProjectName).%(_ProcessTestShard.Identity).zip">
+    <PropertyGroup>
+      <_ProcessTestShardDirectory>$(IntermediateOutputPath)process-test-shards\%(_ProcessTestShard.Identity)\</_ProcessTestShardDirectory>
+    </PropertyGroup>
+    <ItemGroup>
+      <_ProcessTestShardRunCommands Remove="@(_ProcessTestShardRunCommands)" />
+      <_ProcessTestShardRunCommands Include="$([System.IO.File]::ReadAllText('$(PreExecutionTestScript)'))"
+                                    Condition="'$(PreExecutionTestScript)' != ''" />
+      <_ProcessTestShardRunCommands Include="$(RunScriptCommand) %(_ProcessTestShard.Arguments)" />
+      <_ProcessTestShardRunCommands Include="@(PostRunScriptCommands)" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(_ProcessTestShardDirectory)" />
+    <MakeDir Directories="$(_ProcessTestShardDirectory)" />
+    <Copy SourceFiles="@(_ProcessTestPayload)"
+          DestinationFiles="@(_ProcessTestPayload -> '$(_ProcessTestShardDirectory)%(RecursiveDir)%(Filename)%(Extension)')"
+          UseHardlinksIfPossible="true" />
+    <GenerateRunScript RunCommands="@(_ProcessTestShardRunCommands)"
+                       SetCommands="@(SetScriptCommands)"
+                       TemplatePath="$(RunScriptInputPath)"
+                       OutputPath="$(_ProcessTestShardDirectory)$(RunScriptOutputName)" />
+    <ZipDirectory SourceDirectory="$(_ProcessTestShardDirectory)"
+                  DestinationFile="$(TestArchiveTestsDir)$(TestProjectName).%(_ProcessTestShard.Identity).zip"
+                  Overwrite="true"
+                  CompressionLevel="Fastest" />
+  </Target>
+
+  <Target Name="_RemoveUnshardedProcessTestArchive"
+          AfterTargets="_ArchiveProcessTestShard"
+          Condition="'$(_ShardProcessTests)' == 'true'">
+    <Error Condition="!Exists('$(TestArchiveTestsDir)$(TestProjectName).%(_ProcessTestShard.Identity).zip')"
+           Text="Missing Process test shard %(_ProcessTestShard.Identity)." />
+    <Delete Files="$(TestArchiveTestsDir)$(TestProjectName).zip" />
+  </Target>
+
+  <Target Name="_RemoveStaleProcessTestShards"
+          AfterTargets="ZipTestArchive"
+          Condition="'$(_ShardProcessTests)' != 'true'">
+    <Delete Files="@(_ProcessTestShard -> '$(TestArchiveTestsDir)$(TestProjectName).%(Identity).zip')" />
+  </Target>
+</Project>
