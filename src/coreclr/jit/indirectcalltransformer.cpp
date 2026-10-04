@@ -1094,7 +1094,7 @@ private:
                         assert(m_origCall->TypeIs(TYP_VOID) || m_returnValueUnused);
                         newRetExpr = m_compiler->gtUnusedValNode(newRetExpr);
                     }
-                    m_compiler->fgNewStmtAtEnd(block, newRetExpr);
+                    m_compiler->fgNewStmtAtEnd(block, newRetExpr, m_stmt->GetDebugInfo());
                 }
             }
         }
