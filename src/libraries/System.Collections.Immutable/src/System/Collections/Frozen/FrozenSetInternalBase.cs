@@ -130,15 +130,24 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
-            // Fast path for Overlaps when other is ISet with fast lookup and same equality comparer
-            if (other is ISet<T> otherAsSet && HasFastLookupAndComparersAreCompatible(otherAsSet))
+            
+            switch (other)
             {
-                return otherAsSet.Count > Count
-                    ? SmallerSetOverlapsLargerCompatibleSetImpl(this, otherAsSet)
-                    : SmallerSetOverlapsLargerCompatibleSetImpl(otherAsSet, this);
-            }
+                // Fast path for Overlaps when other is HashSet and same equality comparer
+                case HashSet<T> hs when _thisSet.Comparer.Equals(hs.Comparer):
+                    return hs.Count > Count
+                        ? SmallerSetOverlapsLargerCompatibleSetImpl(this, hs)
+                        : SmallerSetOverlapsLargerCompatibleSetImpl(hs, this);
 
-            return OverlapsEnumerableImpl(other);
+                // Fast path for Overlaps when other is FrozenSet and same equality comparer
+                case FrozenSet<T> fs when _thisSet.Comparer.Equals(fs.Comparer):
+                    return fs.Count > Count
+                        ? SmallerSetOverlapsLargerCompatibleSetImpl(this, fs)
+                        : SmallerSetOverlapsLargerCompatibleSetImpl(fs, this);
+
+                default:
+                    return OverlapsEnumerableImpl(other);
+            }
         }
 
         private bool OverlapsEnumerableImpl(IEnumerable<T> other)
@@ -154,7 +163,9 @@ namespace System.Collections.Frozen
             return false;
         }
 
-        private static bool SmallerSetOverlapsLargerCompatibleSetImpl(ISet<T> smaller, ISet<T> larger)
+        private static bool SmallerSetOverlapsLargerCompatibleSetImpl<TSmallerSet, TLargerSet>(TSmallerSet smaller, TLargerSet larger)
+            where TSmallerSet : ISet<T>
+            where TLargerSet : ISet<T>
         {
             foreach (T element in smaller)
             {
@@ -193,14 +204,6 @@ namespace System.Collections.Frozen
                 FrozenSet<T> fs => _thisSet.Comparer.Equals(fs.Comparer),
                 _ => false
             };
-
-        private bool HasFastLookupAndComparersAreCompatible(ISet<T> other) =>
-                    other switch
-                    {
-                        HashSet<T> hs => _thisSet.Comparer.Equals(hs.Comparer),
-                        FrozenSet<T> fs => _thisSet.Comparer.Equals(fs.Comparer),
-                        _ => false
-                    };
 
         /// <summary>
         /// Determines counts that can be used to determine equality, subset, and superset.
