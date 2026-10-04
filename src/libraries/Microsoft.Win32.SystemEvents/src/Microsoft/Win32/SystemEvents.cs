@@ -755,7 +755,7 @@ namespace Microsoft.Win32
             unsafe
             {
                 int pid;
-                uint thread = unchecked((uint)Interop.User32.GetWindowThreadProcessId(s_systemEvents!._windowHandle, &pid));
+                uint thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents!._windowHandle, &pid);
                 Debug.Assert(s_windowThread == null || thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call MarshaledInvoke on the system events thread");
             }
 #endif
