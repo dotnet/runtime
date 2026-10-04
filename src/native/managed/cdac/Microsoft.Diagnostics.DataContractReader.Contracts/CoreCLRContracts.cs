@@ -52,6 +52,7 @@ public static class CoreCLRContracts
         registry.Register<IFeatureFlags>("c1", static t => new FeatureFlags_1(t));
 
         registry.Register<IPrecodeStubs>("c1", static t => new PrecodeStubs_1(t));
+        registry.Register<IPrecodeStubs>("c2", static t => new PrecodeStubs_2(t));
 
         registry.Register<IReJIT>("c1", static t => new ReJIT_1(t));
 
