@@ -1487,6 +1487,12 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_NonGenericInterface1), "System.Reflection.Tests")]
         [InlineData(typeof(PublicEnum), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1), "System.Reflection.Tests")]
+        [InlineData(typeof(MultipleNestedClass.Nest1), "System.Reflection.Tests")]
+        [InlineData(typeof(MultipleNestedClass.Nest1.Nest2.Nest3), "System.Reflection.Tests")]
+        [InlineData(typeof(MultipleNestedClass.Nest1.Generic<>), "System.Reflection.Tests")]
+        [InlineData(typeof(MultipleNestedClass.Nest1.Generic<int>), "System.Reflection.Tests")]
+        [InlineData(typeof(TI_GlobalNamespaceType<>.Nested.NestedAgain), null)]
+        [InlineData(typeof(TI_GlobalNamespaceType<int>.Nested.NestedAgain), null)]
         [InlineData(typeof(int), "System")]
         [InlineData(typeof(TI_BaseClass[]), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1[]), "System.Reflection.Tests")]
@@ -1747,6 +1753,8 @@ namespace System.Reflection.Tests
                 {
                     public class Nest3 { }
                 }
+
+                public class Generic<T> { }
             }
         }
 
@@ -2044,5 +2052,13 @@ namespace System.Reflection.Tests
         public static unsafe T* PointerTypeParam() => throw new Exception();
         public static ref T ByRefTypeParam() => throw new Exception();
         public static List<T> ListTypeParam() => throw new Exception();
+    }
+}
+
+public class TI_GlobalNamespaceType<T>
+{
+    public class Nested
+    {
+        public class NestedAgain { }
     }
 }
