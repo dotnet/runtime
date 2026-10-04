@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 // Mirrors Wasm32GcInfoEncoding in src/coreclr/inc/gcinfotypes.h.
@@ -38,7 +40,12 @@ internal sealed class WasmGCInfoTraits : IGCInfoTraits
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => false;
     public static bool HAS_INTERRUPTIBLE_RANGES => false;
 
-    // Valid Wasm GC info has no register slots. Treat unexpected ones as scratch
-    // so they are omitted from non-active frames.
-    public static bool IsScratchRegister(uint regNum) => true;
+    // Valid Wasm GC info has no register slots; RyuJIT never emits one. Mirror the
+    // native fallback (gcinfodecoder.cpp PORTABILITY_ASSERT): flag the unexpected
+    // call in debug builds and otherwise return false, like other unimplemented platforms.
+    public static bool IsScratchRegister(uint regNum)
+    {
+        Debug.Fail("Wasm GC info must not contain register slots.");
+        return false;
+    }
 }
