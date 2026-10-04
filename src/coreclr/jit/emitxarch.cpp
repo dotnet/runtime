@@ -16965,7 +16965,23 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
     // The 'mov' opcode is special
     bool isSignExtendingMov = (size == EA_8BYTE) && FitsIn<int32_t>(val) && !id->idIsCnsReloc();
-    if ((ins == INS_mov) && !isSignExtendingMov)
+    if ((ins == INS_mov) && isSignExtendingMov)
+    {
+        // This is INS_mov and will not take VEX prefix
+        assert(!TakesVexPrefix(ins));
+        
+        // Move imm32 sign extended to 64-bit register: mov r/m64, imm32
+        code = insCodeMI(ins) | 0x1; // C7
+        code = insEncodeMIreg(id, reg, size, code);
+        code = AddRexWPrefix(id, code);
+
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputWord(dst, code);
+        dst += emitOutputLong(dst, val);
+
+        goto DONE;
+    }
+    if ((ins == INS_mov))
     {
         code = insCodeACC(ins);
         assert(code < 0x100);
