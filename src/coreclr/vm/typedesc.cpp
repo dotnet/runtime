@@ -833,8 +833,8 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 constraints = constraintAlloc.operator->();
 
                 // Publish the array before filling it so concurrent loaders populate the same storage.
-                TypeHandle* existingConstraints = InterlockedCompareExchangeT(&m_constraints, constraints, NULL);
-                if (existingConstraints == NULL)
+                TypeHandle* existingConstraints = InterlockedCompareExchangeT(&m_constraints, constraints, nullptr);
+                if (existingConstraints == nullptr)
                 {
                     constraintAlloc.SuppressRelease();
                 }
