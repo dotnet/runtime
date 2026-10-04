@@ -130,24 +130,16 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
-            
-            switch (other)
+            return other switch
             {
                 // Fast path for Overlaps when other is HashSet and same equality comparer
-                case HashSet<T> hs when _thisSet.Comparer.Equals(hs.Comparer):
-                    return hs.Count > Count
-                        ? SmallerSetOverlapsLargerCompatibleSetImpl(this, hs)
-                        : SmallerSetOverlapsLargerCompatibleSetImpl(hs, this);
+                HashSet<T> hs when _thisSet.Comparer.Equals(hs.Comparer) => OverlapsCompatibleSetImpl(hs),
 
                 // Fast path for Overlaps when other is FrozenSet and same equality comparer
-                case FrozenSet<T> fs when _thisSet.Comparer.Equals(fs.Comparer):
-                    return fs.Count > Count
-                        ? SmallerSetOverlapsLargerCompatibleSetImpl(this, fs)
-                        : SmallerSetOverlapsLargerCompatibleSetImpl(fs, this);
+                FrozenSet<T> fs when _thisSet.Comparer.Equals(fs.Comparer) => OverlapsCompatibleSetImpl(fs),
 
-                default:
-                    return OverlapsEnumerableImpl(other);
-            }
+                _ => OverlapsEnumerableImpl(other)
+            };
         }
 
         private bool OverlapsEnumerableImpl(IEnumerable<T> other)
@@ -161,6 +153,14 @@ namespace System.Collections.Frozen
             }
 
             return false;
+        }
+
+        private bool OverlapsCompatibleSetImpl<TOtherSet>(TOtherSet other)
+            where TOtherSet : ISet<T>
+        {
+            return other.Count > Count
+                        ? SmallerSetOverlapsLargerCompatibleSetImpl(this, other)
+                        : SmallerSetOverlapsLargerCompatibleSetImpl(other, this);
         }
 
         private static bool SmallerSetOverlapsLargerCompatibleSetImpl<TSmallerSet, TLargerSet>(TSmallerSet smaller, TLargerSet larger)
