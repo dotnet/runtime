@@ -182,11 +182,11 @@ namespace System.Collections.Frozen
             return false;
         }
 
-        private static bool SmallerSetOverlapsLargerCompatibleSetImpl(HashSet<T> smaller, ISet<T> larger)
+        private static bool SmallerSetOverlapsLargerCompatibleSetImpl(HashSet<T> smaller, FrozenSetInternalBase<T, TThisWrapper> larger)
         {
             foreach (T element in smaller)
             {
-                if (larger.Contains(element))
+                if (larger._thisSet.FindItemIndex(element) >= 0)
                 {
                     return true;
                 }
