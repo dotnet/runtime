@@ -198,7 +198,6 @@ namespace System.Collections.Frozen
                     other switch
                     {
                         HashSet<T> hs => _thisSet.Comparer.Equals(hs.Comparer),
-                        ImmutableHashSet<T> ihs => _thisSet.Comparer.Equals(ihs.KeyComparer),
                         FrozenSet<T> fs => _thisSet.Comparer.Equals(fs.Comparer),
                         _ => false
                     };
