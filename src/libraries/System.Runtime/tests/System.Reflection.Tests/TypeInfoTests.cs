@@ -1504,6 +1504,12 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void NestedAttributeTypeDoesNotMatchWellKnownAttribute()
+        {
+            Assert.NotEqual(new Guid("00000000-0000-0000-0000-000000000001"), typeof(TI_NestedGuidAttribute).GUID);
+        }
+
+        [Fact]
         public static void Namespace_FunctionPointers_ReturnsNull()
         {
             Assert.Null(typeof(delegate*<void>).Namespace);
@@ -2061,4 +2067,21 @@ public class TI_GlobalNamespaceType<T>
     {
         public class NestedAgain { }
     }
+}
+
+namespace System.Runtime.InteropServices
+{
+    public static class AttributeContainer
+    {
+        public sealed class GuidAttribute : Attribute
+        {
+            public GuidAttribute(string value) { }
+        }
+    }
+}
+
+namespace System.Reflection.Tests
+{
+    [System.Runtime.InteropServices.AttributeContainer.Guid("00000000-0000-0000-0000-000000000001")]
+    public class TI_NestedGuidAttribute { }
 }

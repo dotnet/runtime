@@ -192,6 +192,8 @@ namespace System.Reflection.Runtime.General
             if (handleType == HandleType.TypeDefinition)
             {
                 TypeDefinition typeDefinition = typeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
+                if (!typeDefinition.EnclosingType.IsNil || typeDefinition.NamespaceDefinition.IsNil)
+                    return false;
                 if (!typeDefinition.Name.StringEquals(name, reader))
                     return false;
                 NamespaceDefinitionHandle nsHandle = typeDefinition.NamespaceDefinition;
