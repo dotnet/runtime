@@ -495,7 +495,7 @@ namespace System.SpanTests
 
             for (int length = 0; length < byte.MaxValue; length++)
             {
-                var a = Array.CreateFilled(length, "");
+                string[] a = Array.CreateFilled(length, "");
 
                 string[] targets = { "", "99" };
 
@@ -633,7 +633,7 @@ namespace System.SpanTests
 
             for (int length = 0; length < byte.MaxValue; length++)
             {
-                var a = Array.CreateFilled(length, "");
+                string[] a = Array.CreateFilled(length, "");
                 
                 string[] targets = { "", "99", "98" };
 
@@ -780,7 +780,7 @@ namespace System.SpanTests
         {
             for (int length = 0; length < byte.MaxValue; length++)
             {
-                var a = Array.CreateFilled(length, "");
+                string[] a = Array.CreateFilled(length, "");
                 
                 var values = new string[] { "", "99", "98", "0" };
 

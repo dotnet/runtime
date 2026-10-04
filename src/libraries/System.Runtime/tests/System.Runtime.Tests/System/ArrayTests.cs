@@ -4634,7 +4634,7 @@ namespace System.Tests
         [Fact]
         public void CreateFilled_Factory_ValueType()
         {
-            var array = Array.CreateFilled<int>(10, index => index + 1);
+            int[] array = Array.CreateFilled(10, index => index + 1);
             Assert.Equal(10, array.Length);
             Assert.Equal(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, array);
         }
@@ -4642,14 +4642,14 @@ namespace System.Tests
         [Fact]
         public void CreateFilled_Factory_Empty_ValueType()
         {
-            var array = Array.CreateFilled<int>(0, index => index);
+            int[] array = Array.CreateFilled(0, index => index);
             Assert.Empty(array);
         }
 
         [Fact]
         public void CreateFilled_Factory_ReferenceType()
         {
-            var array = Array.CreateFilled<Foo2>(10, index => new Foo2(index));
+            Foo2[] array = Array.CreateFilled(10, index => new Foo2(index));
             var expected = new Foo2[10];
             for (int i = 0; i < 10; i++)
                 expected[i] = new Foo2(i);
@@ -4661,7 +4661,7 @@ namespace System.Tests
         [Fact]
         public void CreateFilled_Factory_Empty_ReferenceType()
         {
-            var array = Array.CreateFilled<Foo2>(0, index => new Foo2(index));
+            Foo2[] array = Array.CreateFilled(0, index => new Foo2(index));
             Assert.Empty(array);
         }
 
@@ -4671,7 +4671,7 @@ namespace System.Tests
         [InlineData(1000, 10)]
         public void CreateFilled_Value_ValueType(int length, int value)
         {
-            var array = Array.CreateFilled<int>(length, value);
+            int[] array = Array.CreateFilled(length, value);
             var expected = new int[length];
             for (int i = 0; i < expected.Length; i++)
                 expected[i] = value;
@@ -4687,7 +4687,7 @@ namespace System.Tests
         public void CreateFilled_Value_ReferenceType(int length)
         {
             var value = new object();
-            var array = Array.CreateFilled<object>(length, value);
+            object[] array = Array.CreateFilled(length, value);
             var expected = new object[length];
             for (int i = 0; i < expected.Length; i++)
                 expected[i] = value;
@@ -4699,7 +4699,7 @@ namespace System.Tests
         [Fact]
         public void CreateFilled_Value_Empty()
         {
-            var array = Array.CreateFilled<int>(0, 0);
+            int[] array = Array.CreateFilled(0, 0);
             Assert.Empty(array);
         }
 
