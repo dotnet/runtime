@@ -179,8 +179,9 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int GetSyncEntryIndex(int* pHeader)
         {
-            Debug.Assert(HasSyncEntryIndex(*pHeader));
-            return Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX;
+            int header = Volatile.Read(ref *pHeader);
+            Debug.Assert(HasSyncEntryIndex(header));
+            return header & MASK_HASHCODE_INDEX;
         }
 
         /// <summary>
