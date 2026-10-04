@@ -390,6 +390,13 @@ struct MethodTableAuxiliaryData
 #endif
 
 public:
+    inline DWORD GetLoadLevelFlags() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        // Acquire the payload published by the interlocked load-level updates.
+        return VolatileLoad(&m_dwFlags);
+    }
+
     inline PTR_Module GetLoaderModule() const
     {
         return m_pLoaderModule;
@@ -1324,7 +1331,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
+        return (GetAuxiliaryData()->GetLoadLevelFlags() & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
@@ -1381,7 +1388,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        DWORD dwFlags = GetAuxiliaryData()->m_dwFlags;
+        DWORD dwFlags = GetAuxiliaryData()->GetLoadLevelFlags();
 
         if (dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded)
         {
@@ -2147,7 +2154,7 @@ public:
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
+        return (GetAuxiliaryData()->GetLoadLevelFlags() & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
     }
     inline void SetHasExactParent()
     {
