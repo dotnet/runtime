@@ -16972,6 +16972,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         // Move imm32 sign extended to 64-bit register: mov r/m64, imm32
         code = insCodeMI(ins) | 0x1; // C7
+        code = AddX86PrefixIfNeededAndNotPresent(id, code, size);
         code = insEncodeMIreg(id, reg, size, code);
         code = AddRexWPrefix(id, code);
 
