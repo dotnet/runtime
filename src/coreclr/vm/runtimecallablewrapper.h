@@ -221,7 +221,7 @@ struct RCW
         CONTRACTL_END;
 
         DWORD syncBlockIndex = m_SyncBlockIndex;
-        PTR_SyncTableEntry syncTable = SyncTableEntry::GetSyncTableEntryAcquire();
+        PTR_SyncTableEntry syncTable = g_pSyncTable;
         return (COMOBJECTREF) ObjectToOBJECTREF(syncTable[syncBlockIndex].m_Object);
     }
 
@@ -239,7 +239,7 @@ struct RCW
         CONTRACTL_END;
 
         DWORD syncBlockIndex = m_SyncBlockIndex;
-        PTR_SyncTableEntry syncTable = SyncTableEntry::GetSyncTableEntryAcquire();
+        PTR_SyncTableEntry syncTable = g_pSyncTable;
         return VolatileLoad(&syncTable[syncBlockIndex].m_SyncBlock);
     }
 

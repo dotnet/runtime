@@ -568,17 +568,6 @@ class SyncTableEntry
     PTR_SyncBlock    m_SyncBlock;
     VolatilePtr<Object, PTR_Object> m_Object;
     static PTR_SyncTableEntry GetSyncTableEntry();
-    FORCEINLINE static PTR_SyncTableEntry GetSyncTableEntryAcquire()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-#ifdef DACCESS_COMPILE
-        return GetSyncTableEntry();
-#else
-        return (PTR_SyncTableEntry)VolatileLoad(&g_pSyncTable);
-#endif // DACCESS_COMPILE
-    }
 #ifndef DACCESS_COMPILE
     static SyncTableEntry*& GetSyncTableEntryByRef();
 #endif
@@ -922,10 +911,10 @@ class ObjHeader
             return NULL;
 
         DWORD index = value & MASK_SYNCBLOCKINDEX;
-        PTR_SyncTableEntry syncTable = SyncTableEntry::GetSyncTableEntryAcquire();
 #ifdef DACCESS_COMPILE
-        return syncTable[(int)index].m_SyncBlock;
+        return SyncTableEntry::GetSyncTableEntry()[(int)index].m_SyncBlock;
 #else
+        PTR_SyncTableEntry syncTable = g_pSyncTable;
         return VolatileLoad(&syncTable[(int)index].m_SyncBlock);
 #endif // DACCESS_COMPILE
     }

@@ -245,7 +245,7 @@ void BulkComLogger::LogAllComObjects()
         return;
 
     int count = cache->GetTableEntryCount();
-    SyncTableEntry *table = SyncTableEntry::GetSyncTableEntryAcquire();
+    SyncTableEntry *table = SyncTableEntry::GetSyncTableEntry();
 
     for (int i = 0; i < count; ++i)
     {
