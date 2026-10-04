@@ -114,9 +114,6 @@ public class MemberDef
 
     public string GetMemberDescription()
     {
-        if (Comment is not null)
-            return Comment;
-
         var typeSet = TypeName as string[];
         if (typeSet == null)
             return null;
