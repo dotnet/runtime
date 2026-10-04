@@ -155,17 +155,47 @@ namespace System.Collections.Frozen
             return false;
         }
 
-        private bool OverlapsCompatibleSetImpl<TOtherSet>(TOtherSet other)
-            where TOtherSet : ISet<T>
+        private bool OverlapsCompatibleSetImpl(HashSet<T> other)
         {
             return other.Count > Count
                         ? SmallerSetOverlapsLargerCompatibleSetImpl(this, other)
                         : SmallerSetOverlapsLargerCompatibleSetImpl(other, this);
         }
 
-        private static bool SmallerSetOverlapsLargerCompatibleSetImpl<TSmallerSet, TLargerSet>(TSmallerSet smaller, TLargerSet larger)
-            where TSmallerSet : ISet<T>
-            where TLargerSet : ISet<T>
+        private bool OverlapsCompatibleSetImpl(FrozenSet<T> other)
+        {
+            return other.Count > Count
+                        ? SmallerSetOverlapsLargerCompatibleSetImpl(this, other)
+                        : SmallerSetOverlapsLargerCompatibleSetImpl(other, this);
+        }
+
+        private static bool SmallerSetOverlapsLargerCompatibleSetImpl(FrozenSet<T> smaller, FrozenSet<T> larger)
+        {
+            foreach (T element in smaller)
+            {
+                if (larger.Contains(element))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool SmallerSetOverlapsLargerCompatibleSetImpl(FrozenSet<T> smaller, HashSet<T> larger)
+        {
+            foreach (T element in smaller)
+            {
+                if (larger.Contains(element))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool SmallerSetOverlapsLargerCompatibleSetImpl(HashSet<T> smaller, FrozenSet<T> larger)
         {
             foreach (T element in smaller)
             {
