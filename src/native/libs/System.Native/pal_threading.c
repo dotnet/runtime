@@ -300,8 +300,7 @@ void SystemNative_Abort(void)
     abort();
 }
 
-// Gets a non-truncated OS thread ID that is also suitable for diagnostics
-uint64_t SystemNative_GetOSThreadId(void)
+uint64_t SystemNative_GetCurrentThreadId(void)
 {
-    return (uint64_t)minipal_get_current_thread_id();
+    return minipal_get_current_thread_id();
 }

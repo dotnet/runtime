@@ -12,8 +12,8 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CreateThread(IntPtr stackSize, delegate* unmanaged<IntPtr, IntPtr> startAddress, IntPtr parameter);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetOSThreadId")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCurrentThreadId")]
         [SuppressGCTransition]
-        internal static unsafe partial ulong GetOSThreadId();
+        internal static unsafe partial ulong GetCurrentThreadId();
     }
 }

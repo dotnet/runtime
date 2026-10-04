@@ -300,7 +300,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetEnviron)
     DllImportEntry(SystemNative_FreeEnviron)
     DllImportEntry(SystemNative_GetGroupName)
-    DllImportEntry(SystemNative_GetOSThreadId)
+    DllImportEntry(SystemNative_GetCurrentThreadId)
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Size)
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Init)
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Acquire)

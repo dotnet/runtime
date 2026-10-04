@@ -37,4 +37,4 @@ PALEXPORT __attribute__((noreturn)) void SystemNative_Exit(int32_t exitCode);
 
 PALEXPORT __attribute__((noreturn)) void SystemNative_Abort(void);
 
-PALEXPORT uint64_t SystemNative_GetOSThreadId(void);
+PALEXPORT uint64_t SystemNative_GetCurrentThreadId(void);

@@ -284,7 +284,7 @@ namespace System.Diagnostics
 
         public static SafeThreadHandle OpenThread(int threadId, int access)
         {
-            SafeThreadHandle threadHandle = Interop.Kernel32.OpenThread(access, false, threadId);
+            SafeThreadHandle threadHandle = Interop.Kernel32.OpenThread(access, false, unchecked((uint)threadId));
             int result = Marshal.GetLastWin32Error();
             if (threadHandle.IsInvalid)
             {
