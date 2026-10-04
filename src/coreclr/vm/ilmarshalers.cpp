@@ -2408,7 +2408,6 @@ void ILBlittablePtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslIL
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
-    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
@@ -2416,12 +2415,12 @@ void ILBlittablePtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslIL
     ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
-    EmitLoadNativeValue(pslILEmit);                             // dest
+    EmitLoadNativeValue(pslILEmit);                                   // dest
 
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitLDFLDA(fieldDef);                            // src
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1); // src
 
-    pslILEmit->EmitLDC(uNativeSize);                            // size
+    pslILEmit->EmitLDC(uNativeSize);                                  // size
 
     pslILEmit->EmitCPBLK();
 
@@ -2444,7 +2443,6 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
-    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
@@ -2453,11 +2451,11 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitLDFLDA(fieldDef);                            // dest
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1); // dest
 
-    EmitLoadNativeValue(pslILEmit);                             // src
+    EmitLoadNativeValue(pslILEmit);                                   // src
 
-    pslILEmit->EmitLDC(uNativeSize);                            // size
+    pslILEmit->EmitLDC(uNativeSize);                                  // size
 
     pslILEmit->EmitCPBLK();
 
@@ -2573,7 +2571,6 @@ void ILBlittableLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStrea
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
-    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(0);
@@ -2583,12 +2580,12 @@ void ILBlittableLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStrea
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
-    EmitLoadNativeHomeAddr(pslILEmit);                             // dest
+    EmitLoadNativeHomeAddr(pslILEmit);                                // dest
 
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitLDFLDA(fieldDef);                            // src
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1); // src
 
-    pslILEmit->EmitLDC(uNativeSize);                            // size
+    pslILEmit->EmitLDC(uNativeSize);                                  // size
 
     pslILEmit->EmitCPBLK();
     pslILEmit->EmitLabel(pNullRefLabel);
@@ -2599,7 +2596,6 @@ void ILBlittableLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStrea
     STANDARD_VM_CONTRACT;
 
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
-    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(m_pargs->m_pMT));
     pslILEmit->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
@@ -2607,11 +2603,11 @@ void ILBlittableLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStrea
     EmitStoreManagedValue(pslILEmit);
 
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitLDFLDA(fieldDef);                            // dest
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1); // dest
 
-    EmitLoadNativeHomeAddr(pslILEmit);                             // src
+    EmitLoadNativeHomeAddr(pslILEmit);                                // src
 
-    pslILEmit->EmitLDC(uNativeSize);                            // size
+    pslILEmit->EmitLDC(uNativeSize);                                  // size
 
     pslILEmit->EmitCPBLK();
 }

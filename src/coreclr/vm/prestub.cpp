@@ -1554,14 +1554,13 @@ PCODE CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     MethodDesc::CreateDerivedTargetSig(msig, &stubSigBuilder);
 
     // Emit the method body
-    mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     if (pTargetMD->RequiresInstMethodTableArg())
     {
         // Push the hidden context param
         // The context is going to be captured from the thisptr
         pCode->EmitLoadThis();
-        pCode->EmitLDFLDA(tokRawData);
+        pCode->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
         pCode->EmitLDC(Object::GetOffsetOfFirstField());
         pCode->EmitSUB();
         pCode->EmitLDIND_I();
@@ -1572,7 +1571,7 @@ PCODE CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     // We need to skip over the MethodTable*
     // The trick below will do that.
     pCode->EmitLoadThis();
-    pCode->EmitLDFLDA(tokRawData);
+    pCode->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
 
     // Push the rest of the arguments
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)

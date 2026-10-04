@@ -703,21 +703,14 @@ namespace System.Runtime.CompilerServices
             }
         }
     }
-    // Helper class to assist with unsafe pinning of arbitrary objects.
-    // It's used by VM code.
-    [NonVersionable] // This only applies to field layout
-    internal sealed class RawData
-    {
-        public byte Data;
-    }
 
     // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
     // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
     //                 ^               ^                 ^                  ^ returned reference
     //                 |               |                 \-- ref Unsafe.As<RawArrayData>(array).Data
-    //                 \-- array       \-- ref Unsafe.As<RawData>(array).Data
+    //                 \-- array       \-- ref array.GetRawData()
     // The BaseSize of an array includes all the fields before the array data,
-    // including the sync block and method table. The reference to RawData.Data
+    // including the sync block and method table. The reference to GetRawData()
     // points at the number of components, skipping over these two pointer-sized fields.
     [NonVersionable] // This only applies to field layout
     internal sealed class RawArrayData
