@@ -192,11 +192,12 @@ namespace System.Reflection.Runtime.General
             if (handleType == HandleType.TypeDefinition)
             {
                 TypeDefinition typeDefinition = typeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
-                if (!typeDefinition.EnclosingType.IsNil || typeDefinition.NamespaceDefinition.IsNil)
+                Handle namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
+                if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceDefinition)
                     return false;
                 if (!typeDefinition.Name.StringEquals(name, reader))
                     return false;
-                NamespaceDefinitionHandle nsHandle = typeDefinition.NamespaceDefinition;
+                NamespaceDefinitionHandle nsHandle = namespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader);
                 int idx = namespaceParts.Length;
                 while (idx-- != 0)
                 {

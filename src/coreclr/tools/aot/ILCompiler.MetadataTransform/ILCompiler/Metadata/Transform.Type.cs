@@ -234,13 +234,13 @@ namespace ILCompiler.Metadata
             if (containingType != null)
             {
                 var enclosingType = (TypeDefinition)HandleType(containingType);
-                record.EnclosingType = enclosingType;
+                record.NamespaceOrEnclosingType = enclosingType;
                 enclosingType.NestedTypes.Add(record);
             }
             else
             {
                 var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.GetNamespace());
-                record.NamespaceDefinition = namespaceDefinition;
+                record.NamespaceOrEnclosingType = namespaceDefinition;
 
                 if (entity.IsModuleType)
                 {

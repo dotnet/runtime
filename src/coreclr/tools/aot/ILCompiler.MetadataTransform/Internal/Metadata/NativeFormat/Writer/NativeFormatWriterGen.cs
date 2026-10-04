@@ -4374,9 +4374,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             BaseType = visitor.Visit(this, BaseType);
-            NamespaceDefinition = visitor.Visit(this, NamespaceDefinition);
+            NamespaceOrEnclosingType = visitor.Visit(this, NamespaceOrEnclosingType);
             Name = visitor.Visit(this, Name);
-            EnclosingType = visitor.Visit(this, EnclosingType);
             NestedTypes = visitor.Visit(this, NestedTypes);
             Methods = visitor.Visit(this, Methods);
             Fields = visitor.Visit(this, Fields);
@@ -4392,9 +4391,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeDefinition;
             if (other == null) return false;
-            if (!Object.Equals(NamespaceDefinition, other.NamespaceDefinition)) return false;
+            if (!Object.Equals(NamespaceOrEnclosingType, other.NamespaceOrEnclosingType)) return false;
             if (!Object.Equals(Name, other.Name)) return false;
-            if (!Object.Equals(EnclosingType, other.EnclosingType)) return false;
             return true;
         } // Equals
 
@@ -4404,9 +4402,8 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -1095947977;
-            hash = ((hash << 13) - (hash >> 19)) ^ (NamespaceDefinition == null ? 0 : NamespaceDefinition.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (NamespaceOrEnclosingType == null ? 0 : NamespaceOrEnclosingType.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (EnclosingType == null ? 0 : EnclosingType.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -4420,11 +4417,13 @@ namespace Internal.Metadata.NativeFormat.Writer
                 BaseType.HandleType == HandleType.TypeReference ||
                 BaseType.HandleType == HandleType.TypeSpecification);
             writer.Write(BaseType);
-            writer.Write(NamespaceDefinition);
+            Debug.Assert(NamespaceOrEnclosingType == null ||
+                NamespaceOrEnclosingType.HandleType == HandleType.NamespaceDefinition ||
+                NamespaceOrEnclosingType.HandleType == HandleType.TypeDefinition);
+            writer.Write(NamespaceOrEnclosingType);
             writer.Write(Name);
             writer.Write(Size);
             writer.Write(PackingSize);
-            writer.Write(EnclosingType);
             writer.Write(NestedTypes);
             writer.Write(Methods);
             writer.Write(Fields);
@@ -4461,11 +4460,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public TypeAttributes Flags;
         public MetadataRecord BaseType;
-        public NamespaceDefinition NamespaceDefinition;
+        public MetadataRecord NamespaceOrEnclosingType;
         public ConstantStringValue Name;
         public uint Size;
         public ushort PackingSize;
-        public TypeDefinition EnclosingType;
         public List<TypeDefinition> NestedTypes = new List<TypeDefinition>();
         public List<Method> Methods = new List<Method>();
         public List<Field> Fields = new List<Field>();

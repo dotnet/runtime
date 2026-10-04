@@ -4943,11 +4943,10 @@ namespace Internal.Metadata.NativeFormat
             NativeReader streamReader = reader._streamReader;
             offset = streamReader.Read(offset, out _flags);
             offset = streamReader.Read(offset, out _baseType);
-            offset = streamReader.Read(offset, out _namespaceDefinition);
+            offset = streamReader.Read(offset, out _namespaceOrEnclosingType);
             offset = streamReader.Read(offset, out _name);
             offset = streamReader.Read(offset, out _size);
             offset = streamReader.Read(offset, out _packingSize);
-            offset = streamReader.Read(offset, out _enclosingType);
             offset = streamReader.Read(offset, out _nestedTypes);
             offset = streamReader.Read(offset, out _methods);
             offset = streamReader.Read(offset, out _fields);
@@ -4967,9 +4966,9 @@ namespace Internal.Metadata.NativeFormat
         public Handle BaseType => _baseType;
         private readonly Handle _baseType;
 
-        /// Nil for nested types; resolve their namespace through the enclosing type chain.
-        public NamespaceDefinitionHandle NamespaceDefinition => _namespaceDefinition;
-        private readonly NamespaceDefinitionHandle _namespaceDefinition;
+        /// A namespace definition for top-level types or the enclosing type for nested types.
+        public Handle NamespaceOrEnclosingType => _namespaceOrEnclosingType;
+        private readonly Handle _namespaceOrEnclosingType;
 
         public ConstantStringValueHandle Name => _name;
         private readonly ConstantStringValueHandle _name;
@@ -4979,9 +4978,6 @@ namespace Internal.Metadata.NativeFormat
 
         public ushort PackingSize => _packingSize;
         private readonly ushort _packingSize;
-
-        public TypeDefinitionHandle EnclosingType => _enclosingType;
-        private readonly TypeDefinitionHandle _enclosingType;
 
         public TypeDefinitionHandleCollection NestedTypes => _nestedTypes;
         private readonly TypeDefinitionHandleCollection _nestedTypes;

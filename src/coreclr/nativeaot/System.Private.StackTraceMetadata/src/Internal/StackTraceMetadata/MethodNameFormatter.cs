@@ -314,19 +314,20 @@ namespace Internal.StackTraceMetadata
         private void EmitTypeDefinitionName(TypeDefinitionHandle typeDefHandle, Flags flags)
         {
             TypeDefinition typeDef = _metadataReader.GetTypeDefinition(typeDefHandle);
-            if (!typeDef.EnclosingType.IsNil)
+            Handle namespaceOrEnclosingType = typeDef.NamespaceOrEnclosingType;
+            if (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
             {
                 // Nested type
-                EmitTypeName(typeDef.EnclosingType, flags);
+                EmitTypeName(namespaceOrEnclosingType, flags);
                 if ((flags & Flags.ReflectionFormat) != 0)
                     _outputBuilder.Append('+');
                 else
                     _outputBuilder.Append('.');
             }
-            else if ((flags & Flags.NamespaceQualify) != 0)
+            else if (namespaceOrEnclosingType.HandleType == HandleType.NamespaceDefinition && (flags & Flags.NamespaceQualify) != 0)
             {
                 int charsWritten = _outputBuilder.Length;
-                EmitNamespaceDefinitionName(typeDef.NamespaceDefinition);
+                EmitNamespaceDefinitionName(namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_metadataReader));
                 if (_outputBuilder.Length - charsWritten > 0)
                     _outputBuilder.Append('.');
             }

@@ -230,10 +230,7 @@ namespace Internal.StackTraceMetadata
             {
                 case HandleType.TypeDefinition:
                     TypeDefinition typeDef = reader.GetTypeDefinition(handle.ToTypeDefinitionHandle(reader));
-                    TypeDefinitionHandle enclosingTypeDef = typeDef.EnclosingType;
-                    if (!enclosingTypeDef.IsNil)
-                        return FormatAssemblyName(reader, enclosingTypeDef);
-                    return FormatAssemblyName(reader, typeDef.NamespaceDefinition);
+                    return FormatAssemblyName(reader, typeDef.NamespaceOrEnclosingType);
                 case HandleType.TypeReference:
                     TypeReference typeRef = reader.GetTypeReference(handle.ToTypeReferenceHandle(reader));
                     return FormatAssemblyName(reader, typeRef.ParentNamespaceOrType);
