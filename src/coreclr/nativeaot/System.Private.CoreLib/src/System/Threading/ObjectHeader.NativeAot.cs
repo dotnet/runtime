@@ -15,8 +15,6 @@ namespace System.Threading
     /// <remarks>
     /// Do not store managed pointers (ref int) to the object header in locals or parameters
     /// as they may be incorrectly updated during garbage collection.
-    /// Header reads that feed lock-free SyncTable lookups must have acquire semantics so that
-    /// table growth and entry initialization are visible after observing a sync entry index.
     /// </remarks>
     internal static class ObjectHeader
     {
@@ -176,6 +174,10 @@ namespace System.Threading
             return (header & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) == BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX;
         }
 
+        /// <remarks>
+        /// Header reads that feed lock-free SyncTable lookups must have acquire semantics so that
+        /// table growth and entry initialization are visible after observing a sync entry index.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int GetSyncEntryIndex(int* pHeader)
         {
