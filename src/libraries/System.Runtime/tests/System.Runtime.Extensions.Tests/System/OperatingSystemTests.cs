@@ -207,6 +207,8 @@ namespace System.Tests
                 { "IsBrowser", OperatingSystem.IsBrowser() },
                 { "IsLinux", OperatingSystem.IsLinux() },
                 { "IsFreeBSD", OperatingSystem.IsFreeBSD() },
+                { "IsIllumos", OperatingSystem.IsIllumos() },
+                { "IsSolaris", OperatingSystem.IsSolaris() },
                 { "IsAndroid", OperatingSystem.IsAndroid() },
                 { "IsIOS", OperatingSystem.IsIOS() },
                 { "IsMacCatalyst", OperatingSystem.IsMacCatalyst() },
@@ -262,6 +264,8 @@ namespace System.Tests
             }
 
             AssertVersionChecks(currentOSName.Equals("Android", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsAndroidVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("illumos", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIllumosVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("Solaris", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsSolarisVersionAtLeast);
             AssertVersionChecks(currentOSName == "MacCatalyst" || currentOSName.Equals("iOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("macOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("MacCatalyst", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacCatalystVersionAtLeast);
