@@ -12250,10 +12250,11 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
             return false;
         }
 
-        // Avoid repeating checked barriers for an unknown destination; also prefer bulk for Tier0/cold blocks.
+        // Prefer bulk for more than two checked barriers, or for Tier0/cold blocks.
         if ((layout->GetGCPtrCount() > 1) &&
             (!m_compiler->opts.OptimizationEnabled() || ((m_block != nullptr) && (m_block->isRunRarely())) ||
-             (((blkNode->gtFlags & GTF_IND_TGT_HEAP) == 0) && !blkNode->IsAddressNotOnHeap(m_compiler) &&
+             ((layout->GetGCPtrCount() > 2) && ((blkNode->gtFlags & GTF_IND_TGT_HEAP) == 0) &&
+              !blkNode->IsAddressNotOnHeap(m_compiler) &&
               (m_compiler->codeGen->gcInfo.gcWriteBarrierFormFromTargetAddress(blkNode->Addr()) ==
                GCInfo::WBF_BarrierUnknown))))
         {
