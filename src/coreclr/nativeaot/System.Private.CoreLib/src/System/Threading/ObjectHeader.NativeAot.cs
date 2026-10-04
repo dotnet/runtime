@@ -73,7 +73,7 @@ namespace System.Threading
                     return hashOrIndex;
                 }
 
-                if (HasSyncEntryIndex(bits))
+                if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                 {
                     // Look up the hash code in the SyncTable
                     int hashCode = SyncTable.GetHashCode(Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX);
@@ -109,7 +109,7 @@ namespace System.Threading
                     return hashOrIndex;
                 }
 
-                if (HasSyncEntryIndex(bits))
+                if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                 {
                     // Look up the hash code in the SyncTable
                     return SyncTable.GetHashCode(Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX);
@@ -203,7 +203,7 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                if (HasSyncEntryIndex(*pHeader))
+                if (GetSyncEntryIndex(*pHeader, out _))
                 {
                     return Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX;
                 }
@@ -502,11 +502,6 @@ namespace System.Threading
                 while (true)
                 {
                     int oldBits = *pHeader;
-                    if (HasSyncEntryIndex(oldBits))
-                    {
-                        oldBits = Volatile.Read(ref *pHeader);
-                    }
-
                     // is the lock thin?
                     if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
                     {
@@ -533,11 +528,13 @@ namespace System.Threading
                         }
                     }
 
-                    if (!GetSyncEntryIndex(oldBits, out int syncIndex))
+                    if (!GetSyncEntryIndex(oldBits, out _))
                     {
                         // someone else owns or noone.
                         throw new SynchronizationLockException();
                     }
+
+                    int syncIndex = Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX;
 
                     // Get the fat lock. Must be done while still pinning the obj.
                     fatLock = SyncTable.GetLockObject(syncIndex);
@@ -569,7 +566,7 @@ namespace System.Threading
                     return true;
                 }
 
-                if (HasSyncEntryIndex(oldBits))
+                if (GetSyncEntryIndex(oldBits, out _))
                 {
                     int syncIndex = Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX;
                     return SyncTable.GetLockObject(syncIndex).GetIsHeldByCurrentThread(currentThreadID);
