@@ -21,6 +21,89 @@ namespace ILAssembler.Tests
 {
     public class ExceptionHandlingTests
     {
+        public static TheoryData<string, ExceptionRegionKind, int, int, int, int, int, bool> ZeroCodeExceptionRegions { get; } = new()
+        {
+            { "finally", ExceptionRegionKind.Finally, -1, 0, 0, 1, 0, true },
+            { "finally", ExceptionRegionKind.Finally, 0, 0, 0, 1, 0, false },
+            { "finally", ExceptionRegionKind.Finally, 0, -1, 0, 0, 0, true },
+            { "fault", ExceptionRegionKind.Fault, -1, 0, 0, 1, 0, true },
+            { "catch [mscorlib]System.Exception", ExceptionRegionKind.Catch, 0, 1, 1, 2, 0, false },
+            { "filter -1", ExceptionRegionKind.Filter, 0, 0, 0, 0, -1, false },
+            { "filter 1", ExceptionRegionKind.Filter, 0, 0, 0, 0, 1, false },
+        };
+
+        [Theory]
+        [MemberData(nameof(ZeroCodeExceptionRegions))]
+        public void ZeroCodeMethod_ErrorTolerantRetainsExceptionClause(
+            string clause, ExceptionRegionKind kind, int tryStart, int tryEnd,
+            int handlerStart, int handlerEnd, int payload, bool fat)
+        {
+            string source = DocumentCompilerTestHelpers.MethodSource(
+                $".try {tryStart} to {tryEnd} {clause} handler {handlerStart} to {handlerEnd}");
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { ErrorTolerant = true });
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidExceptionRegion, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            Assert.Equal(".try", source.Substring(diagnostic.Location.Span.Start, diagnostic.Location.Span.Length));
+            Assert.NotNull(result);
+            using PEReader pe = new(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.GetMethodDefinition(reader.MethodDefinitions.Single());
+            Assert.True(method.RelativeVirtualAddress > 0);
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            Assert.Empty(body.GetILBytes()!);
+            Assert.Equal(8, body.MaxStack);
+            Assert.True(body.LocalVariablesInitialized);
+            Assert.False(body.LocalSignature.IsNil);
+            Assert.Single(body.ExceptionRegions);
+
+            if (kind == ExceptionRegionKind.Catch)
+            {
+                payload = MetadataTokens.GetToken(DocumentCompilerTestHelpers.FindTypeRef(reader, "Exception"));
+            }
+
+            ReadOnlySpan<byte> raw = pe.GetSectionData(method.RelativeVirtualAddress).GetContent().AsSpan();
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(raw.Slice(4)));
+            Assert.Equal(fat ? 0x41 : 0x01, raw[12]);
+            Assert.Equal(fat ? 28 : 16, raw[13]);
+            Assert.Equal(fat ? 40 : 28, body.Size);
+            if (fat)
+            {
+                Assert.Equal((int)kind, BinaryPrimitives.ReadInt32LittleEndian(raw.Slice(16)));
+                Assert.Equal(tryStart, BinaryPrimitives.ReadInt32LittleEndian(raw.Slice(20)));
+                Assert.Equal(tryEnd - tryStart, BinaryPrimitives.ReadInt32LittleEndian(raw.Slice(24)));
+                Assert.Equal(handlerStart, BinaryPrimitives.ReadInt32LittleEndian(raw.Slice(28)));
+                Assert.Equal(handlerEnd - handlerStart, BinaryPrimitives.ReadInt32LittleEndian(raw.Slice(32)));
+                Assert.Equal(payload, BinaryPrimitives.ReadInt32LittleEndian(raw.Slice(36)));
+            }
+            else
+            {
+                Assert.Equal((int)kind, BinaryPrimitives.ReadUInt16LittleEndian(raw.Slice(16)));
+                Assert.Equal(tryStart, BinaryPrimitives.ReadUInt16LittleEndian(raw.Slice(18)));
+                Assert.Equal(tryEnd - tryStart, raw[20]);
+                Assert.Equal(handlerStart, BinaryPrimitives.ReadUInt16LittleEndian(raw.Slice(21)));
+                Assert.Equal(handlerEnd - handlerStart, raw[23]);
+                Assert.Equal(payload, BinaryPrimitives.ReadInt32LittleEndian(raw.Slice(24)));
+            }
+
+            var (strictDiagnostics, strictResult) = DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options());
+            Assert.Equal(DiagnosticIds.InvalidExceptionRegion, Assert.Single(strictDiagnostics).Id);
+            Assert.Null(strictResult);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ZeroCodeMethod_WithoutExceptionRegionsRemainsBodyless(bool errorTolerant)
+        {
+            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                DocumentCompilerTestHelpers.MethodSource(string.Empty), new Options { ErrorTolerant = errorTolerant });
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.GetMethodDefinition(reader.MethodDefinitions.Single());
+            Assert.Equal(0, method.RelativeVirtualAddress);
+        }
+
         [Theory]
         [InlineData(-1, 1, 1, 2)]
         [InlineData(0, 4, 1, 2)]

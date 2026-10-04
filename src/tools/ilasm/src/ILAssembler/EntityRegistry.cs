@@ -349,7 +349,7 @@ namespace ILAssembler
                 MethodDefinitionEntity methodDef = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[i];
 
                 int bodyOffset = -1;
-                if (methodDef.MethodBody.CodeBuilder.Count != 0)
+                if (methodDef.MethodBody.CodeBuilder.Count != 0 || methodDef.ExceptionRegions.Count != 0)
                 {
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle

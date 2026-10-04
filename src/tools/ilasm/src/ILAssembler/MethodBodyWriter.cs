@@ -160,7 +160,7 @@ internal sealed class MethodBodyWriter
         if (optimize && _labels[target.Id - 1] is int targetOffset)
         {
             long distance = (long)targetOffset - Offset;
-            // Native ilasm uses the worst-case long-instruction size when shortening a known target.
+            // Use conservative displacement bounds that account for both short and long instruction sizes.
             if (distance - 5 >= sbyte.MinValue && distance - 2 <= sbyte.MaxValue)
             {
                 code = code.GetShortBranch();
