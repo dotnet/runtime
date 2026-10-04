@@ -154,7 +154,7 @@ StgPool::TakeOwnershipOfInitMem()
 //*****************************************************************************
 // Clear out this pool.  Cannot use until you call InitNew.
 //*****************************************************************************
-void StgPool::Uninit()
+void StgPool::Uninit() noexcept
 {
     CONTRACTL
     {
@@ -438,6 +438,7 @@ StgPool::AddSegment(
     return S_OK;
 } // StgPool::AddSegment
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 #ifndef DACCESS_COMPILE
 //*****************************************************************************
 // The entire string pool is written to the given stream. The stream is aligned
@@ -575,6 +576,7 @@ StgPool::PersistPartialToStream(
 
     return hr;
 } // StgPool::PersistPartialToStream
+#endif // FEATURE_METADATA_PERSISTENCE
 
 // Copies data from pSourcePool starting at index nStartSourceIndex.
 __checkReturn
@@ -832,7 +834,7 @@ StgStringPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgStringPool::Uninit()
+void StgStringPool::Uninit() noexcept
 {
     CONTRACTL
     {
@@ -1190,7 +1192,7 @@ StgGuidPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgGuidPool::Uninit()
+void StgGuidPool::Uninit() noexcept
 {
     CONTRACTL
     {
@@ -1495,7 +1497,7 @@ StgBlobPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgBlobPool::Uninit()
+void StgBlobPool::Uninit() noexcept
 {
     CONTRACTL
     {
@@ -1791,4 +1793,3 @@ StgBlobPool::RehashBlobs()
     }
     return (S_OK);
 } // StgBlobPool::RehashBlobs
-

@@ -185,6 +185,7 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 #endif
 }
 
+#ifdef FEATURE_HIJACK
 static void UnmaskActivationSignal()
 {
     sigset_t signal_set;
@@ -194,6 +195,7 @@ static void UnmaskActivationSignal()
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
     _ASSERTE(sigmaskRet == 0);
 }
+#endif // FEATURE_HIJACK
 
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
@@ -367,22 +369,6 @@ struct TlsDestructionMonitor
 thread_local TlsDestructionMonitor tls_destructionMonitor;
 #endif
 
-// This thread local variable is used for delegate marshalling
-PLATFORM_THREAD_LOCAL intptr_t tls_thunkData;
-
-#ifdef FEATURE_EMULATED_TLS
-EXTERN_C intptr_t* RhpGetThunkData()
-{
-    return &tls_thunkData;
-}
-#endif //FEATURE_EMULATED_TLS
-
-FCIMPL0(intptr_t, RhGetCurrentThunkContext)
-{
-    return tls_thunkData;
-}
-FCIMPLEND
-
 // Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
 // Parameters:
@@ -399,7 +385,9 @@ void PalAttachThread(void* thread)
     tls_destructionMonitor.SetThread(thread);
 #endif
 
+#ifdef FEATURE_HIJACK
     UnmaskActivationSignal();
+#endif // FEATURE_HIJACK
 }
 
 #if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
@@ -719,7 +707,7 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
     }
 #elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
     sys_icache_invalidate (pAddress, size);
-#else
+#elif !defined(HOST_WASM)
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
 }

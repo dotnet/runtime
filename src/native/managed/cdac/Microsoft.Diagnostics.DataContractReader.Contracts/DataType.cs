@@ -43,6 +43,7 @@ public enum DataType
     Module,
     ModuleLookupMap,
     AppDomain,
+    ExternalMemoryHandle,
     Debugger,
     DebuggerRCThread,
     DebuggerPatchTable,

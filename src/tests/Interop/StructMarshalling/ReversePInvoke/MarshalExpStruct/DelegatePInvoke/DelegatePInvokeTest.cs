@@ -4,6 +4,7 @@
 using System;
 using System.Text;
 using System.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -11,6 +12,54 @@ public class Test_DelegatePInvokeTest
 {
     const int iNative = 11;//the value passed from Native side to Managed side
     const int iManaged = 10;//The value passed from Managed side to Native sid
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Inner<T>
+    {
+        public T Value1;
+        public bool Flag;
+        public T Value2;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Outer
+    {
+        public Inner<int> Field;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeInner
+    {
+        public int Value1;
+        public int Flag;
+        public int Value2;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ReadFields(ref Outer value);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe int ReadNative(NativeInner* fields)
+    {
+        // A managed bool is marshalled as a four-byte Win32 BOOL between the two ints.
+        return fields->Flag switch
+        {
+            1 => fields->Value1 + fields->Value2,
+            0 => -(fields->Value1 + fields->Value2),
+            _ => int.MinValue
+        };
+    }
+
+    private static unsafe void TestGenericStructFieldMarshalling()
+    {
+        ReadFields read = Marshal.GetDelegateForFunctionPointer<ReadFields>(
+            (nint)(delegate* unmanaged[Cdecl]<NativeInner*, int>)&ReadNative);
+        Outer value = new() { Field = new Inner<int> { Value1 = 41, Flag = true, Value2 = 2 } };
+
+        Assert.Equal(43, read(ref value));
+        value.Field.Flag = false;
+        Assert.Equal(-43, read(ref value));
+    }
 
     enum StructID
     {
@@ -695,6 +744,8 @@ public class Test_DelegatePInvokeTest
     {
         try
         {
+            TestGenericStructFieldMarshalling();
+
             #region calling method
 
             ////Delegate PInvoke,ByRef,Cdecl

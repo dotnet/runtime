@@ -23,7 +23,6 @@ namespace System.Reflection.Emit
         internal RuntimeTypeBuilder m_containingType;
 
         // IL
-        private int[]? m_mdMethodFixups;              // The location of all of the token fixups. Null means no fixups.
         private byte[]? m_localSignature;             // Local signature if set explicitly via DefineBody. Null otherwise.
         internal LocalSymInfo? m_localSymInfo;        // keep track debugging local information
         internal RuntimeILGenerator? m_ilGenerator;   // Null if not used.
@@ -174,8 +173,6 @@ namespace System.Reflection.Emit
 
             m_ubBody = il.BakeByteArray();
 
-            m_mdMethodFixups = il.GetTokenFixups();
-
             // Okay, now the fun part.  Calculate all of the exceptions.
             excp = il.GetExceptions()!;
             int numExceptions = CalculateNumberOfExceptions(excp);
@@ -232,7 +229,6 @@ namespace System.Reflection.Emit
 
             m_ubBody = null;
             m_localSymInfo = null;
-            m_mdMethodFixups = null;
             m_localSignature = null;
             m_exceptions = null;
         }
@@ -266,11 +262,6 @@ namespace System.Reflection.Emit
             // Returns the il bytes of this method.
             // This il is not valid until somebody has called BakeByteArray
             return m_ubBody;
-        }
-
-        internal int[]? GetTokenFixups()
-        {
-            return m_mdMethodFixups;
         }
 
         internal SignatureHelper GetMethodSignature()
