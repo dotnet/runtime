@@ -114,6 +114,9 @@ public class MemberDef
 
     public string GetMemberDescription()
     {
+        if (Comment is not null)
+            return Comment;
+
         var typeSet = TypeName as string[];
         if (typeSet == null)
             return null;
@@ -458,7 +461,7 @@ internal sealed class SchemaDef
             members: new MemberDef[] {
                 new MemberDef("Flags", "TypeAttributes"),
                 new MemberDef("BaseType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("NamespaceDefinition", "NamespaceDefinition", MemberDefFlags.RecordRef | MemberDefFlags.Compare),
+                new MemberDef("NamespaceDefinition", "NamespaceDefinition", MemberDefFlags.RecordRef | MemberDefFlags.Compare, comment: "Nil for nested types; resolve their namespace through the enclosing type chain."),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
                 new MemberDef("Size", "uint"),
                 new MemberDef("PackingSize", "ushort"),

@@ -4967,6 +4967,7 @@ namespace Internal.Metadata.NativeFormat
         public Handle BaseType => _baseType;
         private readonly Handle _baseType;
 
+        /// Nil for nested types; resolve their namespace through the enclosing type chain.
         public NamespaceDefinitionHandle NamespaceDefinition => _namespaceDefinition;
         private readonly NamespaceDefinitionHandle _namespaceDefinition;
 
