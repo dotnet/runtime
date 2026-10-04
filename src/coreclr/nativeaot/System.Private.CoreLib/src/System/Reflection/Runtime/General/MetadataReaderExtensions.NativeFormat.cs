@@ -180,9 +180,9 @@ namespace System.Reflection.Runtime.General
             if (handleType == HandleType.TypeDefinition)
             {
                 TypeDefinition typeDefinition = typeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
-                Handle namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
                 if (!typeDefinition.Name.StringEquals(name, reader))
                     return false;
+                Handle namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
                 if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceDefinition)
                     return false;
                 NamespaceDefinitionHandle nsHandle = namespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader);
@@ -206,9 +206,10 @@ namespace System.Reflection.Runtime.General
                 TypeReference typeReference = typeHandle.ToTypeReferenceHandle(reader).GetTypeReference(reader);
                 if (!typeReference.TypeName.StringEquals(name, reader))
                     return false;
-                if (typeReference.NamespaceOrEnclosingType.HandleType != HandleType.NamespaceReference)
+                Handle namespaceOrEnclosingType = typeReference.NamespaceOrEnclosingType;
+                if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceReference)
                     return false;
-                NamespaceReferenceHandle nsHandle = typeReference.NamespaceOrEnclosingType.ToNamespaceReferenceHandle(reader);
+                NamespaceReferenceHandle nsHandle = namespaceOrEnclosingType.ToNamespaceReferenceHandle(reader);
                 int idx = namespaceParts.Length;
                 while (idx-- != 0)
                 {
