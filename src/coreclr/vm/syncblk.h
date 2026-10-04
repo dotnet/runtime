@@ -911,11 +911,7 @@ class ObjHeader
             return NULL;
 
         DWORD index = value & MASK_SYNCBLOCKINDEX;
-#ifdef DACCESS_COMPILE
-        return SyncTableEntry::GetSyncTableEntry()[(int)index].m_SyncBlock;
-#else
         return g_pSyncTable[(int)index].m_SyncBlock;
-#endif // DACCESS_COMPILE
     }
 
     DWORD GetSyncBlockIndex();
