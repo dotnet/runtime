@@ -251,18 +251,14 @@ void BulkComLogger::LogAllComObjects()
     {
         SyncTableEntry &entry = table[i];
         Object *obj = entry.m_Object.Load();
-        if (obj)
+        if (obj && entry.m_SyncBlock)
         {
-            SyncBlock *syncBlock = VolatileLoad(&entry.m_SyncBlock);
-            if (syncBlock)
+            InteropSyncBlockInfo *interop = entry.m_SyncBlock->GetInteropInfoNoCreate();
+            if (interop)
             {
-                InteropSyncBlockInfo *interop = syncBlock->GetInteropInfoNoCreate();
-                if (interop)
-                {
-                    RCW *rcw = interop->GetRawRCW();
-                    if (rcw)
-                        WriteRcw(rcw, obj);
-                }
+                RCW *rcw = interop->GetRawRCW();
+                if (rcw)
+                    WriteRcw(rcw, obj);
             }
         }
     }

@@ -1306,7 +1306,7 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
 
     // store the wrapper in the sync block, that is the only way we can get cleaned up
     // the syncblock is guaranteed to be present
-    SyncBlock *pSyncBlock = VolatileLoad(&g_pSyncTable[(int)dwSyncBlockIndex].m_SyncBlock);
+    SyncBlock *pSyncBlock = g_pSyncTable[(int)dwSyncBlockIndex].m_SyncBlock;
     InteropSyncBlockInfo *pInteropInfo = pSyncBlock->GetInteropInfo();
     pInteropInfo->SetRawRCW(this);
 

@@ -236,7 +236,7 @@ struct RCW
         }
         CONTRACTL_END;
 
-        return VolatileLoad(&g_pSyncTable[m_SyncBlockIndex].m_SyncBlock);
+        return g_pSyncTable[m_SyncBlockIndex].m_SyncBlock;
     }
 
     //--------------------------------------------------------------------------
