@@ -55,6 +55,7 @@ protected:
         StructBlock,
         SkipMultiRegSrc,
         SkipSingleRegCallSrc,
+        SkipFieldListSrc,
         Nop
     };
 
@@ -654,7 +655,7 @@ void MorphCopyBlockHelper::PrepareSrc()
 
     // Verify that the types of the store and data match.
     assert(m_store->TypeGet() == m_src->TypeGet());
-    if (m_store->TypeIs(TYP_STRUCT))
+    if (m_store->TypeIs(TYP_STRUCT) && !m_src->OperIs(GT_FIELD_LIST))
     {
         assert(m_blockLayout->CanAssignFrom(m_src->GetLayout(m_compiler)));
     }
@@ -665,7 +666,17 @@ void MorphCopyBlockHelper::PrepareSrc()
 //
 void MorphCopyBlockHelper::TrySpecialCases()
 {
-    if (m_src->IsMultiRegNode())
+    if (m_src->OperIs(GT_FIELD_LIST))
+    {
+        // Physical promotion preserves these full definitions for async liveness.
+        // Keep them intact during both global morph and later block remorphing.
+        // Lowering expands the listed fields into stores.
+        assert(m_store->OperIs(GT_STORE_LCL_VAR));
+        assert(!m_dstVarDsc->lvPromoted);
+        m_transformationDecision = BlockTransformation::SkipFieldListSrc;
+        m_result                 = m_store;
+    }
+    else if (m_src->IsMultiRegNode())
     {
         assert(m_store->OperIs(GT_STORE_LCL_VAR));
 

@@ -644,8 +644,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     GenTree* fwdSubNode = defNode->AsLclVarCommon()->Data();
 
     // Can't substitute GT_CATCH_ARG, GT_LCLHEAP or GT_ASYNC_CONTINUATION.
+    // Sparse FIELD_LIST definitions also depend on their destination's layout
+    // and full-definition semantics and cannot be used by arbitrary consumers.
     //
-    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION))
+    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION, GT_FIELD_LIST))
     {
         JITDUMP(" tree to sub is %s\n", GenTree::OpName(fwdSubNode->OperGet()));
         return false;

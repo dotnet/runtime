@@ -117,10 +117,23 @@ const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
 //
 // Returns:
 //   True if the node is a constant zero value (integral, floating-point, or
-//   vector).
+//   vector), or a field list containing only zero values.
 //
 static bool IsDefaultValue(GenTree* node)
 {
+    if (node->OperIs(GT_FIELD_LIST))
+    {
+        for (GenTreeFieldList::Use& use : node->AsFieldList()->Uses())
+        {
+            if (!IsDefaultValue(use.GetNode()))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
 }
 

@@ -5575,6 +5575,33 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
 
+    if (lclStore->Data()->OperIs(GT_FIELD_LIST))
+    {
+        assert(lclStore->OperIs(GT_STORE_LCL_VAR));
+        assert(!m_compiler->lvaGetDesc(lclStore)->lvPromoted);
+
+        GenTreeFieldList* fields     = lclStore->Data()->AsFieldList();
+        GenTree*          firstStore = nullptr;
+        GenTree*          next       = lclStore->gtNext;
+
+        for (GenTreeFieldList::Use& use : fields->Uses())
+        {
+            // Evaluate every operand before overwriting the existing local.
+            // Forward substitution may have introduced interfering reads or calls.
+            GenTree* store =
+                m_compiler->gtNewStoreLclFldNode(lclStore->GetLclNum(), use.GetType(), use.GetOffset(), use.GetNode());
+            BlockRange().InsertBefore(lclStore, store);
+            if (firstStore == nullptr)
+            {
+                firstStore = store;
+            }
+        }
+
+        BlockRange().Remove(fields);
+        BlockRange().Remove(lclStore);
+        return firstStore != nullptr ? firstStore : next;
+    }
+
     TryRetypingFloatingPointStoreToIntegerStore(lclStore);
 
     if (lclStore->OperIs(GT_STORE_LCL_FLD) && (JitConfig.JitEnableStoreLclFldCoalescing() != 0))

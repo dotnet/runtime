@@ -84,6 +84,7 @@ class DecompositionPlan
     bool               m_dstInvolvesReplacements;
     bool               m_srcInvolvesReplacements;
     ArrayStack<Entry>  m_entries;
+    GenTreeFieldList*  m_dstFields                       = nullptr;
     bool               m_hasNonRemainderUseOfStructLocal = false;
 
 public:
@@ -205,6 +206,12 @@ public:
         {
             FinalizeCopy(statements);
         }
+
+        if (m_dstFields != nullptr)
+        {
+            statements->AddStatement(
+                m_compiler->gtNewStoreLclVarNode(m_store->AsLclVarCommon()->GetLclNum(), m_dstFields));
+        }
     }
 
     //------------------------------------------------------------------------
@@ -315,6 +322,45 @@ private:
         {
         }
     };
+
+    //------------------------------------------------------------------------
+    // InitializeDestinationFields:
+    //   Preserve a full local definition when decomposition does not retain a
+    //   full block operation.
+    //
+    // Parameters:
+    //   remainderStrategy - How the unpromoted remainder will be handled.
+    //
+    void InitializeDestinationFields(const RemainderStrategy& remainderStrategy)
+    {
+        // Async liveness needs the original full definition, even when all
+        // parent stores disappear. Omitted fields are dead or represented by
+        // replacement locals until a later writeback. Limit these sparse
+        // definitions to async methods, where prolog-init suppression is disabled.
+        if (!m_compiler->compIsAsync() || !m_store->OperIs(GT_STORE_LCL_VAR) ||
+            (remainderStrategy.Type == RemainderStrategy::FullBlock))
+        {
+            return;
+        }
+
+        // Collecting the parent stores must not move faulting or aliasing reads
+        // past definitions of replacement locals.
+        if (!IsInit() && !m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        {
+            return;
+        }
+
+        unsigned   lclNum = m_store->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* dsc    = m_compiler->lvaGetDesc(lclNum);
+        // These parameter forms become indirect stores during morphing.
+        if (dsc->lvPromoted || m_compiler->lvaIsImplicitByRefLocal(lclNum) ||
+            m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
+        {
+            return;
+        }
+
+        m_dstFields = m_compiler->gtNewFieldList();
+    }
 
     //------------------------------------------------------------------------
     // DetermineRemainderStrategy:
@@ -451,6 +497,7 @@ private:
         }
 
         RemainderStrategy remainderStrategy = DetermineRemainderStrategy(deaths);
+        InitializeDestinationFields(remainderStrategy);
         if (remainderStrategy.Type == RemainderStrategy::FullBlock)
         {
             statements->AddStatement(m_store);
@@ -460,9 +507,8 @@ private:
             GenTree*       value = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
             LocationAccess storeAccess;
             storeAccess.InitializeLocal(m_store->AsLclVarCommon());
-            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, remainderStrategy.PrimitiveType,
-                                                     value, m_compiler);
-            statements->AddStatement(store);
+            AddStore(storeAccess, remainderStrategy.PrimitiveOffset, remainderStrategy.PrimitiveType, value,
+                     statements);
         }
     }
 
@@ -485,6 +531,7 @@ private:
         }
 
         RemainderStrategy remainderStrategy = DetermineRemainderStrategy(dstDeaths);
+        InitializeDestinationFields(remainderStrategy);
 
         // If the remainder is a full block and is going to incur write barrier
         // then avoid incurring multiple write barriers for each source
@@ -739,17 +786,14 @@ private:
                 src = srcAccess.CreateRead(entry.Offset, entry.Type, m_compiler);
             }
 
-            GenTree* store;
             if (entry.ToReplacement != nullptr)
             {
-                store = m_compiler->gtNewStoreLclVarNode(entry.ToReplacement->LclNum, src);
+                statements->AddStatement(m_compiler->gtNewStoreLclVarNode(entry.ToReplacement->LclNum, src));
             }
             else
             {
-                store = storeAccess.CreateStore(entry.Offset, entry.Type, src, m_compiler);
+                AddStore(storeAccess, entry.Offset, entry.Type, src, statements);
             }
-
-            statements->AddStatement(store);
         }
 
         if (!handleRemainderFirst)
@@ -1185,6 +1229,37 @@ private:
     };
 
     //------------------------------------------------------------------------
+    // AddStore:
+    //   Add a parent store, retaining it as part of a full definition when possible.
+    //
+    // Parameters:
+    //   storeAccess - Destination of the store.
+    //   offset      - Offset within the destination.
+    //   type        - Type of the store.
+    //   value       - Value to store.
+    //   statements  - List to add standalone stores to.
+    //
+    void AddStore(LocationAccess&             storeAccess,
+                  unsigned                    offset,
+                  var_types                   type,
+                  GenTree*                    value,
+                  DecompositionStatementList* statements)
+    {
+        if (m_dstFields != nullptr)
+        {
+            // Preserve the planned order: a primitive remainder may overlap
+            // fields whose up-to-date values are in source replacements.
+            m_dstFields->AddField(m_compiler, value, offset, type);
+            m_compiler->lvaSetVarDoNotEnregister(m_store->AsLclVarCommon()->GetLclNum()
+                                                     DEBUGARG(DoNotEnregisterReason::LocalField));
+        }
+        else
+        {
+            statements->AddStatement(storeAccess.CreateStore(offset, type, value, m_compiler));
+        }
+    }
+
+    //------------------------------------------------------------------------
     // CopyRemainder:
     //   Create IR to copy the remainder.
     //
@@ -1233,9 +1308,8 @@ private:
                 }
             }
 
-            GenTree* src   = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
-            GenTree* store = storeAccess.CreateStore(remainderStrategy.PrimitiveOffset, primitiveType, src, m_compiler);
-            statements->AddStatement(store);
+            GenTree* src = srcAccess.CreateRead(remainderStrategy.PrimitiveOffset, primitiveType, m_compiler);
+            AddStore(storeAccess, remainderStrategy.PrimitiveOffset, primitiveType, src, statements);
         }
     }
 };
