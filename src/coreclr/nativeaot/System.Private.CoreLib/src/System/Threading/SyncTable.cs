@@ -109,9 +109,10 @@ namespace System.Threading
                 using (s_lock.EnterScope())
                 {
                     // After acquiring the lock check whether another thread already assigned the sync entry
-                    if (ObjectHeader.GetSyncEntryIndex(*pHeader, out int syncIndex))
+                    int syncIndex;
+                    if (ObjectHeader.HasSyncEntryIndex(*pHeader))
                     {
-                        return syncIndex;
+                        return ObjectHeader.GetSyncEntryIndex(pHeader);
                     }
 
                     if (s_freeEntryList != 0)
