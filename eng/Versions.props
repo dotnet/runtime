@@ -233,7 +233,7 @@
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-rtm.26457.3</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.11-ci.156755675</MicrosoftNativeQuicMsQuicSchannelVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.11-ci.159417053</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- Mono LLVM -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.25311.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.25311.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
