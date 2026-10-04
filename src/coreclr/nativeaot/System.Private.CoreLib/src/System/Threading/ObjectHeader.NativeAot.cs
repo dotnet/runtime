@@ -125,7 +125,7 @@ namespace System.Threading
         /// </summary>
         private static unsafe int AssignHashCode(object o, int* pHeader)
         {
-            int newHash = RuntimeHelpers.GetNewHashCode() & MASK_HASHCODE_INDEX;
+            int newHash = Random.Shared.Next() & MASK_HASHCODE_INDEX;
             // Never use the zero hash code.  SyncTable treats the zero value as "not assigned".
             if (newHash == 0)
             {
