@@ -64,7 +64,7 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                int bits = Volatile.Read(ref *pHeader);
+                int bits = *pHeader;
                 int hashOrIndex = bits & MASK_HASHCODE_INDEX;
                 if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
                 {
@@ -73,10 +73,10 @@ namespace System.Threading
                     return hashOrIndex;
                 }
 
-                if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
+                if (HasSyncEntryIndex(bits))
                 {
                     // Look up the hash code in the SyncTable
-                    int hashCode = SyncTable.GetHashCode(hashOrIndex);
+                    int hashCode = SyncTable.GetHashCode(Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX);
                     if (hashCode != 0)
                     {
                         return hashCode;
@@ -100,7 +100,7 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                int bits = Volatile.Read(ref *pHeader);
+                int bits = *pHeader;
                 int hashOrIndex = bits & MASK_HASHCODE_INDEX;
                 if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
                 {
@@ -109,10 +109,10 @@ namespace System.Threading
                     return hashOrIndex;
                 }
 
-                if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
+                if (HasSyncEntryIndex(bits))
                 {
                     // Look up the hash code in the SyncTable
-                    return SyncTable.GetHashCode(hashOrIndex);
+                    return SyncTable.GetHashCode(Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX);
                 }
 
                 // The hash code has not yet been set.
@@ -203,9 +203,9 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                if (GetSyncEntryIndex(Volatile.Read(ref *pHeader), out int syncIndex))
+                if (HasSyncEntryIndex(*pHeader))
                 {
-                    return syncIndex;
+                    return Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX;
                 }
 
                 // Assign a new sync entry
@@ -501,7 +501,12 @@ namespace System.Threading
                 // touching unrelated header bits.
                 while (true)
                 {
-                    int oldBits = Volatile.Read(ref *pHeader);
+                    int oldBits = *pHeader;
+                    if (HasSyncEntryIndex(oldBits))
+                    {
+                        oldBits = Volatile.Read(ref *pHeader);
+                    }
+
                     // is the lock thin?
                     if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
                     {
@@ -555,7 +560,7 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                int oldBits = Volatile.Read(ref *pHeader);
+                int oldBits = *pHeader;
 
                 // if we own the lock
                 if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
@@ -564,8 +569,9 @@ namespace System.Threading
                     return true;
                 }
 
-                if (GetSyncEntryIndex(oldBits, out int syncIndex))
+                if (HasSyncEntryIndex(oldBits))
                 {
+                    int syncIndex = Volatile.Read(ref *pHeader) & MASK_HASHCODE_INDEX;
                     return SyncTable.GetLockObject(syncIndex).GetIsHeldByCurrentThread(currentThreadID);
                 }
 
