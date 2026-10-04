@@ -19,6 +19,10 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
 {
+#if SINGLE_FILE_TEST_RUNNER && TargetsUnix
+    // Single-file runners cannot use RemoteExecutor to isolate the working-directory test.
+    [Collection(nameof(DisableParallelization))]
+#endif
     public partial class ProcessTests : ProcessTestBase
     {
         private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
@@ -99,28 +103,33 @@ namespace System.Diagnostics.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_DirectoryNameInCurDirectorySameAsFileNameInExecDirectory_Success()
         {
-            string fileToOpen = "dotnet";
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "dotnet"));
+
+#if SINGLE_FILE_TEST_RUNNER && TargetsUnix
             string curDir = Environment.CurrentDirectory;
-            string dotnetFolder = Path.Combine(Path.GetTempPath(),"dotnet");
-            bool shouldDelete = !Directory.Exists(dotnetFolder);
             try
             {
-                Directory.SetCurrentDirectory(Path.GetTempPath());
-                Directory.CreateDirectory(dotnetFolder);
+                Directory.SetCurrentDirectory(TestDirectory);
+                StartDotnet();
+            }
+            finally
+            {
+                Directory.SetCurrentDirectory(curDir);
+            }
+#else
+            RemoteExecutor.Invoke(StartDotnet, new RemoteInvokeOptions
+            {
+                StartInfo = new ProcessStartInfo { WorkingDirectory = TestDirectory }
+            }).Dispose();
+#endif
 
+            static void StartDotnet()
+            {
+                string fileToOpen = "dotnet";
                 using (var px = Process.Start(fileToOpen))
                 {
                     Assert.NotNull(px);
                 }
-            }
-            finally
-            {
-                if (shouldDelete)
-                {
-                    Directory.Delete(dotnetFolder);
-                }
-
-                Directory.SetCurrentDirectory(curDir);
             }
         }
 

@@ -235,95 +235,113 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSetEnvironmentOnChildProcess()
         {
-            const string name = "b5a715d3-d74f-465d-abb7-2abe844750c9";
-            Environment.SetEnvironmentVariable(name, "parent-process-value");
-
-            Process p = CreateProcess(() =>
+            RemoteExecutor.Invoke(static () =>
             {
-                if (Environment.GetEnvironmentVariable(name) != "child-process-value")
-                    return 1;
+                using var tests = new ProcessStartInfoTests();
+                const string name = "b5a715d3-d74f-465d-abb7-2abe844750c9";
+                Environment.SetEnvironmentVariable(name, "parent-process-value");
+                try
+                {
+                    Process p = tests.CreateProcess(() =>
+                    {
+                        if (Environment.GetEnvironmentVariable(name) != "child-process-value")
+                            return 1;
 
-                return RemoteExecutor.SuccessExitCode;
-            });
-            p.StartInfo.Environment.Add(name, "child-process-value");
-            p.Start();
+                        return RemoteExecutor.SuccessExitCode;
+                    });
+                    p.StartInfo.Environment.Add(name, "child-process-value");
+                    p.Start();
 
-            Assert.True(p.WaitForExit(WaitInMS));
-            Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+                    Assert.True(p.WaitForExit(WaitInMS));
+                    Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(name, null);
+                }
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEnvironmentOfChildProcess()
         {
-            const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
-            Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
-            const string EmptyEnvVar = "TestEnvironmentOfChildProcess_Empty";
-            Environment.SetEnvironmentVariable(EmptyEnvVar, "");
-            try
+            RemoteExecutor.Invoke(static () =>
             {
-                // Schedule a process to see what env vars it gets.  Have it write out those variables
-                // to its output stream so we can read them.
-                Process p = CreateProcess(() =>
+                using var tests = new ProcessStartInfoTests();
+                const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
+                Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
+                const string EmptyEnvVar = "TestEnvironmentOfChildProcess_Empty";
+                Environment.SetEnvironmentVariable(EmptyEnvVar, "");
+                try
                 {
-                    Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
-                    return RemoteExecutor.SuccessExitCode;
-                });
-                p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-                p.StartInfo.RedirectStandardOutput = true;
-                p.Start();
-                string output = p.StandardOutput.ReadToEnd();
-                Assert.True(p.WaitForExit(WaitInMS));
+                    // Schedule a process to see what env vars it gets.  Have it write out those variables
+                    // to its output stream so we can read them.
+                    Process p = tests.CreateProcess(() =>
+                    {
+                        Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                        return RemoteExecutor.SuccessExitCode;
+                    });
+                    p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                    p.StartInfo.RedirectStandardOutput = true;
+                    p.Start();
+                    string output = p.StandardOutput.ReadToEnd();
+                    Assert.True(p.WaitForExit(WaitInMS));
 
-                // Parse the env vars from the child process
-                var actualEnv = new HashSet<string>(output.Split(new[] { ItemSeparator }, StringSplitOptions.None).Select(s => Encoding.UTF8.GetString(Convert.FromBase64String(s))));
+                    // Parse the env vars from the child process
+                    var actualEnv = new HashSet<string>(output.Split(new[] { ItemSeparator }, StringSplitOptions.None).Select(s => Encoding.UTF8.GetString(Convert.FromBase64String(s))));
 
-                // Validate against StartInfo.Environment.
-                var startInfoEnv = new HashSet<string>(p.StartInfo.Environment.Select(e => e.Key + "=" + e.Value));
-                Assert.True(startInfoEnv.SetEquals(actualEnv),
-                    string.Format("Expected: {0}{1}Actual: {2}",
-                        string.Join(", ", startInfoEnv.Except(actualEnv)),
-                        Environment.NewLine,
-                        string.Join(", ", actualEnv.Except(startInfoEnv))));
+                    // Validate against StartInfo.Environment.
+                    var startInfoEnv = new HashSet<string>(p.StartInfo.Environment.Select(e => e.Key + "=" + e.Value));
+                    Assert.True(startInfoEnv.SetEquals(actualEnv),
+                        string.Format("Expected: {0}{1}Actual: {2}",
+                            string.Join(", ", startInfoEnv.Except(actualEnv)),
+                            Environment.NewLine,
+                            string.Join(", ", actualEnv.Except(startInfoEnv))));
 
-                // Validate against current process. (Profilers / code coverage tools can add own environment variables
-                // but we start child process without them. Thus the set of variables from the child process could
-                // be a subset of variables from current process.)
-                var envEnv = new HashSet<string>(Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => e.Key + "=" + e.Value));
-                Assert.True(envEnv.IsSupersetOf(actualEnv),
-                    string.Format("Expected: {0}{1}Actual: {2}",
-                        string.Join(", ", envEnv.Except(actualEnv)),
-                        Environment.NewLine,
-                        string.Join(", ", actualEnv.Except(envEnv))));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ExtraEnvVar, null);
-                Environment.SetEnvironmentVariable(EmptyEnvVar, null);
-            }
+                    // Validate against current process. (Profilers / code coverage tools can add own environment variables
+                    // but we start child process without them. Thus the set of variables from the child process could
+                    // be a subset of variables from current process.)
+                    var envEnv = new HashSet<string>(Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => e.Key + "=" + e.Value));
+                    Assert.True(envEnv.IsSupersetOf(actualEnv),
+                        string.Format("Expected: {0}{1}Actual: {2}",
+                            string.Join(", ", envEnv.Except(actualEnv)),
+                            Environment.NewLine,
+                            string.Join(", ", actualEnv.Except(envEnv))));
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(ExtraEnvVar, null);
+                    Environment.SetEnvironmentVariable(EmptyEnvVar, null);
+                }
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EnvironmentNullValue()
         {
-            const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
-            Environment.SetEnvironmentVariable(NullEnvVar, "");
-            try
+            RemoteExecutor.Invoke(static () =>
             {
-                Process p = CreateProcess(() =>
+                using var tests = new ProcessStartInfoTests();
+                const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
+                Environment.SetEnvironmentVariable(NullEnvVar, "");
+                try
                 {
-                    // Verify that setting the value to null in StartInfo is going to remove the process environment.
-                    Assert.Null(Environment.GetEnvironmentVariable(NullEnvVar));
-                    return RemoteExecutor.SuccessExitCode;
-                });
-                p.StartInfo.Environment[NullEnvVar] = null;
-                Assert.Null(p.StartInfo.Environment[NullEnvVar]);
-                p.Start();
-                Assert.True(p.WaitForExit(WaitInMS));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(NullEnvVar, null);
-            }
+                    Process p = tests.CreateProcess(() =>
+                    {
+                        // Verify that setting the value to null in StartInfo is going to remove the process environment.
+                        Assert.Null(Environment.GetEnvironmentVariable(NullEnvVar));
+                        return RemoteExecutor.SuccessExitCode;
+                    });
+                    p.StartInfo.Environment[NullEnvVar] = null;
+                    Assert.Null(p.StartInfo.Environment[NullEnvVar]);
+                    p.Start();
+                    Assert.True(p.WaitForExit(WaitInMS));
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(NullEnvVar, null);
+                }
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
