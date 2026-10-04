@@ -114,6 +114,7 @@ namespace System.Threading
                         return ObjectHeader.GetSyncEntryIndex(pHeader);
                     }
 
+                    int syncIndex;
                     if (s_freeEntryList != 0)
                     {
                         // Grab a free entry from the list
