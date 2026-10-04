@@ -2686,23 +2686,84 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     // Not yet finished for x86
     assert(TARGET_POINTER_SIZE == 8);
 
-    // TODO-CQ: Support addressing modes, for now we don't use them
-    GenTreeIndir* srcIndir = tree->Data()->AsIndir();
-    assert(srcIndir->isContained() && !srcIndir->Addr()->isContained());
+    GenTree* src = tree->Data();
+    assert(src->isContained());
+    genConsumeAddress(tree->Addr());
+    if (src->OperIs(GT_IND))
+    {
+        genConsumeAddress(src->AsIndir()->Addr());
+    }
 
-    regNumber dst  = genConsumeReg(tree->Addr());
-    regNumber src  = genConsumeReg(srcIndir->Addr());
-    unsigned  size = tree->Size();
+    unsigned size = tree->Size();
+
+    auto emitLoadStore = [&](bool load, instruction ins, emitAttr attr, regNumber reg, unsigned offset) {
+        GenTree* mem = load ? src : tree;
+        GenTree* addr;
+        if (mem->OperIsLocalRead())
+        {
+            addr = mem;
+        }
+        else
+        {
+            addr = mem->AsIndir()->Addr();
+        }
+
+        if (mem->OperIsLocalRead() || (addr->isContained() && addr->OperIs(GT_LCL_ADDR)))
+        {
+            unsigned lclNum = addr->AsLclVarCommon()->GetLclNum();
+            unsigned offs   = addr->AsLclVarCommon()->GetLclOffs() + offset;
+            if (load)
+            {
+                GetEmitter()->emitIns_R_S(ins, attr, reg, lclNum, offs);
+            }
+            else
+            {
+                GetEmitter()->emitIns_S_R(ins, attr, reg, lclNum, offs);
+            }
+            return;
+        }
+
+        regNumber base         = addr->GetRegNum();
+        regNumber index        = REG_NA;
+        unsigned  scale        = 1;
+        int       displacement = static_cast<int>(offset);
+        if (addr->isContained())
+        {
+            GenTreeAddrMode* mode = addr->AsAddrMode();
+            base                  = mode->HasBase() ? mode->Base()->GetRegNum() : REG_NA;
+            index                 = mode->HasIndex() ? mode->Index()->GetRegNum() : REG_NA;
+            scale                 = mode->GetScale();
+            displacement += mode->Offset();
+        }
+        if (load)
+        {
+            GetEmitter()->emitIns_R_ARX(ins, attr, reg, base, index, scale, displacement);
+        }
+        else
+        {
+            GetEmitter()->emitIns_ARX_R(ins, attr, reg, base, index, scale, displacement);
+        }
+    };
+
+    auto emitScalarLoadStore = [&](bool load, unsigned width, regNumber reg, unsigned offset) {
+        var_types memType = m_compiler->roundDownMaxType(width);
+        assert(!varTypeIsSIMD(memType));
+        emitLoadStore(load, load ? ins_Load(memType) : ins_Store(memType), emitTypeSize(memType), reg, offset);
+    };
 
     const unsigned simdSize = m_compiler->roundDownSIMDSize(size);
     if ((size >= simdSize) && (simdSize > 0))
     {
+        const unsigned remainder       = size % simdSize;
+        const bool     useGprRemainder = (remainder != 0) && isPow2(remainder) && (remainder <= REGSIZE_BYTES);
+        const unsigned simdCopySize    = useGprRemainder ? size - remainder : size;
+
         // Number of SIMD regs needed to save the whole src to regs.
         unsigned numberOfSimdRegs = internalRegisters.Count(tree, RBM_ALLFLOAT);
 
         // Lowering takes care to only introduce this node such that we will always have enough
         // temporary SIMD registers to fully load the source and avoid any potential issues with overlap.
-        assert(numberOfSimdRegs * simdSize >= size);
+        assert(numberOfSimdRegs * simdSize >= simdCopySize);
 
         // Pop all temp regs to a local array, currently, this impl is limited with LSRA's MaxInternalCount
         regNumber tempRegs[LinearScan::MaxInternalCount] = {};
@@ -2719,75 +2780,44 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
             do
             {
                 assert(curSimdSize >= XMM_REGSIZE_BYTES);
-                if (load)
-                {
-                    // vmovdqu  ymm, ymmword ptr[src + offset]
-                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], src, offset);
-                }
-                else
-                {
-                    // vmovdqu  ymmword ptr[dst + offset], ymm
-                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], dst, offset);
-                }
+                emitLoadStore(load, simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], offset);
                 offset += curSimdSize;
-                if (size == offset)
+                if (simdCopySize == offset)
                 {
                     break;
                 }
 
                 // Overlap with the previously processed data. We'll always use SIMD for simplicity
-                assert(size > offset);
-                unsigned remainder = size - offset;
+                assert(simdCopySize > offset);
+                unsigned remainder = simdCopySize - offset;
                 if (remainder < curSimdSize)
                 {
                     // Switch to smaller SIMD size if necessary
                     curSimdSize = m_compiler->roundUpSIMDSize(remainder);
-                    offset      = size - curSimdSize;
+                    offset      = simdCopySize - curSimdSize;
                 }
             } while (true);
         };
 
         // load everything from SRC to temp regs
         emitSimdLoadStore(/* load */ true);
+        regNumber remainderReg = REG_NA;
+        if (useGprRemainder)
+        {
+            remainderReg = internalRegisters.GetSingle(tree, RBM_ALLINT);
+            emitScalarLoadStore(true, remainder, remainderReg, simdCopySize);
+        }
         // store them to DST
         emitSimdLoadStore(/* load */ false);
+        if (useGprRemainder)
+        {
+            emitScalarLoadStore(false, remainder, remainderReg, simdCopySize);
+        }
     }
     else
     {
         // Here we work with size 1..15 (x64)
         assert((size > 0) && (size < XMM_REGSIZE_BYTES));
-
-        auto emitScalarLoadStore = [&](bool load, int size, regNumber tempReg, int offset) {
-            var_types memType;
-            switch (size)
-            {
-                case 1:
-                    memType = TYP_UBYTE;
-                    break;
-                case 2:
-                    memType = TYP_USHORT;
-                    break;
-                case 4:
-                    memType = TYP_INT;
-                    break;
-                case 8:
-                    memType = TYP_LONG;
-                    break;
-                default:
-                    unreached();
-            }
-
-            if (load)
-            {
-                // mov  reg, qword ptr [src + offset]
-                GetEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), tempReg, src, offset);
-            }
-            else
-            {
-                // mov  qword ptr [dst + offset], reg
-                GetEmitter()->emitIns_AR_R(ins_Store(memType), emitTypeSize(memType), tempReg, dst, offset);
-            }
-        };
 
         // Use overlapping loads/stores, e. g. for size == 9: "mov [dst], tmpReg1; mov [dst+1], tmpReg2".
         unsigned loadStoreSize = 1 << BitOperations::Log2(size);

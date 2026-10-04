@@ -1563,11 +1563,14 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 const unsigned simdSize = m_compiler->roundDownSIMDSize(size);
                 if ((size >= simdSize) && (simdSize > 0))
                 {
-                    unsigned simdRegs = size / simdSize;
-                    if ((size % simdSize) != 0)
+                    unsigned simdRegs  = size / simdSize;
+                    unsigned remainder = size % simdSize;
+                    if ((remainder != 0) && isPow2(remainder) && (remainder <= REGSIZE_BYTES))
                     {
-                        // TODO-CQ: Consider using GPR load/store here if the reminder is 1,2,4 or 8
-                        // especially if we enable AVX-512
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+                    else if (remainder != 0)
+                    {
                         simdRegs++;
                     }
                     for (unsigned i = 0; i < simdRegs; i++)

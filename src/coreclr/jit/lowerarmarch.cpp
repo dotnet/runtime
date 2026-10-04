@@ -736,7 +736,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //
 void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
+    assert(blkNode->OperIs(GT_STORE_BLK) && ((blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll) ||
+                                             (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnrollMemmove)));
     assert(size < INT32_MAX);
 
     if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))

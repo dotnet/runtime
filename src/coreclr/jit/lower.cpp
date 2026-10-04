@@ -2475,7 +2475,6 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
             assert(!dstAddr->isContained());
             assert(!srcAddr->isContained());
 
-            // TODO-CQ: Try to create an addressing mode
             GenTreeIndir* srcBlk = m_compiler->gtNewIndir(TYP_STRUCT, srcAddr);
             srcBlk->SetContained();
 
@@ -2499,6 +2498,11 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
                     arg.GetNode()->SetUnusedValue();
                 }
             }
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+            ContainBlockStoreAddress(storeBlk, static_cast<unsigned>(cnsSize), srcAddr, srcBlk);
+            ContainBlockStoreAddress(storeBlk, static_cast<unsigned>(cnsSize), dstAddr, nullptr);
+#endif
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
@@ -12246,9 +12250,12 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
             return false;
         }
 
-        // We assume that the bulk helper is also a better option for Tier0/cold blocks.
+        // Avoid repeating checked barriers for an unknown destination; also prefer bulk for Tier0/cold blocks.
         if ((layout->GetGCPtrCount() > 1) &&
-            (!m_compiler->opts.OptimizationEnabled() || ((m_block != nullptr) && (m_block->isRunRarely()))))
+            (!m_compiler->opts.OptimizationEnabled() || ((m_block != nullptr) && (m_block->isRunRarely())) ||
+             (((blkNode->gtFlags & GTF_IND_TGT_HEAP) == 0) && !blkNode->IsAddressNotOnHeap(m_compiler) &&
+              (m_compiler->codeGen->gcInfo.gcWriteBarrierFormFromTargetAddress(blkNode->Addr()) ==
+               GCInfo::WBF_BarrierUnknown))))
         {
             return false;
         }

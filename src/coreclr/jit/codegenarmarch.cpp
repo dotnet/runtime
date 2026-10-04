@@ -2954,13 +2954,15 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
 {
 #ifdef TARGET_ARM64
-    // TODO-CQ: Support addressing modes, for now we don't use them
-    GenTreeIndir* srcIndir = tree->Data()->AsIndir();
-    assert(srcIndir->isContained() && !srcIndir->Addr()->isContained());
+    GenTree* src = tree->Data();
+    assert(src->isContained());
+    genConsumeAddress(tree->Addr());
+    if (src->OperIs(GT_IND))
+    {
+        genConsumeAddress(src->AsIndir()->Addr());
+    }
 
-    regNumber dst  = genConsumeReg(tree->Addr());
-    regNumber src  = genConsumeReg(srcIndir->Addr());
-    unsigned  size = tree->Size();
+    unsigned size = tree->Size();
 
     auto emitLoadStore = [&](bool load, unsigned regSize, regNumber tempReg, unsigned offset) {
         var_types memType;
@@ -2984,13 +2986,36 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
             default:
                 unreached();
         }
-        if (load)
+        GenTree*    mem  = load ? src : tree;
+        GenTree*    addr = mem->OperIsLocalRead() ? mem : mem->AsIndir()->Addr();
+        instruction ins  = load ? ins_Load(memType) : ins_Store(memType);
+        emitAttr    attr = emitTypeSize(memType);
+
+        if (mem->OperIsLocalRead() || (addr->isContained() && addr->OperIs(GT_LCL_ADDR)))
         {
-            GetEmitter()->emitIns_R_R_I(ins_Load(memType), emitTypeSize(memType), tempReg, src, offset);
+            unsigned lclNum = addr->AsLclVarCommon()->GetLclNum();
+            unsigned offs   = addr->AsLclVarCommon()->GetLclOffs() + offset;
+            if (load)
+            {
+                GetEmitter()->emitIns_R_S(ins, attr, tempReg, lclNum, offs);
+            }
+            else
+            {
+                GetEmitter()->emitIns_S_R(ins, attr, tempReg, lclNum, offs);
+            }
         }
         else
         {
-            GetEmitter()->emitIns_R_R_I(ins_Store(memType), emitTypeSize(memType), tempReg, dst, offset);
+            regNumber base         = addr->GetRegNum();
+            int       displacement = static_cast<int>(offset);
+            if (addr->isContained())
+            {
+                GenTreeAddrMode* mode = addr->AsAddrMode();
+                assert(!mode->HasIndex());
+                base = mode->Base()->GetRegNum();
+                displacement += mode->Offset();
+            }
+            genInstrWithConstant(ins, attr, tempReg, base, displacement, rsGetRsvdReg());
         }
     };
 
@@ -3060,6 +3085,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
             emitLoadStore(/* load */ false, loadStoreSize, tmpReg2, size - loadStoreSize);
         }
     }
+
 #else // TARGET_ARM64
     unreached();
 #endif
