@@ -22,14 +22,6 @@ namespace Internal.TypeSystem
             }
         }
 
-
-        protected override bool ComputeIsNonSharableMethod()
-        {
-            return !IsCanonicalMethod(CanonicalFormKind.Any) &&
-                        this == GetCanonMethodTarget(CanonicalFormKind.Specific);
-        }
-
-
         /// <summary>
         /// Does this method need a dictionary?
         /// </summary>

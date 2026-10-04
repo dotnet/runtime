@@ -25,6 +25,7 @@ namespace System.Reflection
         internal MethodInvoker(RuntimeConstructorInfo constructor)
         {
             _methodBaseInvoker = constructor.MethodInvoker;
+            _parameterCount = constructor.GetParametersAsSpan().Length;
         }
 
         public static MethodInvoker Create(MethodBase method)
