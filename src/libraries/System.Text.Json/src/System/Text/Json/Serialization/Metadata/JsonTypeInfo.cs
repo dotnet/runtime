@@ -1471,7 +1471,7 @@ namespace System.Text.Json.Serialization.Metadata
         private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, Type? declaringType, JsonSerializerOptions options);
 
         private protected Dictionary<ParameterLookupKey, JsonParameterInfoValues>? _parameterInfoValuesIndex;
-        private JsonParameterInfoValues[]? _parameterInfoValues;
+        private protected JsonParameterInfoValues[]? _parameterInfoValues;
         internal UnboundConstructorParameterInfo? UnboundConstructorParameterDiagnostic { get; private set; }
 
         internal readonly struct UnboundConstructorParameterInfo(
@@ -1637,6 +1637,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             List<JsonParameterInfo> parameterCache = new(ParameterCount);
             Dictionary<ParameterLookupKey, JsonParameterInfo> parameterIndex = new(ParameterCount);
+            bool[] boundParameters = new bool[ParameterCount];
 
             foreach (JsonPropertyInfo propertyInfo in _propertyCache)
             {
@@ -1644,6 +1645,11 @@ namespace System.Text.Json.Serialization.Metadata
                 if (parameterInfo is null)
                 {
                     continue;
+                }
+
+                if (parameterInfo.Position < boundParameters.Length)
+                {
+                    boundParameters[parameterInfo.Position] = true;
                 }
 
                 string propertyName = propertyInfo.MemberName ?? propertyInfo.Name;
@@ -1671,17 +1677,20 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 foreach (JsonParameterInfoValues param in _parameterInfoValues)
                 {
-                    ParameterLookupKey key = new(param.ParameterType, param.Name);
-                    if (!parameterIndex.ContainsKey(key))
+                    if (param.Position < boundParameters.Length && !boundParameters[param.Position])
                     {
                         JsonPropertyInfo? matchingNameProp = null;
                         foreach (JsonPropertyInfo prop in _propertyCache)
                         {
-                            string propName = prop.MemberName ?? prop.Name;
-                            if (string.Equals(propName, param.Name, StringComparison.OrdinalIgnoreCase))
+                            if (prop.AssociatedParameter is null)
                             {
-                                matchingNameProp = prop;
-                                break;
+                                string propName = prop.MemberName ?? prop.Name;
+                                if (string.Equals(propName, param.Name, StringComparison.OrdinalIgnoreCase) &&
+                                    prop.PropertyType != param.ParameterType)
+                                {
+                                    matchingNameProp = prop;
+                                    break;
+                                }
                             }
                         }
 

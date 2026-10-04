@@ -2461,6 +2461,72 @@ namespace System.Text.Json.Serialization.Tests
         public Point_With_MismatchedMembers MyPoint { get; set; }
     }
 
+    public class FirstMissingSecondTypeMismatch
+    {
+        public int X { get; set; }
+        public string Z { get; set; }
+
+        public FirstMissingSecondTypeMismatch(int x, string y, double z)
+        {
+            X = x;
+            Z = z.ToString();
+        }
+    }
+
+    public class FirstTypeMismatchSecondMissing
+    {
+        public int X { get; set; }
+        public string Z { get; set; }
+
+        public FirstTypeMismatchSecondMissing(int x, double z, string y)
+        {
+            X = x;
+            Z = z.ToString();
+        }
+    }
+
+    public class ClassWithPropertyAndFieldMismatch
+    {
+        public int X { get; set; }
+        public float Y;
+
+        public ClassWithPropertyAndFieldMismatch(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
+
+    public class ClassWithJsonIncludeFieldMismatch
+    {
+        public int X { get; set; }
+        [JsonInclude]
+        public float Y;
+
+        public ClassWithJsonIncludeFieldMismatch(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
+
+    public sealed class CaseInsensitiveDuplicateParameterClass
+    {
+        public int A { get; }
+        public CaseInsensitiveDuplicateParameterClass(int a, int A) => this.A = A;
+    }
+
+    public class ClassWithTwoConstructorParameters
+    {
+        public int X { get; }
+        public int Y { get; }
+
+        public ClassWithTwoConstructorParameters(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
 
     public class Point_ExtendedPropNames
     {
