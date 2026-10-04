@@ -193,9 +193,9 @@ namespace System.Reflection.Runtime.General
             {
                 TypeDefinition typeDefinition = typeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
                 Handle namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
-                if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceDefinition)
-                    return false;
                 if (!typeDefinition.Name.StringEquals(name, reader))
+                    return false;
+                if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceDefinition)
                     return false;
                 NamespaceDefinitionHandle nsHandle = namespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader);
                 int idx = namespaceParts.Length;
