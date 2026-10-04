@@ -15,6 +15,8 @@ namespace System.Threading
     /// <remarks>
     /// Do not store managed pointers (ref int) to the object header in locals or parameters
     /// as they may be incorrectly updated during garbage collection.
+    /// Header reads that feed lock-free SyncTable lookups must have acquire semantics so that
+    /// table growth and entry initialization are visible after observing a sync entry index.
     /// </remarks>
     internal static class ObjectHeader
     {
@@ -62,7 +64,7 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                int bits = *pHeader;
+                int bits = Volatile.Read(ref *pHeader);
                 int hashOrIndex = bits & MASK_HASHCODE_INDEX;
                 if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
                 {
@@ -98,7 +100,7 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                int bits = *pHeader;
+                int bits = Volatile.Read(ref *pHeader);
                 int hashOrIndex = bits & MASK_HASHCODE_INDEX;
                 if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
                 {
@@ -201,7 +203,7 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                if (GetSyncEntryIndex(*pHeader, out int syncIndex))
+                if (GetSyncEntryIndex(Volatile.Read(ref *pHeader), out int syncIndex))
                 {
                     return syncIndex;
                 }
@@ -499,7 +501,7 @@ namespace System.Threading
                 // touching unrelated header bits.
                 while (true)
                 {
-                    int oldBits = *pHeader;
+                    int oldBits = Volatile.Read(ref *pHeader);
                     // is the lock thin?
                     if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
                     {
@@ -553,7 +555,7 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                int oldBits = *pHeader;
+                int oldBits = Volatile.Read(ref *pHeader);
 
                 // if we own the lock
                 if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
