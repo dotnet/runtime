@@ -479,7 +479,7 @@ internal sealed class SchemaDef
         new RecordDef(
             name: "TypeReference",
             members: new MemberDef[] {
-                new MemberDef("ParentNamespaceOrType", new string[] { "NamespaceReference", "TypeReference" }, MemberDefFlags.RecordRef),
+                new MemberDef("NamespaceOrEnclosingType", new string[] { "NamespaceReference", "TypeReference" }, MemberDefFlags.RecordRef),
                 new MemberDef("TypeName", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Name),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }

@@ -200,11 +200,11 @@ namespace ILCompiler.Metadata
 
             if (containingType.ContainingType != null)
             {
-                parentReferenceRecord.ParentNamespaceOrType = GetNestedReferenceParent(containingType);
+                parentReferenceRecord.NamespaceOrEnclosingType = GetNestedReferenceParent(containingType);
             }
             else
             {
-                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(containingType.Module, containingType.GetNamespace());
+                parentReferenceRecord.NamespaceOrEnclosingType = HandleNamespaceReference(containingType.Module, containingType.GetNamespace());
             }
 
             return parentReferenceRecord;
@@ -216,11 +216,11 @@ namespace ILCompiler.Metadata
 
             if (entity.ContainingType != null)
             {
-                record.ParentNamespaceOrType = GetNestedReferenceParent(entity);
+                record.NamespaceOrEnclosingType = GetNestedReferenceParent(entity);
             }
             else
             {
-                record.ParentNamespaceOrType = HandleNamespaceReference(entity.Module, entity.GetNamespace());
+                record.NamespaceOrEnclosingType = HandleNamespaceReference(entity.Module, entity.GetNamespace());
             }
 
             record.TypeName = HandleString(entity.GetName());

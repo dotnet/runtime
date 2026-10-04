@@ -82,14 +82,14 @@ namespace Internal.Metadata.NativeFormat
             TypeReference typeRef = reader.GetTypeReference(typeRefHandle);
 
             HashCodeBuilder builder = new HashCodeBuilder(""u8);
-            AppendNamespaceHashCode(ref builder, typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(reader), reader, appendDot: false);
+            AppendNamespaceHashCode(ref builder, typeRef.NamespaceOrEnclosingType.ToNamespaceReferenceHandle(reader), reader, appendDot: false);
             int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeRef.TypeName));
 
             int hashCode = VersionResilientHashCode.NameHashCode(builder.ToHashCode(), nameHashCode);
 
-            if (typeRef.ParentNamespaceOrType.HandleType == HandleType.TypeReference)
+            if (typeRef.NamespaceOrEnclosingType.HandleType == HandleType.TypeReference)
             {
-                int enclosingTypeHashCode = typeRef.ParentNamespaceOrType.ToTypeReferenceHandle(reader).ComputeHashCode(reader);
+                int enclosingTypeHashCode = typeRef.NamespaceOrEnclosingType.ToTypeReferenceHandle(reader).ComputeHashCode(reader);
                 return VersionResilientHashCode.NestedTypeHashCode(enclosingTypeHashCode, hashCode);
             }
 

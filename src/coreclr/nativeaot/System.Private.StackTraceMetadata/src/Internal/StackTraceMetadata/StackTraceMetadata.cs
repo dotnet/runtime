@@ -233,7 +233,7 @@ namespace Internal.StackTraceMetadata
                     return FormatAssemblyName(reader, typeDef.NamespaceOrEnclosingType);
                 case HandleType.TypeReference:
                     TypeReference typeRef = reader.GetTypeReference(handle.ToTypeReferenceHandle(reader));
-                    return FormatAssemblyName(reader, typeRef.ParentNamespaceOrType);
+                    return FormatAssemblyName(reader, typeRef.NamespaceOrEnclosingType);
                 case HandleType.TypeSpecification:
                     TypeSpecification typeSpec = reader.GetTypeSpecification(handle.ToTypeSpecificationHandle(reader));
                     return FormatAssemblyName(reader, typeSpec.Signature);

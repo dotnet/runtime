@@ -4636,7 +4636,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            ParentNamespaceOrType = visitor.Visit(this, ParentNamespaceOrType);
+            NamespaceOrEnclosingType = visitor.Visit(this, NamespaceOrEnclosingType);
             TypeName = visitor.Visit(this, TypeName);
         } // Visit
 
@@ -4645,7 +4645,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeReference;
             if (other == null) return false;
-            if (!Object.Equals(ParentNamespaceOrType, other.ParentNamespaceOrType)) return false;
+            if (!Object.Equals(NamespaceOrEnclosingType, other.NamespaceOrEnclosingType)) return false;
             if (!Object.Equals(TypeName, other.TypeName)) return false;
             return true;
         } // Equals
@@ -4656,7 +4656,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -540108450;
-            hash = ((hash << 13) - (hash >> 19)) ^ (ParentNamespaceOrType == null ? 0 : ParentNamespaceOrType.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (NamespaceOrEnclosingType == null ? 0 : NamespaceOrEnclosingType.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (TypeName == null ? 0 : TypeName.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -4665,10 +4665,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
-            Debug.Assert(ParentNamespaceOrType == null ||
-                ParentNamespaceOrType.HandleType == HandleType.NamespaceReference ||
-                ParentNamespaceOrType.HandleType == HandleType.TypeReference);
-            writer.Write(ParentNamespaceOrType);
+            Debug.Assert(NamespaceOrEnclosingType == null ||
+                NamespaceOrEnclosingType.HandleType == HandleType.NamespaceReference ||
+                NamespaceOrEnclosingType.HandleType == HandleType.TypeReference);
+            writer.Write(NamespaceOrEnclosingType);
             writer.Write(TypeName);
         } // Save
 
@@ -4692,7 +4692,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public MetadataRecord ParentNamespaceOrType;
+        public MetadataRecord NamespaceOrEnclosingType;
         public ConstantStringValue TypeName;
     } // TypeReference
 

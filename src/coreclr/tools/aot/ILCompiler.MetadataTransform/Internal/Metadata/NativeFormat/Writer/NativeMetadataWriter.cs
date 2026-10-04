@@ -707,10 +707,10 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString(bool includeHandleValue)
         {
             string s = "";
-            if (ParentNamespaceOrType is NamespaceReference)
-                s += ParentNamespaceOrType.ToString(false) + ".";
-            if (ParentNamespaceOrType is TypeReference)
-                s += ParentNamespaceOrType.ToString(false) + "+";
+            if (NamespaceOrEnclosingType is NamespaceReference)
+                s += NamespaceOrEnclosingType.ToString(false) + ".";
+            if (NamespaceOrEnclosingType is TypeReference)
+                s += NamespaceOrEnclosingType.ToString(false) + "+";
             s += TypeName.Value;
             if (includeHandleValue)
                 s += string.Format(" ({0:x})", Handle._value);

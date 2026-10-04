@@ -289,12 +289,12 @@ namespace Internal.StackTraceMetadata
         private void EmitTypeReferenceName(TypeReferenceHandle typeRefHandle, Flags flags)
         {
             TypeReference typeRef = _metadataReader.GetTypeReference(typeRefHandle);
-            if (!typeRef.ParentNamespaceOrType.IsNil)
+            if (!typeRef.NamespaceOrEnclosingType.IsNil)
             {
-                if (typeRef.ParentNamespaceOrType.HandleType != HandleType.NamespaceReference)
+                if (typeRef.NamespaceOrEnclosingType.HandleType != HandleType.NamespaceReference)
                 {
                     // Nested type
-                    EmitTypeName(typeRef.ParentNamespaceOrType, flags);
+                    EmitTypeName(typeRef.NamespaceOrEnclosingType, flags);
                     if ((flags & Flags.ReflectionFormat) != 0)
                         _outputBuilder.Append('+');
                     else
@@ -303,7 +303,7 @@ namespace Internal.StackTraceMetadata
                 else if ((flags & Flags.NamespaceQualify) != 0)
                 {
                     int charsWritten = _outputBuilder.Length;
-                    EmitNamespaceReferenceName(typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(_metadataReader));
+                    EmitNamespaceReferenceName(typeRef.NamespaceOrEnclosingType.ToNamespaceReferenceHandle(_metadataReader));
                     if (_outputBuilder.Length - charsWritten > 0)
                         _outputBuilder.Append('.');
                 }

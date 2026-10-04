@@ -5250,15 +5250,15 @@ namespace Internal.Metadata.NativeFormat
             _handle = handle;
             uint offset = (uint)handle.Offset;
             NativeReader streamReader = reader._streamReader;
-            offset = streamReader.Read(offset, out _parentNamespaceOrType);
+            offset = streamReader.Read(offset, out _namespaceOrEnclosingType);
             offset = streamReader.Read(offset, out _typeName);
         }
 
         public TypeReferenceHandle Handle => _handle;
 
         /// One of: NamespaceReference, TypeReference
-        public Handle ParentNamespaceOrType => _parentNamespaceOrType;
-        private readonly Handle _parentNamespaceOrType;
+        public Handle NamespaceOrEnclosingType => _namespaceOrEnclosingType;
+        private readonly Handle _namespaceOrEnclosingType;
 
         public ConstantStringValueHandle TypeName => _typeName;
         private readonly ConstantStringValueHandle _typeName;

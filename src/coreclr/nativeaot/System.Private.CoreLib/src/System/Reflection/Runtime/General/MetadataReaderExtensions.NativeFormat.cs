@@ -218,9 +218,9 @@ namespace System.Reflection.Runtime.General
                 TypeReference typeReference = typeHandle.ToTypeReferenceHandle(reader).GetTypeReference(reader);
                 if (!typeReference.TypeName.StringEquals(name, reader))
                     return false;
-                if (!typeReference.ParentNamespaceOrType.IsNamespaceReferenceHandle(reader))
+                if (!typeReference.NamespaceOrEnclosingType.IsNamespaceReferenceHandle(reader))
                     return false;
-                NamespaceReferenceHandle nsHandle = typeReference.ParentNamespaceOrType.ToNamespaceReferenceHandle(reader);
+                NamespaceReferenceHandle nsHandle = typeReference.NamespaceOrEnclosingType.ToNamespaceReferenceHandle(reader);
                 int idx = namespaceParts.Length;
                 while (idx-- != 0)
                 {
