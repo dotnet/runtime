@@ -12754,7 +12754,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree)
             unsigned dim;
             for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
             {
-                tree->AsArrElem()->gtArrInds[dim] = fgMorphTree(tree->AsArrElem()->gtArrInds[dim]);
+                tree->AsArrElem()->Indices()[dim] = fgMorphTree(tree->AsArrElem()->Indices()[dim]);
             }
 
             tree->gtFlags &= ~GTF_CALL;
@@ -12763,7 +12763,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree)
 
             for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
             {
-                tree->gtFlags |= tree->AsArrElem()->gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
+                tree->gtFlags |= tree->AsArrElem()->Indices()[dim]->gtFlags & GTF_ALL_EFFECT;
             }
             break;
 
@@ -15807,11 +15807,15 @@ unsigned Compiler::MorphMDArrayTempCache::GrabTemp(var_types type)
 //      pTempCache - pointer to the temp locals cache
 //      block - BasicBlock where the statement lives
 //      stmt - statement to walk
+//      processedArrayCount - phase-wide count used to exclude methods with earlier array expansions
 //
 // Returns:
-//      True if anything changed, false if the IR was unchanged.
+//      Maximum array rank expanded, or zero if the IR was unchanged.
 //
-bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock* block, Statement* stmt)
+unsigned Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache,
+                                       BasicBlock*            block,
+                                       Statement*             stmt,
+                                       unsigned*              processedArrayCount)
 {
     class MorphMDArrayVisitor final : public GenTreeVisitor<MorphMDArrayVisitor>
     {
@@ -15821,17 +15825,297 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             DoPostOrder = true
         };
 
-        MorphMDArrayVisitor(Compiler* compiler, BasicBlock* block, MorphMDArrayTempCache* pTempCache)
+        MorphMDArrayVisitor(Compiler*              compiler,
+                            BasicBlock*            block,
+                            Statement*             stmt,
+                            MorphMDArrayTempCache* pTempCache,
+                            unsigned*              processedArrayCount)
             : GenTreeVisitor<MorphMDArrayVisitor>(compiler)
-            , m_changed(false)
+            , m_maxRank(0)
             , m_block(block)
+            , m_stmt(stmt)
+            , m_processedArrayCount(processedArrayCount)
             , m_pTempCache(pTempCache)
         {
         }
 
-        bool Changed() const
+        unsigned MaxRank() const
         {
-            return m_changed;
+            return m_maxRank;
+        }
+
+        // Local-number equality is a complete write check only for standalone locals.
+        // Promoted parents/fields have logical aliases; implicit-byref locals may name caller storage.
+        bool IsStandaloneLocal(unsigned num)
+        {
+            LclVarDsc* dsc = m_compiler->lvaGetDesc(num);
+            return !dsc->IsAddressExposed() && !dsc->lvPromoted && !dsc->lvIsStructField &&
+                   !m_compiler->lvaIsImplicitByRefLocal(num);
+        }
+
+        bool IsScalarCapture(unsigned num)
+        {
+            LclVarDsc* dsc = m_compiler->lvaGetDesc(num);
+            return IsStandaloneLocal(num) && dsc->lvIsTemp && dsc->TypeIs(TYP_INT, TYP_REF);
+        }
+
+        unsigned PlainFieldBase(GenTree* value)
+        {
+            if (!value->OperIs(GT_IND) || !value->TypeIs(TYP_INT, TYP_REF) ||
+                ((value->gtFlags & GTF_IND_NONFAULTING) == 0) || value->AsIndir()->IsVolatile() ||
+                ((value->gtFlags & (GTF_CALL | GTF_ASG | GTF_EXCEPT)) != 0))
+            {
+                return BAD_VAR_NUM;
+            }
+            GenTree* addr = value->AsIndir()->Addr();
+            if (!addr->OperIs(GT_ADD) || ((addr->gtFlags & GTF_ALL_EFFECT) != 0))
+            {
+                return BAD_VAR_NUM;
+            }
+            GenTree* base   = addr->AsOp()->gtOp1;
+            GenTree* offset = addr->AsOp()->gtOp2;
+            if (!base->OperIs(GT_LCL_VAR) || !base->TypeIs(TYP_REF) || !offset->OperIs(GT_CNS_INT) ||
+                (offset->AsIntCon()->IconValue() < 0))
+            {
+                return BAD_VAR_NUM;
+            }
+            unsigned num = base->AsLclVar()->GetLclNum();
+            return IsStandaloneLocal(num) ? num : BAD_VAR_NUM;
+        }
+
+        // Avoid eager copies of a complete group of existing nonfaulting, nonvolatile
+        // index field reads. Preserve the original nodes and every effect flag.
+        // No statement is moved. Array evaluation remains before the entire expansion.
+        // All index trees are checked before any can bypass the ordinary copy path.
+        GenTree** TryDeferDirectIndices(GenTreeArrElem* arrElem)
+        {
+            if (!m_compiler->opts.OptimizationEnabled() || (arrElem->gtArrRank <= GenTreeArrElem::InlineRank))
+                return nullptr;
+
+            GenTree* array = arrElem->gtArrObj;
+            if (!((array->OperIs(GT_LCL_VAR) && array->TypeIs(TYP_REF) &&
+                   IsStandaloneLocal(array->AsLclVar()->GetLclNum()) && ((array->gtFlags & GTF_ALL_EFFECT) == 0)) ||
+                  (array->TypeIs(TYP_REF) && (PlainFieldBase(array) != BAD_VAR_NUM) &&
+                   ((array->gtFlags & GTF_SIDE_EFFECT) == 0))))
+            {
+                JITDUMP("MD direct deferral rejects array operand\n");
+                return nullptr;
+            }
+
+            // A nonfaulting IND can carry GTF_ORDER_SIDEEFF to pin it below the check
+            // that established non-nullness (optNonNullAssertionProp_Ind). We only sink
+            // it within this expression, never above its original evaluation point.
+            // PlainFieldBase proves the address has no effects and the load is not
+            // volatile. For INT ADD below, ordering flags can only come from that load.
+            // Reject every other effect across the entire index group; retain ordering
+            // flags on the load so subsequent phases cannot hoist it past its proof.
+            bool hasField = false;
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                GenTree* index = arrElem->Indices()[i];
+                if ((index->OperIs(GT_CNS_INT) ||
+                     (index->OperIs(GT_LCL_VAR) && IsStandaloneLocal(index->AsLclVar()->GetLclNum()))) &&
+                    index->TypeIs(TYP_INT) && ((index->gtFlags & GTF_ALL_EFFECT) == 0))
+                    continue;
+
+                // Only unchecked field-plus-constant is admitted, never checked math.
+                GenTree* field = index;
+                if (index->OperIs(GT_ADD) && index->TypeIs(TYP_INT) && !index->gtOverflow() &&
+                    index->AsOp()->gtOp2->OperIs(GT_CNS_INT) && index->AsOp()->gtOp2->TypeIs(TYP_INT) &&
+                    ((index->AsOp()->gtOp2->gtFlags & GTF_ALL_EFFECT) == 0))
+                    field = index->AsOp()->gtOp1;
+
+                if (!index->TypeIs(TYP_INT) || !field->TypeIs(TYP_INT) || (PlainFieldBase(field) == BAD_VAR_NUM) ||
+                    ((index->gtFlags & GTF_SIDE_EFFECT) != 0) || ((field->gtFlags & GTF_SIDE_EFFECT) != 0))
+                {
+                    JITDUMP(
+                        "MD direct deferral rejects complete group at index %u: index=%s flags=%08x, field=%s flags=%08x\n",
+                        i, GenTree::OpName(index->OperGet()), index->gtFlags, GenTree::OpName(field->OperGet()),
+                        field->gtFlags);
+                    return nullptr;
+                }
+                hasField = true;
+            }
+            if (!hasField)
+            {
+                JITDUMP("MD direct deferral rejects group without direct fields (captures retained)\n");
+                return nullptr;
+            }
+
+            GenTree** result = m_compiler->getAllocator(CMK_ASTNode).allocate<GenTree*>(arrElem->gtArrRank);
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+                result[i] = arrElem->Indices()[i];
+            JITDUMP("MD direct deferral proved complete rank-%u index group\n", arrElem->gtArrRank);
+            return result;
+        }
+
+        // Sink only already-nonfaulting, nonvolatile loads with a stable standalone REF base.
+        // The original nonnull proof remains earlier; calls, addressable writes, barriers and
+        // base redefinitions cannot be crossed. Other destination operands are effect-free.
+        // Validate every candidate against the original IR before removing any capture, and
+        // retain all load flags. Only the explicitly proven node bypasses eager MD-index capture.
+        GenTree** TrySinkIndices(GenTreeArrElem* arrElem, GenTree* user)
+        {
+            if (!m_compiler->opts.OptimizationEnabled() || (m_compiler->fgBBcount != 1) ||
+                (m_compiler->compHndBBtabCount != 0) || (arrElem->gtArrRank <= GenTreeArrElem::InlineRank) ||
+                (m_compiler->lvaCount > 256) || (user == nullptr) || (m_stmt->GetRootNode() != user) ||
+                !user->OperIs(GT_STOREIND) || !user->TypeIs(TYP_INT) || (user->AsIndir()->Addr() != arrElem) ||
+                !user->AsIndir()->Data()->OperIs(GT_LCL_VAR, GT_CNS_INT) || !arrElem->gtArrObj->OperIs(GT_LCL_VAR) ||
+                ((arrElem->gtArrObj->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                ((user->AsIndir()->Data()->gtFlags & GTF_ALL_EFFECT) != 0))
+            {
+                JITDUMP("MD sink group rejected by method/consumer shape\n");
+                return nullptr;
+            }
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                if (!arrElem->Indices()[i]->OperIs(GT_LCL_VAR, GT_CNS_INT) ||
+                    ((arrElem->Indices()[i]->gtFlags & GTF_ALL_EFFECT) != 0))
+                    return nullptr;
+            }
+            struct LocalInfo
+            {
+                unsigned   defs;
+                unsigned   uses;
+                bool       unusual;
+                Statement* definition;
+            };
+            LocalInfo* info = m_compiler->getAllocator(CMK_Unknown).allocate<LocalInfo>(m_compiler->lvaCount);
+            for (unsigned n = 0; n < m_compiler->lvaCount; n++)
+                info[n] = {0, 0, false, nullptr};
+            class CountVisitor : public GenTreeVisitor<CountVisitor>
+            {
+            public:
+                enum
+                {
+                    DoPreOrder = true
+                };
+                LocalInfo* info;
+                unsigned   arrays = 0, nodes = 0;
+                CountVisitor(Compiler* comp, LocalInfo* counts)
+                    : GenTreeVisitor(comp)
+                    , info(counts)
+                {
+                }
+                fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                {
+                    GenTree* node = *use;
+                    if (++nodes > 4096)
+                        return WALK_ABORT;
+                    if (node->OperIs(GT_ARR_ELEM))
+                        arrays++;
+                    if (node->OperIsLocal())
+                    {
+                        LocalInfo& count = info[node->AsLclVarCommon()->GetLclNum()];
+                        if (node->OperIs(GT_STORE_LCL_VAR))
+                            count.defs++;
+                        else if (node->OperIs(GT_LCL_VAR))
+                            count.uses++;
+                        else
+                            count.unusual = true;
+                    }
+                    return WALK_CONTINUE;
+                }
+            } counts(m_compiler, info);
+            unsigned statements     = 0;
+            bool     beforeConsumer = true;
+            for (Statement* stmt : m_block->Statements())
+            {
+                if (++statements > 64)
+                    break;
+                if (stmt == m_stmt)
+                    beforeConsumer = false;
+                GenTree* root = stmt->GetRootNode();
+                if (beforeConsumer && root->OperIs(GT_STORE_LCL_VAR))
+                    info[root->AsLclVarCommon()->GetLclNum()].definition = stmt;
+                counts.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                if (counts.nodes > 4096)
+                    break;
+            }
+            if ((statements > 64) || (counts.nodes > 4096) || (counts.arrays != 1))
+                return nullptr;
+
+            GenTree**   deferred    = nullptr;
+            Statement** definitions = nullptr;
+            unsigned    count       = 0;
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                GenTree* idx = arrElem->Indices()[i];
+                if (!idx->OperIs(GT_LCL_VAR))
+                    continue;
+                unsigned         num   = idx->AsLclVar()->GetLclNum();
+                const LocalInfo& local = info[num];
+                if (!IsScalarCapture(num) || (local.defs != 1) || (local.uses != 1) || local.unusual ||
+                    (local.definition == nullptr))
+                    continue;
+                GenTree* value   = local.definition->GetRootNode()->AsLclVarCommon()->Data();
+                unsigned baseNum = PlainFieldBase(value);
+                if ((baseNum == BAD_VAR_NUM) || !value->TypeIs(TYP_INT))
+                {
+                    JITDUMP("MD sink group rejects index %u: not a plain nonvolatile nonfaulting field load\n", i);
+                    continue;
+                }
+                bool safe = true;
+                for (Statement* crossed = local.definition->GetNextStmt(); crossed != m_stmt;
+                     crossed            = crossed->GetNextStmt())
+                {
+                    if (crossed == nullptr)
+                    {
+                        safe = false;
+                        break;
+                    }
+                    GenTree* root = crossed->GetRootNode();
+                    if (!root->OperIs(GT_STORE_LCL_VAR))
+                    {
+                        safe = false;
+                        break;
+                    }
+                    unsigned dest = root->AsLclVarCommon()->GetLclNum();
+                    if ((dest == baseNum) || !IsScalarCapture(dest))
+                    {
+                        safe = false;
+                        break;
+                    }
+                    GenTree* rhs = root->AsLclVarCommon()->Data();
+                    if (rhs->OperIs(GT_LCL_VAR, GT_CNS_INT) && ((rhs->gtFlags & GTF_ALL_EFFECT) == 0))
+                        continue;
+                    if (PlainFieldBase(rhs) == BAD_VAR_NUM)
+                    {
+                        safe = false;
+                        break;
+                    }
+                }
+                if (!safe)
+                {
+                    JITDUMP("MD sink group rejects index %u: crossed non-pure capture or changed base\n", i);
+                    continue;
+                }
+                if (deferred == nullptr)
+                {
+                    deferred    = m_compiler->getAllocator(CMK_Unknown).allocate<GenTree*>(arrElem->gtArrRank);
+                    definitions = m_compiler->getAllocator(CMK_Unknown).allocate<Statement*>(arrElem->gtArrRank);
+                    for (unsigned dim = 0; dim < arrElem->gtArrRank; dim++)
+                    {
+                        deferred[dim]    = nullptr;
+                        definitions[dim] = nullptr;
+                    }
+                }
+                deferred[i]    = value;
+                definitions[i] = local.definition;
+                count++;
+                JITDUMP("MD sink group proved index %u, V%02u, unchanged base V%02u against original IR\n", i, num,
+                        baseNum);
+            }
+            // Every proof above saw the original definitions and interference window.
+            // Remove captures only after the entire group has been validated.
+            if (deferred != nullptr)
+            {
+                for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+                    if (definitions[i] != nullptr)
+                        m_compiler->fgRemoveStmt(m_block, definitions[i]);
+            }
+            JITDUMP("MD sink group moved %u independently proven loads\n", count);
+            return deferred;
         }
 
         fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
@@ -15843,26 +16127,27 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                 return Compiler::WALK_CONTINUE;
             }
 
-            GenTreeArrElem* const arrElem = node->AsArrElem();
+            GenTreeArrElem* const arrElem      = node->AsArrElem();
+            bool                  isFirstArray = ((*m_processedArrayCount)++ == 0);
 
             JITDUMP("Morphing GT_ARR_ELEM [%06u] in " FMT_BB " of '%s'\n", dspTreeID(arrElem), m_block->bbNum,
                     m_compiler->info.compFullName);
             DISPTREE(arrElem);
 
             // impArrayAccessIntrinsic() ensures the following.
-            assert((2 <= arrElem->gtArrRank) && (arrElem->gtArrRank <= GT_ARR_MAX_RANK));
+            assert(2 <= arrElem->gtArrRank);
             assert(arrElem->gtArrObj->TypeIs(TYP_REF));
             assert(arrElem->TypeIs(TYP_BYREF));
 
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
-                assert(arrElem->gtArrInds[i] != nullptr);
+                assert(arrElem->Indices()[i] != nullptr);
 
                 // We cast the index operands to TYP_INT in the importer.
                 // Note that the offset calculation needs to be TYP_I_IMPL, as multiplying the linearized index
                 // by the array element scale might overflow (although does .NET support array objects larger than
                 // 2GB in size?).
-                assert(genActualType(arrElem->gtArrInds[i]->TypeGet()) == TYP_INT);
+                assert(genActualType(arrElem->Indices()[i]->TypeGet()) == TYP_INT);
             }
 
             // The order of evaluation of a[i,j,k] is: a, i, j, k. That is, if any of the i, j, k throw an
@@ -15873,13 +16158,28 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             // First, we need to make temp copies of the index expressions that have side-effects. We
             // always make a copy of the array object (below) so we can multi-use it.
             //
-            GenTree* idxToUse[GT_ARR_MAX_RANK];
-            unsigned idxToCopy[GT_ARR_MAX_RANK];
-            bool     anyIdxWithSideEffects = false;
+            GenTree** deferredIndices = isFirstArray ? TrySinkIndices(arrElem, user) : nullptr;
+            if (deferredIndices == nullptr)
+                deferredIndices = TryDeferDirectIndices(arrElem);
+            unsigned  rank = arrElem->gtArrRank;
+            GenTree*  inlineIdxToUse[GenTreeArrElem::InlineRank];
+            unsigned  inlineIdxToCopy[GenTreeArrElem::InlineRank];
+            GenTree** idxToUse              = (rank <= GenTreeArrElem::InlineRank)
+                                                  ? inlineIdxToUse
+                                                  : m_compiler->getAllocator(CMK_ASTNode).allocate<GenTree*>(rank);
+            unsigned* idxToCopy             = (rank <= GenTreeArrElem::InlineRank)
+                                                  ? inlineIdxToCopy
+                                                  : m_compiler->getAllocator(CMK_ASTNode).allocate<unsigned>(rank);
+            bool      anyIdxWithSideEffects = false;
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
-                GenTree* idx = arrElem->gtArrInds[i];
-                if ((idx->gtFlags & GTF_ALL_EFFECT) == 0)
+                GenTree* idx = arrElem->Indices()[i];
+                if ((deferredIndices != nullptr) && (deferredIndices[i] != nullptr))
+                {
+                    idxToUse[i]  = deferredIndices[i];
+                    idxToCopy[i] = BAD_VAR_NUM;
+                }
+                else if ((idx->gtFlags & GTF_ALL_EFFECT) == 0)
                 {
                     // No side-effect; just use it.
                     idxToUse[i]  = idx;
@@ -15902,7 +16202,6 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             unsigned arrLcl    = BAD_VAR_NUM;
             unsigned newArrLcl = BAD_VAR_NUM;
             GenTree* arrObj    = arrElem->gtArrObj;
-            unsigned rank      = arrElem->gtArrRank;
 
             // We are going to multiply reference the array object; create a new local var if necessary.
             if (arrObj->OperIs(GT_LCL_VAR))
@@ -15922,7 +16221,9 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
                 GenTree* idx = idxToUse[i];
-                assert((idx->gtFlags & GTF_ALL_EFFECT) == 0); // We should have taken care of side effects earlier.
+                assert(((idx->gtFlags & GTF_ALL_EFFECT) == 0) ||
+                       ((deferredIndices != nullptr) && (idx == deferredIndices[i]))); // Explicit proof permits only
+                                                                                       // this load.
 
                 GenTreeMDArr* const mdArrLowerBound =
                     m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank);
@@ -15985,7 +16286,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                     if (idxToCopy[i - 1] != BAD_VAR_NUM)
                     {
                         GenTree* const idxLclStore =
-                            m_compiler->gtNewTempStore(idxToCopy[i - 1], arrElem->gtArrInds[i - 1]);
+                            m_compiler->gtNewTempStore(idxToCopy[i - 1], arrElem->Indices()[i - 1]);
                         fullExpansion =
                             m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), idxLclStore, fullExpansion);
                     }
@@ -16004,7 +16305,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             DISPTREE(fullExpansion);
 
             *use      = fullExpansion;
-            m_changed = true;
+            m_maxRank = max(m_maxRank, static_cast<unsigned>(arrElem->gtArrRank));
 
             // The GT_ARR_ELEM node is no longer needed.
             DEBUG_DESTROY_NODE(node);
@@ -16013,14 +16314,16 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
         }
 
     private:
-        bool                   m_changed;
+        unsigned               m_maxRank;
         BasicBlock*            m_block;
+        Statement*             m_stmt;
+        unsigned*              m_processedArrayCount;
         MorphMDArrayTempCache* m_pTempCache;
     };
 
-    MorphMDArrayVisitor morphMDArrayVisitor(this, block, pTempCache);
+    MorphMDArrayVisitor morphMDArrayVisitor(this, block, stmt, pTempCache, processedArrayCount);
     morphMDArrayVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-    return morphMDArrayVisitor.Changed();
+    return morphMDArrayVisitor.MaxRank();
 }
 
 //------------------------------------------------------------------------
@@ -16115,13 +16418,14 @@ PhaseStatus Compiler::fgMorphArrayOps()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Maintain a cache of temp locals to use when we need a temp for this transformation. After each statement,
-    // reset the cache, meaning we can re-use any of the temps previously allocated. The idea here is to avoid
+    // Maintain a cache of temp locals to use when we need a temp for this transformation. After each high-rank
+    // statement, reset the cache so we can re-use the temps previously allocated. The idea here is to avoid
     // creating too many temporaries, since the JIT has a limit on the number of tracked locals. A temp created
     // here in one statement will have a distinct lifetime from a temp created in another statement, so register
     // allocation is not constrained.
 
-    bool                  changed = false;
+    bool                  changed             = false;
+    unsigned              processedArrayCount = 0;
     MorphMDArrayTempCache mdArrayTempCache(this);
 
     for (BasicBlock* const block : Blocks())
@@ -16137,7 +16441,8 @@ PhaseStatus Compiler::fgMorphArrayOps()
 
         for (Statement* const stmt : block->Statements())
         {
-            if (fgMorphArrayOpsStmt(&mdArrayTempCache, block, stmt))
+            unsigned maxRank = fgMorphArrayOpsStmt(&mdArrayTempCache, block, stmt, &processedArrayCount);
+            if (maxRank != 0)
             {
                 changed = true;
 
@@ -16150,6 +16455,13 @@ PhaseStatus Compiler::fgMorphArrayOps()
                 DISPTREE(morphedTree);
 
                 stmt->SetRootNode(morphedTree);
+            }
+
+            // Preserve the existing cache policy in methods containing only common ranks.
+            // In mixed methods, a high-rank statement makes its slots available to later statements.
+            if (maxRank > GenTreeArrElem::InlineRank)
+            {
+                mdArrayTempCache.Reset();
             }
         }
 

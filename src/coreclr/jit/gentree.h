@@ -7968,27 +7968,45 @@ struct GenTreeBoundsChk : public GenTreeOp
 //
 struct GenTreeArrElem : public GenTree
 {
-    GenTree* gtArrObj;
+    static constexpr unsigned InlineRank = 3;
 
-#define GT_ARR_MAX_RANK 3
-    GenTree*      gtArrInds[GT_ARR_MAX_RANK]; // Indices
-    unsigned char gtArrRank;                  // Rank of the array
+    GenTree*      gtArrObj;
+    unsigned char gtArrRank; // Rank of the array
 
     unsigned gtArrElemSize; // The size of the array elements. Used only on the
                             // optimization path of array intrinsics.
 
+private:
+    union
+    {
+        GenTree*  gtInlineInds[InlineRank];
+        GenTree** gtOtherInds;
+    };
+
+public:
+    GenTree** Indices()
+    {
+        return (gtArrRank <= InlineRank) ? gtInlineInds : gtOtherInds;
+    }
+
     // Requires that "inds" is a pointer to an array of "rank" nodes for the indices.
+    // For ranks greater than InlineRank, the node takes ownership of the array, which
+    // must be allocated in the compiler's arena.
     GenTreeArrElem(var_types type, GenTree* arr, unsigned char rank, unsigned elemSize, GenTree** inds)
         : GenTree(GT_ARR_ELEM, type)
         , gtArrObj(arr)
         , gtArrRank(rank)
         , gtArrElemSize(elemSize)
     {
-        assert(rank <= ArrLen(gtArrInds));
+        if (rank > InlineRank)
+        {
+            gtOtherInds = inds;
+        }
+
         gtFlags |= (arr->gtFlags & GTF_ALL_EFFECT);
         for (unsigned char i = 0; i < rank; i++)
         {
-            gtArrInds[i] = inds[i];
+            Indices()[i] = inds[i];
             gtFlags |= (inds[i]->gtFlags & GTF_ALL_EFFECT);
         }
         gtFlags |= GTF_EXCEPT;

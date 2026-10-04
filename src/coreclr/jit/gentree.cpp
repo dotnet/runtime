@@ -3127,7 +3127,7 @@ AGAIN:
             unsigned dim;
             for (dim = 0; dim < op1->AsArrElem()->gtArrRank; dim++)
             {
-                if (!Compare(op1->AsArrElem()->gtArrInds[dim], op2->AsArrElem()->gtArrInds[dim]))
+                if (!Compare(op1->AsArrElem()->Indices()[dim], op2->AsArrElem()->Indices()[dim]))
                 {
                     return false;
                 }
@@ -3700,7 +3700,7 @@ AGAIN:
             unsigned dim;
             for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
             {
-                hash = genTreeHashAdd(hash, gtHashValue(tree->AsArrElem()->gtArrInds[dim]));
+                hash = genTreeHashAdd(hash, gtHashValue(tree->AsArrElem()->Indices()[dim]));
             }
 
             break;
@@ -7833,13 +7833,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             for (unsigned dim = 0; dim < arrElem->gtArrRank; dim++)
             {
-                lvl2 = gtSetEvalOrder(arrElem->gtArrInds[dim]);
+                lvl2 = gtSetEvalOrder(arrElem->Indices()[dim]);
                 if (level < lvl2)
                 {
                     level = lvl2;
                 }
-                costEx += arrElem->gtArrInds[dim]->GetCostEx();
-                costSz += arrElem->gtArrInds[dim]->GetCostSz();
+                costEx += arrElem->Indices()[dim]->GetCostEx();
+                costSz += arrElem->Indices()[dim]->GetCostSz();
             }
 
             level += arrElem->gtArrRank;
@@ -8490,9 +8490,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 
                 for (unsigned i = 0; i < arrElem->gtArrRank; i++)
                 {
-                    if (operand == arrElem->gtArrInds[i])
+                    if (operand == arrElem->Indices()[i])
                     {
-                        *pUse = &arrElem->gtArrInds[i];
+                        *pUse = &arrElem->Indices()[i];
                         return true;
                     }
                 }
@@ -11679,10 +11679,13 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
         case GT_ARR_ELEM:
         {
             GenTreeArrElem* arrElem = tree->AsArrElem();
-            GenTree*        inds[GT_ARR_MAX_RANK];
+            GenTree*        inlineInds[GenTreeArrElem::InlineRank];
+            GenTree**       inds = (arrElem->gtArrRank <= GenTreeArrElem::InlineRank)
+                                       ? inlineInds
+                                       : getAllocator(CMK_ASTNode).allocate<GenTree*>(arrElem->gtArrRank);
             for (unsigned dim = 0; dim < arrElem->gtArrRank; dim++)
             {
-                inds[dim] = gtCloneExpr(arrElem->gtArrInds[dim]);
+                inds[dim] = gtCloneExpr(arrElem->Indices()[dim]);
             }
             copy = new (this, GT_ARR_ELEM) GenTreeArrElem(arrElem->TypeGet(), gtCloneExpr(arrElem->gtArrObj),
                                                           arrElem->gtArrRank, arrElem->gtArrElemSize, &inds[0]);
@@ -12366,7 +12369,7 @@ void GenTreeUseEdgeIterator::AdvanceArrElem()
 {
     if (m_state < m_node->AsArrElem()->gtArrRank)
     {
-        m_edge = &m_node->AsArrElem()->gtArrInds[m_state];
+        m_edge = &m_node->AsArrElem()->Indices()[m_state];
         assert(*m_edge != nullptr);
         m_state++;
     }
@@ -12929,12 +12932,21 @@ void Compiler::gtDispNodeName(GenTree* tree)
     }
     else if (tree->OperIs(GT_ARR_ELEM))
     {
-        bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s[", name);
-        for (unsigned rank = tree->AsArrElem()->gtArrRank - 1; rank; rank--)
+        unsigned rank = tree->AsArrElem()->gtArrRank;
+        if (rank > GenTreeArrElem::InlineRank)
         {
-            bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), ",");
+            // A comma for every dimension can exceed the fixed-size display buffer.
+            sprintf_s(buf, sizeof(buf), " %s[rank=%u]", name, rank);
         }
-        SimpleSprintf_s(bufp, buf, sizeof(buf), "]");
+        else
+        {
+            bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s[", name);
+            for (unsigned dim = 1; dim < rank; dim++)
+            {
+                bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), ",");
+            }
+            SimpleSprintf_s(bufp, buf, sizeof(buf), "]");
+        }
     }
     else if (tree->OperIs(GT_LEA))
     {
@@ -15107,7 +15119,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
                 {
                     IndentInfo arcType = ((dim + 1) == tree->AsArrElem()->gtArrRank) ? IIArcBottom : IIArc;
-                    gtDispChild(tree->AsArrElem()->gtArrInds[dim], indentStack, arcType, nullptr, topOnly);
+                    gtDispChild(tree->AsArrElem()->Indices()[dim], indentStack, arcType, nullptr, topOnly);
                 }
             }
             break;

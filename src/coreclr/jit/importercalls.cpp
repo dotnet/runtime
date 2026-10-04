@@ -13603,15 +13603,6 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     unsigned rank = (intrinsicName == NI_Array_Set) ? (sig->numArgs - 1) : sig->numArgs;
 
-    // Handle a maximum rank of GT_ARR_MAX_RANK (3). This is an implementation choice (larger ranks are expected
-    // to be rare) and could be increased.
-    if (rank > GT_ARR_MAX_RANK)
-    {
-        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because rank (%d) > GT_ARR_MAX_RANK (%d)\n", rank,
-                GT_ARR_MAX_RANK);
-        return nullptr;
-    }
-
     // The rank 1 case is special because it has to handle two array formats. We will simply not do that case.
     if (rank <= 1)
     {
@@ -13688,9 +13679,11 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     optMethodFlags |= OMF_HAS_MDARRAYREF;
     compCurBB->SetFlags(BBF_HAS_MDARRAYREF);
 
-    noway_assert((unsigned char)GT_ARR_MAX_RANK == GT_ARR_MAX_RANK);
+    noway_assert(static_cast<unsigned char>(rank) == rank);
 
-    GenTree* inds[GT_ARR_MAX_RANK];
+    GenTree*  inlineInds[GenTreeArrElem::InlineRank];
+    GenTree** inds =
+        (rank <= GenTreeArrElem::InlineRank) ? inlineInds : getAllocator(CMK_ASTNode).allocate<GenTree*>(rank);
     for (unsigned k = rank; k > 0; k--)
     {
         // The indices should be converted to `int` type, as they would be if the intrinsic was not expanded.

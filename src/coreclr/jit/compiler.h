@@ -6344,7 +6344,7 @@ public:
         }
     };
 
-    bool fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock* block, Statement* stmt);
+    unsigned fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock* block, Statement* stmt, unsigned* processedArrayCount);
     PhaseStatus fgMorphArrayOps();
 
     void fgSetOptions();
@@ -13215,7 +13215,7 @@ public:
                     const unsigned rank = arrElem->gtArrRank;
                     for (unsigned dim = 0; dim < rank; dim++)
                     {
-                        result = WalkTree(&arrElem->gtArrInds[dim], arrElem);
+                        result = WalkTree(&arrElem->Indices()[dim], arrElem);
                         if (result == fgWalkResult::WALK_ABORT)
                         {
                             return result;

@@ -4405,7 +4405,7 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             RETURN_IF_ABORT(visitor(&arrElem->gtArrObj));
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
-                RETURN_IF_ABORT(visitor(&arrElem->gtArrInds[i]));
+                RETURN_IF_ABORT(visitor(&arrElem->Indices()[i]));
             }
             return VisitResult::Continue;
         }
