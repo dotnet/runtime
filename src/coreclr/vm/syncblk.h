@@ -568,6 +568,17 @@ class SyncTableEntry
     PTR_SyncBlock    m_SyncBlock;
     VolatilePtr<Object, PTR_Object> m_Object;
     static PTR_SyncTableEntry GetSyncTableEntry();
+    FORCEINLINE static PTR_SyncTableEntry GetSyncTableEntryAcquire()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+#ifdef DACCESS_COMPILE
+        return GetSyncTableEntry();
+#else
+        return (PTR_SyncTableEntry)VolatileLoad(&g_pSyncTable);
+#endif // DACCESS_COMPILE
+    }
 #ifndef DACCESS_COMPILE
     static SyncTableEntry*& GetSyncTableEntryByRef();
 #endif
@@ -905,7 +916,18 @@ class ObjHeader
     PTR_SyncBlock PassiveGetSyncBlock()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return g_pSyncTable [(int)GetHeaderSyncBlockIndex()].m_SyncBlock;
+        // The table load must follow the acquire of the header index.
+        DWORD value = GetBitsAcquire();
+        if ((value & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) != BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+            return NULL;
+
+        DWORD index = value & MASK_SYNCBLOCKINDEX;
+        PTR_SyncTableEntry syncTable = SyncTableEntry::GetSyncTableEntryAcquire();
+#ifdef DACCESS_COMPILE
+        return syncTable[(int)index].m_SyncBlock;
+#else
+        return VolatileLoad(&syncTable[(int)index].m_SyncBlock);
+#endif // DACCESS_COMPILE
     }
 
     DWORD GetSyncBlockIndex();

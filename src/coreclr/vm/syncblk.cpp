@@ -1467,7 +1467,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    DWORD bits = GetBits ();
+    DWORD bits = GetBitsAcquire ();
     Object * obj = GetBaseObject ();
     BOOL bVerifyMore = g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_SYNCBLK;
     //the highest 2 bits have reloaded meaning
@@ -1499,7 +1499,8 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
             if (bVerifySyncBlkIndex  && GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid ())
             {
                 DWORD sbIndex = bits & MASK_SYNCBLOCKINDEX;
-                ASSERT_AND_CHECK(SyncTableEntry::GetSyncTableEntry()[sbIndex].m_Object == obj);
+                PTR_SyncTableEntry syncTable = SyncTableEntry::GetSyncTableEntryAcquire();
+                ASSERT_AND_CHECK(syncTable[sbIndex].m_Object == obj);
             }
         }
         else
@@ -1562,8 +1563,9 @@ SyncBlock *ObjHeader::GetSyncBlock()
     {
 #ifdef _DEBUG
         // Has our backpointer been correctly updated through every GC?
-        PTR_SyncTableEntry pEntries(SyncTableEntry::GetSyncTableEntry());
-        _ASSERTE(pEntries[GetHeaderSyncBlockIndex()].m_Object == GetBaseObject());
+        DWORD index = GetBitsAcquire() & MASK_SYNCBLOCKINDEX;
+        PTR_SyncTableEntry pEntries(SyncTableEntry::GetSyncTableEntryAcquire());
+        _ASSERTE(pEntries[index].m_Object == GetBaseObject());
 #endif // _DEBUG
         return syncBlock;
     }
@@ -1627,7 +1629,11 @@ SyncBlock *ObjHeader::GetSyncBlock()
                     }
                 }
 
-                SyncTableEntry::GetSyncTableEntry() [indx].m_SyncBlock = syncBlock;
+                if (indexHeld)
+                    syncBlock->SetPrecious();
+
+                // Publish the fully initialized block before any reader can discover it.
+                VolatileStore(&SyncTableEntry::GetSyncTableEntry()[indx].m_SyncBlock, syncBlock);
 
                 // in order to avoid a race where some thread tries to get the AD index and we've already zapped it,
                 // make sure the syncblock etc is all setup with the AD index prior to replacing the index
@@ -1637,11 +1643,6 @@ SyncBlock *ObjHeader::GetSyncBlock()
                     // We have transferred the AppDomain into the syncblock above.
                     SetIndex(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | indx);
                 }
-
-                //If we had already an index, hold the syncblock
-                //for the lifetime of the object.
-                if (indexHeld)
-                    syncBlock->SetPrecious();
 
                 ReleaseSpinLock();
             }
