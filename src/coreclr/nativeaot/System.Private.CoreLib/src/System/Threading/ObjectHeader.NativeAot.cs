@@ -73,7 +73,7 @@ namespace System.Threading
                     return hashOrIndex;
                 }
 
-                if (HasSyncEntryIndex(bits))
+                if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                 {
                     // Look up the hash code in the SyncTable
                     int hashCode = SyncTable.GetHashCode(GetSyncEntryIndex(pHeader));
