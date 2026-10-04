@@ -1499,8 +1499,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
             if (bVerifySyncBlkIndex  && GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid ())
             {
                 DWORD sbIndex = bits & MASK_SYNCBLOCKINDEX;
-                PTR_SyncTableEntry syncTable = SyncTableEntry::GetSyncTableEntry();
-                ASSERT_AND_CHECK(syncTable[sbIndex].m_Object == obj);
+                ASSERT_AND_CHECK(SyncTableEntry::GetSyncTableEntry()[sbIndex].m_Object == obj);
             }
         }
         else

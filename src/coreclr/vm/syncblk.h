@@ -914,8 +914,7 @@ class ObjHeader
 #ifdef DACCESS_COMPILE
         return SyncTableEntry::GetSyncTableEntry()[(int)index].m_SyncBlock;
 #else
-        PTR_SyncTableEntry syncTable = g_pSyncTable;
-        return VolatileLoad(&syncTable[(int)index].m_SyncBlock);
+        return VolatileLoad(&g_pSyncTable[(int)index].m_SyncBlock);
 #endif // DACCESS_COMPILE
     }
 
