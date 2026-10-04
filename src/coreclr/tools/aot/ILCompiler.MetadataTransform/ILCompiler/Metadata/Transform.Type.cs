@@ -236,10 +236,6 @@ namespace ILCompiler.Metadata
                 var enclosingType = (TypeDefinition)HandleType(containingType);
                 record.EnclosingType = enclosingType;
                 enclosingType.NestedTypes.Add(record);
-
-                var namespaceDefinition =
-                    HandleNamespaceDefinition(containingType.Module, entity.ContainingType.GetNamespace());
-                record.NamespaceDefinition = namespaceDefinition;
             }
             else
             {

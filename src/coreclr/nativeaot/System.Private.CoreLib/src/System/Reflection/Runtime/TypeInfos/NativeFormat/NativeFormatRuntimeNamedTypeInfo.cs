@@ -373,7 +373,17 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return _lazyNamespaceChain ??= new NamespaceChain(_reader, _typeDefinition.NamespaceDefinition);
+                NamespaceChain? namespaceChain = _lazyNamespaceChain;
+                if (namespaceChain is null)
+                {
+                    TypeDefinition typeDefinition = _typeDefinition;
+                    while (typeDefinition.NamespaceDefinition.IsNil)
+                        typeDefinition = typeDefinition.EnclosingType.GetTypeDefinition(_reader);
+
+                    namespaceChain = _lazyNamespaceChain ??= new NamespaceChain(_reader, typeDefinition.NamespaceDefinition);
+                }
+
+                return namespaceChain;
             }
         }
 
