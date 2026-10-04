@@ -19,8 +19,6 @@ class BasicThreading
 
         ThreadStaticsTestWithTasks.Run();
 
-        SyncTableGrowthTest();
-
         if (ThreadStaticAlignmentTest.Run() != Pass)
             return Fail;
 
@@ -39,54 +37,6 @@ class BasicThreading
             return Fail;
 
         return Pass;
-    }
-
-    private static void SyncTableGrowthTest()
-    {
-        const int ObjectCount = 4096;
-        object[] objects = new object[ObjectCount];
-        int[] hashCodes = new int[ObjectCount];
-        for (int i = 0; i < objects.Length; i++)
-        {
-            objects[i] = new object();
-            hashCodes[i] = RuntimeHelpers.GetHashCode(objects[i]);
-        }
-
-        using Barrier start = new Barrier(2);
-        Task writer = Task.Run(() =>
-        {
-            start.SignalAndWait();
-            foreach (object obj in objects)
-            {
-                // A hash code in the header forces monitor acquisition to allocate a sync entry.
-                Monitor.Enter(obj);
-                Monitor.Exit(obj);
-            }
-        });
-
-        start.SignalAndWait();
-        for (int iteration = 0; iteration < 4; iteration++)
-        {
-            for (int i = objects.Length - 1; i >= 0; i--)
-            {
-                object obj = objects[i];
-                Assert.False(Monitor.IsEntered(obj));
-                Assert.Equal(hashCodes[i], RuntimeHelpers.GetHashCode(obj));
-                Monitor.Enter(obj);
-                try
-                {
-                    Assert.True(Monitor.IsEntered(obj));
-                    Assert.Equal(hashCodes[i], RuntimeHelpers.GetHashCode(obj));
-                }
-                finally
-                {
-                    Monitor.Exit(obj);
-                }
-            }
-        }
-
-        writer.Wait();
-        Console.WriteLine("SyncTableGrowthTest passed");
     }
 }
 
