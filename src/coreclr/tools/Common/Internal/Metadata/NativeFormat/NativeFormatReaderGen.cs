@@ -4966,7 +4966,7 @@ namespace Internal.Metadata.NativeFormat
         public Handle BaseType => _baseType;
         private readonly Handle _baseType;
 
-        /// A namespace definition for top-level types or the enclosing type for nested types.
+        /// One of: NamespaceDefinition, TypeDefinition
         public Handle NamespaceOrEnclosingType => _namespaceOrEnclosingType;
         private readonly Handle _namespaceOrEnclosingType;
 

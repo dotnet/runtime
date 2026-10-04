@@ -461,7 +461,7 @@ internal sealed class SchemaDef
             members: new MemberDef[] {
                 new MemberDef("Flags", "TypeAttributes"),
                 new MemberDef("BaseType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("NamespaceOrEnclosingType", new[] { "NamespaceDefinition", "TypeDefinition" }, MemberDefFlags.RecordRef | MemberDefFlags.Compare, comment: "A namespace definition for top-level types or the enclosing type for nested types."),
+                new MemberDef("NamespaceOrEnclosingType", new[] { "NamespaceDefinition", "TypeDefinition" }, MemberDefFlags.RecordRef | MemberDefFlags.Compare),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
                 new MemberDef("Size", "uint"),
                 new MemberDef("PackingSize", "ushort"),
