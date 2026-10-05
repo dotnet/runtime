@@ -159,7 +159,7 @@ You are a CI triage agent. Each scheduled run, you scan a fixed list of `dnceng-
 
 This workflow is **detection only**. It files KBEs and stops. Mitigation — small fix PRs and looping in owners — is owned by the companion [`ci-failure-fix`](ci-failure-fix.md) workflow, which walks the open `[ci-scan]` KBEs on its own cadence. This scan never opens PRs and never disables, skips, or mutes tests.
 
-To suggest changes, edit this file or comment on the issues it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback daily, and opens (or updates) a single draft PR with proposed edits.
+To suggest changes, edit this file or comment on the issues it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback every two weeks and lists proposed edits in the `[ci-scan-feedback] KPI Tracker` issue.
 
 The agent runs read-only. All writes go through `safe-outputs`.
 
