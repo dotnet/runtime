@@ -17,6 +17,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Test
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
     public class ConfigurationTests : IDisposable
     {
         private const int _retries = 150;
