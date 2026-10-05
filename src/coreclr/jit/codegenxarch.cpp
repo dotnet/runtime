@@ -1073,11 +1073,12 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     else
     {
         // when reg3 != reg1 && reg3 != reg2, and NDD is available, we can use APX-EVEX.ND to optimize the codegen.
-        // For performance, avoid the memory-source form of EVEX.ND; keep NDD only for register and immediate sources.
-        eligibleForNDD = emit->DoJitUseApxNDD(ins) && !op2->isUsedFromMemory();
+        eligibleForNDD = emit->DoJitUseApxNDD(ins, op2);
         if (!eligibleForNDD)
         {
             var_types op1Type = op1->TypeGet();
+            // The mov must not clobber a base/index register of a contained op2; LSRA delay-frees those.
+            assert((op2->gtGetContainedRegMask() & genRegMask(targetReg)) == 0);
             inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
             regSet.verifyRegUsed(targetReg);
             gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
@@ -1118,7 +1119,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         assert(dst->isUsedFromReg());
         assert(op1reg != targetReg);
         assert(op2reg != targetReg);
-        r = emit->emitIns_BASE_R_R_RM(ins, emitTypeSize(treeNode), targetReg, treeNode, dst, src);
+        r = emit->emitIns_BASE_R_R_RM(ins, emitTypeSize(treeNode), targetReg, treeNode, dst, src, eligibleForNDD);
     }
     else
     {
@@ -1277,7 +1278,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
         }
         assert(regOp->isUsedFromReg());
 
-        emit->emitIns_BASE_R_R_RM(ins, size, mulTargetReg, treeNode, regOp, rmOp);
+        emit->emitIns_BASE_R_R_RM(ins, size, mulTargetReg, treeNode, regOp, rmOp, emit->DoJitUseApxNDD(ins, rmOp));
 
         // Move the result to the desired register, if necessary
         if (ins == INS_mulEAX)
