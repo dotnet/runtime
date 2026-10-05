@@ -112,35 +112,39 @@ namespace System.Buffers.Text
 #if NET
             if (maxSrcLength >= Vector128DecodeInputLength)
             {
+                // Bound the vector kernels by maxSrcLength so their wide stores never land past the final bytesWritten.
+                ReadOnlySpan<T> simdSrc = source.Slice(0, maxSrcLength);
+
                 if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported)
                 {
-                    if (src.Length >= Vector128DecodeInputLength && dest.Length >= Avx512DecodeTailOutputLength)
+                    if (dest.Length >= Avx512DecodeTailOutputLength)
                     {
-                        Avx512Decode(decoder, ref src, ref dest);
+                        Avx512Decode(decoder, ref simdSrc, ref dest);
+                    }
+                }
+                else
+                {
+                    if (Avx2.IsSupported && simdSrc.Length >= Avx2DecodeMinInputLength && dest.Length >= Avx2DecodeStoreLength)
+                    {
+                        Avx2Decode(decoder, ref simdSrc, ref dest);
                     }
 
-                    goto Scalar;
+                    if (AdvSimd.Arm64.IsSupported && simdSrc.Length >= AdvSimdDecodeMinInputLength && dest.Length >= AdvSimdDecodeOutputLength)
+                    {
+                        AdvSimdDecode(decoder, ref simdSrc, ref dest);
+                    }
+
+                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
+                        BitConverter.IsLittleEndian &&
+                        simdSrc.Length >= Vector128DecodeMinInputLength &&
+                        dest.Length >= Vector128DecodeStoreLength)
+                    {
+                        Vector128Decode(decoder, ref simdSrc, ref dest);
+                    }
                 }
 
-                if (Avx2.IsSupported && src.Length >= Avx2DecodeMinInputLength && dest.Length >= Avx2DecodeStoreLength)
-                {
-                    Avx2Decode(decoder, ref src, ref dest);
-                }
-
-                if (AdvSimd.Arm64.IsSupported && src.Length >= AdvSimdDecodeMinInputLength && dest.Length >= AdvSimdDecodeOutputLength)
-                {
-                    AdvSimdDecode(decoder, ref src, ref dest);
-                }
-
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
-                    BitConverter.IsLittleEndian &&
-                    src.Length >= Vector128DecodeMinInputLength &&
-                    dest.Length >= Vector128DecodeStoreLength)
-                {
-                    Vector128Decode(decoder, ref src, ref dest);
-                }
+                src = source.Slice(maxSrcLength - simdSrc.Length);
             }
-        Scalar:
 #endif
 
             // Last bytes could have padding characters, so process them separately and treat them as valid only if isFinalBlock is true

@@ -93,6 +93,7 @@ namespace System.Buffers.Text
             return false;
         }
 
+#if !NET
         internal static int IndexOfAnyExcept(ReadOnlySpan<char> span, ReadOnlySpan<sbyte> decodingMap)
         {
             for (int i = 0; i < span.Length; i++)
@@ -117,6 +118,7 @@ namespace System.Buffers.Text
             }
             return -1;
         }
+#endif
 
         internal interface IBase64Validatable<T>
         {

@@ -302,7 +302,8 @@ namespace System.Buffers.Text
             ReadOnlySpan<byte> src = srcBytes;
             Span<T> dest = destBytes;
 
-            if (src.Length < Avx2EncodeReadLength)
+            // The exit adjustment below assumes at least one iteration ran.
+            if (src.Length < Avx2EncodeReadLength || dest.Length < Avx2EncodeOutputLength)
             {
                 return;
             }
