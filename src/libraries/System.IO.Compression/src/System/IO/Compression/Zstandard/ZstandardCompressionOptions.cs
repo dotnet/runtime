@@ -120,7 +120,7 @@ namespace System.IO.Compression
         /// <value><see langword="true"/> if long-distance matching is enabled; otherwise, <see langword="false"/>.</value>
         /// <remarks>Setting this property to <see langword="true" /> might improve compression ratios for large files at the cost of higher memory usage.</remarks>
         public bool EnableLongDistanceMatching { get; set; }
- 
+
         /// <summary>Gets or sets the base-2 logarithm of the initial probe (hash) table size to use for Zstandard compression.</summary>
         /// <value>The base-2 logarithm of the hash table size. The valid range is from <see cref="MinHashLog2"/> to <see cref="MaxHashLog2"/>.</value>
         /// <remarks>
