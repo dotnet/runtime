@@ -65,43 +65,28 @@ namespace System.Buffers.Text
                 if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported)
                 {
                     Avx512Encode(encoder, ref src, ref dest);
-                    goto Scalar;
                 }
-
-                if (Avx2.IsSupported && src.Length >= Avx2EncodeReadLength && dest.Length >= Avx2EncodeOutputLength)
+                else
                 {
-                    Avx2Encode(encoder, ref src, ref dest);
-
-                    if (src.IsEmpty)
+                    if (Avx2.IsSupported && src.Length >= Avx2EncodeReadLength && dest.Length >= Avx2EncodeOutputLength)
                     {
-                        goto DoneExit;
+                        Avx2Encode(encoder, ref src, ref dest);
                     }
-                }
 
-                if (AdvSimd.Arm64.IsSupported && src.Length >= AdvSimdEncodeInputLength && dest.Length >= AdvSimdEncodeOutputLength)
-                {
-                    AdvSimdEncode(encoder, ref src, ref dest);
-
-                    if (src.IsEmpty)
+                    if (AdvSimd.Arm64.IsSupported && src.Length >= AdvSimdEncodeInputLength && dest.Length >= AdvSimdEncodeOutputLength)
                     {
-                        goto DoneExit;
+                        AdvSimdEncode(encoder, ref src, ref dest);
                     }
-                }
 
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
-                    BitConverter.IsLittleEndian &&
-                    src.Length >= Vector128EncodeReadLength &&
-                    dest.Length >= Vector128EncodeOutputLength)
-                {
-                    Vector128Encode(encoder, ref src, ref dest);
-
-                    if (src.IsEmpty)
+                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
+                        BitConverter.IsLittleEndian &&
+                        src.Length >= Vector128EncodeReadLength &&
+                        dest.Length >= Vector128EncodeOutputLength)
                     {
-                        goto DoneExit;
+                        Vector128Encode(encoder, ref src, ref dest);
                     }
                 }
             }
-        Scalar:
 #endif
             ReadOnlySpan<byte> encodingMap = encoder.EncodingMap;
 
@@ -655,81 +640,40 @@ namespace System.Buffers.Text
             }
 
             ReadOnlySpan<byte> encodingMap = encoder.EncodingMap;
-            if (dataLength <= 3)
-            {
-                if (dataLength == 1)
-                {
-                    encoder.EncodeOneOptionallyPadTwo(buffer, buffer, encodingMap);
-                }
-                else if (dataLength == 2)
-                {
-                    encoder.EncodeTwoOptionallyPadOne(buffer, buffer, encodingMap);
-                }
-                else if (dataLength == 3)
-                {
-                    uint input = ((uint)buffer[0] << 16) | ((uint)buffer[1] << 8) | buffer[2];
-                    uint result = Encode(input, encodingMap);
-                    BinaryPrimitives.WriteUInt32LittleEndian(buffer, result);
-                }
-
-                bytesWritten = encodedLength;
-                return OperationStatus.Done;
-            }
-
-            return EncodeToUtf8InPlaceCore(encoder, buffer, dataLength, encodedLength, out bytesWritten);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static OperationStatus EncodeToUtf8InPlaceCore<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer,
-            int dataLength, int encodedLength, out int bytesWritten)
-            where TBase64Encoder : IBase64Encoder<byte>
-        {
-            ReadOnlySpan<byte> encodingMap = encoder.EncodingMap;
             int leftover = (int)((uint)dataLength % 3); // how many bytes after packs of 3
-
-            uint destinationIndex = encoder.GetInPlaceDestinationLength(encodedLength, leftover);
-            uint sourceIndex = (uint)(dataLength - leftover);
+            int sourceIndex = dataLength - leftover;
+            int destinationIndex = sourceIndex / 3 * 4;
 
             // encode last pack to avoid conditional in the main loop
-            if (leftover != 0)
+            if (leftover == 1)
             {
-                if (leftover == 1)
-                {
-                    encoder.EncodeOneOptionallyPadTwo(buffer.Slice((int)sourceIndex), buffer.Slice((int)destinationIndex), encodingMap);
-                }
-                else
-                {
-                    encoder.EncodeTwoOptionallyPadOne(buffer.Slice((int)sourceIndex), buffer.Slice((int)destinationIndex), encodingMap);
-                }
+                encoder.EncodeOneOptionallyPadTwo(buffer.Slice(sourceIndex), buffer.Slice(destinationIndex), encodingMap);
+            }
+            else if (leftover == 2)
+            {
+                encoder.EncodeTwoOptionallyPadOne(buffer.Slice(sourceIndex), buffer.Slice(destinationIndex), encodingMap);
             }
 
             if (sourceIndex > MaxSmallInPlaceInputLength)
             {
-                EncodeChunksInPlace(encoder, buffer, (int)sourceIndex);
-                bytesWritten = encodedLength;
-                return OperationStatus.Done;
+                EncodeChunksInPlace(encoder, buffer, sourceIndex);
             }
 #if NET
-            if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && sourceIndex >= Vector128EncodeInputLength)
+            else if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && sourceIndex >= Vector128EncodeInputLength)
             {
-                EncodeSmallInPlace(buffer, (int)sourceIndex, encodingMap);
-                bytesWritten = encodedLength;
-                return OperationStatus.Done;
+                EncodeSmallInPlace(buffer, sourceIndex, encodingMap);
             }
 #endif
-            if (leftover != 0)
+            else
             {
-                destinationIndex -= 4;
-            }
-
-            sourceIndex -= 3;
-            while ((int)sourceIndex >= 0)
-            {
-                uint input = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice((int)sourceIndex)) >> 8;
-                uint result = Encode(input, encodingMap);
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice((int)destinationIndex), result);
-                destinationIndex -= 4;
-                sourceIndex -= 3;
+                // Expand packs from the end so unread input is never overwritten.
+                while (sourceIndex > 0)
+                {
+                    sourceIndex -= 3;
+                    destinationIndex -= 4;
+                    uint input = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(sourceIndex)) >> 8;
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(destinationIndex), Encode(input, encodingMap));
+                }
             }
 
             bytesWritten = encodedLength;
@@ -855,8 +799,6 @@ namespace System.Buffers.Text
                 srcLength <= MaximumEncodeLength && destLength >= Base64.GetMaxEncodedToUtf8Length(srcLength) ?
                 srcLength : (destLength >> 2) * 3;
 
-            public uint GetInPlaceDestinationLength(int encodedLength, int _) => (uint)(encodedLength - 4);
-
             public int GetMaxEncodedLength(int srcLength) => Base64.GetMaxEncodedToUtf8Length(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -944,8 +886,6 @@ namespace System.Buffers.Text
 
             public int GetMaxSrcLength(int srcLength, int destLength) =>
                 default(Base64EncoderByte).GetMaxSrcLength(srcLength, destLength);
-
-            public uint GetInPlaceDestinationLength(int encodedLength, int _) => 0; // not used for char encoding
 
             public int GetMaxEncodedLength(int _) => 0;  // not used for char encoding
 

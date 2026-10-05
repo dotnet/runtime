@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if NET
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 #endif
@@ -15,13 +15,13 @@ namespace System.Buffers.Text
     {
         internal const int MaxStackallocThreshold = 256;
 
+#if NET
         [DoesNotReturn]
         internal static void ThrowUnreachableException()
         {
             throw new UnreachableException();
         }
 
-#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static (Vector128<byte>, Vector128<byte>, Vector128<byte>) LoadArmVector128x3(ReadOnlySpan<byte> source)
         {
@@ -84,7 +84,6 @@ namespace System.Buffers.Text
             uint Ssse3AdvSimdLutE3 { get; }
             int GetMaxSrcLength(int srcLength, int destLength);
             int GetMaxEncodedLength(int srcLength);
-            uint GetInPlaceDestinationLength(int encodedLength, int leftOver);
             void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<T> dest, ReadOnlySpan<byte> encodingMap);
             void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> oneByte, Span<T> dest, ReadOnlySpan<byte> encodingMap);
             void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<T> destination, ReadOnlySpan<byte> encodingMap);
@@ -145,10 +144,7 @@ namespace System.Buffers.Text
 #endif // NET
             int DecodeFourElements(ReadOnlySpan<T> source, ReadOnlySpan<sbyte> decodingMap);
             int DecodeRemaining(ReadOnlySpan<T> srcEnd, ReadOnlySpan<sbyte> decodingMap, int remaining, out uint t2, out uint t3);
-            int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<T> span);
-            OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(TTBase64Decoder decoder, ReadOnlySpan<T> source,
-                Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
-                where TTBase64Decoder : IBase64Decoder<T>;
+            int ToInt32(T value);
         }
     }
 }

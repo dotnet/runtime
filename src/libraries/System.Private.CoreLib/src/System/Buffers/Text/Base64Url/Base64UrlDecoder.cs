@@ -423,13 +423,7 @@ namespace System.Buffers.Text
             public int DecodeRemaining(ReadOnlySpan<byte> srcEnd, ReadOnlySpan<sbyte> decodingMap, int remaining, out uint t2, out uint t3) =>
                 default(Base64DecoderByte).DecodeRemaining(srcEnd, decodingMap, remaining, out t2, out t3);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span) => default(Base64DecoderByte).IndexOfAnyExceptWhiteSpace(span);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> utf8, Span<byte> bytes,
-                ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<byte> =>
-                DecodeWithWhiteSpaceBlockwise(decoder, utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+            public int ToInt32(byte value) => value;
         }
 
         private readonly struct Base64UrlDecoderChar : IBase64Decoder<ushort>
@@ -508,13 +502,7 @@ namespace System.Buffers.Text
             public int DecodeRemaining(ReadOnlySpan<ushort> srcEnd, ReadOnlySpan<sbyte> decodingMap, int remaining, out uint t2, out uint t3) =>
                 default(Base64DecoderChar).DecodeRemaining(srcEnd, decodingMap, remaining, out t2, out t3);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<ushort> span) => default(Base64DecoderChar).IndexOfAnyExceptWhiteSpace(span);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes,
-                ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<ushort> =>
-                DecodeWithWhiteSpaceBlockwise(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+            public int ToInt32(ushort value) => value;
         }
     }
 }

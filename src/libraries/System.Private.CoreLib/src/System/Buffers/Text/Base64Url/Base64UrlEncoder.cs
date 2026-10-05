@@ -242,9 +242,6 @@ namespace System.Buffers.Text
                 srcLength <= MaximumEncodeLength && destLength >= GetEncodedLength(srcLength) ?
                 srcLength : GetMaxDecodedLength(destLength);
 
-            public uint GetInPlaceDestinationLength(int encodedLength, int leftOver) =>
-                leftOver > 0 ? (uint)(encodedLength - leftOver - 1) : (uint)(encodedLength - 4);
-
             public int GetMaxEncodedLength(int srcLength) => GetEncodedLength(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -320,8 +317,6 @@ namespace System.Buffers.Text
 
             public int GetMaxSrcLength(int srcLength, int destLength) =>
                 default(Base64UrlEncoderByte).GetMaxSrcLength(srcLength, destLength);
-
-            public uint GetInPlaceDestinationLength(int encodedLength, int _) => 0; // not used for char encoding
 
             public int GetMaxEncodedLength(int _) => 0;  // not used for char encoding
 
