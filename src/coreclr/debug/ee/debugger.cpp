@@ -1266,6 +1266,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_md = NULL;
     m_resultType = TypeHandle();
     m_externalMemoryOwner = NULL;
+    m_funcEvalResult = NULL;
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
