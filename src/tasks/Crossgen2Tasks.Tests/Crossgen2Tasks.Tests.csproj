@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
+    <UseDefaultTestHost>true</UseDefaultTestHost>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Crossgen2Tasks/Crossgen2Tasks.csproj" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" />
+    <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" />
+    <Reference Include="$(MSBuildBinPath)/NuGet.Frameworks.dll" />
+  </ItemGroup>
+</Project>

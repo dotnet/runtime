@@ -39,6 +39,7 @@ namespace Microsoft.NET.Build.Tasks
         private string _outputPDBImage;
         private string _createPDBCommand;
         private bool _createCompositeImage;
+        private List<Crossgen2Cache.Diagnostic> _cacheDiagnostics;
 
         private bool IsPdbCompilation => !string.IsNullOrEmpty(_createPDBCommand);
         private bool ActuallyUseCrossgen2 => UseCrossgen2 && !IsPdbCompilation;
@@ -416,11 +417,111 @@ namespace Microsoft.NET.Build.Tasks
 
             WarningsDetected = false;
 
-            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+            DateTime timestamp = DateTime.UtcNow;
+            Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(Log);
+            string key = null;
+            string[] outputs = null;
+            if (cache is not null)
+            {
+                try
+                {
+                    if (!ActuallyUseCrossgen2 || Crossgen2IsVersion5 || _createCompositeImage ||
+                        !string.IsNullOrEmpty(DotNetHostPath) || UseCommandProcessor ||
+                        EnvironmentVariables?.Length > 0 ||
+                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_LIBRARY_PATH")) ||
+                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_PRELOAD")) ||
+                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_AUDIT")) ||
+                        !string.IsNullOrEmpty(Crossgen2ContainerFormat) ||
+                        HasExtraArguments(Crossgen2ExtraCommandLineArgs) ||
+                        HasExtraArguments(Crossgen2CompositeExtraCommandLineArgs) ||
+                        !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+                        RuntimeInformation.ProcessArchitecture != Architecture.X64 ||
+                        Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) != "linux" ||
+                        Crossgen2Tool.GetMetadata(MetadataKeys.TargetArch) != "x64" ||
+                        Path.GetFullPath(pathToTool) != Path.GetFullPath(Crossgen2Tool.ItemSpec))
+                    {
+                        cache.Report("bypass: unsupported invocation (requires native Linux-x64, non-composite PE crossgen2 without extra arguments or environment overrides)");
+                    }
+                    else
+                    {
+                        string image = Crossgen2Cache.InputPath(_outputR2RImage);
+                        string map = Path.ChangeExtension(image, ".ni.r2rmap");
+                        if (_emitSymbols && (Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion) != "1" ||
+                            Crossgen2Cache.InputPath(_outputPDBImage) != map))
+                        {
+                            cache.Report("bypass: symbols require a version-1 perf map beside the image with the compiler-generated filename");
+                        }
+                        else
+                        {
+                            outputs = new[] { image, map };
+                            key = cache.ComputeKey(pathToTool, Crossgen2Tool.GetMetadata(MetadataKeys.JitPath),
+                                _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
+                                outputs, responseFileCommands, commandLineCommands,
+                                string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
+                                GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
+                        }
+                    }
+                }
+                catch (Exception ex) when (Crossgen2Cache.IsCacheFailure(ex))
+                {
+                    cache.Report($"bypass: {ex.Message}");
+                }
+            }
+
+            if (key is null)
+            {
+                return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
+            }
+
+            if (cache.TryRestore(key, outputs, timestamp, out List<Crossgen2Cache.Diagnostic> diagnostics))
+            {
+                foreach (Crossgen2Cache.Diagnostic diagnostic in diagnostics)
+                {
+                    LogEventsFromTextOutput(diagnostic.Text, diagnostic.Importance);
+                }
+                return 0;
+            }
+
+            // Remove only the declared outputs, including any partially restored files.
+            // A cleanup failure must fail the task rather than reuse stale optional outputs.
+            foreach (string output in outputs)
+            {
+                File.Delete(output);
+            }
+
+            _cacheDiagnostics = new List<Crossgen2Cache.Diagnostic>();
+            int exitCode;
+            try
+            {
+                exitCode = ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
+                if (exitCode == 0 && !Log.HasLoggedErrors)
+                {
+                    cache.Store(key, outputs, _cacheDiagnostics);
+                }
+            }
+            finally
+            {
+                _cacheDiagnostics = null;
+            }
+            return exitCode;
         }
+
+        internal virtual int ExecuteCompiler(string pathToTool, string responseFileCommands, string commandLineCommands)
+            => base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+
+        private static bool HasExtraArguments(string arguments)
+            => !string.IsNullOrEmpty(arguments) && arguments.Any(c => c != ';' && !char.IsWhiteSpace(c));
 
         protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
         {
+            if (_cacheDiagnostics is not null)
+            {
+                lock (_cacheDiagnostics)
+                {
+                    _cacheDiagnostics.Add(new Crossgen2Cache.Diagnostic(singleLine, messageImportance));
+                }
+            }
+
             if (!ShowCompilerWarnings && singleLine.Contains("warning:", StringComparison.OrdinalIgnoreCase))
             {
                 Log.LogMessage(MessageImportance.Normal, singleLine);

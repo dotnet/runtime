@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Crossgen2Tasks.Tests" />
     <Content Include="Microsoft.NET.CrossGen.targets" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="ShimFilesSimulatingLogicInSdkRepo/Microsoft.NET.CrossGen.props"
       Link="Microsoft.NET.CrossGen.props"
