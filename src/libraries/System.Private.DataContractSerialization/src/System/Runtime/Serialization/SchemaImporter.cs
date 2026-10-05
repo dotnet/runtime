@@ -1305,7 +1305,7 @@ namespace System.Runtime.Serialization
                     if (nestedLevelAttribute != null)
                     {
                         if (!int.TryParse(nestedLevelAttribute.Value, out argumentLevel))
-                            throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationHasInvalidAttributeValue, argumentElement.LocalName, argumentElement.NamespaceURI, type.Name, nestedLevelAttribute.Value, nestedLevelAttribute.LocalName, typeof(int).Name));
+                            throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationHasInvalidAttributeValue, argumentElement.LocalName, argumentElement.NamespaceURI, type.Name, nestedLevelAttribute.Value, nestedLevelAttribute.LocalName, nameof(Int32)));
                     }
                     if (argumentLevel < currentLevel)
                         throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationForNestedLevelMustBeIncreasing, argumentElement.LocalName, argumentElement.NamespaceURI, type.Name));
@@ -1320,7 +1320,7 @@ namespace System.Runtime.Serialization
             {
                 int nestedLevels;
                 if (!int.TryParse(typeNestedLevelsAttribute.Value, out nestedLevels))
-                    throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationHasInvalidAttributeValue, typeElement.LocalName, typeElement.NamespaceURI, type.Name, typeNestedLevelsAttribute.Value, typeNestedLevelsAttribute.LocalName, typeof(int).Name));
+                    throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationHasInvalidAttributeValue, typeElement.LocalName, typeElement.NamespaceURI, type.Name, typeNestedLevelsAttribute.Value, typeNestedLevelsAttribute.LocalName, nameof(Int32)));
                 if ((nestedLevels - 1) > currentLevel)
                     genInfo.AddToLevel(nestedLevels - 1, 0);
             }
