@@ -515,9 +515,11 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
     STATIC_CONTRACT_GC_NOTRIGGER;
     SUPPORTS_DAC;
 
-    if (_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
+    DWORD dwFlags = VolatileLoad(&_typeAndFlags);
+
+    if (dwFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
     {
-        if (_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
+        if (dwFlags & TypeDesc::enum_flag_DependenciesLoaded)
         {
             return CLASS_DEPENDENCIES_LOADED;
         }
