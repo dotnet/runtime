@@ -25,9 +25,9 @@ jobs:
       buildArgs: -s clr+libs -c $(_BuildConfig)
       timeoutInMinutes: 360
       preBuildSteps:
-        - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+        - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
       postBuildSteps:
-        - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+        - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
@@ -56,9 +56,9 @@ jobs:
       buildArgs: -s clr.aot+libs.native+libs.sfx -c $(_BuildConfig)
       timeoutInMinutes: 360
       preBuildSteps:
-        - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+        - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
       postBuildSteps:
-        - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+        - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot

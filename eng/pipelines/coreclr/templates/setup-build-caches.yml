@@ -10,20 +10,51 @@ parameters:
   platform: ''
   shouldContinueOnError: false
   osSubgroup: ''
+  enableWindowsRoslynCache: false
 
   # sccache version. Keep the version in sync across platforms so all jobs
   # cache against the same compiler-launcher behavior.
   sccacheVersion: '0.15.0'
 
 steps:
-  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
-    - template: /eng/pipelines/coreclr/templates/setup-roslyn-cache.yml
-      parameters:
-        osGroup: ${{ parameters.osGroup }}
-        osSubgroup: ${{ parameters.osSubgroup }}
-        archType: ${{ parameters.archType }}
-        nameSuffix: ${{ parameters.nameSuffix }}
+  # Roslyn compiler cache
+  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx'), and(eq(parameters.osGroup, 'windows'), eq(parameters.enableWindowsRoslynCache, true))), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+    # Cache entries restored by pull request builds come only from the pull
+    # request itself or its target branch. This lets rolling builds seed the
+    # cache without allowing pull requests to modify caches used by main.
+    #
+    # Keep Debug and Release entries separate so rolling builds can seed both
+    # configurations without competing for the same immutable cache key.
+    # Roslyn's own deterministic key accounts for legs that override the
+    # matrix configuration in their build arguments.
+    - task: Cache@2
+      displayName: Roslyn compiler cache
+      continueOnError: true
+      inputs:
+        key: roslyn | v2 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)" | "$(Build.BuildId)"
+        path: $(Pipeline.Workspace)/.roslyn-cache
+        restoreKeys: |
+          roslyn | v2 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)"
+          roslyn | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
 
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          set -euo pipefail
+          echo "##vso[task.setvariable variable=ROSLYN_CACHE_PATH]$(Pipeline.Workspace)/.roslyn-cache"
+          echo "##vso[task.setvariable variable=ROSLYN_CACHE_BUILD_START]$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+        displayName: Configure Roslyn compiler cache
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - pwsh: |
+          $cachePath = Join-Path "$(Pipeline.Workspace)" ".roslyn-cache"
+          $buildStart = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+
+          Write-Host "##vso[task.setvariable variable=ROSLYN_CACHE_PATH]$cachePath"
+          Write-Host "##vso[task.setvariable variable=ROSLYN_CACHE_BUILD_START]$buildStart"
+        displayName: Configure Roslyn compiler cache
+
+  # sccache native compiler cache
+  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
@@ -32,7 +63,7 @@ steps:
     # the *managed* Configuration (Debug for PRs, Release for rolling
     # builds), but sccache only caches native (C/C++) compilations whose
     # flags are controlled by RuntimeConfiguration (-rc), which is
-    # constant per leg regardless of buildConfig.  Omitting it lets PR
+    # constant per leg regardless of buildConfig. Omitting it lets PR
     # builds warm-start from rolling-build caches saved in the main scope.
     #
     # osGroup/osSubgroup/archType keep each platform's cache isolated so

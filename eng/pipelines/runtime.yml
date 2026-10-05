@@ -96,9 +96,9 @@ extends:
             buildArgs: -s clr+libs+host+packs -rc Release -lc Release -c $(_BuildConfig)
             timeoutInMinutes: 120
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -116,9 +116,9 @@ extends:
             buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -337,9 +337,9 @@ extends:
             buildArgs: -s clr+libs+libs.tests+host+packs -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 180
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -383,9 +383,9 @@ extends:
               buildArgs: -s clr+libs+libs.tests+host+packs -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
               timeoutInMinutes: 180
               preBuildSteps:
-                - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+                - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
               postBuildSteps:
-                - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+                - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -447,9 +447,9 @@ extends:
             buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
             timeoutInMinutes: 180
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/installer/helix-queues-setup.yml
                 parameters:
                   creator: dotnet-bot
@@ -487,9 +487,9 @@ extends:
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true
             timeoutInMinutes: 120
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -537,9 +537,9 @@ extends:
             buildArgs: -s clr+clr.wasmjit+libs -c $(_BuildConfig) -rc Checked
             timeoutInMinutes: 120
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -613,9 +613,9 @@ extends:
             buildArgs: -s clr+libs -c $(_BuildConfig) -rc Checked
             timeoutInMinutes: 120
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -686,9 +686,9 @@ extends:
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -799,9 +799,9 @@ extends:
             buildArgs: -s clr+libs+host+packs+tools.cdac -c $(_BuildConfig) -rc Checked --bootstrap
             timeoutInMinutes: 120
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -915,9 +915,9 @@ extends:
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
@@ -957,10 +957,10 @@ extends:
             buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             # extra steps, run tests
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot

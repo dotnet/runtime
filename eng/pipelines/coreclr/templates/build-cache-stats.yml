@@ -1,0 +1,76 @@
+parameters:
+  archType: 'x64'
+  osGroup: 'linux'
+  buildConfig: ''
+  runtimeFlavor: ''
+  runtimeVariant: ''
+  helixQueues: ''
+  targetRid: ''
+  nameSuffix: ''
+  platform: ''
+  shouldContinueOnError: false
+  osSubgroup: ''
+  enableWindowsRoslynCache: false
+
+steps:
+  # Roslyn compiler cache
+  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx'), and(eq(parameters.osGroup, 'windows'), eq(parameters.enableWindowsRoslynCache, true))), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          set -euo pipefail
+
+          dotnet="$(Build.SourcesDirectory)/.dotnet/dotnet"
+          if [[ -z "${ROSLYN_CACHE_PATH:-}" ||
+                -z "${ROSLYN_CACHE_BUILD_START:-}" ||
+                ! -x "$dotnet" ]]; then
+              echo "Roslyn compiler cache statistics are unavailable."
+              exit 0
+          fi
+
+          sdkVersion="$("$dotnet" --version)"
+          compilerServer="$(Build.SourcesDirectory)/.dotnet/sdk/$sdkVersion/Roslyn/bincore/VBCSCompiler.dll"
+          if [[ ! -f "$compilerServer" ]]; then
+              echo "Roslyn compiler server not found at $compilerServer."
+              exit 0
+          fi
+
+          "$dotnet" "$compilerServer" \
+            "-cachestats:${ROSLYN_CACHE_BUILD_START}" \
+            "-cachepath:${ROSLYN_CACHE_PATH}" || true
+        displayName: Roslyn compiler cache stats
+        condition: always()
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - pwsh: |
+          $dotnet = Join-Path "$(Build.SourcesDirectory)" ".dotnet\dotnet.exe"
+          if ([string]::IsNullOrEmpty($env:ROSLYN_CACHE_PATH) -or
+              [string]::IsNullOrEmpty($env:ROSLYN_CACHE_BUILD_START) -or
+              -not (Test-Path -PathType Leaf $dotnet)) {
+            Write-Host "Roslyn compiler cache statistics are unavailable."
+            exit 0
+          }
+
+          $sdkVersion = (& $dotnet --version).Trim()
+          $compilerServer = Join-Path "$(Build.SourcesDirectory)" ".dotnet\sdk\$sdkVersion\Roslyn\bincore\VBCSCompiler.dll"
+          if (-not (Test-Path -PathType Leaf $compilerServer)) {
+            Write-Host "Roslyn compiler server not found at $compilerServer."
+            exit 0
+          }
+
+          & $dotnet $compilerServer `
+            "-cachestats:$env:ROSLYN_CACHE_BUILD_START" `
+            "-cachepath:$env:ROSLYN_CACHE_PATH"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Roslyn compiler cache statistics exited with code $LASTEXITCODE."
+          }
+
+          exit 0
+        displayName: Roslyn compiler cache stats
+        condition: always()
+
+  # sccache native compiler cache
+  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+    - script: sccache --show-stats || true
+      displayName: Sccache stats
+      condition: always()

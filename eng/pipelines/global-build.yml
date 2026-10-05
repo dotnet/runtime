@@ -135,9 +135,9 @@ extends:
             buildArgs: -subset clr.native+libs.native+host.native -c $(_BuildConfig)
             timeoutInMinutes: 120
             preBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
