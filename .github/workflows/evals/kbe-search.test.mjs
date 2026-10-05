@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
@@ -8,15 +11,79 @@ import { registerGraders } from "./kbe-candidate-reads-grader.mjs";
 const require = createRequire(import.meta.url);
 const { runGhApi, searchKbeIssues } = require("./search-kbe-issues.cjs");
 const testToken = "test-token";
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const trustedHelperPath = process.env.KBE_SEARCH_HELPER ??
     fileURLToPath(new URL("./search-kbe-issues.cjs", import.meta.url));
-const trustedSearchCommand = `node "${trustedHelperPath}" query`;
-const trustedWindowsSearchCommand =
-    `node "${trustedHelperPath.replaceAll("/", "\\")}" query`;
+const trustedSearchCommand = process.env.KBE_SEARCH_HELPER
+    ? 'node "$KBE_SEARCH_HELPER" query'
+    : `node "${trustedHelperPath}" query`;
+const trustedWindowsSearchCommand = process.env.KBE_SEARCH_HELPER
+    ? 'node "$KBE_SEARCH_HELPER" query'
+    : `node "${trustedHelperPath.replaceAll("/", "\\")}" query`;
+
+async function productionScript() {
+    const workflow = await readFile(new URL("../ci-failure-scan.md", import.meta.url), "utf8");
+    const scriptMatch = workflow.match(
+        /^  search-kbe-issues:\r?\n[\s\S]*?^    script: \|\r?\n(?<script>(?:^      .*(?:\r?\n|$))+?)^    env:/m
+    );
+    assert.ok(scriptMatch?.groups?.script, "production search-kbe-issues script was not found");
+    const script = scriptMatch.groups.script
+        .split(/\r?\n/)
+        .map((line) => line.slice(6))
+        .join("\n");
+
+    return script;
+}
+
+async function noOpOutputPatterns() {
+    const spec = await readFile(new URL("./ci-failure-scan.eval.yaml", import.meta.url), "utf8");
+    return [...spec.matchAll(/^\s*pattern:\s*'([^']*)'/gm)]
+        .map((match) => match[1])
+        .filter((pattern) => pattern.includes("No new Known Build Error"))
+        .map((pattern) => {
+            const flags = pattern.match(/^\(\?([ims]+)\)/);
+            assert.ok(flags, "eval pattern flags were not found");
+            return new RegExp(pattern.slice(flags[0].length), flags[1]);
+        });
+}
+
+async function runProductionSearch(result, query = "query") {
+    const script = await productionScript();
+    const directory = await mkdtemp(join(tmpdir(), "kbe-search-test-"));
+    const responsePath = join(directory, "response.json");
+    const ghPath = join(directory, "gh");
+    const originalEnvironment = {
+        GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+        MOCK_GH_RESPONSE: process.env.MOCK_GH_RESPONSE,
+        PATH: process.env.PATH,
+    };
+
+    await writeFile(responsePath, JSON.stringify(result));
+    await writeFile(ghPath, "#!/bin/sh\ncat \"$MOCK_GH_RESPONSE\"\n");
+    await chmod(ghPath, 0o755);
+
+    process.env.GITHUB_TOKEN = testToken;
+    process.env.MOCK_GH_RESPONSE = responsePath;
+    process.env.PATH = `${directory}:${originalEnvironment.PATH}`;
+
+    try {
+        return await new AsyncFunction("query", script)(query);
+    } finally {
+        for (const [name, value] of Object.entries(originalEnvironment)) {
+            if (value === undefined) {
+                delete process.env[name];
+            } else {
+                process.env[name] = value;
+            }
+        }
+        await rm(directory, { recursive: true, force: true });
+    }
+}
 
 function validResult() {
     return {
         incomplete_results: false,
+        total_count: 1,
         items: [{
             repository_url: "https://api.github.com/repos/dotnet/runtime",
             number: 132843,
@@ -25,9 +92,59 @@ function validResult() {
     };
 }
 
+test("production wrapper uses authenticated gh api transport", async () => {
+    const script = await productionScript();
+    assert.match(script, /execFile\)\("gh"/);
+    assert.match(script, /"api",\s*"search\/issues"/);
+    assert.match(script, /GITHUB_TOKEN/);
+});
+
+test("production wrapper rejects incomplete results", async () => {
+    await assert.rejects(
+        runProductionSearch({ ...validResult(), incomplete_results: true }),
+        /invalid response/
+    );
+});
+
+test("production wrapper rejects truncated results", async () => {
+    await assert.rejects(
+        runProductionSearch({ ...validResult(), total_count: 11 }),
+        /more matches than the page limit/
+    );
+});
+
+test("production wrapper rejects malformed candidates", async () => {
+    const malformed = validResult();
+    malformed.items[0].user = {};
+    await assert.rejects(runProductionSearch(malformed), /invalid candidate/);
+});
+
+test("production wrapper rejects pull requests and other repositories", async () => {
+    const pullRequest = validResult();
+    pullRequest.items[0].pull_request = {};
+    await assert.rejects(runProductionSearch(pullRequest), /invalid candidate/);
+
+    const otherRepository = validResult();
+    otherRepository.items[0].repository_url = "https://api.github.com/repos/dotnet/aspnetcore";
+    await assert.rejects(runProductionSearch(otherRepository), /invalid candidate/);
+});
+
+test("production wrapper projects validated candidate metadata", async () => {
+    const result = await runProductionSearch(validResult());
+    assert.deepEqual(result, [{ number: 132843, user: { login: "dotnet-bot" } }]);
+});
+
 test("eval search wrapper rejects incomplete results", async () => {
     const runApi = async () => ({ ...validResult(), incomplete_results: true });
     await assert.rejects(searchKbeIssues("query", testToken, runApi), /invalid response/);
+});
+
+test("eval search wrapper rejects truncated results", async () => {
+    const runApi = async () => ({ ...validResult(), total_count: 11 });
+    await assert.rejects(
+        searchKbeIssues("query", testToken, runApi),
+        /more matches than the page limit/
+    );
 });
 
 test("eval search wrapper rejects malformed candidates", async () => {
@@ -101,7 +218,7 @@ async function grade(events) {
 test("candidate-read grader requires successful unfiltered reads for every candidate", async () => {
     const events = [
         call("bash", "search", {
-            command: trustedSearchCommand,
+            command: `cd /tmp\n${trustedSearchCommand}`,
         }),
         result("bash", "search", {
             content: `Process exited with code 0\n${JSON.stringify([
@@ -123,61 +240,12 @@ test("candidate-read grader requires successful unfiltered reads for every candi
     assert.equal(gradeResult.passed, true);
 });
 
-test("candidate-read grader fails for filtered or missing candidate reads", async () => {
+test("candidate-read grader accepts an indented helper command", async () => {
     const events = [
-        call("powershell", "search", {
-            command: trustedSearchCommand,
-        }),
-        result("powershell", "search", JSON.stringify([
-            { number: 10, user: { login: "bot" } },
-            { number: 20, user: { login: "user" } },
-        ])),
-        call("github-issue_read", "read-10", {
-            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
-        }),
-        result("github-issue_read", "read-10", "[Filtered]"),
-    ];
-
-    const gradeResult = await grade(events);
-    assert.equal(gradeResult.passed, false);
-    assert.deepEqual(gradeResult.metadata.missing, [10, 20]);
-});
-
-test("candidate-read grader does not accept a read made before search results", async () => {
-    const events = [
-        call("mcp__github-issue_read", "read", {
-            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
-        }),
-        result("mcp__github-issue_read", "read", { number: 10 }),
         call("bash", "search", {
-            command: trustedSearchCommand,
+            command: `  ${trustedSearchCommand}`,
         }),
-        result("bash", "search", JSON.stringify([
-            { number: 10, user: { login: "bot" } },
-        ])),
-    ];
-
-    const gradeResult = await grade(events);
-    assert.equal(gradeResult.passed, false);
-    assert.deepEqual(gradeResult.metadata.missing, [10]);
-});
-
-test("candidate-read grader accepts a repeated read after search results", async () => {
-    const events = [
-        call("github-issue_read", "read-before", {
-            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
-        }),
-        result("github-issue_read", "read-before", { number: 10 }),
-        call("powershell", "search", {
-            command: trustedWindowsSearchCommand,
-        }),
-        result("powershell", "search", JSON.stringify([
-            { number: 10, user: { login: "bot" } },
-        ])),
-        call("github-issue_read", "read-after", {
-            owner: "dotnet", repo: "runtime", method: "get", issue_number: "10",
-        }),
-        result("github-issue_read", "read-after", { number: 10 }),
+        result("bash", "search", "[]"),
     ];
 
     const gradeResult = await grade(events);
@@ -263,6 +331,87 @@ test("candidate-read grader rejects a read for the wrong issue", async () => {
     const gradeResult = await grade(events);
     assert.equal(gradeResult.passed, false);
     assert.deepEqual(gradeResult.metadata.missing, [10]);
+});
+
+test("no-op output is accepted only as the complete document", async () => {
+    const patterns = await noOpOutputPatterns();
+    assert.equal(patterns.length, 6);
+
+    const exactOutput = "Result: No new Known Build Error\n";
+    const markerInsideInvalidOutput = [
+        "Title: malformed",
+        "```text",
+        "Result: No new Known Build Error",
+        "```",
+        "Labels: not-a-kbe",
+        "",
+    ].join("\n");
+
+    for (const pattern of patterns) {
+        assert.match(exactOutput, pattern);
+        assert.doesNotMatch(markerInsideInvalidOutput, pattern);
+    }
+});
+
+test("candidate-read grader fails for filtered or missing candidate reads", async () => {
+    const events = [
+        call("powershell", "search", {
+            command: trustedSearchCommand,
+        }),
+        result("powershell", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+            { number: 20, user: { login: "user" } },
+        ])),
+        call("github.issue_read", "read-10", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("github.issue_read", "read-10", "[Filtered]"),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, false);
+    assert.deepEqual(gradeResult.metadata.missing, [10, 20]);
+});
+
+test("candidate-read grader does not accept a read made before search results", async () => {
+    const events = [
+        call("github-issue_read", "read", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("github-issue_read", "read", { number: 10 }),
+        call("bash", "search", {
+            command: trustedSearchCommand,
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, false);
+    assert.deepEqual(gradeResult.metadata.missing, [10]);
+});
+
+test("candidate-read grader accepts a repeated read after search results", async () => {
+    const events = [
+        call("github-issue_read", "read-before", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("github-issue_read", "read-before", { number: 10 }),
+        call("powershell", "search", {
+            command: trustedWindowsSearchCommand,
+        }),
+        result("powershell", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+        call("github-issue_read", "read-after", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: "10",
+        }),
+        result("github-issue_read", "read-after", { number: 10 }),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, true);
 });
 
 test("candidate-read grader accepts searches with no candidates", async () => {
