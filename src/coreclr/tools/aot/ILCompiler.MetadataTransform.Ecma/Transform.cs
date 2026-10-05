@@ -21,6 +21,7 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
     private readonly MetadataReader _reader;
     private readonly TPolicy _policy;
     private readonly MetadataBuilder _metadata = new MetadataBuilder();
+    private readonly HashSet<string> _strings;
     private readonly Dictionary<(EcmaModule, EntityHandle), EntityHandle> _tokens = new();
     private readonly Dictionary<EcmaType, TypeReferenceHandle> _typeReferences = new();
     private readonly Dictionary<EcmaModule, AssemblyReferenceHandle> _assemblyReferences = new();
@@ -34,11 +35,12 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
 
     public bool HasMetadata { get; private set; }
 
-    public Transform(EcmaModule module, TPolicy policy)
+    public Transform(EcmaModule module, TPolicy policy, HashSet<string> strings)
     {
         _module = module;
         _reader = module.MetadataReader;
         _policy = policy;
+        _strings = strings;
 
         // Definition handles must be assigned before rewriting any signatures. Lists are
         // contiguous in their owning type/method (ECMA-335 II.22.15, II.22.26 and II.22.37).
@@ -68,7 +70,7 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
         }
     }
 
-    public MetadataRootBuilder Generate()
+    public MetadataBuilder Generate()
     {
         ModuleDefinition module = _reader.GetModuleDefinition();
         ModuleDefinitionHandle moduleHandle = _metadata.AddModule(
@@ -106,7 +108,7 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
             if (_policy.GeneratesMetadata(_module, handle))
                 MapToken(_module, handle);
 
-        return new MetadataRootBuilder(_metadata, _reader.MetadataVersion);
+        return _metadata;
     }
 
     private void AddType(TypeDefinitionHandle handle)
@@ -258,7 +260,14 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
         }
     }
 
-    private StringHandle CopyString(StringHandle handle) => _metadata.GetOrAddString(_reader.GetString(handle));
+    private StringHandle CopyString(StringHandle handle) => GetOrAddString(_reader.GetString(handle));
+
+    private StringHandle GetOrAddString(string value)
+    {
+        _strings.Add(value);
+
+        return _metadata.GetOrAddString(value);
+    }
 
     private BlobHandle CopyBlob(BlobHandle handle) => handle.IsNil ? default : _metadata.GetOrAddBlob(_reader.GetBlobContent(handle));
 
@@ -340,8 +349,8 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
             case HandleKind.ExportedType:
                 ExportedType exportedType = reader.GetExportedType((ExportedTypeHandle)handle);
                 mapped = _metadata.AddExportedType(exportedType.Attributes,
-                    _metadata.GetOrAddString(reader.GetString(exportedType.Namespace)),
-                    _metadata.GetOrAddString(reader.GetString(exportedType.Name)),
+                    GetOrAddString(reader.GetString(exportedType.Namespace)),
+                    GetOrAddString(reader.GetString(exportedType.Name)),
                     MapToken(module, exportedType.Implementation), typeDefinitionId: 0);
                 break;
             default:
@@ -369,8 +378,8 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
             : type.Module == _module ? MetadataTokens.EntityHandle(TableIndex.Module, 1) : MapAssembly(type.Module);
         TypeDefinition definition = type.MetadataReader.GetTypeDefinition(type.Handle);
         reference = _metadata.AddTypeReference(scope,
-            _metadata.GetOrAddString(type.MetadataReader.GetString(definition.Namespace)),
-            _metadata.GetOrAddString(type.MetadataReader.GetString(definition.Name)));
+            GetOrAddString(type.MetadataReader.GetString(definition.Namespace)),
+            GetOrAddString(type.MetadataReader.GetString(definition.Name)));
         _typeReferences.Add(type, reference);
 
         return reference;
@@ -398,8 +407,8 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
 
     private AssemblyReferenceHandle AddAssemblyReference(string name, Version version, string culture, BlobHandle keyOrToken, AssemblyFlags flags)
     {
-        StringHandle nameHandle = _metadata.GetOrAddString(name);
-        StringHandle cultureHandle = _metadata.GetOrAddString(culture);
+        StringHandle nameHandle = GetOrAddString(name);
+        StringHandle cultureHandle = GetOrAddString(culture);
         var key = (nameHandle, version, cultureHandle, keyOrToken, flags);
         if (!_assemblyReferenceRecords.TryGetValue(key, out AssemblyReferenceHandle reference))
         {
@@ -412,7 +421,7 @@ internal sealed class Transform<TPolicy> where TPolicy : struct, IMetadataPolicy
 
     private MemberReferenceHandle AddMemberReference(EntityHandle parent, string name, BlobHandle signature)
     {
-        StringHandle nameHandle = _metadata.GetOrAddString(name);
+        StringHandle nameHandle = GetOrAddString(name);
         var key = (parent, nameHandle, signature);
         if (!_memberReferences.TryGetValue(key, out MemberReferenceHandle reference))
         {
