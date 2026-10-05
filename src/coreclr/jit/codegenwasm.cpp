@@ -1214,11 +1214,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         default:
 #ifdef DEBUG
-            if (JitConfig.JitWasmNyiToR2RUnsupported())
-            {
-                NYI_WASM("Opcode not implemented");
-            }
-
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
 #else
             NYI_WASM("Opcode not implemented");
@@ -4127,6 +4122,8 @@ void CodeGen::genCallFinally(BasicBlock* block)
     unsigned const funcletIndex = ehDsc->ebdFuncIndex;
 
     assert((funcletIndex >= 1) && (funcletIndex < m_compiler->compFuncCount()));
+
+    ensureCurrentFuncIsUnwindable();
 
     EmitCallParams params;
     params.callType = EmitCallType::EC_INDIR_R;

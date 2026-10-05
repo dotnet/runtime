@@ -1577,6 +1577,13 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
+#if defined(TARGET_WASI)
+    // WASI hosts are not required to support setting file times, so copying them is best effort.
+    if (ret != 0 && (errno == ENOSYS || errno == ENOTSUP))
+    {
+        ret = 0;
+    }
+#endif /* TARGET_WASI */
     // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
     // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and
     // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
@@ -1586,8 +1593,8 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         return -1;
     }
 
-#if HAVE_FCHMOD
-    // Copy permissions.
+#if HAVE_FCHMOD && !defined(TARGET_WASI)
+    // Copy permissions. WASI has no permission bits and wasi-libc's fchmod always fails with ENOSYS.
     // Even though managed code created the file with permissions matching those of the source file,
     // we need to copy permissions because the open permissions may be filtered by 'umask'.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
@@ -1595,7 +1602,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     {
         return -1;
     }
-#endif /* HAVE_FCHMOD */
+#endif /* HAVE_FCHMOD && !defined(TARGET_WASI) */
 
     return 0;
 #endif // HAVE_FCOPYFILE

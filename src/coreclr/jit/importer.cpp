@@ -3764,16 +3764,12 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
 
         // Record that this is a "box" node and keep track of the matching parts.
-        op1 = new (this, GT_BOX) GenTreeBox(TYP_REF, op1, allocBoxStmt, copyStmt);
-
-        // If it is a value class, mark the "box" node.  We can use this information
-        // to optimise several cases:
+        // We can use this information to optimise several cases:
         //    "box(x) == null" --> false
         //    "(box(x)).CallAnInterfaceMethod(...)" --> "(&x).CallAValueTypeMethod"
         //    "(box(x)).CallAnObjectMethod(...)" --> "(&x).CallAValueTypeMethod"
-
-        op1->gtFlags |= GTF_BOX_VALUE;
-        assert(op1->IsBoxedValue() && allocBoxStore->OperIs(GT_STORE_LCL_VAR));
+        op1 = new (this, GT_BOX) GenTreeBox(TYP_REF, op1, allocBoxStmt, copyStmt);
+        assert(allocBoxStore->OperIs(GT_STORE_LCL_VAR));
     }
     else
     {

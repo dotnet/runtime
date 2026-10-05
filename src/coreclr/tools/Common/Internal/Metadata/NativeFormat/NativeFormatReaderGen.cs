@@ -4943,11 +4943,10 @@ namespace Internal.Metadata.NativeFormat
             NativeReader streamReader = reader._streamReader;
             offset = streamReader.Read(offset, out _flags);
             offset = streamReader.Read(offset, out _baseType);
-            offset = streamReader.Read(offset, out _namespaceDefinition);
+            offset = streamReader.Read(offset, out _namespaceOrEnclosingType);
             offset = streamReader.Read(offset, out _name);
             offset = streamReader.Read(offset, out _size);
             offset = streamReader.Read(offset, out _packingSize);
-            offset = streamReader.Read(offset, out _enclosingType);
             offset = streamReader.Read(offset, out _nestedTypes);
             offset = streamReader.Read(offset, out _methods);
             offset = streamReader.Read(offset, out _fields);
@@ -4967,8 +4966,9 @@ namespace Internal.Metadata.NativeFormat
         public Handle BaseType => _baseType;
         private readonly Handle _baseType;
 
-        public NamespaceDefinitionHandle NamespaceDefinition => _namespaceDefinition;
-        private readonly NamespaceDefinitionHandle _namespaceDefinition;
+        /// One of: NamespaceDefinition, TypeDefinition
+        public Handle NamespaceOrEnclosingType => _namespaceOrEnclosingType;
+        private readonly Handle _namespaceOrEnclosingType;
 
         public ConstantStringValueHandle Name => _name;
         private readonly ConstantStringValueHandle _name;
@@ -4978,9 +4978,6 @@ namespace Internal.Metadata.NativeFormat
 
         public ushort PackingSize => _packingSize;
         private readonly ushort _packingSize;
-
-        public TypeDefinitionHandle EnclosingType => _enclosingType;
-        private readonly TypeDefinitionHandle _enclosingType;
 
         public TypeDefinitionHandleCollection NestedTypes => _nestedTypes;
         private readonly TypeDefinitionHandleCollection _nestedTypes;
@@ -5253,15 +5250,15 @@ namespace Internal.Metadata.NativeFormat
             _handle = handle;
             uint offset = (uint)handle.Offset;
             NativeReader streamReader = reader._streamReader;
-            offset = streamReader.Read(offset, out _parentNamespaceOrType);
+            offset = streamReader.Read(offset, out _namespaceOrEnclosingType);
             offset = streamReader.Read(offset, out _typeName);
         }
 
         public TypeReferenceHandle Handle => _handle;
 
         /// One of: NamespaceReference, TypeReference
-        public Handle ParentNamespaceOrType => _parentNamespaceOrType;
-        private readonly Handle _parentNamespaceOrType;
+        public Handle NamespaceOrEnclosingType => _namespaceOrEnclosingType;
+        private readonly Handle _namespaceOrEnclosingType;
 
         public ConstantStringValueHandle TypeName => _typeName;
         private readonly ConstantStringValueHandle _typeName;

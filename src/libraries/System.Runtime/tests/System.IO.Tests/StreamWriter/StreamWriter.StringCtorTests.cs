@@ -42,6 +42,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void NegativeOneBufferSize_ShouldNotThrowException()
         {
             string testfile = Path.GetTempFileName();
@@ -68,6 +69,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void CreateStreamWriter()
         {
             string testfile = Path.GetTempFileName();
@@ -99,6 +101,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(EncodingsToTestStreamWriter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void TestEncoding(Encoding encoding, string testString)
         {
             string testfile = Path.GetTempFileName();

@@ -48,11 +48,23 @@ extern "C" uint32_t g_wasi_r2r_image_cap;
 #define WEBCIL_SECTION_HEADER_SIZE  (16u)
 #define WEBCIL_VERSION_MAJOR_OFFSET (4u)
 
-// The composite native image's bundle-relative file name (the ownerCompositeExecutable named by each
-// per-assembly stub). The runtime asks for this via NativeImage::Open -> external_assembly_probe.
-#ifndef WASI_R2R_COMPOSITE_NAME
-#define WASI_R2R_COMPOSITE_NAME "composite-r2r.wasm"
+// The composite native image's file name (the ownerCompositeExecutable recorded in each per-assembly
+// stub). The runtime asks for this via NativeImage::Open -> external_assembly_probe. crossgen2's output
+// name is the single authority: the composer writes that NUL-terminated name here with an active data
+// segment, alongside the payload, so a host that was never composed matches no name at all.
+#ifndef WASI_R2R_COMPOSITE_NAME_CAP
+#define WASI_R2R_COMPOSITE_NAME_CAP (256u)
 #endif
+extern "C"
+{
+    char g_wasi_r2r_composite_name[WASI_R2R_COMPOSITE_NAME_CAP] = {};
+}
+
+static bool WasiIsCompositeName(const char* name)
+{
+    return g_wasi_r2r_composite_name[0] != '\0'
+        && strncmp(name, g_wasi_r2r_composite_name, WASI_R2R_COMPOSITE_NAME_CAP) == 0;
+}
 
 static bool WasiIsWebcilV1(const uint8_t* p, size_t len)
 {
@@ -140,7 +152,7 @@ static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t
 {
     // The composite native image itself: return the merged composite payload at imageBase. Its size is
     // read from the self-describing WbIL header (no baked constant), and validated against the buffer cap.
-    if (strcmp(name, WASI_R2R_COMPOSITE_NAME) == 0)
+    if (WasiIsCompositeName(name))
     {
         int64_t payloadSize = WasiWebcilPayloadSize(&g_wasi_r2r_image[0], g_wasi_r2r_image_cap);
         if (payloadSize <= 0 || static_cast<size_t>(payloadSize) > g_wasi_r2r_image_cap)
@@ -157,7 +169,7 @@ static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t
 
     // A managed assembly: return its per-assembly stub payload (extracted from <base>.wasm on disk).
     // The stub carries the assembly metadata + the R2R header naming the composite, which drives the
-    // runtime to then request WASI_R2R_COMPOSITE_NAME above.
+    // runtime to then request the composite name above.
     size_t nlen = strlen(name);
     if (nlen > 4 && strcmp(name + nlen - 4, ".dll") == 0)
     {
@@ -199,14 +211,29 @@ extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r
 // against them, so a mismatch is a build-time error instead of a wrong-function dispatch at runtime.
 // The capacity accessor is weak because a ReadyToRun publish supplies a strong definition alongside
 // the sized buffer.
+#ifndef CORERUN_WASI_R2R_STRONG_CAP
 extern "C" __attribute__((weak, export_name("wasi_r2r_image_cap"))) uint32_t wasi_r2r_image_cap(void)
 {
     return wasi_r2r::g_wasi_r2r_image_cap;
 }
+#endif // CORERUN_WASI_R2R_STRONG_CAP
 
 extern "C" __attribute__((export_name("wasi_r2r_table_base"))) uint32_t wasi_r2r_table_base(void)
 {
     return (uint32_t)WASI_R2R_TABLE_BASE;
+}
+
+// The composite name buffer's address and capacity, so the composer can write the composite's file name
+// into it without a host rebuild. This is what lets one prebuilt host serve whatever name crossgen2 gave
+// the composite.
+extern "C" __attribute__((export_name("wasi_r2r_composite_name_base"))) uint32_t wasi_r2r_composite_name_base(void)
+{
+    return (uint32_t)(uintptr_t)&wasi_r2r::g_wasi_r2r_composite_name[0];
+}
+
+extern "C" __attribute__((export_name("wasi_r2r_composite_name_cap"))) uint32_t wasi_r2r_composite_name_cap(void)
+{
+    return (uint32_t)WASI_R2R_COMPOSITE_NAME_CAP;
 }
 
 #endif // TARGET_WASI

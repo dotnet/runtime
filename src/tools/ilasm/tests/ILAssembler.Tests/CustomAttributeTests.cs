@@ -76,6 +76,28 @@ namespace ILAssembler.Tests
             }
         }
 
+        [Theory]
+        [InlineData("0x123", 0x23)]
+        [InlineData("-0x123", 0xDD)]
+        public void HexByteBlob_PrefixedValuesAreMasked(string literal, byte expected)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = ({{literal}})
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var attribute = reader.GetCustomAttribute(Assert.Single(type.GetCustomAttributes()));
+
+            Assert.Equal([expected], reader.GetBlobBytes(attribute.Value));
+        }
+
 
         [Fact]
         public void CustomAttributeOnMethod_EmittedCorrectly()
@@ -464,6 +486,45 @@ namespace ILAssembler.Tests
             Assert.Equal("int32[]", value.NamedArguments[4].Type);
             AssertArrayValue(value.NamedArguments[4].Value, 1, 2);
             AssertNamedArgument(value.NamedArguments[5], CustomAttributeNamedArgumentKind.Property, "Kind", "Contoso.Kind", 3);
+        }
+
+        [Fact]
+        public void CustomAttribute_VerbalNamedArgument_ResolvesSerializationTypeAlias()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .typedef int32 as MyInt
+                .class public auto ansi sealed NamedAttribute extends [mscorlib]System.Attribute
+                {
+                    .method public specialname rtspecialname instance void .ctor() cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Attribute::.ctor()
+                        ret
+                    }
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .custom instance void NamedAttribute::.ctor() = {
+                        property MyInt Number = int32(42)
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            var attribute = reader.GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(type)));
+            CustomAttributeValue<string> value = attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder);
+
+            AssertNamedArgument(
+                Assert.Single(value.NamedArguments),
+                CustomAttributeNamedArgumentKind.Property,
+                "Number",
+                "int32",
+                42);
         }
 
         [Fact]

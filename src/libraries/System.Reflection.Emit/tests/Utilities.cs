@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -65,6 +66,23 @@ namespace System.Reflection.Emit.Tests
             else
             {
                 return DynamicModule(assemblyName, moduleName).DefineType(typeName, attributes, baseType);
+            }
+        }
+
+        public static unsafe byte[] GetFieldValueBytes(FieldInfo field, int size)
+        {
+            object value = field.GetValue(null);
+            Assert.NotNull(value);
+            GCHandle handle = GCHandle.Alloc(value, GCHandleType.Pinned);
+            try
+            {
+                byte[] bytes = new byte[size];
+                new ReadOnlySpan<byte>(handle.AddrOfPinnedObject().ToPointer(), size).CopyTo(bytes);
+                return bytes;
+            }
+            finally
+            {
+                handle.Free();
             }
         }
 

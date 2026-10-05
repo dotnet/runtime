@@ -540,10 +540,10 @@ namespace
         (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7));
     }
 
-    static void CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    static void CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10), ARG_I32(11), ARG_I32(12));
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10));
     }
 
     NOINLINE static void CallFunc_This_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
@@ -794,7 +794,7 @@ const StringToPortableSigThunk g_portableCallHelperThunks[] = {
     { "MvS8iiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_RetVoid },
     { "MvS8iiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_RetVoid },
     { "MvS8iiiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_RetVoid },
-    { "MvS8iiiiiiiiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid },
+    { "MvS8iiiiiiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid },
     { "MvTp", (void*)&CallFunc_This_RetVoid_PE },
     { "Mvdddddddddiii", (void*)&CallFunc_F64_F64_F64_F64_F64_F64_F64_F64_F64_I32_I32_I32_RetVoid },
     { "Mvdii", (void*)&CallFunc_F64_I32_I32_RetVoid },

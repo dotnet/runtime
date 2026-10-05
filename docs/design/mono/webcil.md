@@ -217,18 +217,26 @@ table bases, merges the host, shim, and composite with `wasm-merge`, folds the g
 preserve the `name` section with `-g`.
 
 The host exports its reserved buffer address, buffer capacity, and composite table base through
-`wasi_r2r_image_base`, `wasi_r2r_image_cap`, and `wasi_r2r_table_base`. Before merging, the composer
-checks that the active payload fits the buffer and that the composite's table entries end before
+`wasi_r2r_image_base`, `wasi_r2r_image_cap`, and `wasi_r2r_table_base`, and the address and capacity
+of a composite name buffer through `wasi_r2r_composite_name_base` and `wasi_r2r_composite_name_cap`.
+Before merging, the composer checks that the active payload fits the buffer, that the composite's
+file name fits the name buffer, and that the composite's table entries end before
 the host's own active element segment. These checks must happen before instantiation: a runtime
 check cannot prevent an active segment from overwriting an undersized reservation.
 
 The shim's start function calls `patchWebcilHeader`; the active segments themselves install the
-payload and function table. The host's external assembly probe serves `composite-r2r.wasm` from
+payload and function table. The shim also carries an active segment that writes the composite's
+file name, NUL-terminated, into the host's name buffer. Component stubs record the owner by the file
+name Crossgen2 wrote, so that name is the single authority: publishing uses the `<entry>.r2r.wasm`
+name the ReadyToRun tasks also give browser, and a prebuilt host can be composed with a composite
+of any name. The host's external assembly probe serves the recorded name from
 the embedded buffer and maps raw per-assembly WebCIL forwarding stubs from `comp/<assembly>.dll`.
+An uncomposed host records no name and serves no composite.
 The composer extracts those payloads from their self-installing Wasm wrappers at build time.
 Placing a composite on disk without composing it into the host does not satisfy this contract.
 
-Publishing sizes the host reservations from the generated app/framework composite.
+Publishing sizes the host reservations from the generated app/framework composite. Runtime tests
+instead use the shared corerun's fixed reservations and compose only their test assemblies.
 See [the WASI R2R workflow](../../workflow/building/coreclr/wasi-r2r.md) for usage and diagnostics.
 
 ### Webcil payload

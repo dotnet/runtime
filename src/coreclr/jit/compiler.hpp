@@ -1752,8 +1752,6 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen)
 {
     assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
-    static_assert(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
-    static_assert(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
 }
 
@@ -1810,7 +1808,6 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 {
     GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
-    static_assert(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -5019,6 +5016,35 @@ inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
     return VisitPhysicalLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
+}
+
+//------------------------------------------------------------------------
+// VisitLogicalLocalOccurrencesViaLocalsTreeList:
+//   Visit occurrences in locals-list order without expanding promoted parents.
+//
+// Arguments:
+//   visitor - Generic functor accepting a local occurrence provider.
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+// Remarks:
+//   The callback may abort the walk, but must not change the list and continue.
+//
+template <typename TVisitor>
+GenTree::VisitResult Statement::VisitLogicalLocalOccurrencesViaLocalsTreeList(TVisitor visitor)
+{
+    assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllLocals);
+
+    for (GenTree* node : LocalsTreeList())
+    {
+        if (visitor(LocalOccurrence(node->AsLclVarCommon())) == GenTree::VisitResult::Abort)
+        {
+            return GenTree::VisitResult::Abort;
+        }
+    }
+
+    return GenTree::VisitResult::Continue;
 }
 
 /*****************************************************************************
