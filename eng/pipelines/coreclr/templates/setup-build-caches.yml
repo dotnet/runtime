@@ -10,7 +10,6 @@ parameters:
   platform: ''
   shouldContinueOnError: false
   osSubgroup: ''
-  enableWindowsRoslynCache: false
 
   # sccache version. Keep the version in sync across platforms so all jobs
   # cache against the same compiler-launcher behavior.
@@ -18,7 +17,7 @@ parameters:
 
 steps:
   # Roslyn compiler cache
-  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx'), and(eq(parameters.osGroup, 'windows'), eq(parameters.enableWindowsRoslynCache, true))), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+  - ${{ if or(eq(parameters.osGroup, 'windows'), and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64')))) }}:
     # Cache entries restored by pull request builds come only from the pull
     # request itself or its target branch. This lets rolling builds seed the
     # cache without allowing pull requests to modify caches used by main.

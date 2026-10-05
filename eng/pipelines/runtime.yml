@@ -378,6 +378,7 @@ extends:
             - linux_x64
             - linux_musl_x64
             - osx_arm64
+            - windows_x64
             jobParameters:
               nameSuffix: CoreCLR_AllSubsets
               buildArgs: -s clr+libs+libs.tests+host+packs -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
@@ -403,7 +404,10 @@ extends:
             nameSuffix: CoreCLR_AllSubsets
             buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 180
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   helixBuildConfig: Release

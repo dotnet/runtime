@@ -10,11 +10,10 @@ parameters:
   platform: ''
   shouldContinueOnError: false
   osSubgroup: ''
-  enableWindowsRoslynCache: false
 
 steps:
   # Roslyn compiler cache
-  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx'), and(eq(parameters.osGroup, 'windows'), eq(parameters.enableWindowsRoslynCache, true))), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+  - ${{ if or(eq(parameters.osGroup, 'windows'), and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64')))) }}:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
           set -euo pipefail
