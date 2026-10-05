@@ -19,7 +19,7 @@
 
 // #SyncBlockOverview
 //
-// Every Object is preceded by an ObjHeader (at a negative offset). The header can store one of thin lock state,
+// Every Object is preceded by an ObjHeader (at a negative offset). The header can store one of a thin lock,
 // a hash code, or a nonzero index into the process-global code:g_pSyncTable when the object needs
 // a SyncBlock to store more state than can fit into ObjHeader.
 //
