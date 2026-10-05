@@ -622,11 +622,13 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
         }
     }
 
+#ifdef FEATURE_MULTITHREADING
     if (!s_PriorityBoosted)
     {
         if (GetFinalizerThread()->SetThreadPriority(THREAD_PRIORITY_HIGHEST))
             s_PriorityBoosted = true;
     }
+#endif // FEATURE_MULTITHREADING
 
     // The Finalizer thread is started very early in EE startup. We deferred
     // some initialization until a point we are sure the EE is up and running. At

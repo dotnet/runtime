@@ -411,7 +411,6 @@ void SetThread(Thread* t)
 
 #ifdef FEATURE_MULTITHREADING
 extern INT32 MapFromNTPriority(INT32 NTPriority);
-#endif // FEATURE_MULTITHREADING
 
 BOOL Thread::SetThreadPriority(
     int nPriority   // thread priority level
@@ -434,9 +433,6 @@ BOOL Thread::SetThreadPriority(
             fRet = ::SetThreadPriority(GetThreadHandle(), nPriority);
     }
 
-#ifdef FEATURE_MULTITHREADING
-    // Without multithreading, the managed priority is purely managed state and is not
-    // mirrored from the native thread priority.
     if (fRet)
     {
         GCX_COOP();
@@ -447,7 +443,6 @@ BOOL Thread::SetThreadPriority(
             pObject->SetPriority (MapFromNTPriority(nPriority));
         }
     }
-#endif // FEATURE_MULTITHREADING
     return fRet;
 }
 
@@ -468,6 +463,7 @@ int Thread::GetThreadPriority()
 
     return nRetVal;
 }
+#endif // FEATURE_MULTITHREADING
 
 void Thread::ChooseThreadCPUGroupAffinity()
 {

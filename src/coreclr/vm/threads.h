@@ -1692,10 +1692,12 @@ public:
 
 #endif  // DISABLE_THREADSUSPEND
 
+#ifdef FEATURE_MULTITHREADING
     int GetThreadPriority();
     BOOL SetThreadPriority(
         int nPriority   // thread priority level
     );
+#endif // FEATURE_MULTITHREADING
 
     BOOL GetThreadContext(
         LPCONTEXT lpContext   // context structure

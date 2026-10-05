@@ -553,6 +553,7 @@ void ThreadBaseObject::InitExisting()
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_MULTITHREADING
     Thread *pThread = GetInternal();
     _ASSERTE (pThread);
     switch (pThread->GetThreadPriority())
@@ -588,6 +589,9 @@ void ThreadBaseObject::InitExisting()
         m_Priority = ThreadNative::PRIORITY_NORMAL;
         break;
     }
+#else
+    m_Priority = ThreadNative::PRIORITY_NORMAL;
+#endif // FEATURE_MULTITHREADING
 }
 
 FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
