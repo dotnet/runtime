@@ -252,15 +252,6 @@ internal static partial class PseudoCustomAttributes
         _ => throw new BadImageFormatException(),
     };
 
-    private static ushort GetUInt16(object? value) => value switch
-    {
-        short signed => unchecked((ushort)signed),
-        ushort unsigned => unsigned,
-        int signed => unchecked((ushort)signed),
-        uint unsigned => unchecked((ushort)unsigned),
-        _ => throw new BadImageFormatException(),
-    };
-
     private static int GetInt32(object? value) => value switch
     {
         short signed => unchecked((ushort)signed),

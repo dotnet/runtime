@@ -13,10 +13,10 @@ namespace ILAssembler;
 /// represent, and suppresses the <c>CustomAttribute</c> row for the attributes that are not retained.
 /// </summary>
 /// <remarks>
-/// This mirrors <c>RegMeta::DefineCustomAttribute</c> in <c>src/coreclr/md/compiler/custattr_emit.cpp</c>,
-/// which the native IL assembler relies on for the same behavior. Attributes are matched on the
-/// namespace and name of the declaring type of the constructor only; the assembly the constructor
-/// resolves to is deliberately not considered, matching the native implementation.
+/// Recognizes the metadata transforms supported by native ILAsm, using C# compiler behavior for
+/// decoded argument values rather than legacy metadata-emitter validation. Attributes that only
+/// require validation are left untouched. Matching uses the namespace and name of the constructor's
+/// declaring type without requiring a particular assembly.
 /// </remarks>
 internal static partial class PseudoCustomAttributes
 {
@@ -56,41 +56,33 @@ internal static partial class PseudoCustomAttributes
             }
 
             KnownAttribute? known = TryFindKnownAttribute(attribute.Constructor, @namespace, name);
-            if (known is null && !IsSecurityAttribute(@namespace, name))
+            if (known is null)
             {
                 continue;
             }
 
             var context = new LoweringContext(registry, diagnostics, attribute, @namespace, name);
-            if (known is not null)
+            if (known.KeepOnInvalidTarget && (known.Targets & GetTarget(context.Owner)) == 0)
             {
-                // COMPAT: Native ilasm applies attributes with unresolved local member references after
-                // field attributes and explicit layout, even if they appear earlier in the source.
-                if (known.Kind == KnownAttributeKind.FieldOffset && context.IsDeferred)
-                {
-                    if (RequiresMemberReferenceResolution(registry, attribute.Owner))
-                    {
-                        deferredFieldOffsets.Add((context, known));
-                    }
-                    else
-                    {
-                        fieldOffsetsWithDeferredConstructors.Add((context, known));
-                    }
-                    continue;
-                }
-
-                // The native emitter abandons the whole DefineCustomAttribute call when a known
-                // attribute fails validation, so the row is never written regardless of KeepAttribute.
-                if (!Apply(context, known) || !known.KeepAttribute)
-                {
-                    lowered.Add(attribute);
-                }
-
                 continue;
             }
 
-            if (ApplySecurityAttribute(context, @namespace, name, out bool keepSecurityAttribute)
-                && !keepSecurityAttribute)
+            // COMPAT: Native ilasm applies attributes with unresolved local member references after
+            // field attributes and explicit layout, even if they appear earlier in the source.
+            if (known.Kind == KnownAttributeKind.FieldOffset && context.IsDeferred)
+            {
+                if (RequiresMemberReferenceResolution(registry, attribute.Owner))
+                {
+                    deferredFieldOffsets.Add((context, known));
+                }
+                else
+                {
+                    fieldOffsetsWithDeferredConstructors.Add((context, known));
+                }
+                continue;
+            }
+
+            if (!Apply(context, known) || !known.KeepAttribute)
             {
                 lowered.Add(attribute);
             }
@@ -148,10 +140,6 @@ internal static partial class PseudoCustomAttributes
         public bool InvalidBlob() => Error(
             DiagnosticIds.PseudoCustomAttributeInvalidBlob,
             string.Format(DiagnosticMessageTemplates.PseudoCustomAttributeInvalidBlob, AttributeName));
-
-        public bool InvalidGuid() => Error(
-            DiagnosticIds.PseudoCustomAttributeInvalidGuid,
-            string.Format(DiagnosticMessageTemplates.PseudoCustomAttributeInvalidGuid, AttributeName));
 
         public bool UnknownArgument(string argumentName) => Error(
             DiagnosticIds.PseudoCustomAttributeUnknownArgument,

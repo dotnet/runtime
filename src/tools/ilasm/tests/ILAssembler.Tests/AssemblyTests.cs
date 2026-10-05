@@ -991,6 +991,8 @@ namespace ILAssembler.Tests
         [InlineData("System.Security.AllowPartiallyTrustedCallersAttribute", ".ctor()", "( 01 00 00 00 )")]
         [InlineData("System.Runtime.InteropServices.TypeLibVersionAttribute", ".ctor(int32, int32)", "( 01 00 01 00 00 00 02 00 00 00 00 00 )")]
         [InlineData("System.Runtime.InteropServices.ComCompatibleVersionAttribute", ".ctor(int32, int32, int32, int32)", "( 01 00 01 00 00 00 02 00 00 00 03 00 00 00 04 00 00 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.TypeLibVersionAttribute", ".ctor(int32, int32)", "( 01 00 FF FF FF FF 02 00 00 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.ComCompatibleVersionAttribute", ".ctor(int32, int32, int32, int32)", "( 01 00 FF FF FF FF 02 00 00 00 03 00 00 00 04 00 00 00 00 00 )")]
         public void PseudoCustomAttribute_OnAssembly_KeepsAttribute(string attributeType, string constructor, string value)
         {
             string source = $$"""
@@ -1007,27 +1009,10 @@ namespace ILAssembler.Tests
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            Assert.Single(reader.GetAssemblyDefinition().GetCustomAttributes());
-        }
-
-        [Fact]
-        public void PseudoCustomAttribute_TypeLibVersionWithNegativeValue_ReportsDiagnostic()
-        {
-            string source = """
-                .assembly extern mscorlib { }
-                .assembly test
-                {
-                    .custom instance void [mscorlib]System.Runtime.InteropServices.TypeLibVersionAttribute::.ctor(int32, int32) = ( 01 00 FF FF FF FF 02 00 00 00 00 00 )
-                }
-                .class public auto ansi Test extends [mscorlib]System.Object
-                {
-                }
-                """;
-
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
-            var diagnostic = Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
-            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            var attribute = reader.GetCustomAttribute(Assert.Single(reader.GetAssemblyDefinition().GetCustomAttributes()));
+            Assert.Equal(
+                Convert.FromHexString(value.Replace("(", "").Replace(")", "").Replace(" ", "")),
+                reader.GetBlobBytes(attribute.Value));
         }
     }
 }

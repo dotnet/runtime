@@ -9,21 +9,6 @@ namespace ILAssembler;
 
 internal static class MetadataExtensions
 {
-    extension(MethodImplAttributes)
-    {
-        public static MethodImplAttributes UserMask =>
-            MethodImplAttributes.ManagedMask |
-            MethodImplAttributes.ForwardRef |
-            MethodImplAttributes.PreserveSig |
-            MethodImplAttributes.InternalCall |
-            MethodImplAttributes.Synchronized |
-            MethodImplAttributes.NoInlining |
-            MethodImplAttributes.AggressiveInlining |
-            MethodImplAttributes.NoOptimization |
-            MethodImplAttributes.AggressiveOptimization |
-            MethodImplAttributes.Async;
-    }
-
     extension(TypeAttributes)
     {
         public static TypeAttributes ExtendedLayout => (TypeAttributes)0x18;
@@ -56,21 +41,5 @@ internal static class MetadataExtensions
     extension(ILOpCode)
     {
         public static ILOpCode Unused => (ILOpCode)0xFE22;
-    }
-}
-
-internal static class ClassInterfaceTypeExtensions
-{
-    extension(ClassInterfaceType)
-    {
-        public static ClassInterfaceType Last => (ClassInterfaceType)3;
-    }
-}
-
-internal static class ComInterfaceTypeExtensions
-{
-    extension(ComInterfaceType)
-    {
-        public static ComInterfaceType Last => (ComInterfaceType)4;
     }
 }

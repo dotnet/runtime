@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace ILAssembler;
@@ -27,12 +26,7 @@ internal static partial class PseudoCustomAttributes
         return known.Kind switch
         {
             KnownAttributeKind.DllImport => ApplyDllImport(context, arguments),
-            KnownAttributeKind.Guid => ApplyGuid(context, arguments),
             KnownAttributeKind.ComImport => AddTypeFlags(context, TypeAttributes.Import),
-            KnownAttributeKind.InterfaceType =>
-                GetUInt16(arguments.FixedArguments[0].Value) < (ushort)ComInterfaceType.Last || context.InvalidValue(),
-            KnownAttributeKind.ClassInterface =>
-                GetUInt16(arguments.FixedArguments[0].Value) < (ushort)ClassInterfaceType.Last || context.InvalidValue(),
 #pragma warning disable SYSLIB0050 // Formatter-based serialization APIs are obsolete.
             KnownAttributeKind.Serializable => AddTypeFlags(context, TypeAttributes.Serializable),
             KnownAttributeKind.NonSerialized => AddFieldFlags(context, FieldAttributes.NotSerialized),
@@ -47,11 +41,10 @@ internal static partial class PseudoCustomAttributes
             KnownAttributeKind.StructLayout1 or KnownAttributeKind.StructLayout2 =>
                 ApplyStructLayout(context, known.Kind, arguments),
             KnownAttributeKind.FieldOffset => ApplyFieldOffset(context, arguments),
-            KnownAttributeKind.TypeLibVersion or KnownAttributeKind.ComCompatibleVersion =>
-                ValidateNonNegative(context, arguments.FixedArguments),
             KnownAttributeKind.SpecialName => ApplySpecialName(context),
-            KnownAttributeKind.AllowPartiallyTrustedCallers => true,
             KnownAttributeKind.WindowsRuntimeImport => AddTypeFlags(context, TypeAttributes.WindowsRuntime),
+            KnownAttributeKind.DynamicSecurityMethod => AddMethodFlags(context, MethodAttributes.RequireSecObject),
+            KnownAttributeKind.SuppressUnmanagedCodeSecurity => ApplySuppressUnmanagedCodeSecurity(context),
             _ => true,
         };
     }
@@ -65,6 +58,12 @@ internal static partial class PseudoCustomAttributes
     private static bool AddFieldFlags(LoweringContext context, FieldAttributes flags)
     {
         ((EntityRegistry.FieldDefinitionEntity)context.Owner).Attributes |= flags;
+        return true;
+    }
+
+    private static bool AddMethodFlags(LoweringContext context, MethodAttributes flags)
+    {
+        ((EntityRegistry.MethodDefinitionEntity)context.Owner).MethodAttributes |= flags;
         return true;
     }
 
@@ -104,30 +103,19 @@ internal static partial class PseudoCustomAttributes
         }
     }
 
-    private static bool ValidateNonNegative(
-        LoweringContext context,
-        ImmutableArray<CustomAttributeTypedArgument<SerializationTypeCode>> arguments)
+    private static bool ApplySuppressUnmanagedCodeSecurity(LoweringContext context)
     {
-        foreach (CustomAttributeTypedArgument<SerializationTypeCode> argument in arguments)
+        switch (context.Owner)
         {
-            if (GetInt32(argument.Value) < 0)
-            {
-                return context.InvalidValue();
-            }
+            case EntityRegistry.TypeDefinitionEntity type:
+                type.Attributes |= TypeAttributes.HasSecurity;
+                return true;
+            case EntityRegistry.MethodDefinitionEntity method:
+                method.MethodAttributes |= MethodAttributes.HasSecurity;
+                return true;
+            default:
+                return context.InvalidTarget();
         }
-
-        return true;
-    }
-
-    private static bool ApplyGuid(
-        LoweringContext context,
-        CustomAttributeValue<SerializationTypeCode> arguments)
-    {
-        // The value is only validated; the attribute itself is still emitted.
-        string guid = GetString(arguments.FixedArguments[0].Value);
-        return guid.Length == 36 && Guid.TryParseExact(guid, "D", out _)
-            ? true
-            : context.InvalidGuid();
     }
 
     private static bool ApplyFieldOffset(
@@ -162,12 +150,13 @@ internal static partial class PseudoCustomAttributes
 
         if (kind is not KnownAttributeKind.MethodImpl1)
         {
-            // The I2 overload is widened before validation, matching the native emitter.
             object? fixedValue = arguments.FixedArguments[0].Value;
-            ushort value = kind is KnownAttributeKind.MethodImpl2
+            int value = kind is KnownAttributeKind.MethodImpl2
                 ? unchecked((ushort)GetInt16(fixedValue))
-                : GetUInt16(fixedValue);
-            if (((MethodImplAttributes)value & ~MethodImplAttributes.UserMask) != 0)
+                : GetInt32(fixedValue);
+            // MethodCodeType owns the low bits. All other bits are available for runtime experiments,
+            // provided the value fits the two-byte MethodDef.ImplFlags column (ECMA-335 II.22.26).
+            if ((uint)value > ushort.MaxValue || ((MethodImplAttributes)value & MethodImplAttributes.CodeTypeMask) != 0)
             {
                 return context.InvalidValue();
             }
@@ -175,19 +164,17 @@ internal static partial class PseudoCustomAttributes
             fixedAttributes = (MethodImplAttributes)value;
         }
 
-        bool applyCodeType = kind is KnownAttributeKind.MethodImpl1 || codeTypeArgument is not null;
-        ushort codeType = codeTypeArgument is { } argument ? GetUInt16(argument.Value) : (ushort)0;
-        if (applyCodeType && (codeType & ~(ushort)MethodImplAttributes.CodeTypeMask) != 0)
+        MethodCodeType codeType = codeTypeArgument is { } argument
+            ? (MethodCodeType)GetInt32(argument.Value)
+            : MethodCodeType.IL;
+        if (codeType is < MethodCodeType.IL or > MethodCodeType.Runtime)
         {
             return context.InvalidValue();
         }
 
         method.ImplementationAttributes |= fixedAttributes;
-        if (applyCodeType)
-        {
-            method.ImplementationAttributes =
-                (method.ImplementationAttributes & ~MethodImplAttributes.CodeTypeMask) | (MethodImplAttributes)codeType;
-        }
+        method.ImplementationAttributes =
+            (method.ImplementationAttributes & ~MethodImplAttributes.CodeTypeMask) | (MethodImplAttributes)codeType;
 
         return true;
     }
@@ -201,16 +188,16 @@ internal static partial class PseudoCustomAttributes
 
         // The I2 overload is zero-extended through 16 bits before the layout kind is read.
         object? fixedValue = arguments.FixedArguments[0].Value;
-        int layoutKind = kind is KnownAttributeKind.StructLayout1
+        LayoutKind layoutKind = (LayoutKind)(kind is KnownAttributeKind.StructLayout1
             ? unchecked((ushort)GetInt16(fixedValue))
-            : GetInt32(fixedValue);
+            : GetInt32(fixedValue));
 
         TypeAttributes layout = layoutKind switch
         {
-            0 => TypeAttributes.SequentialLayout,
-            1 => TypeAttributes.ExtendedLayout,
-            2 => TypeAttributes.ExplicitLayout,
-            3 => TypeAttributes.AutoLayout,
+            LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+            LayoutKind.Extended => TypeAttributes.ExtendedLayout,
+            LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
+            LayoutKind.Auto => TypeAttributes.AutoLayout,
             _ => (TypeAttributes)(-1),
         };
 
@@ -247,15 +234,16 @@ internal static partial class PseudoCustomAttributes
 
         if (FindNamedArgument(arguments, StructLayoutCharSet) is { } charSetArgument)
         {
-            switch (GetUInt32(charSetArgument.Value))
+            switch ((CharSet)GetUInt32(charSetArgument.Value))
             {
-                case 2:
+                case CharSet.None:
+                case CharSet.Ansi:
                     attributes = (attributes & ~TypeAttributes.StringFormatMask) | TypeAttributes.AnsiClass;
                     break;
-                case 3:
+                case CharSet.Unicode:
                     attributes = (attributes & ~TypeAttributes.StringFormatMask) | TypeAttributes.UnicodeClass;
                     break;
-                case 4:
+                case CharSet.Auto:
                     attributes = (attributes & ~TypeAttributes.StringFormatMask) | TypeAttributes.AutoClass;
                     break;
                 default:
@@ -293,15 +281,14 @@ internal static partial class PseudoCustomAttributes
 
         if (FindNamedArgument(arguments, DllImportCallingConvention) is { } callingConventionArgument)
         {
-            flags = GetUInt32(callingConventionArgument.Value) switch
+            flags = (CallingConvention)GetUInt32(callingConventionArgument.Value) switch
             {
-                0 => flags,
-                1 => flags | MethodImportAttributes.CallingConventionWinApi,
-                2 => flags | MethodImportAttributes.CallingConventionCDecl,
-                3 => flags | MethodImportAttributes.CallingConventionStdCall,
-                4 => flags | MethodImportAttributes.CallingConventionThisCall,
-                5 => flags | MethodImportAttributes.CallingConventionFastCall,
-                _ => flags,
+                CallingConvention.Winapi => flags | MethodImportAttributes.CallingConventionWinApi,
+                CallingConvention.Cdecl => flags | MethodImportAttributes.CallingConventionCDecl,
+                CallingConvention.StdCall => flags | MethodImportAttributes.CallingConventionStdCall,
+                CallingConvention.ThisCall => flags | MethodImportAttributes.CallingConventionThisCall,
+                CallingConvention.FastCall => flags | MethodImportAttributes.CallingConventionFastCall,
+                _ => flags | MethodImportAttributes.CallingConventionWinApi,
             };
         }
         else
@@ -311,13 +298,12 @@ internal static partial class PseudoCustomAttributes
 
         if (FindNamedArgument(arguments, DllImportCharSet) is { } charSetArgument)
         {
-            flags = GetUInt32(charSetArgument.Value) switch
+            flags = (CharSet)GetUInt32(charSetArgument.Value) switch
             {
-                // 0 means "do nothing" and 1 is "not specified", which is the zero bit pattern.
-                0 or 1 => flags,
-                2 => flags | MethodImportAttributes.CharSetAnsi,
-                3 => flags | MethodImportAttributes.CharSetUnicode,
-                4 => flags | MethodImportAttributes.CharSetAuto,
+                CharSet.None => flags,
+                CharSet.Ansi => flags | MethodImportAttributes.CharSetAnsi,
+                CharSet.Unicode => flags | MethodImportAttributes.CharSetUnicode,
+                CharSet.Auto => flags | MethodImportAttributes.CharSetAuto,
                 _ => flags,
             };
         }

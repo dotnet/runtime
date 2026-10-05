@@ -866,18 +866,21 @@ namespace ILAssembler.Tests
             Assert.Empty(method.GetCustomAttributes());
         }
 
-        [Fact]
-        public void PseudoCustomAttribute_DllImportExplicitZeroCallingConventionDoesNotDefaultToWinApi()
+        [Theory]
+        [InlineData("00 00 00 00")]
+        [InlineData("06 00 00 00")]
+        [InlineData("FF FF FF FF")]
+        public void PseudoCustomAttribute_DllImportInvalidCallingConventionDefaultsToWinApi(string valueBytes)
         {
             string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 01 00 "
                 + "53 55 30 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E "
-                + "11 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E 00 00 00 00 )";
+                + $"11 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E {valueBytes} )";
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
             var reader = pe.GetMetadataReader();
             MethodImport import = GetMethod(reader, "Native").GetImport();
 
-            Assert.Equal(default, import.Attributes & MethodImportAttributes.CallingConventionMask);
+            Assert.Equal(MethodImportAttributes.CallingConventionWinApi, import.Attributes & MethodImportAttributes.CallingConventionMask);
         }
 
         [Fact]
