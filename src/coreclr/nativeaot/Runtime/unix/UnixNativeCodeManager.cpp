@@ -1060,8 +1060,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
     {
         uint32_t instr = *pInstr;
 
-        // Pointer authentication instructions are part of the epilog. Keep scanning
-        // backwards to find the LR restore or SP adjustment that precedes them.
+        // Scan past authentication instructions to find the FP/LR restore.
         if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
         {
             continue;
@@ -1072,11 +1071,6 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
         // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
         if ((instr & BEGS_MASK) == BEGS_BITS)
         {
-            // Scan past authentication instructions to find the FP/LR restore.
-            if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
-            {
-                continue;
-            }
             // not in an epilogue
             break;
         }
