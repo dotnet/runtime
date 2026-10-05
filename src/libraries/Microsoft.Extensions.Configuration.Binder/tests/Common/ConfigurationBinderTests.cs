@@ -199,6 +199,48 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("Yo", options.NamedProperty);
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void VirtualPropertyMetadataUsesMostDerivedDeclaration(bool useGet, bool includeOriginalKey)
+        {
+            var values = new Dictionary<string, string?> { ["Renamed:0"] = "1" };
+            if (includeOriginalKey)
+            {
+                values["Values:0"] = "2";
+            }
+            IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+            RenamedVirtualCollectionOptions renamed;
+            InheritedRenamedVirtualCollectionOptions inherited;
+            IgnoredVirtualCollectionOptions ignored;
+            InheritedIgnoredVirtualCollectionOptions inheritedIgnored;
+            if (useGet)
+            {
+                renamed = configuration.Get<RenamedVirtualCollectionOptions>();
+                inherited = configuration.Get<InheritedRenamedVirtualCollectionOptions>();
+                ignored = configuration.Get<IgnoredVirtualCollectionOptions>();
+                inheritedIgnored = configuration.Get<InheritedIgnoredVirtualCollectionOptions>();
+            }
+            else
+            {
+                renamed = new();
+                inherited = new();
+                ignored = new();
+                inheritedIgnored = new();
+                configuration.Bind(renamed);
+                configuration.Bind(inherited);
+                configuration.Bind(ignored);
+                configuration.Bind(inheritedIgnored);
+            }
+
+            Assert.Equal(new[] { 99, 1 }, renamed.Values);
+            Assert.Equal(new[] { 99, 1 }, inherited.Values);
+            Assert.Equal(new[] { 99 }, ignored.Values);
+            Assert.Equal(new[] { 99 }, inheritedIgnored.Values);
+        }
+
         [Fact]
         public void CanBindConfigurationKeyNamesRequiringEscaping()
         {

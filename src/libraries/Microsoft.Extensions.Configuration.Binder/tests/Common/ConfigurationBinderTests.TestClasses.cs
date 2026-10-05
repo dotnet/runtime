@@ -41,6 +41,33 @@ namespace Microsoft.Extensions
             public T Value { get; set; }
         }
 
+        public class VirtualCollectionOptions
+        {
+            public virtual List<int> Values { get; } = [99];
+        }
+
+        public class RenamedVirtualCollectionOptions : VirtualCollectionOptions
+        {
+            [ConfigurationKeyName("Renamed")]
+            public override List<int> Values { get; } = [99];
+        }
+
+        public sealed class InheritedRenamedVirtualCollectionOptions : RenamedVirtualCollectionOptions
+        {
+            public override List<int> Values { get; } = [99];
+        }
+
+        public class IgnoredVirtualCollectionOptions : VirtualCollectionOptions
+        {
+            [ConfigurationIgnore]
+            public override List<int> Values { get; } = [99];
+        }
+
+        public sealed class InheritedIgnoredVirtualCollectionOptions : IgnoredVirtualCollectionOptions
+        {
+            public override List<int> Values { get; } = [99];
+        }
+
         public record GenericOptionsRecord<T>(T Value);
 
         public class GenericOptionsWithParamCtor<T>
