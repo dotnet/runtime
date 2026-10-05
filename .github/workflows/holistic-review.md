@@ -218,6 +218,8 @@ pre-agent-steps:
       } >> "$GITHUB_ENV"
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-pull-request-review-comment:
     max: 10
     side: RIGHT

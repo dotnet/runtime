@@ -193,6 +193,7 @@ namespace System.IO.Tests
             stream.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134955", TestPlatforms.Wasi)]
     public class FileStream_BeginEndRead_AsyncReads : FileStream_AsyncReads
     {
         protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>

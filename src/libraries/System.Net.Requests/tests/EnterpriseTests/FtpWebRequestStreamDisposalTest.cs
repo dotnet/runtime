@@ -159,6 +159,63 @@ namespace System.Net.Tests
                 _output.WriteLine($"Cleanup failed: {ex.Message}");
             }
         }
+
+        [ConditionalTheory(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task FtpListDirectoryDetails_ReturnsPlainText(bool useSsl)
+        {
+            string fileName = $"test_{Guid.NewGuid()}.txt";
+            string fileUrl = GetFtpUrl(fileName);
+
+            FtpWebRequest uploadRequest = (FtpWebRequest)WebRequest.Create(fileUrl);
+            uploadRequest.Method = WebRequestMethods.Ftp.UploadFile;
+            uploadRequest.EnableSsl = useSsl;
+            uploadRequest.Credentials = EnterpriseTestConfiguration.FtpNetworkCredentials;
+
+            using (Stream requestStream = await uploadRequest.GetRequestStreamAsync())
+            {
+                await requestStream.WriteAsync("test"u8.ToArray());
+            }
+
+            using (FtpWebResponse uploadResponse = (FtpWebResponse)await uploadRequest.GetResponseAsync())
+            {
+                Assert.Equal(FtpStatusCode.ClosingData, uploadResponse.StatusCode);
+            }
+
+            try
+            {
+                FtpWebRequest listRequest = (FtpWebRequest)WebRequest.Create(GetFtpUrl(string.Empty));
+                listRequest.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
+                listRequest.EnableSsl = useSsl;
+                listRequest.Credentials = EnterpriseTestConfiguration.FtpNetworkCredentials;
+
+                using (FtpWebResponse response = (FtpWebResponse)listRequest.GetResponse())
+                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                {
+                    string listing = reader.ReadToEnd();
+                    Assert.Contains(fileName, listing);
+                    Assert.Equal(FtpStatusCode.ClosingData, response.StatusCode);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    FtpWebRequest deleteRequest = (FtpWebRequest)WebRequest.Create(fileUrl);
+                    deleteRequest.Method = WebRequestMethods.Ftp.DeleteFile;
+                    deleteRequest.EnableSsl = useSsl;
+                    deleteRequest.Credentials = EnterpriseTestConfiguration.FtpNetworkCredentials;
+
+                    using FtpWebResponse deleteResponse = (FtpWebResponse)await deleteRequest.GetResponseAsync();
+                    Assert.Equal(FtpStatusCode.FileActionOK, deleteResponse.StatusCode);
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Cleanup failed: {ex.Message}");
+                }
+            }
+        }
 #pragma warning restore SYSLIB0014
     }
 }

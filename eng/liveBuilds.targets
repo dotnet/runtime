@@ -263,6 +263,7 @@
         $(LibrariesNativeArtifactsPath)*.jar;"
         IsNative="true" />
 
+      <!-- These Rollup maps are inputs to Emscripten's JS-library handling, not maps for a served module. -->
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
                              Include="
         $(CoreCLRSharedFrameworkDir)libcoreclr_static.a;
@@ -279,7 +280,11 @@
         "
         Exclude="$(LibrariesSharedFrameworkDir)libminipal.a;
                  $(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
-                 $(LibrariesSharedFrameworkDir)libz.a"
+                 $(LibrariesSharedFrameworkDir)libz.a;
+                 $(LibrariesSharedFrameworkDir)libBrowserHost.js.map;
+                 $(LibrariesSharedFrameworkDir)libSystem.Native.Browser.js.map;
+                 $(LibrariesSharedFrameworkDir)libSystem.Native.Browser.Utils.js.map;
+                 $(LibrariesSharedFrameworkDir)libSystem.Runtime.InteropServices.JavaScript.Native.js.map"
         IsNative="true" />
 
       <!-- Runtime tests for Helix are built without the host subset, so browser host files are excluded from the runtime tests build -->
