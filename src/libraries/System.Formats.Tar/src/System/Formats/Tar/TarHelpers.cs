@@ -181,6 +181,19 @@ namespace System.Formats.Tar
             return false;
         }
 
+        /// <summary>Parses a uid or gid extended attribute value. See <see cref="ParseUidGid"/> for how out of range values are handled.</summary>
+        internal static bool TryGetStringAsUidGid(IReadOnlyDictionary<string, string> dict, string fieldName, out int id)
+        {
+            if (dict.TryGetValue(fieldName, out string? value) && !string.IsNullOrEmpty(value))
+            {
+                id = ToUidGid(long.Parse(value, CultureInfo.InvariantCulture));
+                return true;
+            }
+
+            id = 0;
+            return false;
+        }
+
         // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenLong'.
         internal static bool TryGetStringAsBaseTenLong(IReadOnlyDictionary<string, string> dict, string fieldName, out long baseTenLong)
         {
@@ -212,6 +225,25 @@ namespace System.Formats.Tar
             }
 
             return entryType;
+        }
+
+        /// <summary>Parses a uid or gid numeric field.</summary>
+        /// <remarks>
+        /// Unix uid_t and gid_t are 32-bit unsigned, and archives may contain values larger than <see cref="int.MaxValue"/>
+        /// (for example, GNU base-256 encoded fields). Such values are reinterpreted as <see cref="int"/> without an
+        /// overflow check, which matches how <see cref="TarWriter"/> stores uid and gid values read from the file system.
+        /// Values that don't fit in 32 bits can't be a valid id and are rejected.
+        /// </remarks>
+        internal static int ParseUidGid(ReadOnlySpan<byte> buffer) => ToUidGid(ParseNumeric<long>(buffer));
+
+        private static int ToUidGid(long value)
+        {
+            if (value < int.MinValue || value > uint.MaxValue)
+            {
+                ThrowInvalidNumber();
+            }
+
+            return unchecked((int)value);
         }
 
         /// <summary>Parses a numeric field.</summary>
