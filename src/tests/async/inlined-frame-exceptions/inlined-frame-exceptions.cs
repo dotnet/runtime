@@ -55,20 +55,20 @@ public class Async2InlinedFrameExceptions
     private static async Task<string> SuspendThenThrowCaughtAsync() => await CatchAsync(InlinedSuspendThenThrowAsync);
 
     [Fact]
-    public static void ExceptionsSurfaceFromInlinedFrames()
+    public static async Task ExceptionsSurfaceFromInlinedFrames()
     {
-        Assert.Equal("no-exception", SuspendOnlyCaughtAsync().GetAwaiter().GetResult());
-        Assert.Equal("boom", ThrowOnlyCaughtAsync().GetAwaiter().GetResult());
-        Assert.Equal("boom", SuspendThenThrowCaughtAsync().GetAwaiter().GetResult());
+        Assert.Equal("no-exception", await SuspendOnlyCaughtAsync());
+        Assert.Equal("boom", await ThrowOnlyCaughtAsync());
+        Assert.Equal("boom", await SuspendThenThrowCaughtAsync());
     }
 
     private static async Task UncaughtAsync() => await InlinedSuspendThenThrowAsync();
 
     [Fact]
-    public static void ExceptionPropagatesOutOfInlinedFrame()
+    public static async Task ExceptionPropagatesOutOfInlinedFrame()
     {
         InvalidOperationException e =
-            Assert.Throws<InvalidOperationException>(() => UncaughtAsync().GetAwaiter().GetResult());
+            await Assert.ThrowsAsync<InvalidOperationException>(UncaughtAsync);
         Assert.Equal("boom", e.Message);
     }
 }

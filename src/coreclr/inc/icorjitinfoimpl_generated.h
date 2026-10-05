@@ -686,7 +686,8 @@ bool convertPInvokeCalliToCall(
 
 bool notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled) override;
+          bool supportEnabled,
+          bool preserveNegativeDependency) override;
 
 void updateEntryPointForTailCall(
           CORINFO_CONST_LOOKUP* entryPoint) override;

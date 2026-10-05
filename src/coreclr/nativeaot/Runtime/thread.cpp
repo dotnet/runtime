@@ -416,7 +416,7 @@ void Thread::Destroy()
 extern OBJECTREF * t_pShadowStackTop;
 extern OBJECTREF * t_pShadowStackBottom;
 
-void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
+void GcScanWasmShadowStack(ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData)
 {
     // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
     EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
@@ -472,6 +472,7 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
+#ifndef TARGET_WASM
 void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
@@ -594,6 +595,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         }
     }
 }
+#endif // !TARGET_WASM
 
 #ifndef DACCESS_COMPILE
 
@@ -1287,7 +1289,7 @@ void Thread::EnsureRuntimeInitialized()
 {
     while (PalInterlockedCompareExchangePointer((void *volatile *)&g_RuntimeInitializingThread, this, NULL) != NULL)
     {
-        PalSleep(1);
+        minipal_sleep(1);
     }
 
     if (g_RuntimeInitializationCallback != NULL)

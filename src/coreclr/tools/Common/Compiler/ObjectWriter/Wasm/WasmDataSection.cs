@@ -101,7 +101,7 @@ namespace ILCompiler.ObjectWriter
         /// Assign the layout of segments within the data section, padding segments for file alignment, and placing
         /// active segments at the appropriate memory offsets.
         /// </summary>
-        private void AssignSegmentLayout()
+        public void AssignSegmentLayout()
         {
             if (_layoutAssigned)
                 return;

@@ -15,18 +15,17 @@ namespace ILCompiler
     /// </summary>
     public abstract class CompilerGeneratedInteropStubManager : InteropStubManager
     {
-        private readonly PInvokeILEmitterConfiguration _pInvokeILEmitterConfiguration;
         internal readonly InteropStateManager _interopStateManager;
 
         public CompilerGeneratedInteropStubManager(InteropStateManager interopStateManager, PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration)
+            : base(pInvokeILEmitterConfiguration)
         {
             _interopStateManager = interopStateManager;
-            _pInvokeILEmitterConfiguration = pInvokeILEmitterConfiguration;
         }
 
         public sealed override PInvokeILProvider CreatePInvokeILProvider()
         {
-            return new PInvokeILProvider(_pInvokeILEmitterConfiguration, _interopStateManager);
+            return new PInvokeILProvider(_configuration, _interopStateManager);
         }
 
         public sealed override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)

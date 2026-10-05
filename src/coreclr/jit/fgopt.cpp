@@ -1052,6 +1052,10 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         }
     }
 
+    // Compaction can run before liveness establishes the first tracked-local epoch.
+    // Even for uninitialized live-out sets, the assignment below needs a defined size.
+    assert((GetCurLVEpoch() != 0) || (lvaTrackedCount == 0));
+    assert((GetCurLVEpoch() != 0) || (lvaTrackedCountInSizeTUnits == 0));
     VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, target->bbLiveOut);
 
     // Update the beginning and ending IL offsets (bbCodeOffs and bbCodeOffsEnd).
@@ -1267,6 +1271,36 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 }
 
 //-------------------------------------------------------------
+// fgLeadsToEmptyBlockCycle:
+//    Check whether a chain of empty unconditional blocks reaches a cycle.
+//
+// Arguments:
+//    block - start of the chain
+//
+// Returns: true if the chain reaches a cycle of empty unconditional blocks
+//
+// Notes:
+//    Redirecting a branch into such a cycle would indefinitely rotate its target.
+//
+bool Compiler::fgLeadsToEmptyBlockCycle(BasicBlock* block)
+{
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visited = BitVecOps::MakeEmpty(&traits);
+
+    while (block->isEmpty() && block->KindIs(BBJ_ALWAYS))
+    {
+        if (!BitVecOps::TryAddElemD(&traits, visited, block->bbNum))
+        {
+            return true;
+        }
+
+        block = block->GetTarget();
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------
 // fgOptimizeBranchToEmptyUnconditional:
 //    Optimize a jump to an empty block which ends in an unconditional branch.
 //
@@ -1278,40 +1312,11 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 //
 bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest)
 {
-    bool optimizeJump = true;
-
     assert(bDest->isEmpty());
     assert(bDest->KindIs(BBJ_ALWAYS));
 
-    BasicBlock* const bDestTarget = bDest->GetTarget();
-
-    // Don't redirect 'block' into a cycle of empty unconditional blocks. The next invocation
-    // would redirect it again, indefinitely rotating its target around the cycle.
-    BasicBlock* slow = bDest;
-    BasicBlock* fast = bDest;
-    while (true)
-    {
-        if (!slow->isEmpty() || !slow->KindIs(BBJ_ALWAYS) || !fast->isEmpty() || !fast->KindIs(BBJ_ALWAYS))
-        {
-            break;
-        }
-
-        slow = slow->GetTarget();
-        fast = fast->GetTarget();
-
-        if (!fast->isEmpty() || !fast->KindIs(BBJ_ALWAYS))
-        {
-            break;
-        }
-
-        fast = fast->GetTarget();
-
-        if (slow == fast)
-        {
-            optimizeJump = false;
-            break;
-        }
-    }
+    BasicBlock* const bDestTarget  = bDest->GetTarget();
+    bool              optimizeJump = !fgLeadsToEmptyBlockCycle(bDest);
 
     // We do not optimize jumps between two different try regions.
     // However jumping to a block that is not in any try region is OK
@@ -1636,7 +1641,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         // Do we have a JUMP to an empty unconditional JUMP block?
         if (bDest->isEmpty() && bDest->KindIs(BBJ_ALWAYS) && !bDest->TargetIs(bDest)) // special case for self jumps
         {
-            bool optimizeJump = true;
+            bool optimizeJump = !fgLeadsToEmptyBlockCycle(bDest);
 
             // We do not optimize jumps between two different try regions.
             // However jumping to a block that is not in any try region is OK
@@ -1711,8 +1716,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
     noway_assert(switchTree->TypeIs(TYP_VOID));
 
-    // At this point all of the case jump targets have been updated such
-    // that none of them go to block that is an empty unconditional block
+    // At this point all of the case jump targets have been updated where possible.
     // Now check for two trivial switch jumps.
     //
     if (block->GetSwitchTargets()->GetSuccCount() == 1)
@@ -2156,9 +2160,17 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
+    // Other statement in the block must be an assignment to the local being compared.
+    // RHS must be binary operation or another local.
+    GenTree* const data = firstTree->AsLclVar()->Data();
+    if (data->OperIs(GT_LCL_VAR))
+    {
+        *lclNum = data->AsLclVar()->GetLclNum();
+        return true;
+    }
+
     // Could allow unary here too...
     //
-    GenTree* const data = firstTree->AsLclVar()->Data();
     if (!data->OperIsBinary())
     {
         return false;
@@ -2387,12 +2399,46 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
         return false;
     }
 
-    if (!store->Data()->IsIntegralConst())
+    GenTree*  data     = store->Data();
+    var_types copyType = TYP_UNDEF;
+
+    // Look through one adjacent copy, ex.
+    // V01 = 1
+    // V02 = V01
+    // CMP V02, 0
+    if (data->OperIs(GT_LCL_VAR))
+    {
+        Statement* sourceStmt = secondLastStmt->GetPrevStmt();
+        if (sourceStmt == block->lastStmt())
+        {
+            return false;
+        }
+
+        GenTree* sourceTree = sourceStmt->GetRootNode();
+        if (!sourceTree->OperIs(GT_STORE_LCL_VAR))
+        {
+            return false;
+        }
+
+        GenTreeLclVarCommon* sourceStore = sourceTree->AsLclVarCommon();
+        if ((sourceStore->GetLclNum() != data->AsLclVarCommon()->GetLclNum()) ||
+            !sourceStore->Data()->IsIntegralConst() ||
+            (genActualType(sourceStore) != genActualType(sourceStore->Data())) ||
+            (genActualType(sourceStore) != genActualType(data)))
+        {
+            return false;
+        }
+
+        copyType = lvaGetDesc(data->AsLclVarCommon())->TypeGet();
+        data     = sourceStore->Data();
+    }
+
+    if (!data->IsIntegralConst())
     {
         return false;
     }
 
-    if (genActualType(store) != genActualType(store->Data()) || (genActualType(store) != genActualType(lcl)))
+    if (genActualType(store) != genActualType(data) || (genActualType(store) != genActualType(lcl)))
     {
         return false;
     }
@@ -2403,8 +2449,14 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
     JITDUMP("\nAfter:\n");
 
     LclVarDsc* varDsc  = lvaGetDesc(lcl);
-    GenTree*   newData = gtCloneExpr(store->Data());
-    if (varTypeIsSmall(varDsc) && fgCastNeeded(store->Data(), varDsc->TypeGet()))
+    GenTree*   newData = gtCloneExpr(data);
+    if ((copyType != TYP_UNDEF) && varTypeIsSmall(copyType) && fgCastNeeded(newData, copyType))
+    {
+        newData = gtNewCastNode(TYP_INT, newData, false, copyType);
+        newData = gtFoldExpr(newData);
+    }
+
+    if (varTypeIsSmall(varDsc) && fgCastNeeded(newData, varDsc->TypeGet()))
     {
         newData = gtNewCastNode(TYP_INT, newData, false, varDsc->TypeGet());
         newData = gtFoldExpr(newData);
@@ -4401,6 +4453,13 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
     //      Once a block is removed the predecessors are not accurate (assuming they were at the beginning)
     //      For now we will only use the information in bbRefs because it is easier to be updated
 
+    // Tail duplication rewrites the flow out of the duplicating block, and so can end up rotating an
+    // unconditional branch around a cycle of conditional blocks, never reaching a fixed point. Remember
+    // which (source, target) pairs have already been duplicated, so that each pair is only duplicated
+    // once per invocation. Since duplication never creates new blocks, this bounds the work we do here.
+    //
+    JitHashTable<uint64_t, JitLargePrimitiveKeyFuncs<uint64_t>, bool> tailDupPairs(getAllocator(CMK_FlowEdge));
+
     bool modified = false;
     bool change;
     do
@@ -4458,9 +4517,12 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
             if (block->KindIs(BBJ_ALWAYS))
             {
-                bDest = block->GetTarget();
-                if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, bDest))
+                bDest                     = block->GetTarget();
+                const uint64_t tailDupKey = ((uint64_t)block->bbID << 32) | bDest->bbID;
+                if (doTailDuplication && !tailDupPairs.Lookup(tailDupKey) &&
+                    fgOptimizeUncondBranchToSimpleCond(block, bDest))
                 {
+                    tailDupPairs.Set(tailDupKey, true);
                     assert(block->KindIs(BBJ_COND));
                     assert(bNext == block->Next());
                     change   = true;
@@ -4472,9 +4534,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         // similarly have its control flow straightened out.
                         // Try to compact it and repeat the optimization for
                         // it.
-                        if (bDest->bbRefs == 1)
+                        BasicBlock* const otherPred = bDest->GetUniquePred(this);
+                        if (otherPred != nullptr)
                         {
-                            BasicBlock* otherPred = bDest->bbPreds->getSourceBlock();
                             JITDUMP("Trying to compact last pred " FMT_BB " of " FMT_BB " that we now bypass\n",
                                     otherPred->bbNum, bDest->bbNum);
                             if (fgCanCompactBlock(otherPred))

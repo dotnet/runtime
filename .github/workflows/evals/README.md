@@ -26,10 +26,16 @@ for conformance, behavior, and constructiveness. Every grader must pass.
 The workflow preserves the eval specs and installs Vally from the trusted base
 branch before it checks out the PR head. This lets it evaluate PR changes to the
 workflow prompts without allowing the PR to weaken its graders or toolchain.
-Each eval attaches a read-only GitHub MCP server with the `pull_requests`,
-`repos`, `issues`, and `search` toolsets. The `GITHUB_TOKEN` that the eval job
-supplies to that server has only the job's read permissions, allowing the
-scanner to use the `github` MCP server's `search_issues` tool.
+Each eval attaches a read-only GitHub MCP server with the toolsets its scenario
+needs. The `GITHUB_TOKEN` that the eval job supplies to that server has only the
+job's read permissions. The scanner eval omits the built-in `search` toolset and
+invokes a CLI harness for the workflow's `search-kbe-issues` MCP-script tool
+through Node because the eval runner does not launch workflow frontmatter MCP
+servers. It uses the `github` MCP server's `issue_read` tool for candidate
+inspection. A trusted static grader correlates every candidate returned by the
+harness with a successful, unfiltered `issue_read`. Focused Node tests keep the
+workflow-frontmatter and CLI wrapper behavior in sync and exercise the grader's
+candidate correlation.
 
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually
@@ -37,20 +43,35 @@ exist and scores workflow output against them, is deferred.
 
 - **`ci-failure-scan`** has the agent query the anonymous dnceng-public AzDO REST
   API for a currently-failing outer-loop build on `main`, extract a real error
-  signature, check for an existing KBE, and emit the create-issue safe-output at
-  `out/kbe.md`. Graders check the static Known Build Error format, meaning the
-  title, exactly `Known Build Error` plus one blocking label, the three sections,
-  collapsed authoring guidance, a single json signature, the collapsed
-  workflow-owned positive match-count metadata, and no test-muting. They also check
-  `tool-calls` evidence that it actually fetched a real build and searched existing
-  KBEs.
+  signature, check for an existing KBE, and either emit the create-issue
+  safe-output at `out/kbe.md` or write the exact no-op result
+  `Result: No new Known Build Error` when the live scan has nothing actionable
+  to file. Graders check the static Known Build Error format when a KBE is
+  emitted: the title, exactly `Known Build Error` plus one blocking label, the
+  three sections, collapsed authoring guidance, a single json signature, the
+  collapsed workflow-owned positive match-count metadata, and no test-muting.
+  They also check `tool-calls` evidence that it actually fetched a real build,
+  searched existing KBEs through the wrapper, and inspected returned candidates
+  through `issue_read`.
 
-- **`ci-failure-fix`** has the agent find a real open `[ci-scan]` Known Build
-  Error issue via `gh`, reason about it, and emit one safe-output at
+- **`ci-failure-fix`** runs the workflow's deterministic scanner-author filter
+  in trusted eval setup before the agent starts. The agent then reads a
+  candidate's body and comments through GitHub MCP, reasons about the real open
+  `[ci-scan]` Known Build Error, and emits one safe-output at
   `out/decision.md`. Graders check that it either created a fix PR, with a
   `[ci-fix]` title, a linked KBE, and a real diff that is never a test-disable,
-  or engaged owners with a hand-off comment, and never both, plus `tool-calls`
-  evidence that it acted on a real issue.
+  or engaged owners with a hand-off comment, and never both. A deterministic
+  program grader validates the trusted filter output metadata and requires
+  successful MCP body and comments reads for the same candidate referenced by
+  `Linked KBE:` in the decision. The eval setup runs the same checked-in filter
+  script before the agent and preserves the artifact for grading.
+  An empty candidate list reports the live eval as unavailable (a grader error,
+  not a pass); `noop` cannot pass. The production empty-list skip is covered by
+  the deterministic intake tests instead.
+
+  This eval connects directly to the GitHub MCP server, not through production's
+  filtering gateway. It checks MCP usage and remediation behavior, but does not
+  validate production filtering; gateway-parity coverage remains separate work.
 
 - **`ci-failure-scan-feedback`** has the agent scan real recent `[ci-scan]`
   issues and `[ci-fix]` PRs via `gh`, then emit its feedback safe-output at
@@ -68,6 +89,17 @@ is failing at eval time.
 
 ## Run locally
 
+The deterministic fixer tests need Python 3, Bash, jq, and Node with the eval
+dependencies installed (`npm ci --prefix .github/workflows/evals`), but no
+credentials or network access during testing. They exercise the shared intake
+script and grader, including author filtering, pagination, empty results, API
+failures, repository/job conditions, trusted candidate metadata, and
+candidate/read/comments/decision identity:
+
+```bash
+python3 .github/workflows/evals/test_ci_failure_fix_candidates.py
+```
+
 You need Node 22.12 or newer, Docker, a Copilot token for the agent and judges,
 and a GitHub token for the agent's `gh` calls and the GitHub MCP server.
 
@@ -77,7 +109,10 @@ export PATH="$PWD/.github/workflows/evals/node_modules/.bin:$PATH"
 export COPILOT_GITHUB_TOKEN="$(gh auth token)"
 export GH_TOKEN="$(gh auth token)"
 export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"
-vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml --strict
+export KBE_SEARCH_HELPER="$PWD/.github/workflows/evals/search-kbe-issues.cjs"
+vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
+  --grader-plugin "$PWD/.github/workflows/evals/kbe-candidate-reads-grader.mjs" --strict
 vally eval --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
+  --grader-plugin "$PWD/.github/workflows/evals/kbe-candidate-reads-grader.mjs" \
   --skill-dir .github/workflows --workspace /tmp/ws --output-dir /tmp/out
 ```

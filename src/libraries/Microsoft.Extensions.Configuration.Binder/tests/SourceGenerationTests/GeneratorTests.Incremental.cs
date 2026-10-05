@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsMultithreadingSupported))] // Roslyn workspaces block on SemaphoreSlim
         public sealed class IncrementalTests
         {
             [Fact]
