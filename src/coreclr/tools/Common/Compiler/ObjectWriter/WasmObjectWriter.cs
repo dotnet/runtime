@@ -67,6 +67,7 @@ namespace ILCompiler.ObjectWriter
         /// logical WebAssembly indices and must not be used to resolve index relocations.
         /// </summary>
         private protected Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
+        private readonly Dictionary<Utf8String, INodeWithTypeSignature> _externalFunctions = new();
         private int[] _sectionEmitOrder;
 
         /// <summary>
@@ -143,6 +144,25 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private protected override void PrepareImportsForUndefinedSymbols()
+        {
+            // Imports must be registered before layout consumes function indices. Only actual unresolved
+            // references require imports; a marked extern can also resolve to a definition in this object.
+            foreach (Utf8String name in GetUndefinedSymbols())
+            {
+                if (_externalFunctions.TryGetValue(name, out INodeWithTypeSignature function))
+                {
+                    if (function.Signature is null)
+                    {
+                        throw new InvalidOperationException($"Extern function '{name}' has no known signature and cannot be imported on Wasm");
+                    }
+
+                    int typeIndex = RegisterSignature(WasmLowering.GetSignature(function).FuncType);
+                    WriteImport(new WasmImport("env", name.ToString(), new WasmFunctionImportType(typeIndex)));
+                }
+            }
+        }
+
         private protected static void EmitWasmHeader(Stream outputFileStream)
         {
             outputFileStream.Write("\0asm"u8);
@@ -197,6 +217,14 @@ namespace ILCompiler.ObjectWriter
         }
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
+        {
+            if (node is not ISymbolDefinitionNode && !node.RepresentsIndirectionCell)
+            {
+                _externalFunctions.TryAdd(GetMangledName(node), node);
+            }
+        }
+
+        private protected override void RecordMethodDefinition(INodeWithTypeSignature node)
         {
             Utf8String methodName = new(node.GetMangledName(_nodeFactory.NameMangler));
             Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
@@ -473,7 +501,7 @@ namespace ILCompiler.ObjectWriter
             return functionIndices;
         }
 
-        // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
+        // This effectively recreates the logic of RecordMethodDefinition, but for manually inserted stubs that are not
         // represented by nodes in the dependency graph.
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
         private protected void RegisterStubIndexAndSignature(WasmFuncType signature)
