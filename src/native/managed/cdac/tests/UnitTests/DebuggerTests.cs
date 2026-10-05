@@ -273,6 +273,16 @@ public class DebuggerTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetHijackKind_ReturnsNone_WhenDebuggerNull(MockTarget.Architecture arch)
+    {
+        Target target = BuildNullDebuggerTarget(arch);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0x1234)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void RequestSyncAtEvent_DoesNothing_WhenDebuggerNull(MockTarget.Architecture arch)
     {
         Target target = BuildNullDebuggerTarget(arch);

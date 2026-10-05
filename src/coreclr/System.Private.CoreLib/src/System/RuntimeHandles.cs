@@ -1096,6 +1096,16 @@ namespace System
             return ptr;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetVirtualFunctionPointer")]
+        private static partial IntPtr GetVirtualFunctionPointer(RuntimeMethodHandleInternal method, QCallTypeHandle declaringType, ObjectHandleOnStack target);
+
+        internal static IntPtr GetVirtualFunctionPointer(RuntimeMethodInfo method, RuntimeType declaringType, object target)
+        {
+            return GetVirtualFunctionPointer(IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref declaringType),
+                ObjectHandleOnStack.Create(ref target));
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsCollectible(RuntimeMethodHandleInternal method);
 
@@ -1200,26 +1210,6 @@ namespace System
             return new MdUtf8String(name);
         }
 
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_InvokeMethod")]
-        private static partial void InvokeMethod(ObjectHandleOnStack target, void** arguments, ObjectHandleOnStack sig, Interop.BOOL isConstructor, ObjectHandleOnStack result);
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal static object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor)
-        {
-            object? result = null;
-            InvokeMethod(
-                ObjectHandleOnStack.Create(ref target),
-                arguments,
-                ObjectHandleOnStack.Create(ref sig),
-                isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                ObjectHandleOnStack.Create(ref result));
-            return result;
-        }
-
         /// <summary>
         /// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
         /// </summary>
@@ -1321,12 +1311,14 @@ namespace System
         internal static extern RuntimeMethodHandleInternal GetMethodFromCanonical(RuntimeMethodHandleInternal method, RuntimeType declaringType);
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetNativeCode")]
-        private static partial IntPtr GetNativeCode(RuntimeMethodHandleInternal method);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetDiagnosticCodeStart")]
+        private static partial IntPtr GetDiagnosticCodeStart(RuntimeMethodHandleInternal method);
 
-        internal static IntPtr GetNativeCodeInternal(IRuntimeMethodInfo method)
+        // Returns the code start address that diagnostic tools use to identify the method.
+        // This value is only meaningful for diagnostic reporting; it is not guaranteed to be callable.
+        internal static IntPtr GetDiagnosticCodeStart(IRuntimeMethodInfo method)
         {
-            IntPtr value = GetNativeCode(IRuntimeMethodInfo.GetValue(method));
+            IntPtr value = GetDiagnosticCodeStart(IRuntimeMethodInfo.GetValue(method));
             GC.KeepAlive(method);
             return value;
         }

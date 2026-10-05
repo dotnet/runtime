@@ -95,11 +95,16 @@ public unsafe class ThisCallTest
             Test4ByteNonHFA(instance);
             TestEnum(instance);
             TestCLong(instance);
-            Test8ByteHFAReverse();
-            Test4ByteHFAReverse();
-            Test4ByteNonHFAReverse();
-            TestEnumReverse();
-            TestCLongReverse();
+            // Marshal.GetFunctionPointerForDelegate needs a stub created at run time, which CoreCLR
+            // on wasm cannot allocate.
+            if (!PlatformDetection.IsWasm)
+            {
+                Test8ByteHFAReverse();
+                Test4ByteHFAReverse();
+                Test4ByteNonHFAReverse();
+                TestEnumReverse();
+                TestCLongReverse();
+            }
             Test8ByteHFAUnmanagedCallersOnly();
             Test4ByteHFAUnmanagedCallersOnly();
             Test4ByteNonHFAUnmanagedCallersOnly();

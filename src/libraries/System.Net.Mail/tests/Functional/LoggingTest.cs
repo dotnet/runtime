@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Net.Mail.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "SmtpClient is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "SmtpClient is not supported on Browser and WASI")]
     public class LoggingTest
     {
         [Fact]

@@ -81,10 +81,9 @@
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_64BIT
 #endif // !TARGET_64BIT
 
-#define CEE_FILE_GEN_GROWTH_COLLECTIBLE 2048
-
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
+#ifdef FEATURE_INLINE_TRACKING
 BOOL Module::HasReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -108,6 +107,7 @@ COUNT_T Module::GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef in
 #endif
     return 0;
 }
+#endif // FEATURE_INLINE_TRACKING
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 BOOL Module::HasJitInlineTrackingMap()
@@ -910,12 +910,11 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress)
 
 #endif // !DACCESS_COMPILE
 
-// Get the stored address of the IL blob for reflection/dynamics
+// Get the stored address of an IL body or RVA field's data for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
-//         fAllowTemporary also check the temporary overrides
-// Return Value: starting (target) address of the IL blob corresponding to the input token
+//         token        method token or field token
+// Return Value: starting (target) address of the data corresponding to the input token
 
 TADDR Module::GetDynamicIL(mdToken token)
 {
@@ -1622,6 +1621,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 #endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
+#ifdef PROFILING_SUPPORTED
 //
 // Wrapper for Module::GetRWImporter + QI when writing is not needed.
 //
@@ -1671,6 +1671,7 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
 
     return hr;
 }
+#endif // PROFILING_SUPPORTED
 
 // a special token that indicates no reader could be created - don't try again
 static ISymUnmanagedReader* const k_pInvalidSymReader = (ISymUnmanagedReader*)0x1;
@@ -2911,6 +2912,7 @@ void Module::SetJMCStatus(bool fStatus)
     m_debuggerSpecificData.m_fDefaultJMCStatus = fStatus;
 }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Update the dynamic metadata if needed. Nop for non-dynamic modules
 void Module::UpdateDynamicMetadataIfNeeded()
 {
@@ -2943,6 +2945,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
     }
 
 }
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
 
@@ -2953,12 +2956,14 @@ BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
         Module * pModule = pAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
+#endif
 
     //
     // Remaining work is only needed if a debugger is attached
@@ -3834,11 +3839,7 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     CONTRACTL_END
 
     m_pInMemoryWriter = NULL;
-    m_sdataSection = NULL;
-    m_pCeeFileGen = NULL;
 }
-
-HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
 
 // Module initialization occurs in two phases: the constructor phase and the Initialize phase.
 //
@@ -3858,20 +3859,12 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     Module::Initialize(pamTracker);
 
-    IfFailThrow(CreateICeeGen(IID_ICeeGenInternal, (void **)&m_pCeeFileGen));
-
-    // Collectible modules should try to limit the growth of their associate IL section, as common scenarios for collectible
-    // modules include single type modules
-    if (IsCollectible())
-    {
-        ReleaseHolder<ICeeGenInternal> pCeeGenInternal(NULL);
-        IfFailThrow(m_pCeeFileGen->QueryInterface(IID_ICeeGenInternal, (void **)&pCeeGenInternal));
-        IfFailThrow(pCeeGenInternal->SetInitialGrowth(CEE_FILE_GEN_GROWTH_COLLECTIBLE));
-    }
-
     m_pInMemoryWriter = new RefClassWriter();
 
-    IfFailThrow(m_pInMemoryWriter->Init(GetCeeGen(), GetEmitter(), szName));
+    IfFailThrow(m_pInMemoryWriter->Init(
+        GetPEAssembly()->GetMDInternalEmit(),
+        GetMDImport(),
+        szName));
 
     m_CrstLeafLock.Init(CrstLeafLock);
 }
@@ -3887,9 +3880,6 @@ void ReflectionModule::Destruct()
     CONTRACTL_END;
 
     delete m_pInMemoryWriter;
-
-    if (m_pCeeFileGen)
-        m_pCeeFileGen->Release();
 
     Module::Destruct();
 
@@ -3916,15 +3906,15 @@ public:
         WRAPPER_NO_CONTRACT;
         (void)Release();
     }
-    HRESULT SetMDUpdateMode(IMetaDataEmit *pEmitter, ULONG updateMode)
+    HRESULT SetMDUpdateMode(IMDInternalEmit *pEmitter, ULONG updateMode)
     {
         LIMITED_METHOD_CONTRACT;
         HRESULT hr = S_OK;
 
         _ASSERTE(updateMode != UINT32_MAX);
 
-        IfFailRet(pEmitter->QueryInterface(IID_IMDInternalEmit, (void **)&m_pInternalEmitter));
-        _ASSERTE(m_pInternalEmitter != NULL);
+        m_pInternalEmitter = pEmitter;
+        m_pInternalEmitter->AddRef();
 
         IfFailRet(m_pInternalEmitter->SetMDUpdateMode(updateMode, &m_OriginalMDUpdateMode));
         _ASSERTE(m_OriginalMDUpdateMode != UINT32_MAX);
@@ -3969,6 +3959,7 @@ private:
     ULONG            m_OriginalMDUpdateMode;
 };
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Called in live paths to fetch metadata for dynamic modules. This makes the metadata available to the
 // debugger from out-of-process.
 //
@@ -3996,7 +3987,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     CONTRACTL_END;
 
     // Do not release the emitter. This is a weak reference.
-    IMetaDataEmit *pEmitter = this->GetEmitter();
+    IMDInternalEmit *pEmitter = m_pInMemoryWriter->GetEmitter();
     _ASSERTE(pEmitter != NULL);
 
     HRESULT hr;
@@ -4042,6 +4033,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     // Will be S_FALSE if someone changed the MDUpdateMode (from MDUpdateExtension) meanwhile
     _ASSERTE(hr == S_OK);
 }
+#endif
 
 
 #endif // !DACCESS_COMPILE
@@ -4071,33 +4063,20 @@ TADDR ReflectionModule::GetDynamicMetadataBuffer() const
 }
 #endif
 
-TADDR ReflectionModule::GetIL(RVA il) // virtual
+TADDR ReflectionModule::GetIL(RVA methodToken) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-    BYTE* pByte = NULL;
-    if (il != 0)
-        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
-    return TADDR(pByte);
-#else // DACCESS_COMPILE
-    SUPPORTS_DAC;
-    DacNotImpl();
-    return (TADDR)NULL;
-#endif // DACCESS_COMPILE
-}
 
-PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
-{
-#ifndef DACCESS_COMPILE
-    WRAPPER_NO_CONTRACT;
-    // This function should be call only if the target is a field or a field with RVA.
-    PTR_BYTE pByte = NULL;
-    m_pCeeFileGen->ComputePointer(m_sdataSection, field, &pByte);
-    return dac_cast<PTR_VOID>(pByte);
+    if (methodToken == 0)
+        return 0;
+
+    _ASSERTE(TypeFromToken(methodToken) == mdtMethodDef);
+    return GetDynamicIL(methodToken);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
     DacNotImpl();
-    return NULL;
+    return 0;
 #endif // DACCESS_COMPILE
 }
 

@@ -370,7 +370,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             }
 
             TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
-            TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+            TargetCodePointer pCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode);
             TargetPointer codeStart = pCode.ToAddress(_target);
             if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
@@ -460,7 +460,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         try
         {
             TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
-            TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+            TargetCodePointer pCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode);
             TargetPointer codeStart = pCode.ToAddress(_target);
 
             // No debug info exists at all (e.g. ILStubs).
@@ -548,7 +548,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         TargetCodePointer nativeCode = rts.GetNativeCode(_methodDesc);
-        TargetCodePointer code = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+        TargetCodePointer code = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode);
         if (code == TargetCodePointer.Null)
         {
             code = nativeCode;

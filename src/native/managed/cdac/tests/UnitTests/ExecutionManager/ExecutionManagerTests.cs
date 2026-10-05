@@ -332,6 +332,73 @@ public class ExecutionManagerTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetDebugInfo_R2R_NoDebugInfoSection_ReturnsNull(string version, MockTarget.Architecture arch)
+    {
+        const ulong CodeRangeStart = 0x0a0a_0000u;
+        const uint CodeRangeSize = 0xc000u;
+        const ulong JitManagerAddress = 0x000b_ff00;
+        const ulong MethodDescAddress = 0x0101_aaa0;
+        const uint RuntimeFunction = 0x100;
+        const uint CodeOffset = 4;
+        // Make the low addresses readable, as linear address 0 is on wasm, so that dereferencing
+        // a null DebugInfoSection decodes zeros instead of failing the read.
+        const ulong ReadableZeroPageSize = 0x1000;
+
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockExecutionManagerBuilder.JittedCodeRange jittedCode = emBuilder.AllocateJittedCodeRange(CodeRangeStart, CodeRangeSize);
+        MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([RuntimeFunction], []);
+        new MockHashMapBuilder(emBuilder.Builder).PopulatePtrMap(
+            r2rInfo.EntryPointToMethodDescMapAddress,
+            [(jittedCode.RangeStart + RuntimeFunction, MethodDescAddress)]);
+        MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+        MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, JitManagerAddress, r2rModule.Address);
+        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+        Assert.Equal(0ul, r2rInfo.DebugInfoSection);
+
+        TargetCodePointer methodStart = new(CodeRangeStart + RuntimeFunction);
+        TargetCodePointer pCode = new(CodeRangeStart + RuntimeFunction + CodeOffset);
+        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(new TargetPointer(MethodDescAddress));
+        Mock<ICodeVersions> codeVersions = new();
+        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(pCode)).Returns(nativeCodeVersion);
+        codeVersions.Setup(c => c.GetNativeCode(nativeCodeVersion)).Returns(methodStart);
+
+        MockMemorySpace.MemoryContext memoryContext = emBuilder.Builder.GetMemoryContext();
+        Target target = CreateTarget(emBuilder, configureTarget: targetBuilder => targetBuilder
+            .UseReader(ReadWithReadableZeroPage)
+            .AddContract<IDebugInfo>(version: "c1")
+            .AddMockContract(codeVersions));
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        CodeBlockHandle? handle = em.GetCodeBlockHandle(pCode);
+        Assert.NotNull(handle);
+        TargetPointer debugInfo = em.GetDebugInfo(handle.Value, out bool hasFlagByte);
+        Assert.Equal(TargetPointer.Null, debugInfo);
+        Assert.False(hasFlagByte);
+
+        IDebugInfo debugInfoContract = target.Contracts.DebugInfo;
+        Assert.False(debugInfoContract.HasDebugInfo(pCode));
+        Assert.Empty(debugInfoContract.GetMethodVarInfo(pCode, out uint varInfoCodeOffset));
+        Assert.Equal(CodeOffset, varInfoCodeOffset);
+        Assert.Empty(debugInfoContract.GetMethodNativeMap(pCode, preferUninstrumented: false, out uint nativeMapCodeOffset));
+        Assert.Equal(CodeOffset, nativeMapCodeOffset);
+
+        int ReadWithReadableZeroPage(ulong address, Span<byte> buffer)
+        {
+            if (address < ReadableZeroPageSize)
+            {
+                if (address + (ulong)buffer.Length > ReadableZeroPageSize)
+                    return -1;
+
+                buffer.Clear();
+                return 0;
+            }
+
+            return memoryContext.ReadFromTarget(address, buffer);
+        }
+    }
+
     [Fact]
     public void GetMethodDesc_R2R_WasmVirtualIPRangeList_ResolvesCapturedShape()
     {
@@ -1622,7 +1689,7 @@ public class ExecutionManagerTests
 
         // GetCodeBlockHandle should return null for a precode address.
         // Callers are responsible for resolving interpreter precodes via
-        // PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent before calling GetCodeBlockHandle.
+        // GetDiagnosticCodeStartFromEntryPoint before calling GetCodeBlockHandle.
         TargetCodePointer precodeAddress = new(precodeRangeStart + 0x100);
         var eeInfo = em.GetCodeBlockHandle(precodeAddress);
         Assert.Null(eeInfo);
@@ -1821,5 +1888,239 @@ public class ExecutionManagerTests
             target.Contracts.ExecutionManager.GetDynamicFunctionTableEntries(new TargetPointer(0xdead_beef));
 
         Assert.Empty(entries);
+    }
+
+    private const int PortableEntryPointPrefersInterpreterEntryPoint = 0x4;
+    private const ulong PortableVirtualIPRangeStart = 0x8001_0001;
+    private const uint PortableRootBeginAddress = 0x100;
+    private const uint PortableMinFunctionTableIndex = 5;
+    // Local index 1 is the controlling function; local index 2 is its funclet.
+    private const uint PortableRootFunctionTableIndex = PortableMinFunctionTableIndex + 1;
+    private const uint PortableFuncletFunctionTableIndex = PortableMinFunctionTableIndex + 2;
+    private const ulong PortableMethodDescAddress = 0x0101_aaa0;
+    private const ulong PortableInterpreterCode = 0x0061_0000;
+    private const ulong PortableCodeRangeStart = 0x0a0a_0000;
+
+    private sealed class PortableEntryPointFixture
+    {
+        public required Target Target { get; init; }
+        public required TargetCodePointer EntryPoint { get; init; }
+        public required TargetCodePointer EntryPointInCodeRange { get; init; }
+        public required Mock<IPrecodeStubs> PrecodeStubs { get; init; }
+    }
+
+    // Builds a Wasm target with a ReadyToRun virtual-IP range, a FunctionTableIndexRangeSection for the
+    // same module, and a PortableEntryPoint for a MethodDesc. The same PortableEntryPoint bytes are also
+    // placed inside a registered code range, where they must not be interpreted as a portable entry point.
+    private static PortableEntryPointFixture CreatePortableEntryPointFixture(
+        ulong interpreterCode,
+        ulong actualCode,
+        int flags = 0,
+        bool isTemporaryEntryPoint = true,
+        bool portableEntrypointsEnabled = true,
+        bool cyclicFunctionTableIndexRangeList = false)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        MockExecutionManagerBuilder emBuilder = new("c1", wasmArch, MockExecutionManagerBuilder.DefaultAllocationRange, isWasm: true);
+        TargetTestHelpers helpers = emBuilder.Builder.TargetTestHelpers;
+        MockMemorySpace.BumpAllocator allocator = emBuilder.Builder.CreateAllocator(0x0060_0000, 0x0061_0000);
+
+        MockExecutionManagerBuilder.JittedCodeRange virtualIPRange = emBuilder.AllocateJittedCodeRange(PortableVirtualIPRangeStart, 0x400);
+        MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([0x80, PortableRootBeginAddress, 0x8000_0000 | 0x120], []);
+        r2rInfo.MinVirtualIP = PortableVirtualIPRangeStart;
+        r2rInfo.LoadedImageBase = 0x0090_0000;
+        new MockHashMapBuilder(emBuilder.Builder).PopulatePtrMap(
+            r2rInfo.EntryPointToMethodDescMapAddress,
+            [(PortableVirtualIPRangeStart + PortableRootBeginAddress, PortableMethodDescAddress)]);
+        MockLoaderModule module = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+        _ = emBuilder.AddVirtualIPRangeSection(virtualIPRange, jitManagerAddress: 0x000b_ff00, module.Address);
+
+        MockExecutionManagerBuilder.JittedCodeRange codeRange = emBuilder.AllocateJittedCodeRange(PortableCodeRangeStart, 0x1000);
+        MockRangeSection codeRangeSection = emBuilder.AddRangeSection(codeRange, jitManagerAddress: 0x000b_ff00, codeHeapListNodeAddress: 0);
+        _ = emBuilder.AddRangeSectionFragment(codeRange, codeRangeSection.Address);
+
+        TargetTestHelpers.LayoutResult sectionLayout = helpers.LayoutFields([
+            new(nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex), DataType.uint32),
+            new(nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions), DataType.uint32),
+            new(nameof(Data.FunctionTableIndexRangeSection.R2RModule), DataType.pointer),
+            new(nameof(Data.FunctionTableIndexRangeSection.Next), DataType.pointer),
+        ]);
+        TargetTestHelpers.LayoutResult portableEntryPointLayout = helpers.LayoutFields([
+            new(nameof(Data.PortableEntryPoint.ActualCode), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.MethodDesc), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.Flags), DataType.int32),
+        ]);
+        TargetTestHelpers.LayoutResult methodDescLayout = helpers.LayoutFields([
+            new(nameof(Data.MethodDesc.CodeData), DataType.pointer),
+            new(nameof(Data.MethodDesc.InterpreterCode), DataType.pointer),
+        ]);
+        // TemporaryEntryPoint is a CodePointer-typed field, so it is declared without a pointer type name.
+        Target.TypeInfo codeDataType = new()
+        {
+            Fields = new Dictionary<string, Target.FieldInfo> { [nameof(Data.MethodDescCodeData.TemporaryEntryPoint)] = new() { Offset = 0 } },
+            Size = (uint)helpers.PointerSize,
+        };
+
+        MockMemorySpace.HeapFragment section = allocator.Allocate(sectionLayout.Stride, "FunctionTableIndexRangeSection");
+        helpers.Write(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), PortableMinFunctionTableIndex);
+        helpers.Write(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), 3u);
+        helpers.WritePointer(section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RModule)].Offset, helpers.PointerSize), module.Address);
+        helpers.WritePointer(
+            section.Data.AsSpan(sectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.Next)].Offset, helpers.PointerSize),
+            cyclicFunctionTableIndexRangeList ? section.Address : 0);
+        MockMemorySpace.HeapFragment listSlot = allocator.Allocate((ulong)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
+        helpers.WritePointer(listSlot.Data.AsSpan(), section.Address);
+
+        emBuilder.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = PortableMethodDescAddress,
+            Data = new byte[methodDescLayout.Stride],
+            Name = "MethodDesc",
+        });
+        Span<byte> methodDesc = emBuilder.Builder.BorrowAddressRange(PortableMethodDescAddress, (int)methodDescLayout.Stride);
+        MockMemorySpace.HeapFragment codeData = allocator.Allocate(codeDataType.Size!.Value, "MethodDescCodeData");
+        helpers.WritePointer(methodDesc.Slice(methodDescLayout.Fields[nameof(Data.MethodDesc.CodeData)].Offset, helpers.PointerSize), codeData.Address);
+        helpers.WritePointer(methodDesc.Slice(methodDescLayout.Fields[nameof(Data.MethodDesc.InterpreterCode)].Offset, helpers.PointerSize), interpreterCode);
+
+        void WritePortableEntryPoint(Span<byte> pep)
+        {
+            helpers.WritePointer(pep.Slice(portableEntryPointLayout.Fields[nameof(Data.PortableEntryPoint.ActualCode)].Offset, helpers.PointerSize), actualCode);
+            helpers.WritePointer(pep.Slice(portableEntryPointLayout.Fields[nameof(Data.PortableEntryPoint.MethodDesc)].Offset, helpers.PointerSize), PortableMethodDescAddress);
+            helpers.Write(pep.Slice(portableEntryPointLayout.Fields[nameof(Data.PortableEntryPoint.Flags)].Offset, sizeof(int)), flags);
+        }
+
+        MockMemorySpace.HeapFragment portableEntryPoint = allocator.Allocate(portableEntryPointLayout.Stride, "PortableEntryPoint");
+        WritePortableEntryPoint(portableEntryPoint.Data);
+        MockMemorySpace.HeapFragment portableEntryPointInCodeRange = codeRange.Allocator.Allocate(portableEntryPointLayout.Stride, "PortableEntryPoint-shaped code");
+        WritePortableEntryPoint(portableEntryPointInCodeRange.Data);
+
+        ulong temporaryEntryPoint = isTemporaryEntryPoint ? portableEntryPoint.Address : portableEntryPoint.Address + 0x100;
+        helpers.WritePointer(codeData.Data.AsSpan(), temporaryEntryPoint);
+
+        Mock<IPrecodeStubs> precodeStubs = new(MockBehavior.Strict);
+        Target target = CreateTarget(
+            emBuilder,
+            RuntimeInfoOperatingSystem.Windows,
+            RuntimeInfoArchitecture.Wasm,
+            targetBuilder => targetBuilder
+                .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.FunctionTableIndexRangeSection] = new() { Fields = sectionLayout.Fields, Size = sectionLayout.Stride },
+                    [DataType.PortableEntryPoint] = new() { Fields = portableEntryPointLayout.Fields, Size = portableEntryPointLayout.Stride },
+                    [DataType.MethodDesc] = new() { Fields = methodDescLayout.Fields, Size = methodDescLayout.Stride },
+                    [DataType.MethodDescCodeData] = codeDataType,
+                })
+                .AddGlobals(
+                    (Constants.Globals.FunctionTableIndexRangeList, listSlot.Address),
+                    (Constants.Globals.FeaturePortableEntrypoints, portableEntrypointsEnabled ? 1ul : 0ul))
+                .AddContract<IFeatureFlags>(version: "c1")
+                .AddMockContract(precodeStubs));
+
+        return new PortableEntryPointFixture
+        {
+            Target = target,
+            EntryPoint = new TargetCodePointer(portableEntryPoint.Address),
+            EntryPointInCodeRange = new TargetCodePointer(portableEntryPointInCodeRange.Address),
+            PrecodeStubs = precodeStubs,
+        };
+    }
+
+    public static IEnumerable<object[]> PortableEntryPointDiagnosticCodeStartCases()
+    {
+        const ulong Unchanged = 0;
+        ulong virtualIP = PortableVirtualIPRangeStart + PortableRootBeginAddress;
+
+        // interpreterCode, actualCode, flags, isTemporaryEntryPoint, expected
+        yield return [PortableInterpreterCode, 0ul, PortableEntryPointPrefersInterpreterEntryPoint, true, PortableInterpreterCode];
+        yield return [PortableInterpreterCode, (ulong)PortableRootFunctionTableIndex, 0, true, PortableInterpreterCode];
+        // Like native, the interpreter mapping does not require the address to be the temporary entry point.
+        yield return [PortableInterpreterCode, 0ul, 0, false, PortableInterpreterCode];
+        yield return [0ul, (ulong)PortableRootFunctionTableIndex, 0, true, virtualIP];
+        yield return [1ul /* INTERPRETER_CODE_POISON */, (ulong)PortableRootFunctionTableIndex, 0, true, virtualIP];
+        yield return [0ul, (ulong)PortableFuncletFunctionTableIndex, 0, true, virtualIP];
+        yield return [0ul, (ulong)PortableRootFunctionTableIndex, PortableEntryPointPrefersInterpreterEntryPoint, true, Unchanged];
+        yield return [0ul, (ulong)PortableRootFunctionTableIndex, 0, false, Unchanged];
+        yield return [0ul, (ulong)PortableMinFunctionTableIndex + 100, 0, true, Unchanged];
+        yield return [0ul, 0ul, 0, true, Unchanged];
+    }
+
+    [Theory]
+    [MemberData(nameof(PortableEntryPointDiagnosticCodeStartCases))]
+    public void GetDiagnosticCodeStartFromEntryPoint_PortableEntryPoint(
+        ulong interpreterCode,
+        ulong actualCode,
+        int flags,
+        bool isTemporaryEntryPoint,
+        ulong expected)
+    {
+        PortableEntryPointFixture fixture = CreatePortableEntryPointFixture(interpreterCode, actualCode, flags, isTemporaryEntryPoint);
+        IExecutionManager em = fixture.Target.Contracts.ExecutionManager;
+
+        TargetCodePointer actual = em.GetDiagnosticCodeStartFromEntryPoint(fixture.EntryPoint);
+
+        Assert.Equal(expected == 0 ? fixture.EntryPoint : new TargetCodePointer(expected), actual);
+    }
+
+    [Fact]
+    public void GetDiagnosticCodeStartFromEntryPoint_WasmR2RPortableEntryPoint_ResolvesToCodeBlock()
+    {
+        PortableEntryPointFixture fixture = CreatePortableEntryPointFixture(interpreterCode: 0, actualCode: PortableRootFunctionTableIndex);
+        IExecutionManager em = fixture.Target.Contracts.ExecutionManager;
+
+        Assert.Null(em.GetCodeBlockHandle(fixture.EntryPoint));
+        TargetCodePointer codeStart = em.GetDiagnosticCodeStartFromEntryPoint(fixture.EntryPoint);
+        CodeBlockHandle? handle = em.GetCodeBlockHandle(codeStart);
+
+        Assert.NotNull(handle);
+        Assert.Equal(new TargetPointer(PortableMethodDescAddress), em.GetMethodDesc(handle.Value));
+        Assert.Equal(new TargetPointer(codeStart.Value), em.GetStartAddress(handle.Value));
+    }
+
+    [Fact]
+    public void GetDiagnosticCodeStartFromEntryPoint_AddressInCodeRange_ReturnsOriginalAddress()
+    {
+        PortableEntryPointFixture fixture = CreatePortableEntryPointFixture(PortableInterpreterCode, PortableRootFunctionTableIndex);
+        IExecutionManager em = fixture.Target.Contracts.ExecutionManager;
+
+        // The readable, PortableEntryPoint-shaped bytes in a registered code range are code, not an entry point.
+        Assert.Equal(fixture.EntryPointInCodeRange, em.GetDiagnosticCodeStartFromEntryPoint(fixture.EntryPointInCodeRange));
+
+        TargetCodePointer virtualIP = new(PortableVirtualIPRangeStart + PortableRootBeginAddress);
+        Assert.Equal(virtualIP, em.GetDiagnosticCodeStartFromEntryPoint(virtualIP));
+    }
+
+    [Fact]
+    public void GetDiagnosticCodeStartFromEntryPoint_UnreadableAddress_ReturnsOriginalAddress()
+    {
+        PortableEntryPointFixture fixture = CreatePortableEntryPointFixture(PortableInterpreterCode, PortableRootFunctionTableIndex);
+        TargetCodePointer unreadable = new(0x0070_0000);
+
+        Assert.Equal(unreadable, fixture.Target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(unreadable));
+    }
+
+    [Fact]
+    public void GetDiagnosticCodeStartFromEntryPoint_WithoutPortableEntryPoints_UsesPrecodeStubs()
+    {
+        PortableEntryPointFixture fixture = CreatePortableEntryPointFixture(
+            PortableInterpreterCode, PortableRootFunctionTableIndex, portableEntrypointsEnabled: false);
+        TargetCodePointer precode = new(0x0a0b_0000);
+        TargetCodePointer byteCode = new(0x0a0c_0000);
+        fixture.PrecodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(precode)).Returns(byteCode);
+        IExecutionManager em = fixture.Target.Contracts.ExecutionManager;
+
+        Assert.Equal(byteCode, em.GetDiagnosticCodeStartFromEntryPoint(precode));
+        Assert.Equal(TargetCodePointer.Null, em.GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer.Null));
+    }
+
+    [Fact]
+    public void WasmFunctionTableIndexLookup_CyclicRangeList_ReturnsFalse()
+    {
+        PortableEntryPointFixture fixture = CreatePortableEntryPointFixture(
+            interpreterCode: 0, actualCode: PortableMinFunctionTableIndex + 100, cyclicFunctionTableIndexRangeList: true);
+        ExecutionManagerHelpers.WasmFunctionTableIndexLookup lookup = new(fixture.Target);
+
+        Assert.True(lookup.TryGetVirtualIPBase(PortableRootFunctionTableIndex, out _));
+        Assert.False(lookup.TryGetVirtualIPBase(PortableMinFunctionTableIndex + 100, out _));
+        Assert.Equal(fixture.EntryPoint, fixture.Target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(fixture.EntryPoint));
     }
 }

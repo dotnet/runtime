@@ -25,6 +25,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Compilation_NotSupported()
         {
             CodeDomProvider provider = GetProvider();

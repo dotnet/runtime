@@ -445,6 +445,85 @@ namespace System.Numerics.Tensors.Tests
         }
 
         #region Span -> Destination
+        public static IEnumerable<object[]> Tan_RangeReductionInputs()
+        {
+            foreach (int length in new[] { 0, 1, 2, 3, 4, 7, 8, 9, 15, 16, 17, 31, 32, 33, 65 })
+            {
+                for (int inputKind = 0; inputKind < 6; inputKind++)
+                {
+                    yield return new object[] { length, inputKind };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Tan_RangeReductionInputs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135117", typeof(Helpers), nameof(Helpers.IsWasmWithAcceleratedVector128))]
+        public void Tan_RangeReduction(int length, int inputKind)
+        {
+            using BoundedMemory<T> source = CreateTensor(length);
+            using BoundedMemory<T> destination = CreateTensor(length);
+            T[] expected = new T[length];
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 3e-13, floatTolerance: 1e-4f);
+            for (int i = 0; i < length; i++)
+            {
+                T pole = (T.CreateChecked(i % 16) + T.CreateChecked(0.5)) * T.Pi;
+                T value = (i % 4) switch
+                {
+                    0 => T.BitDecrement(pole),
+                    1 => T.BitIncrement(pole),
+                    2 => -T.BitDecrement(pole),
+                    _ => -T.BitIncrement(pole),
+                };
+                if (i == 0)
+                {
+                    value = T.CreateChecked(-32.986717f);
+                }
+                switch (inputKind)
+                {
+                    case 1:
+                        value = T.CreateChecked(i % 33 - 16) * T.CreateChecked(0.3125);
+                        break;
+                    case 2:
+                    case 5:
+                        T count = T.CreateChecked(i / 16 * 31 + 21);
+                        T boundary = count * (T.Pi / T.CreateChecked(2)) +
+                            count * T.CreateChecked((inputKind == 2 ? 0.99 : 1.01) / 256);
+                        value = i / 16 % 2 == 0 ? boundary : -boundary;
+                        break;
+                    case 3:
+                        T limit = T.CreateSaturating(typeof(T) == typeof(double) ? 8388608 : 1048576);
+                        value = (i % 4) switch
+                        {
+                            0 => T.BitDecrement(limit),
+                            1 => T.BitIncrement(limit),
+                            2 => -T.BitDecrement(limit),
+                            _ => -T.BitIncrement(limit),
+                        };
+                        break;
+                    case 4:
+                        value = i == length - 1 ? T.CreateChecked(-32.986717f) :
+                            T.CreateChecked(i % 7 - 3) * T.CreateChecked(0.125);
+                        break;
+                }
+
+                source[i] = value;
+                expected[i] = T.Tan(value);
+            }
+
+            TensorPrimitives.Tan<T>(source.Span, destination.Span);
+            for (int i = 0; i < length; i++)
+            {
+                AssertEqualTolerance(expected[i], destination[i], tolerance);
+            }
+
+            TensorPrimitives.Tan<T>(source.Span, source.Span);
+            for (int i = 0; i < length; i++)
+            {
+                AssertEqualTolerance(expected[i], source[i], tolerance);
+            }
+        }
+
         public static IEnumerable<object[]> SpanDestinationFunctionsToTest()
         {
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
@@ -532,6 +611,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135117", typeof(Helpers), nameof(Helpers.IsWasmWithAcceleratedVector128))]
         public void SpanDestinationFunctions_InPlace(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
