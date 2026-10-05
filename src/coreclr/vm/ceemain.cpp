@@ -1708,11 +1708,13 @@ static void RuntimeThreadShutdown(void* thread)
 #endif // TARGET_UNIX
         pThread->DetachThread(TRUE);
     }
+#ifdef FEATURE_MULTITHREADING
     else
     {
         // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
         AssertThreadStaticDataFreed();
     }
+#endif // FEATURE_MULTITHREADING
 
     ThreadDetaching();
 }

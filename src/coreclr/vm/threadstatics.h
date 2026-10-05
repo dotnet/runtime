@@ -41,6 +41,10 @@
 #ifndef __THREADLOCALSTORAGE_H__
 #define __THREADLOCALSTORAGE_H__
 
+#ifndef FEATURE_MULTITHREADING
+#error Thread static storage is only supported in builds with FEATURE_MULTITHREADING.
+#endif // !FEATURE_MULTITHREADING
+
 class Thread;
 
 // [cDAC] [Thread]: Contract depends on the values of NonCollectible, Collectible, and DirectOnThreadLocalData.
@@ -341,15 +345,12 @@ public:
 #endif
 };
 
-#ifdef FEATURE_MULTITHREADING
 PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread *pThreadLocalData, TLSIndex index);
-#endif // FEATURE_MULTITHREADING
 
 #ifndef DACCESS_COMPILE
 void InitializeCurrentThreadsStaticData(Thread* pThread);
 void FreeThreadStaticData(Thread* pThread);
 void AssertThreadStaticDataFreed();
-#ifdef FEATURE_MULTITHREADING
 void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc);
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index);
 void InitializeThreadStaticData();
@@ -359,7 +360,6 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);
 void GetThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 bool CanJITOptimizeTLSAccess();
-#endif // FEATURE_MULTITHREADING
 #else
 void EnumThreadMemoryRegions(ThreadLocalData* pThreadLocalData, CLRDataEnumMemoryFlags flags);
 #endif

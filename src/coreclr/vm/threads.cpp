@@ -371,7 +371,9 @@ void SetThread(Thread* t)
     if (t != NULL)
     {
         _ASSERTE(origThread == NULL);
+#ifdef FEATURE_MULTITHREADING
         InitializeCurrentThreadsStaticData(t);
+#endif // FEATURE_MULTITHREADING
         EnsureTlsDestructionMonitor();
         t->InitRuntimeThreadLocals();
     }
@@ -2720,11 +2722,6 @@ void Thread::CooperativeCleanup()
     {
         FreeThreadStaticData(this);
         m_ThreadLocalDataPtr = NULL;
-    }
-#else
-    if (t_ThreadStatics.pThread == this)
-    {
-        FreeThreadStaticData(this);
     }
 #endif // FEATURE_MULTITHREADING
 

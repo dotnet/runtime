@@ -26,7 +26,9 @@
 #include "generics.h"
 #include "gcinfotypes.h"
 #include "enum_class_flags.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 /*
  * Forward Declarations
@@ -298,11 +300,15 @@ typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
 // Any MethodTable which has static variables has this structure
 struct DynamicStaticsInfo;
+#ifdef FEATURE_MULTITHREADING
 struct ThreadStaticsInfo;
+#endif // FEATURE_MULTITHREADING
 struct GenericsStaticsInfo;
 
 typedef DPTR(DynamicStaticsInfo) PTR_DynamicStaticsInfo;
+#ifdef FEATURE_MULTITHREADING
 typedef DPTR(ThreadStaticsInfo) PTR_ThreadStaticsInfo;
+#endif // FEATURE_MULTITHREADING
 typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 
 //
@@ -386,7 +392,9 @@ struct MethodTableAuxiliaryData
     // These pointers make it easier to examine the various statics structures in the debugger
     PTR_DynamicStaticsInfo m_debugOnlyDynamicStatics;
     PTR_GenericsStaticsInfo m_debugOnlyGenericStatics;
+#ifdef FEATURE_MULTITHREADING
     PTR_ThreadStaticsInfo m_debugOnlyThreadStatics;
+#endif // FEATURE_MULTITHREADING
 #endif
 
 public:
@@ -573,7 +581,9 @@ public:
 
     static inline PTR_DynamicStaticsInfo GetDynamicStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
     static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+#ifdef FEATURE_MULTITHREADING
     static inline PTR_ThreadStaticsInfo GetThreadStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData);
+#endif // FEATURE_MULTITHREADING
     inline void SetMayHaveOpenInterfacesInInterfaceMap()
     {
         LIMITED_METHOD_CONTRACT;
@@ -693,6 +703,7 @@ struct GenericsStaticsInfo
     return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(GenericsStaticsInfo));
 }
 
+#ifdef FEATURE_MULTITHREADING
 // And MethodTable with Thread Statics has this structure. NOTE: This structure includes
 // GenericsStatics which may not actually have the m_pFieldDescs filled in if the MethodTable
 // is not actually Generic
@@ -712,6 +723,7 @@ struct ThreadStaticsInfo
 {
     return dac_cast<PTR_ThreadStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(ThreadStaticsInfo));
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifdef UNIX_AMD64_ABI_ITF
 inline
@@ -4068,12 +4080,14 @@ public:
         return MethodTableAuxiliaryData::GetDynamicStaticsInfo(AuxiliaryData);
     }
 
+#ifdef FEATURE_MULTITHREADING
     PTR_ThreadStaticsInfo GetThreadStaticsInfo()
     {
         PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
         _ASSERTE(GetNumThreadStaticFields() > 0);
         return MethodTableAuxiliaryData::GetThreadStaticsInfo(AuxiliaryData);
     }
+#endif // FEATURE_MULTITHREADING
 private:
 
     // Optional members.  These are used for fields in the data structure where

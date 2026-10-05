@@ -597,12 +597,17 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
 
     int16_t sizeofStaticsStructure = 0;
 
+#ifdef FEATURE_MULTITHREADING
     if (HasFlag(staticsFlags, MethodTableStaticsFlags::Thread))
     {
         _ASSERTE(HasFlag(staticsFlags, MethodTableStaticsFlags::Present));
         sizeofStaticsStructure = sizeof(ThreadStaticsInfo);
     }
-    else if (HasFlag(staticsFlags, MethodTableStaticsFlags::Generic))
+    else
+#else
+    _ASSERTE(!HasFlag(staticsFlags, MethodTableStaticsFlags::Thread));
+#endif // FEATURE_MULTITHREADING
+    if (HasFlag(staticsFlags, MethodTableStaticsFlags::Generic))
     {
         _ASSERTE(HasFlag(staticsFlags, MethodTableStaticsFlags::Present));
         sizeofStaticsStructure = sizeof(GenericsStaticsInfo);
@@ -644,6 +649,7 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
         pMTAuxiliaryData->m_debugOnlyGenericStatics = MethodTableAuxiliaryData::GetGenericStaticsInfo(pMTAuxiliaryData);
     }
 #endif
+#ifdef FEATURE_MULTITHREADING
     if (HasFlag(staticsFlags, MethodTableStaticsFlags::Thread))
     {
         MethodTableAuxiliaryData::GetThreadStaticsInfo(pMTAuxiliaryData)->Init();
@@ -651,6 +657,7 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
         pMTAuxiliaryData->m_debugOnlyThreadStatics = MethodTableAuxiliaryData::GetThreadStaticsInfo(pMTAuxiliaryData);
 #endif
     }
+#endif // FEATURE_MULTITHREADING
 }
 
 
@@ -7776,10 +7783,12 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         {
             MethodTableAuxiliaryData::GetDynamicStaticsInfo(pAuxiliaryData).EnumMem();
         }
+#ifdef FEATURE_MULTITHREADING
         if (GetNumThreadStaticFields() > 0)
         {
             MethodTableAuxiliaryData::GetThreadStaticsInfo(pAuxiliaryData).EnumMem();
         }
+#endif // FEATURE_MULTITHREADING
         if (HasNonVirtualSlots())
         {
             DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(pAuxiliaryData)) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());

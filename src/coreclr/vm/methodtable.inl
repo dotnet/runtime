@@ -15,7 +15,9 @@
 
 #include "methodtable.h"
 #include "genericdict.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 //==========================================================================================
 // DO NOT ADD ANY ASSERTS OR ANY OTHER CODE TO THIS METHOD.
