@@ -102,7 +102,6 @@ private:
 #ifdef TARGET_ARM64
     void RewriteSubLshDiv(GenTree** use);
 #endif
-
 };
 
 inline Rationalizer::Rationalizer(Compiler* _comp)

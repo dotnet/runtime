@@ -322,7 +322,9 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 //
 // Return Value:
 //    None.
-void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents, RationalizeVisitor* revisitor)
+void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree**             use,
+                                                ArrayStack<GenTree*>& parents,
+                                                RationalizeVisitor*   revisitor)
 {
     GenTreeHWIntrinsic* hwintrinsic  = (*use)->AsHWIntrinsic();
     NamedIntrinsic      intrinsicId  = hwintrinsic->GetHWIntrinsicId();
@@ -461,7 +463,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 parents.Push(result);
 
                 // We need to revisit the new root node (op1) to make sure it is properly processed.
-                // We don't expect the revisit to ever terminate the walk.  
+                // We don't expect the revisit to ever terminate the walk.
                 Compiler::fgWalkResult visitResult = revisitor->PreOrderVisit(use, user);
                 assert(visitResult == Compiler::fgWalkResult::WALK_CONTINUE);
 
