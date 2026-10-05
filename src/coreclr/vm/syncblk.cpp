@@ -1058,9 +1058,9 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
 #endif
 
         (*scanProc) (keyv, NULL, lp1, lp2);
-        SyncBlock   *pSB = SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock;
         if (*keyv == 0)
         {
+            SyncBlock   *pSB = SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock;
 #ifdef VERIFY_HEAP
             if (g_pConfig->GetHeapVerifyLevel () & EEConfig::HEAPVERIFY_SYNCBLK)
             {
