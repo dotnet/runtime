@@ -303,6 +303,8 @@ jobs:
           scan_spec=.github/workflows/evals/ci-failure-scan.eval.yaml
           if [[ " $SPECS " == *" $scan_spec "* ]] &&
              test -f "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"; then
+            cp -- .github/workflows/ci-failure-scan.md \
+              "$RUNNER_TEMP/ci-failure-scan.md"
             node --test "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"
           fi
 

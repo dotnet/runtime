@@ -104,6 +104,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void TestConstructorWithFileName()
         {
             string expectedName = string.Empty;
@@ -114,6 +115,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 
         [Theory]
         [MemberData(nameof(TestNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void TestConstructorWithFileNameAndName(string testName)
         {
             var target = new DelimitedListTraceListener(Path.GetTempFileName(), testName);

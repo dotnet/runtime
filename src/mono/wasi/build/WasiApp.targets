@@ -55,8 +55,10 @@
     <_WasiIntrinsicsSubstitutionsDir Condition="Exists('$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml')">$(MSBuildThisFileDirectory)</_WasiIntrinsicsSubstitutionsDir>
     <_WasiIntrinsicsSubstitutionsDir Condition="'$(_WasiIntrinsicsSubstitutionsDir)' == '' and '$(BrowserProjectRoot)' != ''">$(BrowserProjectRoot)build\</_WasiIntrinsicsSubstitutionsDir>
 
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <!-- CoreCLR determines intrinsic support in its own CoreLib/JIT and does not pass CoreLib
+         through this linker invocation, so these Mono substitutions do not apply. -->
+    <_ExtraTrimmerArgs Condition="'$(RuntimeFlavor)' != 'CoreCLR' and '$(WasmEnableSIMD)' != 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(RuntimeFlavor)' != 'CoreCLR' and '$(WasmEnableSIMD)' == 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
 
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 

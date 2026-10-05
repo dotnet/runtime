@@ -159,9 +159,8 @@ internal sealed class MethodBodyWriter
     {
         if (optimize && _labels[target.Id - 1] is int targetOffset)
         {
-            long distance = (long)targetOffset - Offset;
-            // Use conservative displacement bounds that account for both short and long instruction sizes.
-            if (distance - 5 >= sbyte.MinValue && distance - 2 <= sbyte.MaxValue)
+            long shortDistance = (long)targetOffset - Offset - 2;
+            if (shortDistance is >= sbyte.MinValue and <= sbyte.MaxValue)
             {
                 code = code.GetShortBranch();
             }

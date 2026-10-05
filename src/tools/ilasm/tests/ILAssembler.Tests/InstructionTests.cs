@@ -182,9 +182,12 @@ namespace ILAssembler.Tests
 
         [Theory]
         [InlineData(123, true)]
-        [InlineData(124, false)]
-        [InlineData(126, false)]
-        public void BackwardBranchOptimization_UsesNativeConservativeLimit(int padding, bool shortened)
+        [InlineData(124, true)]
+        [InlineData(125, true)]
+        [InlineData(126, true)]
+        [InlineData(127, false)]
+        [InlineData(128, false)]
+        public void BackwardBranchOptimization_UsesShortInstructionLimit(int padding, bool shortened)
         {
             byte[] il = DocumentCompilerTestHelpers.CompileMethodIL(
                 "START:\n" + string.Concat(Enumerable.Repeat("nop\n", padding)) + "br START\nret", new Options { Optimize = true });
@@ -193,6 +196,33 @@ namespace ILAssembler.Tests
             Assert.Equal(shortened ? -padding - 2 : -padding - 5,
                 shortened ? (sbyte)il[padding + 1] : BinaryPrimitives.ReadInt32LittleEndian(il.AsSpan(padding + 1)));
             Assert.Equal(padding + (shortened ? 2 : 5) + 1, il.Length);
+        }
+
+        [Theory]
+        [MemberData(nameof(BranchOpcodes))]
+        public void BackwardBranchFamilies_ShortenAtSignedByteLimit(string opcode, byte longOpcode, byte shortOpcode)
+        {
+            foreach (int padding in new[] { 123, 124, 125, 126, 127, 128 })
+            {
+                string source = "START:\n" + string.Concat(Enumerable.Repeat("nop\n", padding)) + $"{opcode} START\nret";
+                foreach (bool optimize in new[] { false, true })
+                {
+                    bool shortened = optimize && padding <= 126;
+                    int instructionSize = shortened ? 2 : 5;
+                    byte[] expected = new byte[padding + instructionSize + 1];
+                    expected[padding] = shortened ? shortOpcode : longOpcode;
+                    if (shortened)
+                    {
+                        expected[padding + 1] = unchecked((byte)(-padding - instructionSize));
+                    }
+                    else
+                    {
+                        BinaryPrimitives.WriteInt32LittleEndian(expected.AsSpan(padding + 1), -padding - instructionSize);
+                    }
+                    expected[^1] = 0x2A;
+                    Assert.Equal(expected, DocumentCompilerTestHelpers.CompileMethodIL(source, new Options { Optimize = optimize }));
+                }
+            }
         }
 
         [Theory]
@@ -465,8 +495,10 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
-        [Fact]
-        public void UndefinedBranchTarget_WithErrorTolerantOption_PreservesNativeFatHeaderBehavior()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UndefinedBranchTarget_WithErrorTolerantOption_PreservesNativeFatHeaderBehavior(bool fold)
         {
             string source = """
                 .assembly extern mscorlib { }
@@ -480,6 +512,12 @@ namespace ILAssembler.Tests
                         br UndefinedLabel
                         ret
                     }
+                    .method public static void OtherMethod() cil managed
+                    {
+                        .maxstack 3
+                        br UndefinedLabel
+                        ret
+                    }
                 }
                 """;
 
@@ -488,7 +526,7 @@ namespace ILAssembler.Tests
                 new SourceText(source, "test.il"),
                 _ => throw new InvalidOperationException("Unexpected include"),
                 _ => throw new InvalidOperationException("Unexpected resource"),
-                new Options { ErrorTolerant = true });
+                new Options { ErrorTolerant = true, Fold = fold });
 
             Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.LabelNotFound);
             Assert.NotNull(result);
@@ -501,9 +539,14 @@ namespace ILAssembler.Tests
                 .Select(reader.GetMethodDefinition)
                 .Single(method => reader.GetString(method.Name) == "TestMethod");
             MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            MethodDefinition otherMethod = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "OtherMethod");
 
             Assert.Equal(3, body.MaxStack);
             Assert.True(body.LocalVariablesInitialized);
+            Assert.Equal(fold, method.RelativeVirtualAddress == otherMethod.RelativeVirtualAddress);
+            Assert.Equal(body.GetILBytes(), pe.GetMethodBody(otherMethod.RelativeVirtualAddress).GetILBytes());
         }
 
         [Fact]

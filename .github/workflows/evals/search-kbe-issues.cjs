@@ -36,7 +36,15 @@ async function searchKbeIssues(query, token, runApi = runGhApi) {
     }
 
     const result = await runApi(query.trim(), token);
-    if (result.incomplete_results !== false || !Array.isArray(result.items)) {
+    if (result.incomplete_results !== false ||
+        !Array.isArray(result.items) ||
+        !Number.isInteger(result.total_count)) {
+        throw new Error("GitHub issue search returned an invalid response");
+    }
+    if (result.total_count > result.items.length) {
+        throw new Error("GitHub issue search returned more matches than the page limit; narrow the query");
+    }
+    if (result.total_count !== result.items.length) {
         throw new Error("GitHub issue search returned an invalid response");
     }
 
