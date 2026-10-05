@@ -12,6 +12,7 @@ using System.Linq;
 using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 using System.Xml.Schema;
+using System.Xml.Serialization;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 using SchemaObjectDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
@@ -502,7 +503,7 @@ namespace System.Runtime.Serialization
             if (_dataContractSet.TryGetReferencedType(typeName, dataContract, out referencedType)
                 || (string.IsNullOrEmpty(type.Name) && _dataContractSet.TryGetReferencedType(ImportActualType(type.Annotation, typeName, typeName), dataContract, out referencedType)))
             {
-                if (typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(referencedType))
+                if (typeof(IXmlSerializable).IsAssignableFrom(referencedType))
                 {
                     RemoveFailedContract(typeName);
                     return ImportXmlDataType(typeName, type, isAnonymous);
@@ -737,7 +738,7 @@ namespace System.Runtime.Serialization
                 XmlQualifiedName xlinqTypeName = new XmlQualifiedName("XElement", "http://schemas.datacontract.org/2004/07/System.Xml.Linq");
                 Type? referencedType;
                 if (_dataContractSet.TryGetReferencedType(xlinqTypeName, null, out referencedType)
-                    && typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(referencedType))
+                    && typeof(IXmlSerializable).IsAssignableFrom(referencedType))
                 {
                     XmlDataContract xmlDataContract = new XmlDataContract(referencedType);
                     AddDataContract(xmlDataContract);

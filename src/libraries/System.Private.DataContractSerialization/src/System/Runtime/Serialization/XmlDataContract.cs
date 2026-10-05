@@ -324,7 +324,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
                 ilg.New(ctor);
             }
-            ilg.ConvertValue(this.UnderlyingType, typeof(System.Xml.Serialization.IXmlSerializable));
+            ilg.ConvertValue(this.UnderlyingType, typeof(IXmlSerializable));
             ilg.Ret();
             return (CreateXmlSerializableDelegate)ilg.EndMethod();
         }

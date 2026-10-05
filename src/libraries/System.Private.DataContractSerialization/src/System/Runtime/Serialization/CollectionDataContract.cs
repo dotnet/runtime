@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Security;
 using System.Threading;
 using System.Xml;
+using System.Xml.Serialization;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
@@ -1037,7 +1038,7 @@ namespace System.Runtime.Serialization.DataContracts
                     SR.CollectionTypeCannotHaveDataContract, null, ref dataContract);
             }
 
-            if (typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(type) || IsArraySegment(type))
+            if (typeof(IXmlSerializable).IsAssignableFrom(type) || IsArraySegment(type))
             {
                 return false;
             }

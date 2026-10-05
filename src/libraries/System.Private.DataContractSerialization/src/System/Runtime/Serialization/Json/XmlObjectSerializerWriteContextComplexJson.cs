@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -320,7 +321,7 @@ namespace System.Runtime.Serialization.Json
         internal static void VerifyObjectCompatibilityWithInterface(DataContract contract, object graph, Type declaredType)
         {
             Type contractType = contract.GetType();
-            if ((contractType == typeof(XmlDataContract)) && !typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(declaredType))
+            if ((contractType == typeof(XmlDataContract)) && !typeof(IXmlSerializable).IsAssignableFrom(declaredType))
             {
                 throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.XmlObjectAssignedToIncompatibleInterface, graph.GetType(), declaredType));
             }

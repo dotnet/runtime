@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
+using System.Xml.Serialization;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
@@ -479,7 +480,7 @@ namespace System.Runtime.Serialization.DataContracts
                         dataContract = new EnumDataContract(type);
                     else if (type.IsGenericParameter)
                         dataContract = new GenericParameterDataContract(type);
-                    else if (typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(type))
+                    else if (typeof(IXmlSerializable).IsAssignableFrom(type))
                         dataContract = new XmlDataContract(type);
                     else
                     {
@@ -1128,7 +1129,7 @@ namespace System.Runtime.Serialization.DataContracts
                 type.IsPointer ||
                 //Special casing DBNull as its considered a Primitive but is no longer Serializable
                 type == typeof(DBNull) ||
-                typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(type))
+                typeof(IXmlSerializable).IsAssignableFrom(type))
             {
                 return true;
             }
@@ -1346,7 +1347,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 xmlName = builtInContract.XmlName;
             }
-            else if (typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(type))
+            else if (typeof(IXmlSerializable).IsAssignableFrom(type))
             {
                 SchemaExporter.GetXmlTypeInfo(type, out XmlQualifiedName xmlTypeName, out _, out _);
                 xmlName = xmlTypeName;

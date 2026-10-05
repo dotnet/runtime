@@ -615,7 +615,7 @@ namespace System.Runtime.Serialization.Json
                             constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Type.EmptyTypes)!;
                             break;
                         case CollectionKind.Dictionary:
-                            type = Globals.TypeOfHashtable;
+                            type = typeof(Dictionary<object, object>);
                             constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Type.EmptyTypes)!;
                             break;
                         case CollectionKind.Collection:

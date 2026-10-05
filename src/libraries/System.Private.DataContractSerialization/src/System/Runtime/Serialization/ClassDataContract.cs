@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Security;
 using System.Threading;
 using System.Xml;
+using System.Xml.Serialization;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
@@ -275,7 +276,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal static XmlDictionaryString? GetChildNamespaceToDeclare(DataContract dataContract, Type childType, XmlDictionary dictionary)
         {
             childType = DataContract.UnwrapNullableType(childType);
-            if (!childType.IsEnum && !typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(childType)
+            if (!childType.IsEnum && !typeof(IXmlSerializable).IsAssignableFrom(childType)
                 && DataContract.GetBuiltInDataContract(childType) == null && childType != typeof(DBNull))
             {
                 string ns = DataContract.GetXmlName(childType).Namespace;
@@ -310,7 +311,7 @@ namespace System.Runtime.Serialization.DataContracts
             if (type.IsGenericParameter)
                 return false;
 
-            if (typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(type))
+            if (typeof(IXmlSerializable).IsAssignableFrom(type))
                 return false;
 
             if (type.IsPointer)

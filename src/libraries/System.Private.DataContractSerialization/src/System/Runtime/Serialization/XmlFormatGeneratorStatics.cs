@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -206,20 +207,11 @@ namespace System.Runtime.Serialization
 
         internal static ConstructorInfo ExtensionDataObjectCtor => field ??= typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
 
-        private static ConstructorInfo? s_hashtableCtor;
-        internal static ConstructorInfo HashtableCtor
+        internal static ConstructorInfo DictionaryCtor
         {
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            {
-                if (s_hashtableCtor == null)
-                {
-                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes);
-                    Debug.Assert(s_hashtableCtor != null);
-                }
-                return s_hashtableCtor;
-            }
+            get => field ??= typeof(Dictionary<object, object>).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
         }
 
         private static MethodInfo? s_getStreamingContextMethod;

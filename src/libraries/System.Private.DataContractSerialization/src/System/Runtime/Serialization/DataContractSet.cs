@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Xml;
 using System.Xml.Schema;
+using System.Xml.Serialization;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
@@ -420,7 +421,7 @@ namespace System.Runtime.Serialization.DataContracts
                         type.IsSerializable ||
 #pragma warning restore SYSLIB0050
                         type.IsDefined(typeof(DataContractAttribute), false) ||
-                        (typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(type) && !type.IsGenericTypeDefinition) ||
+                        (typeof(IXmlSerializable).IsAssignableFrom(type) && !type.IsGenericTypeDefinition) ||
                         CollectionDataContract.IsCollection(type, out _) ||
                         ClassDataContract.IsNonAttributedTypeValidForSerialization(type));
             }

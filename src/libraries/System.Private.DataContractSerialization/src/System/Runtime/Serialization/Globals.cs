@@ -25,13 +25,6 @@ namespace System.Runtime.Serialization
 
         internal static XmlQualifiedName IdQualifiedName => field ??= new XmlQualifiedName(Globals.IdLocalName, Globals.SerializationNamespace);
         internal static XmlQualifiedName RefQualifiedName => field ??= new XmlQualifiedName(Globals.RefLocalName, Globals.SerializationNamespace);
-        internal static Type TypeOfHashtable
-        {
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
-            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get => field ??= typeof(Dictionary<,>).MakeGenericType(typeof(object), typeof(object));
-        }
-
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
         internal static Type TypeOfSchemaDefinedType => typeof(SchemaDefinedType);
 

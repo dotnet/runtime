@@ -651,8 +651,8 @@ namespace System.Runtime.Serialization
                             constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes)!;
                             break;
                         case CollectionKind.Dictionary:
-                            type = Globals.TypeOfHashtable;
-                            constructor = XmlFormatGeneratorStatics.HashtableCtor;
+                            type = typeof(Dictionary<object, object>);
+                            constructor = XmlFormatGeneratorStatics.DictionaryCtor;
                             break;
                         case CollectionKind.Collection:
                         case CollectionKind.GenericCollection:
