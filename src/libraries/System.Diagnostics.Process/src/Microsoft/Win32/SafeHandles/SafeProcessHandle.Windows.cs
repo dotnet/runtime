@@ -181,18 +181,24 @@ namespace Microsoft.Win32.SafeHandles
 
             Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All of the standard handles must be provided.");
 
-            try
+            const int MaxAttempts = 3;
+            for (int attempt = 0; ; attempt++)
             {
-                return StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, replaceKillOnParentExitJob: false);
-            }
-            catch (Win32Exception exception) when (startInfo.KillOnParentExit && exception.NativeErrorCode == Interop.Errors.ERROR_ACCESS_DENIED)
-            {
-                // The process may have joined another job after the current kill-on-parent-exit job was first
-                // used. Windows cannot reparent that job into the new hierarchy, so retry once with a fresh job
-                // while retaining any old jobs that still contain active children. This may also retry an
-                // unrelated access-denied failure, but that should be very rare and is an intentional tradeoff
-                // to keep the retry logic shared by all process creation paths.
-                return StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, replaceKillOnParentExitJob: true);
+                try
+                {
+                    return StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, replaceKillOnParentExitJob: attempt != 0);
+                }
+                catch (Win32Exception exception) when (
+                    startInfo.KillOnParentExit &&
+                    exception.NativeErrorCode == Interop.Errors.ERROR_ACCESS_DENIED &&
+                    attempt < MaxAttempts - 1)
+                {
+                    // The process may have joined another job after the current kill-on-parent-exit job was first
+                    // used. Windows cannot reparent that job into the new hierarchy, so retry with a fresh job while
+                    // retaining any old jobs that still contain active children. This is a loop because the process
+                    // can join another job again while a retry is in progress. The loop is bounded because an
+                    // unrelated access-denied failure would otherwise retry forever.
+                }
             }
         }
 
