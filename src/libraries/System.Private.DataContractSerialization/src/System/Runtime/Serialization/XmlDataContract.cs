@@ -118,7 +118,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal override bool CanContainReferences => false;
 
-        public override bool IsBuiltInDataContract => UnderlyingType == Globals.TypeOfXmlElement || UnderlyingType == Globals.TypeOfXmlNodeArray;
+        public override bool IsBuiltInDataContract => UnderlyingType == typeof(XmlElement) || UnderlyingType == typeof(XmlNode[]);
 
         private sealed class XmlDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
@@ -137,9 +137,9 @@ namespace System.Runtime.Serialization.DataContracts
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
-                if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
+                if (type.IsDefined(typeof(DataContractAttribute), false))
                     throw new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type)));
-                if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
+                if (type.IsDefined(typeof(CollectionDataContractAttribute), false))
                     throw new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type)));
                 bool hasRoot;
                 XmlSchemaType? xsdType;
@@ -151,7 +151,7 @@ namespace System.Runtime.Serialization.DataContracts
                 XmlDictionary dictionary = new XmlDictionary();
                 Name = dictionary.Add(XmlName.Name);
                 Namespace = dictionary.Add(XmlName.Namespace);
-                object[]? xmlRootAttributes = UnderlyingType?.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
+                object[]? xmlRootAttributes = UnderlyingType?.GetCustomAttributes(typeof(XmlRootAttribute), false).ToArray();
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)
@@ -324,7 +324,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
                 ilg.New(ctor);
             }
-            ilg.ConvertValue(this.UnderlyingType, Globals.TypeOfIXmlSerializable);
+            ilg.ConvertValue(this.UnderlyingType, typeof(System.Xml.Serialization.IXmlSerializable));
             ilg.Ret();
             return (CreateXmlSerializableDelegate)ilg.EndMethod();
         }

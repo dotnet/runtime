@@ -13,14 +13,13 @@ namespace System.Text.Json.Reflection
 {
     internal static partial class ReflectionExtensions
     {
-        private static readonly Type s_nullableType = typeof(Nullable<>);
 
         /// <summary>
         /// Returns <see langword="true" /> when the given type is of type <see cref="Nullable{T}"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNullableOfT(this Type type) =>
-            type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableType;
+            type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 
         public static bool IsNullableType(this Type type) => !type.IsValueType || IsNullableOfT(type);
 

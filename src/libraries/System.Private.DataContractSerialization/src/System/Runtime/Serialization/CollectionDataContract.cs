@@ -429,14 +429,14 @@ namespace System.Runtime.Serialization.DataContracts
                 // Listed in priority order
                 s_knownInterfaces ??= new Type[]
                 {
-                    Globals.TypeOfIDictionaryGeneric,
-                    Globals.TypeOfIDictionary,
-                    Globals.TypeOfIListGeneric,
-                    Globals.TypeOfICollectionGeneric,
-                    Globals.TypeOfIList,
-                    Globals.TypeOfIEnumerableGeneric,
-                    Globals.TypeOfICollection,
-                    Globals.TypeOfIEnumerable
+                    typeof(IDictionary<,>),
+                    typeof(IDictionary),
+                    typeof(IList<>),
+                    typeof(ICollection<>),
+                    typeof(IList),
+                    typeof(IEnumerable<>),
+                    typeof(ICollection),
+                    typeof(IEnumerable)
                 };
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -501,8 +501,8 @@ namespace System.Runtime.Serialization.DataContracts
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
-                if (type == Globals.TypeOfArray)
-                    type = Globals.TypeOfObjectArray;
+                if (type == typeof(Array))
+                    type = typeof(object[]);
                 if (type.GetArrayRank() > 1)
                     throw new NotSupportedException(SR.SupportForMultidimensionalArraysNotPresent);
                 XmlName = DataContract.GetXmlName(type);
@@ -769,7 +769,7 @@ namespace System.Runtime.Serialization.DataContracts
                             break;
                         case CollectionKind.GenericDictionary:
                             {
-                                MethodInfo? buildIncrementCollectionCountDelegate = GetBuildIncrementCollectionCountGenericDelegate(typeof(KeyValuePair<,>).MakeGenericType(ItemType.GetGenericArguments()));
+                                MethodInfo? buildIncrementCollectionCountDelegate = GetBuildIncrementCollectionCountGenericDelegate(typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(ItemType.GetGenericArguments()));
                                 _incrementCollectionCountDelegate = (IncrementCollectionCountDelegate)buildIncrementCollectionCountDelegate.Invoke(null, Array.Empty<object>())!;
                             }
                             break;
@@ -847,11 +847,11 @@ namespace System.Runtime.Serialization.DataContracts
                 if (Kind == CollectionKind.GenericDictionary)
                 {
                     Type[] keyValueTypes = ItemType.GetGenericArguments();
-                    enumeratorType = Globals.TypeOfGenericDictionaryEnumerator.MakeGenericType(keyValueTypes);
+                    enumeratorType = typeof(CollectionDataContract.GenericDictionaryEnumerator<,>).MakeGenericType(keyValueTypes);
                 }
                 else if (Kind == CollectionKind.Dictionary)
                 {
-                    enumeratorType = Globals.TypeOfDictionaryEnumerator;
+                    enumeratorType = typeof(CollectionDataContract.DictionaryEnumerator);
                 }
                 else
                 {
@@ -867,14 +867,14 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                     else
                     {
-                        Type ienumeratorInterface = Globals.TypeOfIEnumerator;
+                        Type ienumeratorInterface = typeof(IEnumerator);
                         if (Kind == CollectionKind.GenericDictionary || Kind == CollectionKind.GenericCollection || Kind == CollectionKind.GenericEnumerable)
                         {
                             Type[] interfaceTypes = enumeratorType.GetInterfaces();
                             foreach (Type interfaceType in interfaceTypes)
                             {
                                 if (interfaceType.IsGenericType
-                                    && interfaceType.GetGenericTypeDefinition() == Globals.TypeOfIEnumeratorGeneric
+                                    && interfaceType.GetGenericTypeDefinition() == typeof(System.Collections.Generic.IEnumerator<>)
                                     && interfaceType.GetGenericArguments()[0] == ItemType)
                                 {
                                     ienumeratorInterface = interfaceType;
@@ -909,12 +909,12 @@ namespace System.Runtime.Serialization.DataContracts
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract? GetSharedTypeContract(Type type)
         {
-            if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
+            if (type.IsDefined(typeof(CollectionDataContractAttribute), false))
             {
                 return this;
             }
 #pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
-            if (type.IsSerializable || type.IsDefined(Globals.TypeOfDataContractAttribute, false))
+            if (type.IsSerializable || type.IsDefined(typeof(DataContractAttribute), false))
             {
                 return new ClassDataContract(type);
             }
@@ -1009,7 +1009,7 @@ namespace System.Runtime.Serialization.DataContracts
         private static bool IsCollectionOrTryCreate(Type type, bool tryCreate, out DataContract? dataContract, out Type itemType, bool constructorRequired, bool skipIfReadOnlyContract = false)
         {
             dataContract = null;
-            itemType = Globals.TypeOfObject;
+            itemType = typeof(object);
 
             if (DataContract.GetBuiltInDataContract(type) != null)
             {
@@ -1023,26 +1023,26 @@ namespace System.Runtime.Serialization.DataContracts
             string? serializationExceptionMessage = null;
             string? deserializationExceptionMessage = null;
             Type? baseType = type.BaseType;
-            bool isBaseTypeCollection = (baseType != null && baseType != Globals.TypeOfObject
-                && baseType != Globals.TypeOfValueType && baseType != Globals.TypeOfUri) ? IsCollection(baseType) : false;
+            bool isBaseTypeCollection = (baseType != null && baseType != typeof(object)
+                && baseType != typeof(ValueType) && baseType != typeof(Uri)) ? IsCollection(baseType) : false;
 
             // Avoid creating an invalid collection contract for Serializable types since we can create a ClassDataContract instead
 #pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
             bool createContractWithException = isBaseTypeCollection && !type.IsSerializable;
 #pragma warning restore SYSLIB0050
 
-            if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
+            if (type.IsDefined(typeof(DataContractAttribute), false))
             {
                 return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
                     SR.CollectionTypeCannotHaveDataContract, null, ref dataContract);
             }
 
-            if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type) || IsArraySegment(type))
+            if (typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(type) || IsArraySegment(type))
             {
                 return false;
             }
 
-            if (!Globals.TypeOfIEnumerable.IsAssignableFrom(type))
+            if (!typeof(IEnumerable).IsAssignableFrom(type))
             {
                 return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
                     SR.CollectionTypeIsNotIEnumerable, null, ref dataContract);
@@ -1060,35 +1060,35 @@ namespace System.Runtime.Serialization.DataContracts
                         if (type.IsGenericType)
                         {
                             Type[] genericArgs = type.GetGenericArguments();
-                            if (interfaceTypeToCheck == Globals.TypeOfIDictionaryGeneric)
+                            if (interfaceTypeToCheck == typeof(IDictionary<,>))
                             {
-                                itemType = Globals.TypeOfKeyValue.MakeGenericType(genericArgs);
+                                itemType = typeof(KeyValue<,>).MakeGenericType(genericArgs);
                                 addMethod = type.GetMethod(Globals.AddMethodName);
-                                getEnumeratorMethod = Globals.TypeOfIEnumerableGeneric.MakeGenericType(Globals.TypeOfKeyValuePair.MakeGenericType(genericArgs)).GetMethod(Globals.GetEnumeratorMethodName)!;
+                                getEnumeratorMethod = typeof(IEnumerable<>).MakeGenericType(typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(genericArgs)).GetMethod(Globals.GetEnumeratorMethodName)!;
                             }
                             else
                             {
                                 itemType = genericArgs[0];
-                                if (interfaceTypeToCheck == Globals.TypeOfICollectionGeneric || interfaceTypeToCheck == Globals.TypeOfIListGeneric)
+                                if (interfaceTypeToCheck == typeof(ICollection<>) || interfaceTypeToCheck == typeof(IList<>))
                                 {
-                                    addMethod = Globals.TypeOfICollectionGeneric.MakeGenericType(itemType).GetMethod(Globals.AddMethodName);
+                                    addMethod = typeof(ICollection<>).MakeGenericType(itemType).GetMethod(Globals.AddMethodName);
                                 }
-                                getEnumeratorMethod = Globals.TypeOfIEnumerableGeneric.MakeGenericType(itemType).GetMethod(Globals.GetEnumeratorMethodName)!;
+                                getEnumeratorMethod = typeof(IEnumerable<>).MakeGenericType(itemType).GetMethod(Globals.GetEnumeratorMethodName)!;
                             }
                         }
                         else
                         {
-                            if (interfaceTypeToCheck == Globals.TypeOfIDictionary)
+                            if (interfaceTypeToCheck == typeof(IDictionary))
                             {
                                 itemType = typeof(KeyValue<object, object>);
                                 addMethod = type.GetMethod(Globals.AddMethodName);
                             }
                             else
                             {
-                                itemType = Globals.TypeOfObject;
+                                itemType = typeof(object);
 
                                 // IList has AddMethod
-                                if (interfaceTypeToCheck == Globals.TypeOfIList)
+                                if (interfaceTypeToCheck == typeof(IList))
                                 {
                                     addMethod = type.GetMethod(Globals.AddMethodName);
                                 }
@@ -1162,8 +1162,8 @@ namespace System.Runtime.Serialization.DataContracts
             if (kind == CollectionKind.Enumerable || kind == CollectionKind.Collection || kind == CollectionKind.GenericEnumerable)
             {
                 if (multipleDefinitions)
-                    knownInterfaceType = Globals.TypeOfIEnumerable;
-                itemType = knownInterfaceType.IsGenericType ? knownInterfaceType.GetGenericArguments()[0] : Globals.TypeOfObject;
+                    knownInterfaceType = typeof(IEnumerable);
+                itemType = knownInterfaceType.IsGenericType ? knownInterfaceType.GetGenericArguments()[0] : typeof(object);
                 GetCollectionMethods(type, knownInterfaceType, new Type[] { itemType },
                                      false /*addMethodOnInterface*/,
                                      out getEnumeratorMethod, out addMethod);
@@ -1210,11 +1210,11 @@ namespace System.Runtime.Serialization.DataContracts
                         addMethodTypeArray = knownInterfaceType.GetGenericArguments();
                         bool isOpenGeneric = knownInterfaceType.IsGenericTypeDefinition
                             || (addMethodTypeArray[0].IsGenericParameter && addMethodTypeArray[1].IsGenericParameter);
-                        itemType = isOpenGeneric ? Globals.TypeOfKeyValue : Globals.TypeOfKeyValue.MakeGenericType(addMethodTypeArray);
+                        itemType = isOpenGeneric ? typeof(KeyValue<,>) : typeof(KeyValue<,>).MakeGenericType(addMethodTypeArray);
                         break;
                     case CollectionKind.Dictionary:
-                        addMethodTypeArray = new Type[] { Globals.TypeOfObject, Globals.TypeOfObject };
-                        itemType = Globals.TypeOfKeyValue.MakeGenericType(addMethodTypeArray);
+                        addMethodTypeArray = new Type[] { typeof(object), typeof(object) };
+                        itemType = typeof(KeyValue<,>).MakeGenericType(addMethodTypeArray);
                         break;
                     case CollectionKind.GenericList:
                     case CollectionKind.GenericCollection:
@@ -1222,7 +1222,7 @@ namespace System.Runtime.Serialization.DataContracts
                         itemType = addMethodTypeArray[0];
                         break;
                     case CollectionKind.List:
-                        itemType = Globals.TypeOfObject;
+                        itemType = typeof(object);
                         addMethodTypeArray = new Type[] { itemType };
                         break;
                 }
@@ -1247,7 +1247,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal static bool IsCollectionDataContract(Type type)
         {
-            return type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false);
+            return type.IsDefined(typeof(CollectionDataContractAttribute), false);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -1347,11 +1347,11 @@ namespace System.Runtime.Serialization.DataContracts
             if (getEnumeratorMethod == null)
             {
                 getEnumeratorMethod = type.GetMethod(Globals.GetEnumeratorMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
-                if (getEnumeratorMethod == null || !Globals.TypeOfIEnumerator.IsAssignableFrom(getEnumeratorMethod.ReturnType))
+                if (getEnumeratorMethod == null || !typeof(IEnumerator).IsAssignableFrom(getEnumeratorMethod.ReturnType))
                 {
                     Type? ienumerableInterface =
                         interfaceType.GetInterfaces().Where(t => t.FullName!.StartsWith("System.Collections.Generic.IEnumerable")).FirstOrDefault() ??
-                        Globals.TypeOfIEnumerable;
+                        typeof(IEnumerable);
                     getEnumeratorMethod = GetIEnumerableGetEnumeratorMethod(type, ienumerableInterface);
                 }
             }

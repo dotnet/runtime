@@ -275,8 +275,8 @@ namespace System.Runtime.Serialization.DataContracts
         internal static XmlDictionaryString? GetChildNamespaceToDeclare(DataContract dataContract, Type childType, XmlDictionary dictionary)
         {
             childType = DataContract.UnwrapNullableType(childType);
-            if (!childType.IsEnum && !Globals.TypeOfIXmlSerializable.IsAssignableFrom(childType)
-                && DataContract.GetBuiltInDataContract(childType) == null && childType != Globals.TypeOfDBNull)
+            if (!childType.IsEnum && !typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(childType)
+                && DataContract.GetBuiltInDataContract(childType) == null && childType != typeof(DBNull))
             {
                 string ns = DataContract.GetXmlName(childType).Namespace;
                 if (ns.Length > 0 && ns != dataContract.Namespace.Value)
@@ -310,13 +310,13 @@ namespace System.Runtime.Serialization.DataContracts
             if (type.IsGenericParameter)
                 return false;
 
-            if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
+            if (typeof(System.Xml.Serialization.IXmlSerializable).IsAssignableFrom(type))
                 return false;
 
             if (type.IsPointer)
                 return false;
 
-            if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
+            if (type.IsDefined(typeof(CollectionDataContractAttribute), false))
                 return false;
 
             if (!IsArraySegment(type))
@@ -333,13 +333,13 @@ namespace System.Runtime.Serialization.DataContracts
                 return false;
 #pragma warning restore SYSLIB0050
 
-            if (Globals.TypeOfISerializable.IsAssignableFrom(type))
+            if (typeof(ISerializable).IsAssignableFrom(type))
                 return false;
 
-            if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
+            if (type.IsDefined(typeof(DataContractAttribute), false))
                 return false;
 
-            if (type == Globals.TypeOfExtensionDataObject)
+            if (type == typeof(ExtensionDataObject))
                 return false;
 
             if (type.IsValueType)
@@ -621,7 +621,7 @@ namespace System.Runtime.Serialization.DataContracts
                     return;
 
                 XmlQualifiedName xmlName = GetXmlNameAndSetHasDataContract(type);
-                if (type == Globals.TypeOfDBNull)
+                if (type == typeof(DBNull))
                 {
                     XmlName = xmlName;
                     _members = new List<DataMember>();
@@ -633,19 +633,19 @@ namespace System.Runtime.Serialization.DataContracts
                     return;
                 }
                 Type? baseType = type.BaseType;
-                IsISerializable = (Globals.TypeOfISerializable.IsAssignableFrom(type));
+                IsISerializable = (typeof(ISerializable).IsAssignableFrom(type));
                 SetIsNonAttributedType(type);
                 if (IsISerializable)
                 {
                     if (HasDataContract)
                         throw new InvalidDataContractException(SR.Format(SR.ISerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type)));
 #pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
-                    if (baseType != null && !(baseType.IsSerializable && Globals.TypeOfISerializable.IsAssignableFrom(baseType)))
+                    if (baseType != null && !(baseType.IsSerializable && typeof(ISerializable).IsAssignableFrom(baseType)))
                         baseType = null;
 #pragma warning restore SYSLIB0050
                 }
                 IsValueType = type.IsValueType;
-                if (baseType != null && baseType != Globals.TypeOfObject && baseType != Globals.TypeOfValueType && baseType != Globals.TypeOfUri)
+                if (baseType != null && baseType != typeof(object) && baseType != typeof(ValueType) && baseType != typeof(Uri))
                 {
                     DataContract baseContract = DataContract.GetDataContract(baseType);
                     if (baseContract is CollectionDataContract collectionDC)
@@ -668,7 +668,7 @@ namespace System.Runtime.Serialization.DataContracts
                     BaseClassContract = null;
                 }
 
-                _hasExtensionData = (Globals.TypeOfIExtensibleDataObject.IsAssignableFrom(type));
+                _hasExtensionData = (typeof(IExtensibleDataObject).IsAssignableFrom(type));
                 if (_hasExtensionData && !HasDataContract && !IsNonAttributedType)
                 {
                     throw new InvalidDataContractException(SR.Format(SR.OnlyDataContractTypesCanHaveExtensionData, DataContract.GetClrTypeFullName(type)));
@@ -912,7 +912,7 @@ namespace System.Runtime.Serialization.DataContracts
                             }
 
                             //skip ExtensionData member of type ExtensionDataObject if IExtensibleDataObject is implemented in non-attributed type
-                            if (_hasExtensionData && memberContract.MemberType == Globals.TypeOfExtensionDataObject
+                            if (_hasExtensionData && memberContract.MemberType == typeof(ExtensionDataObject)
                                 && member.Name == Globals.ExtensionDataObjectPropertyName)
                                 continue;
                         }
@@ -932,7 +932,7 @@ namespace System.Runtime.Serialization.DataContracts
                             DataMember memberContract = new DataMember(member);
 
                             memberContract.Name = DataContract.EncodeLocalName(member.Name);
-                            object[] optionalFields = field!.GetCustomAttributes(Globals.TypeOfOptionalFieldAttribute, false);
+                            object[] optionalFields = field!.GetCustomAttributes(typeof(OptionalFieldAttribute), false);
                             if (optionalFields == null || optionalFields.Length == 0)
                             {
                                 if (IsReference)
@@ -1084,13 +1084,13 @@ namespace System.Runtime.Serialization.DataContracts
                                     else
                                         _extensionDataSetMethod = method;
                                 }
-                                if (IsValidCallback(method, parameters, Globals.TypeOfOnSerializingAttribute, _onSerializing, ref prevAttributeType))
+                                if (IsValidCallback(method, parameters, typeof(OnSerializingAttribute), _onSerializing, ref prevAttributeType))
                                     _onSerializing = method;
-                                if (IsValidCallback(method, parameters, Globals.TypeOfOnSerializedAttribute, _onSerialized, ref prevAttributeType))
+                                if (IsValidCallback(method, parameters, typeof(OnSerializedAttribute), _onSerialized, ref prevAttributeType))
                                     _onSerialized = method;
-                                if (IsValidCallback(method, parameters, Globals.TypeOfOnDeserializingAttribute, _onDeserializing, ref prevAttributeType))
+                                if (IsValidCallback(method, parameters, typeof(OnDeserializingAttribute), _onDeserializing, ref prevAttributeType))
                                     _onDeserializing = method;
-                                if (IsValidCallback(method, parameters, Globals.TypeOfOnDeserializedAttribute, _onDeserialized, ref prevAttributeType))
+                                if (IsValidCallback(method, parameters, typeof(OnDeserializedAttribute), _onDeserialized, ref prevAttributeType))
                                     _onDeserialized = method;
                             }
                             Interlocked.MemoryBarrier();
@@ -1108,10 +1108,10 @@ namespace System.Runtime.Serialization.DataContracts
 
                     if (_extensionDataSetMethod != null)
                         ThrowInvalidDataContractException(SR.Format(SR.DuplicateExtensionDataSetMethod, method, _extensionDataSetMethod, DataContract.GetClrTypeFullName(method.DeclaringType)));
-                    if (method.ReturnType != Globals.TypeOfVoid)
+                    if (method.ReturnType != typeof(void))
                         DataContract.ThrowInvalidDataContractException(SR.Format(SR.ExtensionDataSetMustReturnVoid, DataContract.GetClrTypeFullName(method.DeclaringType), method), method.DeclaringType);
-                    if (parameters == null || parameters.Length != 1 || parameters[0].ParameterType != Globals.TypeOfExtensionDataObject)
-                        DataContract.ThrowInvalidDataContractException(SR.Format(SR.ExtensionDataSetParameterInvalid, DataContract.GetClrTypeFullName(method.DeclaringType), method, Globals.TypeOfExtensionDataObject), method.DeclaringType);
+                    if (parameters == null || parameters.Length != 1 || parameters[0].ParameterType != typeof(ExtensionDataObject))
+                        DataContract.ThrowInvalidDataContractException(SR.Format(SR.ExtensionDataSetParameterInvalid, DataContract.GetClrTypeFullName(method.DeclaringType), method, typeof(ExtensionDataObject)), method.DeclaringType);
                     return true;
                 }
                 return false;
@@ -1131,10 +1131,10 @@ namespace System.Runtime.Serialization.DataContracts
                         DataContract.ThrowInvalidDataContractException(SR.Format(SR.CallbacksCannotBeVirtualMethods, method, DataContract.GetClrTypeFullName(method.DeclaringType), attributeType), method.DeclaringType);
                     else
                     {
-                        if (method.ReturnType != Globals.TypeOfVoid)
+                        if (method.ReturnType != typeof(void))
                             DataContract.ThrowInvalidDataContractException(SR.Format(SR.CallbackMustReturnVoid, DataContract.GetClrTypeFullName(method.DeclaringType), method), method.DeclaringType);
-                        if (parameters == null || parameters.Length != 1 || parameters[0].ParameterType != Globals.TypeOfStreamingContext)
-                            DataContract.ThrowInvalidDataContractException(SR.Format(SR.CallbackParameterInvalid, DataContract.GetClrTypeFullName(method.DeclaringType), method, Globals.TypeOfStreamingContext), method.DeclaringType);
+                        if (parameters == null || parameters.Length != 1 || parameters[0].ParameterType != typeof(StreamingContext))
+                            DataContract.ThrowInvalidDataContractException(SR.Format(SR.CallbackParameterInvalid, DataContract.GetClrTypeFullName(method.DeclaringType), method, typeof(StreamingContext)), method.DeclaringType);
 
                         prevAttributeType = attributeType;
                     }
@@ -1506,7 +1506,7 @@ namespace System.Runtime.Serialization.DataContracts
                 Type type = UnderlyingType;
                 if (type.IsValueType && !IsNonAttributedType)
                 {
-                    type = Globals.TypeOfValueType;
+                    type = typeof(ValueType);
                 }
                 return type;
             }

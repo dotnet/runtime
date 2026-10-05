@@ -79,7 +79,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_dictionaryEnumeratorCtor == null)
                 {
-                    s_dictionaryEnumeratorCtor = typeof(CollectionDataContract.DictionaryEnumerator).GetConstructor(Globals.ScanAllMembers, new Type[] { Globals.TypeOfIDictionaryEnumerator });
+                    s_dictionaryEnumeratorCtor = typeof(CollectionDataContract.DictionaryEnumerator).GetConstructor(Globals.ScanAllMembers, new Type[] { typeof(IDictionaryEnumerator) });
                     Debug.Assert(s_dictionaryEnumeratorCtor != null);
                 }
                 return s_dictionaryEnumeratorCtor;

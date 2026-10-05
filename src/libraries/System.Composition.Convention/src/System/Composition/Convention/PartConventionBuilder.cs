@@ -16,7 +16,6 @@ namespace System.Composition.Convention
         private readonly Type[] _emptyTypeArray = Type.EmptyTypes;
         private static List<Attribute> s_onImportsSatisfiedAttributeList;
         private static readonly List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
-        private static readonly Type s_exportAttributeType = typeof(ExportAttribute);
         private readonly List<ExportConventionBuilder> _typeExportBuilders;
         private bool _isShared;
         private string _sharingBoundary;
@@ -408,7 +407,7 @@ namespace System.Composition.Convention
                 {
                     Type attrType = attr.GetType();
                     // Perf optimization, relies on short circuit evaluation, often a property attribute is an ExportAttribute
-                    if (attrType != s_exportAttributeType && attrType.GetTypeInfo().IsDefined(typeof(MetadataAttributeAttribute), true))
+                    if (attrType != typeof(ExportAttribute) && attrType.GetTypeInfo().IsDefined(typeof(MetadataAttributeAttribute), true))
                     {
                         return true;
                     }
