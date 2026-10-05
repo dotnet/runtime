@@ -91,6 +91,7 @@ class DebuggerControllerQueue;
 class DebuggerController;
 class Crst;
 class ExternalMemoryHandle;
+class DebuggerFuncEvalResult;
 
 typedef CUnorderedArray<DebuggerControllerPatch *, 17> PATCH_UNORDERED_ARRAY;
 template<class T> void DeleteInteropSafe(T *p);
@@ -3412,6 +3413,7 @@ public:
     ARG_SLOT                           m_result[NUMBER_RETURNVALUE_SLOTS];
     TypeHandle                         m_resultType;
     DebuggerExternalMemoryOwner       *m_externalMemoryOwner;
+    DebuggerFuncEvalResult             *m_funcEvalResult;
     SIZE_T                             m_arrayRank;
     FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
     bool                               m_aborted;           // Was this eval aborted
@@ -3424,6 +3426,7 @@ public:
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
 
     BYTE *CreateExternalMemory(MethodTable *pMT, SIZE_T size);
+    void ReleaseFuncEvalResult();
 
     bool Init()
     {
@@ -3460,6 +3463,8 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
+        ReleaseFuncEvalResult();
+
         if (m_externalMemoryOwner != NULL)
         {
             DeleteInteropSafe(m_externalMemoryOwner);
@@ -3491,24 +3496,21 @@ public:
 
 };
 
-// Raw byref result roots shared by the worker and completion controller.
+// Persistent roots for a raw byref result, owned by DebuggerEval through cleanup.
 class DebuggerFuncEvalResult
 {
 public:
-    explicit DebuggerFuncEvalResult(OBJECTREF loaderAllocator);
+    DebuggerFuncEvalResult(DebuggerEval* pDE, OBJECTREF loaderAllocator);
     ~DebuggerFuncEvalResult();
 
     DebuggerFuncEvalResult(const DebuggerFuncEvalResult&) = delete;
     DebuggerFuncEvalResult& operator=(const DebuggerFuncEvalResult&) = delete;
 
-    void RefreshByRefResult(DebuggerEval* pDE);
-
     OBJECTREF m_loaderAllocator;
-    void* m_resultByRef;
 
 private:
     ExternalMemoryHandle* m_loaderAllocatorHandle;
-    ExternalMemoryHandle* m_resultByRefHandle;
+    ExternalMemoryHandle* m_resultHandle;
 };
 
 typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
