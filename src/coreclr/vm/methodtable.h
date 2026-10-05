@@ -1338,7 +1338,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
+        return (VolatileLoad(&GetAuxiliaryData()->m_dwFlags) & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
@@ -1395,7 +1395,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        DWORD dwFlags = GetAuxiliaryData()->m_dwFlags;
+        DWORD dwFlags = VolatileLoad(&GetAuxiliaryData()->m_dwFlags);
 
         if (dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded)
         {
@@ -2161,7 +2161,7 @@ public:
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
+        return (VolatileLoad(&GetAuxiliaryData()->m_dwFlags) & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
     }
     inline void SetHasExactParent()
     {

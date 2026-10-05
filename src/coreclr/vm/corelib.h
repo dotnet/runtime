@@ -537,6 +537,7 @@ DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
 
 DEFINE_CLASS(INSTANCE_CALLI_HELPER, Reflection,             InstanceCalliHelper)
+DEFINE_CLASS(INTRINSIC_INVOKE_HELPER, Reflection,           IntrinsicInvokeHelper)
 
 DEFINE_CLASS_U(Reflection,          RuntimeMethodInfo,      NoClass)
 DEFINE_FIELD_U(m_handle,            ReflectMethodObject,    m_pMD)
@@ -1270,7 +1271,7 @@ DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
 DEFINE_CLASS(VARIANT_BOOL_MARSHALER, StubHelpers,            VariantBoolMarshaler)
 DEFINE_CLASS(BOOL_MARSHALER,        StubHelpers,            BoolMarshaler`1)
 DEFINE_CLASS(LPWSTR_MARSHALER,      StubHelpers,            LPWSTRMarshaler)
-DEFINE_CLASS(ANSICHAR_ARRAY_ELEMENT_MARSHALER, StubHelpers,  AnsiCharArrayMarshaler`2)
+DEFINE_CLASS(ANSICHAR_ARRAY_ELEMENT_MARSHALER, StubHelpers,  AnsiCharArrayMarshaler`3)
 DEFINE_CLASS(LPSTR_ARRAY_ELEMENT_MARSHALER,    StubHelpers,  LPSTRArrayElementMarshaler`2)
 DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMarshaler)
 #ifdef FEATURE_COMINTEROP

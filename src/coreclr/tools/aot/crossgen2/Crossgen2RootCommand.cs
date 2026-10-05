@@ -132,6 +132,8 @@ namespace ILCompiler
             new("--perfmap-path") { Description = SR.PerfMapFilePathOption };
         public Option<int> PerfMapFormatVersion { get; } =
             new("--perfmap-format-version") { DefaultValueFactory = _ => 0, Description = SR.PerfMapFormatVersionOption };
+        public Option<WasmDebugInfo> WasmDebugInfoOption { get; } =
+            new("--wasm-debug-info") { CustomParser = MakeWasmDebugInfo, DefaultValueFactory = MakeWasmDebugInfo, Description = SR.WasmDebugInfoOption, HelpName = "formats" };
         public Option<string[]> CrossModuleInlining { get; } =
             new("--opt-cross-module") { Description = SR.CrossModuleInlining };
         public Option<bool> AsyncMethodOptimization { get; } =
@@ -230,6 +232,7 @@ namespace ILCompiler
             Options.Add(PerfMap);
             Options.Add(PerfMapPath);
             Options.Add(PerfMapFormatVersion);
+            Options.Add(WasmDebugInfoOption);
             Options.Add(CrossModuleInlining);
             Options.Add(AsyncMethodOptimization);
             Options.Add(NonLocalGenericsModule);
@@ -434,6 +437,34 @@ namespace ILCompiler
                 "wasm" => ReadyToRunContainerFormat.Wasm,
                 _ => throw new CommandLineException(SR.InvalidOutputFormat)
             };
+        }
+
+        private static WasmDebugInfo MakeWasmDebugInfo(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return WasmDebugInfo.NameSection;
+
+            string value = result.Tokens[0].Value;
+            if (value.Equals("none", StringComparison.OrdinalIgnoreCase))
+                return WasmDebugInfo.None;
+            if (value.Equals("all", StringComparison.OrdinalIgnoreCase))
+                return WasmDebugInfo.All;
+
+            WasmDebugInfo debugInfo = WasmDebugInfo.None;
+            foreach (string format in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                debugInfo |= format.ToLowerInvariant() switch
+                {
+                    "name" => WasmDebugInfo.NameSection,
+                    "symbol-map" => WasmDebugInfo.SymbolMap,
+                    _ => throw new CommandLineException(SR.InvalidWasmDebugInfo)
+                };
+            }
+
+            if (debugInfo == WasmDebugInfo.None)
+                throw new CommandLineException(SR.InvalidWasmDebugInfo);
+
+            return debugInfo;
         }
 
 #if DEBUG

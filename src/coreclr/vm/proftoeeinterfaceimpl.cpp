@@ -118,7 +118,6 @@
 #include "corprof.h"
 #include "class.h"
 #include "object.h"
-#include "ceegen.h"
 #include "eeconfig.h"
 #include "generics.h"
 #include "gcinfo.h"

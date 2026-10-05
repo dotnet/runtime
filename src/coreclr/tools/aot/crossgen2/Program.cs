@@ -697,6 +697,7 @@ namespace ILCompiler
                         .UseMapCsvFile(Get(_command.MapCsv))
                         .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
                         .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
+                        .UseWasmDebugInfo(Get(_command.WasmDebugInfoOption))
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
                         .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)

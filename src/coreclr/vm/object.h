@@ -234,12 +234,6 @@ class Object
         return GetHeader()->GetSyncBlock();
     }
 
-    DWORD GetSyncBlockIndex()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->GetSyncBlockIndex();
-    }
-
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
     // DO NOT USE THIS METHOD.
     // Yes folks, for better or worse the debugger pokes supposed object addresses

@@ -817,7 +817,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallEr
 
     BEGIN_QCALL;
 
-    ret = __SwitchToThread(0, CALLER_LIMITS_SPINNING);
+    ret = minipal_switch_to_thread(0);
 
     END_QCALL;
 
