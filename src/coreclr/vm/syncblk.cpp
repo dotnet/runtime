@@ -1069,19 +1069,11 @@ BOOL SyncBlockCache::GCWeakPtrScanElement (int nb, HANDLESCANPROC scanProc, LPAR
             }
 #endif
 
-            if (*keyv)
+            if (pSB)
             {
-                _ASSERTE (pSB);
-                GCDeleteSyncBlock(pSB);
-                //clean the object syncblock header
-                ((Object*)(*keyv))->GetHeader()->GCResetIndex();
-            }
-            else if (pSB)
-            {
-
                 cleanup = TRUE;
                 // insert block into cleanup list
-                InsertCleanupSyncBlock (SyncTableEntry::GetSyncTableEntry()[nb].m_SyncBlock);
+                InsertCleanupSyncBlock (pSB);
 #ifdef DUMP_SB
                 LogSpewAlways("       Cleaning up block at %4.4d\n", nb);
 #endif
