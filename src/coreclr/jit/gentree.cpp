@@ -35411,6 +35411,20 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
+#if defined(TARGET_XARCH)
+    if ((ni == NI_Vector_ToVector512) && op1->OperIsHWIntrinsic(NI_Vector_ToVector256))
+    {
+        // A single zero extension from 128 bits also clears the upper 384 bits.
+        GenTreeHWIntrinsic* extend = op1->AsHWIntrinsic();
+        assert(extend->TypeIs(TYP_SIMD32));
+        assert(extend->Op(1)->TypeIs(TYP_SIMD16));
+        tree->Op(1) = extend->Op(1);
+        tree->SetSimdSize(16);
+        DEBUG_DESTROY_NODE(extend);
+        return tree;
+    }
+#endif
+
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     // Fold ConvertMaskToVector(ConvertVectorToMask(vec)) to vec
     if (tree->OperIsConvertMaskToVector())

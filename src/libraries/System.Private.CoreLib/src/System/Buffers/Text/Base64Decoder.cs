@@ -10,8 +10,6 @@ namespace System.Buffers.Text
 {
     public static partial class Base64
     {
-        private const int MaxStackallocThreshold = 256;
-
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text from a span of size <paramref name="base64Length"/>.
         /// </summary>
@@ -99,26 +97,8 @@ namespace System.Buffers.Text
         /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64 character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
-        public static unsafe byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
-        {
-            int upperBound = GetMaxDecodedLength(source.Length);
-            byte[]? rented = null;
-
-            Span<byte> destination = (uint)upperBound <= MaxStackallocThreshold
-                ? stackalloc byte[MaxStackallocThreshold]
-                : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
-
-            OperationStatus status = DecodeFromUtf8(source, destination, out _, out int bytesWritten);
-            Debug.Assert(status is OperationStatus.Done or OperationStatus.InvalidData);
-            byte[] result = destination.Slice(0, bytesWritten).ToArray();
-
-            if (rented is not null)
-            {
-                ArrayPool<byte>.Shared.Return(rented);
-            }
-
-            return status == OperationStatus.Done ? result : throw new FormatException(SR.Format_BadBase64Char);
-        }
+        public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source) =>
+            DecodeToArray(default(Base64DecoderByte), source);
 
         /// <summary>
         /// Decodes the span of UTF-8 encoded text represented as Base64 into binary data.
@@ -231,25 +211,7 @@ namespace System.Buffers.Text
         /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64 character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
-        public static unsafe byte[] DecodeFromChars(ReadOnlySpan<char> source)
-        {
-            int upperBound = GetMaxDecodedLength(source.Length);
-            byte[]? rented = null;
-
-            Span<byte> destination = (uint)upperBound <= MaxStackallocThreshold
-                ? stackalloc byte[MaxStackallocThreshold]
-                : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
-
-            OperationStatus status = DecodeFromChars(source, destination, out _, out int bytesWritten);
-            Debug.Assert(status is OperationStatus.Done or OperationStatus.InvalidData);
-            byte[] result = destination.Slice(0, bytesWritten).ToArray();
-
-            if (rented is not null)
-            {
-                ArrayPool<byte>.Shared.Return(rented);
-            }
-
-            return status == OperationStatus.Done ? result : throw new FormatException(SR.Format_BadBase64Char);
-        }
+        public static byte[] DecodeFromChars(ReadOnlySpan<char> source) =>
+            DecodeToArray(default(Base64DecoderChar), MemoryMarshal.Cast<char, ushort>(source));
     }
 }

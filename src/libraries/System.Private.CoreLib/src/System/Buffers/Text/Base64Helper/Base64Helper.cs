@@ -6,67 +6,28 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 #endif
 
 namespace System.Buffers.Text
 {
     internal static partial class Base64Helper
     {
-        [Conditional("DEBUG")]
-        internal static unsafe void AssertRead<TVector>(byte* src, byte* srcStart, int srcLength)
-        {
-            int vectorElements = sizeof(TVector);
-            byte* readEnd = src + vectorElements;
-            byte* srcEnd = srcStart + srcLength;
+        internal const int MaxStackallocThreshold = 256;
 
-            if (readEnd > srcEnd)
-            {
-                int srcIndex = (int)(src - srcStart);
-                Debug.Fail($"Read for {typeof(TVector)} is not within safe bounds. srcIndex: {srcIndex}, srcLength: {srcLength}");
-            }
+#if NET
+        [InlineArray(MaxStackallocThreshold)]
+        internal struct DecodingBuffer
+        {
+            private byte _element0;
         }
 
-        [Conditional("DEBUG")]
-        internal static unsafe void AssertWrite<TVector>(byte* dest, byte* destStart, int destLength)
+        [InlineArray(32)]
+        internal struct SmallDecodingBuffer
         {
-            int vectorElements = sizeof(TVector);
-            byte* writeEnd = dest + vectorElements;
-            byte* destEnd = destStart + destLength;
-
-            if (writeEnd > destEnd)
-            {
-                int destIndex = (int)(dest - destStart);
-                Debug.Fail($"Write for {typeof(TVector)} is not within safe bounds. destIndex: {destIndex}, destLength: {destLength}");
-            }
+            private byte _element0;
         }
-
-        [Conditional("DEBUG")]
-        internal static unsafe void AssertRead<TVector>(ushort* src, ushort* srcStart, int srcLength)
-        {
-            int vectorElements = sizeof(TVector);
-            ushort* readEnd = src + vectorElements;
-            ushort* srcEnd = srcStart + srcLength;
-
-            if (readEnd > srcEnd)
-            {
-                int srcIndex = (int)(src - srcStart);
-                Debug.Fail($"Read for {typeof(TVector)} is not within safe bounds. srcIndex: {srcIndex}, srcLength: {srcLength}");
-            }
-        }
-
-        [Conditional("DEBUG")]
-        internal static unsafe void AssertWrite<TVector>(ushort* dest, ushort* destStart, int destLength)
-        {
-            int vectorElements = sizeof(TVector);
-            ushort* writeEnd = dest + vectorElements;
-            ushort* destEnd = destStart + destLength;
-
-            if (writeEnd > destEnd)
-            {
-                int destIndex = (int)(dest - destStart);
-                Debug.Fail($"Write for {typeof(TVector)} is not within safe bounds. destIndex: {destIndex}, destLength: {destLength}");
-            }
-        }
+#endif
 
         [DoesNotReturn]
         internal static void ThrowUnreachableException()
@@ -78,6 +39,57 @@ namespace System.Buffers.Text
 #endif
         }
 
+#if NET
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (Vector128<byte>, Vector128<byte>, Vector128<byte>) LoadArmVector128x3(ReadOnlySpan<byte> source)
+        {
+            var table = (Vector128.Create(source), Vector128.Create(source.Slice(16)), Vector128.Create(source.Slice(32)));
+            return (
+                AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45)),
+                AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46)),
+                AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void StoreArmVector128x3(Span<byte> destination, Vector128<byte> first, Vector128<byte> second, Vector128<byte> third)
+        {
+            var table = (first, second, third);
+            AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)0, 16, 32, 1, 17, 33, 2, 18, 34, 3, 19, 35, 4, 20, 36, 5)).CopyTo(destination);
+            AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)21, 37, 6, 22, 38, 7, 23, 39, 8, 24, 40, 9, 25, 41, 10, 26)).CopyTo(destination.Slice(16));
+            AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)42, 11, 27, 43, 12, 28, 44, 13, 29, 45, 14, 30, 46, 15, 31, 47)).CopyTo(destination.Slice(32));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (Vector128<T>, Vector128<T>, Vector128<T>, Vector128<T>) LoadArmVector128x4<T>(ReadOnlySpan<T> source)
+        {
+            int count = Vector128<T>.Count;
+            Vector128<T> first = Vector128.Create(source);
+            Vector128<T> second = Vector128.Create(source.Slice(count));
+            Vector128<T> third = Vector128.Create(source.Slice(2 * count));
+            Vector128<T> fourth = Vector128.Create(source.Slice(3 * count));
+            Vector128<T> evenLow = Vector128.UnzipEven(first, second);
+            Vector128<T> oddLow = Vector128.UnzipOdd(first, second);
+            Vector128<T> evenHigh = Vector128.UnzipEven(third, fourth);
+            Vector128<T> oddHigh = Vector128.UnzipOdd(third, fourth);
+            return (Vector128.UnzipEven(evenLow, evenHigh), Vector128.UnzipEven(oddLow, oddHigh),
+                Vector128.UnzipOdd(evenLow, evenHigh), Vector128.UnzipOdd(oddLow, oddHigh));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void StoreArmVector128x4<T>(Span<T> destination, Vector128<T> first, Vector128<T> second, Vector128<T> third, Vector128<T> fourth)
+        {
+            int count = Vector128<T>.Count;
+            Vector128<T> evenLow = Vector128.ZipLower(first, third);
+            Vector128<T> oddLow = Vector128.ZipLower(second, fourth);
+            Vector128<T> evenHigh = Vector128.ZipUpper(first, third);
+            Vector128<T> oddHigh = Vector128.ZipUpper(second, fourth);
+            Vector128.ZipLower(evenLow, oddLow).CopyTo(destination);
+            Vector128.ZipUpper(evenLow, oddLow).CopyTo(destination.Slice(count));
+            Vector128.ZipLower(evenHigh, oddHigh).CopyTo(destination.Slice(2 * count));
+            Vector128.ZipUpper(evenHigh, oddHigh).CopyTo(destination.Slice(3 * count));
+        }
+#endif
+
         internal interface IBase64Encoder<T> where T : unmanaged
         {
             ReadOnlySpan<byte> EncodingMap { get; }
@@ -88,16 +100,16 @@ namespace System.Buffers.Text
             int GetMaxSrcLength(int srcLength, int destLength);
             int GetMaxEncodedLength(int srcLength);
             uint GetInPlaceDestinationLength(int encodedLength, int leftOver);
-            unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, T* dest, ref byte encodingMap);
-            unsafe void EncodeTwoOptionallyPadOne(byte* oneByte, T* dest, ref byte encodingMap);
-            unsafe void EncodeThreeAndWrite(byte* threeBytes, T* destination, ref byte encodingMap);
+            void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<T> dest, ReadOnlySpan<byte> encodingMap);
+            void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> oneByte, Span<T> dest, ReadOnlySpan<byte> encodingMap);
+            void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<T> destination, ReadOnlySpan<byte> encodingMap);
             int IncrementPadTwo { get; }
             int IncrementPadOne { get; }
 #if NET
-            unsafe void StoreVector512ToDestination(T* dest, T* destStart, int destLength, Vector512<byte> str);
-            unsafe void StoreVector256ToDestination(T* dest, T* destStart, int destLength, Vector256<byte> str);
-            unsafe void StoreVector128ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> str);
-            unsafe void StoreArmVector128x4ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> res1,
+            void StoreVector512ToDestination(Span<T> dest, Vector512<byte> str);
+            void StoreVector256ToDestination(Span<T> dest, Vector256<byte> str);
+            void StoreVector128ToDestination(Span<T> dest, Vector128<byte> str);
+            void StoreArmVector128x4ToDestination(Span<T> dest, Vector128<byte> res1,
                 Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4);
 #endif // NET
         }
@@ -140,14 +152,14 @@ namespace System.Buffers.Text
                 Vector256<sbyte> lutShift,
                 Vector256<sbyte> shiftForUnderscore,
                 out Vector256<sbyte> result);
-            unsafe bool TryLoadVector512(T* src, T* srcStart, int sourceLength, out Vector512<sbyte> str);
-            unsafe bool TryLoadAvxVector256(T* src, T* srcStart, int sourceLength, out Vector256<sbyte> str);
-            unsafe bool TryLoadVector128(T* src, T* srcStart, int sourceLength, out Vector128<byte> str);
-            unsafe bool TryLoadArmVector128x4(T* src, T* srcStart, int sourceLength,
+            bool TryLoadVector512(ReadOnlySpan<T> src, out Vector512<sbyte> str);
+            bool TryLoadAvxVector256(ReadOnlySpan<T> src, out Vector256<sbyte> str);
+            bool TryLoadVector128(ReadOnlySpan<T> src, out Vector128<byte> str);
+            bool TryLoadArmVector128x4(ReadOnlySpan<T> src,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4);
 #endif // NET
-            unsafe int DecodeFourElements(T* source, ref sbyte decodingMap);
-            unsafe int DecodeRemaining(T* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3);
+            int DecodeFourElements(ReadOnlySpan<T> source, ReadOnlySpan<sbyte> decodingMap);
+            int DecodeRemaining(ReadOnlySpan<T> srcEnd, ReadOnlySpan<sbyte> decodingMap, int remaining, out uint t2, out uint t3);
             int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<T> span);
             OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(TTBase64Decoder decoder, ReadOnlySpan<T> source,
                 Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
