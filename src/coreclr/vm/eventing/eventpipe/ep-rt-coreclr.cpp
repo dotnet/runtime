@@ -76,8 +76,16 @@ stack_walk_callback (
 
 	EP_ASSERT (control_pc != 0);
 
+	MethodDesc *method = frame->GetFunction ();
+	if (ep_stack_contents_is_empty (stack_contents) &&
+		(method == CoreLibBinder::GetExistingMethod (METHOD__THREAD__POLLGC) ||
+		 method == CoreLibBinder::GetExistingMethod (METHOD__THREAD__POLLGC_WORKER))) {
+		// Omit leading polling transitions, preserving the caller and the event.
+		return SWA_CONTINUE;
+	}
+
 	// Add the IP to the captured stack.
-	ep_stack_contents_append (stack_contents, control_pc, frame->GetFunction ());
+	ep_stack_contents_append (stack_contents, control_pc, method);
 
 	// Continue the stack walk.
 	return SWA_CONTINUE;

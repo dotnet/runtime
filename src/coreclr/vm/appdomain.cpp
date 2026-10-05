@@ -1097,6 +1097,10 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pStackFrameIteratorClass = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
 
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
+#ifdef FEATURE_PERFTRACING
+        // Bind before managed execution; stack walks cannot load methods.
+        CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC_WORKER);
+#endif // FEATURE_PERFTRACING
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
         g_pThrowDivideByZeroException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWDIVIDEBYZEROEXCEPTION)->GetMultiCallableAddrOfCode();

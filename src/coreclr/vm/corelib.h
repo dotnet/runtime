@@ -999,6 +999,9 @@ DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                        SM_PtrThread_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
+#ifdef FEATURE_PERFTRACING
+DEFINE_METHOD(THREAD,               POLLGC_WORKER,                           PollGCWorker,                         SM_RetVoid)
+#endif // FEATURE_PERFTRACING
 DEFINE_METHOD(THREAD,               ON_THREAD_EXITING,                       OnThreadExited,                       SM_PtrThread_PtrException_RetVoid)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(THREAD,               CTOR,                                    .ctor,                                IM_RetVoid)
