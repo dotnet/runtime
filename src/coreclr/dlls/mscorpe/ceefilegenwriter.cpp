@@ -406,6 +406,19 @@ ErrExit:
     return hr;
 } // HRESULT CeeFileGenWriter::generateImage()
 
+// Hash the image as generateImage would write it now. Fixing up first means the hash covers the
+// relocated section contents and the final headers, and generateImage does not fix up again.
+HRESULT CeeFileGenWriter::computeImageHash(HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+                                           BYTE* pHash, DWORD hashSize)
+{
+    HRESULT hr;
+
+    if (!m_fixed)
+        IfFailRet(fixup());
+
+    return getPEWriter().computeImageHash(computeHash, pHash, hashSize);
+} // HRESULT CeeFileGenWriter::computeImageHash()
+
 HRESULT CeeFileGenWriter::setOutputFileName(_In_ LPWSTR fileName)
 {
     if (m_outputFileName)

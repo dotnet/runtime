@@ -457,3 +457,14 @@ HRESULT ICeeFileGen::SetFileHeaderTimeStamp(HCEEFILE ceeFile, DWORD timeStamp)
     return S_OK;
 }
 
+HRESULT ICeeFileGen::ComputeImageHash(HCEEFILE ceeFile,
+                                      HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+                                      BYTE* pHash, DWORD hashSize)
+{
+    TESTANDRETURNPOINTER(ceeFile);
+    TESTANDRETURNPOINTER(computeHash);
+    TESTANDRETURNPOINTER(pHash);
+
+    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
+    return gen->computeImageHash(computeHash, pHash, hashSize);
+}

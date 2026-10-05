@@ -10,7 +10,7 @@ namespace IlasmPortablePdbTests
 {
     public static class IlasmPortablePdbTesterCommon
     {
-        public const string CommonIlasmArguments = "-nologo -dll -debug";
+        public const string CommonIlasmArguments = "-nologo -dll";
 
         public static string GetIlasmFullPath(string coreRootVar, string ilasmFile)
         {
@@ -21,7 +21,7 @@ namespace IlasmPortablePdbTests
             return ilasmFullPath;
         }
 
-        public static void Assemble(string ilasmFullPath, string ilSrc, string testDir, out string dll, out string pdb, bool deterministic = false)
+        public static void Assemble(string ilasmFullPath, string ilSrc, string testDir, out string dll, out string pdb, bool deterministic = false, bool debug = true, string options = "")
         {
             var currentDirectory = Environment.CurrentDirectory;
             var ilSrcFullPath = Path.Combine(currentDirectory, testDir, ilSrc);
@@ -33,7 +33,7 @@ namespace IlasmPortablePdbTests
             var dllFullPath = Path.Combine(currentDirectory, testDir, dllFileName);
             var pdbFullPath = Path.Combine(currentDirectory, testDir, pdbFileName);
 
-            var ilasmArgs = $"{CommonIlasmArguments}{(deterministic ? " -det" : string.Empty)} -output={dllFullPath} {ilSrcFullPath}";
+            var ilasmArgs = $"{CommonIlasmArguments}{(debug ? " -debug" : string.Empty)}{(deterministic ? " -det" : string.Empty)} {options} -output={dllFullPath} {ilSrcFullPath}";
             var ilasmPsi = new ProcessStartInfo
             {
                 UseShellExecute = false,
@@ -42,15 +42,19 @@ namespace IlasmPortablePdbTests
                 Arguments = ilasmArgs
             };
 
+            // Remove earlier outputs, so that a stale file cannot pass for this run's output.
+            File.Delete(dllFullPath);
+            File.Delete(pdbFullPath);
+
             Process ilasmProcess = Process.Start(ilasmPsi);
             ilasmProcess.WaitForExit();
 
             Assert.Equal(0, ilasmProcess.ExitCode);
             Assert.True(File.Exists(dllFullPath));
-            Assert.True(File.Exists(pdbFullPath));
+            Assert.Equal(debug, File.Exists(pdbFullPath));
 
             dll = dllFullPath;
-            pdb = pdbFullPath;
+            pdb = debug ? pdbFullPath : null;
         }
 
         public static MetadataReaderProvider GetMetadataReaderProvider(string dll, string pdb, PEReader peReader, bool embedded)

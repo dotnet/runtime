@@ -80,7 +80,7 @@ HRESULT Assembler::InitMetaData()
         if (m_fDeterministic)
         {
             // In deterministic mode, the random GUID and timestamp set by Init() must not reach the output.
-            // The deterministic PDB ID is written in CreatePEFile, once the metadata hash is known.
+            // The deterministic PDB ID is written in CreatePEFile, once the PDB content hash is known.
             m_pPortablePdbWriter->SetGuid(GUID());
             m_pPortablePdbWriter->SetTimestamp(0);
         }
@@ -578,9 +578,9 @@ HRESULT Assembler::CreateExportDirectory()
     // Data blob is ready pending Name Pointer Table values offsetting
 
     memset(&exportDirIDD,0,sizeof(IMAGE_EXPORT_DIRECTORY));
-    // Grab the timestamp of the PE file.
-    DWORD fileTimeStamp;
-    if (FAILED(hr = m_pCeeFileGen->GetFileTimeStamp(m_pCeeFile,&fileTimeStamp))) return hr;
+    // Grab the timestamp of the PE file. It is the current time, so deterministic output uses 0.
+    DWORD fileTimeStamp = 0;
+    if (!m_fDeterministic && FAILED(hr = m_pCeeFileGen->GetFileTimeStamp(m_pCeeFile,&fileTimeStamp))) return hr;
     // Fill in the directory entry.
     // Characteristics, MajorVersion and MinorVersion play no role and stay 0
     exportDirIDD.TimeDateStamp = VAL32(fileTimeStamp);
@@ -1162,14 +1162,50 @@ HRESULT Assembler::AllocateStrongNameSignature()
     return S_OK;
 }
 
+// Write the MVID into metadata that has already been serialized into the image.
+// The Module row's Mvid column (ECMA-335 II.22.30) is a 1-based index into the #GUID heap (II.24.2.5).
+static HRESULT SetSerializedMvid(IMetaDataEmit3* pEmitter, BYTE* metaData, DWORD metaDataSize, REFGUID mvid)
+{
+    HRESULT hr;
+    IMetaDataTables* pTables = NULL;
+    ULONG guidIndex = 0;
+
+    if (FAILED(hr = pEmitter->QueryInterface(IID_IMetaDataTables, (void**)&pTables))) return hr;
+    hr = pTables->GetColumn(TBL_Module, ModuleRec::COL_Mvid, 1, &guidIndex);
+    pTables->Release();
+    if (FAILED(hr)) return hr;
+
+    STORAGEHEADER header;
+    ULONG cbStreamHeaders = metaDataSize;
+    PSTORAGESTREAM pStream = MDFormat::GetFirstStream_Verify(&header, metaData, &cbStreamHeaders);
+    if (pStream == NULL) return E_FAIL;
+    BYTE* pEnd = metaData + metaDataSize;
+    for (USHORT i = 0; i < header.GetiStreams(); i++, pStream = pStream->NextStream())
+    {
+        BYTE* pName = (BYTE*)pStream + 2 * sizeof(ULONG);
+        if ((pName >= pEnd) || (memchr(pName, 0, pEnd - pName) == NULL))
+            return E_FAIL;
+
+        if (strcmp(pStream->GetName(), "#GUID") == 0)
+        {
+            if ((pStream->GetOffset() > metaDataSize) || (pStream->GetSize() > metaDataSize - pStream->GetOffset()) ||
+                (guidIndex == 0) || (guidIndex > pStream->GetSize() / sizeof(GUID)))
+                return E_FAIL;
+
+            BYTE* pMvid = metaData + pStream->GetOffset() + (guidIndex - 1) * sizeof(GUID);
+            memcpy_s(pMvid, sizeof(GUID), &mvid, sizeof(GUID));
+            return S_OK;
+        }
+    }
+    return E_FAIL;
+}
+
 HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 {
     HRESULT             hr;
     DWORD               mresourceSize = 0;
     BYTE*               mresourceData = NULL;
     WCHAR*              wzScopeName = NULL;
-    GUID                deterministicGuid = GUID();
-    ULONG               deterministicTimestamp = 0;
 
     if(bClock) bClock->cMDEmitBegin = minipal_lowres_ticks();
     if(m_fReportProgress) printf("Creating PE file\n");
@@ -1455,21 +1491,13 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if (m_fDeterministic)
     {
-        // Get deterministic GUID and timestamp from the computed hash
-        BYTE hash[32];
-        _ASSERTE(sizeof(GUID) + sizeof(ULONG) <= sizeof(hash));
-        if (FAILED(hr = Sha256Hash(metaData, metaDataSize, hash, sizeof(hash)))) goto exit;
-
-        memcpy_s(&deterministicGuid, sizeof(GUID), hash, sizeof(GUID));
-        memcpy_s(&deterministicTimestamp, sizeof(ULONG), hash + sizeof(GUID), sizeof(ULONG));
-
-        // In deterministic mode, the MVID needs to be stabilized for the metadata scope that was
-        // created in Assembler::InitMetaData, and it is guaranteed that the IMDInternalEmit for
-        // that scope was already acquired immediately after that scope was created.
+        // In deterministic mode, the MVID and the PE timestamp are derived from the content of the
+        // image once it is complete, at the end of this method. Until then both are zero, so that
+        // neither the random MVID set when the scope was created nor the current time is hashed.
+        // The IMDInternalEmit for the scope was acquired in Assembler::InitMetaData.
         _ASSERTE(m_pInternalEmitForDeterministicMvid != NULL);
-        m_pInternalEmitForDeterministicMvid->ChangeMvid(deterministicGuid);
-
-        if (FAILED(hr = m_pCeeFileGen->SetFileHeaderTimeStamp(m_pCeeFile, deterministicTimestamp))) goto exit;
+        if (FAILED(hr = m_pInternalEmitForDeterministicMvid->ChangeMvid(GUID()))) goto exit;
+        if (FAILED(hr = m_pCeeFileGen->SetFileHeaderTimeStamp(m_pCeeFile, 0))) goto exit;
     }
 
     if (m_fGeneratePDB)
@@ -1484,10 +1512,17 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
         if (m_fDeterministic)
         {
-            // Now that the PDB checksum has been computed, update the GUID and timestamp
+            // The checksum is the hash of the PDB with its ID zeroed, and the PDB is otherwise final,
+            // so the deterministic PDB ID is derived from it (see docs/design/specs/PE-COFF.md).
+            // The CodeView entry created below carries this ID, so the PE hash covers it.
             _ASSERTE(*(m_pPortablePdbWriter->GetGuid()) == GUID());
             _ASSERTE(m_pPortablePdbWriter->GetTimestamp() == 0);
-            if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamId(deterministicGuid, deterministicTimestamp))) goto exit;
+            GUID pdbGuid;
+            ULONG pdbTimestamp;
+            _ASSERTE(sizeof(GUID) + sizeof(ULONG) <= sizeof(pdbChecksum));
+            memcpy_s(&pdbGuid, sizeof(GUID), pdbChecksum, sizeof(GUID));
+            memcpy_s(&pdbTimestamp, sizeof(ULONG), pdbChecksum + sizeof(GUID), sizeof(ULONG));
+            if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamId(pdbGuid, pdbTimestamp))) goto exit;
         }
 
         if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;
@@ -1784,6 +1819,27 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             hr = E_FAIL;
             goto exit;
         }
+    }
+
+    if (m_fDeterministic)
+    {
+        // The image is now complete apart from its MVID and PE timestamp, which are zero.
+        // Derive both from the hash of the image as it will be written: the headers, the IL,
+        // the metadata, the resources and the debug directory, which carries the PDB ID.
+        // The image is fixed up before it is hashed, so GenerateCeeFile writes these same bytes,
+        // apart from the MVID and the timestamp set here.
+        BYTE hash[32];
+        _ASSERTE(sizeof(GUID) + sizeof(ULONG) <= sizeof(hash));
+        if (FAILED(hr = m_pCeeFileGen->ComputeImageHash(m_pCeeFile, Sha256Hash, hash, sizeof(hash)))) goto exit;
+
+        GUID deterministicGuid;
+        ULONG deterministicTimestamp;
+        memcpy_s(&deterministicGuid, sizeof(GUID), hash, sizeof(GUID));
+        memcpy_s(&deterministicTimestamp, sizeof(ULONG), hash + sizeof(GUID), sizeof(ULONG));
+
+        // The metadata has already been serialized into the image, so the MVID is written there.
+        if (FAILED(hr = SetSerializedMvid(m_pEmitter, metaData, metaDataSize, deterministicGuid))) goto exit;
+        if (FAILED(hr = m_pCeeFileGen->SetFileHeaderTimeStamp(m_pCeeFile, deterministicTimestamp))) goto exit;
     }
 
     hr = S_OK;

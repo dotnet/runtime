@@ -7,6 +7,7 @@ using Xunit;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
 
 namespace IlasmPortablePdbTests
@@ -92,6 +93,140 @@ namespace IlasmPortablePdbTests
                             Assert.Equal("Main", methodName);
                         }
                     }
+                }
+            }
+        }
+
+        // Tests that deterministic output derives the MVID, the PE timestamp and the PDB ID from the content:
+        // two inputs that differ only in a method body, in metadata of the same size, or in sequence points
+        // get different identities, and the same input gives the same bytes.
+        // Both inputs are assembled from the same source path to the same output path, so that they differ
+        // only in the replaced text. A change that reaches only the PDB still changes the PE image, through
+        // the PDB ID in its CodeView entry.
+        [Theory]
+        [InlineData("MethodBody", "ldc.i4.1", "ldc.i4.2", false, true)]
+        [InlineData("MethodBody", "ldc.i4.1", "ldc.i4.2", false, false)]
+        [InlineData("MetadataOfSameSize", "int32 F()", "int32 G()", false, true)]
+        [InlineData("MetadataOfSameSize", "int32 F()", "int32 G()", false, false)]
+        [InlineData("SequencePoints", ".line 10,10", ".line 20,20", true, true)]
+        [InlineData("SequencePoints", ".line 10,10", ".line 20,20", true, false)]
+        public void TestDeterministicIdentity(string change, string original, string replacement, bool onlyPdbChanges, bool debug)
+        {
+            var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
+            var template = File.ReadAllText(Path.Combine(TestDir, "TestDeterministicIdentity.il"));
+            Assert.Equal(1, template.Split(original).Length - 1);
+
+            var ilSource = $"TestDeterministicIdentity{change}{(debug ? "Debug" : "NoDebug")}.il";
+            var ilPath = Path.Combine(TestDir, ilSource);
+
+            File.WriteAllText(ilPath, template);
+            var first = AssembleDeterministic(ilasm, ilSource, debug);
+            var again = AssembleDeterministic(ilasm, ilSource, debug);
+            File.WriteAllText(ilPath, template.Replace(original, replacement));
+            var second = AssembleDeterministic(ilasm, ilSource, debug);
+
+            Assert.Equal(first.Dll, again.Dll);
+            Assert.Equal(first.Pdb, again.Pdb);
+
+            bool imageChanges = !onlyPdbChanges || debug;
+            Assert.Equal(imageChanges, first.Mvid != second.Mvid);
+            Assert.Equal(imageChanges, first.Stamp != second.Stamp);
+            if (debug)
+            {
+                Assert.Equal(onlyPdbChanges, !first.PdbId.SequenceEqual(second.PdbId));
+            }
+
+            AssertIdentityIsContentHash(first.Dll, first.Pdb);
+            AssertIdentityIsContentHash(second.Dll, second.Pdb);
+        }
+
+        // Tests that deterministic output is repeatable and its identity is the hash of the image as written,
+        // for image layouts that differ from the default: stripped relocations, PE32+, and an export directory,
+        // whose timestamp must not be the current time.
+        [Theory]
+        [InlineData("TestDeterministicIdentity.il", "-stripreloc", false)]
+        [InlineData("TestDeterministicIdentity.il", "-pe64 -x64", false)]
+        [InlineData("TestDeterministicExport.il", "", true)]
+        public void TestDeterministicImageLayout(string ilSource, string options, bool hasExports)
+        {
+            var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
+            var first = AssembleDeterministic(ilasm, ilSource, debug: true, options: options);
+            var again = AssembleDeterministic(ilasm, ilSource, debug: true, options: options);
+
+            Assert.Equal(first.Dll, again.Dll);
+            Assert.Equal(first.Pdb, again.Pdb);
+            AssertIdentityIsContentHash(first.Dll, first.Pdb);
+
+            using (var peReader = new PEReader(ImmutableArray.Create(first.Dll)))
+            {
+                Assert.Equal(options.Contains("-stripreloc"), peReader.PEHeaders.CoffHeader.Characteristics.HasFlag(Characteristics.RelocsStripped));
+                Assert.Equal(options.Contains("-pe64"), peReader.PEHeaders.PEHeader.Magic == PEMagic.PE32Plus);
+
+                var exportTable = peReader.PEHeaders.PEHeader.ExportTableDirectory;
+                Assert.Equal(hasExports, exportTable.Size != 0);
+                if (hasExports)
+                {
+                    Assert.True(peReader.PEHeaders.TryGetDirectoryOffset(exportTable, out int exportTableOffset));
+                    Assert.Equal(0u, BitConverter.ToUInt32(first.Dll, exportTableOffset + 4));
+                }
+            }
+        }
+
+        private static (byte[] Dll, byte[] Pdb, Guid Mvid, uint Stamp, byte[] PdbId) AssembleDeterministic(string ilasm, string ilSource, bool debug, string options = "")
+        {
+            IlasmPortablePdbTesterCommon.Assemble(ilasm, ilSource, TestDir, out string dll, out string pdb, deterministic: true, debug: debug, options: options);
+
+            var peImage = File.ReadAllBytes(dll);
+            Guid mvid;
+            uint stamp;
+            using (var peReader = new PEReader(ImmutableArray.Create(peImage)))
+            {
+                var mdReader = peReader.GetMetadataReader();
+                mvid = mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid);
+                stamp = (uint)peReader.PEHeaders.CoffHeader.TimeDateStamp;
+            }
+
+            byte[] pdbImage = null;
+            byte[] pdbId = null;
+            if (debug)
+            {
+                pdbImage = File.ReadAllBytes(pdb);
+                using (var pdbReaderProvider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(pdbImage)))
+                {
+                    pdbId = pdbReaderProvider.GetMetadataReader().DebugMetadataHeader.Id.ToArray();
+                }
+            }
+
+            return (peImage, pdbImage, mvid, stamp, pdbId);
+        }
+
+        // Checks that the MVID and the PE timestamp are the start of the SHA-256 hash of the PE file with both
+        // zeroed, and that the PDB ID is the start of the SHA-256 hash of the PDB file with its ID zeroed.
+        private static void AssertIdentityIsContentHash(byte[] peImage, byte[] pdbImage)
+        {
+            using (var peReader = new PEReader(ImmutableArray.Create(peImage)))
+            {
+                var mdReader = peReader.GetMetadataReader();
+                int mvidOffset = peReader.PEHeaders.MetadataStartOffset
+                    + mdReader.GetHeapMetadataOffset(HeapIndex.Guid)
+                    + (MetadataTokens.GetHeapOffset(mdReader.GetModuleDefinition().Mvid) - 1) * 16;
+                int stampOffset = peReader.PEHeaders.CoffHeaderStartOffset + 4;
+                var identity = peImage.AsSpan(mvidOffset, 16).ToArray().Concat(peImage.AsSpan(stampOffset, 4).ToArray()).ToArray();
+
+                var zeroed = (byte[])peImage.Clone();
+                Array.Clear(zeroed, mvidOffset, 16);
+                Array.Clear(zeroed, stampOffset, 4);
+                Assert.Equal(identity, SHA256.HashData(zeroed).Take(identity.Length).ToArray());
+            }
+
+            if (pdbImage is not null)
+            {
+                using (var pdbReaderProvider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(pdbImage)))
+                {
+                    var pdbHeader = pdbReaderProvider.GetMetadataReader().DebugMetadataHeader;
+                    var zeroed = (byte[])pdbImage.Clone();
+                    Array.Clear(zeroed, pdbHeader.IdStartOffset, pdbHeader.Id.Length);
+                    Assert.Equal(pdbHeader.Id.ToArray(), SHA256.HashData(zeroed).Take(pdbHeader.Id.Length).ToArray());
                 }
             }
         }
