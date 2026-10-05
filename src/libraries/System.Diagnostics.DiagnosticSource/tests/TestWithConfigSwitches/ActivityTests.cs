@@ -9,6 +9,7 @@ namespace System.Diagnostics.Tests
     public class ActivityTests : IDisposable
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public void ActivityIdNonHierarchicalOverflow()
         {
             // find out Activity Id length on this platform in this AppDomain
@@ -80,6 +81,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public void IdFormat_HierarchicalIsDefault()
         {
             Activity activity = new Activity("activity1");
@@ -88,6 +90,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public void IdFormat_ZeroTraceIdAndSpanIdWithHierarchicalFormat()
         {
             Activity activity = new Activity("activity");
