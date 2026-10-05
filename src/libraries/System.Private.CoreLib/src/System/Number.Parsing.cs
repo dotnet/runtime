@@ -1360,7 +1360,7 @@ namespace System
                     return false;
                 }
 
-                bool exponentIsNegative = false;
+                bool exponentIsNegative;
                 int nextIndex = MatchSignChars(value, index, info, out exponentIsNegative);
                 if (nextIndex >= 0)
                 {

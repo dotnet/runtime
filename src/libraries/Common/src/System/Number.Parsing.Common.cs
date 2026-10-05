@@ -184,7 +184,7 @@ namespace System
                 ch = index < value.Length ? TChar.CastToUInt32(value[index]) : '\0';
             }
 
-            bool negExp = false;
+            bool negExp;
             number.DigitsCount = digEnd;
             number.Digits[digEnd] = (byte)'\0';
             if ((state & StateDigits) != 0)
