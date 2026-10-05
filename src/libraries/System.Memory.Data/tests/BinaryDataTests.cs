@@ -349,6 +349,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public async Task CanCreateBinaryDataFromFileStream()
         {
             byte[] buffer = "some data"u8.ToArray();
