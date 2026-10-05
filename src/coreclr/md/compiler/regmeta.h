@@ -1133,12 +1133,9 @@ public:
 //*****************************************************************************
 // IILAsmPortablePdbWriter methods
 //*****************************************************************************
-    STDMETHODIMP ComputeSha256PdbStreamChecksum(                                        // S_OK or error.
-        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), // [IN]
-        BYTE (&checksum)[32]);                                                          // [OUT] 256-bit Pdb checksum
-
-    STDMETHODIMP ChangePdbStreamGuid(       // S_OK or error.
-        REFGUID newGuid);                   // [IN] GUID to use as the PDB GUID
+    STDMETHODIMP ChangePdbStreamId(         // S_OK or error.
+        REFGUID newGuid,                    // [IN] GUID to use as the PDB GUID
+        ULONG newTimestamp);                // [IN] Timestamp to use as the PDB stamp
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //*****************************************************************************

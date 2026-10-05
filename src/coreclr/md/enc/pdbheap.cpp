@@ -68,21 +68,23 @@ HRESULT PdbHeap::SetData(PORT_PDB_STREAM* data)
 
 
 __checkReturn
-HRESULT PdbHeap::SetDataGuid(REFGUID newGuid)
+HRESULT PdbHeap::SetDataId(REFGUID newGuid, ULONG newTimestamp)
 {
     _ASSERTE(m_size >= sizeof(PDB_ID));
 
-    if (memcpy_s(m_data, m_size, &newGuid, sizeof(GUID)))
+    PDB_ID id;
+    id.pdbGuid = newGuid;
+    id.pdbTimeStamp = newTimestamp;
+
+#if BIGENDIAN
+    SwapGuid(&id.pdbGuid);
+    id.pdbTimeStamp = VAL32(id.pdbTimeStamp);
+#endif
+
+    if (memcpy_s(m_data, m_size, &id, sizeof(id)))
         return E_FAIL;
 
     return S_OK;
-}
-
-__checkReturn
-HRESULT PdbHeap::ComputeSha256Checksum(HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), BYTE (&checksum)[32])
-{
-    _ASSERTE(m_size >= sizeof(PDB_ID));
-    return computeSha256(m_data, m_size, (BYTE*)&checksum, sizeof(checksum));
 }
 
 __checkReturn

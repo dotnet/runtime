@@ -2116,29 +2116,16 @@ ErrExit:
 } // RegMeta::DefineLocalVariable
 
 //*******************************************************************************
-// ComputeSha256PdbStreamChecksum
+// ChangePdbStreamId
 //*******************************************************************************
-STDMETHODIMP RegMeta::ComputeSha256PdbStreamChecksum(
-        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
-        BYTE (&checksum)[32])
+STDMETHODIMP RegMeta::ChangePdbStreamId(
+        REFGUID newGuid,
+        ULONG newTimestamp)
 {
 #ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
-    return m_pStgdb->m_pPdbHeap->ComputeSha256Checksum(computeSha256, checksum);
-#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
-}
-
-//*******************************************************************************
-// ChangePdbStreamGuid
-//*******************************************************************************
-STDMETHODIMP RegMeta::ChangePdbStreamGuid(
-        REFGUID newGuid)
-{
-#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
-    return E_NOTIMPL;
-#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
-    return m_pStgdb->m_pPdbHeap->SetDataGuid(newGuid);
+    return m_pStgdb->m_pPdbHeap->SetDataId(newGuid, newTimestamp);
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 }
 

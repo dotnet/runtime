@@ -79,8 +79,8 @@ HRESULT Assembler::InitMetaData()
 
         if (m_fDeterministic)
         {
-            // When build determinism is enabled, the PDB checksum is computed with these fields set to zero.
-            // The GUID and timestamp will be updated after.
+            // In deterministic mode, the random GUID and timestamp set by Init() must not reach the output.
+            // The deterministic PDB ID is written in CreatePEFile, once the metadata hash is known.
             m_pPortablePdbWriter->SetGuid(GUID());
             m_pPortablePdbWriter->SetTimestamp(0);
         }
@@ -1480,16 +1480,14 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
 
         BYTE pdbChecksum[32];
-        if (FAILED(hr = m_pPortablePdbWriter->ComputeSha256PdbStreamChecksum(pdbChecksum))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWriter->ComputeSha256PdbChecksum(pdbChecksum))) goto exit;
 
         if (m_fDeterministic)
         {
             // Now that the PDB checksum has been computed, update the GUID and timestamp
             _ASSERTE(*(m_pPortablePdbWriter->GetGuid()) == GUID());
-            if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamGuid(deterministicGuid))) goto exit;
-
             _ASSERTE(m_pPortablePdbWriter->GetTimestamp() == 0);
-            m_pPortablePdbWriter->SetTimestamp(deterministicTimestamp);
+            if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamId(deterministicGuid, deterministicTimestamp))) goto exit;
         }
 
         if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;

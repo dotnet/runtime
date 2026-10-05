@@ -50,8 +50,8 @@ public:
     void            SetTimestamp(const ULONG newTimestamp);
     Document*       GetCurrentDocument();
     HRESULT         BuildPdbStream(IMetaDataEmit3* peEmitter, mdMethodDef entryPoint);
-    HRESULT         ComputeSha256PdbStreamChecksum(BYTE (&checksum)[32]);
-    HRESULT         ChangePdbStreamGuid(REFGUID newGuid);
+    HRESULT         ComputeSha256PdbChecksum(BYTE (&checksum)[32]);
+    HRESULT         ChangePdbStreamId(REFGUID newGuid, const ULONG newTimestamp);
     HRESULT         DefineDocument(char* name, GUID* language);
     HRESULT         DefineSequencePoints(Method* method);
     HRESULT         DefineLocalScope(Method* method);
