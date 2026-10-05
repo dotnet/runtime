@@ -3611,7 +3611,9 @@ public:
     HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
 
     // Get the width, in bytes, of the breakpoint opcode in the target's instruction stream.
-    HRESULT GetTargetOpcodeSize(ULONG32 * pcbSize);
+    HRESULT GetTargetBreakpointOpcodeSize(ULONG32 * pcbSize);
+
+    HRESULT GetStackwalkControlPCAdjustOffset(ULONG32 * pcbOffset);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();

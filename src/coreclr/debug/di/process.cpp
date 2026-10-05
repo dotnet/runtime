@@ -8207,7 +8207,7 @@ HRESULT CordbProcess::SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer, BOOL 
 // Returns the width, in bytes, of the breakpoint opcode in the target's
 // instruction stream, determined from the target's architecture at runtime.
 //-----------------------------------------------------------------------------
-HRESULT CordbProcess::GetTargetOpcodeSize(ULONG32 * pcbSize)
+HRESULT CordbProcess::GetTargetBreakpointOpcodeSize(ULONG32 * pcbSize)
 {
     _ASSERTE(pcbSize != NULL);
 
@@ -8242,6 +8242,41 @@ HRESULT CordbProcess::GetTargetOpcodeSize(ULONG32 * pcbSize)
     return S_OK;
 }
 
+HRESULT CordbProcess::GetStackwalkControlPCAdjustOffset(ULONG32 * pcbOffset)
+{
+    _ASSERTE(pcbOffset != NULL);
+
+    IDacDbiInterface::TargetInfo targetInfo;
+    HRESULT hr = GetTargetInfo(&targetInfo);
+    if (FAILED(hr))
+        return hr;
+
+    switch (targetInfo.arch)
+    {
+        case IDacDbiInterface::kArchX86:
+        case IDacDbiInterface::kArchAMD64:
+            *pcbOffset = 1;
+            break;
+
+        case IDacDbiInterface::kArchArm:
+        case IDacDbiInterface::kArchWasm:
+            *pcbOffset = 2;
+            break;
+
+        case IDacDbiInterface::kArchArm64:
+        case IDacDbiInterface::kArchLoongArch64:
+        case IDacDbiInterface::kArchRiscV64:
+            *pcbOffset = 4;
+            break;
+
+        default:
+            _ASSERTE(!"NYI: stackwalk control PC adjust offset for this target architecture");
+            return E_NOTIMPL;
+    }
+
+    return S_OK;
+}
+
 //-----------------------------------------------------------------------------
 // Reads the breakpoint opcode from the target using the target's instruction
 // width. The value is zero-extended into pOpcode.
@@ -8249,7 +8284,7 @@ HRESULT CordbProcess::GetTargetOpcodeSize(ULONG32 * pcbSize)
 HRESULT CordbProcess::SafeReadBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode)
 {
     ULONG32 cbSize = 0;
-    HRESULT hr = GetTargetOpcodeSize(&cbSize);
+    HRESULT hr = GetTargetBreakpointOpcodeSize(&cbSize);
     if (FAILED(hr))
         return hr;
 
@@ -8271,7 +8306,7 @@ HRESULT CordbProcess::SafeReadBreakpointInstruction(CORDB_ADDRESS pRemotePtr, UL
 HRESULT CordbProcess::SafeWriteBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 opcode)
 {
     ULONG32 cbSize = 0;
-    HRESULT hr = GetTargetOpcodeSize(&cbSize);
+    HRESULT hr = GetTargetBreakpointOpcodeSize(&cbSize);
     if (FAILED(hr))
         return hr;
 
@@ -8551,7 +8586,7 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
     NativePatch * p = NULL;
     ULONG32 opcode = 0;
     ULONG32 cbOpcode = 0;
-    hr = GetTargetOpcodeSize(&cbOpcode);
+    hr = GetTargetBreakpointOpcodeSize(&cbOpcode);
     if (FAILED(hr))
         goto ErrExit;
 
@@ -12649,7 +12684,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         CordbUnmanagedThread::LogContext(&tempDebugContext);
 
         ULONG32 breakpointOpcodeSize = 0;
-        IfFailThrow(GetTargetOpcodeSize(&breakpointOpcodeSize));
+        IfFailThrow(GetTargetBreakpointOpcodeSize(&breakpointOpcodeSize));
         _ASSERTE(CORDbgGetIP(&tempDebugContext) == pEvent->u.Exception.ExceptionRecord.ExceptionAddress ||
             (DWORD)(size_t)CORDbgGetIP(&tempDebugContext) == ((DWORD)(size_t)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+breakpointOpcodeSize);
     }

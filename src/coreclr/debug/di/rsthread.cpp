@@ -8925,7 +8925,9 @@ void CordbJITILFrame::AdjustIPAfterException()
     CordbNativeFrame* nativeFrameToAdjustIP = m_nativeFrame;
     if (!m_adjustedIP)
     {
-        DWORD nativeOffsetToMap = (DWORD)nativeFrameToAdjustIP->m_ip - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+        ULONG32 offset = 0;
+        IfFailThrow(GetProcess()->GetStackwalkControlPCAdjustOffset(&offset));
+        DWORD nativeOffsetToMap = (DWORD)nativeFrameToAdjustIP->m_ip - offset;
         CorDebugMappingResult mappingType;
         ULONG uILOffset = nativeFrameToAdjustIP->m_nativeCode->GetSequencePoints()->MapNativeOffsetToIL(
                 nativeOffsetToMap,
