@@ -33,8 +33,9 @@ MethodDesc* g_pDebuggerInvokeFunctionMethodDesc = nullptr;
 // and thunk generation. Objects, possible interior values, and writable argument homes
 // have separate roots. Native capture runs with GC forbidden. ExternalMemoryHandle
 // protects serialized non-leaf register slots in place and copies of leaf-frame structs.
-// Managed evaluation owns conversion, boxing, invocation and copy-back; byref-like
-// temporaries are exact typed locals in its emitted thunk.
+// One managed entry owns primitive working storage, the registered call-address vector,
+// conversion, boxing, invocation and memory/literal copy-back.
+// Byref-like temporaries are exact typed locals in its emitted thunk.
 //
 // Byref-like results use GC-tracked external memory owned by the debugger value.
 // Their references remain movable across UCO exit, completion and subsequent evaluations.
@@ -59,103 +60,6 @@ inline static bool IsElementTypeSpecial(CorElementType type)
             (type == ELEMENT_TYPE_SZARRAY) ||
             (type == ELEMENT_TYPE_STRING));
 }
-
-//
-// GetAndSetLiteralValue()
-//
-// This helper function extracts the value out of the source pointer while taking into account alignment and size.
-// Then it stores the value into the destination pointer, again taking into account alignment and size.
-//
-// parameters:   pDst    - destination pointer
-//               dstType - the CorElementType of the destination value
-//               pSrc    - source pointer
-//               srcType - the CorElementType of the source value
-//
-// return value: none
-//
-inline static void GetAndSetLiteralValue(LPVOID pDst, CorElementType dstType, LPVOID pSrc, CorElementType srcType)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UINT64 srcValue;
-
-    // Retrieve the value using the source CorElementType.
-    switch (g_pEEInterface->GetSizeForCorElementType(srcType))
-    {
-    case 1:
-        srcValue = (UINT64)*((BYTE*)pSrc);
-        break;
-    case 2:
-        srcValue = (UINT64)*((USHORT*)pSrc);
-        break;
-    case 4:
-        srcValue = (UINT64)*((UINT32*)pSrc);
-        break;
-    case 8:
-        srcValue = (UINT64)*((UINT64*)pSrc);
-        break;
-
-    default:
-        UNREACHABLE();
-    }
-
-    // Cast to the appropriate type using the destination CorElementType.
-    switch (dstType)
-    {
-    case ELEMENT_TYPE_BOOLEAN:
-        *(BYTE*)pDst = (BYTE)!!srcValue;
-        break;
-    case ELEMENT_TYPE_I1:
-        *(INT8*)pDst = (INT8)srcValue;
-        break;
-    case ELEMENT_TYPE_U1:
-        *(UINT8*)pDst = (UINT8)srcValue;
-        break;
-    case ELEMENT_TYPE_I2:
-        *(INT16*)pDst = (INT16)srcValue;
-        break;
-    case ELEMENT_TYPE_U2:
-    case ELEMENT_TYPE_CHAR:
-        *(UINT16*)pDst = (UINT16)srcValue;
-        break;
-#if !defined(HOST_64BIT)
-    case ELEMENT_TYPE_I:
-#endif
-    case ELEMENT_TYPE_I4:
-        *(int*)pDst = (int)srcValue;
-        break;
-#if !defined(HOST_64BIT)
-    case ELEMENT_TYPE_U:
-#endif
-    case ELEMENT_TYPE_U4:
-    case ELEMENT_TYPE_R4:
-        *(unsigned*)pDst = (unsigned)srcValue;
-        break;
-#if defined(HOST_64BIT)
-    case ELEMENT_TYPE_I:
-#endif
-    case ELEMENT_TYPE_I8:
-    case ELEMENT_TYPE_R8:
-        *(INT64*)pDst = (INT64)srcValue;
-        break;
-
-#if defined(HOST_64BIT)
-    case ELEMENT_TYPE_U:
-#endif
-    case ELEMENT_TYPE_U8:
-        *(UINT64*)pDst = (UINT64)srcValue;
-        break;
-    case ELEMENT_TYPE_FNPTR:
-    case ELEMENT_TYPE_PTR:
-        *(void **)pDst = (void *)(SIZE_T)srcValue;
-        break;
-
-    default:
-        UNREACHABLE();
-    }
-
-}
-
 
 //
 // Throw on not supported func evals
@@ -735,200 +639,49 @@ static BOOL ReadFuncEvalRegisterValue(
     return TRUE;
 }
 
-//
-// Given info about a byref argument, retrieve the current value from the pBufferForArgsArray,
-// the pMaybeInteriorPtrArray, the pByRefMaybeInteriorPtrArray, or the pObjectRefArray.  Then
-// place it back into the proper register or address.
-//
-// Note that we should never use the argAddr of the DebuggerIPCE_FuncEvalArgData in this function
-// since the address may be an interior GC pointer and may have been moved by the GC.  Instead,
-// use the pByRefMaybeInteriorPtrArray.
-//
-static void SetFuncEvalByRefArgValue(DebuggerEval *pDE,
-                                     DebuggerIPCE_FuncEvalArgData *pFEAD,
-                                     CorElementType byrefArgSigType,
-                                     INT64 bufferByRefArg,
-                                     void *maybeInteriorPtrArg,
-                                     void *byRefMaybeInteriorPtrArg,
-                                     OBJECTREF objectRefByRefArg)
+static void SetFuncEvalRegisterValue(
+    DebuggerEval* pDE, DebuggerIPCE_FuncEvalArgData* pArg, UINT64 value)
 {
     WRAPPER_NO_CONTRACT;
 
-    switch (pFEAD->argElementType)
+    _ASSERTE(!pArg->argIsLiteral && pArg->argAddr == static_cast<CORDB_ADDRESS>(0));
+    bool widePrimitive = pArg->argElementType == ELEMENT_TYPE_I8 ||
+        pArg->argElementType == ELEMENT_TYPE_U8 || pArg->argElementType == ELEMENT_TYPE_R8;
+#if !defined(HOST_64BIT)
+    if (widePrimitive ||
+        (pArg->argElementType == ELEMENT_TYPE_VALUETYPE &&
+         (pArg->argHome.kind == RAK_REGREG || pArg->argHome.kind == RAK_MEMREG || pArg->argHome.kind == RAK_REGMEM)))
     {
-    case ELEMENT_TYPE_I8:
-    case ELEMENT_TYPE_U8:
-    case ELEMENT_TYPE_R8:
-        // 64bit values
+        _ASSERTE(pArg->argHome.kind != RAK_REG);
+        SIZE_T low = static_cast<SIZE_T>(value);
+        SIZE_T high = static_cast<SIZE_T>(value >> 32);
+        switch (pArg->argHome.kind)
         {
-            INT64 source;
+        case RAK_REGREG:
+            SetRegisterValue(pDE, pArg->argHome.u.reg2, pArg->argHome.u.reg2Addr, low);
+            SetRegisterValue(pDE, pArg->argHome.reg1, pArg->argHome.reg1Addr, high);
+            break;
+        case RAK_MEMREG:
+            SetRegisterValue(pDE, pArg->argHome.reg1, pArg->argHome.reg1Addr, low);
+            *static_cast<SIZE_T*>(CORDB_ADDRESS_TO_PTR(pArg->argHome.addr)) = high;
+            break;
+        case RAK_REGMEM:
+            *static_cast<SIZE_T*>(CORDB_ADDRESS_TO_PTR(pArg->argHome.addr)) = low;
+            SetRegisterValue(pDE, pArg->argHome.reg1, pArg->argHome.reg1Addr, high);
+            break;
+        default:
+            break;
+        }
+        return;
+    }
 
-#if defined(HOST_64BIT)
-            source = IsElementTypeSpecial(byrefArgSigType) ? (INT64)maybeInteriorPtrArg : bufferByRefArg;
-#else  // !HOST_64BIT
-            source = bufferByRefArg;
-#endif // !HOST_64BIT
-
-            if (pFEAD->argIsLiteral)
-            {
-                // If this was a literal arg, then copy the updated primitive back into the literal.
-                memcpy(pFEAD->argLiteralData, &source, sizeof(pFEAD->argLiteralData));
-            }
-            else if (pFEAD->argAddr != (CORDB_ADDRESS)0)
-            {
-                *((INT64 *)byRefMaybeInteriorPtrArg) = source;
-                return;
-            }
-            else
-            {
-#if !defined(HOST_64BIT)
-                // RAK_REG is the only 4 byte type, all others are 8 byte types.
-                _ASSERTE(pFEAD->argHome.kind != RAK_REG);
-
-                SIZE_T *pLow = (SIZE_T*)(&source);
-                SIZE_T *pHigh  = pLow + 1;
-
-                switch (pFEAD->argHome.kind)
-                {
-                case RAK_REGREG:
-                    SetRegisterValue(pDE, pFEAD->argHome.u.reg2, pFEAD->argHome.u.reg2Addr, *pLow);
-                    SetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, *pHigh);
-                    break;
-
-                case RAK_MEMREG:
-                    SetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, *pLow);
-                    *((SIZE_T*)CORDB_ADDRESS_TO_PTR(pFEAD->argHome.addr)) = *pHigh;
-                    break;
-
-                case RAK_REGMEM:
-                    *((SIZE_T*)CORDB_ADDRESS_TO_PTR(pFEAD->argHome.addr)) = *pLow;
-                    SetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, *pHigh);
-                    break;
-
-                default:
-                    break;
-                }
+    _ASSERTE(pArg->argHome.kind == RAK_REG);
+    CorDebugRegister reg = GetArgAddrFromReg(pArg);
 #else // HOST_64BIT
-                // The only types we use are RAK_REG and RAK_FLOAT, and both of them can be 4 or 8 bytes.
-                _ASSERTE((pFEAD->argHome.kind == RAK_REG) || (pFEAD->argHome.kind == RAK_FLOAT));
-
-                SetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, source);
-#endif // HOST_64BIT
-            }
-        }
-        break;
-
-    case ELEMENT_TYPE_VALUETYPE:
-#if !defined(HOST_64BIT)
-        if (pFEAD->argAddr == static_cast<CORDB_ADDRESS>(0) &&
-            (pFEAD->argHome.kind == RAK_REGREG || pFEAD->argHome.kind == RAK_MEMREG || pFEAD->argHome.kind == RAK_REGMEM))
-        {
-            SIZE_T low = static_cast<SIZE_T>(bufferByRefArg);
-            SIZE_T high = static_cast<SIZE_T>(static_cast<UINT64>(bufferByRefArg) >> 32);
-            switch (pFEAD->argHome.kind)
-            {
-            case RAK_REGREG:
-                SetRegisterValue(pDE, pFEAD->argHome.u.reg2, pFEAD->argHome.u.reg2Addr, low);
-                SetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, high);
-                break;
-            case RAK_MEMREG:
-                SetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, low);
-                *static_cast<SIZE_T*>(CORDB_ADDRESS_TO_PTR(pFEAD->argHome.addr)) = high;
-                break;
-            case RAK_REGMEM:
-                *static_cast<SIZE_T*>(CORDB_ADDRESS_TO_PTR(pFEAD->argHome.addr)) = low;
-                SetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, high);
-                break;
-            default:
-                UNREACHABLE();
-            }
-            return;
-        }
+    _ASSERTE(pArg->argHome.kind == RAK_REG || pArg->argHome.kind == RAK_FLOAT);
+    CorDebugRegister reg = widePrimitive ? pArg->argHome.reg1 : GetArgAddrFromReg(pArg);
 #endif // !HOST_64BIT
-        FALLTHROUGH;
-
-    default:
-        // literal values smaller than 8 bytes and "special types" (e.g. object, array, string, etc.)
-        {
-            SIZE_T source;
-
-#ifdef TARGET_X86
-            if (IsElementTypeSpecial(byrefArgSigType) &&
-                ((pFEAD->argElementType == ELEMENT_TYPE_I4) ||
-                (pFEAD->argElementType == ELEMENT_TYPE_U4) ||
-                (pFEAD->argElementType == ELEMENT_TYPE_R4)))
-            {
-                source = (SIZE_T)maybeInteriorPtrArg;
-            }
-            else
-            {
-#endif
-                source = (SIZE_T)bufferByRefArg;
-#ifdef TARGET_X86
-            }
-#endif
-
-            if (pFEAD->argIsLiteral)
-            {
-                // If this was a literal arg, then copy the updated primitive back into the literal.
-                // The literall buffer is a fixed size (8 bytes), but our source may be 4 or 8 bytes
-                // depending on the platform.  To prevent reading past the end of the source, we
-                // zero the destination buffer and copy only as many bytes as available.
-                memset( pFEAD->argLiteralData, 0, sizeof(pFEAD->argLiteralData) );
-                if (IsElementTypeSpecial(pFEAD->argElementType))
-                {
-                    _ASSERTE( sizeof(pFEAD->argLiteralData) >= sizeof(objectRefByRefArg) );
-                    memcpy(pFEAD->argLiteralData, &objectRefByRefArg, sizeof(objectRefByRefArg));
-                }
-                else
-                {
-                    _ASSERTE( sizeof(pFEAD->argLiteralData) >= sizeof(source) );
-                    memcpy(pFEAD->argLiteralData, &source, sizeof(source));
-                }
-            }
-            else if (pFEAD->argAddr == (CORDB_ADDRESS)0)
-            {
-                // If the 32bit value is enregistered, copy it back to the proper regs.
-
-                // RAK_REG is the only valid 4 byte type on WIN32.  On WIN64, both RAK_REG and RAK_FLOAT can be
-                // 4 bytes or 8 bytes.
-                _ASSERTE((pFEAD->argHome.kind == RAK_REG)
-                         BIT64_ONLY(|| (pFEAD->argHome.kind == RAK_FLOAT)));
-
-                CorDebugRegister regNum = GetArgAddrFromReg(pFEAD);
-
-                // Shove the result back into the proper register.
-                if (IsElementTypeSpecial(pFEAD->argElementType))
-                {
-                    SetRegisterValue(pDE, regNum, pFEAD->argHome.reg1Addr, (SIZE_T)ObjToArgSlot(objectRefByRefArg));
-                }
-                else
-                {
-                    SetRegisterValue(pDE, regNum, pFEAD->argHome.reg1Addr, (SIZE_T)source);
-                }
-            }
-            else
-            {
-                // If the result was an object by ref, then copy back the new location of the object (in GC case).
-                if (pFEAD->argIsHandleValue)
-                {
-                    // The handle's storage was passed directly.
-                }
-                else if (IsElementTypeSpecial(pFEAD->argElementType))
-                {
-                    SetObjectReference(static_cast<OBJECTREF*>(byRefMaybeInteriorPtrArg), objectRefByRefArg);
-                }
-                else if (pFEAD->argElementType == ELEMENT_TYPE_VALUETYPE)
-                {
-                    // The value type's storage was passed directly.
-                }
-                else
-                {
-                    GetAndSetLiteralValue(byRefMaybeInteriorPtrArg, pFEAD->argElementType, &source, ELEMENT_TYPE_PTR);
-                }
-            }
-        } // end default
-    } // end switch
+    SetRegisterValue(pDE, reg, pArg->argHome.reg1Addr, static_cast<SIZE_T>(value));
 }
 
 
@@ -984,6 +737,10 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
         if (pFEAD->argAddr != (CORDB_ADDRESS)0)
         {
             pByRefMaybeInteriorPtrArray[currArgIndex] = CORDB_ADDRESS_TO_PTR(pFEAD->argAddr);
+            if (pFEAD->argIsHandleValue)
+            {
+                pBufferForArgsArray[currArgIndex] = static_cast<INT64>(static_cast<SIZE_T>(pFEAD->argAddr));
+            }
         }
 
         switch (pFEAD->argElementType)
@@ -1045,12 +802,7 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
 
             if (pFEAD->argAddr != (CORDB_ADDRESS)0)
             {
-                if (pFEAD->argIsHandleValue)
-                {
-                    OBJECTHANDLE oh = (OBJECTHANDLE)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr);
-                    pBufferForArgsArray[currArgIndex] = (INT64)(size_t)oh;
-                }
-                else
+                if (!pFEAD->argIsHandleValue)
                 {
                     pObjectRefArray[currArgIndex] = *((OBJECTREF *)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr));
                 }
@@ -1275,7 +1027,7 @@ struct FuncEvalRegisterRootContext : ScanContext
     }
 };
 
-static HRESULT CaptureFuncEvalArgumentValues(
+static HRESULT ProtectFuncEvalArgumentStorage(
     DebuggerEval* pDE, OBJECTREF* pObjectRefArray, INT64* pBufferForArgsArray,
     ExternalMemoryHandle** pArgumentHandles)
 {
@@ -1367,53 +1119,6 @@ static HRESULT CaptureFuncEvalArgumentValues(
                     pNextHandle++;
                 }
             }
-            continue;
-        }
-
-        switch (pArg->argElementType)
-        {
-        case ELEMENT_TYPE_BOOLEAN:
-        case ELEMENT_TYPE_CHAR:
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-        case ELEMENT_TYPE_R4:
-        case ELEMENT_TYPE_R8:
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:
-        case ELEMENT_TYPE_PTR:
-        case ELEMENT_TYPE_FNPTR:
-            break;
-        default:
-            return COR_E_ARGUMENT;
-        }
-
-        if (pArg->argIsHandleValue)
-        {
-            pBufferForArgsArray[i] = static_cast<INT64>(static_cast<SIZE_T>(pArg->argAddr));
-        }
-        else if (pArg->argIsLiteral || pArg->argAddr != static_cast<CORDB_ADDRESS>(0))
-        {
-            void* pSource = pArg->argIsLiteral
-                ? pArg->argLiteralData
-                : CORDB_ADDRESS_TO_PTR(pArg->argAddr);
-            UINT32 size = g_pEEInterface->GetSizeForCorElementType(pArg->argElementType);
-            _ASSERTE(size != 0 && size <= sizeof(pBufferForArgsArray[i]));
-            memcpyNoGCRefs(&pBufferForArgsArray[i], pSource, size);
-        }
-        else
-        {
-            UINT64 value;
-            if (!ReadFuncEvalRegisterValue(pDE, pArg, &value))
-            {
-                return E_POINTER;
-            }
-            pBufferForArgsArray[i] = static_cast<INT64>(value);
         }
     }
 
@@ -1586,6 +1291,12 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalReturnType(
             pContext->pResultData = AllocateFuncEvalExternalResult(pDE);
             pContext->flags |= FuncEvalExternalResult;
         }
+        if (pContext->returnElementType == ELEMENT_TYPE_BYREF)
+        {
+            _ASSERTE(*pContext->ppResult == nullptr);
+            *pContext->ppResult = new (interopsafe) DebuggerFuncEvalResult(*pContext->pLoaderAllocator);
+            pContext->pResultByRefs = &(*pContext->ppResult)->m_resultByRef;
+        }
         returnType.Set(pDE->m_resultType.GetManagedClassObject());
     }
 
@@ -1598,6 +1309,7 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgument(
     QCALL_CONTRACT_NO_GC_TRANSITION;
     _ASSERTE(index < pContext->argumentCount);
     DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
+    pArgument->pLiteral = pArg->argLiteralData[0].GetNativeAddress();
     pArgument->elementType = pArg->argElementType;
     pArgument->flags = (pArg->argIsLiteral ? FuncEvalLiteral : 0) |
         (pArg->argIsHandleValue ? FuncEvalHandle : 0) |
@@ -1638,7 +1350,7 @@ extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
     Object* pObject = interior
         ? static_cast<Object*>(pContext->pInteriors[index])
         : OBJECTREFToObject(GetFuncEvalObjectValue(
-            &pContext->pEval->GetArgData()[index], &pContext->pObjects[index], &pContext->pPrimitives[index]));
+            &pContext->pEval->GetArgData()[index], &pContext->pObjects[index], &pContext->pCapturedArguments[index]));
     HRESULT hr = ValidateObject(pObject);
     if (SUCCEEDED(hr))
     {
@@ -1664,6 +1376,16 @@ extern "C" void QCALLTYPE DebugDebugger_AllocateFuncEvalObject(
     END_QCALL;
 }
 
+extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    _ASSERTE(index < pContext->argumentCount);
+    DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
+    _ASSERTE(pArg->argElementType != ELEMENT_TYPE_VALUETYPE && !IsElementTypeSpecial(pArg->argElementType));
+    return ReadFuncEvalRegisterValue(pContext->pEval, pArg, pValue);
+}
+
 extern "C" void QCALLTYPE DebugDebugger_CopyFuncEvalValueTypeArgument(
     DebuggerFuncEvalContext* pContext, UINT32 index, QCall::TypeHandle type, void* pDestination)
 {
@@ -1682,12 +1404,12 @@ extern "C" void QCALLTYPE DebugDebugger_CopyFuncEvalValueTypeArgument(
     }
     else
     {
-        CopyValueClassUnchecked(pDestination, &pContext->pPrimitives[index], pMT);
+        CopyValueClassUnchecked(pDestination, &pContext->pCapturedArguments[index], pMT);
     }
 }
 
-extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalArgument(
-    DebuggerFuncEvalContext* pContext, UINT32 index, UINT32 signatureType, void* pValue, UINT32 size,
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
     QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -1703,9 +1425,8 @@ extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalArgument(
             ? *static_cast<OBJECTREF*>(pValue)
             : nullptr;
         GCPROTECT_BEGIN(object);
-        SetFuncEvalByRefArgValue(pContext->pEval, pArg, static_cast<CorElementType>(signatureType),
-            static_cast<INT64>(bits), reinterpret_cast<void*>(static_cast<SIZE_T>(bits)),
-            pContext->pHomes[index], object);
+        SetFuncEvalRegisterValue(pContext->pEval, pArg,
+            IsElementTypeSpecial(pArg->argElementType) ? ObjToArgSlot(object) : bits);
         GCPROTECT_END();
     }
     END_QCALL;
@@ -1719,8 +1440,6 @@ extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalArgument(
  *
  * Parameters:
  *    pContext - native roots and debugger state used by managed evaluation.
- *    execute - prepare the managed state, or execute it after result roots are registered.
- *    pState - protected slot for the managed evaluation object.
  *    pCatcherStackAddr - stack address to report as the Catch Handler Found location.
  *
  * Returns:
@@ -1728,29 +1447,22 @@ extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalArgument(
  *
  */
 void FuncEvalWrapper(UnmanagedCallersOnlyCaller* pCaller, DebuggerFuncEvalContext* pContext,
-                     BOOL execute, OBJECTREF* pState, BYTE* pCatcherStackAddr)
+                     BYTE* pCatcherStackAddr)
 {
     struct Param : NotifyOfCHFFilterWrapperParam
     {
         UnmanagedCallersOnlyCaller* pCaller;
         DebuggerFuncEvalContext* pContext;
-        BOOL execute;
-        OBJECTREF* pState;
     };
 
     Param param;
     param.pFrame = pCatcherStackAddr; // Inherited from NotifyOfCHFFilterWrapperParam
     param.pCaller = pCaller;
     param.pContext = pContext;
-    param.execute = execute;
-    param.pState = pState;
 
     PAL_TRY(Param *, pParam, &param)
     {
-        pParam->pCaller->InvokeDirect(
-            reinterpret_cast<INT_PTR>(pParam->pContext),
-            static_cast<INT_PTR>(pParam->execute),
-            pParam->pState);
+        pParam->pCaller->InvokeDirect(reinterpret_cast<INT_PTR>(pParam->pContext));
     }
     PAL_EXCEPT_FILTER(NotifyOfCHFFilterWrapper)
     {
@@ -1882,7 +1594,7 @@ void DebuggerFuncEvalResult::RefreshByRefResult(DebuggerEval* pDE)
 }
 
 static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatcherStackAddr,
-                                  DebuggerFuncEvalResultHolder& result, HRESULT captureResult)
+                                  DebuggerFuncEvalResult** ppResult, HRESULT captureResult)
 {
     CONTRACTL
     {
@@ -1891,9 +1603,6 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-
-    OBJECTREF state = nullptr;
-    GCPROTECT_BEGIN(state);
 
     if (captureResult == E_POINTER)
     {
@@ -1910,38 +1619,31 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
         VolatileStore(&g_pDebuggerInvokeFunctionMethodDesc, CoreLibBinder::GetMethod(METHOD__DEBUGGER__INVOKE_FUNCTION));
     }
     UnmanagedCallersOnlyCaller caller(METHOD__DEBUGGER__INVOKE_FUNCTION);
-    FuncEvalWrapper(&caller, pContext, FALSE, &state, pCatcherStackAddr);
+    pContext->ppResult = ppResult;
+    FuncEvalWrapper(&caller, pContext, pCatcherStackAddr);
 
     {
-        if (pContext->returnElementType == ELEMENT_TYPE_BYREF)
-        {
-            result = new (interopsafe) DebuggerFuncEvalResult(*pContext->pLoaderAllocator);
-            pContext->pResultByRefs = &result->m_resultByRef;
-        }
-
-        FuncEvalWrapper(&caller, pContext, TRUE, &state, pCatcherStackAddr);
-
-        GCX_FORBID();
         DebuggerEval* pDE = pContext->pEval;
         bool external = (pContext->flags & FuncEvalExternalResult) != 0;
         bool boxed = !external &&
             ((pContext->flags & FuncEvalNewObject) != 0 || pContext->returnElementType == ELEMENT_TYPE_VALUETYPE);
         pDE->m_retValueBoxing = external ? Debugger::NoValueTypeBoxing :
             boxed ? Debugger::AllBoxed : Debugger::OnlyPrimitivesUnboxed;
-        if (boxed || IsElementTypeSpecial(static_cast<CorElementType>(pContext->returnElementType)))
+        if (pContext->resultHandle != nullptr)
         {
-            OBJECTHANDLE handle = AppDomain::GetCurrentDomain()->CreateStrongHandle(*pContext->pResultObject);
+            // The strong handle was created in managed code (Debugger.FunctionEvaluation.Invoke),
+            // right after the call, while the result was still reachable as a tracked local/field.
+            OBJECTHANDLE handle = static_cast<OBJECTHANDLE>(pContext->resultHandle);
             pDE->m_result[0] = static_cast<ARG_SLOT>(reinterpret_cast<SIZE_T>(handle));
             pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(handle);
+            pContext->resultHandle = nullptr;
         }
         pDE->m_successful = true;
-        if (result != nullptr)
+        if (*ppResult != nullptr)
         {
-            result->RefreshByRefResult(pDE);
+            (*ppResult)->RefreshByRefResult(pDE);
         }
     }
-
-    GCPROTECT_END(); // state
 }
 
 /*
@@ -2014,7 +1716,7 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
     GCPROTECT_BEGININTERIOR_ARRAY(*pByRefMaybeInteriorPtrArray, (UINT)(cbAllocSize/sizeof(OBJECTREF)));
 
     //
-    // Capture primitive, leaf-frame and mixed-home value-type data before managed preparation.
+    // Capture handle addresses and leaf-frame or mixed-home value-type data.
     // Pure non-leaf register homes are rooted in place and read again when preparing managed storage.
     //
     if ((!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(INT64), cbAllocSize)) ||
@@ -2038,30 +1740,16 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
     // Keep a null terminator so partially registered snapshots are cleaned up on failure.
     memset(pArgumentHandles, 0, cbAllocSize);
 
-    SIZE_T storageCount;
-    if (!ClrSafeInt<SIZE_T>::addition(pDE->m_argCount, 2, storageCount) || storageCount > UINT_MAX ||
-        !ClrSafeInt<SIZE_T>::multiply(storageCount, sizeof(void*), cbAllocSize))
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
-    void** pStorage = static_cast<void**>(_alloca(cbAllocSize));
-    memset(pStorage, 0, cbAllocSize);
-    GCPROTECT_BEGININTERIOR_ARRAY(*pStorage, static_cast<UINT>(storageCount));
-
-    OBJECTREF resultObject = nullptr;
     OBJECTREF loaderAllocator = nullptr;
     DebuggerFuncEvalContext context = {};
     context.pEval = pDE;
     context.pObjects = pObjectRefArray;
     context.pInteriors = pMaybeInteriorPtrArray;
     context.pHomes = pByRefMaybeInteriorPtrArray;
-    context.pPrimitives = pBufferForArgsArray;
-    context.pStorage = pStorage;
+    context.pCapturedArguments = pBufferForArgsArray;
     context.pResultData = pDE->m_result;
     context.argumentCount = pDE->m_argCount;
-    context.pResultObject = &resultObject;
     context.pLoaderAllocator = &loaderAllocator;
-    GCPROTECT_BEGIN(resultObject);
     GCPROTECT_BEGIN(loaderAllocator);
     Holder<ExternalMemoryHandle**, DoNothing<ExternalMemoryHandle**>, ReleaseFuncEvalArgumentHandles>
         argumentHandles(pArgumentHandles);
@@ -2081,14 +1769,23 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
                                    pByRefMaybeInteriorPtrArray,
                                    pBufferForArgsArray
                                    );
-            captureResult = CaptureFuncEvalArgumentValues(
+            captureResult = ProtectFuncEvalArgumentStorage(
                 pDE, pObjectRefArray, pBufferForArgsArray, pArgumentHandles);
         }
 
-        InvokeManagedFuncEval(&context, pCatcherStackAddr, result, captureResult);
+        InvokeManagedFuncEval(&context, pCatcherStackAddr, &result, captureResult);
     }
     EX_CATCH
     {
+        // Managed code can create the result handle immediately before an abort reaches
+        // the UCO boundary. Destroy it unless the successful path transferred ownership
+        // to DebuggerEval::m_vmObjectHandle.
+        if (context.resultHandle != nullptr)
+        {
+            DestroyStrongHandle(static_cast<OBJECTHANDLE>(context.resultHandle));
+            context.resultHandle = nullptr;
+        }
+
         // We got an exception. Make the exception into our result.
         OBJECTREF ppException = GET_THROWABLE();
         GCX_FORBID();
@@ -2100,8 +1797,6 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
 
     argumentHandles.Release();
     GCPROTECT_END();    // loaderAllocator
-    GCPROTECT_END();    // resultObject
-    GCPROTECT_END();    // pStorage
     GCPROTECT_END();    // pByRefMaybeInteriorPtrArray
     GCPROTECT_END();    // pMaybeInteriorPtrArray
     GCPROTECT_END();    // pObjectRefArray

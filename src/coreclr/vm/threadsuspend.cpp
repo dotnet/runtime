@@ -5645,8 +5645,8 @@ retry_for_debugger:
 
         LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
 
-        // If someone's trying to suspend *this* thread, this is a good opportunity.
-        if (pCurThread && pCurThread->CatchAtSafePoint())
+        // Only cooperative threads need to rendezvous; preemptive threads are already safe for suspension.
+        if (pCurThread && pCurThread->PreemptiveGCDisabled() && pCurThread->CatchAtSafePoint())
         {
             pCurThread->PulseGCMode();  // Go suspend myself.
         }

@@ -113,8 +113,9 @@ static const Entry s_QCall[] =
     DllImportEntry(DebugDebugger_GetFuncEvalArgumentType)
     DllImportEntry(DebugDebugger_GetFuncEvalObject)
     DllImportEntry(DebugDebugger_AllocateFuncEvalObject)
+    DllImportEntry(DebugDebugger_ReadFuncEvalPrimitiveRegister)
     DllImportEntry(DebugDebugger_CopyFuncEvalValueTypeArgument)
-    DllImportEntry(DebugDebugger_WriteFuncEvalArgument)
+    DllImportEntry(DebugDebugger_WriteFuncEvalRegister)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
     DllImportEntry(Delegate_BindToMethodName)
     DllImportEntry(Delegate_BindToMethodInfo)
