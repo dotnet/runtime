@@ -52,7 +52,6 @@ namespace ILLink.Tasks.Tests
         }
 
         static readonly string[] nonOptimizationBooleanProperties = new string[] {
-            nameof(ClearOutputDirectory),
             "DumpDependencies",
             "RemoveSymbols",
             "PreserveSymbolPaths",
