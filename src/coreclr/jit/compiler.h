@@ -6633,7 +6633,10 @@ public:
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
 
     // Compute exceptions for a division operation
-    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor);
+    ValueNumPair fgValueNumberDivisionExceptions(genTreeOps oper,
+                                                 GenTree*   dividend,
+                                                 GenTree*   divisor,
+                                                 var_types  simdBaseType = TYP_UNDEF);
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);

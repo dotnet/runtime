@@ -14320,19 +14320,10 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         assert(opCount == 2);
         assert(varTypeIsInt(tree->GetSimdBaseType()));
 
-        ValueNumPair dividendVNP = vnStore->VNPNormalPair(tree->Op(1)->gtVNPair);
-        ValueNumPair divisorVNP  = vnStore->VNPNormalPair(tree->Op(2)->gtVNPair);
-
-        ValueNumPair divideByZeroExc =
-            vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_DivideByZeroExc, divisorVNP));
-        excSetPair = vnStore->VNPExcSetUnion(excSetPair, divideByZeroExc);
-
-        if (varTypeIsSigned(tree->GetSimdBaseType()))
-        {
-            ValueNumPair arithmeticExc = vnStore->VNPExcSetSingleton(
-                vnStore->VNPairForFuncNoFolding(TYP_REF, VNF_ArithmeticExc, dividendVNP, divisorVNP));
-            excSetPair = vnStore->VNPExcSetUnion(excSetPair, arithmeticExc);
-        }
+        genTreeOps   oper = varTypeIsSigned(tree->GetSimdBaseType()) ? GT_DIV : GT_UDIV;
+        ValueNumPair divisionExc =
+            fgValueNumberDivisionExceptions(oper, tree->Op(1), tree->Op(2), tree->GetSimdBaseType());
+        excSetPair = vnStore->VNPExcSetUnion(excSetPair, divisionExc);
     }
 #endif // TARGET_XARCH
 
@@ -15789,18 +15780,56 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
 }
 
 //--------------------------------------------------------------------------------
+// SimdConstantContains:
+//   Determine whether an integral SIMD constant contains the specified value.
+//
+// Arguments:
+//    vnStore      - Value number store
+//    vn           - SIMD constant value number
+//    simdBaseType - SIMD base type
+//    value        - Value to search for
+//
+// Return Value:
+//    True if any element equals value
+//
+#if defined(FEATURE_SIMD)
+static bool SimdConstantContains(ValueNumStore* vnStore, ValueNum vn, var_types simdBaseType, INT64 value)
+{
+    assert(vnStore->IsVNConstant(vn));
+    assert(varTypeIsSIMD(vnStore->TypeOfVN(vn)));
+
+    simd_t   simdValue    = vnStore->GetConstantSimd(vn);
+    unsigned elementCount = genTypeSize(vnStore->TypeOfVN(vn)) / genTypeSize(simdBaseType);
+
+    for (unsigned index = 0; index < elementCount; index++)
+    {
+        if (EvaluateGetElementIntegral(simdBaseType, simdValue, index) == value)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+#endif // FEATURE_SIMD
+
+//--------------------------------------------------------------------------------
 // fgValueNumberDivisionExceptions
 //   Compute exception set for a division operation
 //
 // Arguments:
-//    oper - Division operation (signed/unsigned division/modulo)
-//    dividend - Tree representing dividend
-//    divisor  - Tree representing divisor
+//    oper         - Division operation (signed/unsigned division/modulo)
+//    dividend     - Tree representing dividend
+//    divisor      - Tree representing divisor
+//    simdBaseType - SIMD base type, or TYP_UNDEF for scalar division
 //
 // Return Value:
 //    VNP representing exception set
 //
-ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree* dividend, GenTree* divisor)
+ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper,
+                                                       GenTree*   dividend,
+                                                       GenTree*   divisor,
+                                                       var_types  simdBaseType)
 {
     // A Divide By Zero exception may be possible.
     //
@@ -15810,8 +15839,11 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     bool needArithmeticExcLib   = !isUnsignedOper; // Overflow isn't possible for unsigned divide
     bool needArithmeticExcCon   = !isUnsignedOper;
 
+    bool isSimdOper = varTypeIsSIMD(dividend);
+    assert(isSimdOper == (simdBaseType != TYP_UNDEF));
+
     // Determine if we have a 32-bit or 64-bit divide operation
-    var_types typ = genActualType(dividend);
+    var_types typ = isSimdOper ? genActualType(simdBaseType) : genActualType(dividend);
     assert((typ == TYP_INT) || (typ == TYP_LONG));
 
     // Retrieve the Norm VN for divisor to use it for the DivideByZeroExc
@@ -15819,7 +15851,27 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     ValueNum     vnDivisorNormLib = vnpDisivorNorm.GetLiberal();
     ValueNum     vnDivisorNormCon = vnpDisivorNorm.GetConservative();
 
-    if (typ == TYP_INT)
+#if defined(FEATURE_SIMD)
+    if (isSimdOper)
+    {
+        // DivideByZero exception unneeded for simd if constant divisor has all nonzero lanes
+        // Arithmetic exception unneeded if constant divisor has all lanes not equal to -1
+        if (vnStore->IsVNConstant(vnDivisorNormLib))
+        {
+            needDivideByZeroExcLib = SimdConstantContains(vnStore, vnDivisorNormLib, simdBaseType, 0);
+            needArithmeticExcLib =
+                needArithmeticExcLib && SimdConstantContains(vnStore, vnDivisorNormLib, simdBaseType, -1);
+        }
+        if (vnStore->IsVNConstant(vnDivisorNormCon))
+        {
+            needDivideByZeroExcCon = SimdConstantContains(vnStore, vnDivisorNormCon, simdBaseType, 0);
+            needArithmeticExcCon =
+                needArithmeticExcCon && SimdConstantContains(vnStore, vnDivisorNormCon, simdBaseType, -1);
+        }
+    }
+#endif // FEATURE_SIMD
+
+    if (!isSimdOper && (typ == TYP_INT))
     {
         if (vnStore->IsVNConstant(vnDivisorNormLib))
         {
@@ -15846,7 +15898,7 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
             }
         }
     }
-    else // (typ == TYP_LONG)
+    else if (!isSimdOper) // (typ == TYP_LONG)
     {
         if (vnStore->IsVNConstant(vnDivisorNormLib))
         {
@@ -15879,7 +15931,25 @@ ValueNumPair Compiler::fgValueNumberDivisionExceptions(genTreeOps oper, GenTree*
     ValueNum     vnDividendNormLib = vnpDividendNorm.GetLiberal();
     ValueNum     vnDividendNormCon = vnpDividendNorm.GetConservative();
 
-    if (needArithmeticExcLib || needArithmeticExcCon)
+#if defined(FEATURE_SIMD)
+    if (isSimdOper)
+    {
+        INT64 minValue = (typ == TYP_INT) ? INT32_MIN : INT64_MIN;
+
+        if (needArithmeticExcLib && vnStore->IsVNConstant(vnDividendNormLib) &&
+            !SimdConstantContains(vnStore, vnDividendNormLib, simdBaseType, minValue))
+        {
+            needArithmeticExcLib = false;
+        }
+        if (needArithmeticExcCon && vnStore->IsVNConstant(vnDividendNormCon) &&
+            !SimdConstantContains(vnStore, vnDividendNormCon, simdBaseType, minValue))
+        {
+            needArithmeticExcCon = false;
+        }
+    }
+#endif // FEATURE_SIMD
+
+    if (!isSimdOper && (needArithmeticExcLib || needArithmeticExcCon))
     {
         if (typ == TYP_INT)
         {
