@@ -444,6 +444,7 @@ CDAC_TYPE_FIELD(PEAssembly, T_POINTER, PEImage, cdac_data<PEAssembly>::PEImage)
 CDAC_TYPE_FIELD(PEAssembly, T_POINTER, AssemblyBinder, cdac_data<PEAssembly>::AssemblyBinder)
 CDAC_TYPE_FIELD(PEAssembly, T_INT32, MDImportIsRW, cdac_data<PEAssembly>::MDImportIsRW)
 CDAC_TYPE_FIELD(PEAssembly, T_POINTER, MDImport, cdac_data<PEAssembly>::MDImport)
+CDAC_TYPE_FIELD(PEAssembly, T_POINTER, DNMDMetadataHandleSlot, cdac_data<PEAssembly>::DNMDMetadataHandleSlot)
 CDAC_TYPE_END(PEAssembly)
 
 CDAC_TYPE_BEGIN(AssemblyBinder)
@@ -1872,6 +1873,7 @@ CDAC_GLOBAL(RCWInterfaceCacheSize, T_UINT32, INTERFACE_ENTRY_CACHE_SIZE)
 // this order to find and enumerate the subdescriptors.
 //
 // When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
+CDAC_GLOBAL_SUB_DESCRIPTOR(EcmaMetadata, &g_dnmdContractDescriptor)
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
 // Contract versions for .NET 11 are frozen and must not be changed in any .NET 11 release branch.
@@ -1891,7 +1893,6 @@ CDAC_GLOBAL_CONTRACT(DacStreams, c1)
 CDAC_GLOBAL_CONTRACT(Debugger, c1)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 CDAC_GLOBAL_CONTRACT(DebugInfo, c1)
-CDAC_GLOBAL_CONTRACT(EcmaMetadata, c1)
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(RuntimeMutableTypeSystem, c1)
 #endif // FEATURE_METADATA_UPDATER

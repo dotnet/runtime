@@ -24,6 +24,13 @@ HRESULT GetSymBinder(
 #if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 struct IMDInternalImport;
 
+// Get the address of the current metadata handle slot for out-of-process diagnostics.
+// The slot remains stable when EnC replaces the handle.
+extern "C" DNMD_EXPORT
+HRESULT GetDNMDInternalMetadataHandleSlot(
+    IMDInternalImport* source,
+    void const** slot);
+
 // Replace the metadata in an existing DNMD scope without changing its COM identity.
 extern "C" DNMD_EXPORT
 HRESULT ReOpenDNMDMetaDataWithMemory(

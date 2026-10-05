@@ -376,6 +376,7 @@ private:
 #endif
     };
 
+    void const*              m_pDNMDMetadataHandleSlot;
     IMetaDataImport2* m_pImporter;
     IMetaDataEmit* m_pEmitter;
 
@@ -396,6 +397,7 @@ struct cdac_data<PEAssembly>
 #ifndef DACCESS_COMPILE
     static constexpr size_t MDImport = offsetof(PEAssembly, m_pMDImport);
 #endif
+    static constexpr size_t DNMDMetadataHandleSlot = offsetof(PEAssembly, m_pDNMDMetadataHandleSlot);
 };
 
 struct PEAssemblyHolderTraits final

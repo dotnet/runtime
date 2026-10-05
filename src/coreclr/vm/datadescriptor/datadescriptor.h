@@ -25,6 +25,12 @@
 
 #include "configure.h"
 
+extern "C"
+{
+    struct ContractDescriptor;
+    extern ContractDescriptor* g_dnmdContractDescriptor;
+}
+
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER

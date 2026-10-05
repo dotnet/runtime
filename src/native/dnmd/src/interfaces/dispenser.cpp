@@ -521,6 +521,24 @@ namespace
 
 #if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
 extern "C" DNMD_EXPORT
+HRESULT GetDNMDInternalMetadataHandleSlot(IMDInternalImport* source, void const** slot)
+{
+    if (slot == nullptr)
+        return E_INVALIDARG;
+    *slot = nullptr;
+    if (source == nullptr)
+        return E_INVALIDARG;
+
+    minipal::com_ptr<IDNMDOwner> owner;
+    HRESULT hr = source->QueryInterface(IID_IDNMDOwner, (void**)&owner);
+    if (FAILED(hr))
+        return hr;
+
+    *slot = owner->MetaDataHandleSlot();
+    return *slot != nullptr ? S_OK : E_FAIL;
+}
+
+extern "C" DNMD_EXPORT
 HRESULT ConvertDNMDInternalImport(IMDInternalImport* source, IMDInternalImport** converted)
 {
     if (converted == nullptr)

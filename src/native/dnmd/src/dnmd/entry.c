@@ -4,7 +4,6 @@
 #include <inttypes.h>
 
 // mdlib magic number for context
-#define MDLIB_MAGIC_NUMBER 0x3d71b
 
 // Defined in II.24.2.1
 #define METADATA_SIG 0x424A5342

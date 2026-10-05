@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <UseAppHost Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">false</UseAppHost>
+    <Optimize>false</Optimize>
+    <DumpTypes>Full</DumpTypes>
+    <R2RModes>R2R;Jit</R2RModes>
+    <EnvironmentVariables>DOTNET_MODIFIABLE_ASSEMBLIES=debug</EnvironmentVariables>
+  </PropertyGroup>
+</Project>

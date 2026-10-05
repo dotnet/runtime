@@ -47,6 +47,13 @@ public:
         return _inner.get();
     }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
+    void const* MetaDataHandleSlot() override
+    {
+        return _inner.MetaDataHandleSlot();
+    }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
+
     bool IsReadWrite() override
     {
         return _inner.IsReadWrite();

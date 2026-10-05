@@ -239,3 +239,141 @@ TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
     return new(result, size);
 }
 ```
+
+## Version 2
+
+<!-- BEGIN GENERATED: usage contract=EcmaMetadata version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Removed | `CLiteWeightStgdbRW` | `MetadataAddress` | `pointer` | Pointer to the metadata image |
+| Removed | `CLiteWeightStgdbRW` | `MiniMd` | `pointer` | Address of the embedded `CMiniMdRW` model |
+| Removed | `CMiniMdRW` | `All4ByteColumns` | `uint32` | Whether all variable-width columns are 4 bytes wide |
+| Removed | `CMiniMdRW` | `BlobHeap` | `pointer` | Address of the blob heap's storage pool |
+| Removed | `CMiniMdRW` | `GuidHeap` | `pointer` | Address of the GUID heap's storage pool |
+| Removed | `CMiniMdRW` | `Schema` | `pointer` | Address of the embedded `CMiniMdSchema` |
+| Removed | `CMiniMdRW` | `StringHeap` | `pointer` | Address of the string heap's storage pool |
+| Removed | `CMiniMdRW` | `TableCount` | `uint32` | Number of valid tables |
+| Removed | `CMiniMdRW` | `Tables` | `pointer` | Address of the first table's record storage pool |
+| Removed | `CMiniMdRW` | `UserStringHeap` | `pointer` | Address of the user-string heap's storage pool |
+| Removed | `CMiniMdSchema` | `Heaps` | `uint8` | Heap-size flags byte |
+| Removed | `CMiniMdSchema` | `RecordCounts` | `pointer` | Address of the inline per-table row count array |
+| Removed | `CMiniMdSchema` | `Sorted` | `uint64` | Sorted-table bit mask |
+| Added | `DNMDContext` | `BlobHeap` | `pointer` | Address of the inline DNMDData describing the #Blob heap |
+| Added | `DNMDContext` | `Flags` | `uint32` | Heap index widths, minimal-delta mode, and tables stream format |
+| Added | `DNMDContext` | `GuidHeap` | `pointer` | Address of the inline DNMDData describing the #GUID heap |
+| Added | `DNMDContext` | `Magic` | `uint32` | Value identifying a valid DNMD metadata context |
+| Added | `DNMDContext` | `StringsHeap` | `pointer` | Address of the inline DNMDData describing the #Strings heap |
+| Added | `DNMDContext` | `Tables` | `pointer` | Pointer to the array of DNMD table descriptors |
+| Added | `DNMDContext` | `UserStringHeap` | `pointer` | Address of the inline DNMDData describing the #US heap |
+| Added | `DNMDContext` | `Version` | `pointer` | Pointer to the null-terminated UTF-8 metadata version |
+| Added | `DNMDData` | `Ptr` | `pointer` | Pointer to the current heap or table row bytes |
+| Added | `DNMDData` | `Size` | `nuint` | Live byte count of the heap or table rows |
+| Added | `DNMDTable` | `AddingNewRow` | `uint8` | Nonzero while a new row has not been committed |
+| Added | `DNMDTable` | `Context` | `pointer` | Pointer to the owning DNMD metadata context for an initialized table |
+| Added | `DNMDTable` | `Data` | `pointer` | Address of the inline DNMDData describing this table's rows |
+| Added | `DNMDTable` | `RowCount` | `uint32` | Number of rows in the table |
+| Added | `DNMDTable` | `RowSize` | `uint8` | Byte width of a row in this table |
+| Added | `DNMDTable` | `Sorted` | `uint8` | Whether this table's rows remain sorted |
+| Added | `DNMDTable` | `TableId` | `uint8` | ECMA-335 table index |
+| Removed | `MDInternalRW` | `Stgdb` | `pointer` | Pointer to the read-write storage database |
+| Added | `PEAssembly` | `DNMDMetadataHandleSlot` | `pointer` | Address of the current DNMD metadata handle pointer, updated when the handle is replaced |
+| Removed | `PEAssembly` | `MDImport` | `pointer` | An `MDInternalRW` when module has writable metadata |
+| Removed | `StgPool` | `DataSize` | `uint32` | Live byte count of the head segment |
+| Removed | `StgPool` | `NextSegment` | `pointer` | Pointer to the next pool segment |
+| Removed | `StgPool` | `SegData` | `pointer` | Pointer to the head segment's data |
+| Removed | `StgPoolSeg` | `DataSize` | `uint32` | Live byte count of this extension segment |
+| Removed | `StgPoolSeg` | `NextSegment` | `pointer` | Pointer to the next pool segment, or null |
+| Removed | `StgPoolSeg` | `SegData` | `pointer` | Pointer to this extension segment's data |
+| Removed | `TableRW` | *(type size)* | `uint32` | Size in bytes of each TableRW entry in the CMiniMdRW tables array |
+
+### Global variable changes from `c1`
+
+| Change | Global | Type | Meaning |
+| --- | --- | --- | --- |
+| Added | `DNMDContextMagic` | `uint32` | Magic value used to validate a DNMD metadata context |
+| Added | `DNMDLargeBlobHeap` | `uint32` | Flag for four-byte #Blob heap indexes |
+| Added | `DNMDLargeGuidHeap` | `uint32` | Flag for four-byte #GUID heap indexes |
+| Added | `DNMDLargeStringHeap` | `uint32` | Flag for four-byte #Strings heap indexes |
+| Added | `DNMDMinimalDelta` | `uint32` | Flag for four-byte table and coded indexes, indicated by a #JTD stream |
+| Added | `DNMDTableCount` | `uint32` | Number of DNMD table descriptors in a metadata context |
+| Added | `DNMDUncompressedTables` | `uint32` | Flag indicating the tables stream is #- rather than #~ |
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=EcmaMetadata version=c2 diff-from=c1 -->
+
+Version 2 retains the read-only and saved-copy behavior of version 1. For live read/write
+metadata, CoreCLR provides `PEAssembly.DNMDMetadataHandleSlot`, the address of a pointer-sized
+slot in the DNMD metadata owner. The slot contains the current `mdcxt_t` address and remains
+stable when EnC or reopen replaces the handle. The contract reads this slot instead of
+interpreting `PEAssembly.MDImport` as a legacy `MDInternalRW` object.
+
+The DNMD sub-descriptor provides:
+
+| Type | Fields used |
+| --- | --- |
+| `DNMDContext` | `Magic`, `Flags`, `Version`, `Tables`, and inline `DNMDData` for the `Strings`, `Blob`, `Guid`, and `UserString` heaps |
+| `DNMDData` | `Ptr` and `Size` for a live heap or table data region |
+| `DNMDTable` | Inline `Data` (`DNMDData`), `RowCount`, `RowSize`, `Sorted`, `AddingNewRow`, `TableId`, and `Context` |
+
+Its `DNMDTableCount`, `DNMDContextMagic`, and heap/table flag globals specify the table
+count, handle validation, heap index widths, minimal-delta mode, and compressed versus
+uncompressed tables stream. Read table data from each table's current `Data.Ptr` and `Data.Size`;
+the original metadata image does not reflect subsequent edits. Reject an incomplete row or
+inconsistent row count, row width, or data length.
+
+Reconstruct a contiguous ECMA-335 image using the same serialization as version 1, but
+preserve DNMD's current heap index widths and use `#~` or `#-` according to
+`DNMDUncompressedTables`. Include `#JTD` **only** when `DNMDMinimalDelta` indicates
+four-byte table and coded indexes; heap index widths still follow the DNMD heap-size
+flags. Ordinary writable DNMD metadata omits `#JTD`.
+Cache the resulting image by both `Module.MetadataGeneration` and the current metadata
+handle address. Retain version 1's handling of read-only images and saved dynamic metadata.
+
+```csharp
+// Reconstructs live DNMD metadata as a contiguous ECMA-335 image.
+byte[] GetReadWriteMetadata(ModuleHandle handle)
+{
+    // Require read/write metadata. Read Module.MetadataGeneration and the current
+    // DNMD handle; return the cached image only if both still match.
+    //
+    // Get the PEAssembly from the Loader contract. Read the pointer-sized slot
+    // at PEAssembly.DNMDMetadataHandleSlot to find the current DNMDContext.
+    // Reject a missing handle or a context whose Magic != DNMDContextMagic.
+    // Validate DNMDTableCount against the ECMA-335 table limit and require
+    // DNMDContext.Tables to point to the table array.
+    //
+    // For each DNMDTableCount entry at Tables + index * the DNMDTable type size:
+    // Reject AddingNewRow and record RowCount, including zero for empty tables.
+    // For nonempty tables, validate Context, TableId, RowSize, and Sorted.
+    // Read the inline DNMDData at Data; before allocating, require
+    // Size == RowCount * RowSize, Size within the component limit, and a
+    // nonnull Ptr; then copy the live table rows.
+    // Record the sorted flag for each nonempty table.
+    //
+    // Read DNMDContext.Version as a strict UTF-8 string, rejecting a null pointer.
+    // Read the inline DNMDData at StringsHeap, BlobHeap, GuidHeap, and
+    // UserStringHeap. Reject any region whose Size exceeds the component limit
+    // or whose nonzero Size has a null Ptr; copy Size bytes from each Ptr.
+    // These live views reflect edits; the original metadata image does not.
+    //
+    // Decode DNMDContext.Flags using DNMDLargeStringHeap, DNMDLargeGuidHeap,
+    // and DNMDLargeBlobHeap for heap index widths, DNMDMinimalDelta for
+    // four-byte table and coded indexes, and DNMDUncompressedTables for
+    // the #- versus #~ tables stream.
+    // Combine the version, flags, row counts, sorted flags, and live data
+    // into a TargetEcmaMetadata value.
+    //
+    // Use version 1's serializer to write the metadata root and version,
+    // #Strings, #Blob, #GUID, #US, and #- or #~ streams. Write the tables
+    // stream's heap-size flags, valid/sorted masks, row counts, and rows
+    // in table order. Include #JTD only for a minimal delta; heap index
+    // widths still follow the DNMD heap-size flags.
+    //
+    // Cache the image by Module.MetadataGeneration and the current DNMD
+    // handle address, then return it.
+}
+```

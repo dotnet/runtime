@@ -349,8 +349,17 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     // Swap the pointers in a thread safe manner.  If the contents of *ppImport
     //  equals pOld then no other thread got here first, and the old contents are
     //  replaced with pNew.  The old contents are returned.
+    void const* newHandleSlot = nullptr;
+    HRESULT slotResult = GetMDInternalMetadataHandleSlot(pNew, &newHandleSlot);
+    if (FAILED(slotResult) && slotResult != E_NOINTERFACE)
+    {
+        pNew->Release();
+        IfFailThrow(slotResult);
+    }
+
     if (InterlockedCompareExchangeT(&m_pMDImport, pNew, pOld) == pOld)
     {
+        m_pDNMDMetadataHandleSlot = newHandleSlot;
         //if the debugger queries, it will now see that we have RW metadata
         m_MDImportIsRW_Debugger_Use_Only = TRUE;
 
@@ -391,6 +400,9 @@ void PEAssembly::OpenMDImport()
 
     _ASSERTE(m_pMDImport);
     m_pMDImport->AddRef();
+    HRESULT slotResult = GetMDInternalMetadataHandleSlot(m_pMDImport, &m_pDNMDMetadataHandleSlot);
+    if (slotResult != E_NOINTERFACE)
+        IfFailThrow(slotResult);
 }
 
 void PEAssembly::OpenEmitter()
@@ -641,6 +653,7 @@ PEAssembly::PEAssembly(
       m_PEImage{NULL}
     , m_MDImportIsRW_Debugger_Use_Only{FALSE}
     , m_pMDImport{NULL}
+    , m_pDNMDMetadataHandleSlot{nullptr}
     , m_pImporter{NULL}
     , m_pEmitter{NULL}
     , m_refCount{1}
@@ -677,6 +690,9 @@ PEAssembly::PEAssembly(
                                                      (void **)&m_pMDImport));
         m_pEmitter = pEmit;
         pEmit->AddRef();
+        HRESULT slotResult = GetMDInternalMetadataHandleSlot(m_pMDImport, &m_pDNMDMetadataHandleSlot);
+        if (slotResult != E_NOINTERFACE)
+            IfFailThrow(slotResult);
         m_MDImportIsRW_Debugger_Use_Only = TRUE;
     }
 

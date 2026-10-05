@@ -59,6 +59,11 @@ STDAPI GetMDPublicInterfaceFromInternal(void* internalImport, REFIID riid, void*
         static_cast<IMDInternalImport*>(internalImport), riid, publicInterface);
 }
 
+STDAPI GetMDInternalMetadataHandleSlot(IMDInternalImport* internalImport, void const** slot)
+{
+    return GetDNMDInternalMetadataHandleSlot(internalImport, slot);
+}
+
 STDAPI ConvertMDInternalImport(IMDInternalImport* internalImport, IMDInternalImport** converted)
 {
     return ConvertDNMDInternalImport(internalImport, converted);

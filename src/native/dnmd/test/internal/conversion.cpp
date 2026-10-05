@@ -172,6 +172,54 @@ TEST(InternalConversion, NewWritableScopeSharesPublicAndInternalIdentity)
     EXPECT_EQ(internal.p, alreadyWritable);
 }
 
+TEST(InternalConversion, MetadataHandleSlotTracksScopeReplacement)
+{
+    std::vector<uint8_t> image;
+    ASSERT_NO_FATAL_FAILURE(CreateImage(image));
+
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+    minipal::com_ptr<IMDInternalImport> readOnly;
+    ASSERT_NO_FATAL_FAILURE(OpenReadOnly(dispenser.p, image, readOnly));
+
+    void const* readOnlySlot = nullptr;
+    EXPECT_EQ(E_INVALIDARG, GetDNMDInternalMetadataHandleSlot(nullptr, &readOnlySlot));
+    EXPECT_EQ(nullptr, readOnlySlot);
+    EXPECT_EQ(E_INVALIDARG, GetDNMDInternalMetadataHandleSlot(readOnly.p, nullptr));
+    ASSERT_EQ(S_OK, GetDNMDInternalMetadataHandleSlot(readOnly.p, &readOnlySlot));
+    ASSERT_NE(nullptr, readOnlySlot);
+    mdhandle_t readOnlyHandle = nullptr;
+    std::memcpy(&readOnlyHandle, readOnlySlot, sizeof(readOnlyHandle));
+    ASSERT_NE(nullptr, readOnlyHandle);
+
+    IMDInternalImport* writablePointer = nullptr;
+    ASSERT_EQ(S_OK, ConvertDNMDInternalImport(readOnly.p, &writablePointer));
+    minipal::com_ptr<IMDInternalImport> writable;
+    writable.Attach(writablePointer);
+
+    void const* writableSlot = nullptr;
+    ASSERT_EQ(S_OK, GetDNMDInternalMetadataHandleSlot(writable.p, &writableSlot));
+    ASSERT_NE(nullptr, writableSlot);
+    EXPECT_NE(readOnlySlot, writableSlot);
+
+    mdhandle_t writableHandle = nullptr;
+    std::memcpy(&writableHandle, writableSlot, sizeof(writableHandle));
+    ASSERT_NE(nullptr, writableHandle);
+
+    ASSERT_EQ(S_OK, ReOpenDNMDMetaDataWithMemory(writable.p, image.data(), (ULONG)image.size(), 0));
+    void const* reopenedSlot = nullptr;
+    ASSERT_EQ(S_OK, GetDNMDInternalMetadataHandleSlot(writable.p, &reopenedSlot));
+    EXPECT_EQ(writableSlot, reopenedSlot);
+
+    mdhandle_t reopenedHandle = nullptr;
+    std::memcpy(&reopenedHandle, reopenedSlot, sizeof(reopenedHandle));
+    EXPECT_NE(writableHandle, reopenedHandle);
+
+    mdhandle_t stillReadOnly = nullptr;
+    std::memcpy(&stillReadOnly, readOnlySlot, sizeof(stillReadOnly));
+    EXPECT_EQ(readOnlyHandle, stillReadOnly);
+}
+
 TEST(InternalConversion, MissingAssemblyCustomAttributeReturnsFalse)
 {
     minipal::com_ptr<IMetaDataDispenserEx> dispenser;

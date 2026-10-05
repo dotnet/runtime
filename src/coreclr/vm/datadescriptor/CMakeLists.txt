@@ -21,6 +21,19 @@ generate_data_descriptors(
    INTERFACE_TARGET runtime_descriptor_interface
    EXPORT_VISIBLE)
 
+set(DNMD_DESCRIPTOR_DIR "${CLR_SRC_NATIVE_DIR}/dnmd/src/datadescriptor")
+add_library(dnmd_descriptor_interface INTERFACE)
+target_include_directories(dnmd_descriptor_interface INTERFACE
+    ${DNMD_DESCRIPTOR_DIR}
+    ${CLR_SRC_NATIVE_DIR}/dnmd/src/inc
+    ${CLR_SRC_NATIVE_DIR}/dnmd/src/dnmd)
+add_dependencies(dnmd_descriptor_interface cee_wks_core)
+generate_data_descriptors(
+    LIBRARY_NAME dnmd_descriptor
+    CONTRACT_NAME "DNMDContractDescriptor"
+    INTERFACE_TARGET dnmd_descriptor_interface)
+target_sources(cdac_contract_descriptor PRIVATE dnmd-descriptor.cpp)
+
 set(GC_DESCRIPTOR_DIR "${CLR_DIR}/gc/datadescriptor")
 add_library(gc_wks_descriptor_interface INTERFACE)
 target_include_directories(gc_wks_descriptor_interface INTERFACE

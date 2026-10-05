@@ -1,10 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Linq;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
+using ModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -71,5 +75,65 @@ public class EcmaMetadataDumpTests : DumpTestBase
             typeDefCount++;
         }
         Assert.True(typeDefCount > 0, "Expected at least one TypeDef in module metadata");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "DNMD metadata descriptors require the local runtime")]
+    public void EcmaMetadata_DynamicModulePublishesDNMDDescriptor(TestConfiguration config)
+    {
+        InitializeDumpTest(config, "DNMDMetadata", "full");
+        ILoader loader = Target.Contracts.Loader;
+        IEcmaMetadata metadata = Target.Contracts.EcmaMetadata;
+
+        ModuleHandle module = Assert.Single(loader.GetModuleHandles(
+            loader.GetAppDomain(), AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution)
+            .Where(handle => loader.IsDynamic(handle)));
+        MetadataReader reader = Assert.IsType<MetadataReader>(metadata.GetMetadata(module));
+        Assert.Contains(reader.TypeDefinitions, handle =>
+            reader.GetString(reader.GetTypeDefinition(handle).Name) == "Sample");
+
+        Target.TypeInfo peAssemblyType = Target.GetTypeInfo(DataType.PEAssembly);
+        TargetPointer peAssembly = loader.GetPEAssembly(module);
+        TargetPointer slot = Target.ReadPointer(
+            peAssembly + (ulong)peAssemblyType.Fields["DNMDMetadataHandleSlot"].Offset);
+        Assert.NotEqual(TargetPointer.Null, slot);
+
+        TargetPointer context = Target.ReadPointer(slot);
+        Target.TypeInfo contextType = Target.GetTypeInfo(DataType.DNMDContext);
+        uint magic = Target.Read<uint>(context + (ulong)contextType.Fields["Magic"].Offset);
+        Assert.Equal(Target.ReadGlobal<uint>(Constants.Globals.DNMDContextMagic), magic);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "DNMD metadata descriptors require the local runtime")]
+    public void EcmaMetadata_DenseDeltaReadsLiveDNMDMetadata(TestConfiguration config)
+    {
+        InitializeDumpTest(config, "DNMDMetadata", "full");
+        ILoader loader = Target.Contracts.Loader;
+        ModuleHandle module = Assert.Single(loader.GetModuleHandles(
+            loader.GetAppDomain(), AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution)
+            .Where(handle => loader.GetSimpleName(handle) == "DNMDMetadata"));
+
+        TargetPointer peAssembly = loader.GetPEAssembly(module);
+        Assert.True(Target.Contracts.EcmaMetadata.HasReadWriteMetadata(peAssembly));
+
+        byte[] image = Target.Contracts.EcmaMetadata.GetReadWriteMetadata(module);
+        Assert.Equal(-1, image.AsSpan().IndexOf("#JTD"u8));
+        using MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(
+            ImmutableCollectionsMarshal.AsImmutableArray(image));
+        MetadataReader reader = provider.GetMetadataReader();
+        Assert.Contains(reader.TypeReferences, handle =>
+        {
+            TypeReference type = reader.GetTypeReference(handle);
+            return reader.GetString(type.Namespace) == "Example"
+                && reader.GetString(type.Name) == "Added";
+        });
+
+        MetadataReader? cachedReader = Target.Contracts.EcmaMetadata.GetMetadata(module);
+        Assert.NotNull(cachedReader);
+        Assert.Contains(cachedReader.TypeReferences, handle =>
+            cachedReader.GetString(cachedReader.GetTypeReference(handle).Name) == "Added");
     }
 }

@@ -86,6 +86,7 @@ set(CORECLR_LIBRARIES
     coreclrminipal
     gc_pal
     cdac_contract_descriptor
+    dnmd_descriptor
     gc_wks_descriptor
 )
 

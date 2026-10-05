@@ -49,6 +49,13 @@ public static class Constants
 
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
         public const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
+        public const string DNMDContextMagic = nameof(DNMDContextMagic);
+        public const string DNMDTableCount = nameof(DNMDTableCount);
+        public const string DNMDLargeStringHeap = nameof(DNMDLargeStringHeap);
+        public const string DNMDLargeGuidHeap = nameof(DNMDLargeGuidHeap);
+        public const string DNMDLargeBlobHeap = nameof(DNMDLargeBlobHeap);
+        public const string DNMDMinimalDelta = nameof(DNMDMinimalDelta);
+        public const string DNMDUncompressedTables = nameof(DNMDUncompressedTables);
         public const string DacNotificationFlags = nameof(DacNotificationFlags);
         public const string OffsetOfCurrentThreadInfo = nameof(OffsetOfCurrentThreadInfo);
         public const string TlsIndexBase = nameof(TlsIndexBase);

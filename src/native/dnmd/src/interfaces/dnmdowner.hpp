@@ -26,6 +26,9 @@ inline HRESULT ValidateDNMDUpdateMode(uint32_t mode)
 struct IDNMDOwner : IUnknown
 {
     virtual mdhandle_t MetaData() = 0;
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
+    virtual void const* MetaDataHandleSlot() = 0;
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
     virtual bool IsReadWrite() = 0;
     virtual uint32_t DuplicateChecks() = 0;
     virtual uint32_t UpdateMode() = 0;
@@ -60,6 +63,9 @@ public:
     mdhandle_view& operator=(mdhandle_view&& other) = default;
 
     mdhandle_t get() const;
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
+    void const* MetaDataHandleSlot() const;
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
     bool IsReadWrite() const;
     uint32_t DuplicateChecks() const;
     uint32_t UpdateMode() const;
@@ -157,6 +163,14 @@ public: // IDNMDOwner
         return _currentHandle.load(std::memory_order_acquire);
     }
 
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
+    void const* MetaDataHandleSlot() override
+    {
+        static_assert(sizeof(_currentHandle) == sizeof(mdhandle_t), "cDAC requires a pointer-sized metadata handle slot");
+        return &_currentHandle;
+    }
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
+
     bool IsReadWrite() override
     {
         return _readWrite;
@@ -228,6 +242,13 @@ inline mdhandle_t mdhandle_view::get() const
 {
     return _owner->MetaData();
 }
+
+#if defined(DNMD_ENABLE_INTERNAL_INTERFACES)
+inline void const* mdhandle_view::MetaDataHandleSlot() const
+{
+    return _owner->MetaDataHandleSlot();
+}
+#endif // DNMD_ENABLE_INTERNAL_INTERFACES
 
 inline bool mdhandle_view::IsReadWrite() const
 {

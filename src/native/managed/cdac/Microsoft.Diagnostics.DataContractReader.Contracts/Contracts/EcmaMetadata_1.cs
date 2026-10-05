@@ -11,14 +11,16 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
+internal class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
+    protected Target Target => target;
+
     // Heap index size flags (ECMA-335 II.24.2.6)
     private const byte HEAP_STRING_4 = 0x01;
     private const byte HEAP_GUID_4 = 0x02;
     private const byte HEAP_BLOB_4 = 0x04;
-    private readonly Dictionary<ModuleHandle, (uint Generation, MetadataReaderProvider? Provider)> _metadata = [];
-    private readonly Dictionary<ModuleHandle, (uint Generation, byte[] Blob)> _readWriteMetadataBlob = [];
+    private readonly Dictionary<ModuleHandle, ((uint Generation, TargetPointer Handle) Key, MetadataReaderProvider? Provider)> _metadata = [];
+    private readonly Dictionary<ModuleHandle, ((uint Generation, TargetPointer Handle) Key, byte[] Blob)> _readWriteMetadataBlob = [];
     private readonly Dictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
 
     public void Flush(FlushScope scope)
@@ -96,11 +98,11 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
     public MetadataReader? GetMetadata(ModuleHandle handle)
     {
-        uint generation = GetMetadataGeneration(handle);
+        (uint Generation, TargetPointer Handle) key = GetMetadataCacheKey(handle);
 
-        if (_metadata.TryGetValue(handle, out (uint Generation, MetadataReaderProvider? Provider) cached))
+        if (_metadata.TryGetValue(handle, out ((uint Generation, TargetPointer Handle) Key, MetadataReaderProvider? Provider) cached))
         {
-            if (cached.Generation == generation)
+            if (cached.Key == key)
             {
                 return cached.Provider?.GetMetadataReader();
             }
@@ -108,7 +110,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         }
 
         MetadataReaderProvider? provider = GetMetadataProvider(handle);
-        _metadata[handle] = (generation, provider);
+        _metadata[handle] = (key, provider);
         return provider?.GetMetadataReader();
     }
 
@@ -150,15 +152,15 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         {
             throw new ArgumentException("Module does not have read/write metadata.", nameof(handle));
         }
-        uint generation = GetMetadataGeneration(handle);
+        (uint Generation, TargetPointer Handle) key = GetMetadataCacheKey(handle);
 
-        if (_readWriteMetadataBlob.TryGetValue(handle, out (uint Generation, byte[] Blob) cached) && cached.Generation == generation)
+        if (_readWriteMetadataBlob.TryGetValue(handle, out ((uint Generation, TargetPointer Handle) Key, byte[] Blob) cached) && cached.Key == key)
         {
             return cached.Blob;
         }
 
         byte[] blob = BuildReadWriteMetadataBlob(GetTargetEcmaMetadata(handle));
-        _readWriteMetadataBlob[handle] = (generation, blob);
+        _readWriteMetadataBlob[handle] = (key, blob);
         return blob;
     }
 
@@ -186,19 +188,19 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         builder.WriteUInt16(0);
 
         // number of streams
-        ushort numStreams = 5; // #Strings, #US, #Blob, #GUID, #~ (metadata)
-        if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
+        ushort numStreams = 5; // #Strings, #US, #Blob, #GUID, tables
+        if (targetEcmaMetadata.Schema.UsesMinimalDeltaTableIndexes)
         {
-            // We direct MetadataReader to use 4-byte encoding for all variable-sized columns
-            // by providing the marker stream for a "minimal delta" image.
+            // The minimal-delta marker selects four-byte table and coded indexes.
+            // Heap index widths still come from the heap-size flags.
             numStreams++;
         }
         builder.WriteUInt16(numStreams);
 
         // Write Stream headers
-        if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
+        if (targetEcmaMetadata.Schema.UsesMinimalDeltaTableIndexes)
         {
-            // Write the #JTD stream to indicate that all variable-sized columns are 4 bytes long.
+            // Write the #JTD stream for four-byte table and coded indexes.
             WriteStreamHeader(builder, "#JTD", 0).WriteInt32(builder.Count);
         }
 
@@ -207,11 +209,9 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         BlobWriter guidOffset = WriteStreamHeader(builder, "#GUID", (int)AlignUp((ulong)targetEcmaMetadata.GuidHeap.Length, 4ul));
         BlobWriter userStringOffset = WriteStreamHeader(builder, "#US", (int)AlignUp((ulong)targetEcmaMetadata.UserStringHeap.Length, 4ul));
 
-        // We'll use the "uncompressed" tables stream name as the runtime may have created the *Ptr tables
-        // that are only present in the uncompressed tables stream.
         BlobWriter tablesOffset = new(builder.ReserveBytes(4));
         BlobWriter tablesSize = new(builder.ReserveBytes(4));
-        Write4ByteAlignedString(builder, "#-");
+        Write4ByteAlignedString(builder, targetEcmaMetadata.Schema.UseUncompressedTableStream ? "#-" : "#~");
 
         // Write the heap-style Streams
 
@@ -316,9 +316,9 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         }
     }
 
-    private struct EcmaMetadataSchema
+    protected struct EcmaMetadataSchema
     {
-        public EcmaMetadataSchema(string metadataVersion, bool largeStringHeap, bool largeBlobHeap, bool largeGuidHeap, int[] rowCount, bool[] isSorted, bool variableSizedColumnsAre4BytesLong)
+        public EcmaMetadataSchema(string metadataVersion, bool largeStringHeap, bool largeBlobHeap, bool largeGuidHeap, int[] rowCount, bool[] isSorted, bool usesMinimalDeltaTableIndexes, bool useUncompressedTableStream = true)
         {
             MetadataVersion = metadataVersion;
             LargeStringHeap = largeStringHeap;
@@ -328,7 +328,8 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             _rowCount = rowCount;
             _isSorted = isSorted;
 
-            VariableSizedColumnsAreAll4BytesLong = variableSizedColumnsAre4BytesLong;
+            UsesMinimalDeltaTableIndexes = usesMinimalDeltaTableIndexes;
+            UseUncompressedTableStream = useUncompressedTableStream;
         }
 
         public readonly string MetadataVersion;
@@ -346,10 +347,11 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
         // In certain scenarios the size of the tables is forced to be the maximum size
         // Otherwise the size of columns should be computed based on RowSize/the various heap flags
-        public readonly bool VariableSizedColumnsAreAll4BytesLong;
+        public readonly bool UsesMinimalDeltaTableIndexes;
+        public readonly bool UseUncompressedTableStream;
     }
 
-    private sealed class TargetEcmaMetadata
+    protected sealed class TargetEcmaMetadata
     {
         public TargetEcmaMetadata(EcmaMetadataSchema schema,
                             byte[][] tables,
@@ -413,6 +415,11 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return module.MetadataGeneration;
     }
 
+    private (uint Generation, TargetPointer Handle) GetMetadataCacheKey(ModuleHandle handle)
+        => (GetMetadataGeneration(handle), GetMetadataHandle(handle));
+
+    protected virtual TargetPointer GetMetadataHandle(ModuleHandle handle) => TargetPointer.Null;
+
     public TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
     {
         Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -427,7 +434,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return data.MDImportIsRW != 0;
     }
 
-    private TargetEcmaMetadata GetTargetEcmaMetadata(ModuleHandle handle)
+    protected virtual TargetEcmaMetadata GetTargetEcmaMetadata(ModuleHandle handle)
     {
         TargetPointer peAssemblyPtr = target.Contracts.Loader.GetPEAssembly(handle);
         Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);

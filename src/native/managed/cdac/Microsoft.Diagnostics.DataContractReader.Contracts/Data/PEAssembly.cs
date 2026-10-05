@@ -10,4 +10,5 @@ internal sealed partial class PEAssembly : IData<PEAssembly>
     [Field] public partial TargetPointer AssemblyBinder { get; }
     [Field] public partial int MDImportIsRW { get; }
     [Field] public partial TargetPointer MDImport { get; }
+    [Field] public partial TargetPointer DNMDMetadataHandleSlot { get; }
 }

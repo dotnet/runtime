@@ -43,6 +43,11 @@ STDAPI  GetMDPublicInterfaceFromInternal(
     REFIID      riid,                   // [IN] desired interface
     void        **ppv);                 // [OUT] returned interface
 
+// Address of the DNMD metadata handle slot for diagnostic readers.
+STDAPI GetMDInternalMetadataHandleSlot(
+    IMDInternalImport* pIMD,
+    void const** ppSlot);
+
 // Converts an internal MD import API into the read/write version of this API.
 // This could support edit and continue, or modification of the metadata at
 // runtime (say for profiling).

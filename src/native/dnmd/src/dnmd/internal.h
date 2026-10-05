@@ -69,6 +69,8 @@ static_assert(MDTABLE_MAX_COUNT <= 64, "Specification sets max table count to 64
 
 #define MDTABLE_MAX_COLUMN_COUNT 9
 
+#define MDLIB_MAGIC_NUMBER 0x3d71b
+
 // Macros for computing token types.
 #define CreateTokenType(tk) (mdToken)(((uint32_t)tk << 24) & 0xff000000)
 #define ExtractTokenType(tk) ((tk >> 24) & 0xff)
@@ -151,8 +153,8 @@ typedef struct mdtable__
     uint32_t row_count;
     uint8_t row_size_bytes;
     uint8_t column_count;
-    bool is_sorted : 1;
-    bool is_adding_new_row : 1;
+    uint8_t is_sorted;
+    uint8_t is_adding_new_row;
     uint8_t table_id;
     struct mdcxt__* cxt; // Non-null is indication of complete initialization
     mdtcol_t* column_details;
