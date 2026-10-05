@@ -534,7 +534,7 @@ namespace System.Runtime.CompilerServices
                 return null;
 
             // Allocate a new instance of the T in Nullable<T>.
-            MethodTable* dstMT = srcMT->InstantiationArg0();
+            MethodTable* dstMT = srcMT->NullableType.AsMethodTable();
             ref byte srcValue = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
 
             // Delegate to non-nullable boxing implementation
@@ -592,11 +592,13 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            // Normally getting the first generic argument involves checking the PerInstInfo to get the count of generic dictionaries
-            // in the hierarchy, and then doing a bit of math to find the right dictionary, but since we know this is nullable
-            // we can do a simple double deference to do the same thing.
-            Debug.Assert(typeMT->InstantiationArg0() == **typeMT->PerInstInfo);
-            MethodTable *pMTNullableArg = **typeMT->PerInstInfo;
+            TypeHandle nullableType = typeMT->NullableType;
+            if (nullableType.IsTypeDesc)
+            {
+                return false;
+            }
+
+            MethodTable* pMTNullableArg = nullableType.AsMethodTable();
             if (pMTNullableArg == boxedMT)
             {
                 return true;

@@ -829,7 +829,7 @@ namespace System.Runtime.CompilerServices
         /// generic dictionary is described in the DictionaryLayout of the associated canonical MethodTable.
         /// </summary>
         [FieldOffset(ElementTypeOffset)]
-        public MethodTable*** PerInstInfo;
+        public TypeHandle** PerInstInfo;
 
         /// <summary>
         /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
@@ -986,6 +986,20 @@ namespace System.Runtime.CompilerServices
 
 
         public bool IsNullable { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable; } }
+
+        public TypeHandle NullableType
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(IsNullable);
+
+                // Nullable<T> has one generic argument in its first dictionary.
+                TypeHandle type = **PerInstInfo;
+                Debug.Assert(type.IsTypeDesc || InstantiationArg0() == type.AsMethodTable());
+                return type;
+            }
+        }
 
         public bool IsByRefLike => (Flags & (enum_flag_HasComponentSize | enum_flag_IsByRefLike)) == enum_flag_IsByRefLike;
 
