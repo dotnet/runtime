@@ -6529,12 +6529,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         assert(IsApxNddEncodableInstruction(ins));
         // targetReg has to be an actual register if using NDD.
         assert(targetReg < REG_STK);
-        // make sure target register is not either of the src registers.
+        // targetReg may be src's register (a non-commutative sub), but never dst's.
         assert(dst->isUsedFromReg());
-        regNumber dstreg = dst->GetRegNum();
-        regNumber srcreg = src->isUsedFromReg() ? src->GetRegNum() : REG_NA;
-        assert(targetReg != dstreg);
-        assert(targetReg != srcreg);
+        assert(targetReg != dst->GetRegNum());
     }
 #endif
 

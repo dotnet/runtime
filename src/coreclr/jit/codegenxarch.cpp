@@ -1043,10 +1043,19 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // be the same local.
     else if (op2reg == targetReg)
     {
-        assert(GenTree::OperIsCommutative(oper) || genIsSameLocalVar(op1, op2));
-
-        dst = op2;
-        src = op1;
+        if (GenTree::OperIsCommutative(oper) || genIsSameLocalVar(op1, op2))
+        {
+            dst = op2;
+            src = op1;
+        }
+        else
+        {
+            // LSRA only lets a non-commutative op reuse op2's register when it is emitted as APX NDD.
+            eligibleForNDD = emit->DoJitUseApxNDD(ins, op2);
+            assert(eligibleForNDD);
+            dst = op1;
+            src = op2;
+        }
     }
     // now we know there are 3 different operands so attempt to use LEA
     else if (oper == GT_ADD && !varTypeIsFloating(treeNode) && !treeNode->gtOverflowEx() // LEA does not set flags
@@ -1118,7 +1127,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         // operands should be already formatted above
         assert(dst->isUsedFromReg());
         assert(op1reg != targetReg);
-        assert(op2reg != targetReg);
         r = emit->emitIns_BASE_R_R_RM(ins, emitTypeSize(treeNode), targetReg, treeNode, dst, src, eligibleForNDD);
     }
     else

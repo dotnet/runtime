@@ -888,6 +888,13 @@ int LinearScan::BuildRMWUses(
     {
         delayUseOperand = nullptr;
     }
+    else if (node->OperIs(GT_SUB) && !varTypeIsFloating(node) && !op2->isContained() && op1->OperIs(GT_LCL_VAR) &&
+             isCandidateLocalRef(op1) && !op1->AsLclVar()->IsLastUse(0) &&
+             m_compiler->GetEmitter()->DoJitUseApxNDD(INS_sub))
+    {
+        // op1 stays live, so dst can't take its register; APX NDD "sub dst, op1, op2" lets dst take op2's instead.
+        delayUseOperand = nullptr;
+    }
     if (delayUseOperand != nullptr)
     {
         assert(!prefOp1 || delayUseOperand != op1);
