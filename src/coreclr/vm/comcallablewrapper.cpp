@@ -1873,8 +1873,6 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
     // grab the sync block from the server
     SyncBlock* pSyncBlock = pServer->GetSyncBlock();
 
-    pSyncBlock->SetPrecious();
-
     // if the object belongs to a domain neutral class, need to allocate the wrapper in the default domain.
     // The object is potentially agile so if allocate out of the current domain and then hand out to
     // multiple domains we might never release the wrapper for that object and hence never unload the CCWC.

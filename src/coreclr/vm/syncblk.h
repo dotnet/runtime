@@ -53,9 +53,6 @@
 //
 // We burn an extra 4 bytes for the pointer from the SyncTableEntry to the SyncBlock.
 //
-// The reason for this is that many objects have a SyncTableEntry but no SyncBlock. That's because someone
-// (e.g. HashTable) called Hash() on them.
-//
 // Incidentally, there's a better write-up of all this stuff in the archives.
 
 #ifdef TARGET_X86
@@ -412,22 +409,8 @@ class SyncBlock
     DWORD GetSyncBlockIndex()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwSyncIndex & ~SyncBlockPrecious;
+        return m_dwSyncIndex;
     }
-
-   // As soon as a syncblock acquires some state that cannot be recreated, we latch
-   // a bit.
-   void SetPrecious()
-   {
-       WRAPPER_NO_CONTRACT;
-       m_dwSyncIndex |= SyncBlockPrecious;
-   }
-
-   BOOL IsPrecious()
-   {
-       LIMITED_METHOD_CONTRACT;
-       return (m_dwSyncIndex & SyncBlockPrecious) != 0;
-   }
 
    // Get the lock information for this sync block.
    // Returns false when the lock is not locked or has not been created yet.
@@ -440,15 +423,6 @@ class SyncBlock
    }
 
    OBJECTHANDLE GetOrCreateLock(OBJECTREF lockObj);
-
-    // True is the syncblock and its index are disposable.
-    // If new members are added to the syncblock, this
-    // method needs to be modified accordingly
-    BOOL IsIDisposable()
-    {
-        WRAPPER_NO_CONTRACT;
-        return !IsPrecious() && m_thinLock == 0u;
-    }
 
     // Gets the InteropInfo block, creates a new one if none is present.
     InteropSyncBlockInfo* GetInteropInfo()
@@ -516,7 +490,6 @@ class SyncBlock
         if (result == 0)
         {
             // the sync block now holds a hash code, which we can't afford to lose.
-            SetPrecious();
             return hashCode;
         }
         else
@@ -533,13 +506,6 @@ class SyncBlock
         LIMITED_METHOD_CONTRACT;
         // We've already destructed.  But retain the memory.
     }
-
-    enum
-    {
-        // This bit indicates that the syncblock is valuable and can neither be discarded
-        // nor re-created.
-        SyncBlockPrecious   = 0x80000000,
-    };
 
     private:
     void InitializeThinLock(DWORD recursionLevel, DWORD threadId);
@@ -913,8 +879,6 @@ class ObjHeader
         DWORD index = value & MASK_SYNCBLOCKINDEX;
         return g_pSyncTable[(int)index].m_SyncBlock;
     }
-
-    DWORD GetSyncBlockIndex();
 
     PTR_Object GetBaseObject()
     {
