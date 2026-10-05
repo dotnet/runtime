@@ -7,7 +7,7 @@ namespace System.Runtime
 {
     internal class ThunksHeap
     {
-        public static unsafe ThunksHeap CreateThunksHeap(IntPtr commonStubAddress)
+        public static unsafe ThunksHeap CreateThunksHeap()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_DynamicEntrypoint);
         }
