@@ -106,5 +106,9 @@ namespace Internal.ReadyToRunConstants
         Cssc = 93,
         Zicond = 94,
         Fp16 = 95,
+        RiscV64F = 96,
+        RiscV64D = 97,
+        RiscV64C = 98,
+        RiscV64A = 99,
     }
 }

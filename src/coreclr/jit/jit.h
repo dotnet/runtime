@@ -476,6 +476,12 @@ public:
 #else  // !FEATURE_HFA
     static const bool compFeatureHfa = false;
 #endif // FEATURE_HFA
+#ifdef TARGET_RISCV64
+    // Soft-float changes the register class of TYP_FLOAT/TYP_DOUBLE (varTypeRegister),
+    // which is a process-wide table; the mode is fixed by the first compilation
+    // (see compInitOptions for the states).
+    static LONG compUseSoftFPConfigured;
+#endif // TARGET_RISCV64
 
 #ifdef FEATURE_HFA
 #undef FEATURE_HFA

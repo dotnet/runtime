@@ -15206,6 +15206,14 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             castFromType     = TYP_DOUBLE;
             hasOverflowCheck = true;
             break;
+        case CORINFO_HELP_FLT2DBL:
+            castToType   = TYP_DOUBLE;
+            castFromType = TYP_FLOAT;
+            break;
+        case CORINFO_HELP_DBL2FLT:
+            castToType   = TYP_FLOAT;
+            castFromType = TYP_DOUBLE;
+            break;
 
         default:
             unreached();
@@ -15272,6 +15280,42 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_DBLREM:
             vnf = VNF_MOD;
+            break;
+        case CORINFO_HELP_FLTADD:
+            vnf = VNFunc(GT_ADD);
+            break;
+        case CORINFO_HELP_DBLADD:
+            vnf = VNFunc(GT_ADD);
+            break;
+        case CORINFO_HELP_FLTSUB:
+            vnf = VNFunc(GT_SUB);
+            break;
+        case CORINFO_HELP_DBLSUB:
+            vnf = VNFunc(GT_SUB);
+            break;
+        case CORINFO_HELP_FLTMUL:
+            vnf = VNFunc(GT_MUL);
+            break;
+        case CORINFO_HELP_DBLMUL:
+            vnf = VNFunc(GT_MUL);
+            break;
+        case CORINFO_HELP_FLTDIV:
+            vnf = VNFunc(GT_DIV);
+            break;
+        case CORINFO_HELP_DBLDIV:
+            vnf = VNFunc(GT_DIV);
+            break;
+        case CORINFO_HELP_FLTCMP_LE:
+            vnf = VNF_SoftFPCmpLE;
+            break;
+        case CORINFO_HELP_DBLCMP_LE:
+            vnf = VNF_SoftFPCmpLE;
+            break;
+        case CORINFO_HELP_FLTCMP_GE:
+            vnf = VNF_SoftFPCmpGE;
+            break;
+        case CORINFO_HELP_DBLCMP_GE:
+            vnf = VNF_SoftFPCmpGE;
             break;
 
         // These allocation operations probably require some augmentation -- perhaps allocSiteId,
@@ -15515,6 +15559,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         case CORINFO_HELP_DBL2LNG:
         case CORINFO_HELP_DBL2LNG_OVF:
         case CORINFO_HELP_DBL2UINT_OVF:
+        case CORINFO_HELP_FLT2DBL:
+        case CORINFO_HELP_DBL2FLT:
         case CORINFO_HELP_DBL2ULNG:
         case CORINFO_HELP_DBL2ULNG_OVF:
             fgValueNumberCastHelper(call);

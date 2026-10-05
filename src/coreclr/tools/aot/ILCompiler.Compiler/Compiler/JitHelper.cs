@@ -219,6 +219,50 @@ namespace ILCompiler
                     mangledName = "fmodf";
                     break;
 
+                // Soft-float arithmetic: the compiler-rt/libgcc builtins of the target toolchain
+                case ReadyToRunHelper.FltAdd:
+                    mangledName = "__addsf3";
+                    break;
+                case ReadyToRunHelper.FltSub:
+                    mangledName = "__subsf3";
+                    break;
+                case ReadyToRunHelper.FltMul:
+                    mangledName = "__mulsf3";
+                    break;
+                case ReadyToRunHelper.FltDiv:
+                    mangledName = "__divsf3";
+                    break;
+                case ReadyToRunHelper.DblAdd:
+                    mangledName = "__adddf3";
+                    break;
+                case ReadyToRunHelper.DblSub:
+                    mangledName = "__subdf3";
+                    break;
+                case ReadyToRunHelper.DblMul:
+                    mangledName = "__muldf3";
+                    break;
+                case ReadyToRunHelper.DblDiv:
+                    mangledName = "__divdf3";
+                    break;
+                case ReadyToRunHelper.FltCmpLe:
+                    mangledName = "__lesf2";
+                    break;
+                case ReadyToRunHelper.FltCmpGe:
+                    mangledName = "__gesf2";
+                    break;
+                case ReadyToRunHelper.DblCmpLe:
+                    mangledName = "__ledf2";
+                    break;
+                case ReadyToRunHelper.DblCmpGe:
+                    mangledName = "__gedf2";
+                    break;
+                case ReadyToRunHelper.Flt2Dbl:
+                    mangledName = "__extendsfdf2";
+                    break;
+                case ReadyToRunHelper.Dbl2Flt:
+                    mangledName = "__truncdfsf2";
+                    break;
+
                 case ReadyToRunHelper.LMul:
                     mangledName = "RhpLMul";
                     break;

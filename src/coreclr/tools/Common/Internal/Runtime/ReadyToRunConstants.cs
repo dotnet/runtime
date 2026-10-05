@@ -409,6 +409,22 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+
+        // Soft-float arithmetic (targets without an FPU). NativeAOT only.
+        FltAdd,
+        FltSub,
+        FltMul,
+        FltDiv,
+        DblAdd,
+        DblSub,
+        DblMul,
+        DblDiv,
+        FltCmpLe,
+        FltCmpGe,
+        DblCmpLe,
+        DblCmpGe,
+        Flt2Dbl,
+        Dbl2Flt,
     }
 
     // Enum used for HFA type recognition.
