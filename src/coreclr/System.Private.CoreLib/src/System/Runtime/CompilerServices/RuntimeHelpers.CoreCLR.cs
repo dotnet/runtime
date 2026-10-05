@@ -996,7 +996,9 @@ namespace System.Runtime.CompilerServices
 
                 // Nullable<T> has one generic argument in its first dictionary.
                 TypeHandle type = **PerInstInfo;
-                Debug.Assert(type.IsTypeDesc || InstantiationArg0() == type.AsMethodTable());
+#if DEBUG
+                Debug.Assert(InstantiationArg0() == type.AsPtr());
+#endif
                 return type;
             }
         }
@@ -1062,8 +1064,10 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
 
+#if DEBUG
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern MethodTable* InstantiationArg0();
+        public extern void* InstantiationArg0();
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetNullableNumInstanceFieldBytes()
@@ -1250,6 +1254,10 @@ namespace System.Runtime.CompilerServices
         {
             m_asTAddr = tAddr;
         }
+
+#if DEBUG
+        public void* AsPtr() => m_asTAddr;
+#endif
 
         /// <summary>
         /// Gets whether the current instance wraps a <see langword="null"/> pointer.

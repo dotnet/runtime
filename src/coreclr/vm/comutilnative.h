@@ -282,7 +282,9 @@ public:
     FCDECL1(static UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     FCDECL1(static CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
     FCDECL2(static MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
-    FCDECL1(static MethodTable*, InstantiationArg0, MethodTable* mt);
+#ifdef _DEBUG
+    FCDECL1(static void*, InstantiationArg0, MethodTable* mt);
+#endif // _DEBUG
     FCDECL1(static OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
 };
 
