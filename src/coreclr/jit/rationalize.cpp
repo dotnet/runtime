@@ -322,7 +322,7 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 //
 // Return Value:
 //    None.
-void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents)
+void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents, RationalizeVisitor* revisitor)
 {
     GenTreeHWIntrinsic* hwintrinsic  = (*use)->AsHWIntrinsic();
     NamedIntrinsic      intrinsicId  = hwintrinsic->GetHWIntrinsicId();
@@ -442,19 +442,29 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 BlockRange().Remove(hwintrinsic);
                 BlockRange().Remove(op2);
 
+                GenTree* user;
                 if (parents.Height() > 1)
                 {
                     parents.Top(1)->ReplaceOperand(use, result);
+                    user = parents.Top(1);
                 }
                 else
                 {
+                    // No parent
                     *use = result;
+                    user = nullptr;
                 }
                 // Since "hwintrinsic" is replaced with "result", pop "hwintrinsic" node (i.e the current node)
                 // and replace it with "result" on parent stack.
                 assert(parents.Top() == hwintrinsic);
                 (void)parents.Pop();
                 parents.Push(result);
+
+                // We need to revisit the new root node (op1) to make sure it is properly processed.
+                // We don't expect the revisit to ever terminate the walk.  
+                Compiler::fgWalkResult visitResult = revisitor->PreOrderVisit(use, user);
+                assert(visitResult == Compiler::fgWalkResult::WALK_CONTINUE);
+
                 return;
             }
 
@@ -2402,32 +2412,24 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 // particular statement, link that statement's nodes into the current basic block.
 Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree** use, GenTree* user)
 {
-    GenTree* node;
+    GenTree* const node = *use;
 
-    // The below is a loop, because rewriting an intrinsic or HW intrinsic as a user call
-    // may replace the node with another node which also needs the same pre-order processing.
-    // Continue until no replacement is made.
-    do
+    if (node->OperIs(GT_INTRINSIC))
     {
-        node = *use;
-
-        if (node->OperIs(GT_INTRINSIC))
+        if (m_rationalizer.m_compiler->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
         {
-            if (m_rationalizer.m_compiler->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
-            {
-                m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
-            }
+            m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
         }
+    }
 #if defined(FEATURE_HW_INTRINSICS)
-        else if (node->OperIsHWIntrinsic())
+    else if (node->OperIsHWIntrinsic())
+    {
+        if (node->AsHWIntrinsic()->IsUserCall())
         {
-            if (node->AsHWIntrinsic()->IsUserCall())
-            {
-                m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors);
-            }
+            m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors, this);
         }
+    }
 #endif // FEATURE_HW_INTRINSICS
-    } while (*use != node);
 
 #ifdef TARGET_ARM64
     if (node->OperIs(GT_SUB))

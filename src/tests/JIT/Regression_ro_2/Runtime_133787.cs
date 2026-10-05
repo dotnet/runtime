@@ -19,6 +19,7 @@ public class Runtime_133787
             (byte)2, 3, 4, 5, 6, 7, 8, 9,
             10, 11, 12, 13, 14, 15, 16, 0);
 
+        Assert.Equal(expected, NestedShuffle(value, 1));
         Assert.Equal(expected, Shuffle(value, 1));
     }
 
@@ -30,5 +31,21 @@ public class Runtime_133787
             8, 9, 10, 11, 12, 13, 14, 15);
 
         return Vector128.Shuffle(Sse2.ShiftRightLogical128BitLane(value, count), indices);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector128<byte> NestedShuffle(Vector128<byte> value, byte count)
+    {
+        Vector128<byte> indices = Vector128.Create(
+            (byte)0, 1, 2, 3, 4, 5, 6, 7,
+            8, 9, 10, 11, 12, 13, 14, 15);
+
+        return Vector128.Shuffle(
+            Vector128.Shuffle(
+                Vector128.Shuffle(
+                    Vector128.Shuffle(Sse2.ShiftRightLogical128BitLane(value, count), indices),
+                    indices),
+                indices),
+            indices);
     }
 }
