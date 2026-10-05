@@ -23,8 +23,8 @@
 // a hash code, or a nonzero index into the process-global code:g_pSyncTable when the object needs
 // a SyncBlock to store more state than can fit into ObjHeader.
 //
-// SyncBlocks provide full synchronization state and hold additional per-object data, such as hash codes and
-// interop information.
+// SyncBlocks can hold all a full lock state, a hash code, and additional per-object data, such as interop
+// information.
 //
 // SyncTableEntry structures and SyncBlocks are allocated outside the GC heap. Each SyncTableEntry contains a
 // weak reference to its object and a pointer to its SyncBlock. During GC, entries for dead objects are returned
