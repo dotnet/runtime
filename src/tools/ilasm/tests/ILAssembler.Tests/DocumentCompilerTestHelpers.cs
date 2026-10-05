@@ -44,7 +44,7 @@ namespace ILAssembler.Tests
             }, options);
         }
 
-        internal static PEReader CompileAndGetReader(SourceText sourceText, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+        internal static PEReader CompileAndGetReader(SourceText sourceText, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]?> resourceLocator, Options options)
         {
             var documentCompiler = new DocumentCompiler();
             var (diagnostics, result) = documentCompiler.Compile(sourceText, includedDocumentLoader, resourceLocator, options);

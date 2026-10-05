@@ -679,8 +679,12 @@ void _DacGlobals::Initialize()
     /* no-op on wasm */
 }
 
-// Incorrectly typed temporary symbol to satisfy the linker.
-int g_pDebugger;
+// The in-process debugger (src/coreclr/debug/ee) is not built for wasm. These definitions back the
+// declarations in debug/ee/debugger.h so the cDAC Debugger contract can be advertised: g_pDebugger
+// stays null (no debugger, so no hijacks) and CLRJitAttachState stays 0 (no JIT attach).
+class Debugger;
+Debugger* g_pDebugger = nullptr;
+ULONG CLRJitAttachState = 0;
 
 void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet)
 {

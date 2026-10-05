@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <WasmAppBuilderTasksAssemblyPath Condition="'$(WasmAppBuilderTasksAssemblyPath)' == ''">$(MSBuildThisFileDirectory)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComposeWasiReadyToRun"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory" />
+
+  <ItemGroup>
+    <_ComponentStub Include="$(ComponentStubsDirectory)/*.wasm"
+                    Exclude="$(CompositePath)" />
+  </ItemGroup>
+
+  <Target Name="Compose">
+    <ComposeWasiReadyToRun CompositePath="$(CompositePath)"
+                           ComponentPath="$(ComponentPath)"
+                           OutputDirectory="$(OutputDirectory)"
+                           OutputPath="$(OutputPath)"
+                           WasmToolsPath="$(WasmToolsPath)"
+                           WasmMergePath="$(WasmMergePath)"
+                           WasmOptPath="$(WasmOptPath)"
+                           ComponentStubs="@(_ComponentStub)"
+                           StubOutputDirectory="$(StubOutputDirectory)" />
+  </Target>
+</Project>

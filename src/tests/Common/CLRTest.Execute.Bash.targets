@@ -276,8 +276,10 @@ fi
            resolves there). Globalization is forced to invariant because
            no ICU data is staged in the test layout. wasmtime is expected
            to already be on PATH (provisioned via wasi-provisioning.targets
-           or installed manually). -->
-      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true "$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+           or installed manually). For ReadyToRun runs, the WASI
+           CLRTestBashPreCommands below select the composite host and its
+           probe environment ($__WasiCorerun and $__WasiR2RArgs). -->
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true ${__WasiR2RArgs} "$__WasiCorerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
       <!-- WASI has no watchdog binary in Core_Root (skipped in
            src/coreclr/CMakeLists.txt for wasm targets); use coreutils
@@ -336,6 +338,22 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
 fi
    ]]>
+      </CLRTestBashPreCommands>
+      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetOS)' == 'wasi'"><![CDATA[
+$(CLRTestBashPreCommands)
+__WasiCorerun="$CORE_ROOT/corerun"
+__WasiR2RArgs=
+if [ ! -z ${RunCrossGen2+x} ] && [ "$(CrossGenTest)" != "false" ]; then
+  __WasiCorerun="$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm"
+  if [ ! -f "$__WasiCorerun" ]; then
+    echo "The WASI ReadyToRun host was not produced: $__WasiCorerun"
+    exit 1
+  fi
+  # Keep the probe's stubs private to this host, so a subsequent interpreter run
+  # cannot discover a composite that is not spliced into its own corerun.
+  __WasiR2RArgs="--env TEST_READY_TO_RUN_MODE=1 --env APP_ASSEMBLIES=EXTERNAL --env CORE_LIBRARIES=/IL-CG2/wasi-r2r"
+fi
+      ]]>
       </CLRTestBashPreCommands>
 
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android'">

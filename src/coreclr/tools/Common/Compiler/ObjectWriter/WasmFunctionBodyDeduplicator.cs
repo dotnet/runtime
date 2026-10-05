@@ -25,8 +25,6 @@ namespace ILCompiler.ObjectWriter
             {
                 if (dependency is not ObjectNode node
                     || node is not INodeWithTypeSignature signatureNode
-                    || node is not INodeWithCodeInfo codeNode
-                    || !codeNode.IsShareableCode
                     || shouldSkip(node))
                 {
                     continue;
@@ -42,7 +40,7 @@ namespace ILCompiler.ObjectWriter
                     continue;
                 }
 
-                int hashCode = GetHashCode(node, signatureNode, data, codeNode.CodeInfo);
+                int hashCode = GetHashCode(node, signatureNode, data);
                 if (!_buckets.TryGetValue(hashCode, out List<ObjectNode> candidates))
                 {
                     candidates = [];
@@ -113,13 +111,6 @@ namespace ILCompiler.ObjectWriter
                 return false;
             }
 
-            INodeWithCodeInfo codeNode = (INodeWithCodeInfo)node;
-            INodeWithCodeInfo candidateCodeNode = (INodeWithCodeInfo)candidate;
-            if (!codeNode.CodeInfo.Equals(candidateCodeNode.CodeInfo))
-            {
-                return false;
-            }
-
             ObjectNode.ObjectData candidateData = candidate.GetData(factory);
             return data.Data.AsSpan().SequenceEqual(candidateData.Data)
                 && RelocationsEqual(node, data.Relocs, candidate, candidateData.Relocs);
@@ -163,13 +154,11 @@ namespace ILCompiler.ObjectWriter
         private static int GetHashCode(
             ObjectNode objectNode,
             INodeWithTypeSignature node,
-            ObjectNode.ObjectData data,
-            CodeInfo codeInfo)
+            ObjectNode.ObjectData data)
         {
             HashCode hash = new HashCode();
             hash.Add(WasmLowering.GetSignature(node).FuncType);
             hash.AddBytes(data.Data);
-            hash.Add(codeInfo);
 
             if (data.Relocs is not null)
             {
