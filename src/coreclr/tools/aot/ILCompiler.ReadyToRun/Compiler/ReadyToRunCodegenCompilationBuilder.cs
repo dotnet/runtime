@@ -18,10 +18,27 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
+    /// <summary>
+    /// Specifies the debug information emitted for WebAssembly ReadyToRun images.
+    /// </summary>
+    [Flags]
+    public enum WasmDebugInfo
+    {
+        /// <summary>Do not emit WebAssembly debug information.</summary>
+        None = 0,
+        /// <summary>Emit the standard WebAssembly function name section.</summary>
+        NameSection = 1,
+        /// <summary>Emit an Emscripten-compatible function symbol map sidecar.</summary>
+        SymbolMap = 2,
+        /// <summary>Emit all supported WebAssembly debug information.</summary>
+        All = NameSection | SymbolMap,
+    }
+
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
         private static bool _isJitInitialized = false;
 
+        private readonly ReadyToRunCompilerContext _r2rContext;
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
         private bool _generateMapFile;
@@ -41,6 +58,7 @@ namespace ILCompiler
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
         private bool _verifyGCModeTransitions;
+        private WasmDebugInfo _wasmDebugInfo = WasmDebugInfo.NameSection;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
@@ -57,12 +75,13 @@ namespace ILCompiler
         private ILProvider _ilProvider;
 
         public ReadyToRunCodegenCompilationBuilder(
-            CompilerTypeSystemContext context,
+            ReadyToRunCompilerContext context,
             ReadyToRunCompilationModuleGroupBase group,
             IEnumerable<string> inputFiles,
             string compositeRootPath)
             : base(context, group, new NativeAotNameMangler())
         {
+            _r2rContext = context;
             _ilProvider = new ReadyToRunILProvider(group);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
@@ -194,6 +213,12 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseVerifyGCModeTransitions(bool verifyGCModeTransitions)
         {
             _verifyGCModeTransitions = verifyGCModeTransitions;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseWasmDebugInfo(WasmDebugInfo wasmDebugInfo)
+        {
+            _wasmDebugInfo = wasmDebugInfo;
             return this;
         }
 
@@ -343,10 +368,16 @@ namespace ILCompiler
                 _isJitInitialized = true;
             }
 
+            List<ICompilationRootProvider> compilationRoots = new(_compilationRoots);
+            if (_r2rContext.BubbleIncludesCoreModule)
+            {
+                compilationRoots.Add(new ReadyToRunJitHelperRootProvider(_r2rContext));
+            }
+
             return new ReadyToRunCodegenCompilation(
                 graph,
                 factory,
-                _compilationRoots,
+                compilationRoots,
                 _ilProvider,
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
@@ -369,7 +400,8 @@ namespace ILCompiler
                 _r2rFileLayoutAlgorithm,
                 _customPESectionAlignment,
                 _verifyTypeAndFieldLayout,
-                _format);
+                _format,
+                _wasmDebugInfo);
         }
     }
 }

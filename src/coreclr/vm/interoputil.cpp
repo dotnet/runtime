@@ -749,7 +749,7 @@ ULONG SafeReleasePreemp(IUnknown * pUnk)
 
 //--------------------------------------------------------------------------------
 // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk)
+ULONG SafeRelease(IUnknown* pUnk) noexcept
 {
     CONTRACTL {
         NOTHROW;

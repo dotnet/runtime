@@ -1332,7 +1332,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         // However we may be able to update the flow from block's predecessors so they
                         // bypass block and instead transfer control to jump's successors (aka jump threading).
                         //
-                        const bool wasThreaded = optJumpThreadDom(block, domBlock, !rii.reverseSense);
+                        const bool wasThreaded =
+                            optJumpThreadDom(block, domBlock, !rii.reverseSense, domCmpExcVN, treeExcVN);
 
                         if (wasThreaded)
                         {
@@ -2019,8 +2020,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
         //
         // We can ignore exception side effects in the jump tree.
         //
-        // They are covered by the exception effects in the dominating compare.
-        // We know this because the VNs match and they encode exception states.
+        // For dominator-based threading, the caller has verified they are covered by
+        // the exception effects in the dominating compare.
         //
         if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
@@ -2059,6 +2060,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
 //   domBlock - a dominating block that has an equivalent branch
 //   domIsSameRelop - if true, dominating block does the same compare;
 //                    if false, dominating block does a reverse compare
+//   domCmpExcVN - exception set for the dominating compare
+//   treeExcVN - exception set for the dominated compare
 //
 // Returns:
 //   True if the branch was optimized.
@@ -2093,10 +2096,20 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
 //     /     \           |       |
 //    Tt     Ft          Tt      Ft    True/false target
 //
-bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop)
+bool Compiler::optJumpThreadDom(
+    BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop, ValueNum domCmpExcVN, ValueNum treeExcVN)
 {
     assert(block->KindIs(BBJ_COND));
     assert(domBlock->KindIs(BBJ_COND));
+
+    // Jump threading bypasses the dominated compare. Make sure the dominating compare
+    // produces all exceptions that the dominated compare would produce.
+    //
+    if (!vnStore->VNExcIsSubset(domCmpExcVN, treeExcVN))
+    {
+        JITDUMP("Dominating compare does not anticipate all current relop exceptions\n");
+        return false;
+    }
 
     // If the dominating block is not the immediate dominator
     // we might need to duplicate a lot of code to thread

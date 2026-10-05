@@ -1537,6 +1537,16 @@ DWORD MethodDesc::GetAttrs() const
         _ASSERTE(!"If this ever fires, then this method should return HRESULT");
         return 0;
     }
+
+    if (IsReturnDroppingThunk())
+    {
+        // A return-dropping thunk is synthesized by the runtime and always has an implementation -
+        // it calls the ordinary async variant virtually and drops the result.
+        // The metadata method that the thunk is derived from may be abstract (i.e. when the covariant
+        // override that needs the thunk is abstract), but the thunk itself never is.
+        dwAttributes &= ~mdAbstract;
+    }
+
     return dwAttributes;
 }
 
@@ -2114,20 +2124,12 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Meth
         CheckRestore();
         MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis, pMTOfThis);
 
-        // If we're remoting this call we can't call directly on the returned
-        // method desc, we need to go through a stub that guarantees we end up
-        // in the remoting handler. The stub we use below is normally just for
-        // non-virtual calls on virtual methods (that have the same problem
-        // where we could end up bypassing the remoting system), but it serves
-        // our purpose here (basically pushes our correctly instantiated,
-        // resolved method desc on the stack and calls the remoting code).
-
         return pResultMD->GetSingleCallableAddrOfCode();
     }
 
     if (IsInterface())
     {
-        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,this,orThis, pMTOfThis);
+        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis);
         return pTargetMD->GetSingleCallableAddrOfCode();
     }
 
@@ -3006,7 +3008,7 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
 // fill in the native code slot, but if it is possible to do so it will.
 // This must be called before any R2R code may call the target method.
 //
-// This is called from GetMultiCallableAddrOfCode and from R2R virtual dispatch fixup.
+// This is called from GetMultiCallableAddrOfCode and from R2R external method fixups.
 void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;

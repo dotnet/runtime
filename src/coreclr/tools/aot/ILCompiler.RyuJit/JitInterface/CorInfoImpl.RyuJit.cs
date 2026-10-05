@@ -381,6 +381,11 @@ namespace Internal.JitInterface
             return true;
         }
 
+        private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
+        {
+            throw new NotImplementedException(nameof(GetDelegateCtor));
+        }
+
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP pLookup)
         {
 #if DEBUG
@@ -481,8 +486,10 @@ namespace Internal.JitInterface
             }
         }
 
-        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
+        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
+            helperMethod = null;
+
             ReadyToRunHelper id;
 
             switch (ftnNum)
@@ -532,6 +539,9 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                    id = ReadyToRunHelper.BulkWriteBarrierSmall;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
@@ -628,30 +638,30 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.NewObject;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFast"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.NewFast);
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_FINALIZE:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFinalizable"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.NewFinalizable);
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFastAlign8"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.NewFastAlign8);
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFinalizableAlign8"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.NewFinalizableAlign8);
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_VC:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFastMisalign"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.NewFastMisalign);
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewPtrArrayFast"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.NewPtrArrayFast);
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewArrayFastAlign8"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.NewArrayFastAlign8);
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewArrayFast"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.NewArrayFast);
 
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpStackProbe"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.StackProbe);
 
                 case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpGcPoll"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.GCPoll);
 
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
@@ -797,10 +807,10 @@ namespace Internal.JitInterface
                     if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0
                         // Not implemented on x86: https://github.com/dotnet/runtime/issues/99516
                         && _compilation.NodeFactory.TypeSystemContext.Target.Architecture != TargetArchitecture.X86)
-                        return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatchGuarded"u8));
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatch"u8));
+                        return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.InterfaceDispatchGuarded);
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.InterfaceDispatch);
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethodFast"u8));
+                    return _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethodFast);
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                     id = ReadyToRunHelper.GetRefAny;
@@ -819,18 +829,11 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(ftnNum.ToString());
             }
 
-            string mangledName;
-            MethodDesc methodDesc;
-            JitHelper.GetEntryPoint(_compilation.TypeSystemContext, id, out mangledName, out methodDesc);
-            Debug.Assert(mangledName != null || methodDesc != null);
+            MethodDesc methodDesc = JitHelper.GetEntryPoint(_compilation.TypeSystemContext, id);
 
-            ISymbolNode entryPoint;
-            if (mangledName != null)
-                entryPoint = _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String(mangledName));
-            else
-                entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
-
-            return entryPoint;
+            return methodDesc is null
+                ? _compilation.NodeFactory.ReadyToRunHelper(id)
+                : _compilation.NodeFactory.MethodEntrypoint(methodDesc);
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
@@ -1678,7 +1681,8 @@ namespace Internal.JitInterface
                     // If this is LDVIRTFTN of an interface method that is part of a verifiable delegate creation sequence,
                     // RyuJIT is not going to use this value.
                     pResult->exactContextNeedsRuntimeLookup = false;
-                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("NYI_LDVIRTFTN"u8)));
+                    pResult->codePointerOrStubLookup.constLookup.addr = InvalidHandle;
+                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
                 }
                 else
                 {
@@ -1944,11 +1948,7 @@ namespace Internal.JitInterface
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
             MethodDesc md = HandleToObject(method);
-
-            Utf8String externName = new Utf8String(_compilation.PInvokeILProvider.GetDirectCallExternName(md));
-            externName = _compilation.NodeFactory.NameMangler.NodeMangler.ExternMethod(externName, md);
-
-            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternFunctionSymbol(externName));
+            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.DirectPInvokeTarget(md));
         }
 
         private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
@@ -2499,7 +2499,7 @@ namespace Internal.JitInterface
             pInfo->tlsIndexObject = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternDataSymbol(new Utf8String("_tls_index"u8)));
             pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
             pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
-            pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("__tls_get_addr"u8)));
+            pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.TlsGetAddr));
         }
 
 #pragma warning disable CA1822 // Mark members as static
