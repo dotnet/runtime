@@ -1499,6 +1499,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
+
         private NodeCache<MethodWithGCInfo, WasmMethodRelativeVirtualIPNode> _wasmMethodRelativeVirtualIPs;
 
         private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>
