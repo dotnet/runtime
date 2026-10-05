@@ -19,10 +19,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
 {
-#if SINGLE_FILE_TEST_RUNNER && TargetsUnix
-    // Single-file runners cannot use RemoteExecutor to isolate the working-directory test.
-    [Collection(nameof(DisableParallelization))]
-#endif
     public partial class ProcessTests : ProcessTestBase
     {
         private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
@@ -97,7 +93,7 @@ namespace System.Diagnostics.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Opens program")]
         [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
@@ -105,23 +101,10 @@ namespace System.Diagnostics.Tests
         {
             Directory.CreateDirectory(Path.Combine(TestDirectory, "dotnet"));
 
-#if SINGLE_FILE_TEST_RUNNER && TargetsUnix
-            string curDir = Environment.CurrentDirectory;
-            try
-            {
-                Directory.SetCurrentDirectory(TestDirectory);
-                StartDotnet();
-            }
-            finally
-            {
-                Directory.SetCurrentDirectory(curDir);
-            }
-#else
             RemoteExecutor.Invoke(StartDotnet, new RemoteInvokeOptions
             {
                 StartInfo = new ProcessStartInfo { WorkingDirectory = TestDirectory }
             }).Dispose();
-#endif
 
             static void StartDotnet()
             {

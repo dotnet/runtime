@@ -38,23 +38,13 @@ namespace System.Diagnostics.Tests
                 {
                     throw new Win32Exception();
                 }
-                try
+                if (Interop.SetConsoleCP(ConsoleEncoding) == 0 || Interop.SetConsoleOutputCP(ConsoleEncoding) == 0)
                 {
-                    if (Interop.SetConsoleCP(ConsoleEncoding) == 0 || Interop.SetConsoleOutputCP(ConsoleEncoding) == 0)
-                    {
-                        throw new Win32Exception();
-                    }
+                    throw new Win32Exception();
+                }
 
-                    using var tests = new ProcessStandardConsoleTests();
-                    tests.RunWithExpectedCodePage(ConsoleEncoding);
-                }
-                finally
-                {
-                    if (Interop.FreeConsole() == 0)
-                    {
-                        throw new Win32Exception();
-                    }
-                }
+                using var tests = new ProcessStandardConsoleTests();
+                tests.RunWithExpectedCodePage(ConsoleEncoding);
             }).Dispose();
         }
 

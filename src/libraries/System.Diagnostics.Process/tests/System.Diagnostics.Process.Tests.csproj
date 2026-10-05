@@ -10,7 +10,6 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
-    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'unix'">$(DefineConstants);TargetsUnix</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\IO\StringParser.cs"
@@ -87,9 +86,6 @@
     <Compile Include="ProcessHandlesTests.Unix.cs" />
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
-    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
-             Link="Common\TestUtilities\System\DisableParallelization.cs"
-             Condition="'$(TestSingleFile)' == 'true' and '$(TargetPlatformIdentifier)' == 'unix'" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Kill.cs"
              Link="Common\Interop\Unix\Interop.Kill.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
