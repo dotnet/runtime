@@ -1514,9 +1514,9 @@ SyncBlock *ObjHeader::GetSyncBlock()
         //Try one more time
         syncBlock = GetBaseObject()->PassiveGetSyncBlock();
         if (syncBlock)
-            {
-                return syncBlock;
-            }
+        {
+            return syncBlock;
+        }
 
         SyncBlockMemoryHolder syncBlockMemoryHolder(SyncBlockCache::GetSyncBlockCache()->GetNextFreeSyncBlock());
         syncBlock = syncBlockMemoryHolder;

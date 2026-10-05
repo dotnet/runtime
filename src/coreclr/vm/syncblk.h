@@ -19,41 +19,23 @@
 
 // #SyncBlockOverview
 //
-// Every Object is preceded by an ObjHeader (at a negative offset). The code:ObjHeader has an index to a
-// code:SyncBlock. This index is 0 for the bulk of all instances, which indicates that the object shares a
-// dummy SyncBlock with most other objects.
+// Every Object is preceded by an ObjHeader (at a negative offset). The header stores lock state, a hash code, or
+// a nonzero index into the process-global code:g_pSyncTable when the object needs a full SyncBlock. A zero
+// sync-block index means that the object does not reference a SyncTableEntry; there is no shared dummy SyncBlock.
 //
-// The SyncBlock is primarily responsible for object synchronization. However, it is also a "kitchen sink" of
-// sparsely allocated instance data. For instance, the default implementation of Hash() is based on the
-// existence of a code:SyncTableEntry. And objects exposed to or from COM, or through context boundaries, can
-// store sparse data here.
+// SyncBlocks provide full synchronization state and hold additional per-object data, such as hash codes and
+// interop information.
 //
-// SyncTableEntries and SyncBlocks are allocated in non-GC memory. A weak pointer from the SyncTableEntry to
-// the instance is used to ensure that the SyncBlock and SyncTableEntry are reclaimed (recycled) when the
-// instance dies.
+// SyncTableEntry structures and SyncBlocks are allocated outside the GC heap. Each SyncTableEntry contains a
+// weak reference to its object and a pointer to its SyncBlock. During GC, entries for dead objects are returned
+// to the free list, and associated SyncBlocks are queued for cleanup before being returned to the cache.
 //
-// The organization of the SyncBlocks isn't intuitive (at least to me). Here's the explanation:
+// The process-global g_pSyncTable maps indices stored in ObjHeaders to SyncTableEntries. When the table grows,
+// it is replaced by a larger table and its entries are copied. Old tables are retained until a GC can safely
+// reclaim them.
 //
-// Before each Object is an code:ObjHeader. If the object has a code:SyncBlock, the code:ObjHeader contains a
-// non-0 index to it.
-//
-// The index is looked up in the code:g_pSyncTable of SyncTableEntries. This means the table is consecutive
-// for all outstanding indices. Whenever it needs to grow, it doubles in size and copies all the original
-// entries. The old table is kept until GC time, when it can be safely discarded.
-//
-// Each code:SyncTableEntry has a backpointer to the object and a forward pointer to the actual SyncBlock.
-// The SyncBlock is allocated out of a SyncBlockArray which is essentially just a block of SyncBlocks.
-//
-// The code:SyncBlockArray s are managed by a code:SyncBlockCache that handles the actual allocations and
-// frees of the blocks.
-//
-// So...
-//
-// Each allocation and release has to handle free lists in the table of entries and the table of blocks.
-//
-// We burn an extra 4 bytes for the pointer from the SyncTableEntry to the SyncBlock.
-//
-// Incidentally, there's a better write-up of all this stuff in the archives.
+// SyncBlocks are allocated from SyncBlockArrays managed by the SyncBlockCache, which manages free SyncBlocks
+// and SyncTableEntries.
 
 #ifdef TARGET_X86
 #include <pshpack4.h>
