@@ -161,6 +161,13 @@ public class R2RTestSuites
                     "FoldableBodyTwo",
                     out string foldingDiagnostic),
                 foldingDiagnostic);
+            Assert.True(
+                WasmR2RAssert.MethodsRetainDistinctFunctionDefinitionsAndTableSlots(
+                    reader,
+                    "CatchExceptionOne",
+                    "CatchExceptionTwo",
+                    out string funcletDiagnostic),
+                funcletDiagnostic);
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve to the fixed global

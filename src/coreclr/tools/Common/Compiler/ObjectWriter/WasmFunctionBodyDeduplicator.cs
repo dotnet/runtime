@@ -25,6 +25,7 @@ namespace ILCompiler.ObjectWriter
             {
                 if (dependency is not ObjectNode node
                     || node is not INodeWithTypeSignature signatureNode
+                    || (node is INodeWithFunclets nodeWithFunclets && nodeWithFunclets.GetFuncletKinds().Length > 0)
                     || shouldSkip(node))
                 {
                     continue;

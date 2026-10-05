@@ -59,7 +59,20 @@ public static class WasmWebcilModule
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static int CatchException(int value)
+    public static int CatchExceptionOne(int value)
+    {
+        try
+        {
+            return 100 / value;
+        }
+        catch (DivideByZeroException)
+        {
+            return -1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int CatchExceptionTwo(int value)
     {
         try
         {

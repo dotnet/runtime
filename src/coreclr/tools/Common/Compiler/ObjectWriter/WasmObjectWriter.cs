@@ -76,6 +76,8 @@ namespace ILCompiler.ObjectWriter
 
         private int ActualFunctionCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
 
+        private protected virtual bool ShouldDeduplicateFunctionBodies => false;
+
         private readonly struct FoldedFunctionAlias
         {
             public FoldedFunctionAlias(
@@ -123,7 +125,10 @@ namespace ILCompiler.ObjectWriter
             IObjectDumper dumper,
             Logger logger)
         {
-            _functionBodyDeduplicator.Prepare(nodes, _nodeFactory, ShouldSkip);
+            if (ShouldDeduplicateFunctionBodies)
+            {
+                _functionBodyDeduplicator.Prepare(nodes, _nodeFactory, ShouldSkip);
+            }
             base.EmitObject(outputFileStream, nodes, dumper, logger);
 
             bool ShouldSkip(ObjectNode node)

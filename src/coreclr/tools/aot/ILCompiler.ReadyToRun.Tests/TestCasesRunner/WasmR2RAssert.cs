@@ -219,6 +219,31 @@ internal static class WasmR2RAssert
         ReadyToRunReader reader,
         string firstMethodName,
         string secondMethodName,
+        out string diagnostic) =>
+        MethodsHaveExpectedFunctionDefinitionSharing(
+            reader,
+            firstMethodName,
+            secondMethodName,
+            shouldShare: true,
+            out diagnostic);
+
+    public static bool MethodsRetainDistinctFunctionDefinitionsAndTableSlots(
+        ReadyToRunReader reader,
+        string firstMethodName,
+        string secondMethodName,
+        out string diagnostic) =>
+        MethodsHaveExpectedFunctionDefinitionSharing(
+            reader,
+            firstMethodName,
+            secondMethodName,
+            shouldShare: false,
+            out diagnostic);
+
+    private static bool MethodsHaveExpectedFunctionDefinitionSharing(
+        ReadyToRunReader reader,
+        string firstMethodName,
+        string secondMethodName,
+        bool shouldShare,
         out string diagnostic)
     {
         List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
@@ -246,16 +271,18 @@ internal static class WasmR2RAssert
 
         uint firstFunction = functionIndices[firstSlot];
         uint secondFunction = functionIndices[secondSlot];
-        if (firstFunction != secondFunction)
+        if ((firstFunction == secondFunction) != shouldShare)
         {
             diagnostic =
-                $"Method slots {firstSlot} and {secondSlot} reference different function definitions " +
-                $"{firstFunction} and {secondFunction}.";
+                $"Method slots {firstSlot} and {secondSlot} reference " +
+                $"{(firstFunction == secondFunction ? "the same" : "different")} function definitions " +
+                $"{firstFunction} and {secondFunction}; expected them to " +
+                $"{(shouldShare ? "share" : "remain distinct")}.";
             return false;
         }
 
         uint functionCount = ReadWasmSectionEntryCount(webcilReader, WasmSectionKind.Function);
-        if (functionCount >= functionIndices.Length)
+        if (shouldShare && functionCount >= functionIndices.Length)
         {
             diagnostic =
                 $"Found {functionCount} function definitions for {functionIndices.Length} table slots; " +
@@ -264,7 +291,8 @@ internal static class WasmR2RAssert
         }
 
         diagnostic =
-            $"Methods retain slots {firstSlot} and {secondSlot}, both referencing function definition {firstFunction}; " +
+            $"Methods retain slots {firstSlot} and {secondSlot}, referencing function definitions " +
+            $"{firstFunction} and {secondFunction}; " +
             $"the image has {functionCount} definitions and {functionIndices.Length} slots.";
         return true;
     }

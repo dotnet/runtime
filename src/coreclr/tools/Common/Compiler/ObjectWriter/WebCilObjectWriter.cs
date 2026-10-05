@@ -30,6 +30,7 @@ namespace ILCompiler.ObjectWriter
         public const int WebcilSectionAlignment = 16;
 
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
+        private protected override bool ShouldDeduplicateFunctionBodies => true;
 
         // We use 2 Wasm data segments for webcil,
         // 1 for the payload size, and the second for the payload itself.
