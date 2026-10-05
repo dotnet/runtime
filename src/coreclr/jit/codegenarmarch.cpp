@@ -3350,33 +3350,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         params.sigInfo = call->callSig;
     }
-
-    if (call->IsFastTailCall())
-    {
-        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
-
-        // The epilog may use and trash some registers for the GS cookie check.
-        // Make sure we have no non-standard args that may be trash if this is
-        // a tailcall.
-        if (m_compiler->getNeedsGSSecurityCookie())
-        {
-            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
-        }
-
-        for (CallArg& arg : call->gtArgs.Args())
-        {
-            for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
-            {
-                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
-                {
-                    JITDUMP("Tail call node:\n");
-                    DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
-                    assert(!"Argument to tailcall may be trashed by epilog");
-                }
-            }
-        }
-    }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
 
     GenTree* target = getCallTarget(call, &params.methHnd);
@@ -3928,6 +3902,13 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
+        if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaResumedIndicator) == -preservedAreaSize);
+        }
+
         if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
         {
             preservedAreaSize += TARGET_POINTER_SIZE;
@@ -4297,31 +4278,33 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
 #ifdef TARGET_ARM64
-
             if (index->isContained())
             {
+                // Only BFIZ/CAST nodes should be present for contained index on ARM64.
+                GenTreeCast* cast;
                 if (index->OperIs(GT_BFIZ))
                 {
-                    // Handle LEA with "contained" BFIZ
                     assert(scale == 0);
                     scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
-                    index = index->gtGetOp1()->gtGetOp1();
-                }
-                else if (index->OperIs(GT_CAST))
-                {
-                    index = index->AsCast()->gtGetOp1();
+                    cast  = index->gtGetOp1()->AsCast();
                 }
                 else
                 {
-                    // Only BFIZ/CAST nodes should be present for for contained index on ARM64.
-                    // If there are more, we need to handle them here.
-                    unreached();
+                    cast = index->AsCast();
                 }
-            }
-#endif
 
-            // Then compute target reg from [base + index*scale]
-            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+                // The 32-bit index has to be sign/zero-extended as part of the add.
+                assert(genActualTypeIsInt(cast->CastOp()) && (scale <= 4));
+                emit->emitIns_R_R_R_I(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(),
+                                      cast->CastOp()->GetRegNum(), scale,
+                                      cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW);
+            }
+            else
+#endif
+            {
+                // Then compute target reg from [base + index*scale]
+                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+            }
         }
     }
     else if (lea->HasBase())
@@ -5037,6 +5020,54 @@ void CodeGen::genUnknownSizeFrame()
         instGen_Set_Reg_To_Imm(EA_8BYTE, rsvd, totalVectorCount);
         GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_SCRATCH, 1);
         GetEmitter()->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_SP, rsvd, REG_SCRATCH, REG_SP);
+    }
+}
+
+//----------------------------------------------------------------------------
+//
+// genZeroInitializeUnknownSizeFrame: Zero-initialize the UnknownSizeFrame stack space.
+//
+// Remarks:
+//     This function emits code that assumes the state of sp has not been modified since
+//     establishing the UnknownSizeFrame. sp must point to the end of the UnknownSizeFrame.
+//
+void CodeGen::genZeroInitializeUnknownSizeFrame()
+{
+    assert(m_compiler->compUsesUnknownSizeFrame);
+
+    unsigned vectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
+
+    assert(vectorCount > 0);
+
+    // z9 <== {0, 0, ...}
+    GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, 0, INS_OPTS_SCALABLE_B);
+
+    // For small vector counts, emit unrolled loop of vector stores.
+    // Unrolling to a maximum of 5 stores optimizes for code size rather than performance.
+    // TODO-SVE: Does unrolling further improve performance?
+    if (vectorCount <= 5)
+    {
+        for (unsigned i = 0; i < vectorCount; i++)
+        {
+            // str z9, [sp, #i MUL VL]
+            GetEmitter()->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SP, i);
+        }
+    }
+    else
+    {
+        // $cursor <== x19
+        inst_Mov(TYP_BYREF, REG_SCRATCH, REG_UNKBASE, false);
+        BasicBlock* loop = genCreateTempLabel();
+        // loop:
+        genDefineInlineTempLabel(loop);
+        // addvl $cursor, $cursor, #-1
+        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, -1);
+        // str z9, [$cursor]
+        GetEmitter()->emitIns_R_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, REG_SCRATCH);
+        // cmp sp, $cursor
+        GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, REG_SP, REG_SCRATCH, INS_OPTS_UXTX);
+        // b.ne loop
+        GetEmitter()->emitIns_J(INS_bne, loop);
     }
 }
 #endif

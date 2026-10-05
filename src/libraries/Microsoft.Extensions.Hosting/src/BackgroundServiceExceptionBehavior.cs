@@ -10,20 +10,24 @@ namespace Microsoft.Extensions.Hosting
     public enum BackgroundServiceExceptionBehavior
     {
         /// <summary>
+        /// <para>
         /// Stops the <see cref="IHost"/> instance.
+        /// </para>
+        /// <para>
+        /// If a <see cref="BackgroundService"/> throws an exception, the <see cref="IHost"/> instance stops with an exception, usually leading to the termination of the process.
+        /// </para>
         /// </summary>
-        /// <remarks>
-        /// If a <see cref="BackgroundService"/> throws an exception, the <see cref="IHost"/> instance stops, and the process continues.
-        /// </remarks>
         StopHost = 0,
 
         /// <summary>
+        /// <para>
         /// Ignore exceptions thrown in <see cref="BackgroundService"/>.
-        /// </summary>
-        /// <remarks>
+        /// </para>
+        /// <para>
         /// If a <see cref="BackgroundService"/> throws an exception, the <see cref="IHost"/> will log the error, but otherwise ignore it.
         /// The <see cref="BackgroundService"/> is not restarted.
-        /// </remarks>
+        /// </para>
+        /// </summary>
         Ignore = 1
     }
 }

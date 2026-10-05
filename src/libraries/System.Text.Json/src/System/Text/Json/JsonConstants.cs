@@ -43,6 +43,7 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> NaNValue => "NaN"u8;
         public static ReadOnlySpan<byte> PositiveInfinityValue => "Infinity"u8;
         public static ReadOnlySpan<byte> NegativeInfinityValue => "-Infinity"u8;
+        // The length of the longest of the three named literals above, i.e. "-Infinity".
         public const int MaximumFloatingPointConstantLength = 9;
 
         // Used to search for the end of a number

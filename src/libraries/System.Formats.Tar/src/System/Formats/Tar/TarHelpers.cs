@@ -128,14 +128,20 @@ namespace System.Formats.Tar
         // If the specified fieldName is found in the provided dictionary and it is a valid decimal number, returns true and sets the value in 'dateTimeOffset'.
         internal static bool TryGetDateTimeOffsetFromTimestampString(Dictionary<string, string>? dict, string fieldName, out DateTimeOffset dateTimeOffset)
         {
-            dateTimeOffset = default;
-            if (dict != null &&
-                dict.TryGetValue(fieldName, out string? value) &&
-                decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch))
+            return TryGetDateTimeOffsetFromTimestampString(
+                dict is not null && dict.TryGetValue(fieldName, out string? value) ? value : null,
+                out dateTimeOffset);
+        }
+
+        internal static bool TryGetDateTimeOffsetFromTimestampString(string? value, out DateTimeOffset dateTimeOffset)
+        {
+            if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch))
             {
                 dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
                 return true;
             }
+
+            dateTimeOffset = default;
             return false;
         }
 
@@ -148,12 +154,32 @@ namespace System.Formats.Tar
             return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
-        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.
+        // If the specified fieldName has a non-empty value, parses it as a base-10 integer and returns true. Parsing exceptions propagate.
         internal static bool TryGetStringAsBaseTenInteger(IReadOnlyDictionary<string, string> dict, string fieldName, out int baseTenInteger)
         {
-            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            return TryGetStringAsBaseTenInteger(
+                dict.TryGetValue(fieldName, out string? value) ? value : null,
+                out baseTenInteger);
+        }
+
+        /// <summary>Parses a uid or gid extended attribute value. See <see cref="ParseUidGid"/> for how out of range values are handled.</summary>
+        internal static bool TryGetStringAsUidGid(string? value, out int id)
+        {
+            if (!string.IsNullOrEmpty(value))
             {
-                baseTenInteger = int.Parse(strNumber, CultureInfo.InvariantCulture);
+                id = ToUidGid(long.Parse(value, CultureInfo.InvariantCulture));
+                return true;
+            }
+
+            id = 0;
+            return false;
+        }
+
+        internal static bool TryGetStringAsBaseTenInteger(string? value, out int baseTenInteger)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                baseTenInteger = int.Parse(value, CultureInfo.InvariantCulture);
                 return true;
             }
 
@@ -161,12 +187,19 @@ namespace System.Formats.Tar
             return false;
         }
 
-        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenLong'.
+        // If the specified fieldName has a non-empty value, parses it as a base-10 long and returns true. Parsing exceptions propagate.
         internal static bool TryGetStringAsBaseTenLong(IReadOnlyDictionary<string, string> dict, string fieldName, out long baseTenLong)
         {
-            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            return TryGetStringAsBaseTenLong(
+                dict.TryGetValue(fieldName, out string? value) ? value : null,
+                out baseTenLong);
+        }
+
+        internal static bool TryGetStringAsBaseTenLong(string? value, out long baseTenLong)
+        {
+            if (!string.IsNullOrEmpty(value))
             {
-                baseTenLong = long.Parse(strNumber, CultureInfo.InvariantCulture);
+                baseTenLong = long.Parse(value, CultureInfo.InvariantCulture);
                 return true;
             }
 
@@ -180,21 +213,31 @@ namespace System.Formats.Tar
         // When writing an entry that came from an archive of a different format, if its entry type happens to
         // be an incompatible regular file entry type, convert it to the compatible one.
         // No change for all other entry types.
-        internal static TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format, TarEntryType entryType)
+        internal static TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format, TarEntryType entryType) =>
+            (format, entryType) switch
+            {
+                (TarEntryFormat.V7, TarEntryType.RegularFile) => TarEntryType.V7RegularFile,
+                (not TarEntryFormat.V7, TarEntryType.V7RegularFile) => TarEntryType.RegularFile,
+                _ => entryType,
+            };
+
+        /// <summary>Parses a uid or gid numeric field.</summary>
+        /// <remarks>
+        /// Unix uid_t and gid_t are 32-bit unsigned, and archives may contain values larger than <see cref="int.MaxValue"/>
+        /// (for example, GNU base-256 encoded fields). Such values are reinterpreted as <see cref="int"/> without an
+        /// overflow check, which matches how <see cref="TarWriter"/> stores uid and gid values read from the file system.
+        /// Values that don't fit in 32 bits can't be a valid id and are rejected.
+        /// </remarks>
+        internal static int ParseUidGid(ReadOnlySpan<byte> buffer) => ToUidGid(ParseNumeric<long>(buffer));
+
+        private static int ToUidGid(long value)
         {
-            if (format is TarEntryFormat.V7)
+            if (value < int.MinValue || value > uint.MaxValue)
             {
-                if (entryType is TarEntryType.RegularFile)
-                {
-                    return TarEntryType.V7RegularFile;
-                }
-            }
-            else if (entryType is TarEntryType.V7RegularFile)
-            {
-                return TarEntryType.RegularFile;
+                ThrowInvalidNumber();
             }
 
-            return entryType;
+            return unchecked((int)value);
         }
 
         /// <summary>Parses a numeric field.</summary>

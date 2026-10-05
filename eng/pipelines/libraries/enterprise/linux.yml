@@ -6,8 +6,7 @@ trigger: none
 pr:
   branches:
     include:
-    - main
-    - release/*.*
+    - '*'
 
   paths:
     # If you are changing these and start including eng/common, adjust the Maestro subscriptions

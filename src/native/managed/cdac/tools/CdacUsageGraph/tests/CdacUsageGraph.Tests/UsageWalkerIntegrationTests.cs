@@ -31,7 +31,15 @@ public sealed class UsageWalkerIntegrationTests
         if (root is null)
             return null;
 
-        return (AnalysisPipeline.BuildGraph(root.FullName), root.FullName);
+        return (
+            UsageGraphAnalyzer.Analyze(new UsageGraphAnalysisOptions(
+                Path.Combine(
+                    root.FullName,
+                    CdacSymbols.ContractsProjectDirectory,
+                    CdacSymbols.ContractsProjectFile),
+                CdacSymbols.CoreCLRContractsMetadataName,
+                root.FullName)),
+            root.FullName);
     }
 
     [Fact]
@@ -56,7 +64,10 @@ public sealed class UsageWalkerIntegrationTests
         DirectoryInfo? root = Locator.FindCdacRoot();
         if (root is null) return; // cDAC source not found (running outside the repo)
 
-        CSharpCompilation compilation = CdacCompilationLoader.Load(root.FullName);
+        CSharpCompilation compilation = CdacCompilationLoader.LoadProject(Path.Combine(
+            root.FullName,
+            CdacSymbols.ContractsProjectDirectory,
+            CdacSymbols.ContractsProjectFile));
         INamedTypeSymbol jitNotification = compilation.GetTypeByMetadataName(
             "Microsoft.Diagnostics.DataContractReader.Data.JITNotification")!;
 
@@ -69,11 +80,11 @@ public sealed class UsageWalkerIntegrationTests
 
         INamedTypeSymbol thread = compilation.GetTypeByMetadataName(
             "Microsoft.Diagnostics.DataContractReader.Data.Thread")!;
-        IPropertySymbol threadHandle = thread.GetMembers("ThreadHandle")
-            .OfType<IPropertySymbol>()
+        IMethodSymbol initThreadHandle = thread.GetMembers("InitThreadHandle")
+            .OfType<IMethodSymbol>()
             .Single();
         Assert.True(new CdacAttributeMatcher(compilation).TryGetDescriptorDependencies(
-            threadHandle,
+            initThreadHandle,
             out _));
     }
 
@@ -103,7 +114,7 @@ public sealed class UsageWalkerIntegrationTests
 
     [Theory]
     [InlineData("IExecutionManager", "c1", "Data.UnwindInfo", "FunctionLength")]
-    [InlineData("IPrecodeStubs", "c1", "Data.PrecodeMachineDescriptor", "OffsetOfPrecodeType")]
+    [InlineData("IPrecodeStubs", "c1", "Data.PrecodeMachineDescriptor", "StubCodePageSize")]
     [InlineData("IStackWalk", "c1", "Data.ReadyToRunInfo", "ImportSections")]
     [InlineData("IThread", "c1", "Data.Thread", "ThreadHandle")]
     [InlineData("IThread", "c1", "Data.Thread", "DebuggerControlledThreadState")]
@@ -198,6 +209,7 @@ public sealed class UsageWalkerIntegrationTests
     [InlineData("IThread", "c1", "ThreadStore", "pointer", false)]
     [InlineData("IRuntimeInfo", "c1", "Architecture", "string", true)]
     [InlineData("IRuntimeInfo", "c1", "RecommendedReaderVersion", "uint32", true)]
+    [InlineData("IRuntimeInfo", "c1", "RuntimeProductVersionString", "string", false)]
     [InlineData("IStackWalk", "c1", "<FrameType>Identifier", "pointer", true)]
     [InlineData("IDacStreams", "c1", "MiniMetaDataBuffAddress", "pointer", false)]
     [InlineData("IDacStreams", "c1", "MiniMetaDataBuffMaxSize", "pointer", false)]
@@ -243,28 +255,23 @@ public sealed class UsageWalkerIntegrationTests
         if (built is null) return; // cDAC source not found (running outside the repo)
         UsageGraph graph = built!.Value.Graph;
 
-        // PrecodeStubs c3 reaches Data types only via a generic base + static-abstract dispatch.
+        // PrecodeStubs c1 reaches Data types only via a generic base + static-abstract dispatch.
         HashSet<string> precodeTypes = DataTypesUsed(
             graph,
-            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c3"));
+            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c1"));
         Assert.Contains("Data.InterpMethod", precodeTypes);
     }
 
-    [Theory]
-    [InlineData("c1", false)]
-    [InlineData("c2", false)]
-    [InlineData("c3", true)]
-    public void ReportsInterpreterPrecodeUsageOnlyForSupportingVersion(
-        string version,
-        bool expected)
+    [Fact]
+    public void ReportsInterpreterPrecodeUsage()
     {
         (UsageGraph Graph, string Root)? built = BuildRealGraph();
         if (built is null) return; // cDAC source not found (running outside the repo)
 
         HashSet<string> dataTypes = DataTypesUsed(
             built.Value.Graph,
-            new ContractVersion(new ContractInterface("IPrecodeStubs"), version));
-        Assert.Equal(expected, dataTypes.Contains("Data.InterpreterPrecodeData"));
+            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c1"));
+        Assert.Contains("Data.InterpreterPrecodeData", dataTypes);
     }
 
     [Fact]
@@ -274,17 +281,17 @@ public sealed class UsageWalkerIntegrationTests
         if (built is null) return; // cDAC source not found (running outside the repo)
         UsageGraph graph = built!.Value.Graph;
 
-        // StressLog_1's SmallStressMessageReader is constructed in a field initializer and reads
+        // StressLog_2's message reader is constructed in a field initializer and reads
         // Data.StressMsg fields; walking initializers is what surfaces these.
         Assert.Contains(
             "Header",
-            DataType(graph, new ContractVersion(new ContractInterface("IStressLog"), "c1"), "Data.StressMsg")
+            DataType(graph, new ContractVersion(new ContractInterface("IStressLog"), "c2"), "Data.StressMsg")
                 .Fields.Select(field => field.Name));
 
         // StressMsgHeader is used only via Data.StressMsgHeader.GetSize.
         Assert.True(DataType(
             graph,
-            new ContractVersion(new ContractInterface("IStressLog"), "c1"),
+            new ContractVersion(new ContractInterface("IStressLog"), "c2"),
             "Data.StressMsgHeader").UsesTypeSize);
     }
 
@@ -360,7 +367,6 @@ public sealed class UsageWalkerIntegrationTests
 
     [Theory]
     [InlineData("IExecutionManager", "c1")]
-    [InlineData("IExecutionManager", "c2")]
     public void ExplicitDependenciesIncludeCompositeInfoWhereUsed(string contract, string version)
     {
         (UsageGraph Graph, string Root)? built = BuildRealGraph();
@@ -384,7 +390,7 @@ public sealed class UsageWalkerIntegrationTests
 
         DataTypeUsage syncBlock = DataType(graph, label, "Data.SyncBlock");
         Assert.Equal(
-            ["EnCInfo", "InteropInfo", "LinkNext", "Lock", "ThinLock"],
+            ["InteropInfo", "LinkNext", "Lock", "ThinLock"],
             syncBlock.Fields.Select(field => field.Name).Order().ToArray());
         Assert.DoesNotContain(syncBlock.Fields, field => field.Name == "Address");
 

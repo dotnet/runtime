@@ -17,12 +17,15 @@ public interface ITestInfo
     string DisplayNameForFiltering { get; }
     string Method { get; }
     string ContainingType { get; }
+    bool IsAsync { get; }
 
     CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper);
 }
 
 public interface ITestReporterWrapper
 {
+    bool ShouldReturnAfterSkipReporting { get; }
+
     CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test);
 
     string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null);
@@ -49,16 +52,24 @@ public sealed class BasicTestMethod : ITestInfo
 
         TestNameExpression = displayNameExpression ?? $"$\"{externAlias}::{ContainingType}.{Method}({string.Join(", ", argumentsForName)})\"";
 
+        IsAsync = IsAwaitable(method.ReturnType);
+        string awaitPrefix = IsAsync ? "await " : "";
         if (method.IsStatic)
         {
-            _executionStatement = $"{externAlias}::{ContainingType}.{Method}({args});";
+            _executionStatement = $"{awaitPrefix}{externAlias}::{ContainingType}.{Method}({args});";
         }
         else
         {
-            _executionStatement = $"using ({externAlias}::{ContainingType} obj = new()) obj.{Method}({args});";
+            _executionStatement = $"using ({externAlias}::{ContainingType} obj = new()) {awaitPrefix}obj.{Method}({args});";
         }
     }
 
+    internal static bool IsAwaitable(ITypeSymbol type) =>
+        type is INamedTypeSymbol { Name: "Task" or "ValueTask" } namedType
+        && namedType.ContainingNamespace.ToDisplayString() == "System.Threading.Tasks"
+        && namedType.Arity <= 1;
+
+    public bool IsAsync { get; }
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
@@ -102,9 +113,11 @@ public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
         TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}()\"";
         DisplayNameForFiltering = $"{ContainingType}.{Method}()";
 
-        _executionStatement = $"Xunit.Assert.Equal(100, {externAlias}::{ContainingType}.{Method}());";
+        IsAsync = BasicTestMethod.IsAwaitable(method.ReturnType);
+        _executionStatement = $"Xunit.Assert.Equal(100, {(IsAsync ? "await " : "")}{externAlias}::{ContainingType}.{Method}());";
     }
 
+    public bool IsAsync { get; }
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
@@ -123,7 +136,8 @@ public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
         return obj is LegacyStandaloneEntryPointTestMethod other
             && TestNameExpression == other.TestNameExpression
             && Method == other.Method
-            && ContainingType == other.ContainingType; ;
+            && ContainingType == other.ContainingType
+            && IsAsync == other.IsAsync;
     }
 
     public override int GetHashCode()
@@ -138,6 +152,7 @@ public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
 
 public sealed class ConditionalTest : ITestInfo
 {
+    public bool IsAsync => _innerTest.IsAsync;
     public ConditionalTest(ITestInfo innerTest, string condition, string? skipReason = null)
     {
         TestNameExpression = innerTest.TestNameExpression;
@@ -187,9 +202,12 @@ public sealed class ConditionalTest : ITestInfo
             if (skipReporting.Length > 0)
             {
                 builder.AppendLine(skipReporting);
-                // Return so a skipped test isn't also reported as passed by the trailing
-                // ReportPassedTest. Safe because each executor holds a single test.
-                builder.AppendLine("return;");
+                if (testReporterWrapper.ShouldReturnAfterSkipReporting)
+                {
+                    // Return so a skipped test isn't also reported as passed by the trailing
+                    // ReportPassedTest. Safe because each executor holds a single test.
+                    builder.AppendLine("return;");
+                }
             }
         }
         return builder;
@@ -296,6 +314,7 @@ public sealed class ConditionalTest : ITestInfo
 
 public sealed class MemberDataTest : ITestInfo
 {
+    public bool IsAsync => _innerTest.IsAsync;
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
@@ -370,13 +389,14 @@ public sealed class MemberDataTest : ITestInfo
 
 public sealed class OutOfProcessTest : ITestInfo
 {
+    public bool IsAsync => false;
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
     public string ContainingType => "OutOfProcessTest";
 
     private CodeBuilder _executionStatement { get; }
-    private string RelativeAssemblyPath { get; }
+    internal string RelativeAssemblyPath { get; }
 
     public OutOfProcessTest(string displayName, string relativeAssemblyPath, string? testBuildMode)
     {
@@ -420,6 +440,7 @@ public sealed class OutOfProcessTest : ITestInfo
 
 public sealed class TestWithCustomDisplayName : ITestInfo
 {
+    public bool IsAsync => _inner.IsAsync;
     public string DisplayNameForFiltering { get; }
     public string TestNameExpression => $@"""{DisplayNameForFiltering.Replace(@"\", @"\\")}""";
     public string Method => _inner.Method;
@@ -466,6 +487,7 @@ public sealed class TestWithCustomDisplayName : ITestInfo
 /// </summary>
 public sealed class AlwaysSkippedTest : ITestInfo
 {
+    public bool IsAsync => false;
     public AlwaysSkippedTest(ITestInfo innerTest, string skipReason)
     {
         TestNameExpression = innerTest.TestNameExpression;
@@ -491,9 +513,12 @@ public sealed class AlwaysSkippedTest : ITestInfo
         if (skipReporting.Length > 0)
         {
             builder.AppendLine(skipReporting);
-            // Return so a skipped test isn't also reported as passed by the trailing
-            // ReportPassedTest. Safe because each executor holds a single test.
-            builder.AppendLine("return;");
+            if (testReporterWrapper.ShouldReturnAfterSkipReporting)
+            {
+                // Return so a skipped test isn't also reported as passed by the trailing
+                // ReportPassedTest. Safe because each executor holds a single test.
+                builder.AppendLine("return;");
+            }
         }
         return builder;
     }
@@ -522,9 +547,42 @@ public sealed class AlwaysSkippedTest : ITestInfo
 
 public sealed class NoTestReporting : ITestReporterWrapper
 {
+    public bool ShouldReturnAfterSkipReporting => false;
+
     public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test) => testExecution;
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null) => string.Empty;
+}
+
+public sealed class StandaloneTestReporting : ITestReporterWrapper
+{
+    private readonly string _testExecutedLocalIdentifier;
+    private readonly string _skipReasonLocalIdentifier;
+
+    public StandaloneTestReporting(string testExecutedLocalIdentifier, string skipReasonLocalIdentifier)
+    {
+        _testExecutedLocalIdentifier = testExecutedLocalIdentifier;
+        _skipReasonLocalIdentifier = skipReasonLocalIdentifier;
+    }
+
+    public bool ShouldReturnAfterSkipReporting => false;
+
+    public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test)
+    {
+        CodeBuilder builder = new();
+        builder.AppendLine($"{_testExecutedLocalIdentifier} = true;");
+        builder.Append(testExecution);
+        return builder;
+    }
+
+    public string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null)
+    {
+        string reasonExpression = skipReason is not null
+            ? $"@\"{skipReason.Replace("\r", "").Replace("\n", " ").Replace("\"", "\"\"")}\""
+            : "string.Empty";
+
+        return $"{_skipReasonLocalIdentifier} ??= {reasonExpression};";
+    }
 }
 
 /// <summary>
@@ -544,6 +602,8 @@ internal sealed class SkipReportingPassthrough : ITestReporterWrapper
         _displayNameSource = displayNameSource;
     }
 
+    public bool ShouldReturnAfterSkipReporting => _outer.ShouldReturnAfterSkipReporting;
+
     public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test) => testExecution;
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null)
@@ -555,15 +615,20 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
     private readonly string _summaryLocalIdentifier;
     private readonly string _filterLocalIdentifier;
     private readonly string _outputRecorderIdentifier;
+    private readonly string? _outOfProcessPlanWriterIdentifier;
 
     public WrapperLibraryTestSummaryReporting(string summaryLocalIdentifier,
                                               string filterLocalIdentifier,
-                                              string outputRecorderIdentifier)
+                                              string outputRecorderIdentifier,
+                                              string? outOfProcessPlanWriterIdentifier = null)
     {
         _summaryLocalIdentifier = summaryLocalIdentifier;
         _filterLocalIdentifier = filterLocalIdentifier;
         _outputRecorderIdentifier = outputRecorderIdentifier;
+        _outOfProcessPlanWriterIdentifier = outOfProcessPlanWriterIdentifier;
     }
+
+    public bool ShouldReturnAfterSkipReporting => true;
 
     public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecutionExpression,
                                                       ITestInfo test)
@@ -576,43 +641,27 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
-            builder.AppendLine("try");
-
-            using (builder.NewBracesScope())
+            if (_outOfProcessPlanWriterIdentifier is not null)
             {
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportStartingTest("
-                                 + $"{test.TestNameExpression},"
-                                 + $" System.Console.Out);");
+                builder.AppendLine($"if ({_outOfProcessPlanWriterIdentifier} is not null)");
+                using (builder.NewBracesScope())
+                {
+                    if (test is OutOfProcessTest outOfProcessTest)
+                    {
+                        string relativeAssemblyPath = outOfProcessTest.RelativeAssemblyPath.Replace("\"", "\"\"");
+                        builder.AppendLine($@"{_outOfProcessPlanWriterIdentifier}.WriteLine(@""{relativeAssemblyPath}"");");
+                    }
+                }
 
-                builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
-                builder.Append(testExecutionExpression);
-
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest("
-                                 + $"{test.TestNameExpression},"
-                                 + $" \"{test.ContainingType}\","
-                                 + $" @\"{test.Method}\","
-                                 + $" stopwatch.Elapsed - testStart,"
-                                 + $" {_outputRecorderIdentifier}.GetTestOutput(),"
-                                 + $" System.Console.Out,"
-                                 + $" tempLogSw,"
-                                 + $" statsCsvSw);");
+                builder.AppendLine("else");
+                using (builder.NewBracesScope())
+                {
+                    AppendTestExecutionWithReporting(builder, testExecutionExpression, test);
+                }
             }
-
-            builder.AppendLine("catch (System.Exception ex)");
-
-            using (builder.NewBracesScope())
+            else
             {
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest("
-                                 + $"{test.TestNameExpression},"
-                                 + $" \"{test.ContainingType}\","
-                                 + $" @\"{test.Method}\","
-                                 + $" stopwatch.Elapsed - testStart,"
-                                 + $" ex,"
-                                 + $" {_outputRecorderIdentifier}.GetTestOutput(),"
-                                 + $" System.Console.Out,"
-                                 + $" tempLogSw,"
-                                 + $" statsCsvSw);");
+                AppendTestExecutionWithReporting(builder, testExecutionExpression, test);
             }
         }
 
@@ -625,19 +674,82 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         return builder;
     }
 
-    public string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null)
+    private void AppendTestExecutionWithReporting(CodeBuilder builder,
+                                                  CodeBuilder testExecutionExpression,
+                                                  ITestInfo test)
     {
-        string reasonExpression = skipReason != null
+        builder.AppendLine("System.TimeSpan testStart = stopwatch.Elapsed;");
+        builder.AppendLine("try");
+
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine($"{_summaryLocalIdentifier}.ReportStartingTest("
+                             + $"{test.TestNameExpression},"
+                             + $" System.Console.Out);");
+
+            builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
+            builder.Append(testExecutionExpression);
+
+            builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest("
+                             + $"{test.TestNameExpression},"
+                             + $" \"{test.ContainingType}\","
+                             + $" @\"{test.Method}\","
+                             + $" stopwatch.Elapsed - testStart,"
+                             + $" {_outputRecorderIdentifier}.GetTestOutput(),"
+                             + $" System.Console.Out,"
+                             + $" tempLogSw,"
+                             + $" statsCsvSw);");
+        }
+
+        if (test is OutOfProcessTest)
+        {
+            builder.AppendLine("catch (TestLibrary.OutOfProcessTestSkippedException ex)");
+
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine(GenerateSkippedTestReporting(test, "ex.Message", skipReasonIsExpression: true));
+            }
+        }
+
+        builder.AppendLine("catch (System.Exception ex)");
+
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest("
+                             + $"{test.TestNameExpression},"
+                             + $" \"{test.ContainingType}\","
+                             + $" @\"{test.Method}\","
+                             + $" stopwatch.Elapsed - testStart,"
+                             + $" ex,"
+                             + $" {_outputRecorderIdentifier}.GetTestOutput(),"
+                             + $" System.Console.Out,"
+                             + $" tempLogSw,"
+                             + $" statsCsvSw);");
+        }
+    }
+
+    public string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null)
+        => GenerateSkippedTestReporting(skippedTest, skipReason, skipReasonIsExpression: false);
+
+    private string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason, bool skipReasonIsExpression)
+    {
+        string reasonExpression = skipReasonIsExpression
+            ? skipReason!
+            : skipReason != null
             ? $"@\"{skipReason.Replace("\r", "").Replace("\n", " ").Replace("\"", "\"\"")}\""
             : "string.Empty";
 
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest("
-             + $"{skippedTest.TestNameExpression},"
-             + $" \"{skippedTest.ContainingType}\","
-             + $" @\"{skippedTest.Method}\","
-             + $" System.TimeSpan.Zero,"
-             + $" {reasonExpression},"
-             + $" tempLogSw,"
-             + $" statsCsvSw);";
+        string reportSkippedTest = $"{_summaryLocalIdentifier}.ReportSkippedTest("
+                                 + $"{skippedTest.TestNameExpression},"
+                                 + $" \"{skippedTest.ContainingType}\","
+                                 + $" @\"{skippedTest.Method}\","
+                                 + $" System.TimeSpan.Zero,"
+                                 + $" {reasonExpression},"
+                                 + $" tempLogSw,"
+                                 + $" statsCsvSw);";
+
+        return _outOfProcessPlanWriterIdentifier is null
+            ? reportSkippedTest
+            : $"if ({_outOfProcessPlanWriterIdentifier} is null) {reportSkippedTest}";
     }
 }

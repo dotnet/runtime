@@ -45,7 +45,6 @@ class    MethodDescChunk;
 class    MethodTable;
 class    Module;
 class    Object;
-class    Stub;
 class    Substitution;
 class    TypeHandle;
 class   Dictionary;
@@ -1874,6 +1873,9 @@ public:
     // Only accurate on types which are not auto layout
     inline BOOL IsInt128OrHasInt128Fields();
 
+    // Only accurate on types which are not auto layout
+    inline BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+
     UINT32 GetNativeSize();
 
     DWORD           GetBaseSize()
@@ -3192,13 +3194,13 @@ public:
         inline ULONG AddRef()
             { LIMITED_METHOD_CONTRACT; return (ULONG) InterlockedIncrement((LONG*)&m_cRef); }
 
-        ULONG Release();
+        ULONG Release() noexcept;
 
         // Since all methods that return a MethodData already AddRef'd, we do NOT
         // want to AddRef when putting a holder around it. We only want to release it.
         static void HolderAcquire(MethodData *pEntry)
             { LIMITED_METHOD_CONTRACT; return; }
-        static void HolderRelease(MethodData *pEntry)
+        static void HolderRelease(MethodData *pEntry) noexcept
             { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
 
         static void* operator new(size_t size)

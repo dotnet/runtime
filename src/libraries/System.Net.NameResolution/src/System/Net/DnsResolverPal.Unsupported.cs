@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
+    // DnsResolver is not implemented on Browser or WASI. Enabling the managed resolver on
+    // WASI is tracked by https://github.com/dotnet/runtime/issues/132215.
     internal static partial class DnsResolverPal
     {
         // No platform-specific server restrictions to enforce; resolution itself is

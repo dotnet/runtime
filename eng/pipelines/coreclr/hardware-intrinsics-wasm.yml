@@ -2,7 +2,10 @@ trigger: none
 pr:
   branches:
     include:
-    - main
+    - '*'
+    exclude:
+    - release/*
+    - internal/release/*
   paths:
     include:
     - eng/pipelines/coreclr/hardware-intrinsics-wasm.yml
@@ -25,4 +28,4 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-          testBuildArgs: '/p:EnableWasmHWIntrinsicsTests=true -tree:JIT/HardwareIntrinsics/Wasm'
+          testBuildArgs: '-test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_r.csproj -test:JIT/HardwareIntrinsics/HardwareIntrinsics_Wasm_ro.csproj'

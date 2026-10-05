@@ -183,6 +183,10 @@ public interface IRuntimeTypeSystem : IContract
     bool ContainsGCPointers(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
     bool IsByRefLike(ITypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the type is a compiler-generated inline array buffer type (EEClass::IsInlineArray):
+    // its single declared instance field is repeated across the whole GetNumInstanceFieldBytes span,
+    // one element per (field size) bytes, rather than declared once per element.
+    bool IsInlineArray(ITypeHandle typeHandle) => throw new NotImplementedException();
     // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
     // to 4, 8, or 16. Returns false otherwise (including on targets that don't
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
@@ -190,6 +194,9 @@ public interface IRuntimeTypeSystem : IContract
     bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(ITypeHandle typeHandle) => throw new NotImplementedException();
+    // Returns the unclamped alignment from CEEInfo::getClassAlignmentRequirementStatic.
+    // This is optional functionality. Runtimes that don't support it return the target pointer size.
+    int GetClassAlignmentRequirement(ITypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such
     // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI). Mirrors
@@ -327,6 +334,7 @@ public interface IRuntimeTypeSystem : IContract
     OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    TargetPointer GetAsyncVariant(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     bool IsUnboxingStub(MethodDescHandle methodDesc) => throw new NotImplementedException();

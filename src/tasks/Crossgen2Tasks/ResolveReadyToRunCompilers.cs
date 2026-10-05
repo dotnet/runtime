@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// This task is replicated in dotnet/sdk at src/Tasks/Microsoft.NET.Build.Tasks/ResolveReadyToRunCompilers.cs.
+// Keep both copies synchronized.
+
 #nullable disable
 
 using Microsoft.Build.Framework;
@@ -210,7 +213,7 @@ namespace Microsoft.NET.Build.Tasks
             string portablePlatform = NuGetUtils.GetBestMatchingRid(
                     runtimeGraph,
                     _targetRuntimeIdentifier,
-                    new[] { "linux", "android", "osx", "win", "freebsd", "illumos" },
+                    new[] { "linux", "android", "osx", "win", "freebsd", "illumos", "browser", "wasi" },
                     out _);
 
             targetOS = portablePlatform switch
@@ -221,6 +224,8 @@ namespace Microsoft.NET.Build.Tasks
                 "win" => "windows",
                 "freebsd" => "freebsd",
                 "illumos" => "illumos",
+                "browser" => "browser",
+                "wasi" => "wasi",
                 _ => null
             };
 
@@ -280,6 +285,11 @@ namespace Microsoft.NET.Build.Tasks
                 case "x86":
                     architecture = Architecture.X86;
                     break;
+#if !NETFRAMEWORK
+                case "wasm":
+                    architecture = Architecture.Wasm;
+                    break;
+#endif
                 default:
                     return false;
             }
@@ -444,6 +454,7 @@ namespace Microsoft.NET.Build.Tasks
 #if !NETFRAMEWORK
                 Architecture.RiscV64 => "riscv64",
                 Architecture.LoongArch64 => "loongarch64",
+                Architecture.Wasm => "wasm",
 #endif
                 _ => null
             };

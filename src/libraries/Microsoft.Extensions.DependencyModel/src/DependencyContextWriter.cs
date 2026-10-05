@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.DependencyModel
                 WriteCompilationOptions(context.CompilationOptions, jsonWriter);
                 WriteTargets(context, jsonWriter);
                 WriteLibraries(context, jsonWriter);
-                if (context.RuntimeGraph.Any())
+                if (context.RuntimeGraph.Count > 0)
                 {
                     WriteRuntimeGraph(context, jsonWriter);
                 }
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.DependencyModel
         private static void WriteCompilationOptions(CompilationOptions compilationOptions, Utf8JsonWriter jsonWriter)
         {
             jsonWriter.WriteStartObject(DependencyContextStrings.CompilationOptionsPropertyName);
-            if (compilationOptions.Defines?.Any() == true)
+            if (compilationOptions.Defines?.Count > 0)
             {
                 jsonWriter.WriteStartArray(DependencyContextStrings.DefinesPropertyName);
                 foreach (string? define in compilationOptions.Defines)
@@ -185,7 +185,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static void AddAssets(string key, RuntimeAssetGroup? group, Utf8JsonWriter jsonWriter)
         {
-            if (group == null || !group.RuntimeFiles.Any())
+            if (group == null || group.RuntimeFiles.Count == 0)
             {
                 return;
             }

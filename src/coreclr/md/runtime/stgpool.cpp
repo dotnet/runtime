@@ -55,7 +55,7 @@ StgPool::InitNew(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -86,7 +86,7 @@ StgPool::InitOnMem(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -123,7 +123,7 @@ StgPool::TakeOwnershipOfInitMem()
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -154,12 +154,12 @@ StgPool::TakeOwnershipOfInitMem()
 //*****************************************************************************
 // Clear out this pool.  Cannot use until you call InitNew.
 //*****************************************************************************
-void StgPool::Uninit()
+void StgPool::Uninit() noexcept
 {
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -197,7 +197,7 @@ StgPool::ConvertToRW()
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -221,7 +221,7 @@ StgPool::SetHash(int bHash)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -236,7 +236,7 @@ void StgPool::Trim()
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -275,7 +275,7 @@ bool StgPool::Grow(         // true if successful.
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -292,10 +292,10 @@ bool StgPool::Grow(         // true if successful.
     if ((m_pCurSeg->m_cbSegNext + m_cbCurSegOffset) / m_ulGrowInc >= 3)
         m_ulGrowInc *= 2;
 
-    // NOTE: MD\DataSource\RemoteMDInternalRWSource has taken a dependency that there
+    // NOTE: DacDbiInterfaceImpl::ReadStoragePool has taken a dependency that there
     // won't be more than 1000 segments. Given the current exponential growth algorithm
     // we'll never get anywhere close to that, but if the algorithm changes to allow for
-    // many segments, please update that source as well.
+    // many segments, please update that implementation as well.
 
     // If first time, handle specially.
     if (m_pSegData == m_zeros)
@@ -379,7 +379,7 @@ StgPool::AddSegment(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -438,6 +438,7 @@ StgPool::AddSegment(
     return S_OK;
 } // StgPool::AddSegment
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 #ifndef DACCESS_COMPILE
 //*****************************************************************************
 // The entire string pool is written to the given stream. The stream is aligned
@@ -451,7 +452,7 @@ StgPool::PersistToStream(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -524,7 +525,7 @@ StgPool::PersistPartialToStream(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -575,6 +576,7 @@ StgPool::PersistPartialToStream(
 
     return hr;
 } // StgPool::PersistPartialToStream
+#endif // FEATURE_METADATA_PERSISTENCE
 
 // Copies data from pSourcePool starting at index nStartSourceIndex.
 __checkReturn
@@ -645,6 +647,7 @@ StgPool::CopyData(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pBuffer));
         PRECONDITION(CheckPointer(pcbWritten));
     }
@@ -758,7 +761,7 @@ StgStringPool::InitNew(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -804,7 +807,7 @@ StgStringPool::InitOnMem(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -831,12 +834,12 @@ StgStringPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgStringPool::Uninit()
+void StgStringPool::Uninit() noexcept
 {
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -858,7 +861,7 @@ StgStringPool::SetHash(int bHash)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -886,7 +889,7 @@ StgStringPool::AddString(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -962,7 +965,7 @@ StgStringPool::AddStringW(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1057,7 +1060,7 @@ StgStringPool::RehashStrings()
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1122,7 +1125,7 @@ StgGuidPool::InitNew(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1156,7 +1159,7 @@ StgGuidPool::InitOnMem(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1189,12 +1192,12 @@ StgGuidPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgGuidPool::Uninit()
+void StgGuidPool::Uninit() noexcept
 {
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1218,7 +1221,7 @@ StgGuidPool::AddSegment(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1240,7 +1243,7 @@ StgGuidPool::SetHash(int bHash)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1268,7 +1271,7 @@ StgGuidPool::AddGuid(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1333,7 +1336,7 @@ StgGuidPool::RehashGuids()
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1393,7 +1396,7 @@ StgBlobPool::InitNew(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1451,7 +1454,7 @@ StgBlobPool::InitOnMem(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1494,12 +1497,12 @@ StgBlobPool::InitOnMem(
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-void StgBlobPool::Uninit()
+void StgBlobPool::Uninit() noexcept
 {
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1532,7 +1535,7 @@ StgBlobPool::AddBlob(
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1601,7 +1604,6 @@ StgBlobPool::GetBlob(
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr;
 
@@ -1642,7 +1644,6 @@ StgBlobPool::GetBlobWithSizePrefix(
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr;
 
@@ -1689,7 +1690,7 @@ StgBlobPool::SetHash(int bHash)
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1714,7 +1715,7 @@ StgBlobPool::RehashBlobs()
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -1792,5 +1793,3 @@ StgBlobPool::RehashBlobs()
     }
     return (S_OK);
 } // StgBlobPool::RehashBlobs
-
-

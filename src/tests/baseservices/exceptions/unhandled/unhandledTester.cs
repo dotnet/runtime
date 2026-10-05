@@ -22,8 +22,9 @@ namespace TestUnhandledExceptionTester
             startInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assembly) + " " + unhandledType;
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
-            // Disable creating dump since the target process is expected to fail with an unhandled exception
+            // Disable crash diagnostics since the target process is expected to fail with an unhandled exception
             startInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
+            startInfo.Environment.Remove("DOTNET_EnableCrashReport");
 
             ProcessTextOutput result = Process.RunAndCaptureText(startInfo);
             Console.WriteLine($"Test process {assembly} with argument {unhandledType} exited");

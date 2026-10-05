@@ -87,16 +87,23 @@ func encrypt<Algorithm>(
 
     let nonce = try Algorithm.SealedBox.Nonce(data: nonceData)
 
-    let result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad)
+    let result: Algorithm.SealedBox
 
-    // Copy results out of the SealedBox as the Data objects returned here are sometimes slices,
-    // which don't have a correct implementation of copyBytes.
-    // See https://github.com/apple/swift-foundation/issues/638 for more information.
-    let resultCiphertext = Data(result.ciphertext)
-    let resultTag = Data(result.tag)
+    if aad.isEmpty {
+        result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce)
+    } else {
+        result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad)
+    }
 
-    _ = resultCiphertext.copyBytes(to: cipherText)
-    _ = resultTag.copyBytes(to: tag)
+    // Data.copyBytes did not correctly handle slices before the 26 releases.
+    // See https://github.com/swiftlang/swift-foundation/issues/638.
+    if #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) {
+        _ = result.ciphertext.copyBytes(to: cipherText)
+        _ = result.tag.copyBytes(to: tag)
+    } else {
+        _ = Data(result.ciphertext).copyBytes(to: cipherText)
+        _ = Data(result.tag).copyBytes(to: tag)
+    }
 }
 
 func decrypt<Algorithm>(
@@ -114,7 +121,13 @@ func decrypt<Algorithm>(
 
     let sealedBox = try Algorithm.SealedBox(nonce: nonce, ciphertext: cipherText, tag: tag)
 
-    let result = try Algorithm.open(sealedBox, using: symmetricKey, authenticating: aad)
+    let result: Data
+
+    if aad.isEmpty {
+        result = try Algorithm.open(sealedBox, using: symmetricKey)
+    } else {
+        result = try Algorithm.open(sealedBox, using: symmetricKey, authenticating: aad)
+    }
 
     _ = result.copyBytes(to: plaintext)
 }
@@ -193,6 +206,36 @@ public func AppleCryptoNative_AesGcmDecrypt(
         tag: tag,
         plaintext: plaintext,
         aad: aad);
+}
+
+@_silgen_name("AppleCryptoNative_AesKeyWrapEncrypt")
+@available(macOS 12.0, iOS 15.0, tvOS 15.0, macCatalyst 15.0, *)
+public func AppleCryptoNative_AesKeyWrapEncrypt(
+    key: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeBufferPointer<UInt8>,
+    ciphertext: UnsafeMutableBufferPointer<UInt8>
+) throws -> Int32 {
+    let result = try AES.KeyWrap.wrap(
+        SymmetricKey(data: plaintext),
+        using: SymmetricKey(data: key))
+
+    return Int32(result.copyBytes(to: ciphertext))
+}
+
+@_silgen_name("AppleCryptoNative_AesKeyWrapDecrypt")
+@available(macOS 12.0, iOS 15.0, tvOS 15.0, macCatalyst 15.0, *)
+public func AppleCryptoNative_AesKeyWrapDecrypt(
+    key: UnsafeBufferPointer<UInt8>,
+    ciphertext: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeMutableBufferPointer<UInt8>
+) throws -> Int32 {
+    let result = try AES.KeyWrap.unwrap(
+        ciphertext,
+        using: SymmetricKey(data: key))
+
+    return result.withUnsafeBytes {
+        Int32($0.copyBytes(to: plaintext))
+    }
 }
 
 @_silgen_name("AppleCryptoNative_IsAuthenticationFailure")
@@ -550,6 +593,49 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
     }
 
     return 1
+}
+
+@_silgen_name("AppleCryptoNative_EccExportPublicKeyFromPrivateKey")
+public func AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
+    keySizeInBits: Int32,
+    privateKey: UnsafeBufferPointer<UInt8>,
+    destination: UnsafeMutableBufferPointer<UInt8>) -> Int32 {
+    guard !privateKey.isEmpty, !destination.isEmpty else {
+        return -1
+    }
+
+    // The purpose of this method is to take an EC private scalar D and compute the public value, Q. For this
+    // limited purpose it doesn't matter if we use KeyAgreement or Signing because the result will be the same.
+    // This implementation just uses KeyAgreement.
+    let publicKey: Data
+
+    switch keySizeInBits {
+        case 256:
+            guard let key = try? P256.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        case 384:
+            guard let key = try? P384.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        case 521:
+            guard let key = try? P521.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        default:
+            return -1
+    }
+
+    guard publicKey.count == destination.count else {
+        return -1
+    }
+
+    let copied = publicKey.copyBytes(to: destination) == publicKey.count
+
+    return copied ? 1 : -1
 }
 
 // Return values:

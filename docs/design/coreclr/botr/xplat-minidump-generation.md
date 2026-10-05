@@ -65,8 +65,8 @@ Environment variables supported:
 - `DOTNET_CreateDumpDiagnostics`: if set to "1", enables the _createdump_ utilities diagnostic messages (TRACE macro).
 - `DOTNET_CreateDumpVerboseDiagnostics`: if set to "1", enables the _createdump_ utilities verbose diagnostic messages (TRACE_VERBOSE macro).
 - `DOTNET_CreateDumpLogToFile`: if set, it is the path of the file to write the _createdump_ diagnostic messages.
-- `DOTNET_EnableCrashReport`: In .NET 6.0 or greater, if set to "1", createdump also generates a json formatted crash report which includes information about the threads and stack frames of the crashing application. The crash report name is the dump path/name with _.crashreport.json_ appended.
-- `DOTNET_EnableCrashReportOnly`: In .NET 7.0 or greater, same as DOTNET_EnableCrashReport except the core dump is not generated.
+- `DOTNET_EnableCrashReport`: In .NET 6.0 or greater, if set to "1" together with `DOTNET_DbgEnableMiniDump`, createdump also generates a json formatted crash report which includes information about the threads and stack frames of the crashing application. The crash report name is the dump path/name with _.crashreport.json_ appended. Starting in .NET 11, when `DOTNET_DbgEnableMiniDump` is not enabled on a platform that supports the in-process crash reporter, this setting enables the in-process reporter instead.
+- `DOTNET_EnableCrashReportOnly`: In .NET 7.0 or greater, same as `DOTNET_EnableCrashReport` except createdump does not generate the core dump. Starting in .NET 11, when `DOTNET_DbgEnableMiniDump` is not enabled, this setting also enables the in-process reporter on supported platforms.
 
 DOTNET_DbgMiniDumpType values:
 
@@ -82,10 +82,10 @@ DOTNET_DbgMiniDumpType values:
 
 **Command Line Usage**
 
-The createdump utility can also be run from the command line on arbitrary .NET Core processes. The type of dump can be controlled with the below command switches. The default is a "minidump" which contains the majority the memory and managed state needed. Unless you have ptrace (CAP_SYS_PTRACE) administrative privilege, you need to run with sudo or su. The same as if you were attaching with lldb or other native debugger.
+The createdump utility is normally launched by the runtime as a child of the process being dumped. It only dumps the parent process that launched it, and a target PID cannot be specified. The type of dump can be controlled with the command switches below. The default is a "minidump" which contains the majority of the memory and managed state needed.
 
 ```
-createdump [options] pid
+createdump [options]
 -f, --name - dump path and file name. The default is '/tmp/coredump.%p'. These specifiers are substituted with following values:
    %p  PID of dumped process.
    %e  The process executable filename.

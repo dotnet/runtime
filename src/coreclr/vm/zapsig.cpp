@@ -297,7 +297,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pZapSigContext));
         PRECONDITION(CheckPointer(pZapSigContext->pModuleContext));
@@ -547,7 +546,6 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pTypeHnd));
         PRECONDITION(CheckPointer(typeHnd2));
     }
@@ -590,14 +588,11 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        if (index == 1)
         {
-            if (index == 1)
-            {
-                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
-            }
-            index--;
+            return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
         }
+        index--;
 
         pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
@@ -630,7 +625,6 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -655,14 +649,11 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        if (index == 1)
         {
-            if (index == 1)
-            {
-                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
-            }
-            index--;
+            return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
         }
+        index--;
 
         pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
         if (pAssembly == NULL)

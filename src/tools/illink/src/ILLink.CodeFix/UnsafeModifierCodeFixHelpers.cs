@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ILLink.CodeFixProvider;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -25,10 +26,15 @@ namespace ILLink.CodeFix
         /// <summary>
         /// Registers an add-unsafe action for a supported declaration that has no existing safety modifier.
         /// </summary>
+        /// <remarks>
+        /// A destructor or a declaration that documents why it is safe gets <c>safe</c> instead, so the fixer does
+        /// not add a meaningless <c>unsafe</c> modifier or force callers of an audited member into unsafe contexts.
+        /// </remarks>
         internal static async Task RegisterAddUnsafeCodeFixAsync(
             CodeFixContext context,
             LocalizableString codeFixTitle,
-            Func<SyntaxNode, bool> isSupportedDeclaration)
+            Func<SyntaxNode, bool> isSupportedDeclaration,
+            SyntaxKind insertAfterModifier = SyntaxKind.None)
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
             if (root is null)
@@ -45,11 +51,36 @@ namespace ILLink.CodeFix
                 return;
             }
 
+            bool hasSafetyDocumentation = UnsafeMigrationSyntaxHelpers.HasSafetyDocumentation(declaration);
+            bool useSafeModifier = UnsafeMigrationSyntaxHelpers.SafeKeywordKind != SyntaxKind.None
+                && (declaration is DestructorDeclarationSyntax || hasSafetyDocumentation);
+            SyntaxKind modifier = useSafeModifier
+                ? UnsafeMigrationSyntaxHelpers.SafeKeywordKind
+                : SyntaxKind.UnsafeKeyword;
             string title = codeFixTitle.ToString();
+            string displayTitle = title;
+            if (useSafeModifier)
+            {
+                string resourceName = hasSafetyDocumentation
+                    ? nameof(Resources.AddSafeToDocumentedMemberCodeFixTitle)
+                    : nameof(Resources.AddSafeCodeFixTitle);
+                displayTitle = new LocalizableResourceString(
+                    resourceName,
+                    Resources.ResourceManager,
+                    typeof(Resources)).ToString();
+            }
+
+            // Both flavors share an equivalence key so a single fix-all pass can apply the contract each
+            // declaration asks for, rather than settling on whichever flavor it encountered first.
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    title,
-                    cancellationToken => AddUnsafeModifierAsync(context.Document, declaration, cancellationToken),
+                    displayTitle,
+                    cancellationToken => AddModifierAsync(
+                        context.Document,
+                        declaration,
+                        modifier,
+                        cancellationToken,
+                        insertAfterModifier),
                     title),
                 context.Diagnostics[0]);
         }
@@ -70,31 +101,93 @@ namespace ILLink.CodeFix
         /// <summary>
         /// Adds unsafe while preserving declaration-specific modifiers and trivia.
         /// </summary>
-        internal static async Task<Document> AddUnsafeModifierAsync(
+        internal static Task<Document> AddUnsafeModifierAsync(
+            Document document,
+            SyntaxNode declaration,
+            CancellationToken cancellationToken) =>
+            AddModifierAsync(document, declaration, SyntaxKind.UnsafeKeyword, cancellationToken);
+
+        /// <summary>
+        /// Adds a safety modifier while preserving declaration-specific modifiers and trivia.
+        /// </summary>
+        internal static async Task<Document> AddModifierAsync(
+            Document document,
+            SyntaxNode declaration,
+            SyntaxKind modifier,
+            CancellationToken cancellationToken,
+            SyntaxKind insertAfterModifier = SyntaxKind.None)
+        {
+            var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            editor.ReplaceNode(declaration, AddModifier(declaration, modifier, insertAfterModifier));
+            return editor.GetChangedDocument();
+        }
+
+        /// <summary>
+        /// Replaces an <c>unsafe</c> modifier with <c>safe</c>, preserving its position and trivia.
+        /// </summary>
+        /// <remarks>
+        /// This is the narrowing edit for declarations that must keep an explicit marker, such as
+        /// <c>extern</c> members, where removing <c>unsafe</c> outright would produce <c>CS9389</c>.
+        /// </remarks>
+        internal static async Task<Document> ReplaceUnsafeWithSafeAsync(
             Document document,
             SyntaxNode declaration,
             CancellationToken cancellationToken)
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
             SyntaxTokenList modifiers = UnsafeMigrationSyntaxHelpers.GetModifiers(declaration);
-            if (declaration is AccessorDeclarationSyntax accessor)
-            {
-                editor.ReplaceNode(accessor, AddUnsafeModifier(accessor));
-            }
-            else if (modifiers.Count > 0)
-            {
-                editor.ReplaceNode(
-                    declaration,
-                    WithModifiers(declaration, AddUnsafeModifier(modifiers)));
-            }
-            else
-            {
-                DeclarationModifiers declarationModifiers = editor.Generator.GetModifiers(declaration);
-                editor.SetModifiers(declaration, declarationModifiers.WithIsUnsafe(true));
-            }
+            int unsafeIndex = GetUnsafeModifierIndex(modifiers);
+            if (unsafeIndex < 0 || UnsafeMigrationSyntaxHelpers.SafeKeywordKind == SyntaxKind.None)
+                return document;
 
+            SyntaxToken safeToken = SyntaxFactory.Token(UnsafeMigrationSyntaxHelpers.SafeKeywordKind)
+                .WithTriviaFrom(modifiers[unsafeIndex]);
+            editor.ReplaceNode(
+                declaration,
+                WithModifiers(declaration, modifiers.Replace(modifiers[unsafeIndex], safeToken)));
             return editor.GetChangedDocument();
         }
+
+        /// <summary>
+        /// Returns <paramref name="declaration"/> with a safety modifier added.
+        /// </summary>
+        internal static SyntaxNode AddModifier(
+            SyntaxNode declaration,
+            SyntaxKind modifier,
+            SyntaxKind insertAfterModifier = SyntaxKind.None)
+        {
+            if (declaration is AccessorDeclarationSyntax accessor)
+                return AddModifier(accessor, modifier);
+
+            SyntaxTokenList modifiers = UnsafeMigrationSyntaxHelpers.GetModifiers(declaration);
+            if (modifiers.Count > 0)
+                return WithModifiers(declaration, AddModifier(modifiers, modifier, insertAfterModifier));
+
+            // With no existing modifiers the declaration's leading trivia belongs to the token the new modifier
+            // displaces, so it has to move with it. Attribute lists keep their own leading trivia.
+            SyntaxToken anchor = GetModifierAnchorToken(declaration);
+            SyntaxToken modifierToken = SyntaxFactory.Token(modifier)
+                .WithLeadingTrivia(anchor.LeadingTrivia)
+                .WithTrailingTrivia(SyntaxFactory.ElasticSpace);
+            SyntaxNode withoutTrivia = declaration.ReplaceToken(
+                anchor,
+                anchor.WithLeadingTrivia(default(SyntaxTriviaList)));
+            return WithModifiers(withoutTrivia, SyntaxFactory.TokenList(modifierToken));
+        }
+
+        private static SyntaxToken GetModifierAnchorToken(SyntaxNode declaration) =>
+            GetAttributeLists(declaration) is { Count: > 0 } attributeLists
+                ? attributeLists[attributeLists.Count - 1].GetLastToken().GetNextToken()
+                : declaration.GetFirstToken();
+
+        private static SyntaxList<AttributeListSyntax> GetAttributeLists(SyntaxNode declaration) =>
+            declaration switch
+            {
+                MemberDeclarationSyntax member => member.AttributeLists,
+                LocalFunctionStatementSyntax localFunction => localFunction.AttributeLists,
+                AccessorDeclarationSyntax accessor => accessor.AttributeLists,
+                _ => default,
+            };
 
         /// <summary>
         /// Removes unsafe without disturbing modifiers that the current SyntaxGenerator does not model.
@@ -125,17 +218,17 @@ namespace ILLink.CodeFix
             return editor.GetChangedDocument();
         }
 
-        private static AccessorDeclarationSyntax AddUnsafeModifier(AccessorDeclarationSyntax accessor)
+        private static AccessorDeclarationSyntax AddModifier(AccessorDeclarationSyntax accessor, SyntaxKind modifier)
         {
             // SyntaxGenerator does not yet model unsafe property accessors, so edit their tokens directly.
             if (accessor.Modifiers.Count > 0)
-                return accessor.WithModifiers(AddUnsafeModifier(accessor.Modifiers));
+                return accessor.WithModifiers(AddModifier(accessor.Modifiers, modifier, SyntaxKind.None));
 
-            SyntaxToken unsafeModifier = SyntaxFactory.Token(SyntaxKind.UnsafeKeyword)
+            SyntaxToken modifierToken = SyntaxFactory.Token(modifier)
                 .WithLeadingTrivia(accessor.Keyword.LeadingTrivia)
                 .WithTrailingTrivia(SyntaxFactory.ElasticSpace);
             return accessor
-                .WithModifiers([unsafeModifier])
+                .WithModifiers([modifierToken])
                 .WithKeyword(accessor.Keyword.WithLeadingTrivia(default(SyntaxTriviaList)));
         }
 
@@ -166,24 +259,51 @@ namespace ILLink.CodeFix
             return accessor.WithModifiers(modifiers);
         }
 
-        private static SyntaxTokenList AddUnsafeModifier(SyntaxTokenList modifiers)
+        private static SyntaxTokenList AddModifier(
+            SyntaxTokenList modifiers,
+            SyntaxKind modifier,
+            SyntaxKind insertAfterModifier)
         {
-            // Place unsafe before extern while preserving the existing modifier order.
-            int insertionIndex = modifiers.IndexOf(SyntaxKind.ExternKeyword);
+            int insertionIndex = insertAfterModifier == SyntaxKind.None
+                ? -1
+                : modifiers.IndexOf(insertAfterModifier);
+            if (insertionIndex >= 0)
+            {
+                insertionIndex++;
+            }
+            else
+            {
+                // 'extern' and 'partial' conventionally sit closest to the return type, so the safety modifier goes
+                // before them. Otherwise it is appended, which matches the repo's preferred modifier order where
+                // 'unsafe' follows 'virtual', 'abstract', 'sealed' and 'override'.
+                insertionIndex = GetFirstModifierIndex(modifiers, SyntaxKind.ExternKeyword, SyntaxKind.PartialKeyword);
+            }
+
             if (insertionIndex < 0)
                 insertionIndex = modifiers.Count;
 
-            SyntaxToken unsafeModifier = SyntaxFactory.Token(SyntaxKind.UnsafeKeyword)
+            SyntaxToken modifierToken = SyntaxFactory.Token(modifier)
                 .WithTrailingTrivia(SyntaxFactory.ElasticSpace);
-            if (insertionIndex == 0)
+            if (insertionIndex == 0 && modifiers.Count > 0)
             {
-                unsafeModifier = unsafeModifier.WithLeadingTrivia(modifiers[0].LeadingTrivia);
+                modifierToken = modifierToken.WithLeadingTrivia(modifiers[0].LeadingTrivia);
                 modifiers = modifiers.Replace(
                     modifiers[0],
                     modifiers[0].WithLeadingTrivia(default(SyntaxTriviaList)));
             }
 
-            return modifiers.Insert(insertionIndex, unsafeModifier);
+            return modifiers.Insert(insertionIndex, modifierToken);
+        }
+
+        private static int GetFirstModifierIndex(SyntaxTokenList modifiers, SyntaxKind first, SyntaxKind second)
+        {
+            for (int i = 0; i < modifiers.Count; i++)
+            {
+                if (modifiers[i].IsKind(first) || modifiers[i].IsKind(second))
+                    return i;
+            }
+
+            return -1;
         }
 
         private static SyntaxTokenList RemoveUnsafeModifier(SyntaxTokenList modifiers)

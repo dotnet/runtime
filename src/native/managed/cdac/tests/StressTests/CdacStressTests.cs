@@ -34,8 +34,10 @@ public class CdacStressTests : CdacStressTestBase
         [new Debuggee("ExceptionHandling")],
         [new Debuggee("StructScenarios")],
         [new Debuggee("DynamicMethods")],
+        [new Debuggee("InlineArrayByRefLike")],
         [new Debuggee("CallSignatures")],
         [new Debuggee("CrossModule")],
+        [new Debuggee("NotYetLoadedArgType")],
         [new Debuggee("PInvoke", WindowsOnly: true)],
         // VarArgs is intentionally excluded from GCREFS: the cDAC's
         // GetStackReferences does not yet walk the VASigCookie signature

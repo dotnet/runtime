@@ -172,6 +172,8 @@ public:
         return m_size;
     }
 
+    unsigned GetAlignmentRequirement(Compiler* comp) const;
+
     var_types GetType() const
     {
         return m_type;
@@ -202,7 +204,7 @@ public:
             case 8:
                 return TYP_LONG;
 #endif
-#if defined(FEATURE_SIMD) && !defined(TARGET_WASM)
+#ifdef FEATURE_SIMD
             // TODO: check TYP_SIMD12 profitability,
             // it will need additional support in `BuildStoreLoc`.
             case 16:

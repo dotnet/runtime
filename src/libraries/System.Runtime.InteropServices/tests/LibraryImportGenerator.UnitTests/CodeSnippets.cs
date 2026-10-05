@@ -823,6 +823,15 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
+        public static string GeneratedComInterfaceWithOptions(string options) => BasicParametersAndModifiers("MyInterfaceType", "using System.Runtime.InteropServices.Marshalling;") + $$"""
+            [GeneratedComInterface(Options = {{options}})]
+            [System.Runtime.InteropServices.Guid("D5A6D2DD-F1F1-4DF7-B84F-8A34A6B27CD3")]
+            partial interface MyInterfaceType
+            {
+                void Method();
+            }
+            """;
+
         public static string PreprocessorIfAroundFullFunctionDefinition(string define) =>
             $$"""
             partial class Test

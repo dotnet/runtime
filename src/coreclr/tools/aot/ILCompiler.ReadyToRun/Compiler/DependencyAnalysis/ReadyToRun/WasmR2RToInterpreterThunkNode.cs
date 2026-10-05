@@ -5,7 +5,6 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
-using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
@@ -47,8 +46,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
-        bool INodeWithTypeSignature.IsAsyncCall => false;
+        bool INodeWithTypeSignature.IsAsyncCall => HasAsyncContinuation;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
+
+        private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
 
         public WasmR2RToInterpreterThunkNode(NodeFactory factory, WasmSignature wasmSignature)
         {
@@ -93,39 +94,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(s_helperTypeParams);
 
-            MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            WasmThunkArgLayout layout = new WasmThunkArgLayout(_wasmSignature, _context);
 
-            bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
-            bool hasThis = !methodSignature.IsStatic;
-
-            int[] offsets = new int[methodSignature.Length];
-            bool[] isIndirectStructArg = new bool[methodSignature.Length];
-
-            int argIndex = 0;
-            int argOffset;
-
-            while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
-            {
-                offsets[argIndex] = argOffset;
-                isIndirectStructArg[argIndex] = WasmLowering.CurrentArgLowersValueTypeToPassAsByref(argit);
-                argIndex++;
-            }
-
-            argit.Reset();
-
-            int sizeOfArgumentArray = argit.SizeOfFrameArgumentArray();
-            int sizeOfTransitionBlock = transitionBlock.SizeOfTransitionBlock;
+            int sizeOfArgumentArray = layout.SizeOfFrameArgumentArray;
+            int sizeOfTransitionBlock = layout.TransitionBlock.SizeOfTransitionBlock;
 
             // The arguments area must be 16-byte aligned. The TransitionBlock (8 bytes on Wasm32)
             // sits before the arguments, so it is 8-byte aligned but not 16-byte aligned.
             // Layout from base: [TransitionBlock (8)] [args...]
             int argumentsOffset = AlignmentHelper.AlignUp(sizeOfTransitionBlock, 16);
             int transitionBlockOffset = argumentsOffset - sizeOfTransitionBlock;
-            for (int i = 0; i < offsets.Length; i++)
-            {
-                offsets[i] += transitionBlockOffset;
-            }
             int sizeOfStoredLocals = argumentsOffset + AlignmentHelper.AlignUp(sizeOfArgumentArray, 16);
 
             bool hasWasmReturn = _typeNode.Type.Returns.Types.Length > 0;
@@ -160,40 +138,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Store((ulong)(transitionBlockOffset + 4)));
 
             // Store all arguments into the transition block area
-            int wasmLocalIndex = 1; // local 0 is $sp
-
-            // Handle 'this' pointer — it occupies a wasm local but is not in methodSignature.Length
-            if (hasThis)
+            int? retBufParamIndex = null;
+            foreach (WasmThunkArg arg in layout.Args)
             {
-                int thisOffset = transitionBlock.ThisOffset + transitionBlockOffset;
-                expressions.Add(Local.Get(0));
-                expressions.Add(Local.Get(wasmLocalIndex));
-                expressions.Add(I32.Store((ulong)thisOffset));
-                wasmLocalIndex++;
-            }
+                if (arg.Kind == WasmThunkArgKind.RetBuf)
+                {
+                    retBufParamIndex = arg.WasmParamIndex;
+                    continue;
+                }
 
-            // Hidden retbuf pointer occupies a wasm local but is not in methodSignature params
-            if (hasRetBuffArg)
-            {
-                wasmLocalIndex++;
-            }
+                int currentOffset = arg.Offset + transitionBlockOffset;
 
-            for (int i = 0; i < methodSignature.Length; i++)
-            {
-                TypeDesc paramType = methodSignature[i];
-
-                int currentOffset = offsets[i];
-
-                if (WasmLowering.IsEmptyStruct(paramType))
+                if (arg.IsEmptyStruct)
                 {
                     expressions.Add(Local.Get(0));
                     expressions.Add(I32.Const(0));
                     expressions.Add(I32.Store((ulong)currentOffset));
                 }
-                else if (isIndirectStructArg[i])
+                else if (arg.IsIndirectStruct)
                 {
                     // Indirect struct — copy the exact contents from the incoming pointer
-                    int structSize = paramType.GetElementSize().AsInt;
+                    int structSize = arg.IndirectStructSize;
 
                     // memory.copy: (dst, src, len) -> ()
                     // dst: base + currentOffset
@@ -201,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     expressions.Add(I32.Const(currentOffset));
                     expressions.Add(I32.Add);
                     // src: the byref pointer passed as the wasm local
-                    expressions.Add(Local.Get(wasmLocalIndex));
+                    expressions.Add(Local.Get(arg.WasmParamIndex));
                     // len: struct size
                     expressions.Add(I32.Const(structSize));
                     expressions.Add(Memory.Copy());
@@ -219,35 +184,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         expressions.Add(I32.Const(padding));
                         expressions.Add(Memory.Fill());
                     }
-
-                    wasmLocalIndex++;
                 }
                 else
                 {
-                    expressions.Add(Local.Get(0));
-                    expressions.Add(Local.Get(wasmLocalIndex));
-                    WasmValueType type = _typeNode.Type.Params.Types[wasmLocalIndex];
-                    switch (type)
+                    // Scalars, hidden arguments, and each slot of a multi-slot value.
+                    int slotSize = arg.IsMultiSlot ? WasmLowering.GetMultiSegmentSlotSize(arg.WasmType) : 0;
+                    for (int slot = 0; slot < arg.WasmParamCount; slot++)
                     {
-                        case WasmValueType.I32:
-                            expressions.Add(I32.Store((ulong)currentOffset));
-                            break;
-                        case WasmValueType.F32:
-                            expressions.Add(F32.Store((ulong)currentOffset));
-                            break;
-                        case WasmValueType.I64:
-                            expressions.Add(I64.Store((ulong)currentOffset));
-                            break;
-                        case WasmValueType.F64:
-                            expressions.Add(F64.Store((ulong)currentOffset));
-                            break;
-                        case WasmValueType.V128:
-                            expressions.Add(V128.Store((ulong)currentOffset));
-                            break;
-                        default:
-                            throw new Exception("Unexpected wasm type arg");
+                        expressions.Add(Local.Get(0));
+                        expressions.Add(Local.Get(arg.WasmParamIndex + slot));
+                        expressions.Add(Memory.Store(arg.WasmType, (ulong)(currentOffset + (slot * slotSize))));
                     }
-                    wasmLocalIndex++;
                 }
             }
 
@@ -269,9 +216,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Prepare helper call arguments:
-            //   arg1: portable entrypoint (last wasm local)
-            int portableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length - 1;
-            expressions.Add(Local.Get(portableEntrypointLocalIndex));
+            //   arg1: portable entrypoint
+            expressions.Add(Local.Get(layout.PortableEntrypointParamIndex));
 
             //   arg2: pointer to the collected arguments and transition block (base + transitionBlockOffset)
             expressions.Add(Local.Get(0));
@@ -282,11 +228,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Const(sizeOfArgumentArray));
 
             //   arg4: return buffer pointer
-            if (hasRetBuffArg)
+            if (retBufParamIndex is int retBufLocalIndex)
             {
                 // The retbuf is a wasm parameter — pass it through directly.
-                // For managed calls: local 0 = $sp, local 1 = this (if present), then retbuf.
-                int retBufLocalIndex = 1 + (hasThis ? 1 : 0);
                 expressions.Add(Local.Get(retBufLocalIndex));
             }
             else
@@ -302,45 +246,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Save the current stack pointer global into a local, then set it to local 0
             // (16-byte aligned, <= all buffers allocated in this thunk).
-            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
             expressions.Add(Local.Set(savedSpLocalIndex));
             expressions.Add(Local.Get(0));
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // Load the helper function address and call
-            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex));
+            expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex));
             expressions.Add(I32.LoadWithRVAOffset(_helperCell));
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
+            // The interpreter publishes its async continuation to the global itself
+            // (prestub.cpp), so there is nothing to propagate back here.
+
             // Restore the old stack pointer global
             expressions.Add(Local.Get(savedSpLocalIndex));
-            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
+            expressions.Add(Global.Set(WebCilObjectWriter.StackPointerGlobalIndex));
 
             // If the function has a wasm return value, load it from the local return buffer
             if (hasWasmReturn)
             {
                 Debug.Assert(_typeNode.Type.Returns.Types.Length == 1, "Expected exactly one wasm return type");
                 expressions.Add(Local.Get(0));
-                switch (returnWasmType)
-                {
-                    case WasmValueType.I32:
-                        expressions.Add(I32.Load((ulong)localRetBufOffset));
-                        break;
-                    case WasmValueType.F32:
-                        expressions.Add(F32.Load((ulong)localRetBufOffset));
-                        break;
-                    case WasmValueType.I64:
-                        expressions.Add(I64.Load((ulong)localRetBufOffset));
-                        break;
-                    case WasmValueType.F64:
-                        expressions.Add(F64.Load((ulong)localRetBufOffset));
-                        break;
-                    case WasmValueType.V128:
-                        expressions.Add(V128.Load((ulong)localRetBufOffset));
-                        break;
-                    default:
-                        throw new Exception("Unexpected wasm return type");
-                }
+                expressions.Add(Memory.Load(returnWasmType, (ulong)localRetBufOffset));
             }
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(_typeNode.Type, new[] { WasmValueType.I32 }, expressions.ToArray());

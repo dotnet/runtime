@@ -71,7 +71,6 @@ inline VOID BaseAssemblySpec::CloneFields()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END
 
@@ -116,7 +115,6 @@ inline VOID BaseAssemblySpec::CloneFieldsToLoaderHeap(LoaderHeap *pHeap, AllocMe
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END
 
@@ -159,7 +157,6 @@ inline void BaseAssemblySpec::CopyFrom(const BaseAssemblySpec *pSpec)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END
 
@@ -329,90 +326,6 @@ inline HRESULT BaseAssemblySpec::Init(mdToken kAssemblyToken,
     if (m_cbPublicKeyOrToken == 0)
         m_pbPublicKeyOrToken = (PBYTE)1;
 
-    return S_OK;
-}
-
-inline HRESULT BaseAssemblySpec::Init(mdToken tkAssemblyRef,
-                                  IMetaDataAssemblyImport  *pImport)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Retrieve size of assembly name
-    ASSEMBLYMETADATA sContext;
-    LPWSTR wszAssemblyName=NULL;
-    ZeroMemory(&sContext, sizeof(ASSEMBLYMETADATA));
-    HRESULT hr = S_OK;
-    if(TypeFromToken(tkAssemblyRef) == mdtAssembly)
-    {
-        DWORD cchName;
-        IfFailRet(pImport->GetAssemblyProps(tkAssemblyRef,    // [IN] The Assembly for which to get the properties.
-                                            NULL,        // [OUT] Pointer to the public key or token.
-                                            NULL,        // [OUT] Count of bytes in the public key or token.
-                                            NULL,        // [OUT] Hash Algorithm
-                                            NULL,        // [OUT] Buffer to fill with name.
-                                            0,           // [IN] Size of buffer in wide chars.
-                                            &cchName,    // [OUT] Actual # of wide chars in name.
-                                            &sContext,   // [OUT] Assembly MetaData.
-                                            NULL));       // [OUT] Flags.
-
-        // Get the assembly name other naming properties
-        wszAssemblyName = (LPWSTR)_alloca(cchName * sizeof(WCHAR));
-        IfFailRet(pImport->GetAssemblyProps(tkAssemblyRef,
-                                            (const void **)&m_pbPublicKeyOrToken,
-                                            &m_cbPublicKeyOrToken,
-                                            NULL,
-                                            wszAssemblyName,
-                                            cchName,
-                                            &cchName,
-                                            &sContext,
-                                            &m_dwFlags));
-    }
-    else if(TypeFromToken(tkAssemblyRef) == mdtAssemblyRef)
-    {
-        DWORD cchName;
-        IfFailRet(pImport->GetAssemblyRefProps(tkAssemblyRef, // [IN] The AssemblyRef for which to get the properties.
-                                            NULL,        // [OUT] Pointer to the public key or token.
-                                            NULL,        // [OUT] Count of bytes in the public key or token.
-                                            NULL,        // [OUT] Buffer to fill with name.
-                                            0,           // [IN] Size of buffer in wide chars.
-                                            &cchName,    // [OUT] Actual # of wide chars in name.
-                                            &sContext,   // [OUT] Assembly MetaData.
-                                            NULL,        // [OUT] Hash blob.
-                                            NULL,        // [OUT] Count of bytes in the hash blob.
-                                            NULL));       // [OUT] Flags.
-
-        // Get the assembly name other naming properties
-        wszAssemblyName = (LPWSTR)_alloca(cchName * sizeof(WCHAR));
-        IfFailRet(pImport->GetAssemblyRefProps(tkAssemblyRef,
-                                            (const void **)&m_pbPublicKeyOrToken,
-                                            &m_cbPublicKeyOrToken,
-                                            wszAssemblyName,
-                                            cchName,
-                                            &cchName,
-                                            &sContext,
-                                            NULL,
-                                            NULL,
-                                            &m_dwFlags));
-    }
-    else
-    {
-        _ASSERTE(false && "unexpected token");
-    }
-    MAKE_UTF8PTR_FROMWIDE_NOTHROW(szAssemblyName,wszAssemblyName);
-    IfNullRet(szAssemblyName);
-    size_t len=strlen(szAssemblyName)+1;
-    NewArrayHolder<char> assemblyName(new(nothrow) char[len]);
-    IfNullRet(assemblyName);
-    strcpy_s(assemblyName,len,szAssemblyName);
-
-    m_pAssemblyName=assemblyName.Extract();
-    SetContext(&sContext);
     return S_OK;
 }
 

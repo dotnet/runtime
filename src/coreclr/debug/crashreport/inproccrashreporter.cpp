@@ -15,25 +15,25 @@
 
 #include "pal.h"
 #include "volatile.h"
+#include "config.h"
 
 #include <fcntl.h>
 #include <errno.h>
-#if HAVE_POLL
-#include <poll.h>
-#endif
 #include <stdlib.h>
 #include <new>
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#if HAVE_UCONTEXT_H
 #include <ucontext.h>
+#endif
 #include <minipal/getexepath.h>
 #include <minipal/guid.h>
 #include <minipal/log.h>
 #include <minipal/thread.h>
 #if defined(__ANDROID__)
 #include <android/log.h>
-#elif defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#elif defined(TARGET_APPLE)
 #include <mach/mach.h>
 #include <sys/sysctl.h>
 #endif
@@ -43,16 +43,25 @@ static constexpr uint32_t CRASHREPORT_COR_E_STACKOVERFLOW = 0x800703E9;
 static const char CRASHREPORT_STACK_OVERFLOW_EXCEPTION_TYPE[] = "System.StackOverflowException";
 static const char CRASHREPORT_STACK_OVERFLOW_TRACE_UNAVAILABLE_REASON[] = "stack_overflow_trace_unavailable";
 static constexpr uint32_t CRASHREPORT_STACK_OVERFLOW_MAX_TRACE_FRAMES = 128;
-#if defined(__x86_64__)
-static const char CRASHREPORT_ARCHITECTURE_NAME[] = "amd64";
-#elif defined(__aarch64__)
-static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm64";
-#elif defined(__arm__)
-static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm";
-#elif defined(__i386__)
-static const char CRASHREPORT_ARCHITECTURE_NAME[] = "x86";
+static const char CRASHREPORT_ARCHITECTURE_NAME[] =
+#if defined(TARGET_AMD64)
+    "amd64";
+#elif defined(TARGET_ARM64)
+    "arm64";
+#elif defined(TARGET_ARM)
+    "arm";
+#elif defined(TARGET_X86)
+    "x86";
+#elif defined(TARGET_RISCV64)
+    "riscv64";
+#elif defined(TARGET_LOONGARCH64)
+    "loongarch64";
+#elif defined(TARGET_S390X)
+    "s390x";
+#elif defined(TARGET_POWERPC64)
+    "ppc64le";
 #else
-static const char CRASHREPORT_ARCHITECTURE_NAME[] = "unknown";
+#error "Unsupported arch"
 #endif
 
 // Prescribed compact crash report log format. One logical line == one
@@ -103,7 +112,7 @@ struct StackOverflowTraceSnapshot
 static char sccsid[] = "@(#)Version N/A";
 #endif
 
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
 // Query a sysctl by name into a caller-supplied buffer. Called from Initialize, NOT from the
 // signal handler -- sysctl/sysctlbyname is not on POSIX's async-signal-safe list, so the
 // queried values are cached for use during crash reporting.
@@ -121,7 +130,7 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
         buffer[0] = '\0';
     }
 }
-#endif // defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#endif // TARGET_APPLE
 
 // Bounded module table that deduplicates each unique module observed during a
 // single crash report. Frames in the compact log refer to modules by short
@@ -357,10 +366,11 @@ public:
     void InitializeServices(const InProcCrashReporterServicesSettings& settings);
 
     // Signal-path report generation, invoked by the PAL fatal-signal dispatcher.
+    // Concurrent and recurrent crash diagnostics are serialized by the PAL's
+    // shared crash-dump gate before this is invoked.
     bool CreateReport(
         int signal,
-        void* context,
-        bool serialize);
+        void* context);
 
     // On-demand report generation. Runs the same emit core as the signal path
     // but without the watchdog or lifecycle/file management, routing the selected
@@ -423,7 +433,7 @@ private:
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_stringScratch[CRASHREPORT_STRING_BUFFER_SIZE];
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     char m_osVersion[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_systemModel[CRASHREPORT_STRING_BUFFER_SIZE];
 #endif
@@ -580,37 +590,18 @@ public:
 bool
 InProcCrashReporter::CreateReport(
     int signal,
-    void* context,
-    bool serialize)
+    void* context)
 {
-    if (!serialize)
-    {
-        minipal_log_write_fatal("The in-proc crash reporter does not support recurrent invocations, so it is disabled for paths that may continue execution after signal handling, such as SIGTERM.\n");
-        return false;
-    }
-
+    // Concurrent and recurrent crash diagnostics are serialized by the PAL's
+    // shared crash-dump gate before this callback is invoked, so a signal-path
+    // report is only ever started once. This CAS additionally guards against
+    // overlap with the on-demand report path (which shares
+    // m_reportInFlightThreadId); on contention we bail out rather than block,
+    // since the PAL gate already owns waiting.
     LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
-    LONGLONG previousThreadId = InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0);
-    if (previousThreadId != 0)
+    if (InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0) != 0)
     {
-        if (previousThreadId == currentThreadId)
-        {
-            return false;
-        }
-
-#if HAVE_POLL
-        // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
-        const int PollWaitForever = -1;
-#endif
-        while (true)
-        {
-#if HAVE_POLL
-            poll(nullptr, 0, PollWaitForever);
-#else
-            // fakepoll uses select() and is not suitable for this signal-handler path.
-            pause();
-#endif
-        }
+        return false;
     }
 
     CrashReportWatchdogScope watchdogScope;
@@ -839,7 +830,7 @@ InProcCrashReporter::Initialize(
         }
     }
 
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     // Cache sysctl values at Initialize because sysctl/sysctlbyname is not on POSIX's
     // async-signal-safe list; CreateReport reads these from the signal-handler path.
     CacheSysctlString("kern.osproductversion", m_osVersion, sizeof(m_osVersion));
@@ -910,7 +901,7 @@ InProcCrashReporter::EndStackOverflowTrace()
 }
 
 void
-InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize)
+InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
 {
     (void)siginfo;
 
@@ -922,7 +913,7 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool
 
     // Preserve the interrupted context's errno before the crash reporter uses syscalls.
     int savedErrno = errno;
-    reporter->CreateReport(signal, context, serialize);
+    reporter->CreateReport(signal, context);
     errno = savedErrno;
 }
 
@@ -1176,6 +1167,77 @@ CrashReportHelpers::WriteRegistersToJson(
     writer->CloseObject(); // ctx
 }
 
+#if defined(TARGET_AMD64)
+    #if defined(TARGET_APPLE)
+        #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext->__ss.__rip))
+        #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext->__ss.__rsp))
+        #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext->__ss.__rbp))
+    #elif defined(TARGET_HAIKU)
+        #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.rip))
+        #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.rsp))
+        #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.rbp))
+    #elif defined(TARGET_OPENBSD)
+        #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->sc_rip))
+        #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->sc_rsp))
+        #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->sc_rbp))
+    #elif defined(TARGET_FREEBSD)
+        #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.mc_rip))
+        #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.mc_rsp))
+        #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.mc_rbp))
+    #else
+        #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[REG_RIP]))
+        #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[REG_RSP]))
+        #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[REG_RBP]))
+    #endif
+
+#elif defined(TARGET_ARM64)
+    #if defined(TARGET_APPLE)
+        #define CRASH_MCREG_PC(uc) (reinterpret_cast<uint64_t>(arm_thread_state64_get_pc_fptr((uc)->uc_mcontext->__ss)))
+        #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>(arm_thread_state64_get_sp((uc)->uc_mcontext->__ss)))
+        #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>(arm_thread_state64_get_fp((uc)->uc_mcontext->__ss)))
+    #elif defined(TARGET_FREEBSD)
+        #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.mc_gpregs.gp_elr))
+        #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.mc_gpregs.gp_sp))
+        #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.mc_gpregs.gp_x[29]))
+    #else
+        #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.pc))
+        #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.sp))
+        #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.regs[29]))
+    #endif
+
+#elif defined(TARGET_ARM)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.arm_pc))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.arm_sp))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.arm_fp))
+
+#elif defined(TARGET_X86)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[REG_EIP]))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[REG_ESP]))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[REG_EBP]))
+
+#elif defined(TARGET_LOONGARCH64)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__pc))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[3]))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[22]))
+
+#elif defined(TARGET_RISCV64)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[0]))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[2]))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[8]))
+
+#elif defined(TARGET_S390X)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.psw.addr))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[15]))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[11]))
+
+#elif defined(TARGET_POWERPC64)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gp_regs[32]))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gp_regs[1]))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gp_regs[31]))
+#else
+    #error "Unsupported arch"
+#endif
+
 uint64_t
 CrashReportHelpers::GetInstructionPointer(
     void* context)
@@ -1186,19 +1248,7 @@ CrashReportHelpers::GetInstructionPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rip);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
-    return reinterpret_cast<uint64_t>(arm_thread_state64_get_pc_fptr(ucontext->uc_mcontext->__ss));
-#elif defined(__x86_64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
-#elif defined(__aarch64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.pc);
-#elif defined(__arm__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.arm_pc);
-#else
-    return 0;
-#endif
+    return CRASH_MCREG_PC(ucontext);
 }
 
 uint64_t
@@ -1211,19 +1261,7 @@ CrashReportHelpers::GetStackPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rsp);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
-    return static_cast<uint64_t>(arm_thread_state64_get_sp(ucontext->uc_mcontext->__ss));
-#elif defined(__x86_64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RSP]);
-#elif defined(__aarch64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.sp);
-#elif defined(__arm__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.arm_sp);
-#else
-    return 0;
-#endif
+    return CRASH_MCREG_SP(ucontext);
 }
 
 uint64_t
@@ -1236,19 +1274,7 @@ CrashReportHelpers::GetFramePointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rbp);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
-    return static_cast<uint64_t>(arm_thread_state64_get_fp(ucontext->uc_mcontext->__ss));
-#elif defined(__x86_64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RBP]);
-#elif defined(__aarch64__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.regs[29]);
-#elif defined(__arm__)
-    return static_cast<uint64_t>(ucontext->uc_mcontext.arm_fp);
-#else
-    return 0;
-#endif
+    return CRASH_MCREG_FP(ucontext);
 }
 
 void
@@ -2237,7 +2263,7 @@ InProcCrashReporter::EndJsonReport(
 
     m_jsonWriter.OpenObject("parameters");
     m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     if (m_osVersion[0] != '\0')
     {
         m_jsonWriter.WriteString("OSVersion", m_osVersion);

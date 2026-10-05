@@ -180,6 +180,11 @@ public class Program
         GenBase<MyIdClass0, int>.GetFieldsTest(fobj1, "MyIdClass0=1", "MyIdClass0=2", "MyIdClass0=3", 1, 2, 3);
         GenBase<MyIdClass1, int>.GetFieldsTest(fobj2, "MyIdClass1=1", "MyIdClass1=2", "MyIdClass1=3", 1, 2, 3);
 
+        if (!PlatformDetection.IsMultithreadingSupported)
+        {
+            return;
+        }
+
         Thread t = new Thread(new ThreadStart(() =>
         {
             GenBase<MyIdClass0, int>.SetFieldsTest(fobj1, new MyIdClass0("11"), new MyIdClass0("22"), new MyIdClass0("33"), 11, 22, 33);

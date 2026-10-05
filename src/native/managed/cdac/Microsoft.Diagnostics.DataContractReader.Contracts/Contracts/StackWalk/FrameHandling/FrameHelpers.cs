@@ -54,6 +54,7 @@ internal enum FrameType
 /// </summary>
 internal sealed class FrameHelpers
 {
+    private const ulong InlinedCallFrameMarkerMask = 1;
     private readonly Target _target;
 
     public FrameHelpers(Target target)
@@ -126,7 +127,7 @@ internal sealed class FrameHelpers
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame inlinedCallFrame = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
                 if (InlinedCallFrameHasActiveCall(inlinedCallFrame) && InlinedCallFrameHasFunction(inlinedCallFrame))
-                    return inlinedCallFrame.Datum & ~(ulong)(_target.PointerSize - 1);
+                    return inlinedCallFrame.Datum & ~InlinedCallFrameMarkerMask;
                 else
                     return TargetPointer.Null;
             default:
@@ -359,13 +360,11 @@ internal sealed class FrameHelpers
         if (frameType != FrameType.InlinedCallFrame)
             return false;
 
-        //   ExceptionHandlingHelper = 2 on 64-bit, 1 on 32-bit. Mask == ExceptionHandlingHelper.
         Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
         if (!InlinedCallFrameHasActiveCall(icf))
             return false;
 
-        ulong mask = (ulong)(_target.PointerSize == 8 ? 2 : 1);
-        return (icf.Datum.Value & mask) == mask;
+        return (icf.Datum.Value & InlinedCallFrameMarkerMask) == InlinedCallFrameMarkerMask;
     }
 
     private IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)
@@ -383,6 +382,29 @@ internal sealed class FrameHelpers
         };
     }
 
+    /// <summary>
+    /// Mirrors native <c>InlinedCallFrame::IsInInterpreter</c> (frames.cpp): an active
+    /// InlinedCallFrame pushed by the interpreter for a P/Invoke is directly followed by the
+    /// owning InterpreterFrame, whose top InterpMethodContextFrame is the ICF's CallSiteSP.
+    /// </summary>
+    public bool IsInlinedCallFrameInInterpreter(Data.Frame frame)
+    {
+        if (GetFrameType(frame.Identifier) != FrameType.InlinedCallFrame)
+            return false;
+
+        ulong terminator = _target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue;
+        if (frame.Next == TargetPointer.Null || frame.Next.Value == terminator)
+            return false;
+
+        Data.Frame next = _target.ProcessedData.GetOrAdd<Data.Frame>(frame.Next);
+        if (GetFrameType(next.Identifier) != FrameType.InterpreterFrame)
+            return false;
+
+        Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+        Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(next.Address);
+        return ResolveTopInterpMethodContextFrame(interpreterFrame) == icf.CallSiteSP;
+    }
+
     private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
     {
         return frame.CallerReturnAddress != TargetCodePointer.Null;
@@ -390,14 +412,30 @@ internal sealed class FrameHelpers
 
     private bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame)
     {
-        if (_target.PointerSize == sizeof(ulong))
+        ulong datum = frame.Datum.Value & ~InlinedCallFrameMarkerMask;
+
+        if (!UsesInlinedCallFrameStackSizeSentinel())
         {
-            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) == 0;
+            return datum != 0;
         }
-        else
+
+        return ((long)datum & ~0xffff) != 0;
+    }
+
+    private bool UsesInlinedCallFrameStackSizeSentinel()
+    {
+        if (_target.PointerSize != sizeof(uint))
         {
-            return ((long)frame.Datum.Value & ~0xffff) != 0;
+            return false;
         }
+
+        if (_target.TryReadGlobalString(Constants.Globals.Architecture, out string? arch)
+            && Enum.TryParse(arch, ignoreCase: true, out RuntimeInfoArchitecture runtimeArchitecture))
+        {
+            return runtimeArchitecture == RuntimeInfoArchitecture.X86;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -539,7 +577,11 @@ internal sealed class FrameHelpers
         GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame);
     }
 
-    private TargetPointer GetFirstArgRegister(IPlatformAgnosticContext context)
+    /// <summary>
+    /// Returns the first-argument register, which holds the owning InterpreterFrame for a context
+    /// in interpreted code (native <c>GetFirstArgReg</c>).
+    /// </summary>
+    public TargetPointer GetFirstArgRegister(IPlatformAgnosticContext context)
     {
         string registerName = GetFirstArgRegisterName();
         if (!context.TryReadRegister(registerName, out TargetNUInt value))

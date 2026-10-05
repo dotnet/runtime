@@ -46,6 +46,52 @@ namespace SerializationTypes
         public int PropI { get; set; }
     }
 
+    [XmlRoot("PrimitiveCollections")]
+    public sealed class PrimitiveCollections
+    {
+        public char[] Chars { get; set; }
+
+        [XmlArrayItem(DataType = "date")]
+        public DateTime[] Dates { get; set; }
+
+        [XmlArrayItem(DataType = "time")]
+        public DateTime[] Times { get; set; }
+
+        public DateOnly[] DateOnlyValues { get; set; }
+
+        public TimeOnly[] TimeOnlyValues { get; set; }
+
+        public List<int> Integers { get; set; }
+
+        public IntEnumerableCollection EnumerableIntegers { get; set; }
+
+        public int[] EmptyIntegers { get; set; }
+
+        public PrimitiveCollectionEnum[] Enums { get; set; }
+
+        public int?[] NullableIntegers { get; set; }
+
+        [XmlArrayItem(typeof(int))]
+        public ArrayList BoxedIntegers { get; set; }
+    }
+
+    public sealed class IntEnumerableCollection : IEnumerable<int>
+    {
+        private readonly List<int> _items = new();
+
+        public void Add(int value) => _items.Add(value);
+
+        public IEnumerator<int> GetEnumerator() => _items.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public enum PrimitiveCollectionEnum
+    {
+        One,
+        Two,
+    }
+
     public class TypeWithDictionaryGenericMembers
     {
         public Dictionary<string, int> F1;
@@ -2405,6 +2451,25 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithXmlAttributeOnArray
+    {
+        [XmlAttribute("values")]
+        public string[] Values;
+    }
+
+    public class TypeWithMixedTextAndElementArray
+    {
+        [XmlText(typeof(string))]
+        [XmlElement("num", typeof(int))]
+        public object[] Items;
+    }
+
+    public class TypeWithXmlTextOnListOfString
+    {
+        [XmlText]
+        public List<string> Text = new List<string>();
+    }
+
     // XmlSerializer test types: derived class overriding virtual [XmlText] property from base.
     public class CustomerWithGroupIdRef
     {
@@ -3141,6 +3206,27 @@ class PersonV2 : IExtensibleDataObject
             extensionDataObject_value = value;
         }
     }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV1 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV2 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    [DataMember(Order = 1)]
+    public string Prop2 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
 }
 
 [DataContract]

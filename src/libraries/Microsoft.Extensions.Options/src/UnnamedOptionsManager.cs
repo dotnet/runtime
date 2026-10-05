@@ -31,5 +31,18 @@ namespace Microsoft.Extensions.Options
                 }
             }
         }
+
+        internal TOptions GetOrSetValue(TOptions value)
+        {
+            if (_value is TOptions existingValue)
+            {
+                return existingValue;
+            }
+
+            lock (_syncObj ?? Interlocked.CompareExchange(ref _syncObj, new object(), null) ?? _syncObj)
+            {
+                return _value ??= value;
+            }
+        }
     }
 }

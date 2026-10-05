@@ -198,7 +198,7 @@ void CodeGen::genCodeForBBlist()
     if (m_compiler->verbose)
     {
         printf("\n# ");
-        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", m_compiler->compCycleEstimate,
+        printf("compCycleEstimate = %6zu, compSizeEstimate = %5zu ", m_compiler->compCycleEstimate,
                m_compiler->compSizeEstimate);
         printf("%s\n", m_compiler->info.compFullName);
     }
@@ -246,8 +246,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     JITDUMP("\n=============== Generating ");
     JITDUMPEXEC(block->dspBlockHeader(true, true));
     JITDUMPEXEC(m_compiler->fgDispBBLiveness(block));
-
-    assert(LIR::AsRange(block).CheckLIR(m_compiler));
 
     // Figure out which registers hold variables on entry to this block
 
@@ -457,6 +455,13 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     if (block->IsFirst() && m_compiler->lvaHasAnySwiftStackParamToReassemble())
     {
         genHomeSwiftStructStackParameters();
+    }
+#endif
+
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame && block->IsFirst())
+    {
+        genZeroInitializeUnknownSizeFrame();
     }
 #endif
 
@@ -981,6 +986,8 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
 }
 
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
 //   Record information about an async resume point in the async resume info tabl.e
@@ -999,6 +1006,8 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
 
     asyncResumeInfo->Locations()[index] = emitLocation(GetEmitter());
 }
+
+#if HAS_FIXED_REGISTER_SET
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1109,23 +1118,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     }
 }
 
-//------------------------------------------------------------------------
-// genUpdateVarReg: Update the current register location for a multi-reg lclVar
-//
-// Arguments:
-//    varDsc   - the LclVarDsc for the lclVar
-//    tree     - the lclVar node
-//    regIndex - the index of the register in the node
-//
-// inline
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    // This should only be called for multireg lclVars.
-    assert(m_compiler->lvaEnregMultiRegVars);
-    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
-    varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
-}
-#endif // !TARGET_WASM
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 // genUpdateVarReg: Update the current register location for a lclVar
@@ -1749,6 +1742,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
+#endif
         else if (tree->OperIsFieldList())
         {
             for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
@@ -1757,7 +1751,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
                 genConsumeRegs(fieldNode);
             }
         }
-#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -1991,133 +1984,6 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
     }
 }
 #endif // !TARGET_X86
-
-//------------------------------------------------------------------------
-// genSetBlockSize: Ensure that the block size is in the given register
-//
-// Arguments:
-//    blkNode - The block node
-//    sizeReg - The register into which the block's size should go
-//
-
-void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
-{
-    if (sizeReg != REG_NA)
-    {
-        assert((internalRegisters.GetAll(blkNode) & genRegMask(sizeReg)) != 0);
-        // This can go via helper which takes the size as a native uint.
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blkNode->Size());
-    }
-}
-
-//------------------------------------------------------------------------
-// genConsumeBlockSrc: Consume the source address register of a block node, if any.
-//
-// Arguments:
-//    blkNode - The block node
-
-void CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
-{
-    GenTree* src = blkNode->Data();
-    if (blkNode->OperIsCopyBlkOp())
-    {
-        // For a CopyBlk we need the address of the source.
-        assert(src->isContained());
-        if (src->OperIs(GT_IND))
-        {
-            src = src->AsOp()->gtOp1;
-        }
-        else
-        {
-            // This must be a local.
-            // For this case, there is no source address register, as it is a
-            // stack-based address.
-            assert(src->OperIsLocal());
-            return;
-        }
-    }
-    else
-    {
-        if (src->OperIsInitVal())
-        {
-            src = src->gtGetOp1();
-        }
-    }
-    genConsumeReg(src);
-}
-
-//------------------------------------------------------------------------
-// genSetBlockSrc: Ensure that the block source is in its allocated register.
-//
-// Arguments:
-//    blkNode - The block node
-//    srcReg  - The register in which to set the source (address or init val).
-//
-void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
-{
-    GenTree* src = blkNode->Data();
-    if (blkNode->OperIsCopyBlkOp())
-    {
-        // For a CopyBlk we need the address of the source.
-        if (src->OperIs(GT_IND))
-        {
-            src = src->AsOp()->gtOp1;
-        }
-        else
-        {
-            // This must be a local struct.
-            // Load its address into srcReg.
-            unsigned varNum = src->AsLclVarCommon()->GetLclNum();
-            unsigned offset = src->AsLclVarCommon()->GetLclOffs();
-            GetEmitter()->emitIns_R_S(INS_lea, EA_BYREF, srcReg, varNum, offset);
-            return;
-        }
-    }
-    else
-    {
-        if (src->OperIsInitVal())
-        {
-            src = src->gtGetOp1();
-        }
-    }
-    genCopyRegIfNeeded(src, srcReg);
-}
-
-//------------------------------------------------------------------------
-// genConsumeBlockOp: Ensure that the block's operands are enregistered
-//                    as needed.
-// Arguments:
-//    blkNode - The block node
-//
-// Notes:
-//    This ensures that the operands are consumed in the proper order to
-//    obey liveness modeling.
-
-void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg)
-{
-    // We have to consume the registers, and perform any copies, in the actual execution order: dst, src, size.
-    //
-    // Note that the register allocator ensures that the registers ON THE NODES will not interfere
-    // with one another if consumed (i.e. reloaded or moved to their ASSIGNED reg) in execution order.
-    // Further, it ensures that they will not interfere with one another if they are then copied
-    // to the REQUIRED register (if a fixed register requirement) in execution order.  This requires,
-    // then, that we first consume all the operands, then do any necessary moves.
-
-    GenTree* const dstAddr = blkNode->Addr();
-
-    // First, consume all the sources in order, and verify that registers have been allocated appropriately,
-    // based on the 'gtBlkOpKind'.
-
-    // The destination is always in a register; 'genConsumeReg' asserts that.
-    genConsumeReg(dstAddr);
-    // The source may be a local or in a register; 'genConsumeBlockSrc' will check that.
-    genConsumeBlockSrc(blkNode);
-
-    // Next, perform any necessary moves.
-    genCopyRegIfNeeded(dstAddr, dstReg);
-    genSetBlockSrc(blkNode, srcReg);
-    genSetBlockSize(blkNode, sizeReg);
-}
 
 //-------------------------------------------------------------------------
 // genSpillLocal: Generate the actual spill of a local var.
@@ -2555,7 +2421,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 
     if (castIsLoad)
     {
-        const var_types srcLoadType = src->TypeGet();
+        // A spill temp holds the full actual-type value, already extended per the source's own
+        // signedness, so we allow a bit more leeway with it, in that the cast's own sign can be
+        // allowed to not match the source's, by being executed "as-if" it was from TYP_INT.
+        // This flexibility is used by some HWI lowering which tweaks casts.
+        const var_types srcLoadType = src->isUsedFromSpillTemp() ? srcType : src->TypeGet();
 
         switch (m_extendKind)
         {
@@ -2787,6 +2657,10 @@ void CodeGen::genEmitterUnitTests()
     if (unitTestSectionAll || (strstr(unitTestSection, "advsimd") != nullptr))
     {
         genArm64EmitterUnitTestsAdvSimd();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "fp16") != nullptr))
+    {
+        genArm64EmitterUnitTestsFp16();
     }
     if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {

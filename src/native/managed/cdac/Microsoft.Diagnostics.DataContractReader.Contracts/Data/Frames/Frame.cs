@@ -7,10 +7,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class Frame : IData<Frame>
 {
     [Field] public partial TargetPointer Next { get; }
-    public TargetPointer Identifier { get; private set; }
+    [CustomInit(nameof(InitIdentifier))] public partial TargetPointer Identifier { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    private partial TargetPointer InitIdentifier(Target target, TargetPointer address)
     {
-        Identifier = target.ReadPointer(address);
+        return target.ReadPointer(address);
     }
 }

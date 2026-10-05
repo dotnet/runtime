@@ -498,7 +498,14 @@ public class Application {
     }
 
 
-    [Fact]
+    // WebAssembly ReadyToRun code reports untracked and call-spilled stack GC refs as always live
+    // (see "GC References at Call Sites" in docs/design/coreclr/botr/clr-abi.md and
+    // https://github.com/dotnet/runtime/issues/134803), so objects can outlive the collections this
+    // sample expects to finalize them.
+    public static bool HasPreciseStackRootLifetimes => !TestLibrary.PlatformDetection.IsWasmReadyToRun;
+
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [ConditionalFact(typeof(Application), nameof(HasPreciseStackRootLifetimes))]
     public static void TestEntryPoint()
     {
     // Environment.ExitCode = 1;

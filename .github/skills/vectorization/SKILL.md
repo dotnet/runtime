@@ -6,7 +6,7 @@ description: >
   code that uses Vector128/Vector256/Vector512, Vector<T>, or the platform
   intrinsics in System.Runtime.Intrinsics.X86/Arm/Wasm, and validating remainder
   handling, load/store safety, and hardware-acceleration fallbacks. DO NOT USE
-  FOR: general performance work unrelated to SIMD (use performance-benchmark),
+  FOR: general performance work unrelated to SIMD (use microbenchmark),
   or non-vectorized code review (use code-review).
 ---
 
@@ -76,9 +76,8 @@ This skill distills what to actually enforce when authoring or reviewing vectori
 - **Toggle acceleration via environment variables** (can't be done at the unit-test level): run the
   suite with no overrides, with `DOTNET_EnableAVX2=0` (disables `Vector256`), and with
   `DOTNET_EnableHWIntrinsic=0` (disables all intrinsics down to the software fallback). Build the
-  affected library and run its test project per the build/test workflow in
-  [`.github/copilot-instructions.md`](/.github/copilot-instructions.md), with the relevant
-  `DOTNET_Enable*` variable set in the environment.
+  affected library and run its test project per the build/test workflow in the `build-and-test`
+  skill, with the relevant `DOTNET_Enable*` variable set in the environment.
 - **Guard against out-of-bounds reads with `BoundedMemory`.**
   [`BoundedMemory.Allocate<T>(count)`](/src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs)
   places a no-access page immediately after the buffer (use `PoisonPagePlacement.Before` for
@@ -94,7 +93,7 @@ and the same `DOTNET_Enable*` variables to compare scalar / `Vector128` / `Vecto
 in mind: larger inputs benefit more (small buffers can be *slower* due to setup), speedups are rarely
 the theoretical multiple (memory throughput, alignment, and latency all factor in), and randomized
 allocation alignment adds noise — allocate aligned memory or enable BenchmarkDotNet's randomization for
-stable/observable results. For non-trivial changes, use the `performance-benchmark` skill.
+stable/observable results. For non-trivial changes, use the `microbenchmark` skill.
 
 ## Review checklist
 

@@ -79,6 +79,8 @@ private:
     void PerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic);
 #endif
     void MarkUseDef(GenTreeLclVarCommon* tree);
+    template <typename TOccurrence>
+    void MarkUseDef(const TOccurrence& occurrence);
 
     void                 InterBlockLocalVarLiveness();
     void                 DoLiveVarAnalysis();
@@ -108,7 +110,7 @@ private:
                                          bool* pStoreRemoved DEBUGARG(bool* treeModf));
 
     void ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars);
-    bool IsTrackedRetBufferAddress(LIR::Range& range, GenTree* node);
+    bool IsTrackedCallDefinition(LIR::Range& range, GenTree* node);
     bool TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
     bool TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockRange);
     bool CanUncontainOrRemoveOperands(GenTree* node);
@@ -574,10 +576,10 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
                     GenTree* qmark = m_compiler->fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
                     if (qmark == nullptr)
                     {
-                        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                        {
-                            MarkUseDef(lcl);
-                        }
+                        stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                            MarkUseDef(occurrence);
+                            return GenTree::VisitResult::Continue;
+                        });
                     }
                     else
                     {
@@ -591,16 +593,16 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
                         // handle qmarks very precisely here -- last uses may
                         // not be marked as such due to interference with other
                         // qmark arms.
-                        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                        {
-                            bool isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
+                        stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                            bool isUse = (occurrence.GetFlags() & GTF_VAR_DEF) == 0;
                             // We can still handle the pure def at the top level.
-                            bool conditional = lcl != dst;
+                            bool conditional = occurrence.GetNode() != dst;
                             if (isUse || !conditional)
                             {
-                                MarkUseDef(lcl);
+                                MarkUseDef(occurrence);
                             }
-                        }
+                            return GenTree::VisitResult::Continue;
+                        });
                     }
                 }
             }
@@ -608,10 +610,10 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
             {
                 for (Statement* stmt : block->Statements())
                 {
-                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                    {
-                        MarkUseDef(lcl);
-                    }
+                    stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                        MarkUseDef(occurrence);
+                        return GenTree::VisitResult::Continue;
+                    });
                 }
             }
         }
@@ -743,9 +745,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
         case GT_LCL_ADDR:
             if (TLiveness::IsLIR)
             {
-                // If this is a definition of a retbuf then we process it as
-                // part of the GT_CALL node.
-                if (IsTrackedRetBufferAddress(LIR::AsRange(m_compiler->compCurBB), tree))
+                // If this is a call definition then we process it as part of
+                // the GT_CALL node.
+                if (IsTrackedCallDefinition(LIR::AsRange(m_compiler->compCurBB), tree))
                 {
                     break;
                 }
@@ -862,7 +864,7 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
                 MarkUseDef(lcl);
                 return GenTree::VisitResult::Continue;
             };
-            call->VisitLocalDefNodes(m_compiler, visitDef);
+            call->VisitPhysicalLocalDefNodes(m_compiler, visitDef);
             break;
         }
 
@@ -919,9 +921,17 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsi
 template <typename TLiveness>
 void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
 {
+    MarkUseDef(LocalOccurrence(tree));
+}
+
+template <typename TLiveness>
+template <typename TOccurrence>
+void Liveness<TLiveness>::MarkUseDef(const TOccurrence& occurrence)
+{
+    GenTree* tree = occurrence.GetNode();
     assert((tree->OperIsLocal() && !tree->OperIs(GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
 
-    const unsigned   lclNum = tree->GetLclNum();
+    const unsigned   lclNum = occurrence.GetLclNum();
     LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
     // We should never encounter a reference to a lclVar that has a zero refCnt.
@@ -932,8 +942,8 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
         varDsc->setLvRefCnt(1);
     }
 
-    const bool isDef     = ((tree->gtFlags & GTF_VAR_DEF) != 0);
-    const bool isFullDef = isDef && ((tree->gtFlags & GTF_VAR_USEASG) == 0);
+    const bool isDef     = ((occurrence.GetFlags() & GTF_VAR_DEF) != 0);
+    const bool isFullDef = isDef && ((occurrence.GetFlags() & GTF_VAR_USEASG) == 0);
     const bool isUse     = TLiveness::SsaLiveness ? !isFullDef : !isDef;
 
     if (varDsc->lvTracked)
@@ -1302,15 +1312,16 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         }
     } while (changed && dfsTree->HasCycle());
 
-    // Now that we create throw helper blocks after lower,
-    // we don't need to search for them and set up liveness
-    // during lower.
-    assert(!m_compiler->fgRngChkThrowAdded);
-
-#ifdef DEBUG
-    // Double-check that no unreachable throw helper blocks exist.
-    if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
+    // If we had unremovable blocks that are not in the DFS tree then make
+    // the 'keepAlive' set live in them. This would normally not be
+    // necessary assuming those blocks are actually unreachable; however,
+    // in LIR, throw helpers fall into this category because we do not introduce flow
+    // to them until codegen. Fix that up here.
+    //
+    if (TLiveness::IsLIR && (m_compiler->fgBBcount != dfsTree->GetPostOrderCount()))
     {
+        JITDUMP("Checking for throw helpers...\n");
+
         for (BasicBlock* block : m_compiler->Blocks())
         {
             if (dfsTree->Contains(block))
@@ -1318,10 +1329,28 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
                 continue;
             }
 
-            assert(!block->HasFlag(BBF_THROW_HELPER));
+            if (!block->HasFlag(BBF_THROW_HELPER))
+            {
+                continue;
+            }
+
+            JITDUMP(FMT_BB " is a throw helper, computing liveness\n", block->bbNum);
+
+            // We know throw helpers do not impact global liveness, so we just
+            // recompute within the block itself.
+            //
+            m_compiler->fgSetThrowHelpBlockLiveness(block);
+
+            // Mark last uses in the throw helper block's IR.
+            //
+            VARSET_TP keepAliveVars(VarSetOps::MakeEmpty(m_compiler));
+            VARSET_TP life(VarSetOps::MakeCopy(m_compiler, block->bbLiveOut));
+            ComputeLifeLIR(life, block, keepAliveVars);
+            assert(VarSetOps::Equal(m_compiler, life, block->bbLiveIn));
         }
     }
 
+#ifdef DEBUG
     if (m_compiler->verbose)
     {
         printf("\nBB liveness after DoLiveVarAnalysis():\n\n");
@@ -1526,6 +1555,14 @@ void Compiler::fgSetThrowHelpBlockLiveness(BasicBlock* block)
         unsigned thisVarIndex = lvaGetDesc(info.compThisArg)->lvVarIndex;
         VarSetOps::AddElemD(this, block->bbLiveOut, thisVarIndex);
     }
+
+#ifdef TARGET_WASM
+    LclVarDsc* wasmSpVarDsc = lvaGetDesc(lvaWasmSpArg);
+    if (wasmSpVarDsc->lvTracked)
+    {
+        VarSetOps::AddElemD(this, block->bbLiveOut, wasmSpVarDsc->lvVarIndex);
+    }
+#endif // TARGET_WASM
 
     if (block->HasPotentialEHSuccs(this))
     {
@@ -1737,18 +1774,18 @@ GenTreeLclVarCommon* Liveness<TLiveness>::ComputeLifeCall(VARSET_TP&       life,
 
     GenTreeLclVarCommon* partialDef = nullptr;
 
-    auto visitDef = [&](const LocalDef& def) {
-        if (!def.IsEntire)
+    auto visitDef = [&](GenTreeLclVarCommon* def) {
+        if ((def->gtFlags & GTF_VAR_USEASG) != 0)
         {
             assert(partialDef == nullptr);
-            partialDef = def.Def;
+            partialDef = def;
         }
 
-        ComputeLifeLocal(life, keepAliveVars, def.Def);
+        ComputeLifeLocal(life, keepAliveVars, def);
         return GenTree::VisitResult::Continue;
     };
 
-    call->VisitLocalDefs(m_compiler, visitDef);
+    call->VisitPhysicalLocalDefNodes(m_compiler, visitDef);
 
     return partialDef;
 }
@@ -2342,12 +2379,11 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 }
                 else
                 {
-                    // For LCL_ADDRs that are defined by being passed as a
-                    // retbuf we will handle them when we get to the call. We
-                    // cannot consider them to be defined at the point of the
-                    // LCL_ADDR since there may be uses between the LCL_ADDR
-                    // and call.
-                    if (IsTrackedRetBufferAddress(blockRange, node))
+                    // For LCL_ADDRs that are definitions for the call we will
+                    // handle them when we get to the call. We cannot consider
+                    // them to be defined at the point of the LCL_ADDR since
+                    // there may be uses between the LCL_ADDR and call.
+                    if (IsTrackedCallDefinition(blockRange, node))
                     {
                         break;
                     }
@@ -2549,15 +2585,15 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 }
 
 //---------------------------------------------------------------------
-// IsTrackedRetBufferAddress - given a LCL_ADDR node, check if it is the
-// return buffer definition of a call.
+// IsTrackedCallDefinition - given a LCL_ADDR node, check if it is an
+// extra definition of a call.
 //
 // Arguments
 //    range - the block range containing the LCL_ADDR
 //    node  - the LCL_ADDR
 //
 template <typename TLiveness>
-bool Liveness<TLiveness>::IsTrackedRetBufferAddress(LIR::Range& range, GenTree* node)
+bool Liveness<TLiveness>::IsTrackedCallDefinition(LIR::Range& range, GenTree* node)
 {
     assert(node->OperIs(GT_LCL_ADDR));
     if ((node->gtFlags & GTF_VAR_DEF) == 0)
@@ -2584,7 +2620,11 @@ bool Liveness<TLiveness>::IsTrackedRetBufferAddress(LIR::Range& range, GenTree* 
 
         if (curNode->IsCall())
         {
-            return m_compiler->gtCallGetDefinedRetBufLclAddr(curNode->AsCall()) == node;
+            auto visit = [=](GenTree* callDef) {
+                return node == callDef ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+            };
+
+            return curNode->VisitPhysicalLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort;
         }
     } while (curNode->OperIs(GT_FIELD_LIST) || curNode->OperIsPutArg());
 

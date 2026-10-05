@@ -6,9 +6,14 @@
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-session.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 #include "threadsuspend.h"
+#ifdef FEATURE_PGO
+#include "pgo.h"
+#endif
 
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
 CrstStatic _ep_rt_coreclr_config_lock;
@@ -164,9 +169,32 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 	walk_managed_stack_for_threads (sampling_thread, sampling_event);
 
 	// Resume managed execution.
-	ThreadSuspend::RestartEE (FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+	ThreadSuspend::RestartEE (true /* SuspendSucceeded */);
 
 	return;
+}
+
+void
+ep_rt_coreclr_session_stopping (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+#if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
+	// The EventPipe session_stopping helper has bound this thread to the stopping session as its rundown
+	// session, so ep_event_is_enabled_for_current_thread tests that session's mask and the events emitted by
+	// the flush route only to it (dotnet-pgo drops a method once data arrives after its final chunk, so a
+	// single destination is required).
+	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
+	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
+		ep_event_is_enabled_for_current_thread (EventPipeEventJitInstrumentationDataVerbose))
+	{
+		EX_TRY
+		{
+			PgoManager::LogInstrumentationData ();
+		}
+		EX_CATCH { }
+		EX_END_CATCH
+	}
+#endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
 }
 
 #endif /* ENABLE_PERFTRACING */

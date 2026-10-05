@@ -531,7 +531,13 @@ public class TestPlaceholderTarget : Target
     }
     #endregion subclass reader helpers
 
-    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
+    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
+    {
+        ulong value = PointerSize == sizeof(uint)
+            ? ReadFromSpan<uint>(bytes.Slice(0, sizeof(uint)), IsLittleEndian)
+            : ReadFromSpan<ulong>(bytes.Slice(0, sizeof(ulong)), IsLittleEndian);
+        return new TargetPointer(value);
+    }
 
     public override Target.TypeInfo GetTypeInfo(string typeName)
     {
@@ -544,7 +550,8 @@ public class TestPlaceholderTarget : Target
     public override bool TryGetTypeInfo(string typeName, out Target.TypeInfo info)
         => _typeInfoCache.TryGetValue(typeName, out info);
 
-    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
+    // No OS thread context is available (as on WASM); stack walks fall back to the Frame chain.
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => false;
     public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context) => throw new NotImplementedException();
 
     public override Target.IDataCache ProcessedData => _dataCache;
@@ -604,6 +611,7 @@ public class TestPlaceholderTarget : Target
         private readonly Dictionary<Type, string> _versions = new();
         private readonly Dictionary<Type, IContract> _mocks = new();
         private readonly Dictionary<Type, IContract> _resolved = new();
+        private readonly HashSet<(Type, string)> _unsupportedVersions = new();
         private Target _target = null!;
 
         public void SetTarget(Target target) => _target = target;
@@ -617,10 +625,13 @@ public class TestPlaceholderTarget : Target
         public override void Register<TContract>(string version, Func<Target, TContract> creator)
             => _creators[(typeof(TContract), version)] = t => creator(t);
 
-        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
+        public override void RegisterUnsupported<TContract>(string version)
+            => _unsupportedVersions.Add((typeof(TContract), version));
+
+        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException)
         {
             contract = default!;
-            failureReason = null;
+            failureException = null;
             if (_resolved.TryGetValue(typeof(TContract), out var cached))
             {
                 contract = (TContract)cached;
@@ -636,7 +647,9 @@ public class TestPlaceholderTarget : Target
             {
                 if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
                 {
-                    failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                    failureException = _unsupportedVersions.Contains((typeof(TContract), version))
+                        ? new ContractObsoleteException(TContract.Name, version)
+                        : new ContractUnrecognizedException(TContract.Name, version);
                     return false;
                 }
 
@@ -644,7 +657,7 @@ public class TestPlaceholderTarget : Target
             }
             else
             {
-                failureReason = $"Contract '{typeof(TContract).Name}' is not supported by the target.";
+                failureException = new ContractMissingException(TContract.Name);
                 return false;
             }
 
@@ -653,7 +666,13 @@ public class TestPlaceholderTarget : Target
             return true;
         }
 
-        public override void Flush(FlushScope scope) { }
+        public override void Flush(FlushScope scope)
+        {
+            foreach (IContract contract in _resolved.Values)
+            {
+                contract.Flush(scope);
+            }
+        }
     }
 
 }

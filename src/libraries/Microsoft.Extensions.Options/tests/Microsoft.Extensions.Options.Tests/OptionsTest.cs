@@ -14,6 +14,22 @@ namespace Microsoft.Extensions.Options.Tests
 {
     public class OptionsTest
     {
+#if NET
+        [Fact]
+        public void IStartupValidator_IsObsolete()
+        {
+#pragma warning disable SYSLIB0066
+            ObsoleteAttribute attribute = Assert.IsType<ObsoleteAttribute>(
+                typeof(IStartupValidator).GetCustomAttribute(typeof(ObsoleteAttribute)));
+#pragma warning restore SYSLIB0066
+
+            Assert.Equal("Implement IAsyncStartupValidator instead.", attribute.Message);
+            Assert.False(attribute.IsError);
+            Assert.Equal("SYSLIB0066", attribute.DiagnosticId);
+            Assert.Equal("https://aka.ms/dotnet-warnings/{0}", attribute.UrlFormat);
+        }
+#endif
+
         [Fact]
         public void UsesFactory()
         {
@@ -176,7 +192,10 @@ namespace Microsoft.Extensions.Options.Tests
             sc.AddOptions<FakeOptions>("name3").Configure(o => o.Message += "3").Validate(o => o.Message.Length > 0).ValidateOnStart();
             sc.AddOptions<FakeOptions>("name4").Configure(o => o.Message += "4").Validate(o => o.Message.Length > 0).ValidateOnStart();
 
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility registration.
             Assert.Equal(1, sc.Count(sd => sd.ServiceType == typeof(IStartupValidator)));
+#pragma warning restore SYSLIB0066
+            Assert.Equal(1, sc.Count(sd => sd.ServiceType == typeof(IAsyncStartupValidator)));
         }
 
         public static TheoryData<IDictionary<string, string>, IDictionary<string, object>> Configure_GetsNullableOptionsFromConfiguration_Data

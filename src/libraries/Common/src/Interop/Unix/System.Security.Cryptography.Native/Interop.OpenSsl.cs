@@ -29,7 +29,7 @@ internal static partial class Interop
         // Special value of 0 means unlimited, -1 means the implementation (OpenSSL) default, which is currently 20 * 1024.
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
-        private const int DefaultTlsCacheSizeClient = 500; // since we keep only one TLS Session per hostname, 500 should be enough to cover most scenarios
+        private const int DefaultTlsCacheSizeClient = 500; // bounds the total number of pooled client sessions across all hostnames
         private const int DefaultTlsCacheSizeServer = -1; // use implementation default
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
         private static readonly Lazy<string[]> s_defaultSigAlgs = new(GetDefaultSignatureAlgorithms);
@@ -693,7 +693,13 @@ internal static partial class Interop
             {
                 Exception? ex = GetSslError(ret, errorCode);
 
-                SecurityStatusPalErrorCode palErrorCode = (ex?.HResult & 0X7FFFFF) switch
+                // OpenSSL errors surface as CryptographicException with the packed error code as the HResult;
+                // one raised with an empty error queue keeps the default HResult, which decodes to -1.
+                int reason = ex is CryptographicException ?
+                    GetSslLibraryReason((uint)ex.HResult, isOpenSsl3: OpenSslVersionNumber() >= 0x3_00_00_00_0) :
+                    -1;
+
+                SecurityStatusPalErrorCode palErrorCode = reason switch
                 {
                     279 /*SSL_R_EXTENSION_NOT_RECEIVED*/ or
                     339 /*SSL_R_NO_RENEGOTIATION*/ => SecurityStatusPalErrorCode.NoRenegotiation,
@@ -1299,7 +1305,11 @@ internal static partial class Interop
 
                 if (ctxHandle != null)
                 {
-                    if (ctxHandle.TryAddSession(name, session))
+                    // TLS 1.3 tickets are single-use, TLS 1.2 sessions are not, and the two
+                    // need opposite caching policies.
+                    ReadOnlySpan<byte> version = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(Ssl.SslGetVersion(ssl));
+
+                    if (ctxHandle.TryAddSession(name, session, version.SequenceEqual("TLSv1.3"u8)))
                     {
                         // offered session was stored in our cache.
                         return 1;
@@ -1364,7 +1374,10 @@ internal static partial class Interop
             }
         }
 
-        private static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
+        // Builds the most specific inner exception available for a failed SSL_* call:
+        // errno / the ERR_LIB_SYS queue entry for SSL_ERROR_SYSCALL, the error queue for
+        // SSL_ERROR_SSL.
+        internal static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
         {
             Exception? innerError;
             switch (retVal)
@@ -1391,6 +1404,19 @@ internal static partial class Interop
             }
 
             return innerError;
+        }
+
+        // Returns the reason code of an OpenSSL error raised by the SSL library, or -1 for an error from
+        // any other library. The packing depends on the loaded OpenSSL, not on the headers the shim was
+        // built with: 1.x uses lib << 24 | func << 12 | reason, 3.0 and later use lib << 23 | reason.
+        // A 3.0 system (errno) error has the top bit set, so it never matches the library check.
+        internal static int GetSslLibraryReason(uint error, bool isOpenSsl3)
+        {
+            const uint ERR_LIB_SSL = 20;
+
+            return isOpenSsl3 ?
+                ((error >> 23) == ERR_LIB_SSL ? (int)(error & 0x7F_FFFF) : -1) :
+                ((error >> 24) == ERR_LIB_SSL ? (int)(error & 0xFFF) : -1);
         }
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)

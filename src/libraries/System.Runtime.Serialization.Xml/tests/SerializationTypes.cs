@@ -370,6 +370,27 @@ namespace SerializationTypes
         public byte[] ByteArray { get; set; }
     }
 
+    public class TypeWithBuiltInTypedMembers
+    {
+        public string StringMember;
+        public int IntMember;
+        public int? NullableIntMember;
+        public List<string> ListMember;
+        public int[] ArrayMember;
+    }
+
+    public class TypeWithNullableBuiltInTypedMembers
+    {
+        [XmlElement(IsNullable = true)]
+        public string StringMember;
+
+        public int? NullableIntMember;
+
+        public int[] ArrayMember;
+
+        public List<string> ListMember;
+    }
+
     public class TypeA
     {
         public string Name;
@@ -1471,7 +1492,7 @@ public class PurchaseOrder
         OrderedItem item = new OrderedItem();
         item.ItemName = "Widget S";
         item.Description = "Small widget";
-        item.UnitPrice = (decimal)5.23;
+        item.UnitPrice = 5.23m;
         item.Quantity = 3;
         item.Calculate();
 
@@ -1483,7 +1504,7 @@ public class PurchaseOrder
             subTotal += oi.LineTotal;
         }
         po.SubTotal = subTotal;
-        po.ShipCost = (decimal)12.51;
+        po.ShipCost = 12.51m;
         po.TotalCost = po.SubTotal + po.ShipCost;
         return po;
     }

@@ -276,7 +276,6 @@ public:
     HRESULT GetString(LPCUTF8 *pszString, ULONG *pcbString)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         HRESULT hr;
 
@@ -309,7 +308,6 @@ public:
     HRESULT GetNonNullString(LPCUTF8 *pszString, ULONG *pcbString)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         HRESULT hr;
 
@@ -330,7 +328,6 @@ public:
     HRESULT GetNonEmptyString(LPCUTF8 *pszString, ULONG *pcbString)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         HRESULT hr;
 

@@ -64,7 +64,6 @@
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=udp</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=allow-ip-name-lookup</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=hostcall-fuel=4294967295</_XHarnessArgs>
-    <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--env --engine-arg=DOTNET_WASI_PRINT_EXIT_CODE=1</_XHarnessArgs>
     <!-- CoreCLR-WASI: enable the wasm exception-handling proposal (the host relies on it)
          and point the host at the bundled framework via CORE_ROOT=/managed. Validated
          locally: host+runtime live in managed/ and init succeeds under wasmtime. -->
@@ -151,7 +150,7 @@
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
 
-    <ForceMSBuildGC />
+    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">

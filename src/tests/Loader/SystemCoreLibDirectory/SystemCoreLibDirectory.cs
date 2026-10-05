@@ -7,7 +7,9 @@ using Xunit;
 
 public class SystemCoreLibDirectory
 {
-    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.HasAssemblyFiles))]
+    public static bool HasSystemCoreLibFile => !string.IsNullOrEmpty(typeof(object).Assembly.Location);
+
+    [ConditionalFact(typeof(SystemCoreLibDirectory), nameof(HasSystemCoreLibFile))]
     public static void HostProvidedPath()
     {
         string configuredDirectory = AppContext.GetData("SYSTEM_CORELIB_DIRECTORY") as string;

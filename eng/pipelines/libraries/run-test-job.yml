@@ -27,6 +27,7 @@ parameters:
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
   templatePath: 'templates'
+  useHelixMonitor: false
 
 jobs:
   - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -92,6 +93,8 @@ jobs:
       - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
       - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+        - template: /eng/pipelines/common/select-xcode.yml
+
         - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
           displayName: Install Build Dependencies
 
@@ -133,6 +136,8 @@ jobs:
 
           ${{ if ne(parameters.scenarios[0], '') }}:
             scenarios: ${{ parameters.scenarios }}
+
+          useHelixMonitor: ${{ parameters.useHelixMonitor }}
 
       - ${{ if eq(parameters.SuperPmiCollect, true) }}:
         - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml

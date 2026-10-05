@@ -3,7 +3,6 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
-    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <AssemblyName>Microsoft.Diagnostics.DataContractReader.Usage.Tests</AssemblyName>
   </PropertyGroup>
 

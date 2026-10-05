@@ -24,9 +24,11 @@ DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,
+    CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
-    IDacDbiInterface ** ppInterface);
+    IDacDbiInterface ** ppInterface,
+    IUnknown ** ppLegacyDac);
 
 //---------------------------------------------------------------------------------------
 //
@@ -68,6 +70,8 @@ public:
 
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
+
+    HRESULT STDMETHODCALLTYPE Destroy();
 
     // enable or disable DAC target consistency checks
     HRESULT STDMETHODCALLTYPE DacSetTargetConsistencyChecks(BOOL fEnableAsserts);
@@ -132,16 +136,15 @@ public:
     HRESULT STDMETHODCALLTYPE GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetArrayLayout(CORDB_ADDRESS id, COR_ARRAY_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo);
-    HRESULT STDMETHODCALLTYPE GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW);
+    HRESULT STDMETHODCALLTYPE HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata);
 #ifdef FEATURE_CODE_VERSIONING
     HRESULT STDMETHODCALLTYPE GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
+    HRESULT STDMETHODCALLTYPE GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, OUT TargetBuffer * pCodeInfo, OUT mdSignature * pLocalSigToken);
     HRESULT STDMETHODCALLTYPE GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData);
 #endif // FEATURE_CODE_VERSIONING
     HRESULT STDMETHODCALLTYPE AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled);
-    HRESULT STDMETHODCALLTYPE GetDefinesBitField(ULONG32 *pDefines);
-    HRESULT STDMETHODCALLTYPE GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable);
     HRESULT STDMETHODCALLTYPE GetAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_Assembly *pvmAssembly);
     HRESULT STDMETHODCALLTYPE ParseContinuation(CORDB_ADDRESS continuationAddress,
@@ -151,7 +154,12 @@ public:
     HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData);
     HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
+    HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize);
+    HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer);
+
 private:
+    void SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob);
+
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
                                        TypeHandle                      typeHandle,
                                        DebuggerIPCE_ExpandedTypeData * pTypeInfo);
@@ -853,8 +861,8 @@ private:
                            VMPTR_MethodDesc vmMethodDesc,
                            mdMethodDef      mdMethod,
                            CORDB_ADDRESS    pNativeStartAddress,
-                           SIZE_T *         pLatestEnCVersion,
-                           SIZE_T *         pJittedInstanceEnCVersion = NULL);
+                           ULONG64 *        pLatestEnCVersion,
+                           ULONG64 *        pJittedInstanceEnCVersion = NULL);
 
     // @dbgtodo - This method should be removed once CordbFunctionBreakpoint and SetIP are moved OOP.
     void SetDJIPointer(Module *                   pModule,
@@ -936,6 +944,17 @@ protected:
 
 class DacRefWalker
 {
+    struct ExternalMemoryScanContext : public ScanContext
+    {
+        DacRefWalker *Walker;
+        HRESULT Result;
+
+        ExternalMemoryScanContext(DacRefWalker *walker)
+            : Walker(walker), Result(S_OK)
+        {
+        }
+    };
+
 public:
     DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers);
     ~DacRefWalker();
@@ -947,6 +966,9 @@ private:
     UINT32 GetHandleWalkerMask();
     void Clear();
     HRESULT NextThread();
+    HRESULT WalkExternalMemoryHandles();
+    static void ExternalMemoryHandleCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
+    CLRDATA_ADDRESS ReadPointer(TADDR address);
 
 private:
     ClrDataAccess *mDac;
@@ -959,6 +981,12 @@ private:
 
     // Handles
     DacHandleWalker *mHandleWalker;
+
+    // External memory handles
+    DacReferenceList<DacGcReference> mExternalMemoryHandles;
+    unsigned int mExternalMemoryHandleIndex;
+    DacHeapWalker mExternalMemoryHeap;
+    bool mExternalMemoryHeapInitialized;
 };
 
 #endif // _DACDBI_IMPL_H_

@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 [CdacType(nameof(DataType.ComWrappersVtablePtrs))]
 internal sealed partial class ComWrappersVtablePtrs : IData<ComWrappersVtablePtrs>
 {
-    public IReadOnlyList<TargetCodePointer> ComWrappersInterfacePointers { get; private set; } = [];
+    [CustomInit(nameof(InitComWrappersInterfacePointers))] public partial IReadOnlyList<TargetCodePointer> ComWrappersInterfacePointers { get; }
 
-    [MemberNotNull(nameof(ComWrappersInterfacePointers))]
-    partial void OnInit(Target target, TargetPointer address)
+    private partial IReadOnlyList<TargetCodePointer> InitComWrappersInterfacePointers(Target target, TargetPointer address)
     {
         int count = (int)(GetSize(target) / (uint)target.PointerSize);
         List<TargetCodePointer> pointers = new(count);
@@ -21,6 +19,6 @@ internal sealed partial class ComWrappersVtablePtrs : IData<ComWrappersVtablePtr
             pointers.Add(target.ReadCodePointer(address + (ulong)(i * target.PointerSize)));
         }
 
-        ComWrappersInterfacePointers = pointers;
+        return pointers;
     }
 }

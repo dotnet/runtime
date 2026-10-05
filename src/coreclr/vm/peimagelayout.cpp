@@ -130,7 +130,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     }
 
     // we can use flat layout for this
-    return pFlat.Extract();
+    return pFlat.Detach();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
@@ -154,7 +154,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 
                 PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
                 if (pAlloc->GetBase() != NULL)
-                    return pAlloc.Extract();
+                    return pAlloc.Detach();
 
 #if TARGET_WINDOWS
                 // For regular PE files always use OS loader on Windows.
@@ -299,7 +299,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
         return;
     }
 
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Applying base relocations (preferred: %x, actual: %x)\n",
+    LOG((LF_LOADER, LL_INFO100, "PEImage: Applying base relocations (preferred: %p, actual: %p)\n",
         GetPreferredBase(), GetBase()));
 
     COUNT_T dirSize;
@@ -870,7 +870,6 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     m_pOwner = pOwner;

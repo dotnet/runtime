@@ -58,14 +58,6 @@ int32_t CryptoNative_GetMemoryBioSize(BIO* bio)
     return (int32_t)ret;
 }
 
-int32_t CryptoNative_BioCtrlPending(BIO* bio)
-{
-    // No impact on the error queue.
-    size_t result = BIO_ctrl_pending(bio);
-    assert(result <= INT32_MAX);
-    return (int32_t)result;
-}
-
 /*
  * Managed-span BIO
  * ----------------
@@ -556,6 +548,7 @@ static int SocketReplayBioRead(BIO* bio, char* buf, int len)
     SocketReplayBioCtx* ctx = GetSocketReplayBioCtx(bio);
     if (ctx == NULL)
     {
+        errno = EBADF;
         return -1;
     }
 
@@ -577,6 +570,8 @@ static int SocketReplayBioRead(BIO* bio, char* buf, int len)
     // Prefix exhausted; delegate to the socket.
     if (ctx->fd < 0)
     {
+        // See SocketReplayBioWrite: deterministic errno beats a stale one.
+        errno = EBADF;
         return -1;
     }
 
@@ -622,6 +617,10 @@ static int SocketReplayBioWrite(BIO* bio, const char* buf, int len)
     SocketReplayBioCtx* ctx = GetSocketReplayBioCtx(bio);
     if (ctx == NULL || ctx->fd < 0)
     {
+        // No fd bound (or the BIO was torn down). Report a deterministic errno so the
+        // managed SSL_ERROR_SYSCALL path has something to surface; without it the caller
+        // would observe whatever errno happened to be left over from an unrelated call.
+        errno = EBADF;
         return -1;
     }
 
@@ -638,6 +637,14 @@ static int SocketReplayBioWrite(BIO* bio, const char* buf, int len)
     if (n > 0)
     {
         return (int)n;
+    }
+
+    if (n == 0)
+    {
+        // send() accepted nothing without reporting an error. Nothing was flushed, so
+        // ask OpenSSL to retry rather than surfacing a bogus errno from an earlier call.
+        BIO_set_retry_write(bio);
+        return -1;
     }
 
     if (errno == EAGAIN || errno == EWOULDBLOCK)

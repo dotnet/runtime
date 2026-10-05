@@ -1229,7 +1229,6 @@ namespace HostActivation.Tests
             return ExecutableDotNet.Exec(command)
                 .WorkingDirectory(SharedState.CurrentWorkingDir)
                 .EnableTracingAndCaptureOutputs()
-                .MultilevelLookup(false)
                 .Execute(caller);
         }
 

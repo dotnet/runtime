@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -10,11 +9,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class HandleTableMap : IData<HandleTableMap>
 {
     [Field] public partial TargetPointer Next { get; }
-    [DataDescriptorDependency(nameof(BucketsPtr), "pointer")]
-    public IReadOnlyList<TargetPointer> BucketsPtr { get; private set; } = [];
+    [CustomInit(nameof(InitBucketsPtr))] public partial IReadOnlyList<TargetPointer> BucketsPtr { get; }
 
-    [MemberNotNull(nameof(BucketsPtr))]
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(BucketsPtr), "pointer")]
+    private partial IReadOnlyList<TargetPointer> InitBucketsPtr(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HandleTableMap);
         TargetPointer bucketsPtr = target.ReadPointerField(address, type, nameof(BucketsPtr));
@@ -26,6 +24,6 @@ internal sealed partial class HandleTableMap : IData<HandleTableMap>
             buckets.Add(bucketPtr);
         }
 
-        BucketsPtr = buckets;
+        return buckets;
     }
 }

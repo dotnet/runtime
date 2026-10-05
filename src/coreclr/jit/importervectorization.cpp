@@ -517,21 +517,19 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
                                refEqualityColon);
         }
 
-        impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
+        impPopStack(argsCount);
+
+        impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_ALL);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_ALL);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
         JITDUMP("\n... Successfully unrolled to:\n")
         DISPTREE(unrolled)
-        for (int i = 0; i < argsCount; i++)
-        {
-            impPopStack();
-        }
     }
     return unrolled;
 }
@@ -688,26 +686,23 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
 
     if (unrolled != nullptr)
     {
+        impPopStack(argsCount);
+
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
-            impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
+            impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_ALL);
         }
 
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_ALL);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
         JITDUMP("... Successfully unrolled to:\n")
         DISPTREE(unrolled)
-
-        for (int i = 0; i < argsCount; i++)
-        {
-            impPopStack();
-        }
 
         // We have to clean up GT_RET_EXPR for String.op_Implicit or MemoryExtensions.AsSpans
         if ((spanObj != op1) && op1->OperIs(GT_RET_EXPR))

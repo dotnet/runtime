@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <OutputType>exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CrossGenTest>false</CrossGenTest>
+    <!-- IJW / C++/CLI is Windows-only -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- IJW assemblies contain native code that cannot be round-tripped through ilasm -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- The test launches a secondary process; loading IJW assemblies into an
+    unloadable context is not allowed and process launch prevents unloading. -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/106243 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CopyDebugCRTDllsToOutputDirectory>true</CopyDebugCRTDllsToOutputDirectory>
+  </PropertyGroup>
+  <Target Name="CopyIjwDebugCRTDependencies"
+    BeforeTargets="CopyAllNativeProjectReferenceBinaries"
+    Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
+    <Warning Text="Building C++/CLI tests requires a Visual Studio Dev Command Prompt" Condition="'$(VCToolsRedistDir)' == '' or '$(ExtensionSdkDir)' == ''" />
+    <ItemGroup Condition="'$(VCToolsRedistDir)' != '' and '$(ExtensionSdkDir)' != ''">
+      <IjwNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" />
+      <IjwNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" />
+      <IjwNativeRuntimeDependencies Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(IjwNativeRuntimeDependencies)" DestinationFolder="$(OutputPath)" />
+  </Target>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="../common/profiler_common.csproj" />
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+    <!-- The IJW (C++/CLI) profilee and the ijwhost mock are Windows-only; only
+         reference their native CMake projects on Windows so non-Windows configure
+         doesn't process the /clr build. -->
+    <CMakeProjectReference Include="CMakeLists.txt" Condition="'$(TargetsWindows)' == 'true'" />
+    <CMakeProjectReference Include="../../Interop/IJW/ijwhostmock/CMakeLists.txt" Condition="'$(TargetsWindows)' == 'true'" />
+  </ItemGroup>
+</Project>

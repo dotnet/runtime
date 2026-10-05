@@ -81,10 +81,9 @@
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_64BIT
 #endif // !TARGET_64BIT
 
-#define CEE_FILE_GEN_GROWTH_COLLECTIBLE 2048
-
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
+#ifdef FEATURE_INLINE_TRACKING
 BOOL Module::HasReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -108,6 +107,7 @@ COUNT_T Module::GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef in
 #endif
     return 0;
 }
+#endif // FEATURE_INLINE_TRACKING
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 BOOL Module::HasJitInlineTrackingMap()
@@ -217,7 +217,6 @@ void Module::UpdateNewlyAddedTypes()
         MODE_PREEMPTIVE;
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -278,7 +277,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -365,7 +363,6 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -683,7 +680,7 @@ void Module::Destruct()
     }
     CONTRACTL_END;
 
-    LOG((LF_EEMEM, INFO3, "Deleting module %x\n", this));
+    LOG((LF_EEMEM, INFO3, "Deleting module %p\n", (void*)this));
 #ifdef PROFILING_SUPPORTED
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
@@ -835,7 +832,6 @@ MethodTable *Module::GetGlobalMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return NULL;);
     }
     CONTRACTL_END;
 
@@ -914,12 +910,11 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress)
 
 #endif // !DACCESS_COMPILE
 
-// Get the stored address of the IL blob for reflection/dynamics
+// Get the stored address of an IL body or RVA field's data for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
-//         fAllowTemporary also check the temporary overrides
-// Return Value: starting (target) address of the IL blob corresponding to the input token
+//         token        method token or field token
+// Return Value: starting (target) address of the data corresponding to the input token
 
 TADDR Module::GetDynamicIL(mdToken token)
 {
@@ -1626,6 +1621,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 #endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
+#ifdef PROFILING_SUPPORTED
 //
 // Wrapper for Module::GetRWImporter + QI when writing is not needed.
 //
@@ -1675,6 +1671,7 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
 
     return hr;
 }
+#endif // PROFILING_SUPPORTED
 
 // a special token that indicates no reader could be created - don't try again
 static ISymUnmanagedReader* const k_pInvalidSymReader = (ISymUnmanagedReader*)0x1;
@@ -1806,7 +1803,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         if (fInMemorySymbols)
         {
-            ReleaseHolder<IStream> pIStream( NULL );
+            ReleaseHolder<IStream> pIStream;
 
             // If debug stream is already specified, don't bother to go through fusion
             // This is the common case for case 2 (hosted modules) and case 3 (Ref.Emit).
@@ -1834,7 +1831,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                 // (RW) metadata interface: the reader only needs it to satisfy the
                 // binder, and producing the real importer would force this module's
                 // metadata to its locked RW backing store.
-                ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+                ReleaseHolder<IMetaDataImport2> pNoopImport{ GetNoopMetaDataImport2() };
                 hr = pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader);
             }
         }
@@ -1847,13 +1844,13 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // interface for this module: the reader only needs it to satisfy the
             // binder, and obtaining the real importer would force this module's
             // metadata to its locked RW backing store.
-            ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+            ReleaseHolder<IMetaDataImport2> pNoopImport{ GetNoopMetaDataImport2() };
             hr = pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader);
         }
 
         if (SUCCEEDED(hr))
         {
-            m_pISymUnmanagedReader = pReader.Extract();
+            m_pISymUnmanagedReader = pReader.Detach();
             LOG((LF_CORDB, LL_INFO10, "M::GISUR: Loaded symbols for module %s\n", GetDebugName()));
         }
         else
@@ -1912,7 +1909,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     STANDARD_VM_CONTRACT;
 
     // Create a IStream from the memory for the syms.
-    ComHolderPreemp<CGrowableStream> pStream(new CGrowableStream());
+    ReleaseHolder<CGrowableStream> pStream(new CGrowableStream());
 
     // Do not need to AddRef the CGrowableStream because the constructor set it to 1
     // ref count already. The Module will keep a copy for its own use.
@@ -1972,7 +1969,6 @@ void Module::ReleaseISymUnmanagedReader(void)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -1998,7 +1994,6 @@ ILStubCache* Module::GetILStubCache()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2221,7 +2216,6 @@ BOOL Module::IsSigInILImpl(PCCOR_SIGNATURE signature)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        FORBID_FAULT;
         MODE_ANY;
         NOTHROW;
         GC_NOTRIGGER;
@@ -2239,7 +2233,6 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
@@ -2276,7 +2269,6 @@ STRINGREF* ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
@@ -2340,7 +2332,6 @@ Module::GetAssemblyIfLoaded(
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -2465,7 +2456,6 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2483,7 +2473,7 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
     }
 
     {
-        PEAssemblyHolder pPEAssembly = GetPEAssembly()->LoadAssembly(kAssemblyRef);
+        PEAssemblyHolder pPEAssembly{ GetPEAssembly()->LoadAssembly(kAssemblyRef) };
         AssemblySpec spec;
         spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
@@ -2524,7 +2514,6 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -2593,8 +2582,6 @@ PTR_Module Module::LookupModule(mdToken kFile)
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT;
-        else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
@@ -2619,7 +2606,6 @@ TypeHandle ModuleBase::LookupTypeRef(mdTypeRef token)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     _ASSERTE(TypeFromToken(token) == mdtTypeRef);
@@ -2648,7 +2634,6 @@ PTR_TADDR LookupMapBase::GrowMap(ModuleBase * pModule, DWORD rid)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END;
 
@@ -2927,6 +2912,7 @@ void Module::SetJMCStatus(bool fStatus)
     m_debuggerSpecificData.m_fDefaultJMCStatus = fStatus;
 }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Update the dynamic metadata if needed. Nop for non-dynamic modules
 void Module::UpdateDynamicMetadataIfNeeded()
 {
@@ -2959,6 +2945,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
     }
 
 }
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
 
@@ -2969,12 +2956,14 @@ BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
         Module * pModule = pAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
+#endif
 
     //
     // Remaining work is only needed if a debugger is attached
@@ -3355,7 +3344,7 @@ void Module::FixupVTables()
 #ifdef _DEBUG
                     if (pMD->IsPInvoke())
                     {
-                        LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
+                        LOG((LF_INTEROP, LL_INFO10, "[0x%zx] <-- PINV thunk for \"%s\" (target = 0x%zx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
                             (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
@@ -3478,7 +3467,6 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
         INSTANCE_CHECK;
         if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
         if (loadAllowed) THROWS;                         else NOTHROW;
-        if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
         MODE_ANY;
         PRECONDITION(IsReadyToRun());
     }
@@ -3512,8 +3500,10 @@ void Module::RunEagerFixups()
     COUNT_T nSections;
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
 
+#ifndef TARGET_WASM
     if (nSections == 0)
         return;
+#endif // !TARGET_WASM
 
 #ifdef _DEBUG
     // Loading types during eager fixup is not a tested scenario. Make bugs out of any attempts to do so in a
@@ -3548,6 +3538,12 @@ void Module::RunEagerFixups()
         // For composite images, multiple modules may request initializing eager fixups
         // from multiple threads so we need to lock their resolution.
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
+#ifdef TARGET_WASM
+        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        if (nSections == 0)
+            return;
+#endif // TARGET_WASM
+
         if (compositeNativeImage->EagerFixupsHaveRun())
         {
             if (compositeNativeImage->ReadyToRunCodeDisabled())
@@ -3562,6 +3558,12 @@ void Module::RunEagerFixups()
     else
     {
         // Per-module eager fixups don't need locking
+#ifdef TARGET_WASM
+        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        if (nSections == 0)
+            return;
+#endif // TARGET_WASM
+
         RunEagerFixupsUnlocked();
     }
 }
@@ -3607,10 +3609,7 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
-#ifdef TARGET_WASM
-    // For WASM, register virtual IP ranges instead of real code address ranges.
-    GetReadyToRunInfo()->RegisterVirtualIPRange(this);
-#else
+#ifndef TARGET_WASM
     TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
 
     ExecutionManager::AddCodeRange(
@@ -3618,7 +3617,7 @@ void Module::RunEagerFixupsUnlocked()
         ExecutionManager::GetReadyToRunJitManager(),
         RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 
@@ -3836,16 +3835,11 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
     m_pInMemoryWriter = NULL;
-    m_sdataSection = NULL;
-    m_pCeeFileGen = NULL;
 }
-
-HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
 
 // Module initialization occurs in two phases: the constructor phase and the Initialize phase.
 //
@@ -3865,20 +3859,12 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     Module::Initialize(pamTracker);
 
-    IfFailThrow(CreateICeeGen(IID_ICeeGenInternal, (void **)&m_pCeeFileGen));
-
-    // Collectible modules should try to limit the growth of their associate IL section, as common scenarios for collectible
-    // modules include single type modules
-    if (IsCollectible())
-    {
-        ReleaseHolder<ICeeGenInternal> pCeeGenInternal(NULL);
-        IfFailThrow(m_pCeeFileGen->QueryInterface(IID_ICeeGenInternal, (void **)&pCeeGenInternal));
-        IfFailThrow(pCeeGenInternal->SetInitialGrowth(CEE_FILE_GEN_GROWTH_COLLECTIBLE));
-    }
-
     m_pInMemoryWriter = new RefClassWriter();
 
-    IfFailThrow(m_pInMemoryWriter->Init(GetCeeGen(), GetEmitter(), szName));
+    IfFailThrow(m_pInMemoryWriter->Init(
+        GetPEAssembly()->GetMDInternalEmit(),
+        GetMDImport(),
+        szName));
 
     m_CrstLeafLock.Init(CrstLeafLock);
 }
@@ -3894,9 +3880,6 @@ void ReflectionModule::Destruct()
     CONTRACTL_END;
 
     delete m_pInMemoryWriter;
-
-    if (m_pCeeFileGen)
-        m_pCeeFileGen->Release();
 
     Module::Destruct();
 
@@ -3923,15 +3906,15 @@ public:
         WRAPPER_NO_CONTRACT;
         (void)Release();
     }
-    HRESULT SetMDUpdateMode(IMetaDataEmit *pEmitter, ULONG updateMode)
+    HRESULT SetMDUpdateMode(IMDInternalEmit *pEmitter, ULONG updateMode)
     {
         LIMITED_METHOD_CONTRACT;
         HRESULT hr = S_OK;
 
         _ASSERTE(updateMode != UINT32_MAX);
 
-        IfFailRet(pEmitter->QueryInterface(IID_IMDInternalEmit, (void **)&m_pInternalEmitter));
-        _ASSERTE(m_pInternalEmitter != NULL);
+        m_pInternalEmitter = pEmitter;
+        m_pInternalEmitter->AddRef();
 
         IfFailRet(m_pInternalEmitter->SetMDUpdateMode(updateMode, &m_OriginalMDUpdateMode));
         _ASSERTE(m_OriginalMDUpdateMode != UINT32_MAX);
@@ -3976,6 +3959,7 @@ private:
     ULONG            m_OriginalMDUpdateMode;
 };
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Called in live paths to fetch metadata for dynamic modules. This makes the metadata available to the
 // debugger from out-of-process.
 //
@@ -4003,7 +3987,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     CONTRACTL_END;
 
     // Do not release the emitter. This is a weak reference.
-    IMetaDataEmit *pEmitter = this->GetEmitter();
+    IMDInternalEmit *pEmitter = m_pInMemoryWriter->GetEmitter();
     _ASSERTE(pEmitter != NULL);
 
     HRESULT hr;
@@ -4049,6 +4033,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     // Will be S_FALSE if someone changed the MDUpdateMode (from MDUpdateExtension) meanwhile
     _ASSERTE(hr == S_OK);
 }
+#endif
 
 
 #endif // !DACCESS_COMPILE
@@ -4078,33 +4063,20 @@ TADDR ReflectionModule::GetDynamicMetadataBuffer() const
 }
 #endif
 
-TADDR ReflectionModule::GetIL(RVA il) // virtual
+TADDR ReflectionModule::GetIL(RVA methodToken) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-    BYTE* pByte = NULL;
-    if (il != 0)
-        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
-    return TADDR(pByte);
-#else // DACCESS_COMPILE
-    SUPPORTS_DAC;
-    DacNotImpl();
-    return (TADDR)NULL;
-#endif // DACCESS_COMPILE
-}
 
-PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
-{
-#ifndef DACCESS_COMPILE
-    WRAPPER_NO_CONTRACT;
-    // This function should be call only if the target is a field or a field with RVA.
-    PTR_BYTE pByte = NULL;
-    m_pCeeFileGen->ComputePointer(m_sdataSection, field, &pByte);
-    return dac_cast<PTR_VOID>(pByte);
+    if (methodToken == 0)
+        return 0;
+
+    _ASSERTE(TypeFromToken(methodToken) == mdtMethodDef);
+    return GetDynamicIL(methodToken);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
     DacNotImpl();
-    return NULL;
+    return 0;
 #endif // DACCESS_COMPILE
 }
 
@@ -4231,6 +4203,44 @@ static bool MethodSignatureContainsGenericVariables(SigParser& sp)
 }
 
 //==========================================================================
+// Computes the module that should own runtime artifacts (VASigCookies, CALLI IL stubs)
+// created for the given standalone signature.
+//
+// The generic context is stripped if it is not actually used by the signature. This is
+// necessary for both:
+// - Performance: allows more sharing of the created artifacts
+// - Functionality: built-in runtime marshalling is disallowed for generic signatures
+//==========================================================================
+Module* Module::GetLoaderModuleForSignature(Signature signature, SigTypeContext* pTypeContext)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pTypeContext));
+    }
+    CONTRACTL_END;
+
+    SigParser sigParser = signature.CreateSigParser();
+
+    if (pTypeContext->IsEmpty())
+    {
+        // The method signature should not contain any generic variables if the generic context is not provided.
+        _ASSERTE(!MethodSignatureContainsGenericVariables(sigParser));
+        return this;
+    }
+
+    if (!MethodSignatureContainsGenericVariables(sigParser))
+    {
+        *pTypeContext = SigTypeContext();
+        return this;
+    }
+
+    return ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, pTypeContext->m_classInst, pTypeContext->m_methodInst);
+}
+
+#ifdef FEATURE_VARARGS
+//==========================================================================
 // Enregisters a VASig.
 //==========================================================================
 VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext)
@@ -4239,38 +4249,13 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
-    SigTypeContext emptyContext;
+    SigTypeContext localContext = *typeContext;
+    Module* pLoaderModule = GetLoaderModuleForSignature(vaSignature, &localContext);
 
-    Module* pLoaderModule = this;
-    if (!typeContext->IsEmpty())
-    {
-        // Strip the generic context if it is not actually used by the signature. It is nececessary for both:
-        // - Performance: allow more sharing of vasig cookies
-        // - Functionality: built-in runtime marshalling is disallowed for generic signatures
-        SigParser sigParser = vaSignature.CreateSigParser();
-        if (MethodSignatureContainsGenericVariables(sigParser))
-        {
-            pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
-        }
-        else
-        {
-            typeContext = &emptyContext;
-        }
-    }
-    else
-    {
-#ifdef _DEBUG
-        // The method signature should not contain any generic variables if the generic context is not provided.
-        SigParser sigParser = vaSignature.CreateSigParser();
-        _ASSERTE(!MethodSignatureContainsGenericVariables(sigParser));
-#endif
-    }
-
-    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
+    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, &localContext);
 
     return pCookie;
 }
@@ -4280,7 +4265,6 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -4419,6 +4403,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
     return pCookie;
 }
+#endif // FEATURE_VARARGS
 
 #endif // !DACCESS_COMPILE
 
@@ -4434,7 +4419,6 @@ LookupMapBase::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4460,7 +4444,6 @@ LookupMapBase::ListEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4533,7 +4516,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4614,7 +4596,6 @@ LPCWSTR Module::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
     }
     CONTRACTL_END
 
@@ -4636,7 +4617,6 @@ LPCWSTR ModuleBase::GetPathForErrorMessages()
     {
         THROWS;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
     return W("");
@@ -4794,7 +4774,9 @@ void Module::ExpandAll()
 // Wrap all static_assert's in asmconstants.h with a class definition.  Many of the
 // fields referenced below are private, and this class is a friend of the
 // enclosing type.
+#ifdef FEATURE_VARARGS
 #include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
+#endif // FEATURE_VARARGS
 class CheckAsmOffsets
 {
 #ifndef CROSSBITNESS_COMPILE

@@ -236,7 +236,7 @@ char* CBlobFetcher::MakeNewBlock(unsigned len, unsigned align) {
             m_nIndexMax = nNewMax;
             m_pIndex = pNewIndex;
 
-            STRESS_LOG2(LF_LOADER, LL_INFO10, "CBlobFetcher %08X reallocates m_pIndex %08X\n", this, m_pIndex);
+            STRESS_LOG2(LF_LOADER, LL_INFO10, "CBlobFetcher %p reallocates m_pIndex %p\n", this, m_pIndex);
         }
 
         m_nIndexUsed ++; // current pillar is full, move to next

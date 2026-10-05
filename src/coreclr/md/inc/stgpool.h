@@ -82,7 +82,6 @@ public:
 //*****************************************************************************
 class StgPoolSeg
 {
-    friend class VerifyLayoutsMD;
     friend struct ::cdac_data<StgPoolSeg>;
 public:
     StgPoolSeg() :
@@ -145,8 +144,6 @@ friend class CBlobPoolHash;
 friend class MetaData::StringHeapRO;
 friend class MetaData::StringHeapRW;
 friend class MetaData::BlobHeapRO;
-friend class VerifyLayoutsMD;
-
 public:
     StgPoolReadOnly()
     { LIMITED_METHOD_CONTRACT; };
@@ -165,7 +162,7 @@ public:
 //*****************************************************************************
 // Prepare to shut down or reinitialize.
 //*****************************************************************************
-    virtual    void Uninit();
+    virtual    void Uninit() noexcept;
 
 //*****************************************************************************
 // Return the size of the pool.
@@ -280,7 +277,6 @@ public:
         GUID UNALIGNED **ppGuid)        // Output buffer for Guid.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         HRESULT hr;
         MetaData::DataBlob heapData;
@@ -397,7 +393,6 @@ protected:
     virtual int IsValidOffset(UINT32 nOffset)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         MetaData::DataBlob data;
         return (StgBlobPoolReadOnly::GetBlob(nOffset, &data) == S_OK);
@@ -421,7 +416,6 @@ friend class StgStringPool;
 friend class StgBlobPool;
 friend class RecordPool;
 friend class CBlobPoolHash;
-friend class VerifyLayoutsMD;
 friend struct ::cdac_data<StgPool>;
 
 public:
@@ -478,7 +472,7 @@ public:
 //*****************************************************************************
 // Clear out this pool.  Cannot use until you call InitNew.
 //*****************************************************************************
-    virtual void Uninit();
+    virtual void Uninit() noexcept;
 
 //*****************************************************************************
 // Called to copy the pool to writable memory, reset the r/o bit.
@@ -513,6 +507,7 @@ public:
 //*****************************************************************************
     void Trim();                            //
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
@@ -523,7 +518,6 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
         // Size is offset of last seg + size of last seg.
@@ -546,7 +540,6 @@ public:
         UINT32 *pcbSaveSize) const  // Return save size of this pool.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
         UINT32 cbSize = 0;
@@ -609,6 +602,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return 0;
     }
+#endif
 
 //*****************************************************************************
 // Return the size of the pool.
@@ -762,7 +756,6 @@ protected:
 //*****************************************************************************
 class StgStringPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
 public:
     StgStringPool() :
         StgPool(DFT_STRING_HEAP_SIZE),
@@ -796,7 +789,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
@@ -862,6 +855,7 @@ public:
         return (GetNextOffset() <= 1);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
@@ -899,6 +893,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return ULONG( strlen( reinterpret_cast< LPCSTR >( data ) ) + 1 ); // using strlen since the string is UTF8
     }
+#endif
 
 private:
     __checkReturn
@@ -923,7 +918,6 @@ private:
 //*****************************************************************************
 class StgGuidPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
 public:
     StgGuidPool() :
         StgPool(DFT_GUID_HEAP_SIZE),
@@ -953,7 +947,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // Add a segment to the chain of segments.
@@ -981,6 +975,7 @@ public:
         const GUID *pGuid,          // The Guid to add to pool.
         UINT32     *pnIndex);       // Return index of Guid here.
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Get the size of the GUID obtained from the pool.
 // Needed for generic persisting of data blocks.
@@ -990,6 +985,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return sizeof( GUID );
     }
+#endif
 
 //*****************************************************************************
 // How many objects are there in the pool?  If the count is 0, you don't need
@@ -1025,6 +1021,7 @@ public:
     ULONG GetNextIndex()
     { LIMITED_METHOD_CONTRACT; return (GetNextOffset() / sizeof(GUID)); }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
@@ -1035,7 +1032,6 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         _ASSERTE(pcbSaveSize != NULL);
 
@@ -1046,6 +1042,7 @@ public:
         _ASSERTE(*pcbSaveSize == ALIGN4BYTE(*pcbSaveSize));
         return S_OK;
     }
+#endif
 
 private:
 
@@ -1075,8 +1072,6 @@ private:
 //*****************************************************************************
 class StgBlobPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
-
     using StgPool::InitNew;
     using StgPool::InitOnMem;
 
@@ -1109,7 +1104,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // The blob will be added to the pool.  The offset of the blob in the pool
@@ -1142,6 +1137,7 @@ public:
     __checkReturn
     virtual HRESULT SetHash(int bHash);
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Get the size of the blob obtained from the pool.
 // Needed for generic persisting of data blocks.
@@ -1154,6 +1150,7 @@ public:
         ULONG blobsize = CPackedLen::GetLength( data, & blobdata ); // the size is encoded at the beginning of the block
         return blobsize + static_cast< ULONG >( reinterpret_cast< BYTE const * >( blobdata ) - reinterpret_cast< BYTE const * >( data ) );
     }
+#endif
 
 //*****************************************************************************
 // How many objects are there in the pool?  If the count is 0, you don't need
@@ -1169,11 +1166,11 @@ public:
     virtual int IsEmpty()                    // true if empty.
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         return (GetNextOffset() <= 1);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
@@ -1184,10 +1181,10 @@ public:
         UINT32 *pcbSaveSize) const
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         return StgPool::GetSaveSize(pcbSaveSize);
     }
+#endif
 
 protected:
 
@@ -1197,7 +1194,6 @@ protected:
     virtual int IsValidOffset(UINT32 nOffset)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         MetaData::DataBlob data;
         return (StgBlobPool::GetBlob(nOffset, &data) == S_OK);

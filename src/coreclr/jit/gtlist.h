@@ -41,6 +41,12 @@ GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLI
 GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
 GTNODE(FTN_ENTRY        , GenTree            ,0,0,GTK_LEAF)             // Address of this function's entry point
 
+// Offset into continuation, starting after the MethodTable*, of a special
+// member. GenTreeVal::gtVal1 is an index into Compiler::m_asyncContinuationMembers.
+// The async transformation allocates and lays out the continuation and
+// substitutes these by constants at that time.
+GTNODE(CONTINUATION_MEMBER_OFFSET, GenTreeVal ,0,0,GTK_LEAF)
+
 //-----------------------------------------------------------------------------
 //  Constant nodes:
 //-----------------------------------------------------------------------------
@@ -298,14 +304,16 @@ GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(ADD_UW           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to riscv64 slli.uw instruction. Computes result = zext(op1[31..0]) << imm.
 GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif // TARGET_RISCV64
 
-// Maps to bset/bseti instruction. Computes result = op1 | (1 << op2)
+#if defined(TARGET_RISCV64) || defined(TARGET_XARCH)
+// Maps to riscv64 bset/bseti and xarch bts. Computes result = op1 | (1 << op2)
 GTNODE(BIT_SET          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
-// Maps to bclr/bclri instruction. Computes result = op1 & ~(1 << op2)
+// Maps to riscv64 bclr/bclri and xarch btr. Computes result = op1 & ~(1 << op2)
 GTNODE(BIT_CLEAR        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
-// Maps to binv/binvi instruction. Computes result = op1 ^ (1 << op2)
+// Maps to riscv64 binv/binvi and xarch btc. Computes result = op1 ^ (1 << op2)
 GTNODE(BIT_INVERT       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
-#endif
+#endif // TARGET_RISCV64 || TARGET_XARCH
 
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:

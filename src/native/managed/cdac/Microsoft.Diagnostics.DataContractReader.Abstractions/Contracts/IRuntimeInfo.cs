@@ -43,6 +43,7 @@ public interface IRuntimeInfo : IContract
     RuntimeInfoArchitecture GetTargetArchitecture() => throw new NotImplementedException();
     RuntimeInfoOperatingSystem GetTargetOperatingSystem() => throw new NotImplementedException();
     RuntimeInfoRuntimeFlavor GetRuntimeFlavor() => throw new NotImplementedException();
+    string GetRuntimeProductVersion() => throw new NotImplementedException();
     uint GetCurrentReaderVersion() => throw new NotImplementedException();
     uint GetRecommendedReaderVersion() => throw new NotImplementedException();
 }

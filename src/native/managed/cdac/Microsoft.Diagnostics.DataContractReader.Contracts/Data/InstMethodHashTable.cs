@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -10,15 +9,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class InstMethodHashTable : IData<InstMethodHashTable>
 {
     private const ulong FLAG_MASK = 0x3ul;
+    [CustomInit(nameof(InitEntries))] public partial IReadOnlyList<Entry> Entries { get; }
 
     [DataDescriptorDependency("Buckets", "pointer")]
     [DataDescriptorDependency("Count", "uint32")]
     [DataDescriptorDependency("VolatileEntryValue", "pointer")]
     [DataDescriptorDependency("VolatileEntryNextEntry", "pointer")]
-    public IReadOnlyList<Entry> Entries { get; private set; }
-
-    [MemberNotNull(nameof(Entries))]
-    partial void OnInit(Target target, TargetPointer address)
+    private partial IReadOnlyList<Entry> InitEntries(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InstMethodHashTable);
         DacEnumerableHash baseHashTable = new(target, address, type);
@@ -29,7 +26,7 @@ internal sealed partial class InstMethodHashTable : IData<InstMethodHashTable>
             TargetPointer methodDescPtr = target.ReadPointer(entry);
             entries.Add(new(methodDescPtr));
         }
-        Entries = entries;
+        return entries;
     }
 
     public readonly struct Entry(TargetPointer value)

@@ -7,8 +7,7 @@ trigger: none
 pr:
   branches:
     include:
-    - main
-    - release/*.*
+    - '*'
   paths:
     include:
     - '*'
@@ -52,4 +51,3 @@ stages:
     isBuiltFromVmr: false
     scope: lite
     verifications: [ "source-build-stage1", "source-build-stage2" ]
-

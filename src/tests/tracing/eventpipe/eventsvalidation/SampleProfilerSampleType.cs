@@ -22,6 +22,8 @@ namespace Tracing.Tests.SampleProfilerSampleType
         private const uint SampleTypeExternal = 1;
         private const uint SampleTypeManaged = 2;
 
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -22,6 +22,10 @@
 
 #include <Windows.h>
 
+#ifndef PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE (67)
+#endif
+
 #ifndef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
 #define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
 #endif
@@ -56,6 +60,14 @@
 // Light-up for hardware capabilities that are not present in older headers used by the portable build.
 #ifndef HWCAP_ASIMDRDM
 #define HWCAP_ASIMDRDM  (1 << 12)
+#endif
+
+#ifndef HWCAP_FPHP
+#define HWCAP_FPHP      (1 << 9)
+#endif
+
+#ifndef HWCAP_ASIMDHP
+#define HWCAP_ASIMDHP   (1 << 10)
 #endif
 #ifndef HWCAP_LRCPC
 #define HWCAP_LRCPC     (1 << 15)
@@ -566,6 +578,10 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
 
+    // FEAT_FP16 provides both scalar (FPHP) and Advanced SIMD (ASIMDHP) half-precision arithmetic.
+    if ((hwCap & HWCAP_FPHP) && (hwCap & HWCAP_ASIMDHP))
+        result |= ARM64IntrinsicConstants_Fp16;
+
     if (hwCap & HWCAP_SVE)
         result |= ARM64IntrinsicConstants_Sve;
 
@@ -619,6 +635,9 @@ int minipal_getcpufeatures(void)
     if ((sysctlbyname("hw.optional.arm.FEAT_RDM", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rdm;
 
+    if ((sysctlbyname("hw.optional.arm.FEAT_FP16", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Fp16;
+
     if ((sysctlbyname("hw.optional.arm.FEAT_SHA1", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Sha1;
 
@@ -658,13 +677,13 @@ int minipal_getcpufeatures(void)
 #endif // HOST_UNIX
 
 #if defined(HOST_WINDOWS)
-    if (!IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE) ||
-        !IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
+    if (!IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE))
     {
         // One of the baseline ISAs is not supported
         result |= IntrinsicConstants_Invalid;
     }
-    else
+
+    if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Atomics;
     }
@@ -703,6 +722,11 @@ int minipal_getcpufeatures(void)
     }
 
     // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
+    if (IsProcessorFeaturePresent(PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Fp16;
+    }
 
     if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
     {

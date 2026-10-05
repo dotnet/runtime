@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -17,11 +16,10 @@ internal sealed partial class ArrayListBase : IData<ArrayListBase>
     [FieldAddress]
     public partial TargetPointer FirstBlock { get; }
 
-    public IReadOnlyList<ArrayListBlock> Blocks { get; private set; } = [];
-    public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
+    [CustomInit(nameof(InitBlocks))] public partial IReadOnlyList<ArrayListBlock> Blocks { get; }
+    [CustomInit(nameof(InitElements))] public partial IReadOnlyList<TargetPointer> Elements { get; }
 
-    [MemberNotNull(nameof(Blocks), nameof(Elements))]
-    partial void OnInit(Target target, TargetPointer address)
+    private partial IReadOnlyList<ArrayListBlock> InitBlocks(Target target, TargetPointer address)
     {
         List<ArrayListBlock> blocks = [];
         TargetPointer next = FirstBlock;
@@ -32,9 +30,14 @@ internal sealed partial class ArrayListBase : IData<ArrayListBase>
             next = block.Next;
         }
 
+        return blocks;
+    }
+
+    private partial IReadOnlyList<TargetPointer> InitElements(Target target, TargetPointer address)
+    {
         List<TargetPointer> elements = [];
         uint elementsFound = 0;
-        foreach (ArrayListBlock block in blocks)
+        foreach (ArrayListBlock block in Blocks)
         {
             foreach (TargetPointer element in block.Elements)
             {
@@ -48,8 +51,7 @@ internal sealed partial class ArrayListBase : IData<ArrayListBase>
             }
         }
 
-        Blocks = blocks;
-        Elements = elements;
+        return elements;
     }
 }
 
@@ -62,10 +64,9 @@ internal sealed partial class ArrayListBlock : IData<ArrayListBlock>
     [FieldAddress]
     public partial TargetPointer ArrayStart { get; }
 
-    public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
+    [CustomInit(nameof(InitElements))] public partial IReadOnlyList<TargetPointer> Elements { get; }
 
-    [MemberNotNull(nameof(Elements))]
-    partial void OnInit(Target target, TargetPointer address)
+    private partial IReadOnlyList<TargetPointer> InitElements(Target target, TargetPointer address)
     {
         List<TargetPointer> elements = new((int)Size);
         for (ulong i = 0; i < Size; i++)
@@ -73,6 +74,6 @@ internal sealed partial class ArrayListBlock : IData<ArrayListBlock>
             elements.Add(target.ReadPointer(ArrayStart + (i * (ulong)target.PointerSize)));
         }
 
-        Elements = elements;
+        return elements;
     }
 }

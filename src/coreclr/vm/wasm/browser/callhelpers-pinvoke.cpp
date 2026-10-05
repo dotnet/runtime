@@ -11,11 +11,11 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
-    uint32_t CompressionNative_CompressBound (uint32_t);
     uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
     int32_t CompressionNative_DeflateInit2_ (void *, int32_t, int32_t, int32_t, int32_t, int32_t);
+    int32_t CompressionNative_DeflateReset (void *);
     int32_t CompressionNative_Inflate (void *, int32_t);
     int32_t CompressionNative_InflateEnd (void *);
     int32_t CompressionNative_InflateInit2_ (void *, int32_t);
@@ -195,11 +195,11 @@ static const Entry s_libSystem_Globalization_Native [] = {
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
-    DllImportEntry(CompressionNative_CompressBound) // System.IO.Compression
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
     DllImportEntry(CompressionNative_Deflate) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_DeflateInit2_) // System.IO.Compression, System.Net.WebSockets
+    DllImportEntry(CompressionNative_DeflateReset) // System.IO.Compression
     DllImportEntry(CompressionNative_Inflate) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_InflateEnd) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_InflateInit2_) // System.IO.Compression, System.Net.WebSockets
@@ -234,7 +234,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.Private.CoreLib, System.Security.Cryptography
+    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Private.CoreLib, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib

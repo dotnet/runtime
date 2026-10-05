@@ -459,7 +459,6 @@ void OleVariant::MarshalRecordVariantOleToObject(const VARIANT *pOleVariant,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pOleVariant));
         PRECONDITION(CheckPointer(pObj));
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
@@ -821,7 +820,6 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pOle));
         PRECONDITION(CheckPointer(pObj));
         PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
@@ -1666,8 +1664,8 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     {
         GCX_PREEMP();
 
-        ComHolderPreemp<ITypeInfo> pITI;
-        ComHolderPreemp<IRecordInfo> pRecInfo;
+        ReleaseHolder<ITypeInfo> pITI;
+        ReleaseHolder<IRecordInfo> pRecInfo;
         IfFailThrow(GetITypeInfoForEEClass(pInterfaceMT, &pITI));
         IfFailThrow(GetRecordInfoFromTypeInfo(pITI, &pRecInfo));
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
@@ -1735,7 +1733,6 @@ BASEARRAYREF OleVariant::CreateArrayRefForSafeArray(SAFEARRAY *pSafeArray, VARTY
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pSafeArray));
         PRECONDITION(vt != VT_EMPTY);
     }
@@ -2207,7 +2204,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    ComHolderAnyMode<ITypeInfo> pTypeInfo;
+    ReleaseHolderAnyMode<ITypeInfo> pTypeInfo;
     RecordVariantHolder pRecHolder(pOleVariant);
 
     // Initialize the OLE variant's VT_RECORD fields to NULL.
@@ -2271,7 +2268,6 @@ void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNu
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pDestData));
         PRECONDITION(CheckPointer(pSrcData));
         PRECONDITION(CheckPointer(pSafeArray));
@@ -2666,7 +2662,7 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     return result;
 }
 
-extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

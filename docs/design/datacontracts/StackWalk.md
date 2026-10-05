@@ -15,6 +15,12 @@ public interface IStackDataFrameHandle
 
     // True when the interrupting frame represents an active hardware fault.
     bool HasFaulted { get; }
+
+    // True when the current Frame is either a SoftwareExceptionFrame or FaultingExceptionFrame
+    bool IsExceptionFrame { get; }
+
+    // True when this is the active stack frame.
+    bool IsActiveFrame { get; }
 }
 
 public enum StackWalkState
@@ -153,6 +159,10 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `FramedMethodFrame` | `TransitionBlockPtr` | `pointer` | Pointer to Frame's TransitionBlock |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | `pointer` | Pointer to the Frame's DebuggerEval object |
 | `FuncEvalFrame` | `ReturnAddress` | `CodePointer` | Return address of the frame |
+| `FunctionTableIndexRangeSection` | `MinFunctionTableIndex` | `uint32` | First runtime-global shared function-table index owned by the R2R module |
+| `FunctionTableIndexRangeSection` | `Next` | `pointer` | Pointer to the next registered WASM R2R function-table range |
+| `FunctionTableIndexRangeSection` | `NumRuntimeFunctions` | `uint32` | Number of consecutive RUNTIME_FUNCTION entries owned by the R2R module |
+| `FunctionTableIndexRangeSection` | `R2RModule` | `pointer` | Pointer to the Module that owns this function-table range |
 | `GCFrame` | `GCFlags` | `uint32` | GC_CALL_* promotion flags applied when reporting the protected slots |
 | `GCFrame` | `Next` | `pointer` | Pointer to the next GCFrame toward the top of the chain |
 | `GCFrame` | `NumObjRefs` | `uint32` | Count of protected object reference slots starting at ObjRefs |
@@ -166,7 +176,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `InlinedCallFrame` | `CalleeSavedFP` | `pointer` | FP saved in Frame |
 | `InlinedCallFrame` | `CallerReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `InlinedCallFrame` | `CallSiteSP` | `pointer` | SP saved in Frame |
-| `InlinedCallFrame` | `Datum` | `pointer` | MethodDesc ptr or on 64 bit host: CALLI target address (if lowest bit is set) or on windows x86 host: argument stack size (if value is <64k) |
+| `InlinedCallFrame` | `Datum` | `pointer` | Non-x86: MethodDesc ptr (after masking any InlinedCallFrameMarker bits); x86: argument stack size when the masked value is <64k, otherwise a MethodDesc ptr |
 | `InlinedCallFrame` | `SPAfterProlog` | `pointer` | Stack pointer after the managed method prolog, used to unwind frames with stack allocation |
 | `InterpMethodContextFrame` | `Ip` | `pointer` | The actual instruction pointer within the method (null if frame is inactive/reusable) |
 | `InterpMethodContextFrame` | `NextPtr` | `pointer` | Pointer to the next InterpMethodContextFrame toward the top of the stack |
@@ -177,16 +187,15 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
-| `ReadyToRunInfo` | `CompositeInfo` | `pointer` | Pointer to composite R2R info - or itself for non-composite |
-| `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
-| `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
-| `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap` |
+| `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
 | `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
+| `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
+| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 is the Thumb bit; on WebAssembly, bit 31 marks a funclet and is excluded from address arithmetic. |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
@@ -198,8 +207,6 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `TailCallFrame` | `CalleeSavedRegisters` | `pointer` | Address of the embedded nonvolatile-register values saved in the tailcall frame |
 | `TailCallFrame` | `ReturnAddress` | `CodePointer` | Return address saved in the tailcall frame |
 | `Thread` | `ExceptionTracker` | `pointer` | Pointer to exception tracking information |
-| `Thread` | `RuntimeThreadLocals` | `pointer` | Pointer to some thread-local storage |
-| `Thread` | `ThreadHandle` | `pointer` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
 | `TransitionBlock` | *(type size)* | `uint32` | Size in bytes of the transition block, used to restore the caller's stack pointer |
 | `TransitionBlock` | `ArgumentRegisters` | `pointer` | Byte offset of the argument registers area within the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
@@ -212,6 +219,8 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | Global | Type | Meaning |
 | --- | --- | --- |
 | `<FrameType>Identifier` *(name pattern)* | `pointer` | Per-frame-type sentinel address used to identify and classify runtime frames |
+| `Architecture` | `string` | Target architecture |
+| `FunctionTableIndexRangeList` | `pointer` | Pointer to the head pointer of the registered WASM R2R function-table range list |
 | `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
 
 ### Contracts used
@@ -235,7 +244,7 @@ Constants used:
 | Source | Name | Value | Purpose |
 | --- | --- | --- | --- |
 | `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
-| `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `2 (64-bit), 1(32-bit)` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
+| `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `1` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
 | N/A | `REDIRECTSTUB_ESTABLISHER_OFFSET_RBP` | 0 | AMD64 offset for redirect stubs. |
 | N/A | `REDIRECTSTUB_SP_OFFSET_CONTEXT` | 0 | ARM, ARM64, Loongarch & RISCV64 offset for redirect stubs. |
 | N/A | `REDIRECTSTUB_EBP_OFFSET_CONTEXT` | -4 | X86 offset for redirect stubs. |
@@ -281,7 +290,9 @@ InterpreterFrame
 
 This produces three frames in order: C, B, A (innermost to outermost).
 
-When the stack walk starts with an explicit context in interpreted code (e.g., from a debugger breakpoint), the interpreted frames are already yielded from the initial context as frameless frames. When the walker subsequently encounters the corresponding `InterpreterFrame`, it skips expanding it to prevent the same frames from being walked twice.
+When the stack walk starts with a context in interpreted code (e.g., from a debugger breakpoint, or a context seeded from an interpreted P/Invoke's `InlinedCallFrame`), the interpreted frames are already yielded from the initial context as frameless frames. Like native `StackFrameIterator::Init`, the walker reads the owning `InterpreterFrame` from the context's first-argument register and sets the Frame iterator to that Frame's `Next`, so the same frames are not walked twice. If the first-argument register is null or does not name an `InterpreterFrame`, the walk fails (native asserts both).
+
+An interpreted P/Invoke pushes an active `InlinedCallFrame` whose `CallSiteSP` is the top `InterpMethodContextFrame` of the `InterpreterFrame` that immediately follows it (native `InlinedCallFrame::IsInInterpreter`). When the walker reaches such a Frame, it moves to that `InterpreterFrame` without updating the context; the `InterpreterFrame` then switches into the interpreted chain.
 
 
 #### Simple Example
@@ -440,6 +451,9 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
+* On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is that shadow frame's base. If no virtual IP can be recovered, IP is set to null.
+
+An active InlinedCallFrame stays the current Frame after its context update so the skipped-Frame check can step past it once the walk reaches the managed caller. If the updated IP is not managed code (for example, no WASM R2R virtual IP could be recovered), the walk fails, matching native `StackFrameIterator::NextRaw`; otherwise it would never advance past the Frame.
 
 **Return Address**: `CallerReturnAddress`, but only when the frame has an active call (i.e., `CallerReturnAddress != 0`). Returns null otherwise.
 
@@ -619,7 +633,7 @@ IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer)
 A Frame qualifies when all of the following hold:
 1. The Frame's identifier identifies it as an `InlinedCallFrame`.
 2. `InlinedCallFrame::FrameHasActiveCall` is true (the frame's `CallerReturnAddress` is non-null and, on x86, `CallSiteSP` is non-null).
-3. The low bits of the `Datum` field match `InlinedCallFrameMarker::ExceptionHandlingHelper` (`2` on 64-bit, `1` on 32-bit). The marker shares the low bits used by `InlinedCallFrameMarker::Mask`.
+3. The low bits of the `Datum` field match `InlinedCallFrameMarker::ExceptionHandlingHelper` (`1`). The marker shares the low bits used by `InlinedCallFrameMarker::Mask`.
 
 ```csharp
 bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress)
@@ -722,7 +736,7 @@ The runtime installs a small set of redirect/hijack stubs whose code blocks are 
 
 The recovery step is driven by `IDebugger.GetHijackKind(controlPC)`, which returns a `HijackKind`:
 
-* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special.
+* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special. WASM has no hijack stubs; its `Debugger` contract reports `HijackKind.None` for every IP.
 * `HijackKind.UnhandledException` — the IP is inside the `ExceptionHijack` stub. The saved `PT_CONTEXT*` is at `*SP` (the stub pushed it directly), so the implementation reads `*context.StackPointer`.
 * `HijackKind.Other` — the IP is inside another redirect stub. The saved `PT_CONTEXT*` is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_*` constants.
 

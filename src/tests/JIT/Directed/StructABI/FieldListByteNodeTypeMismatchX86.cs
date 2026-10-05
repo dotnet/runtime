@@ -1,3 +1,5 @@
+namespace JitTest_Directed_StructABI_FieldListByteNodeTypeMismatchX86;
+
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;

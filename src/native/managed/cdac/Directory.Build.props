@@ -2,6 +2,21 @@
     <Import Project="..\Directory.Build.props" />
 
     <PropertyGroup>
+      <!-- Source-build and bootstrap NativeAOT publishing on community platforms require toolchain assets that are not in the released SDK. -->
+      <CDacTfm Condition="
+        '$(CDacTfm)' == '' and
+        ('$(DotNetBuildSourceOnly)' == 'true' or
+         ('$(UseBootstrapLayout)' == 'true' and
+          '$(TargetOS)' != 'windows' and
+          '$(TargetOS)' != 'osx' and
+          !('$(TargetOS)' == 'linux' and
+            ('$(TargetArchitecture)' == 'x64' or
+             '$(TargetArchitecture)' == 'arm' or
+             '$(TargetArchitecture)' == 'arm64'))))">$(NetCoreAppToolCurrent)</CDacTfm>
+      <CDacTfm Condition="'$(CDacTfm)' == ''">$(NetCoreAppMinimum)</CDacTfm>
+    </PropertyGroup>
+
+    <PropertyGroup>
       <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
       <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
       <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>

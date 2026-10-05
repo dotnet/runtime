@@ -18,7 +18,7 @@ const void* POINTER_DATA_NAME[] = { (void*)0 };
 
 DLLEXPORT struct ContractDescriptor CONTRACT_NAME;
 
-#define STUB_DESCRIPTOR "{\"version\":0,\"baseline\":\"empty\",\"contracts\":{},\"types\":{},\"globals\":{}}"
+#define STUB_DESCRIPTOR "{\"version\":2,\"baseline\":\"empty\",\"contracts\":{},\"types\":{},\"globals\":{}}"
 
 DLLEXPORT struct ContractDescriptor CONTRACT_NAME = {
     .magic = 0x0043414443434e44ull, // "DNCCDAC\0"

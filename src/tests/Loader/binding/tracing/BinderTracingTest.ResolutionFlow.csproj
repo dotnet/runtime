@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- TODO: Re-enable when browser CoreCLR can execute this AssemblyLoadContext resolution flow
+         without a WebAssembly function-signature mismatch.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.EventHandlers.cs" />

@@ -10,7 +10,7 @@
          which doesn't set NativeBinaryPrefix. Disable UseNativeLibPrefix to prevent
          double-prefix when building with local NativeAOT targets (bootstrap). -->
     <UseNativeLibPrefix>false</UseNativeLibPrefix>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(CDacTfm)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

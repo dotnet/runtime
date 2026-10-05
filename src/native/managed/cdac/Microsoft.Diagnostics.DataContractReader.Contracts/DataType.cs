@@ -43,8 +43,11 @@ public enum DataType
     Module,
     ModuleLookupMap,
     AppDomain,
+    ExternalMemoryHandle,
     Debugger,
     DebuggerRCThread,
+    DebuggerPatchTable,
+    DebuggerControllerPatch,
     MemoryRange,
     SystemDomain,
     Assembly,
@@ -107,6 +110,7 @@ public enum DataType
     InterpByteCodeStart,
     InterpMethod,
     InterpMethodContextFrame,
+    VirtualIPRangeSection,
     FunctionTableIndexRangeSection,
     Array,
     Delegate,
@@ -226,6 +230,9 @@ public enum DataType
     EnCAddedStaticField,
     EnCSyncBlockInfo,
     UnorderedArrayBase,
+
+    LayoutEEClass,
+    EEClassLayoutInfo,
 }
 
 public static class DataTypeTargetExtensions

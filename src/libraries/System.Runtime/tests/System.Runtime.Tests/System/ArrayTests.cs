@@ -1110,6 +1110,16 @@ namespace System.Tests
 
             yield return new object[] { new int[1] { 2 }, 0, new Int32Enum[1], 0, 1, new Int32Enum[] { (Int32Enum)2 } };
 
+            // Enum nested in a generic type conversions
+            yield return new object[] { new int[] { 1, 2, 3 }, 0, new GenericClassWithNestedEnum<object>.NestedEnum[3], 0, 3, new GenericClassWithNestedEnum<object>.NestedEnum[] { (GenericClassWithNestedEnum<object>.NestedEnum)1, (GenericClassWithNestedEnum<object>.NestedEnum)2, (GenericClassWithNestedEnum<object>.NestedEnum)3 } };
+            yield return new object[] { new uint[] { 1, 2, 3 }, 0, new GenericClassWithNestedEnum<object>.NestedEnum[3], 0, 3, new GenericClassWithNestedEnum<object>.NestedEnum[] { (GenericClassWithNestedEnum<object>.NestedEnum)1, (GenericClassWithNestedEnum<object>.NestedEnum)2, (GenericClassWithNestedEnum<object>.NestedEnum)3 } };
+            yield return new object[] { new GenericClassWithNestedEnum<object>.NestedEnum[] { (GenericClassWithNestedEnum<object>.NestedEnum)1, (GenericClassWithNestedEnum<object>.NestedEnum)2, (GenericClassWithNestedEnum<object>.NestedEnum)3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new GenericClassWithNestedEnum<object>.NestedEnum[] { (GenericClassWithNestedEnum<object>.NestedEnum)1, (GenericClassWithNestedEnum<object>.NestedEnum)2, (GenericClassWithNestedEnum<object>.NestedEnum)3 }, 0, new uint[3], 0, 3, new uint[] { 1, 2, 3 } };
+
+            // Same, but with a value-type generic argument (produces a distinct, unshared instantiation)
+            yield return new object[] { new int[] { 1, 2, 3 }, 0, new GenericClassWithNestedEnum<int>.NestedEnum[3], 0, 3, new GenericClassWithNestedEnum<int>.NestedEnum[] { (GenericClassWithNestedEnum<int>.NestedEnum)1, (GenericClassWithNestedEnum<int>.NestedEnum)2, (GenericClassWithNestedEnum<int>.NestedEnum)3 } };
+            yield return new object[] { new GenericClassWithNestedEnum<int>.NestedEnum[] { (GenericClassWithNestedEnum<int>.NestedEnum)1, (GenericClassWithNestedEnum<int>.NestedEnum)2, (GenericClassWithNestedEnum<int>.NestedEnum)3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+
             // Signed/Unsigned conversions
             yield return new object[] { new byte[] { unchecked((byte)-2) }, 0, new sbyte[1], 0, 1, new sbyte[] { -2 } };
             yield return new object[] { new sbyte[] { -3 }, 0, new byte[1], 0, 1, new byte[] { unchecked((byte)-3) } };
@@ -1225,6 +1235,9 @@ namespace System.Tests
             // SByteEnum[] -> primitive[]
             yield return new object[] { new SByteEnum[] { (SByteEnum)1, (SByteEnum)2, (SByteEnum)3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
             yield return new object[] { new SByteEnum[] { (SByteEnum)1, (SByteEnum)2, (SByteEnum)3 }, 0, new Int32Enum[3], 0, 3, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 } };
+
+            // Enum nested in a generic type -> wider primitive[]
+            yield return new object[] { new GenericClassWithNestedEnum<object>.NestedEnum[] { (GenericClassWithNestedEnum<object>.NestedEnum)1, (GenericClassWithNestedEnum<object>.NestedEnum)2, (GenericClassWithNestedEnum<object>.NestedEnum)3 }, 0, new long[3], 0, 3, new long[] { 1, 2, 3 } };
         }
 
         public static IEnumerable<object[]> Copy_SZArray_UnreliableConversion_CanPerform_TestData()
@@ -1367,6 +1380,36 @@ namespace System.Tests
             Array destinationArrayClone4 = overlaps ? sourceArrayClone4 : (Array)destinationArray.Clone();
             Array.Copy(sourceArrayClone4, (long)sourceIndex, destinationArrayClone4, destinationIndex, length);
             Assert.Equal(expected, destinationArrayClone4);
+        }
+
+        [Fact]
+        public static void Copy_EnumNestedInGenericType()
+        {
+            // Exercise both a reference-type and a value-type generic argument: the two produce
+            // distinct instantiations of the nested enum (a value-type argument is not shared).
+            VerifyEnumNestedInGenericType<GenericClassWithNestedEnum<object>.NestedEnum>();
+            VerifyEnumNestedInGenericType<GenericClassWithNestedEnum<int>.NestedEnum>();
+        }
+
+        private static void VerifyEnumNestedInGenericType<TEnum>() where TEnum : struct, Enum
+        {
+            // Enum.GetValues<T> internally copies from the underlying integer array to a T[].
+            TEnum[] values = Enum.GetValues<TEnum>();
+            Assert.Equal(
+                new[]
+                {
+                    (TEnum)Enum.ToObject(typeof(TEnum), 0),
+                    (TEnum)Enum.ToObject(typeof(TEnum), 1),
+                    (TEnum)Enum.ToObject(typeof(TEnum), 2),
+                    (TEnum)Enum.ToObject(typeof(TEnum), 3),
+                },
+                values);
+
+            // Array.SetValue with the boxed enum value (exact-type path).
+            TEnum value = (TEnum)Enum.ToObject(typeof(TEnum), 2);
+            var dst = new TEnum[1];
+            dst.SetValue(value, 0);
+            Assert.Equal(value, dst[0]);
         }
 
         [Theory]
@@ -4904,6 +4947,12 @@ namespace System.Tests
         }
 
         public enum Int64Enum : long { }
+
+        // Enum nested in a generic type, used as a regression case for Array.Copy/SetValue.
+        public class GenericClassWithNestedEnum<T>
+        {
+            public enum NestedEnum { Value0, Value1, Value2, Value3 }
+        }
     }
 
     [Collection(nameof(DisableParallelization))]
