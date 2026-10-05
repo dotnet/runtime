@@ -830,7 +830,18 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
             if (whichCurrent == WhichConstraintsToLoad::None)
             {
                 constraintAlloc = (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints & ~WhichConstraintsLoadedMask) * S_SIZE_T(sizeof(TypeHandle))));
-                constraints = (TypeHandle*)constraintAlloc;
+                constraints = constraintAlloc.operator->();
+
+                // Publish the array before filling it so concurrent loaders populate the same storage.
+                TypeHandle* existingConstraints = InterlockedCompareExchangeT(&m_constraints, constraints, nullptr);
+                if (existingConstraints == nullptr)
+                {
+                    constraintAlloc.SuppressRelease();
+                }
+                else
+                {
+                    constraints = existingConstraints;
+                }
             }
             else
             {
@@ -956,14 +967,6 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 }
 
                 i++;
-            }
-
-            if (whichCurrent == WhichConstraintsToLoad::None)
-            {
-                if (InterlockedCompareExchangeT(&m_constraints, constraintAlloc.operator->(), NULL) == NULL)
-                {
-                    constraintAlloc.SuppressRelease();
-                }
             }
 
             if (loadedAllConstraints)
