@@ -118,6 +118,8 @@ checkout:
   fetch-depth: 50
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-issue:
     max: 5
     labels: [agentic-workflows, "Known Build Error"]

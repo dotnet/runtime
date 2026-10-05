@@ -17,6 +17,8 @@ tools:
   bash: ["pwsh", "gh"]
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   add-comment:
     target: "*"
   noop:
