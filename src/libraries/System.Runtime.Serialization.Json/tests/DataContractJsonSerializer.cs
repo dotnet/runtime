@@ -1715,6 +1715,61 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
         Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
         Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+        Assert.False(input.OnDeserializingMethodInvoked, "input.OnDeserializingMethodInvoked is true");
+        Assert.False(input.OnDeserializedMethodInvoked, "input.OnDeserializedMethodInvoked is true");
+        Assert.False(output.OnSerializingMethodInvoked, "output.OnSerializingMethodInvoked is true");
+        Assert.False(output.OnSerializedMethodInvoked, "output.OnSerializedMethodInvoked is true");
+    }
+
+    [Fact]
+    public static void DCJS_SerializationEvents_NoStreamingContext()
+    {
+        var input = new MyType_NoStreamingContext() { Value = "string value" };
+        var output = SerializeAndDeserialize<MyType_NoStreamingContext>(input, @"{""Value"":""string value""}");
+
+        Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
+        Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
+        Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
+        Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+        Assert.False(input.OnDeserializingMethodInvoked, "input.OnDeserializingMethodInvoked is true");
+        Assert.False(input.OnDeserializedMethodInvoked, "input.OnDeserializedMethodInvoked is true");
+        Assert.False(output.OnSerializingMethodInvoked, "output.OnSerializingMethodInvoked is true");
+        Assert.False(output.OnSerializedMethodInvoked, "output.OnSerializedMethodInvoked is true");
+    }
+
+    [Fact]
+    public static void DCJS_SerializationEvents_Invalid()
+    {
+        IMyType_InvalidEventMethods[] objs = [
+            new MyType_InvalidEventMethods_Type_OnSerializing(),
+            new MyType_InvalidEventMethods_Type_OnSerialized(),
+            new MyType_InvalidEventMethods_Type_OnDeserializing(),
+            new MyType_InvalidEventMethods_Type_OnDeserialized(),
+            new MyType_InvalidEventMethods_Length_OnSerializing(),
+            new MyType_InvalidEventMethods_Length_OnSerialized(),
+            new MyType_InvalidEventMethods_Length_OnDeserializing(),
+            new MyType_InvalidEventMethods_Length_OnDeserialized()
+        ];
+
+        using var ms = new MemoryStream();
+
+        // The deserialization API is "ReadObject", but an error is also thrown at "WriteObject".
+        // By doing this, it saves time and effort to create sample JSON data manually.
+
+        for (int i = 0; i < objs.Length; ++i)
+        {
+            var obj = objs[i];
+            var t = obj.GetType();
+            var dcs = new DataContractJsonSerializer(t);
+            Console.WriteLine("Testing [{0}/{1}] {2}...", i + 1, objs.Length, t);
+            var ex = Assert.Throws<InvalidDataContractException>(() =>
+            {
+                dcs.WriteObject(ms, obj);
+            });
+            Assert.Contains(t.FullName, ex.Message);
+            Assert.Contains(obj.MethodName, ex.Message);
+            Console.WriteLine("Testing [{0}/{1}] {2} is OK!", i + 1, objs.Length, t);
+        }
     }
 
     [Fact]
