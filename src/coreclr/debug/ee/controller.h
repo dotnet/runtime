@@ -28,7 +28,6 @@ class DebuggerPatchSkip;
 class DebuggerThreadStarter;
 class DebuggerController;
 class DebuggerControllerQueue;
-class DebuggerFuncEvalResult;
 struct DebuggerControllerPatch;
 class DebuggerUserBreakpoint;
 class ControllerStackInfo;
@@ -2028,9 +2027,6 @@ class DebuggerFuncEvalComplete : public DebuggerController
 public:
     DebuggerFuncEvalComplete(Thread *thread,
                              void *dest);
-    ~DebuggerFuncEvalComplete() override;
-
-    void SetResultRoots(DebuggerFuncEvalResult* pRoots) { LIMITED_METHOD_CONTRACT; m_pResultRoots = pRoots; }
 
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
         { return DEBUGGER_CONTROLLER_FUNC_EVAL_COMPLETE; }
@@ -2041,7 +2037,6 @@ private:
                       TRIGGER_WHY tyWhy);
     bool SendEvent(Thread *thread, bool fInterruptedBySetIp);
     DebuggerEval* m_pDE;
-    DebuggerFuncEvalResult* m_pResultRoots = nullptr;
 };
 
 // continuable-exceptions

@@ -1320,8 +1320,8 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalReturnType(
         if (pContext->returnElementType == ELEMENT_TYPE_BYREF)
         {
             _ASSERTE(*pContext->ppResult == nullptr);
-            *pContext->ppResult = new (interopsafe) DebuggerFuncEvalResult(*pContext->pLoaderAllocator);
-            pContext->pResultByRefs = &(*pContext->ppResult)->m_resultByRef;
+            *pContext->ppResult = new (interopsafe) DebuggerFuncEvalResult(pDE, *pContext->pLoaderAllocator);
+            pContext->pResultByRefs = reinterpret_cast<void**>(&pDE->m_result[0]);
         }
         returnType.Set(pDE->m_resultType.GetManagedClassObject());
     }
@@ -1569,9 +1569,8 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
 }
 
 
-DebuggerFuncEvalResult::DebuggerFuncEvalResult(OBJECTREF loaderAllocator)
-    : m_loaderAllocator(loaderAllocator), m_resultByRef(nullptr),
-      m_loaderAllocatorHandle(nullptr), m_resultByRefHandle(nullptr)
+DebuggerFuncEvalResult::DebuggerFuncEvalResult(DebuggerEval* pDE, OBJECTREF loaderAllocator)
+    : m_loaderAllocator(loaderAllocator), m_loaderAllocatorHandle(nullptr), m_resultHandle(nullptr)
 {
     CONTRACTL
     {
@@ -1583,7 +1582,9 @@ DebuggerFuncEvalResult::DebuggerFuncEvalResult(OBJECTREF loaderAllocator)
 
     Holder<ExternalMemoryHandle*, DoNothing<ExternalMemoryHandle*>, ReleaseDebuggerExternalMemoryHandle>
         loaderAllocatorHandle(ExternalMemoryHandle::Add(g_pObjectClass, &m_loaderAllocator, 0));
-    m_resultByRefHandle = ExternalMemoryHandle::Add(g_pObjectClass, &m_resultByRef, GC_CALL_INTERIOR);
+    pDE->m_result[0] = 0;
+    _ASSERTE(IS_ALIGNED(reinterpret_cast<SIZE_T>(&pDE->m_result[0]), sizeof(void*)));
+    m_resultHandle = ExternalMemoryHandle::Add(g_pObjectClass, &pDE->m_result[0], GC_CALL_INTERIOR);
     m_loaderAllocatorHandle = loaderAllocatorHandle.GetValue();
     loaderAllocatorHandle.SuppressRelease();
 }
@@ -1592,24 +1593,18 @@ DebuggerFuncEvalResult::~DebuggerFuncEvalResult()
 {
     WRAPPER_NO_CONTRACT;
 
-    ReleaseDebuggerExternalMemoryHandle(m_resultByRefHandle);
+    ReleaseDebuggerExternalMemoryHandle(m_resultHandle);
     ReleaseDebuggerExternalMemoryHandle(m_loaderAllocatorHandle);
 }
 
-void DebuggerFuncEvalResult::RefreshByRefResult(DebuggerEval* pDE)
+void DebuggerEval::ReleaseFuncEvalResult()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(GetThread()->PreemptiveGCDisabled() || ThreadStore::HoldingThreadStore());
-    }
-    CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 
-    if (pDE->m_successful && pDE->m_resultType.IsByRef())
+    if (m_funcEvalResult != nullptr)
     {
-        pDE->m_result[0] = PtrToArgSlot(m_resultByRef);
+        DeleteInteropSafe(m_funcEvalResult);
+        m_funcEvalResult = nullptr;
     }
 }
 
@@ -1659,10 +1654,6 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
             pContext->resultHandle = nullptr;
         }
         pDE->m_successful = true;
-        if (*ppResult != nullptr)
-        {
-            (*ppResult)->RefreshByRefResult(pDE);
-        }
     }
 }
 
@@ -1676,11 +1667,11 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
  *    pCatcherStackAddr - stack address to report as the Catch Handler Found location.
  *
  * Returns:
- *    Scalar result roots whose ownership is handed to the completion path.
+ *    None. DebuggerEval owns any persistent raw-byref result root.
  *
  */
-static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
-                             BYTE *pCatcherStackAddr )
+static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
+                                                  BYTE *pCatcherStackAddr)
 {
     CONTRACTL
     {
@@ -1798,6 +1789,10 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
     }
     EX_CATCH
     {
+        // The result slot is registered as an interior root for byref returns. Release
+        // that registration before replacing the slot with an exception OBJECTHANDLE.
+        result = nullptr;
+
         // Managed code can create the result handle immediately before an abort reaches
         // the UCO boundary. Destroy it unless the successful path transferred ownership
         // to DebuggerEval::m_vmObjectHandle.
@@ -1822,20 +1817,21 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
     GCPROTECT_END();    // pMaybeInteriorPtrArray
     GCPROTECT_END();    // pObjectRefArray
     LOG((LF_CORDB, LL_EVERYTHING, "Managed func-eval: returning...\n"));
-    DebuggerFuncEvalResult* pResult = result;
+    _ASSERTE(pDE->m_funcEvalResult == nullptr);
+    pDE->m_funcEvalResult = result;
     result.SuppressRelease();
-    return pResult;
 }
 
 
-DebuggerFuncEvalResult* FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame* pFEFrame)
+void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame* pFEFrame)
 {
     BYTE * pCatcherStackAddr = (BYTE*) pFEFrame;
 
     // Normal calls and constructors use the managed evaluator.
     if ((pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) || (pDE->m_evalType == DB_IPCE_FET_NORMAL))
     {
-        return GCProtectArgsAndInvokeManagedFuncEval(pDE, pCatcherStackAddr);
+        GCProtectArgsAndInvokeManagedFuncEval(pDE, pCatcherStackAddr);
+        return;
     }
 
     OBJECTREF newObj = NULL;
@@ -2011,7 +2007,6 @@ DebuggerFuncEvalResult* FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThr
     EX_END_CATCH
 
     GCPROTECT_END();
-    return nullptr;
 }
 
 //
@@ -2103,7 +2098,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
         pDE->m_thread->DisableSingleStep();
 #endif
 
-    DebuggerFuncEvalResultHolder resultRoots(FuncEvalHijackRealWorker(pDE, pThread, &FEFrame));
+    FuncEvalHijackRealWorker(pDE, pThread, &FEFrame);
 
 #ifdef FEATURE_EMULATE_SINGLESTEP
     if (ssEnabled)
@@ -2167,9 +2162,6 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
         DebuggerFuncEvalComplete *comp;
         comp = new (interopsafe) DebuggerFuncEvalComplete(pThread, dest);
         _ASSERTE(comp != NULL); // would have thrown
-        comp->SetResultRoots(resultRoots);
-        resultRoots.SuppressRelease();
-
         // Pop the FuncEvalFrame now that we're pretty much done. Make sure we
         // don't pop the frame too early. Because GC can be triggered in our grabbing of
         // Debugger lock. If we pop the FE frame without setting back thread filter context,
@@ -2205,10 +2197,6 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
                 if (CORDebuggerAttached())
                 {
-                    if (resultRoots != nullptr)
-                    {
-                        resultRoots->RefreshByRefResult(pDE);
-                    }
                     g_pDebugger->FuncEvalComplete(pDE->m_thread, pDE);
 
                     g_pDebugger->SyncAllThreads(SENDIPCEVENT_PtrDbgLockHolder);
