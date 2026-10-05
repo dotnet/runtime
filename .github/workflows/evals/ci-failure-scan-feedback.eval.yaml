@@ -3,7 +3,7 @@ description: Dynamic constructiveness gate for the CI feedback meta workflow's s
 
 defaults:
   judge_model: claude-opus-4.8
-  model: gpt-6-astra
+  model: gpt-6.1-sol
   runs: 1
   timeout: 25m
 

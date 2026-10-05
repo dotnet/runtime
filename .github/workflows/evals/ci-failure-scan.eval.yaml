@@ -3,7 +3,7 @@ description: Dynamic gate for the CI failure scanner's safe-output, run with the
 
 defaults:
   judge_model: claude-opus-4.8
-  model: gpt-6-astra
+  model: gpt-6.1-sol
   runs: 1
   timeout: 25m
 
