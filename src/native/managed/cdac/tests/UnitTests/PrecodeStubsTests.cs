@@ -541,4 +541,36 @@ public class PrecodeStubsTests
 
         Assert.Equal(unreadableAddress, actual);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMethodDescFromStubAddress_PortableEntryPoint_ReturnsOwningMethodDesc(MockTarget.Architecture arch)
+    {
+        MockMemorySpace.Builder builder = new(new TargetTestHelpers(arch));
+        TargetTestHelpers helpers = builder.TargetTestHelpers;
+        TargetTestHelpers.LayoutResult layout = helpers.LayoutFields([
+            new(nameof(Data.PortableEntryPoint.ActualCode), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.MethodDesc), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.Flags), DataType.int32),
+        ]);
+        TargetPointer expectedMethodDesc = new(0x0eee_eee0u);
+        MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(0x0010_0000, 0x0010_1000);
+        MockMemorySpace.HeapFragment entryPoint = allocator.Allocate(layout.Stride, "PortableEntryPoint");
+        helpers.WritePointer(entryPoint.Data.AsSpan(layout.Fields[nameof(Data.PortableEntryPoint.MethodDesc)].Offset, helpers.PointerSize), expectedMethodDesc);
+
+        Target target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader(builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.PortableEntryPoint] = new() { Fields = layout.Fields, Size = layout.Stride },
+            })
+            .AddContract<IPrecodeStubs>(version: "c2")
+            .Build();
+
+        IPrecodeStubs precodeStubs = target.Contracts.PrecodeStubs;
+        TargetCodePointer entryPointAddress = new(entryPoint.Address);
+
+        Assert.Equal(expectedMethodDesc, precodeStubs.GetMethodDescFromStubAddress(entryPointAddress));
+        Assert.Equal(entryPointAddress, precodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(entryPointAddress));
+    }
 }

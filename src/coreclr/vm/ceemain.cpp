@@ -145,6 +145,7 @@
 #include "cordbpriv.h"
 #include "comdelegate.h"
 #include "appdomain.hpp"
+#include "externalmemoryhandle.h"
 #include "eventtrace.h"
 #include "corhost.h"
 #include "binder.h"
@@ -673,7 +674,9 @@ void EEStartupHelper()
         InitCallStubGenerator();
 #endif // FEATURE_INTERPRETER
 
+#ifdef FEATURE_INLINE_TRACKING
         JITInlineTrackingMap::StaticInitialize();
+#endif // FEATURE_INLINE_TRACKING
         MethodDescBackpatchInfoTracker::StaticInitialize();
 
 #ifdef FEATURE_CODE_VERSIONING
@@ -918,6 +921,8 @@ void EEStartupHelper()
 
         // Set up the sync block
         SyncBlockCache::Start();
+
+        ExternalMemoryHandle::Init();
 
         // This isn't done as part of InitializeGarbageCollector() above because it
         // requires write barriers to have been set up on x86, which happens as part
@@ -1211,7 +1216,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     } CONTRACTL_END;
 
     // Used later for a callback.
-    CEEInfo ceeInf;
+    CEEInfo ceeInf(nullptr, nullptr);
 
 #ifdef FEATURE_PGO
     EX_TRY

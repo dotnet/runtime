@@ -123,7 +123,7 @@ namespace System
         {
             get
             {
-                if (IsWindows || IsAndroid || IsApplePlatform || IsBrowser)
+                if (IsWindows || IsAndroid || IsApplePlatform || IsWasm)
                 {
                     return false;
                 }
@@ -160,7 +160,7 @@ namespace System
         // as they are answering the question "is OpenSSL the primary crypto provider".
         private static bool IsOpenSslVersionAtLeast(Version minVersion)
         {
-            if (IsApplePlatform || IsWindows || IsAndroid || IsBrowser)
+            if (IsApplePlatform || IsWindows || IsAndroid || IsWasm)
             {
                 return false;
             }

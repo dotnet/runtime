@@ -485,6 +485,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
                     groupConfig.InstructionSetSupport = instructionSetSupport;
+                    groupConfig.DirectPInvokeModules = Get(_command.DirectPInvoke);
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
@@ -692,6 +693,7 @@ namespace ILCompiler
                         .UseMapCsvFile(Get(_command.MapCsv))
                         .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
                         .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
+                        .UseWasmDebugInfo(Get(_command.WasmDebugInfoOption))
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
                         .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)

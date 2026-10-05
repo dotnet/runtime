@@ -1125,7 +1125,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "uses a lot of stack")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "uses a lot of stack")]
         public async Task TestReceiveAsync_LongChain()
         {
             const int Length = 10000;
@@ -1926,7 +1926,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "uses a lot of stack")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "uses a lot of stack")]
         public async Task TestOutputAvailableAsync_LongSequence()
         {
             const int iterations = 10000; // enough to stack overflow if there's a problem

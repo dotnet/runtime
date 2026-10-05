@@ -190,6 +190,11 @@ GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
         return nullptr;
     }
 
+    if (!IsInvariantInRange(lea->Base(), indirNode))
+    {
+        return nullptr;
+    }
+
     if (indirNode->OperIs(GT_STOREIND) &&
         m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(indirNode->AsStoreInd()))
     {

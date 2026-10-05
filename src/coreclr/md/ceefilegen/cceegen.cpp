@@ -10,56 +10,6 @@
 #include "memorystreams.h"
 
 
-//*****************************************************************************
-// Creation for new CCeeGen instances
-//
-// Both allocate and call virtual Init() (Can't call v-func in a ctor,
-// but we want to create in 1 call);
-//*****************************************************************************
-
-HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen)
-{
-    if (riid != IID_ICeeGenInternal)
-        return E_NOTIMPL;
-    if (!pCeeGen)
-        return E_POINTER;
-    CCeeGen *pCeeFileGen;
-    HRESULT hr = CCeeGen::CreateNewInstance(pCeeFileGen);
-    if (FAILED(hr))
-        return hr;
-    pCeeFileGen->AddRef();
-    *(CCeeGen**)pCeeGen = pCeeFileGen;
-    return S_OK;
-}
-
-HRESULT CCeeGen::CreateNewInstance(CCeeGen* & pGen) // static, public
-{
-    NewHolder<CCeeGen> pGenHolder(new CCeeGen());
-    _ASSERTE(pGenHolder != NULL);
-    TESTANDRETURNMEMORY(pGenHolder);
-
-    pGenHolder->m_peSectionMan = new PESectionMan;
-    _ASSERTE(pGenHolder->m_peSectionMan != NULL);
-    TESTANDRETURNMEMORY(pGenHolder->m_peSectionMan);
-
-    HRESULT hr = pGenHolder->m_peSectionMan->Init();
-    if (FAILED(hr))
-    {
-        pGenHolder->Cleanup();
-        return hr;
-    }
-
-    hr = pGenHolder->Init();
-    if (FAILED(hr))
-    {
-        // Init() calls Cleanup() on failure
-        return hr;
-    }
-
-    pGen = pGenHolder.Extract();
-    return hr;
-}
-
 STDMETHODIMP CCeeGen::QueryInterface(REFIID riid, void** ppv)
 {
     if (!ppv)

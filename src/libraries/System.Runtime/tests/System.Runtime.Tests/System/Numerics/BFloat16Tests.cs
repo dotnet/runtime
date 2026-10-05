@@ -854,6 +854,7 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromInt128_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135116", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ExplicitConversion_FromInt128(Int128 i, BFloat16 expected)
         {
             BFloat16 b16 = (BFloat16)i;
@@ -885,6 +886,7 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromUInt128_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135116", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ExplicitConversion_FromUInt128(UInt128 i, BFloat16 expected)
         {
             BFloat16 b16 = (BFloat16)i;
@@ -1322,6 +1324,26 @@ namespace System.Numerics.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        [Theory]
+        [InlineData(0.00031415927f, "F3", "0.000")]
+        [InlineData(0.00031415927f, "F4", "0.0003")]
+        [InlineData(0.00031415927f, "F5", "0.00031")]
+        [InlineData(-0.00031415927f, "F4", "-0.0003")]
+        [InlineData(0.00031415927f, "C4", "\u00A40.0003")]
+        [InlineData(0.00031415927f, "N4", "0.0003")]
+        [InlineData(0.00031415927f, "P2", "0.03 %")]
+        [InlineData(0.00031415927f, "P4", "0.0315 %")]
+        [InlineData(9.18355E-41f, "F4", "0.0000")]
+        [InlineData(-9.18355E-41f, "F4", "-0.0000")]
+        [InlineData(0.0f, "F4", "0.0000")]
+        [InlineData(-0.0f, "F4", "-0.0000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            BFloat16 b = (BFloat16)value;
+            Assert.Equal(expected, b.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(b, format, NumberFormatInfo.InvariantInfo, expected);
         }
 
         [Theory]

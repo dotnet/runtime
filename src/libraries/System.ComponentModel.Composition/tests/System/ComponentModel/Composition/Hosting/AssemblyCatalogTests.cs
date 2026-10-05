@@ -174,7 +174,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor1_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -273,7 +273,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor2_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -371,7 +371,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor3_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -468,7 +468,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void Constructor4_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_LockedFileAsCodeBaseArgument_ShouldThrowIOException((s) =>
@@ -630,6 +630,7 @@ namespace System.ComponentModel.Composition
         //  Test cases for AssemblyCatalog(string codebase, ICompositionElement definitionOrigin, ReflectionContext reflectionContext) constructor
         //=========================================================================================================================================
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor8_ValueAsAssemblyArgument_ShouldSetAssemblyProperty()
         {
             AssemblyCatalogConstructorTests.Constructor_ValueAsAssemblyArgument_ShouldSetAssemblyProperty((a) =>
@@ -1017,6 +1018,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void ICompositionElementDisplayName_ShouldIncludeDerivedCatalogTypeNameAndAssemblyFullName()
         {
             var expectations = Expectations.GetAssemblies();
@@ -1045,6 +1047,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void NonStaticallyReferencedAssembly()
         {
             string testAssembly = "System.ComponentModel.Composition.Noop.Assembly.dll";
