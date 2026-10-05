@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Internal.TypeSystem.Ecma;
 
 using CodeOptimizations = Mono.Linker.CodeOptimizations;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -26,13 +27,11 @@ namespace ILCompiler.DependencyAnalysis
         public ManifestResourceNode(EcmaModule module, ManifestResourceHandle handle)
             : base(module, handle) { }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             ManifestResource resource = _module.MetadataReader.GetManifestResource(Handle);
 
             _skipWritingResource = false;
-
-            DependencyList dependencies = null;
 
             if (resource.Implementation.IsNil)
             {
@@ -54,18 +53,20 @@ namespace ILCompiler.DependencyAnalysis
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        dependencies = DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
+                        foreach (DependencyListEntry dependency in DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings))
+                        {
+                            sink.Add(dependency);
+                        }
                     }
                 }
             }
             else
             {
-                dependencies = new();
                 switch (resource.Implementation.Kind)
                 {
                     case HandleKind.AssemblyReference:
                         var referencedAssembly = (EcmaAssembly)_module.GetObject(resource.Implementation);
-                        dependencies.Add(factory.AssemblyReference(_module, referencedAssembly), "Implementation of a manifest resource");
+                        sink.Add(factory.AssemblyReference(_module, referencedAssembly), "Implementation of a manifest resource");
                         break;
                     default:
                         // TODO: Handle AssemblyFile
@@ -73,20 +74,19 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, resource.GetCustomAttributes());
-            return dependencies;
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, resource.GetCustomAttributes());
         }
 
         public override void BuildTokens(TokenMap.Builder builder)
         {
-            Debug.Assert(_skipWritingResource.HasValue, "Should have called GetStaticDependencies before writing");
+            Debug.Assert(_skipWritingResource.HasValue, "Should have called AddStaticDependencies before writing");
             if (!_skipWritingResource.Value)
                 base.BuildTokens(builder);
         }
 
         public override void Write(ModuleWritingContext writeContext)
         {
-            Debug.Assert(_skipWritingResource.HasValue, "Should have called GetStaticDependencies before writing");
+            Debug.Assert(_skipWritingResource.HasValue, "Should have called AddStaticDependencies before writing");
             if (!_skipWritingResource.Value)
                 base.Write(writeContext);
         }

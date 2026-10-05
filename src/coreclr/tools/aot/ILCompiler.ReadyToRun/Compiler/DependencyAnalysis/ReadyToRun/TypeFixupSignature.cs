@@ -11,6 +11,7 @@ using Internal.TypeSystem.Interop;
 using Internal.ReadyToRunConstants;
 using Internal.CorConstants;
 using Internal.JitInterface;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -201,28 +202,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_typeDesc, otherNode._typeDesc);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             if (_typeDesc.HasInstantiation &&
                 !_typeDesc.IsGenericDefinition &&
                 (factory.CompilationCurrentPhase == 0) &&
                 factory.CompilationModuleGroup.VersionsWithType(_typeDesc))
             {
-                dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
+                sink.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
 
-            factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeDesc);
+            factory.AddVirtualMethodDiscoveryDependencies(sink, _typeDesc);
 
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {
-                AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeDesc);
+                AddDependenciesForAsyncStateMachineBox(sink, factory, _typeDesc);
             }
-            return dependencies;
         }
 
-        public static void AddDependenciesForAsyncStateMachineBox(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public static void AddDependenciesForAsyncStateMachineBox(DependencySink dependencies, NodeFactory factory, TypeDesc type)
         {
             ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)type.Context;
             // If adding a typehandle to the AsyncStateMachineBox, pre-compile the most commonly used methods.
@@ -230,9 +228,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // simple examples of async will get compiled
             if (factory.OptimizationFlags.OptimizeAsyncMethods && type.GetTypeDefinition() == context.AsyncStateMachineBoxType && !type.IsGenericDefinition && factory.CompilationCurrentPhase <= 7)
             {
-                if (dependencies == null)
-                    dependencies = new DependencyList();
-
                 // This is the async state machine box, compile the cctor, and the MoveNext method.
                 foreach (MethodDesc method in type.ConvertToCanonForm(CanonicalFormKind.Specific).GetAllMethods())
                 {

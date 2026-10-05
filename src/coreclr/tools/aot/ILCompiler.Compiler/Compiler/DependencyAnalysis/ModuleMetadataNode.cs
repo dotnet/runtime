@@ -30,35 +30,29 @@ namespace ILCompiler.DependencyAnalysis
 
         public ModuleDesc Module => _module;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             // Global module type always generates metadata because it's really convenient to
             // have something in an assembly that always generates metadata.
-            dependencies.Add(factory.TypeMetadata(_module.GetGlobalModuleType()), "Global module type");
+            sink.Add(factory.TypeMetadata(_module.GetGlobalModuleType()), "Global module type");
             if (_module is EcmaModule ecmaModule
                 && ecmaModule.EntryPoint is MethodDesc entrypoint
                 && !factory.MetadataManager.IsReflectionBlocked(entrypoint))
             {
-                dependencies.Add(factory.ReflectedMethod(entrypoint), "Reflectable entrypoint");
+                sink.Add(factory.ReflectedMethod(entrypoint), "Reflectable entrypoint");
             }
 
             EcmaAssembly ecmaAssembly = (EcmaAssembly)_module;
 
             foreach (EcmaModule satelliteModule in ((UsageBasedMetadataManager)factory.MetadataManager).GetSatelliteAssemblies(ecmaAssembly))
             {
-                dependencies.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
+                sink.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
             }
-
-            return dependencies;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink sink, NodeFactory factory)
         {
-            var dependencies = new List<CombinedDependencyListEntry>();
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);
-            return dependencies;
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, (EcmaAssembly)_module);
         }
 
         protected override string GetName(NodeFactory factory)
@@ -70,6 +64,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink sink, NodeFactory factory) { }
     }
 }
