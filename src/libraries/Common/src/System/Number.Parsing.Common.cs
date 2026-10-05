@@ -371,7 +371,7 @@ namespace System
         private static int MatchSignChars<TChar>(ReadOnlySpan<TChar> value, int index, NumberFormatInfo info, out bool isNegative)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            if (info.HasInvariantNumberSigns)
+            if (HasInvariantNumberSigns(info))
             {
                 if ((uint)index < (uint)value.Length)
                 {
@@ -399,7 +399,7 @@ namespace System
                 ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
 
                 // Prefer the longer token when signs overlap; retain positive precedence for equal-length signs.
-                if (positiveSign.Length >= negativeSign.Length || MatchChars(negativeSign, 0, positiveSign) < 0)
+                if (info.PositiveSign.Length >= info.NegativeSign.Length || MatchChars(negativeSign, 0, positiveSign) < 0)
                 {
                     isNegative = false;
                     return positiveSignIndex;
@@ -416,6 +416,15 @@ namespace System
 
             isNegative = true;
             return negativeSignIndex;
+        }
+
+        private static bool HasInvariantNumberSigns(NumberFormatInfo info)
+        {
+#if SYSTEM_PRIVATE_CORELIB
+            return info.HasInvariantNumberSigns;
+#else
+            return info.PositiveSign == "+" && info.NegativeSign == "-";
+#endif
         }
 
         private static int MatchChars<TChar>(ReadOnlySpan<TChar> source, int index, ReadOnlySpan<TChar> value)

@@ -314,6 +314,7 @@ namespace System.Tests
             // When custom signs overlap, the longer sign is preferred.
             yield return new object[] { "-+123", NumberStyles.AllowLeadingSign, new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" }, -123 };
             yield return new object[] { "-+123", NumberStyles.AllowLeadingSign, new NumberFormatInfo { PositiveSign = "-+", NegativeSign = "-" }, 123 };
+            yield return new object[] { " +123", NumberStyles.AllowLeadingSign, new NumberFormatInfo { PositiveSign = "\u00A0", NegativeSign = " +" }, -123 };
 
             // Empty PositiveSign or NegativeSign
             yield return new object[] { "100", NumberStyles.AllowLeadingSign, emptyPositiveFormat, 100 };
