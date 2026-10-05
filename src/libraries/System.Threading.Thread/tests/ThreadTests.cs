@@ -88,7 +88,11 @@ namespace System.Threading.Threads.Tests
         public static void ConstructorTest_WithoutMultithreading()
         {
             Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null));
+            Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null, 0));
+            Assert.Throws<ArgumentNullException>(() => new Thread((ParameterizedThreadStart)null));
+            Assert.Throws<ArgumentNullException>(() => new Thread((ParameterizedThreadStart)null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(() => { }, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(state => { }, -1));
 
             Thread first = new Thread(() => { });
             Thread second = new Thread(state => { });
@@ -130,6 +134,19 @@ namespace System.Threading.Threads.Tests
             Assert.Null(first.Name);
 
             Assert.Throws<PlatformNotSupportedException>(() => first.Start());
+            Assert.Throws<PlatformNotSupportedException>(() => first.Start(new object()));
+            Assert.Throws<PlatformNotSupportedException>(() => first.UnsafeStart());
+            Assert.Throws<PlatformNotSupportedException>(() => first.UnsafeStart(new object()));
+            Assert.Throws<PlatformNotSupportedException>(() => second.Start());
+            Assert.Throws<PlatformNotSupportedException>(() => second.Start(new object()));
+            Assert.Throws<PlatformNotSupportedException>(() => second.UnsafeStart());
+            Assert.Throws<PlatformNotSupportedException>(() => second.UnsafeStart(new object()));
+            Assert.Throws<ArgumentNullException>(() => first.CurrentCulture = null);
+            Assert.Throws<ArgumentNullException>(() => first.CurrentUICulture = null);
+            first.CurrentCulture = CultureInfo.InvariantCulture;
+            first.CurrentUICulture = CultureInfo.InvariantCulture;
+            Assert.Throws<InvalidOperationException>(() => first.CurrentCulture);
+            Assert.Throws<InvalidOperationException>(() => first.CurrentUICulture);
             Assert.Equal(ThreadState.Unstarted | ThreadState.Background, first.ThreadState);
         }
 

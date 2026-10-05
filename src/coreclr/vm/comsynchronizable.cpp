@@ -542,7 +542,7 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t, QCal
 #endif
 
 // If the exposed object is created after-the-fact, for an existing thread, we call
-// InitExisting on it.  This is the other "construction", as opposed to SetDelegate.
+// InitExisting on it instead of running the managed constructor.
 void ThreadBaseObject::InitExisting()
 {
     CONTRACTL
@@ -594,6 +594,7 @@ void ThreadBaseObject::InitExisting()
 #endif // FEATURE_MULTITHREADING
 }
 
+#ifdef FEATURE_MULTITHREADING
 FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
@@ -615,9 +616,7 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
-#ifdef FEATURE_MULTITHREADING
         Thread::SetCleanupNeededForFinalizedThread();
-#endif // FEATURE_MULTITHREADING
     }
 }
 FCIMPLEND
@@ -629,6 +628,7 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CatchAtSafePoint)
     FC_RETURN_BOOL(GetThread()->CatchAtSafePoint());
 }
 FCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 #ifdef FEATURE_MULTITHREADING
 // Get whether or not this is a background thread.
@@ -703,6 +703,7 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
 }
 #endif // FEATURE_MULTITHREADING
 
+#ifdef FEATURE_MULTITHREADING
 FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 {
     FCALL_CONTRACT;
@@ -710,6 +711,7 @@ FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
     return (INT32)YieldProcessorNormalization::GetOptimalMaxNormalizedYieldsPerSpinIteration();
 }
 FCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     INT_PTR status,
@@ -846,6 +848,7 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
 {
     FCALL_CONTRACT;
@@ -853,6 +856,7 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
     FC_RETURN_BOOL(IsFinalizerThread());
 }
 FCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 FCIMPL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* pObj)
 {

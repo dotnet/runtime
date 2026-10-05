@@ -10,6 +10,39 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool CatchAtSafePoint();
+
+        // GC Suspension is done by simply dropping into native code via p/invoke, and we reuse the p/invoke
+        // mechanism for suspension. On all architectures we should have the actual stub used for the check be implemented
+        // as a small assembly stub which checks the global g_TrapReturningThreads flag and tail-call to this helper
+        private static void PollGC()
+        {
+            if (CatchAtSafePoint())
+            {
+                PollGCWorker();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void PollGCWorker() => PollGCInternal();
+        }
+
+        /// <summary>
+        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
+        /// appropriate for the processor.
+        /// </summary>
+        internal static int OptimalMaxSpinWaitsPerSpinIteration
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
+
+        /// <summary>Clean up the thread when it goes away.</summary>
+        ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern void InternalFinalize();
+
         private void Initialize()
         {
             Thread _this = this;

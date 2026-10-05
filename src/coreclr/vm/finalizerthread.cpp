@@ -665,6 +665,7 @@ VOID FinalizerThread::FinalizerThreadWorkerIteration(void *args)
 #endif // !TARGET_WASM
 }
 
+#ifdef FEATURE_MULTITHREADING
 DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 {
     CONTRACTL
@@ -750,6 +751,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     return 0;
 }
+#endif // FEATURE_MULTITHREADING
 
 void FinalizerThread::FinalizerThreadCreate()
 {
@@ -759,7 +761,7 @@ void FinalizerThread::FinalizerThreadCreate()
         MODE_ANY;
     } CONTRACTL_END;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_MULTITHREADING
 #ifndef TARGET_UNIX
     MHandles[kLowMemoryNotification] =
         CreateMemoryResourceNotification(LowMemoryResourceNotification);
@@ -797,10 +799,10 @@ void FinalizerThread::FinalizerThreadCreate()
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);
     }
-#else // !TARGET_WASM
+#else // FEATURE_MULTITHREADING
     // capture the current (single) thread as the finalizer thread
     g_pFinalizerThread = PTR_Thread(GetThread());
-#endif // !TARGET_WASM
+#endif // FEATURE_MULTITHREADING
 }
 
 static int g_fullGcCountSeenByFinalization;

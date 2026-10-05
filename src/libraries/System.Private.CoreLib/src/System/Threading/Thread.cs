@@ -9,7 +9,6 @@ using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
@@ -22,118 +21,11 @@ namespace System.Threading
         [ThreadStatic]
         private static Thread? t_currentThread;
 
-        // State associated with starting new thread
-        private sealed class StartHelper
-        {
-            internal int _maxStackSize;
-            internal Delegate _start;
-            internal object? _startArg;
-            internal CultureInfo? _culture;
-            internal CultureInfo? _uiCulture;
-            internal ExecutionContext? _executionContext;
-
-            internal StartHelper(Delegate start)
-            {
-                _start = start;
-            }
-
-            internal static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(Callback);
-
-            private static void Callback(object? state)
-            {
-                Debug.Assert(state != null);
-                ((StartHelper)state).RunWorker();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)] // avoid long-lived stack frame in many threads
-            internal void Run()
-            {
-                if (_executionContext != null && !_executionContext.IsDefault)
-                {
-                    ExecutionContext.RunInternal(_executionContext, s_threadStartContextCallback, this);
-                }
-                else
-                {
-                    RunWorker();
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)] // avoid long-lived stack frame in many threads
-            private void RunWorker()
-            {
-                InitializeCulture();
-
-                Delegate start = _start;
-                _start = null!;
-
-#if FEATURE_OBJCMARSHAL
-                if (AutoreleasePool.EnableAutoreleasePool)
-                    AutoreleasePool.CreateAutoreleasePool();
-#endif
-
-                try
-                {
-#if TARGET_APPLE || NATIVEAOT
-                    // On other platforms, when the underlying native thread is created,
-                    // the thread name is set to the name of the managed thread by another thread.
-                    // However, on Apple platforms and NativeAOT (across all OSes), only the thread itself can set its name.
-                    // Therefore, by this point the native thread is still unnamed as it has not started yet.
-                    Thread thread = Thread.CurrentThread;
-                    if (!string.IsNullOrEmpty(thread.Name))
-                    {
-                        // Name the underlying native thread to match the managed thread name.
-                        thread.ThreadNameChanged(thread.Name);
-                    }
-#endif
-                    if (start is ThreadStart threadStart)
-                    {
-                        threadStart();
-                    }
-                    else
-                    {
-                        ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
-
-                        object? startArg = _startArg;
-                        _startArg = null;
-
-                        parameterizedThreadStart(startArg);
-                    }
-                }
-                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
-                {
-                    // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
-                }
-
-#if FEATURE_OBJCMARSHAL
-                // There is no need to wrap this "clean up" code in a finally block since
-                // if an exception is thrown above, the process is going to terminate.
-                // Optimize for the most common case - no exceptions escape a thread.
-                if (AutoreleasePool.EnableAutoreleasePool)
-                    AutoreleasePool.DrainAutoreleasePool();
-#endif
-            }
-
-            private void InitializeCulture()
-            {
-                if (_culture != null)
-                {
-                    CultureInfo.CurrentCulture = _culture;
-                    _culture = null;
-                }
-
-                if (_uiCulture != null)
-                {
-                    CultureInfo.CurrentUICulture = _uiCulture;
-                    _uiCulture = null;
-                }
-            }
-        }
-
         public Thread(ThreadStart start)
         {
             ArgumentNullException.ThrowIfNull(start);
 
-            _startHelper = new StartHelper(start);
+            InitializeStartHelper(start, maxStackSize: 0);
 
             Initialize();
         }
@@ -144,7 +36,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
-            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
+            InitializeStartHelper(start, maxStackSize);
 
             Initialize();
         }
@@ -153,7 +45,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
-            _startHelper = new StartHelper(start);
+            InitializeStartHelper(start, maxStackSize: 0);
 
             Initialize();
         }
@@ -164,7 +56,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
-            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
+            InitializeStartHelper(start, maxStackSize);
 
             Initialize();
         }
@@ -193,29 +85,6 @@ namespace System.Threading
 #endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
-        private void Start(object? parameter, bool captureContext)
-        {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
-            StartHelper? startHelper = _startHelper;
-
-            // In the case of a null startHelper (second call to start on same thread)
-            // StartCore method will take care of the error reporting.
-            if (startHelper != null)
-            {
-                if (startHelper._start is ThreadStart)
-                {
-                    // We expect the thread to be setup with a ParameterizedThreadStart if this Start is called.
-                    throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
-                }
-
-                startHelper._startArg = parameter;
-                startHelper._executionContext = captureContext ? ExecutionContext.Capture() : null;
-            }
-
-            StartCore();
-        }
-
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
@@ -236,22 +105,6 @@ namespace System.Threading
 #endif
         public void UnsafeStart() => Start(captureContext: false);
 
-        private void Start(bool captureContext)
-        {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-            StartHelper? startHelper = _startHelper;
-
-            // In the case of a null startHelper (second call to start on same thread)
-            // StartCore method will take care of the error reporting.
-            if (startHelper != null)
-            {
-                startHelper._startArg = null;
-                startHelper._executionContext = captureContext ? ExecutionContext.Capture() : null;
-            }
-
-            StartCore();
-        }
-
 #if !MONO
         public bool Join(int millisecondsTimeout)
         {
@@ -269,31 +122,6 @@ namespace System.Threading
             if (this != CurrentThread)
             {
                 throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
-            }
-        }
-
-        private void SetCultureOnUnstartedThread(CultureInfo value, bool uiCulture)
-        {
-            ArgumentNullException.ThrowIfNull(value);
-
-            StartHelper? startHelper = _startHelper;
-
-            // This check is best effort to catch common user errors only. It won't catch all posssible race
-            // conditions between setting culture on unstarted thread and starting the thread.
-            if ((ThreadState & ThreadState.Unstarted) == 0)
-            {
-                throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
-            }
-
-            Debug.Assert(startHelper != null);
-
-            if (uiCulture)
-            {
-                startHelper._uiCulture = value;
-            }
-            else
-            {
-                startHelper._culture = value;
             }
         }
 
@@ -785,11 +613,5 @@ namespace System.Threading
         {
         }
 #endif
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-#if NATIVEAOT
-        [RuntimeImport(RuntimeImports.RuntimeLibrary, "RhpCurrentThreadIsFinalizerThread")]
-#endif
-        internal static extern bool CurrentThreadIsFinalizerThread();
     }
 }

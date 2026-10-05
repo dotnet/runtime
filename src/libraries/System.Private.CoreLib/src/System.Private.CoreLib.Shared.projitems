@@ -1362,6 +1362,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TplEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ValueTask.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Multithreading.cs" Condition="'$(FeatureCoreCLR)' != 'true' or '$(FeatureMultithreading)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ProcessorIdCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadAbortException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadBlockingInfo.cs" />

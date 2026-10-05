@@ -1184,7 +1184,9 @@ private:
     OBJECTREF     m_ExecutionContext;
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
+#ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_StartHelper;
+#endif // FEATURE_MULTITHREADING
 #ifdef TARGET_UNIX
     OBJECTREF     m_WaitInfo;
 #ifdef FEATURE_MULTITHREADING
@@ -1245,11 +1247,13 @@ public:
 
     void      InitExisting();
 
+#ifdef FEATURE_MULTITHREADING
     void ResetStartHelper()
     {
         LIMITED_METHOD_CONTRACT
         m_StartHelper = NULL;
     }
+#endif // FEATURE_MULTITHREADING
 
     void SetPriority(INT32 priority)
     {

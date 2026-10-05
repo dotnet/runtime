@@ -979,7 +979,9 @@ DEFINE_CLASS(STACKCRAWMARK,         Threading,       StackCrawlMark)
 
 DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObject)
 DEFINE_FIELD_U(_name,                     ThreadBaseObject,   m_Name)
+#ifdef FEATURE_MULTITHREADING
 DEFINE_FIELD_U(_startHelper,              ThreadBaseObject,   m_StartHelper)
+#endif // FEATURE_MULTITHREADING
 DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_FIELD_U(_isDead,                   ThreadBaseObject,   m_IsDead)

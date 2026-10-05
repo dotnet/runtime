@@ -310,7 +310,9 @@ enum SetupUnstartedThreadFlags
     // The default flags for the majority of threads.
     SUTF_Default = SUTF_None,
 };
+#ifdef FEATURE_MULTITHREADING
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
+#endif // FEATURE_MULTITHREADING
 void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
@@ -1114,13 +1116,17 @@ public:
     // than SetupThread, complete the setup here when the thread is
     // actually running.
     //--------------------------------------------------------------
+#ifdef FEATURE_MULTITHREADING
     BOOL HasStarted();
+#endif // FEATURE_MULTITHREADING
 
     // We don't want ::CreateThread() calls scattered throughout the source.
     // Create all new threads here.  The thread is created as suspended, so
     // you must ::ResumeThread to kick it off.  It is guaranteed to create the
     // thread, or throw.
+#ifdef FEATURE_MULTITHREADING
     BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
+#endif // FEATURE_MULTITHREADING
 
     // Functions used to perform initialization and cleanup on a managed thread
     // that would normally occur if the thread was stated when the runtime was
@@ -1129,6 +1135,7 @@ public:
     static void InitializationForManagedThreadInNative(_In_ Thread* pThread);
     static void CleanUpForManagedThreadInNative(_In_ Thread* pThread);
 
+#ifdef FEATURE_MULTITHREADING
     enum StackSizeBucket
     {
         StackSize_Small,
@@ -1141,6 +1148,7 @@ public:
     // StackSizeBucket determines how large the stack should be.
     //
     static HANDLE CreateUtilityThread(StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags = 0, DWORD* pThreadId = NULL);
+#endif // FEATURE_MULTITHREADING
 
     //--------------------------------------------------------------
     // Destructor
@@ -1627,7 +1635,9 @@ public:
 
     // When we create a managed thread, the thread is suspended.  We call StartThread to get
     // the thread start.
+#ifdef FEATURE_MULTITHREADING
     DWORD StartThread();
+#endif // FEATURE_MULTITHREADING
 
     // The result of attempting to OS-suspend an EE thread.
     enum SuspendThreadResult
@@ -2664,7 +2674,9 @@ private:
     HANDLE          m_ThreadHandleForResume;
     SIZE_T          m_OSThreadId;
 
+#ifdef FEATURE_MULTITHREADING
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
+#endif // FEATURE_MULTITHREADING
 
     OBJECTHANDLE    m_ExposedObject;
     OBJECTHANDLE    m_StrongHndToExposedObject;
@@ -3380,6 +3392,7 @@ public:
     }
 #endif // _DEBUG
 
+#ifdef FEATURE_MULTITHREADING
 private:
     // If HasStarted fails, we cache the exception here, and rethrow on the thread which
     // calls Thread.Start.
@@ -3387,6 +3400,7 @@ private:
 
 public:
     OBJECTREF GetExceptionDuringStartup();
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
 private:

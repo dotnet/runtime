@@ -39,10 +39,12 @@ public:
         ThreadAbortRequested = 128,
     };
 
+#ifdef FEATURE_MULTITHREADING
     FCDECL0(static INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
     FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
     FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
     FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);
+#endif // FEATURE_MULTITHREADING
 };
 
 extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(INT_PTR status, QCall::ObjectHandleOnStack exception, QCallExceptionStatus* qcallError);

@@ -32,7 +32,9 @@ namespace System.Threading
         internal SynchronizationContext? _synchronizationContext; // maintained separately from ExecutionContext
 
         private string? _name;
+#if FEATURE_MULTITHREADING
         private StartHelper? _startHelper;
+#endif
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
@@ -92,12 +94,6 @@ namespace System.Threading
         }
 
         partial void StartCore();
-
-        /// <summary>Clean up the thread when it goes away.</summary>
-        ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void InternalFinalize();
 
         partial void ThreadNameChanged(string? value);
 
@@ -194,35 +190,8 @@ namespace System.Threading
             Interlocked.And(ref nativeThread->m_State, ~NativeThread.ThreadState.TS_WaitSleepJoin);
         }
 
-        /// <summary>
-        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
-        /// appropriate for the processor.
-        /// </summary>
-        internal static int OptimalMaxSpinWaitsPerSpinIteration
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool CatchAtSafePoint();
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
         private static partial void PollGCInternal();
-
-        // GC Suspension is done by simply dropping into native code via p/invoke, and we reuse the p/invoke
-        // mechanism for suspension. On all architectures we should have the actual stub used for the check be implemented
-        // as a small assembly stub which checks the global g_TrapReturningThreads flag and tail-call to this helper
-        private static void PollGC()
-        {
-            if (CatchAtSafePoint())
-            {
-                PollGCWorker();
-            }
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static void PollGCWorker() => PollGCInternal();
-        }
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo WaitInfo

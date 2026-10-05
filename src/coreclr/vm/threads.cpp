@@ -533,6 +533,7 @@ void Thread::ClearThreadCPUGroupAffinity()
 #endif // !TARGET_UNIX
 }
 
+#ifdef FEATURE_MULTITHREADING
 DWORD Thread::StartThread()
 {
     CONTRACTL
@@ -552,6 +553,7 @@ DWORD Thread::StartThread()
     DWORD dwRetVal = ClrResumeThread(GetThreadHandle());
     return dwRetVal;
 }
+#endif // FEATURE_MULTITHREADING
 
 // Class static data:
 LONG    Thread::m_DebugWillSyncCount = -1;
@@ -637,6 +639,7 @@ Thread* SetupThread()
     }
 #endif
 
+#ifdef FEATURE_MULTITHREADING
     // Normally, HasStarted is called from the thread's entrypoint to introduce it to
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
     // that call into managed code.  In that case, a call to SetupThread here must
@@ -671,6 +674,8 @@ Thread* SetupThread()
             return fStatus ? pThread : NULL;
         }
     }
+
+#endif // FEATURE_MULTITHREADING
 
     // First time we've seen this thread in the runtime:
     pThread = new Thread();
@@ -826,12 +831,6 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
     ThreadStore::AddThread(pThread);
 
     return pThread;
-}
-#else // FEATURE_MULTITHREADING
-Thread* SetupUnstartedThread(SetupUnstartedThreadFlags)
-{
-    PORTABILITY_ASSERT("Unstarted native threads are not supported without multithreading");
-    return nullptr;
 }
 #endif // FEATURE_MULTITHREADING
 
@@ -1484,7 +1483,9 @@ Thread::Thread()
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
+#ifdef FEATURE_MULTITHREADING
     m_pExceptionDuringStartup = NULL;
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
     m_pbDestCode = NULL;
@@ -1720,6 +1721,7 @@ BOOL Thread::AllocHandles()
     return fOK;
 }
 
+#ifdef FEATURE_MULTITHREADING
 //--------------------------------------------------------------------
 // This is the alternate path to SetupThread/InitThread.  If we created
 // an unstarted thread, we have SetupUnstartedThread/HasStarted.
@@ -1896,6 +1898,7 @@ OBJECTREF Thread::GetExceptionDuringStartup()
 
     return throwable;
 }
+#endif // FEATURE_MULTITHREADING
 
 #ifndef TARGET_UNIX
 BOOL RevertIfImpersonated(BOOL *bReverted, HANDLE *phToken)
@@ -1931,6 +1934,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken)
 #endif // !TARGET_UNIX
 
 
+#ifdef FEATURE_MULTITHREADING
 // We don't want ::CreateThread() calls scattered throughout the source.  So gather
 // them all here.
 
@@ -1966,6 +1970,7 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
 
     return bRet;
 }
+#endif // FEATURE_MULTITHREADING
 
 void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
 {
@@ -2007,6 +2012,7 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
 #endif // FEATURE_OBJCMARSHAL
 }
 
+#ifdef FEATURE_MULTITHREADING
 HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags, DWORD* pThreadId)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2145,6 +2151,7 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
 
     return TRUE;
 }
+#endif // FEATURE_MULTITHREADING
 
 //
 // #threadDestruction
@@ -2435,10 +2442,12 @@ Thread::~Thread()
     MarkRedirectContextInUse(m_pSavedRedirectContext);
     m_pSavedRedirectContext = NULL;
 
+#ifdef FEATURE_MULTITHREADING
     if (m_pExceptionDuringStartup)
     {
         Exception::Delete (m_pExceptionDuringStartup);
     }
+#endif // FEATURE_MULTITHREADING
 
     if (!IsAtProcessExit())
     {
