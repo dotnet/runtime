@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
+    <ProjectReference Include="..\ILCompiler.MetadataTransform.Ecma\ILCompiler.MetadataTransform.Ecma.csproj" />
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
 

@@ -88,6 +88,8 @@ namespace ILCompiler
             new("--sourcelink") { Description = "Generate a SourceLink file" };
         public Option<string> MetadataLogFileName { get; } =
             new("--metadatalog") { Description = "Generate a metadata log file" };
+        public Option<string> EcmaMetadataOutputDirectory { get; } =
+            new("--ecmametadatadlls") { Description = "Write ECMA-335 reflection metadata as metadata-only DLLs to the specified directory" };
         public Option<bool> CompleteTypesMetadata { get; } =
             new("--completetypemetadata") { Description = "Generate complete metadata for types" };
         public Option<string> ReflectionData { get; } =
@@ -228,6 +230,7 @@ namespace ILCompiler
             Options.Add(MstatFileName);
             Options.Add(SourceLinkFileName);
             Options.Add(MetadataLogFileName);
+            Options.Add(EcmaMetadataOutputDirectory);
             Options.Add(CompleteTypesMetadata);
             Options.Add(ReflectionData);
             Options.Add(ScanReflection);

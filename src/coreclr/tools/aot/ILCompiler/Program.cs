@@ -612,6 +612,8 @@ namespace ILCompiler
             compilationRoots.Add(metadataManager);
             compilationRoots.Add(interopStubManager);
 
+            metadataManager.EcmaMetadataOutputDirectory = Get(_command.EcmaMetadataOutputDirectory);
+
             MethodBodyFoldingMode foldingMode = string.IsNullOrEmpty(Get(_command.MethodBodyFolding))
                 ? MethodBodyFoldingMode.None
                 : Enum.Parse<MethodBodyFoldingMode>(Get(_command.MethodBodyFolding), ignoreCase: true);

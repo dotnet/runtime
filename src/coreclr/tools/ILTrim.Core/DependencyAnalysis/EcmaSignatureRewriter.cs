@@ -8,6 +8,10 @@ using System.Collections.Immutable;
 
 using Internal.TypeSystem;
 
+#if !ILTRIM
+using TokenMap = System.Func<System.Reflection.Metadata.EntityHandle, System.Reflection.Metadata.EntityHandle>;
+#endif
+
 namespace ILCompiler.DependencyAnalysis
 {
     public struct EcmaSignatureRewriter
@@ -21,10 +25,19 @@ namespace ILCompiler.DependencyAnalysis
             _tokenMap = tokenMap;
         }
 
+        private EntityHandle MapToken(EntityHandle handle)
+        {
+#if ILTRIM
+            return _tokenMap.MapToken(handle);
+#else
+            return _tokenMap(handle);
+#endif
+        }
+
         private void RewriteCustomModifier(SignatureTypeCode typeCode, CustomModifiersEncoder encoder)
         {
             encoder.AddModifier(
-                _tokenMap.MapToken(_blobReader.ReadTypeHandle()),
+                MapToken(_blobReader.ReadTypeHandle()),
                 typeCode == SignatureTypeCode.OptionalModifier);
         }
 
@@ -38,6 +51,10 @@ namespace ILCompiler.DependencyAnalysis
         again:
             switch (typeCode)
             {
+                case SignatureTypeCode.Void:
+                case SignatureTypeCode.TypedReference:
+                    encoder.Builder.WriteByte((byte)typeCode);
+                    break;
                 case SignatureTypeCode.Boolean:
                     encoder.Boolean(); break;
                 case SignatureTypeCode.SByte:
@@ -79,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis
                         byte classOrValueType = _blobReader.ReadByte();
                         System.Diagnostics.Debug.Assert(classOrValueType == 0x12 || classOrValueType == 0x11);
                         encoder.Type(
-                            _tokenMap.MapToken(_blobReader.ReadTypeHandle()),
+                            MapToken(_blobReader.ReadTypeHandle()),
                             isValueType: classOrValueType == 0x11);
                     }
                     break;
@@ -138,7 +155,7 @@ namespace ILCompiler.DependencyAnalysis
                         int numGenericArgs = _blobReader.ReadCompressedInteger();
 
                         GenericTypeArgumentsEncoder genericArgsEncoder = encoder.GenericInstantiation(
-                            _tokenMap.MapToken(genericTypeDefHandle),
+                            MapToken(genericTypeDefHandle),
                             numGenericArgs,
                             isValueType: classOrValueType == 0x11
                             );
@@ -153,7 +170,10 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         SignatureHeader header = _blobReader.ReadSignatureHeader();
                         int arity = header.IsGeneric ? _blobReader.ReadCompressedInteger() : 0;
-                        MethodSignatureEncoder sigEncoder = encoder.FunctionPointer(header.CallingConvention, 0, arity);
+                        FunctionPointerAttributes attributes = header.HasExplicitThis
+                            ? FunctionPointerAttributes.HasExplicitThis
+                            : header.IsInstance ? FunctionPointerAttributes.HasThis : FunctionPointerAttributes.None;
+                        MethodSignatureEncoder sigEncoder = encoder.FunctionPointer(header.CallingConvention, attributes, arity);
                         int count = _blobReader.ReadCompressedInteger();
                         sigEncoder.Parameters(count, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramEncoder);
                         RewriteMethodSignature(count, retTypeEncoder, paramEncoder);
@@ -241,8 +261,11 @@ namespace ILCompiler.DependencyAnalysis
         private void RewriteMethodSignature(BlobBuilder blobBuilder, SignatureHeader header)
         {
             int arity = header.IsGeneric ? _blobReader.ReadCompressedInteger() : 0;
-            var encoder = new BlobEncoder(blobBuilder);
-            var sigEncoder = encoder.MethodSignature(header.CallingConvention, arity, header.IsInstance);
+            // Preserve all calling-convention bits, including ExplicitThis (ECMA-335 II.23.2.1).
+            blobBuilder.WriteByte(header.RawValue);
+            if (header.IsGeneric)
+                blobBuilder.WriteCompressedInteger(arity);
+            var sigEncoder = new MethodSignatureEncoder(blobBuilder, header.CallingConvention == SignatureCallingConvention.VarArgs);
             RewriteMethodSignature(sigEncoder);
         }
 
@@ -257,12 +280,11 @@ namespace ILCompiler.DependencyAnalysis
 
         private void RewriteMethodSignature(int count, ReturnTypeEncoder returnTypeEncoder, ParametersEncoder paramsEncoder)
         {
-            bool isByRef = false;
         againReturnType:
             SignatureTypeCode typeCode = _blobReader.ReadSignatureTypeCode();
             if (typeCode == SignatureTypeCode.ByReference)
             {
-                isByRef = true;
+                returnTypeEncoder.Builder.WriteByte((byte)typeCode);
                 goto againReturnType;
             }
             if (typeCode == SignatureTypeCode.RequiredModifier || typeCode == SignatureTypeCode.OptionalModifier)
@@ -281,14 +303,17 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                RewriteType(typeCode, returnTypeEncoder.Type(isByRef));
+                RewriteType(typeCode, returnTypeEncoder.Type(isByRef: false));
             }
 
             for (int i = 0; i < count; i++)
             {
-                ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
+                if (_blobReader.ReadByte() == (byte)SignatureTypeCode.Sentinel)
+                    paramsEncoder = paramsEncoder.StartVarArgs();
+                else
+                    _blobReader.Offset--;
 
-                isByRef = false;
+                ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
 
             againParameter:
                 typeCode = _blobReader.ReadSignatureTypeCode();
@@ -299,7 +324,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 if (typeCode == SignatureTypeCode.ByReference)
                 {
-                    isByRef = true;
+                    paramEncoder.Builder.WriteByte((byte)typeCode);
                     goto againParameter;
                 }
 
@@ -309,7 +334,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    RewriteType(typeCode, paramEncoder.Type(isByRef));
+                    RewriteType(typeCode, paramEncoder.Type(isByRef: false));
                 }
             }
         }
@@ -330,12 +355,11 @@ namespace ILCompiler.DependencyAnalysis
             var encoder = new BlobEncoder(blobBuilder);
             var fieldEncoder = encoder.Field();
 
-            bool isByRef = false;
         again:
             SignatureTypeCode typeCode = _blobReader.ReadSignatureTypeCode();
             if (typeCode == SignatureTypeCode.ByReference)
             {
-                isByRef = true;
+                fieldEncoder.Builder.WriteByte((byte)typeCode);
                 goto again;
             }
             if (typeCode == SignatureTypeCode.RequiredModifier || typeCode == SignatureTypeCode.OptionalModifier)
@@ -350,7 +374,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                RewriteType(typeCode, fieldEncoder.Type(isByRef));
+                RewriteType(typeCode, fieldEncoder.Type(isByRef: false));
             }
         }
 

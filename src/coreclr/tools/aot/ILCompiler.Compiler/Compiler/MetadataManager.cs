@@ -36,7 +36,7 @@ using ConstantStringArray = Internal.Metadata.NativeFormat.Writer.ConstantString
 namespace ILCompiler
 {
     /// <summary>
-    /// This class is responsible for managing native metadata to be emitted into the compiled
+    /// This class is responsible for managing reflection metadata to be emitted into the compiled
     /// module. It also helps facilitate mappings between generated runtime structures or code,
     /// and the native metadata.
     /// </summary>
@@ -46,7 +46,8 @@ namespace ILCompiler
 
         protected readonly MetadataManagerOptions _options;
 
-        private byte[] _metadataBlob;
+        private byte[] _nativeMetadataBlob;
+        private byte[] _ecmaMetadataBlob;
         private List<MetadataMapping<MetadataType>> _typeMappings;
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private Dictionary<FieldDesc, int> _fieldHandleMap;
@@ -110,6 +111,8 @@ namespace ILCompiler
         }
 
         public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
+
+        public string EcmaMetadataOutputDirectory { get; set; }
 
         internal ObjectNode.ObjectData PrepareForDehydration(DehydratableObjectNode node, ObjectNode.ObjectData hydratedData)
         {
@@ -710,10 +713,10 @@ namespace ILCompiler
 
         protected void EnsureMetadataGenerated(NodeFactory factory)
         {
-            if (_metadataBlob != null)
+            if (_nativeMetadataBlob is not null)
                 return;
 
-            ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _methodHandleMap, out _fieldMappings, out _fieldHandleMap, out _stackTraceMappings, out _reflectionStackTraceMappings);
+            ComputeMetadata(factory, out _nativeMetadataBlob, out _typeMappings, out _methodMappings, out _methodHandleMap, out _fieldMappings, out _fieldHandleMap, out _stackTraceMappings, out _reflectionStackTraceMappings);
         }
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -816,6 +819,9 @@ namespace ILCompiler
             }
 
             metadataBlob = ms.ToArray();
+
+            _ecmaMetadataBlob = Metadata.Ecma.EcmaMetadataTransform.Run(
+                policy, GetCompilationModulesWithMetadata(), EcmaMetadataOutputDirectory);
 
             const int MaxAllowedMetadataOffset = 0x1FFFFFF;
             if (metadataBlob.Length > MaxAllowedMetadataOffset)
@@ -995,7 +1001,7 @@ namespace ILCompiler
         public byte[] GetMetadataBlob(NodeFactory factory)
         {
             EnsureMetadataGenerated(factory);
-            return _metadataBlob;
+            return _ecmaMetadataBlob;
         }
 
         public IEnumerable<MetadataMapping<MetadataType>> GetTypeDefinitionMapping(NodeFactory factory)

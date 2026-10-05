@@ -8,8 +8,8 @@ using Internal.Text;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a blob of native metadata describing assemblies, the types in them, and their members.
-    /// The data is used at runtime to e.g. support reflection.
+    /// Represents concatenated ECMA-335 reflection metadata roots for experimental file-size measurements.
+    /// Runtime readers and mapping tables still expect NativeFormat metadata and cannot use this blob.
     /// </summary>
     public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
     {

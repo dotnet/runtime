@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Configurations>Debug;Release;Checked</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\ILTrim.Core\DependencyAnalysis\EcmaSignatureRewriter.cs" Link="EcmaSignatureRewriter.cs" />
+    <Compile Include="EcmaMetadataTransform.cs" />
+    <Compile Include="Transform.cs" />
+  </ItemGroup>
+</Project>
