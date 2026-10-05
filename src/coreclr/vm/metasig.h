@@ -322,7 +322,6 @@ DEFINE_METASIG_T(SM(CultureInfo_RetVoid, C(CULTURE_INFO), v))
 DEFINE_METASIG(IM(Int_RetVoid, i, v))
 
 DEFINE_METASIG(IM(IntPtr_RetVoid, I, v))
-DEFINE_METASIG(SM(IntPtr_IntPtr_PtrObj_RetVoid, I I P(j), v))
 
 DEFINE_METASIG(IM(Obj_IntPtr_RetVoid, j I, v))
 DEFINE_METASIG(IM(Obj_UIntPtr_RetVoid, j U, v))

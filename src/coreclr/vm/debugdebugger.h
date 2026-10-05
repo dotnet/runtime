@@ -22,6 +22,7 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 class DebuggerEval;
+class DebuggerFuncEvalResult;
 
 struct DebuggerFuncEvalContext
 {
@@ -30,11 +31,11 @@ struct DebuggerFuncEvalContext
     OBJECTREF* pObjects;
     void** pInteriors;
     void** pHomes;
-    INT64* pPrimitives;
-    void** pStorage;
+    INT64* pCapturedArguments;
+    DebuggerFuncEvalResult** ppResult;
     void** pResultByRefs;
     void* pResultData;
-    OBJECTREF* pResultObject;
+    void* resultHandle;
     OBJECTREF* pLoaderAllocator;
     UINT32 argumentCount;
     UINT32 parameterCount;
@@ -54,6 +55,7 @@ enum DebuggerFuncEvalFlags
 
 struct DebuggerFuncEvalArgument
 {
+    BYTE* pLiteral;
     UINT32 elementType;
     UINT32 flags;
 };
@@ -80,10 +82,12 @@ extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
     DebuggerFuncEvalContext* pContext, UINT32 index, BOOL interior, QCall::ObjectHandleOnStack value);
 extern "C" void QCALLTYPE DebugDebugger_AllocateFuncEvalObject(
     QCall::TypeHandle type, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
 extern "C" void QCALLTYPE DebugDebugger_CopyFuncEvalValueTypeArgument(
     DebuggerFuncEvalContext* pContext, UINT32 index, QCall::TypeHandle type, void* pDestination);
-extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalArgument(
-    DebuggerFuncEvalContext* pContext, UINT32 index, UINT32 signatureType, void* pValue, UINT32 size,
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
     QCallExceptionStatus* qcallError);
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 
