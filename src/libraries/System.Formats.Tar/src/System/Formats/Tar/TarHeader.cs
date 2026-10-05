@@ -216,7 +216,10 @@ namespace System.Formats.Tar
         // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
         // Uses the same logic as CollectExtendedAttributesFromStandardFieldsIfNeeded to determine
         // whether to add or remove the attribute.
-        internal void SyncNumericExtendedAttribute(string key, int value, int maxNonextendedValue)
+        // Unix uid_t and gid_t are unsigned: a negative value represents an id larger than int.MaxValue.
+        internal static long UidGidAsUnsigned(int value) => unchecked((uint)value);
+
+        internal void SyncNumericExtendedAttribute(string key, long value, int maxNonextendedValue)
         {
             if (_format == TarEntryFormat.Pax && _ea is not null)
             {
@@ -266,8 +269,8 @@ namespace System.Formats.Tar
             }
 
             AddOrRemoveNumericField(ea, PaxEaSize, _size, Octal12ByteFieldMaxValue, removeIfUnneeded);
-            AddOrRemoveNumericField(ea, PaxEaUid, _uid, Octal8ByteFieldMaxValue, removeIfUnneeded);
-            AddOrRemoveNumericField(ea, PaxEaGid, _gid, Octal8ByteFieldMaxValue, removeIfUnneeded);
+            AddOrRemoveNumericField(ea, PaxEaUid, UidGidAsUnsigned(_uid), Octal8ByteFieldMaxValue, removeIfUnneeded);
+            AddOrRemoveNumericField(ea, PaxEaGid, UidGidAsUnsigned(_gid), Octal8ByteFieldMaxValue, removeIfUnneeded);
             AddOrRemoveNumericField(ea, PaxEaDevMajor, _devMajor, Octal8ByteFieldMaxValue, removeIfUnneeded);
             AddOrRemoveNumericField(ea, PaxEaDevMinor, _devMinor, Octal8ByteFieldMaxValue, removeIfUnneeded);
 
