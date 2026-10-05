@@ -347,9 +347,6 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
     FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
     FCFuncElement("GetMethodTableMatchingParentClass", MethodTableNative::GetMethodTableMatchingParentClass)
-#ifdef _DEBUG
-    FCFuncElement("InstantiationArg0", MethodTableNative::InstantiationArg0)
-#endif // _DEBUG
     FCFuncElement("GetLoaderAllocatorHandle", MethodTableNative::GetLoaderAllocatorHandle)
 FCFuncEnd()
 

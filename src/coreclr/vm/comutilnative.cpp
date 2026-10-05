@@ -2009,16 +2009,6 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
 }
 FCIMPLEND
 
-#ifdef _DEBUG
-FCIMPL1(void*, MethodTableNative::InstantiationArg0, MethodTable* mt);
-{
-    FCALL_CONTRACT;
-
-    return mt->GetInstantiation()[0].AsPtr();
-}
-FCIMPLEND
-#endif // _DEBUG
-
 FCIMPL1(OBJECTHANDLE, MethodTableNative::GetLoaderAllocatorHandle, MethodTable *mt)
 {
     FCALL_CONTRACT;

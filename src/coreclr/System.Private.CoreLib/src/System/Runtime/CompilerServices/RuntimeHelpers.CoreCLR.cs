@@ -995,11 +995,7 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(IsNullable);
 
                 // Nullable<T> has one generic argument in its first dictionary.
-                TypeHandle type = **PerInstInfo;
-#if DEBUG
-                Debug.Assert(InstantiationArg0() == type.AsPtr());
-#endif
-                return type;
+                return **PerInstInfo;
             }
         }
 
@@ -1063,11 +1059,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
-
-#if DEBUG
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern void* InstantiationArg0();
-#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetNullableNumInstanceFieldBytes()
@@ -1254,10 +1245,6 @@ namespace System.Runtime.CompilerServices
         {
             m_asTAddr = tAddr;
         }
-
-#if DEBUG
-        public void* AsPtr() => m_asTAddr;
-#endif
 
         /// <summary>
         /// Gets whether the current instance wraps a <see langword="null"/> pointer.

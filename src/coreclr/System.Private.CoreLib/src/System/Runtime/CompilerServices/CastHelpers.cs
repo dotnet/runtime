@@ -593,20 +593,14 @@ namespace System.Runtime.CompilerServices
             }
 
             TypeHandle nullableType = typeMT->NullableType;
-            if (nullableType.IsTypeDesc)
-            {
-                return false;
-            }
-
-            MethodTable* pMTNullableArg = nullableType.AsMethodTable();
-            if (pMTNullableArg == boxedMT)
+            if (TypeHandle.AreSameType(nullableType, new TypeHandle(boxedMT)))
             {
                 return true;
             }
             else
             {
 #if FEATURE_TYPEEQUIVALENCE
-                return AreTypesEquivalent(pMTNullableArg, boxedMT);
+                return !nullableType.IsTypeDesc && AreTypesEquivalent(nullableType.AsMethodTable(), boxedMT);
 #else
                 return false;
 #endif // FEATURE_TYPEEQUIVALENCE
