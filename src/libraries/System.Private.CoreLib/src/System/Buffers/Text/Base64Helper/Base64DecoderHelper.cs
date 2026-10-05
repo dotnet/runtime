@@ -20,7 +20,6 @@ namespace System.Buffers.Text
     // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
     internal static partial class Base64Helper
     {
-#if NET
         private const int Avx512DecodeInputLength = 64;
         private const int Avx512DecodeOutputLength = 48;
         private const int Avx512DecodeStoreLength = 64;
@@ -40,7 +39,6 @@ namespace System.Buffers.Text
         private const int AdvSimdDecodeMinInputLength = AdvSimdDecodeInputLength + 2; // Leave possible padding for scalar decoding.
         private const int Avx512DecodeTailInputLength = 12;
         private const int Avx512DecodeTailOutputLength = 9;
-#endif
 
         internal static byte[] DecodeToArray<TBase64Decoder, T>(TBase64Decoder decoder, ReadOnlySpan<T> source)
             where TBase64Decoder : IBase64Decoder<T>
@@ -53,32 +51,9 @@ namespace System.Buffers.Text
 
             int upperBound = decoder.GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
-            scoped Span<byte> destination;
-#if NET
-            SmallDecodingBuffer smallBuffer;
-            DecodingBuffer buffer;
-            if ((uint)upperBound <= SmallDecodingBufferLength)
-            {
-                smallBuffer = default;
-                destination = smallBuffer;
-                destination = destination.Slice(SmallDecodingBufferLength - upperBound);
-            }
-            else if ((uint)upperBound <= MaxStackallocThreshold)
-            {
-                buffer = default;
-                destination = buffer;
-            }
-#else
-            Span<byte> buffer = stackalloc byte[MaxStackallocThreshold];
-            if ((uint)upperBound <= MaxStackallocThreshold)
-            {
-                destination = buffer;
-            }
-#endif
-            else
-            {
-                destination = rented = ArrayPool<byte>.Shared.Rent(upperBound);
-            }
+            Span<byte> destination = (uint)upperBound <= MaxStackallocThreshold
+                ? stackalloc byte[MaxStackallocThreshold]
+                : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 
             OperationStatus status = DecodeFrom(decoder, source, destination, out _, out int bytesWritten, isFinalBlock: true, ignoreWhiteSpace: true);
             Debug.Assert(status is OperationStatus.Done or OperationStatus.InvalidData);
@@ -181,13 +156,9 @@ namespace System.Buffers.Text
                 // This should never overflow since destLength here is less than int.MaxValue / 4 * 3 (i.e. 1610612733)
                 // Therefore, (destLength / 3) * 4 will always be less than 2147483641
                 Debug.Assert(destLength < (int.MaxValue / 4 * 3));
-#if NET
-                (maxSrcLength, int remainder) = int.DivRem(destLength, 3);
-                maxSrcLength *= 4;
-#else
-                maxSrcLength = (destLength / 3) * 4;
-                int remainder = (int)((uint)destLength % 3);
-#endif
+                int whole = destLength / 3;
+                int remainder = destLength - whole * 3;
+                maxSrcLength = whole * 4;
                 if (isFinalBlock && remainder > 0)
                 {
                     srcLength &= ~0x3; // In case of Base64UrlDecoder source can be not a multiple of 4, round down to multiple of 4

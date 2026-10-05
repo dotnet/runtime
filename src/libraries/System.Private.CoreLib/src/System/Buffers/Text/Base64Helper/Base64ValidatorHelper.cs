@@ -16,7 +16,6 @@ namespace System.Buffers.Text
 
             if (!base64Text.IsEmpty)
             {
-#if NET
                 while (!base64Text.IsEmpty)
                 {
                     int index = validatable.IndexOfAnyExcept(base64Text);
@@ -57,40 +56,6 @@ namespace System.Buffers.Text
                     paddingCount = 1;
                     foreach (T charToValidateInPadding in base64Text)
                     {
-#else
-                for (int i = 0; i < base64Text.Length; i++)
-                {
-                    T charToValidate = base64Text[i];
-                    int value = validatable.DecodeValue(charToValidate);
-                    if (value == -2)
-                    {
-                        // Not an Ascii char
-                        goto Fail;
-                    }
-
-                    if (value >= 0) // valid char
-                    {
-                        length++;
-                        lastChar = charToValidate;
-                        continue;
-                    }
-                    if (validatable.IsWhiteSpace(charToValidate))
-                    {
-                        continue;
-                    }
-
-                    if (!validatable.IsEncodingPad(charToValidate))
-                    {
-                        // Invalid char was found.
-                        goto Fail;
-                    }
-
-                    // Encoding pad found. Determine if padding is valid, then stop processing.
-                    paddingCount = 1;
-                    for (i++; i < base64Text.Length; i++)
-                    {
-                        T charToValidateInPadding = base64Text[i];
-#endif
                         if (validatable.IsEncodingPad(charToValidateInPadding))
                         {
                             // There can be at most 2 padding chars.
@@ -128,13 +93,34 @@ namespace System.Buffers.Text
             return false;
         }
 
+        internal static int IndexOfAnyExcept(ReadOnlySpan<char> span, ReadOnlySpan<sbyte> decodingMap)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                char value = span[i];
+                if (value > byte.MaxValue || decodingMap[value] < 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        internal static int IndexOfAnyExcept(ReadOnlySpan<byte> span, ReadOnlySpan<sbyte> decodingMap)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (decodingMap[span[i]] < 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         internal interface IBase64Validatable<T>
         {
-#if NET
             int IndexOfAnyExcept(ReadOnlySpan<T> span);
-#else
-            int DecodeValue(T value);
-#endif
             bool IsWhiteSpace(T value);
             bool IsEncodingPad(T value);
             bool ValidateAndDecodeLength(T lastChar, int length, int paddingCount, out int decodedLength);
@@ -147,17 +133,8 @@ namespace System.Buffers.Text
 
             public int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64Chars);
 #else
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int DecodeValue(char value)
-            {
-                if (value > byte.MaxValue)
-                {
-                    // Invalid char was found.
-                    return -2;
-                }
-
-                return default(Base64DecoderByte).DecodingMap[value];
-            }
+            public int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
+                Base64Helper.IndexOfAnyExcept(span, default(Base64DecoderByte).DecodingMap);
 #endif
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(char value) => value == EncodingPad;
@@ -172,7 +149,8 @@ namespace System.Buffers.Text
 
             public int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64Chars);
 #else
-            public int DecodeValue(byte value) => default(Base64DecoderByte).DecodingMap[value];
+            public int IndexOfAnyExcept(ReadOnlySpan<byte> span) =>
+                Base64Helper.IndexOfAnyExcept(span, default(Base64DecoderByte).DecodingMap);
 #endif
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == EncodingPad;

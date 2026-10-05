@@ -29,20 +29,14 @@ namespace System.Buffers.Text
         {
 #if NET
             ArgumentOutOfRangeException.ThrowIfNegative(base64Length);
-
-            (uint whole, uint remainder) = uint.DivRem((uint)base64Length, 4);
-
-            return (int)(whole * 3 + (remainder > 0 ? remainder - 1 : 0));
 #else
             if (base64Length < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(base64Length));
             }
-
-            int remainder = (int)((uint)base64Length % 4);
-
-            return (base64Length >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0);
 #endif
+            int remainder = base64Length % 4;
+            return (base64Length / 4) * 3 + (remainder > 0 ? remainder - 1 : 0);
         }
 
         /// <summary>

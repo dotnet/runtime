@@ -52,20 +52,15 @@ namespace System.Buffers.Text
         {
 #if NET
             ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, MaximumEncodeLength);
-
-            (uint whole, uint remainder) = uint.DivRem((uint)bytesLength, 3);
-
-            return (int)(whole * 4 + (remainder > 0 ? remainder + 1 : 0)); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
 #else
             if ((uint)bytesLength > MaximumEncodeLength)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesLength));
             }
-
-            int remainder = (int)((uint)bytesLength % 3);
-
-            return (bytesLength / 3) * 4 + (remainder > 0 ? remainder + 1 : 0);
 #endif
+            int whole = bytesLength / 3;
+            int remainder = bytesLength - whole * 3;
+            return whole * 4 + (remainder > 0 ? remainder + 1 : 0);
         }
 
         /// <summary>

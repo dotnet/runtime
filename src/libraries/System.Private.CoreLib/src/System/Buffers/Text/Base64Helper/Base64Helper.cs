@@ -15,22 +15,6 @@ namespace System.Buffers.Text
     {
         internal const int MaxStackallocThreshold = 256;
 
-#if NET
-        private const int SmallDecodingBufferLength = 32;
-
-        [InlineArray(MaxStackallocThreshold)]
-        internal struct DecodingBuffer
-        {
-            private byte _element0;
-        }
-
-        [InlineArray(SmallDecodingBufferLength)]
-        internal struct SmallDecodingBuffer
-        {
-            private byte _element0;
-        }
-#endif
-
         [DoesNotReturn]
         internal static void ThrowUnreachableException()
         {

@@ -18,7 +18,6 @@ namespace System.Buffers.Text
     // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
     internal static partial class Base64Helper
     {
-#if NET
         private const int Avx512EncodeInputLength = 48;
         private const int Avx512EncodeReadLength = 64;
         private const int Avx512EncodeOutputLength = 64;
@@ -31,7 +30,6 @@ namespace System.Buffers.Text
         private const int AdvSimdEncodeInputLength = 48;
         private const int AdvSimdEncodeOutputLength = 64;
         private const int MaxSmallInPlaceInputLength = 2 * Vector128EncodeInputLength;
-#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static OperationStatus EncodeTo<TBase64Encoder, T>(TBase64Encoder encoder, ReadOnlySpan<byte> source,
@@ -704,14 +702,13 @@ namespace System.Buffers.Text
                 }
             }
 
-#if NET
             if (sourceIndex > MaxSmallInPlaceInputLength)
             {
                 EncodeChunksInPlace(encoder, buffer, (int)sourceIndex);
                 bytesWritten = encodedLength;
                 return OperationStatus.Done;
             }
-
+#if NET
             if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && sourceIndex >= Vector128EncodeInputLength)
             {
                 EncodeSmallInPlace(buffer, (int)sourceIndex, encodingMap);
@@ -756,12 +753,12 @@ namespace System.Buffers.Text
                 Vector512.Create(0x3036242A1016040Aul).AsByte());
             result.GetLower().GetLower().CopyTo(buffer);
         }
+#endif
 
         private static void EncodeChunksInPlace<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer, int sourceLength)
             where TBase64Encoder : IBase64Encoder<byte>
         {
-            DecodingBuffer scratchBuffer = default;
-            Span<byte> scratch = scratchBuffer;
+            Span<byte> scratch = stackalloc byte[MaxStackallocThreshold];
             const int MaxChunkLength = MaxStackallocThreshold / 4 * 3;
             while (sourceLength > 0)
             {
@@ -776,7 +773,6 @@ namespace System.Buffers.Text
                 output.CopyTo(buffer.Slice(sourceLength / 3 * 4));
             }
         }
-#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint Encode(ReadOnlySpan<byte> threeBytes, ReadOnlySpan<byte> encodingMap)
