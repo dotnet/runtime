@@ -209,8 +209,6 @@ namespace System.Data.Common
             }
         }
 
-        // only StackOverflowException & ThreadAbortException are sealed classes
-
         internal static bool IsCatchableExceptionType(Exception e)
         {
             // a 'catchable' exception is defined by what it is not.

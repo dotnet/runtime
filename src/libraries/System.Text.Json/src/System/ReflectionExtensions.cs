@@ -13,7 +13,6 @@ namespace System.Text.Json.Reflection
 {
     internal static partial class ReflectionExtensions
     {
-
         /// <summary>
         /// Returns <see langword="true" /> when the given type is of type <see cref="Nullable{T}"/>.
         /// </summary>
