@@ -612,12 +612,37 @@ static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData *pFEAD)
     return retval;
 }
 
+#if !defined(HOST_64BIT)
+static bool IsMixedFuncEvalRegisterHome(RemoteAddressKind kind)
+{
+    LIMITED_METHOD_CONTRACT;
+    return kind == RAK_MEMREG || kind == RAK_REGMEM;
+}
+
+static void AssertValidMixedFuncEvalRegisterHome(DebuggerIPCE_FuncEvalArgData* pArg)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsMixedFuncEvalRegisterHome(pArg->argHome.kind));
+    _ASSERTE(pArg->argElementType == ELEMENT_TYPE_I8 ||
+        pArg->argElementType == ELEMENT_TYPE_U8 ||
+        pArg->argElementType == ELEMENT_TYPE_VALUETYPE);
+}
+#endif
+
 static BOOL ReadFuncEvalRegisterValue(
     DebuggerEval* pDE, DebuggerIPCE_FuncEvalArgData* pArg, UINT64* pValue)
 {
     LIMITED_METHOD_CONTRACT;
 
     *pValue = 0;
+
+#if !defined(HOST_64BIT)
+    if (IsMixedFuncEvalRegisterHome(pArg->argHome.kind))
+    {
+        AssertValidMixedFuncEvalRegisterHome(pArg);
+    }
+#endif
 
 #if defined(HOST_64BIT)
     if (pArg->argElementType != ELEMENT_TYPE_VALUETYPE && pArg->argHome.kind == RAK_FLOAT)
@@ -648,30 +673,31 @@ static void SetFuncEvalRegisterValue(
     bool widePrimitive = pArg->argElementType == ELEMENT_TYPE_I8 ||
         pArg->argElementType == ELEMENT_TYPE_U8 || pArg->argElementType == ELEMENT_TYPE_R8;
 #if !defined(HOST_64BIT)
-    if (widePrimitive ||
-        (pArg->argElementType == ELEMENT_TYPE_VALUETYPE &&
-         (pArg->argHome.kind == RAK_REGREG || pArg->argHome.kind == RAK_MEMREG || pArg->argHome.kind == RAK_REGMEM)))
+    if (IsMixedFuncEvalRegisterHome(pArg->argHome.kind))
     {
-        _ASSERTE(pArg->argHome.kind != RAK_REG);
+        AssertValidMixedFuncEvalRegisterHome(pArg);
         SIZE_T low = static_cast<SIZE_T>(value);
         SIZE_T high = static_cast<SIZE_T>(value >> 32);
-        switch (pArg->argHome.kind)
+        if (pArg->argHome.kind == RAK_MEMREG)
         {
-        case RAK_REGREG:
-            SetRegisterValue(pDE, pArg->argHome.u.reg2, pArg->argHome.u.reg2Addr, low);
-            SetRegisterValue(pDE, pArg->argHome.reg1, pArg->argHome.reg1Addr, high);
-            break;
-        case RAK_MEMREG:
             SetRegisterValue(pDE, pArg->argHome.reg1, pArg->argHome.reg1Addr, low);
             *static_cast<SIZE_T*>(CORDB_ADDRESS_TO_PTR(pArg->argHome.addr)) = high;
-            break;
-        case RAK_REGMEM:
+        }
+        else
+        {
             *static_cast<SIZE_T*>(CORDB_ADDRESS_TO_PTR(pArg->argHome.addr)) = low;
             SetRegisterValue(pDE, pArg->argHome.reg1, pArg->argHome.reg1Addr, high);
-            break;
-        default:
-            break;
         }
+        return;
+    }
+
+    if (pArg->argHome.kind == RAK_REGREG)
+    {
+        _ASSERTE(widePrimitive || pArg->argElementType == ELEMENT_TYPE_VALUETYPE);
+        SIZE_T low = static_cast<SIZE_T>(value);
+        SIZE_T high = static_cast<SIZE_T>(value >> 32);
+        SetRegisterValue(pDE, pArg->argHome.u.reg2, pArg->argHome.u.reg2Addr, low);
+        SetRegisterValue(pDE, pArg->argHome.reg1, pArg->argHome.reg1Addr, high);
         return;
     }
 
@@ -903,10 +929,6 @@ static bool HasNonLeafFuncEvalRegister(DebuggerIPCE_FuncEvalArgData* pArg)
     switch (pArg->argHome.kind)
     {
     case RAK_REG:
-#if !defined(HOST_64BIT)
-    case RAK_REGMEM:
-    case RAK_MEMREG:
-#endif
         return pArg->argHome.reg1Addr == kNonLeafFrameRegAddr;
 #if !defined(HOST_64BIT)
     case RAK_REGREG:
@@ -1009,16 +1031,8 @@ struct FuncEvalRegisterRootContext : ScanContext
             }
             break;
         case RAK_MEMREG:
-            if (offset == 0 && home->reg1Addr == kNonLeafFrameRegAddr)
-            {
-                RegisterFuncEvalSlot(&home->reg1Value, flags, context->nextHandle);
-            }
-            break;
         case RAK_REGMEM:
-            if (offset == sizeof(void*) && home->reg1Addr == kNonLeafFrameRegAddr)
-            {
-                RegisterFuncEvalSlot(&home->reg1Value, flags, context->nextHandle);
-            }
+            _ASSERTE(!"Mixed register/memory homes cannot contain GC references or byrefs");
             break;
 #endif
         default:
@@ -1045,13 +1059,6 @@ static HRESULT ProtectFuncEvalArgumentStorage(
     {
         DebuggerIPCE_FuncEvalArgData* pArg = &pArguments[i];
         bool nonLeafRegister = HasNonLeafFuncEvalRegister(pArg);
-#if !defined(HOST_64BIT)
-        if (nonLeafRegister && (pArg->argHome.kind == RAK_MEMREG || pArg->argHome.kind == RAK_REGMEM))
-        {
-            // Root the serialized address, not the memory contents already reported by the original home.
-            RegisterFuncEvalSlot(&pArg->argHome.addr, GC_CALL_INTERIOR, pNextHandle);
-        }
-#endif
         if (IsElementTypeSpecial(pArg->argElementType))
         {
             if (nonLeafRegister)
@@ -1099,9 +1106,20 @@ static HRESULT ProtectFuncEvalArgumentStorage(
             }
 
             MethodTable* pMT = type.AsMethodTable();
+#if !defined(HOST_64BIT)
+            bool mixedHome = IsMixedFuncEvalRegisterHome(pArg->argHome.kind);
+            if (mixedHome)
+            {
+                AssertValidMixedFuncEvalRegisterHome(pArg);
+                _ASSERTE(type.GetInternalCorElementType() == ELEMENT_TYPE_I8 ||
+                    type.GetInternalCorElementType() == ELEMENT_TYPE_U8);
+            }
+#else
+            constexpr bool mixedHome = false;
+#endif
             // Value-type arguments do not use this object slot. Keep their captured layout alive.
             pObjectRefArray[i] = pMT->GetLoaderAllocator()->GetExposedObject();
-            if (nonLeafRegister)
+            if (nonLeafRegister && !mixedHome)
             {
                 // Only field offsets are consumed; the callback registers the original serialized slots.
                 UINT64 layout = 0;
@@ -1111,9 +1129,9 @@ static HRESULT ProtectFuncEvalArgumentStorage(
             }
             if (!CanReadFuncEvalRegistersInPlace(pArg))
             {
-                // Mixed homes still need a snapshot: their original memory contents may also be stack roots.
+                // Leaf and mixed homes need a stable value snapshot across managed preparation.
                 pBufferForArgsArray[i] = static_cast<INT64>(value);
-                if (pMT->ContainsGCPointers() || pMT->IsByRefLike())
+                if (!mixedHome && (pMT->ContainsGCPointers() || pMT->IsByRefLike()))
                 {
                     *pNextHandle = ExternalMemoryHandle::Add(pMT, &pBufferForArgsArray[i], 0);
                     pNextHandle++;
@@ -1722,8 +1740,9 @@ static DebuggerFuncEvalResult* GCProtectArgsAndInvokeManagedFuncEval(DebuggerEva
     INT64 *pBufferForArgsArray = (INT64*)_alloca(cbAllocSize);
     memset(pBufferForArgsArray, 0, cbAllocSize);
 
-    // Mixed homes can need a register root, a memory-address root and a rooted snapshot.
-    constexpr SIZE_T MaxHandlesPerArgument = 3;
+    // A two-register value can require two scalar roots; other value homes need at most
+    // one register root plus one rooted snapshot.
+    constexpr SIZE_T MaxHandlesPerArgument = 2;
     SIZE_T handleCount;
     if (!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, MaxHandlesPerArgument, handleCount) ||
         !ClrSafeInt<SIZE_T>::addition(handleCount, 1, handleCount) ||
