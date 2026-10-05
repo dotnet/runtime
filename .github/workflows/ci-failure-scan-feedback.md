@@ -51,6 +51,8 @@ checkout:
   fetch-depth: 1
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-pull-request:
     title-prefix: "[ci-scan-feedback] "
     draft: true
