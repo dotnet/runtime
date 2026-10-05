@@ -14611,11 +14611,18 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             PrepareCodeConfig config(NativeCodeVersion(pMD), FALSE, TRUE);
-            result = pMD->GetModule()->GetReadyToRunInfo()->GetEntryPoint(pMD, &config, TRUE /* fFixups */);
-            if (result == 0)
+            PCODE pEntryPoint = pMD->GetModule()->GetReadyToRunInfo()->GetEntryPoint(pMD, &config, TRUE /* fFixups */);
+            if (pEntryPoint == (PCODE)NULL)
             {
                 return FALSE;
             }
+
+            if (pMD->PublishPrecompiledCode(&config, pEntryPoint, false) != pEntryPoint)
+            {
+                return FALSE;
+            }
+
+            result = pEntryPoint;
         }
         break;
 

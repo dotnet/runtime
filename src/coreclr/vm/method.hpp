@@ -2356,6 +2356,9 @@ public:
 public:
     PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
+#ifdef FEATURE_READYTORUN
+    PCODE PublishPrecompiledCode(PrepareCodeConfig* pConfig, PCODE pCode, bool shouldTier);
+#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     // Probe for precompiled R2R native code for an UnmanagedCallersOnly method and, if present,

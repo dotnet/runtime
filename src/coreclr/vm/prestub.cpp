@@ -428,50 +428,61 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
     if (pCode != (PCODE)NULL)
     {
         LOG_USING_R2R_CODE(this);
-
-#ifdef FEATURE_TIERED_COMPILATION
-        // Finalize the optimization tier before SetNativeCode() is called
-        bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
-#endif
-
-        if (pConfig->SetNativeCode(pCode, &pCode))
-        {
-#ifdef FEATURE_CODE_VERSIONING
-            pConfig->SetGeneratedOrLoadedNewCode();
-#endif
-#ifdef FEATURE_TIERED_COMPILATION
-            if (shouldCountCalls)
-            {
-                _ASSERTE(!pConfig->GetCodeVersion().IsFinalTier());
-                pConfig->SetShouldCountCalls();
-            }
-#endif
-
-#ifdef FEATURE_MULTICOREJIT
-            // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
-            // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
-            // of R2R code are also recorded.
-            if (pConfig->NeedsMulticoreJitNotification())
-            {
-                _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
-                _ASSERTE(!pConfig->IsForMulticoreJit());
-
-                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-                if (mcJitManager.IsRecorderActive())
-                {
-                    if (MulticoreJitManager::IsMethodSupported(this))
-                    {
-                        mcJitManager.RecordMethodJitOrLoad(this);
-                    }
-                }
-            }
-#endif
-        }
+        pCode = PublishPrecompiledCode(pConfig, pCode, shouldTier);
     }
 #endif // FEATURE_READYTORUN
 
     return pCode;
 }
+
+#ifdef FEATURE_READYTORUN
+PCODE MethodDesc::PublishPrecompiledCode(PrepareCodeConfig* pConfig, PCODE pCode, bool shouldTier)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pCode != (PCODE)NULL);
+
+#ifdef FEATURE_TIERED_COMPILATION
+    // Finalize the optimization tier before SetNativeCode() is called
+    bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
+#endif
+
+    if (pConfig->SetNativeCode(pCode, &pCode))
+    {
+#ifdef FEATURE_CODE_VERSIONING
+        pConfig->SetGeneratedOrLoadedNewCode();
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
+        if (shouldCountCalls)
+        {
+            _ASSERTE(!pConfig->GetCodeVersion().IsFinalTier());
+            pConfig->SetShouldCountCalls();
+        }
+#endif
+
+#ifdef FEATURE_MULTICOREJIT
+        // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
+        // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
+        // of R2R code are also recorded.
+        if (pConfig->NeedsMulticoreJitNotification())
+        {
+            _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
+            _ASSERTE(!pConfig->IsForMulticoreJit());
+
+            MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+            if (mcJitManager.IsRecorderActive())
+            {
+                if (MulticoreJitManager::IsMethodSupported(this))
+                {
+                    mcJitManager.RecordMethodJitOrLoad(this);
+                }
+            }
+        }
+#endif
+    }
+
+    return pCode;
+}
+#endif // FEATURE_READYTORUN
 
 PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 {
