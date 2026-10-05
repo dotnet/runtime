@@ -171,10 +171,6 @@ internal static class TestRunner
         else
         {
             Directory.CreateDirectory(logsDirectory);
-            if (!Directory.Exists(logsDirectory))
-            {
-                throw new RunnerExitException($"Error: logs_dir not found or could not be created: {logsDirectory}");
-            }
         }
 
         Console.WriteLine($"host_os                  : {hostOperatingSystem}");
@@ -1232,43 +1228,19 @@ internal static class TestRunner
 
     private static string GetDefaultHostOperatingSystem()
     {
-        if (OperatingSystem.IsLinux())
-        {
-            return "linux";
-        }
-
-        if (OperatingSystem.IsMacOS())
-        {
-            return "osx";
-        }
-
-        if (OperatingSystem.IsWindows())
-        {
-            return "windows";
-        }
-
-        if (OperatingSystem.IsFreeBSD())
-        {
-            return "freebsd";
-        }
-
         string description = RuntimeInformation.OSDescription.ToLowerInvariant();
-        if (description.Contains("illumos", StringComparison.Ordinal))
+        return true switch
         {
-            return "illumos";
-        }
-
-        if (description.Contains("sunos", StringComparison.Ordinal) || description.Contains("solaris", StringComparison.Ordinal))
-        {
-            return "solaris";
-        }
-
-        if (description.Contains("haiku", StringComparison.Ordinal))
-        {
-            return "haiku";
-        }
-
-        throw new RunnerExitException($"Unknown OS: {RuntimeInformation.OSDescription}");
+            _ when OperatingSystem.IsLinux() => "linux",
+            _ when OperatingSystem.IsMacOS() => "osx",
+            _ when OperatingSystem.IsWindows() => "windows",
+            _ when OperatingSystem.IsFreeBSD() => "freebsd",
+            _ when description.Contains("illumos", StringComparison.Ordinal) => "illumos",
+            _ when description.Contains("sunos", StringComparison.Ordinal) ||
+                   description.Contains("solaris", StringComparison.Ordinal) => "solaris",
+            _ when description.Contains("haiku", StringComparison.Ordinal) => "haiku",
+            _ => throw new RunnerExitException($"Unknown OS: {RuntimeInformation.OSDescription}"),
+        };
     }
 
     private static string GetDefaultArchitecture() =>
@@ -1643,17 +1615,8 @@ fi
 
         private static string GetRequiredValue(string[] arguments, ref int index, string? inlineValue, string option)
         {
-            if (inlineValue is not null)
-            {
-                return inlineValue;
-            }
-
-            if (index + 1 < arguments.Length && !arguments[index + 1].StartsWith('-', StringComparison.Ordinal))
-            {
-                return arguments[++index];
-            }
-
-            throw new RunnerExitException($"run.cs: error: argument {option}: expected one argument", exitCode: 2);
+            return GetOptionalValue(arguments, ref index, inlineValue)
+                ?? throw new RunnerExitException($"run.cs: error: argument {option}: expected one argument", exitCode: 2);
         }
 
         private static void PrintHelp()
