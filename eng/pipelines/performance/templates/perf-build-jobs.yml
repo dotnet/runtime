@@ -11,3 +11,4 @@ jobs:
       windows_x86: true
       android_arm64: true
       coreclr_r2r_interpreter: true
+      osx_arm64: true

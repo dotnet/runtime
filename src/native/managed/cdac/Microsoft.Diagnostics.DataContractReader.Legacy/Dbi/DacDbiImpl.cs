@@ -2921,7 +2921,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer nativeCode = rts.GetNativeCode(methodDescHandle);
                 if (nativeCode != TargetCodePointer.Null)
                 {
-                    nativeCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+                    nativeCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode);
                     pCodeInfo->hotRegion.pAddress = nativeCode.ToAddress(_target).ToClrDataAddress(_target);
 
                     IExecutionManager executionManager = _target.Contracts.ExecutionManager;
@@ -2975,7 +2975,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer code = ((ClrDataAddress)codeAddress).ToTargetCodePointer(_target);
                 try
                 {
-                    code = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(code);
+                    code = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(code);
                 }
                 catch (VirtualReadException)
                 {
@@ -6483,6 +6483,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                 if (pCode != TargetCodePointer.Null)
                 {
+                    pCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(pCode);
                     IReadOnlyList<AsyncSuspensionInfo> suspensionPoints = _target.Contracts.DebugInfo.GetAsyncSuspensionPoints(pCode);
                     if (state < (uint)suspensionPoints.Count)
                     {

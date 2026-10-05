@@ -1847,6 +1847,7 @@ public class MyType
         private static int Int32Sum(int a, int b) => a + b;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133123", TestPlatforms.Wasi, TargetFrameworkMonikers.Any, TestRuntimes.CoreCLR)]
         public void EmitCalliBlittable()
         {
             int a = 1, b = 1, result = 2;

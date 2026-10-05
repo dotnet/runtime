@@ -50,7 +50,7 @@ namespace Internal.Runtime.TypeLoader
                     return _defType.ConvertToCanonForm(CanonicalFormKind.Specific).GetHashCode();
 
                 if (!_genericDefinition.IsNull())
-                    return TypeLoaderEnvironment.Instance.GetCanonicalHashCode(_typeToFind, CanonicalFormKind.Specific);
+                    return TypeLoaderEnvironment.Instance.GetCanonicalHashCode(_typeToFind);
                 else
                     return _typeToFind.GetHashCode();
             }
@@ -74,7 +74,7 @@ namespace Internal.Runtime.TypeLoader
                     RuntimeTypeHandle[] otherGenericArgs;
                     otherGenericDefinition = RuntimeAugments.GetGenericInstantiation(other, out otherGenericArgs);
 
-                    return _genericDefinition.Equals(otherGenericDefinition) && TypeLoaderEnvironment.Instance.CanInstantiationsShareCode(_genericArgs, otherGenericArgs, CanonicalFormKind.Specific);
+                    return _genericDefinition.Equals(otherGenericDefinition) && TypeLoaderEnvironment.Instance.CanInstantiationsShareCode(_genericArgs, otherGenericArgs);
                 }
                 else
                     return false;

@@ -41,6 +41,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_DigestOneShot)
     DllImportEntry(AppleCryptoNative_DigestReset)
     DllImportEntry(AppleCryptoNative_DigestUpdate)
+    DllImportEntry(AppleCryptoNative_EccExportPublicKeyFromPrivateKey)
     DllImportEntry(AppleCryptoNative_EccGenerateKey)
     DllImportEntry(AppleCryptoNative_EccGetKeySizeInBits)
     DllImportEntry(AppleCryptoNative_EcdhKeyAgree)

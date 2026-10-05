@@ -308,6 +308,28 @@ static char* s_core_root_path = nullptr;
 extern "C" bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 #endif // TARGET_BROWSER
 
+#ifdef TARGET_WASI
+#ifndef WASI_R2R_IMAGE_CAP
+#define WASI_R2R_IMAGE_CAP (16u * 1024u * 1024u)
+#endif
+#define CORERUN_WASI_R2R_STRONG_CAP
+#include "wasi_r2r_probe.hpp"
+
+namespace wasi_r2r
+{
+extern "C"
+{
+alignas(16) uint8_t g_wasi_r2r_image[WASI_R2R_IMAGE_CAP] = {};
+uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image);
+}
+}
+
+extern "C" __attribute__((export_name("wasi_r2r_image_cap"))) uint32_t wasi_r2r_image_cap(void)
+{
+    return WASI_R2R_IMAGE_CAP;
+}
+#endif // TARGET_WASI
+
 static bool HOST_CONTRACT_CALLTYPE get_native_code_data(
     const host_runtime_contract_native_code_context* context,
     host_runtime_contract_native_code_data* data)
@@ -375,6 +397,12 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
     const char* pos = strrchr(name, '/');
     if (pos != NULL)
         name = pos + 1;
+
+#ifdef TARGET_WASI
+    const char* const r2r_dirs[] = { s_core_libs_path, s_core_root_path };
+    if (wasi_r2r::WasiStaticR2RProbe(name, r2r_dirs, 2, data_start, size))
+        return true;
+#endif // TARGET_WASI
 
     // Try to map the file from our known app assembly paths
     for (const char* dir : { s_core_libs_path, s_core_root_path })
@@ -654,22 +682,6 @@ static int run(const configuration& config)
     return exit_code;
 #else // TARGET_BROWSER
     int final_exit_code = corerun_shutdown(exit_code);
-#ifdef TARGET_WASI
-    // wasi:cli/exit's stable exit() only signals ok/err, so wasmtime
-    // collapses any non-zero Main return to host exit 1. When
-    // DOTNET_WASI_PRINT_EXIT_CODE=1, emit a "WASM EXIT <n>" marker on
-    // stderr matching Mono (src/mono/wasi/runtime/main.c); the WASI
-    // launcher in src/tests/Common/CLRTest.Execute.Bash.targets recovers
-    // the value from that. wasi:cli/exit already defines
-    // exit-with-code(status-code: u8), but it is gated
-    // @unstable(feature = cli-exit-with-code) in wasi-cli 0.2.x. Once that
-    // feature stabilizes and wasi-libc/wasi-sdk/wasmtime expose it, this
-    // marker (and the parser in CLRTest.Execute.Bash.targets) can be removed.
-    if (pal::getenv(W("DOTNET_WASI_PRINT_EXIT_CODE")) == W("1"))
-    {
-        pal::fprintf(stderr, W("WASM EXIT %d\n"), final_exit_code);
-    }
-#endif // TARGET_WASI
     return final_exit_code;
 #endif // TARGET_BROWSER
 }
@@ -879,7 +891,13 @@ int MAIN(const int argc, const char_t* argv[])
         return self_test();
 
     int exit_code = run(config);
+#ifdef TARGET_WASI
+    // Returning from main only reports success/failure through wasi:cli/run.
+    // exit() reports the actual code through wasi:cli/exit's exit-with-code.
+    exit(exit_code);
+#else
     return exit_code;
+#endif
 }
 
 extern "C" DLL_EXPORT HRESULT CDECL GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)

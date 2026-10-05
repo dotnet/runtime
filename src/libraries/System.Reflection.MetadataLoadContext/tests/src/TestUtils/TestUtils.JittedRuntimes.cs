@@ -23,7 +23,7 @@ namespace System.Reflection.Tests
 #endif
 
             Assembly assembly = type.Assembly;
-            string location = assembly.Location;
+            string location = AssemblyPathHelper.GetAssemblyLocation(assembly);
             if (PlatformDetection.IsNotBrowser && (location == null || location == string.Empty))
             {
                 throw new Exception("Could not find the IL for assembly " + type.Assembly + " on disk. The most likely cause " +
@@ -60,10 +60,10 @@ namespace System.Reflection.Tests
             // of the underlying runtime will do just fine.
             if (PlatformDetection.IsNotBrowser)
             {
-                string assumedLocationOfCoreLibrary = typeof(object).Assembly.Location;
+                string assumedLocationOfCoreLibrary = GetPathToCoreAssembly();
                 if (assumedLocationOfCoreLibrary == null || assumedLocationOfCoreLibrary == string.Empty)
                 {
-                    throw new Exception("Could not find a core assembly to use for tests as 'typeof(object).Assembly.Location` returned " +
+                    throw new Exception("Could not find a core assembly to use for tests as the location of 'typeof(object).Assembly' was " +
                         "a null or empty value. The most likely cause is that you built the tests for a Jitted runtime but are running them " +
                         "on an AoT runtime.");
                 }
