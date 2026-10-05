@@ -20,8 +20,7 @@
 // #SyncBlockOverview
 //
 // Every Object is preceded by an ObjHeader (at a negative offset). The header stores lock state, a hash code, or
-// a nonzero index into the process-global code:g_pSyncTable when the object needs a full SyncBlock. A zero
-// sync-block index means that the object does not reference a SyncTableEntry; there is no shared dummy SyncBlock.
+// a nonzero index into the process-global code:g_pSyncTable when the object needs a full SyncBlock.
 //
 // SyncBlocks provide full synchronization state and hold additional per-object data, such as hash codes and
 // interop information.
