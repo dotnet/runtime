@@ -228,27 +228,13 @@ internal sealed class ILLinkCache
 
     private void UpdateLastUsed(string entryDirectory)
     {
-        string temporaryFile = Path.Combine(entryDirectory, ILLinkCacheEntry.LastUsedFileName + "." + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
-            ILLinkCacheEntry.WriteLastUsed(temporaryFile);
-            // Replace rather than overwrite so parallel restores cannot leave a partially written marker.
-            File.Replace(temporaryFile, Path.Combine(entryDirectory, ILLinkCacheEntry.LastUsedFileName), null);
+            ILLinkCacheEntry.WriteLastUsed(Path.Combine(entryDirectory, ILLinkCacheEntry.LastUsedFileName));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _log.LogMessage(MessageImportance.Low, $"ILLink cache last-used update failed for '{entryDirectory}': {ex.Message}");
-        }
-        finally
-        {
-            try
-            {
-                File.Delete(temporaryFile);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                _log.LogMessage(MessageImportance.Low, $"ILLink cache last-used cleanup failed for '{temporaryFile}': {ex.Message}");
-            }
         }
     }
 

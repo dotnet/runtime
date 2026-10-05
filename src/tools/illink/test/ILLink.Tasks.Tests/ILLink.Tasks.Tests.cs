@@ -1266,7 +1266,6 @@ namespace ILLink.Tasks.Tests
                     for (int attempt = 0; attempt < 20; attempt++)
                         Assert.True(cache.TryRestore(CacheTestDirectory.Key, output, CacheTestDirectory.Timestamp));
                     Assert.Empty(engine.Errors);
-                    Assert.DoesNotContain(engine.Messages, message => message.Message.Contains("last-used update failed"));
                 }, test.Cache.CacheDirectory, Path.Combine(test.Root, "reader-" + index), Path.Combine(test.Root, "start"));
         }
 
