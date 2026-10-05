@@ -12,8 +12,8 @@ namespace System.Reflection
     /// A MetadataLoadContext represents a closed universe of Type objects loaded for inspection-only purposes.
     /// Each MetadataLoadContext can have its own binding rules and is isolated from all other MetadataLoadContexts.
     ///
-    /// A MetadataLoadContext serves as a dictionary that binds assembly names to Assembly instances that were previously
-    /// loaded into the context or need to be loaded.
+    /// A MetadataLoadContext serves as a dictionary that binds assembly names to the Assembly instances that its
+    /// MetadataAssemblyResolver returns for them. Loading an assembly into the context does not bind its name.
     ///
     /// Assemblies are treated strictly as metadata. There are no restrictions on loading assemblies based
     /// on target platform, CPU architecture or pointer size. There are no restrictions on the assembly designated
@@ -43,8 +43,8 @@ namespace System.Reflection
     /// That method should load the requested assembly and return it.
     /// To do this, it can use LoadFromAssemblyPath() or one of its variants (LoadFromStream(), LoadFromByteArray()).
     ///
-    /// Once an assembly has been bound, no assembly with the same assembly name identity
-    /// can be bound again from a different location unless the Mvids are identical.
+    /// Once an assembly has been loaded, no assembly with the same assembly name identity
+    /// can be loaded again from a different location unless the Mvids are identical.
     ///
     /// Once loaded, the underlying file may be locked for the duration of the MetadataLoadContext's lifetime. You can
     /// release the locks by disposing the MetadataLoadContext object. The behavior of any Type, Assembly or other reflection
@@ -115,9 +115,12 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Loads an assembly from a specific path on the disk and binds its assembly name to it in the MetadataLoadContext. If a prior
+        /// Loads an assembly from a specific path on the disk into the MetadataLoadContext. If a prior
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
+        ///
+        /// Loading an assembly does not bind its name. References to it, and LoadFromAssemblyName(), are resolved only through
+        /// the MetadataAssemblyResolver, which can return this assembly.
         /// </summary>
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
@@ -129,9 +132,12 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Loads an assembly from a byte array and binds its assembly name to it in the MetadataLoadContext. If a prior
+        /// Loads an assembly from a byte array into the MetadataLoadContext. If a prior
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
+        ///
+        /// Loading an assembly does not bind its name. References to it, and LoadFromAssemblyName(), are resolved only through
+        /// the MetadataAssemblyResolver, which can return this assembly.
         /// </summary>
         public Assembly LoadFromByteArray(byte[] assembly)
         {
@@ -143,9 +149,12 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Loads an assembly from a stream and binds its assembly name to it in the MetadataLoadContext. If a prior
+        /// Loads an assembly from a stream into the MetadataLoadContext. If a prior
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
+        ///
+        /// Loading an assembly does not bind its name. References to it, and LoadFromAssemblyName(), are resolved only through
+        /// the MetadataAssemblyResolver, which can return this assembly.
         ///
         /// The MetadataLoadContext takes ownership of the Stream passed into this method. The original owner must not mutate its position, dispose the Stream or
         /// assume that its position will stay unchanged.
@@ -161,8 +170,9 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound by to this name, that assembly is returned.
+        /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound to this name, that assembly is returned.
         /// Otherwise, the MetadataLoadContext calls the specified MetadataAssemblyResolver. If the resolver returns null, this method throws a FileNotFoundException.
+        /// That failure is remembered as well: later requests for the same name throw without calling the resolver again.
         ///
         /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() but does not match the behavior of
         /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
@@ -179,8 +189,9 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound by to this name, that assembly is returned.
+        /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound to this name, that assembly is returned.
         /// Otherwise, the MetadataLoadContext calls the specified MetadataAssemblyResolver. If the resolver returns null, this method throws a FileNotFoundException.
+        /// That failure is remembered as well: later requests for the same name throw without calling the resolver again.
         ///
         /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() resolve event but does not match the behavior of
         /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)

@@ -175,10 +175,10 @@
     <value>An assembly that was not created by this MetadataLoadContext object was returned from its MetadataAssemblyResolver.</value>
   </data>
   <data name="FileLoadDuplicateAssemblies" xml:space="preserve">
-    <value>The assembly '{0}' has already loaded been loaded into this MetadataLoadContext.</value>
+    <value>The assembly '{0}' has already been loaded into this MetadataLoadContext.</value>
   </data>
   <data name="FileNotFoundAssembly" xml:space="preserve">
-    <value>Could not find assembly '{0}'. Either explicitly load this assembly using a method such as LoadFromAssemblyPath() or use a MetadataAssemblyResolver that returns a valid assembly.</value>
+    <value>Could not find assembly '{0}'. The MetadataAssemblyResolver did not return it. An assembly loaded into the MetadataLoadContext, for example with LoadFromAssemblyPath(), is used for this name only if the resolver returns it.</value>
   </data>
   <data name="FileNotFoundModule" xml:space="preserve">
     <value>Could not find the module file for '{0}'.</value>
