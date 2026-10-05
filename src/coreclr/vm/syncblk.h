@@ -32,7 +32,7 @@
 //
 // The process-global g_pSyncTable maps indices stored in ObjHeaders to SyncTableEntries. When the table grows,
 // it is replaced by a larger table and its entries are copied. Old tables are retained until a GC can safely
-// reclaim them.
+// reclaim them to allow lock-free access.
 //
 // SyncBlocks are allocated from SyncBlockArrays managed by the SyncBlockCache, which manages free SyncBlocks
 // and SyncTableEntries.
