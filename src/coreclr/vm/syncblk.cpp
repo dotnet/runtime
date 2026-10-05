@@ -819,29 +819,6 @@ void    SyncBlockCache::DeleteSyncBlockMemory(SyncBlock *psb)
 
 }
 
-// free a used sync block
-void SyncBlockCache::GCDeleteSyncBlock(SyncBlock *psb)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Destruct the SyncBlock, but don't reclaim its memory.  (Overridden
-    // operator delete).
-    delete psb;
-
-    m_ActiveCount--;
-    m_FreeCount++;
-
-    psb->m_pNext = m_FreeBlockList;
-    m_FreeBlockList = psb;
-}
-
 void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
 {
     CONTRACTL

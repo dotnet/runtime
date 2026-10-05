@@ -612,9 +612,6 @@ class SyncBlockCache
     // returns the sync block memory to the free pool but does not destruct sync block (must own cache lock already)
     void    DeleteSyncBlockMemory(SyncBlock *sb);
 
-    // return sync block to cache or delete, called from GC
-    void    GCDeleteSyncBlock(SyncBlock *sb);
-
     void    GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
 
     void    GCDone(BOOL demoting, int max_gen);
@@ -754,14 +751,6 @@ class ObjHeader
 
         _ASSERTE(m_SyncBlockValue & BIT_SBLK_SPIN_LOCK);
         InterlockedAnd((LONG*)&m_SyncBlockValue, ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX));
-    }
-
-    // Used only GC
-    void GCResetIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_SyncBlockValue.RawValue() &=~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX);
     }
 
     // For now, use interlocked operations to twiddle bits in the bitfield portion.
