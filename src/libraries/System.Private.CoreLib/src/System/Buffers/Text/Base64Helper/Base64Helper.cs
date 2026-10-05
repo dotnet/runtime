@@ -16,13 +16,15 @@ namespace System.Buffers.Text
         internal const int MaxStackallocThreshold = 256;
 
 #if NET
+        private const int SmallDecodingBufferLength = 32;
+
         [InlineArray(MaxStackallocThreshold)]
         internal struct DecodingBuffer
         {
             private byte _element0;
         }
 
-        [InlineArray(32)]
+        [InlineArray(SmallDecodingBufferLength)]
         internal struct SmallDecodingBuffer
         {
             private byte _element0;
@@ -54,9 +56,12 @@ namespace System.Buffers.Text
         private static void StoreArmVector128x3(Span<byte> destination, Vector128<byte> first, Vector128<byte> second, Vector128<byte> third)
         {
             var table = (first, second, third);
-            AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)0, 16, 32, 1, 17, 33, 2, 18, 34, 3, 19, 35, 4, 20, 36, 5)).CopyTo(destination);
-            AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)21, 37, 6, 22, 38, 7, 23, 39, 8, 24, 40, 9, 25, 41, 10, 26)).CopyTo(destination.Slice(16));
-            AdvSimd.Arm64.VectorTableLookup(table, Vector128.Create((byte)42, 11, 27, 43, 12, 28, 44, 13, 29, 45, 14, 30, 46, 15, 31, 47)).CopyTo(destination.Slice(32));
+            Vector128<byte> firstIndices = Vector128.Create((byte)0, 16, 32, 1, 17, 33, 2, 18, 34, 3, 19, 35, 4, 20, 36, 5);
+            Vector128<byte> secondIndices = Vector128.Create((byte)21, 37, 6, 22, 38, 7, 23, 39, 8, 24, 40, 9, 25, 41, 10, 26);
+            Vector128<byte> thirdIndices = Vector128.Create((byte)42, 11, 27, 43, 12, 28, 44, 13, 29, 45, 14, 30, 46, 15, 31, 47);
+            AdvSimd.Arm64.VectorTableLookup(table, firstIndices).CopyTo(destination);
+            AdvSimd.Arm64.VectorTableLookup(table, secondIndices).CopyTo(destination.Slice(16));
+            AdvSimd.Arm64.VectorTableLookup(table, thirdIndices).CopyTo(destination.Slice(32));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

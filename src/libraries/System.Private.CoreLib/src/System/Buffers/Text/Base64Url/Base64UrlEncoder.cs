@@ -164,7 +164,9 @@ namespace System.Buffers.Text
         public static string EncodeToString(ReadOnlySpan<byte> source)
         {
             if (source.IsEmpty)
+            {
                 return string.Empty;
+            }
 
 #if NET
             int encodedLength = GetEncodedLength(source.Length);
@@ -264,8 +266,8 @@ namespace System.Buffers.Text
 
                 uint i = t0 << 8;
 
-                byte i0 = encodingMap[(int)((i >> 10))];
-                byte i1 = encodingMap[(int)(((i >> 4) & 0x3F))];
+                byte i0 = encodingMap[(int)(i >> 10)];
+                byte i1 = encodingMap[(int)((i >> 4) & 0x3F)];
 
                 BinaryPrimitives.WriteUInt16LittleEndian(dest, (ushort)(i0 | (i1 << 8)));
             }
@@ -278,9 +280,9 @@ namespace System.Buffers.Text
 
                 uint i = (t0 << 16) | (t1 << 8);
 
-                byte i0 = encodingMap[(int)((i >> 18))];
-                byte i1 = encodingMap[(int)(((i >> 12) & 0x3F))];
-                byte i2 = encodingMap[(int)(((i >> 6) & 0x3F))];
+                byte i0 = encodingMap[(int)(i >> 18)];
+                byte i1 = encodingMap[(int)((i >> 12) & 0x3F)];
+                byte i2 = encodingMap[(int)((i >> 6) & 0x3F)];
 
                 BinaryPrimitives.WriteUInt16LittleEndian(dest, (ushort)(i0 | (i1 << 8)));
                 dest[2] = i2;

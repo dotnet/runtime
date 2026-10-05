@@ -20,12 +20,36 @@ namespace System.Buffers.Text
     // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
     internal static partial class Base64Helper
     {
+#if NET
+        private const int Avx512DecodeInputLength = 64;
+        private const int Avx512DecodeOutputLength = 48;
+        private const int Avx512DecodeStoreLength = 64;
+        private const int Avx512DecodeMinInputLength = 88; // 64 input elements + 24 to cover the store overshoot and padding.
+        private const int Avx512DecodePairMinInputLength = Avx512DecodeInputLength + Avx512DecodeMinInputLength;
+        private const int Avx512DecodePairMinDestinationLength = Avx512DecodeOutputLength + Avx512DecodeStoreLength;
+        private const int Avx2DecodeInputLength = 32;
+        private const int Avx2DecodeOutputLength = 24;
+        private const int Avx2DecodeStoreLength = 32;
+        private const int Avx2DecodeMinInputLength = 45; // 32 input elements + 13 to cover the store overshoot and padding.
+        private const int Vector128DecodeInputLength = 16;
+        private const int Vector128DecodeOutputLength = 12;
+        private const int Vector128DecodeStoreLength = 16;
+        private const int Vector128DecodeMinInputLength = 24; // 16 input elements + 8 to cover the store overshoot and padding.
+        private const int AdvSimdDecodeInputLength = 64;
+        private const int AdvSimdDecodeOutputLength = 48;
+        private const int AdvSimdDecodeMinInputLength = AdvSimdDecodeInputLength + 2; // Leave possible padding for scalar decoding.
+        private const int Avx512DecodeTailInputLength = 12;
+        private const int Avx512DecodeTailOutputLength = 9;
+#endif
+
         internal static byte[] DecodeToArray<TBase64Decoder, T>(TBase64Decoder decoder, ReadOnlySpan<T> source)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
         {
             if (source.IsEmpty)
+            {
                 return Array.Empty<byte>();
+            }
 
             int upperBound = decoder.GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
@@ -33,11 +57,11 @@ namespace System.Buffers.Text
 #if NET
             SmallDecodingBuffer smallBuffer;
             DecodingBuffer buffer;
-            if ((uint)upperBound <= 32)
+            if ((uint)upperBound <= SmallDecodingBufferLength)
             {
                 smallBuffer = default;
                 destination = smallBuffer;
-                destination = destination.Slice(32 - upperBound);
+                destination = destination.Slice(SmallDecodingBufferLength - upperBound);
             }
             else if ((uint)upperBound <= MaxStackallocThreshold)
             {
@@ -45,17 +69,7 @@ namespace System.Buffers.Text
                 destination = buffer;
             }
 #else
-            Span<byte> buffer = stackalloc byte[MaxStackallocThreshold]
-            {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-            };
+            Span<byte> buffer = stackalloc byte[MaxStackallocThreshold];
             if ((uint)upperBound <= MaxStackallocThreshold)
             {
                 destination = buffer;
@@ -70,9 +84,16 @@ namespace System.Buffers.Text
             Debug.Assert(status is OperationStatus.Done or OperationStatus.InvalidData);
             byte[] result = destination.Slice(0, bytesWritten).ToArray();
             if (rented is not null)
+            {
                 ArrayPool<byte>.Shared.Return(rented);
+            }
 
-            return status == OperationStatus.Done ? result : throw new FormatException(SR.Format_BadBase64Char);
+            if (status != OperationStatus.Done)
+            {
+                throw new FormatException(SR.Format_BadBase64Char);
+            }
+
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -96,245 +117,241 @@ namespace System.Buffers.Text
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
         {
+            int srcLength = decoder.SrcLength(isFinalBlock, source.Length);
+            int destLength = bytes.Length;
+            int maxSrcLength = srcLength;
+            int decodedLength = decoder.GetMaxDecodedLength(srcLength);
+
+            // max. 2 padding chars
+            if (destLength < decodedLength - 2)
             {
-                int srcLength = decoder.SrcLength(isFinalBlock, source.Length);
-                int destLength = bytes.Length;
-                int maxSrcLength = srcLength;
-                int decodedLength = decoder.GetMaxDecodedLength(srcLength);
+                // For overflow see comment below
+                maxSrcLength = destLength / 3 * 4;
+            }
 
-                // max. 2 padding chars
-                if (destLength < decodedLength - 2)
-                {
-                    // For overflow see comment below
-                    maxSrcLength = destLength / 3 * 4;
-                }
-
-                ReadOnlySpan<T> src = source;
-                Span<byte> dest = bytes;
-                int srcEnd = source.Length - srcLength;
-                int srcMax;
+            ReadOnlySpan<T> src = source;
+            Span<byte> dest = bytes;
+            int srcEnd = source.Length - srcLength;
+            int srcMax;
 
 #if NET
-                if (maxSrcLength >= 16)
+            if (maxSrcLength >= Vector128DecodeInputLength)
+            {
+                if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported)
                 {
-
-                    if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported)
+                    if (src.Length >= Vector128DecodeInputLength && dest.Length >= Avx512DecodeTailOutputLength)
                     {
-                        if (src.Length >= 16 && dest.Length >= 9)
-                            Avx512Decode(decoder, ref src, ref dest);
-                        goto Scalar;
+                        Avx512Decode(decoder, ref src, ref dest);
                     }
 
-                    if (Avx2.IsSupported && src.Length >= 45 && dest.Length >= 32)
-                    {
-                        Avx2Decode(decoder, ref src, ref dest);
-
-                        if (src.Length == srcEnd)
-                        {
-                            goto DoneExit;
-                        }
-                    }
-
-                    if (AdvSimd.Arm64.IsSupported && src.Length >= 66 && dest.Length >= 48)
-                    {
-                        AdvSimdDecode(decoder, ref src, ref dest);
-
-                        if (src.Length == srcEnd)
-                        {
-                            goto DoneExit;
-                        }
-                    }
-
-                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian && src.Length >= 24 && dest.Length >= 16)
-                    {
-                        Vector128Decode(decoder, ref src, ref dest);
-
-                        if (src.Length == srcEnd)
-                        {
-                            goto DoneExit;
-                        }
-                    }
+                    goto Scalar;
                 }
-            Scalar:
+
+                if (Avx2.IsSupported && src.Length >= Avx2DecodeMinInputLength && dest.Length >= Avx2DecodeStoreLength)
+                {
+                    Avx2Decode(decoder, ref src, ref dest);
+                }
+
+                if (AdvSimd.Arm64.IsSupported && src.Length >= AdvSimdDecodeMinInputLength && dest.Length >= AdvSimdDecodeOutputLength)
+                {
+                    AdvSimdDecode(decoder, ref src, ref dest);
+                }
+
+                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
+                    BitConverter.IsLittleEndian &&
+                    src.Length >= Vector128DecodeMinInputLength &&
+                    dest.Length >= Vector128DecodeStoreLength)
+                {
+                    Vector128Decode(decoder, ref src, ref dest);
+                }
+            }
+        Scalar:
 #endif
 
-                // Last bytes could have padding characters, so process them separately and treat them as valid only if isFinalBlock is true
-                // if isFinalBlock is false, padding characters are considered invalid
-                int skipLastChunk = isFinalBlock ? 4 : 0;
+            // Last bytes could have padding characters, so process them separately and treat them as valid only if isFinalBlock is true
+            // if isFinalBlock is false, padding characters are considered invalid
+            int skipLastChunk = isFinalBlock ? 4 : 0;
 
-                if (destLength >= decodedLength)
-                {
-                    maxSrcLength = srcLength - skipLastChunk;
-                }
-                else
-                {
-                    // This should never overflow since destLength here is less than int.MaxValue / 4 * 3 (i.e. 1610612733)
-                    // Therefore, (destLength / 3) * 4 will always be less than 2147483641
-                    Debug.Assert(destLength < (int.MaxValue / 4 * 3));
+            if (destLength >= decodedLength)
+            {
+                maxSrcLength = srcLength - skipLastChunk;
+            }
+            else
+            {
+                // This should never overflow since destLength here is less than int.MaxValue / 4 * 3 (i.e. 1610612733)
+                // Therefore, (destLength / 3) * 4 will always be less than 2147483641
+                Debug.Assert(destLength < (int.MaxValue / 4 * 3));
 #if NET
-                    (maxSrcLength, int remainder) = int.DivRem(destLength, 3);
-                    maxSrcLength *= 4;
+                (maxSrcLength, int remainder) = int.DivRem(destLength, 3);
+                maxSrcLength *= 4;
 #else
-                    maxSrcLength = (destLength / 3) * 4;
-                    int remainder = (int)((uint)destLength % 3);
+                maxSrcLength = (destLength / 3) * 4;
+                int remainder = (int)((uint)destLength % 3);
 #endif
-                    if (isFinalBlock && remainder > 0)
-                    {
-                        srcLength &= ~0x3; // In case of Base64UrlDecoder source can be not a multiple of 4, round down to multiple of 4
-                    }
-                }
-
-                ReadOnlySpan<sbyte> decodingMap = decoder.DecodingMap;
-                srcMax = Math.Max(3, source.Length - maxSrcLength);
-
-                while (src.Length > srcMax && dest.Length >= 3)
+                if (isFinalBlock && remainder > 0)
                 {
-                    int result = decoder.DecodeFourElements(src, decodingMap);
-
-                    if (result < 0)
-                    {
-                        goto InvalidDataExit;
-                    }
-
-                    WriteThreeLowOrderBytes(dest, result);
-                    src = src.Slice(4);
-                    dest = dest.Slice(3);
+                    srcLength &= ~0x3; // In case of Base64UrlDecoder source can be not a multiple of 4, round down to multiple of 4
                 }
+            }
 
-                if (maxSrcLength != srcLength - skipLastChunk)
+            ReadOnlySpan<sbyte> decodingMap = decoder.DecodingMap;
+            srcMax = Math.Max(3, source.Length - maxSrcLength);
+
+            while (src.Length > srcMax && dest.Length >= 3)
+            {
+                int result = decoder.DecodeFourElements(src, decodingMap);
+
+                if (result < 0)
                 {
-                    goto DestinationTooSmallExit;
+                    goto InvalidDataExit;
                 }
 
-                if (src.Length == srcEnd)
+                WriteThreeLowOrderBytes(dest, result);
+                src = src.Slice(4);
+                dest = dest.Slice(3);
+            }
+
+            if (maxSrcLength != srcLength - skipLastChunk)
+            {
+                goto DestinationTooSmallExit;
+            }
+
+            if (src.Length == srcEnd)
+            {
+                if (isFinalBlock)
                 {
-                    if (isFinalBlock)
-                    {
-                        goto InvalidDataExit;
-                    }
-
-                    if (src.IsEmpty)
-                    {
-                        goto DoneExit;
-                    }
-
-                    goto NeedMoreDataExit;
+                    goto InvalidDataExit;
                 }
 
-                // if isFinalBlock is false, we will never reach this point
-                // Handle remaining bytes, for Base64 its always 4 bytes, for Base64Url up to 8 bytes left.
-                // If more than 4 bytes remained it will end up in DestinationTooSmallExit or InvalidDataExit (might succeed after whitespace removed)
-                int remaining = src.Length - srcEnd;
-                Debug.Assert(typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? remaining == 4 : remaining < 8);
-                int decodeLength = typeof(TBase64Decoder) == typeof(Base64DecoderByte) || typeof(TBase64Decoder) == typeof(Base64DecoderChar) ? 4 : remaining;
-                int i0 = decoder.DecodeRemaining(src, decodingMap, decodeLength, out uint t2, out uint t3);
+                if (src.IsEmpty)
+                {
+                    goto DoneExit;
+                }
+
+                goto NeedMoreDataExit;
+            }
+
+            // if isFinalBlock is false, we will never reach this point
+            // Handle remaining bytes, for Base64 its always 4 bytes, for Base64Url up to 8 bytes left.
+            // If more than 4 bytes remained it will end up in DestinationTooSmallExit or InvalidDataExit (might succeed after whitespace removed)
+            int remaining = src.Length - srcEnd;
+            Debug.Assert(typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? remaining == 4 : remaining < 8);
+            int decodeLength = remaining;
+            if (typeof(TBase64Decoder) == typeof(Base64DecoderByte) || typeof(TBase64Decoder) == typeof(Base64DecoderChar))
+            {
+                decodeLength = 4;
+            }
+            int i0 = decoder.DecodeRemaining(src, decodingMap, decodeLength, out uint t2, out uint t3);
+
+            if (i0 < 0)
+            {
+                goto InvalidDataExit;
+            }
+
+            if (!decoder.IsValidPadding(t3))
+            {
+                int i2 = decodingMap[(byte)t2];
+                int i3 = decodingMap[(byte)t3];
+
+                i2 <<= 6;
+
+                i0 |= i3;
+                i0 |= i2;
 
                 if (i0 < 0)
                 {
                     goto InvalidDataExit;
                 }
 
-                if (!decoder.IsValidPadding(t3))
+                if (dest.Length < 3)
                 {
-                    int i2 = decodingMap[(byte)t2];
-                    int i3 = decodingMap[(byte)t3];
-
-                    i2 <<= 6;
-
-                    i0 |= i3;
-                    i0 |= i2;
-
-                    if (i0 < 0)
-                    {
-                        goto InvalidDataExit;
-                    }
-                    if (dest.Length < 3)
-                    {
-                        goto DestinationTooSmallExit;
-                    }
-
-                    WriteThreeLowOrderBytes(dest, i0);
-                    dest = dest.Slice(3);
-                    src = src.Slice(4);
-                }
-                else if (!decoder.IsValidPadding(t2))
-                {
-                    int i2 = decodingMap[(byte)t2];
-
-                    i2 <<= 6;
-
-                    i0 |= i2;
-
-                    if ((i0 & 0x800000c0) != 0) // if negative or 2 unused bits are not 0.
-                    {
-                        goto InvalidDataExit;
-                    }
-                    if (dest.Length < 2)
-                    {
-                        goto DestinationTooSmallExit;
-                    }
-
-                    dest[0] = (byte)(i0 >> 16);
-                    dest[1] = (byte)(i0 >> 8);
-                    dest = dest.Slice(2);
-                    src = src.Slice(remaining);
-                }
-                else
-                {
-                    if ((i0 & 0x8000F000) != 0) // if negative or 4 unused bits are not 0.
-                    {
-                        goto InvalidDataExit;
-                    }
-                    if (dest.Length < 1)
-                    {
-                        goto DestinationTooSmallExit;
-                    }
-
-                    dest[0] = (byte)(i0 >> 16);
-                    dest = dest.Slice(1);
-                    src = src.Slice(remaining);
+                    goto DestinationTooSmallExit;
                 }
 
-                if (srcLength != source.Length)
+                WriteThreeLowOrderBytes(dest, i0);
+                dest = dest.Slice(3);
+                src = src.Slice(4);
+            }
+            else if (!decoder.IsValidPadding(t2))
+            {
+                int i2 = decodingMap[(byte)t2];
+
+                i2 <<= 6;
+
+                i0 |= i2;
+
+                if ((i0 & 0x800000c0) != 0) // if negative or 2 unused bits are not 0.
                 {
                     goto InvalidDataExit;
                 }
 
-            DoneExit:
-                bytesConsumed = source.Length - src.Length;
-                bytesWritten = destLength - dest.Length;
-                return OperationStatus.Done;
-
-            DestinationTooSmallExit:
-                if (srcLength != source.Length && isFinalBlock)
+                if (dest.Length < 2)
                 {
-                    goto InvalidDataExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
+                    goto DestinationTooSmallExit;
                 }
 
-                if (ignoreWhiteSpace)
+                dest[0] = (byte)(i0 >> 16);
+                dest[1] = (byte)(i0 >> 8);
+                dest = dest.Slice(2);
+                src = src.Slice(remaining);
+            }
+            else
+            {
+                if ((i0 & 0x8000F000) != 0) // if negative or 4 unused bits are not 0.
                 {
-                    // Fall through to InvalidDataFallback which strips whitespace and re-evaluates destination size requirement
                     goto InvalidDataExit;
                 }
 
-                bytesConsumed = source.Length - src.Length;
-                bytesWritten = destLength - dest.Length;
-                return OperationStatus.DestinationTooSmall;
+                if (dest.Length < 1)
+                {
+                    goto DestinationTooSmallExit;
+                }
 
-            NeedMoreDataExit:
-                bytesConsumed = source.Length - src.Length;
-                bytesWritten = destLength - dest.Length;
-                return OperationStatus.NeedMoreData;
-
-            InvalidDataExit:
-                bytesConsumed = source.Length - src.Length;
-                bytesWritten = destLength - dest.Length;
-                return ignoreWhiteSpace ?
-                    InvalidDataFallback(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock) :
-                    OperationStatus.InvalidData;
+                dest[0] = (byte)(i0 >> 16);
+                dest = dest.Slice(1);
+                src = src.Slice(remaining);
             }
 
-            static OperationStatus InvalidDataFallback(TBase64Decoder decoder, ReadOnlySpan<T> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
+            if (srcLength != source.Length)
+            {
+                goto InvalidDataExit;
+            }
+
+        DoneExit:
+            bytesConsumed = source.Length - src.Length;
+            bytesWritten = destLength - dest.Length;
+            return OperationStatus.Done;
+
+        DestinationTooSmallExit:
+            if (srcLength != source.Length && isFinalBlock)
+            {
+                goto InvalidDataExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
+            }
+
+            if (ignoreWhiteSpace)
+            {
+                // Fall through to InvalidDataFallback which strips whitespace and re-evaluates destination size requirement
+                goto InvalidDataExit;
+            }
+
+            bytesConsumed = source.Length - src.Length;
+            bytesWritten = destLength - dest.Length;
+            return OperationStatus.DestinationTooSmall;
+
+        NeedMoreDataExit:
+            bytesConsumed = source.Length - src.Length;
+            bytesWritten = destLength - dest.Length;
+            return OperationStatus.NeedMoreData;
+
+        InvalidDataExit:
+            bytesConsumed = source.Length - src.Length;
+            bytesWritten = destLength - dest.Length;
+            return ignoreWhiteSpace ?
+                InvalidDataFallback(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock) :
+                OperationStatus.InvalidData;
+
+            static OperationStatus InvalidDataFallback(TBase64Decoder decoder, ReadOnlySpan<T> source, Span<byte> bytes,
+                ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
             {
                 source = source.Slice(bytesConsumed);
                 bytes = bytes.Slice(bytesWritten);
@@ -391,7 +408,8 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
+        internal static OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> buffer,
+            out int bytesWritten, bool ignoreWhiteSpace)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             if (!decoder.IsInvalidLength(buffer.Length))
@@ -406,7 +424,9 @@ namespace System.Buffers.Text
                 {
                     OperationStatus status = DecodeInPlaceTail(decoder, buffer, buffer, decoder.DecodingMap, out bytesWritten);
                     if (status == OperationStatus.Done || !ignoreWhiteSpace)
+                    {
                         return status;
+                    }
                     goto Invalid;
                 }
 
@@ -420,7 +440,8 @@ namespace System.Buffers.Text
                 OperationStatus.InvalidData;
         }
 
-        private static OperationStatus DecodeFromUtf8InPlaceCore<TBase64Decoder>(TBase64Decoder decoder, Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
+        private static OperationStatus DecodeFromUtf8InPlaceCore<TBase64Decoder>(TBase64Decoder decoder, Span<byte> buffer,
+            out int bytesWritten, bool ignoreWhiteSpace)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             ReadOnlySpan<byte> src = buffer;
@@ -428,19 +449,34 @@ namespace System.Buffers.Text
 #if NET
             if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && typeof(TBase64Decoder) != typeof(Base64DecoderByte))
             {
-                if (src.Length >= 16)
+                if (src.Length >= Vector128DecodeInputLength)
+                {
                     Avx512Decode(decoder, ref src, ref dest);
+                }
             }
             else
             {
-                if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && src.Length >= 88)
+                if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && src.Length >= Avx512DecodeMinInputLength)
+                {
                     Avx512Decode(decoder, ref src, ref dest, decodeNarrow: false);
-                if (Avx2.IsSupported && src.Length >= 45)
+                }
+
+                if (Avx2.IsSupported && src.Length >= Avx2DecodeMinInputLength)
+                {
                     Avx2Decode(decoder, ref src, ref dest);
-                if (AdvSimd.Arm64.IsSupported && src.Length >= 66)
+                }
+
+                if (AdvSimd.Arm64.IsSupported && src.Length >= AdvSimdDecodeMinInputLength)
+                {
                     AdvSimdDecode(decoder, ref src, ref dest);
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian && src.Length >= 24)
+                }
+
+                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
+                    BitConverter.IsLittleEndian &&
+                    src.Length >= Vector128DecodeMinInputLength)
+                {
                     Vector128Decode(decoder, ref src, ref dest);
+                }
             }
 #endif
             ReadOnlySpan<sbyte> decodingMap = decoder.DecodingMap;
@@ -448,14 +484,19 @@ namespace System.Buffers.Text
             {
                 int result = decoder.DecodeFourElements(src, decodingMap);
                 if (result < 0)
+                {
                     goto Invalid;
+                }
+
                 WriteThreeLowOrderBytes(dest, result);
                 src = src.Slice(4);
                 dest = dest.Slice(3);
             }
 
             if (DecodeInPlaceTail(decoder, src, dest, decodingMap, out int finalWritten) != OperationStatus.Done)
+            {
                 goto Invalid;
+            }
 
             bytesWritten = buffer.Length - dest.Length + finalWritten;
             return OperationStatus.Done;
@@ -476,14 +517,20 @@ namespace System.Buffers.Text
             int remaining = typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? 4 : src.Length;
             int value = decoder.DecodeRemaining(src, decodingMap, remaining, out uint t2, out uint t3);
             if (value < 0)
+            {
                 return OperationStatus.InvalidData;
+            }
+
             if (!decoder.IsValidPadding(t3))
             {
                 value |= decodingMap[(byte)t2] << 6;
                 int i3 = decodingMap[(byte)t3];
                 value |= i3;
                 if (value < 0)
+                {
                     return OperationStatus.InvalidData;
+                }
+
                 WriteThreeLowOrderBytes(dest, value);
                 bytesWritten = 3;
             }
@@ -491,7 +538,9 @@ namespace System.Buffers.Text
             {
                 value |= decodingMap[(byte)t2] << 6;
                 if ((value & 0x800000c0) != 0)
+                {
                     return OperationStatus.InvalidData;
+                }
                 dest[0] = (byte)(value >> 16);
                 dest[1] = (byte)(value >> 8);
                 bytesWritten = 2;
@@ -499,7 +548,9 @@ namespace System.Buffers.Text
             else
             {
                 if ((value & 0x8000F000) != 0)
+                {
                     return OperationStatus.InvalidData;
+                }
                 dest[0] = (byte)(value >> 16);
                 bytesWritten = 1;
             }
@@ -507,7 +558,8 @@ namespace System.Buffers.Text
             return OperationStatus.Done;
         }
 
-        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> source,
+            Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             const int BlockSize = 4;
@@ -573,7 +625,8 @@ namespace System.Buffers.Text
                     localIsFinalBlock = false;
                 }
 
-                status = DecodeFrom<TBase64Decoder, byte>(decoder, buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
+                status = DecodeFrom<TBase64Decoder, byte>(decoder, buffer.Slice(0, bufferIdx), bytes,
+                    out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
 
                 if (status != OperationStatus.Done)
                 {
@@ -612,7 +665,8 @@ namespace System.Buffers.Text
             return status;
         }
 
-        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source,
+            Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<ushort>
         {
             const int BlockSize = 4;
@@ -678,7 +732,8 @@ namespace System.Buffers.Text
                     localIsFinalBlock = false;
                 }
 
-                status = DecodeFrom(decoder, buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
+                status = DecodeFrom(decoder, buffer.Slice(0, bufferIdx), bytes,
+                    out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
 
                 if (status != OperationStatus.Done)
                 {
@@ -754,7 +809,8 @@ namespace System.Buffers.Text
             return padding;
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> source, ref int destIndex, uint sourceIndex)
+        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> source,
+            ref int destIndex, uint sourceIndex)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             int BlockSize = Math.Min(source.Length - (int)sourceIndex, 4);
@@ -837,7 +893,8 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
-        private static void Avx512Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref ReadOnlySpan<T> srcBytes, ref Span<byte> destBytes, bool decodeNarrow = true)
+        private static void Avx512Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref ReadOnlySpan<T> srcBytes,
+            ref Span<byte> destBytes, bool decodeNarrow = true)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
         {
@@ -864,10 +921,10 @@ namespace System.Buffers.Text
 
             // This algorithm requires AVX512VBMI support.
             // Vbmi was first introduced in CannonLake and is available from IceLake on.
-            while (src.Length >= 152 && dest.Length >= 112)
+            while (src.Length >= Avx512DecodePairMinInputLength && dest.Length >= Avx512DecodePairMinDestinationLength)
             {
                 if (!decoder.TryLoadVector512(src, out Vector512<sbyte> first) ||
-                    !decoder.TryLoadVector512(src.Slice(64), out Vector512<sbyte> second))
+                    !decoder.TryLoadVector512(src.Slice(Avx512DecodeInputLength), out Vector512<sbyte> second))
                 {
                     break;
                 }
@@ -880,12 +937,12 @@ namespace System.Buffers.Text
                 }
 
                 PackVector(firstIndex, vbmiPackedLanesControl, mergeConstant0, mergeConstant1).CopyTo(dest);
-                PackVector(secondIndex, vbmiPackedLanesControl, mergeConstant0, mergeConstant1).CopyTo(dest.Slice(48));
-                src = src.Slice(128);
-                dest = dest.Slice(96);
+                PackVector(secondIndex, vbmiPackedLanesControl, mergeConstant0, mergeConstant1).CopyTo(dest.Slice(Avx512DecodeOutputLength));
+                src = src.Slice(2 * Avx512DecodeInputLength);
+                dest = dest.Slice(2 * Avx512DecodeOutputLength);
             }
 
-            while (src.Length >= 88 && dest.Length >= 64)
+            while (src.Length >= Avx512DecodeMinInputLength && dest.Length >= Avx512DecodeStoreLength)
             {
                 if (!decoder.TryLoadVector512(src, out Vector512<sbyte> str) ||
                     !TryDecodeVector(str, vbmiLookup0, vbmiLookup1, vbmiPackedLanesControl, mergeConstant0, mergeConstant1, out Vector512<byte> result))
@@ -894,14 +951,16 @@ namespace System.Buffers.Text
                 }
 
                 result.CopyTo(dest);
-                src = src.Slice(64);
-                dest = dest.Slice(48);
+                src = src.Slice(Avx512DecodeInputLength);
+                dest = dest.Slice(Avx512DecodeOutputLength);
             }
 
             if (!decodeNarrow)
+            {
                 goto Exit;
+            }
 
-            while (src.Length >= 36 && dest.Length >= 24)
+            while (src.Length >= Avx2DecodeInputLength + 4 && dest.Length >= Avx2DecodeOutputLength)
             {
                 if (!decoder.TryLoadAvxVector256(src, out Vector256<sbyte> input) ||
                     !TryDecodeVector(input.ToVector512(), vbmiLookup0, vbmiLookup1,
@@ -915,11 +974,11 @@ namespace System.Buffers.Text
                 {
                     ThrowUnreachableException();
                 }
-                src = src.Slice(32);
-                dest = dest.Slice(24);
+                src = src.Slice(Avx2DecodeInputLength);
+                dest = dest.Slice(Avx2DecodeOutputLength);
             }
 
-            while (src.Length >= 20 && dest.Length >= 12)
+            while (src.Length >= Vector128DecodeInputLength + 4 && dest.Length >= Vector128DecodeOutputLength)
             {
                 if (!decoder.TryLoadVector128(src, out Vector128<byte> input) ||
                     !TryDecodeVector(input.ToVector256().ToVector512().AsSByte(), vbmiLookup0, vbmiLookup1,
@@ -932,15 +991,16 @@ namespace System.Buffers.Text
                 {
                     ThrowUnreachableException();
                 }
+
                 if (!BitConverter.TryWriteBytes(dest.Slice(8), result.AsUInt32().GetElement(2)))
                 {
                     ThrowUnreachableException();
                 }
-                src = src.Slice(16);
-                dest = dest.Slice(12);
+                src = src.Slice(Vector128DecodeInputLength);
+                dest = dest.Slice(Vector128DecodeOutputLength);
             }
 
-            while (src.Length >= 16 && dest.Length >= 9)
+            while (src.Length >= Vector128DecodeInputLength && dest.Length >= Avx512DecodeTailOutputLength)
             {
                 if (!decoder.TryLoadVector128(src, out Vector128<byte> input) ||
                     !TryDecodeVector(input.ToVector256().ToVector512().AsSByte(), vbmiLookup0, vbmiLookup1,
@@ -954,8 +1014,8 @@ namespace System.Buffers.Text
                     ThrowUnreachableException();
                 }
                 dest[8] = result.GetElement(8);
-                src = src.Slice(12);
-                dest = dest.Slice(9);
+                src = src.Slice(Avx512DecodeTailInputLength);
+                dest = dest.Slice(Avx512DecodeTailOutputLength);
             }
 
         Exit:
@@ -968,9 +1028,20 @@ namespace System.Buffers.Text
             {
                 Vector512<sbyte> origIndex = Avx512Vbmi.PermuteVar64x8x2(lookup0, str, lookup1);
                 Vector512<sbyte> errorVec = (origIndex.AsInt32() | str.AsInt32()).AsSByte();
-                ulong errors = errorMask == ulong.MaxValue ? errorVec.ExtractMostSignificantBits() :
-                    errorMask == uint.MaxValue ? errorVec.GetLower().ExtractMostSignificantBits() :
-                    errorVec.GetLower().GetLower().ExtractMostSignificantBits();
+                ulong errors;
+                if (errorMask == ulong.MaxValue)
+                {
+                    errors = errorVec.ExtractMostSignificantBits();
+                }
+                else if (errorMask == uint.MaxValue)
+                {
+                    errors = errorVec.GetLower().ExtractMostSignificantBits();
+                }
+                else
+                {
+                    errors = errorVec.GetLower().GetLower().ExtractMostSignificantBits();
+                }
+
                 if ((errors & errorMask) != 0)
                 {
                     result = default;
@@ -1039,7 +1110,7 @@ namespace System.Buffers.Text
             ReadOnlySpan<T> src = srcBytes;
             Span<byte> dest = destBytes;
 
-            while (src.Length >= 45 && dest.Length >= 32)
+            while (src.Length >= Avx2DecodeMinInputLength && dest.Length >= Avx2DecodeStoreLength)
             {
                 if (!decoder.TryLoadAvxVector256(src, out Vector256<sbyte> str))
                 {
@@ -1083,8 +1154,8 @@ namespace System.Buffers.Text
 
                 str.AsByte().CopyTo(dest);
 
-                src = src.Slice(32);
-                dest = dest.Slice(24);
+                src = src.Slice(Avx2DecodeInputLength);
+                dest = dest.Slice(Avx2DecodeOutputLength);
             }
 
             srcBytes = src;
@@ -1167,7 +1238,7 @@ namespace System.Buffers.Text
             Span<byte> dest = destBytes;
             Vector128<byte> offset = Vector128.Create<byte>(63);
 
-            while (src.Length >= 66 && dest.Length >= 48)
+            while (src.Length >= AdvSimdDecodeMinInputLength && dest.Length >= AdvSimdDecodeOutputLength)
             {
                 // Step 1: Load 64 bytes and de-interleave.
                 if (!decoder.TryLoadArmVector128x4(src,
@@ -1243,8 +1314,8 @@ namespace System.Buffers.Text
                 // Step 6: Interleave and store decoded results.
                 StoreArmVector128x3(dest, res1, res2, res3);
 
-                src = src.Slice(64);
-                dest = dest.Slice(48);
+                src = src.Slice(AdvSimdDecodeInputLength);
+                dest = dest.Slice(AdvSimdDecodeOutputLength);
             }
 
             srcBytes = src;
@@ -1347,7 +1418,7 @@ namespace System.Buffers.Text
             ReadOnlySpan<T> src = srcBytes;
             Span<byte> dest = destBytes;
 
-            while (src.Length >= 24 && dest.Length >= 16)
+            while (src.Length >= Vector128DecodeMinInputLength && dest.Length >= Vector128DecodeStoreLength)
             {
                 if (!decoder.TryLoadVector128(src, out Vector128<byte> str))
                 {
@@ -1437,8 +1508,8 @@ namespace System.Buffers.Text
 
                 str.CopyTo(dest);
 
-                src = src.Slice(16);
-                dest = dest.Slice(12);
+                src = src.Slice(Vector128DecodeInputLength);
+                dest = dest.Slice(Vector128DecodeOutputLength);
             }
 
             srcBytes = src;
