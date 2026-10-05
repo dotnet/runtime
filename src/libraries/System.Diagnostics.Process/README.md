@@ -11,12 +11,3 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3A
 
 ## Deployment
 `System.Diagnostics.Process` is included in the shared framework. The package does not need to be installed into any project compatible with .NET Standard 2.0.
-
-## Test isolation
-The tests use the default xUnit class-level parallelism in a single test project.
-Tests that change or observe process-wide state in ways that depend on other tests not running
-must use `RemoteExecutor`. On Windows, remote processes inherit the parent's console, so tests
-that change console code pages must also allocate a private console. Temporary files and
-directories should use the per-test paths provided by `FileCleanupTestBase`.
-Unix single-file runners do not support `RemoteExecutor`, so their `ProcessTests` collection
-remains nonparallel to preserve the working-directory test without skipping it.
