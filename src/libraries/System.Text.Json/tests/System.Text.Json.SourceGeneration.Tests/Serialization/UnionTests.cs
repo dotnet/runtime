@@ -54,9 +54,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(NullableEnumUnion))]
         [JsonSerializable(typeof(RecursiveNat))]
         [JsonSerializable(typeof(RecursiveNatReversed))]
-#if false // ActiveIssue https://github.com/dotnet/roslyn/issues/85762
         [JsonSerializable(typeof(NullableNat))]
-#endif
         [JsonSerializable(typeof(SelfReferentialUnion))]
         [JsonSerializable(typeof(ShapeUnion))]
         [JsonSerializable(typeof(WritableUnion))]
@@ -122,9 +120,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(NullableEnumUnion))]
         [JsonSerializable(typeof(RecursiveNat))]
         [JsonSerializable(typeof(RecursiveNatReversed))]
-#if false // ActiveIssue https://github.com/dotnet/roslyn/issues/85762
         [JsonSerializable(typeof(NullableNat))]
-#endif
         [JsonSerializable(typeof(SelfReferentialUnion))]
         [JsonSerializable(typeof(ShapeUnion))]
         [JsonSerializable(typeof(WritableUnion))]
