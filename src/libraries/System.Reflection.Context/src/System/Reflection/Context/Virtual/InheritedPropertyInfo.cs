@@ -51,6 +51,11 @@ namespace System.Reflection.Context.Virtual
                 return new InheritedMethodInfo(underlyingSetter, _reflectedType);
         }
 
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            return UnderlyingProperty.HasSameMetadataDefinitionAs(other);
+        }
+
         public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is InheritedPropertyInfo other &&
