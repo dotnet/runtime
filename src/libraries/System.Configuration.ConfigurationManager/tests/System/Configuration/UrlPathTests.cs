@@ -25,6 +25,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134952", TestPlatforms.Wasi)]
         public void GetDirectoryOrRootName_GettingDirectoryFromAFilePath()
         {
             string exePath = AppDomain.CurrentDomain.BaseDirectory;

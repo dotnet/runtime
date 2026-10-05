@@ -211,10 +211,12 @@ extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r
 // against them, so a mismatch is a build-time error instead of a wrong-function dispatch at runtime.
 // The capacity accessor is weak because a ReadyToRun publish supplies a strong definition alongside
 // the sized buffer.
+#ifndef CORERUN_WASI_R2R_STRONG_CAP
 extern "C" __attribute__((weak, export_name("wasi_r2r_image_cap"))) uint32_t wasi_r2r_image_cap(void)
 {
     return wasi_r2r::g_wasi_r2r_image_cap;
 }
+#endif // CORERUN_WASI_R2R_STRONG_CAP
 
 extern "C" __attribute__((export_name("wasi_r2r_table_base"))) uint32_t wasi_r2r_table_base(void)
 {

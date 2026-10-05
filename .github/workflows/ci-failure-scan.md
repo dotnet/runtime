@@ -31,9 +31,23 @@ environment: copilot-pat-pool
 
 engine:
   id: copilot
-  model: claude-opus-4.8
   env:
     COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
+
+model: gpt-6.1-sol
+max-ai-credits: 2500
+
+# gpt-6.1-sol is not yet in the built-in gh-aw v0.86.2 pricing table.
+models:
+  providers:
+    github-copilot:
+      models:
+        gpt-6.1-sol:
+          cost:
+            input: "2e-06"
+            output: "1e-05"
+            cache_read: "1e-07"
+            cache_write: "2.5e-06"
 
 concurrency:
   group: "ci-failure-scan"
@@ -118,6 +132,8 @@ checkout:
   fetch-depth: 50
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-issue:
     max: 5
     labels: [agentic-workflows, "Known Build Error"]
@@ -143,7 +159,7 @@ You are a CI triage agent. Each scheduled run, you scan a fixed list of `dnceng-
 
 This workflow is **detection only**. It files KBEs and stops. Mitigation — small fix PRs and looping in owners — is owned by the companion [`ci-failure-fix`](ci-failure-fix.md) workflow, which walks the open `[ci-scan]` KBEs on its own cadence. This scan never opens PRs and never disables, skips, or mutes tests.
 
-To suggest changes, edit this file or comment on the issues it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback daily, and opens (or updates) a single draft PR with proposed edits.
+To suggest changes, edit this file or comment on the issues it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback every two weeks and lists proposed edits in the `[ci-scan-feedback] KPI Tracker` issue.
 
 The agent runs read-only. All writes go through `safe-outputs`.
 
