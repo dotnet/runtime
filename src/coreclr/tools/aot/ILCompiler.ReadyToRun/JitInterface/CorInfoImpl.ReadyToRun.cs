@@ -1083,6 +1083,12 @@ namespace Internal.JitInterface
 
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
+            if (ftnNum is >= CorInfoHelpFunc.CORINFO_HELP_WASM_PROLOGUE and <= CorInfoHelpFunc.CORINFO_HELP_WASM_PROLOGUE_RESUME)
+            {
+                Debug.Assert(_compilation.NodeFactory.Target.IsWasm);
+                helperMethod = null;
+                return _compilation.NodeFactory.WasmPrologueHelper(ftnNum);
+            }
             MethodDesc managedHelper = ReadyToRunJitHelperRootProvider.GetManagedHelper(
                 _compilation.TypeSystemContext,
                 ftnNum);

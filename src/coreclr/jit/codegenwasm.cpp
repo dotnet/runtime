@@ -103,6 +103,8 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    genWasmSharedPrologueUsed = false;
+    genWasmSharedPrologueHome = BAD_VAR_NUM;
     GetEmitter()->emitIns(INS_code_size);
 
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
@@ -126,11 +128,104 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 }
 
 //------------------------------------------------------------------------
-// genAllocLclFrame: initialize the SP and FP locals.
+// genWasmSharedPrologue: Try the experimental R2R leaf stub for a root shadow frame.
 //
 // Arguments:
-//    frameSize         - Size of the frame to establish
-//    initReg           - Unused
+//    frameSize - Size of the frame to allocate
+//    zeroHi    - Exclusive upper bound of the zero-initialization range
+//    zeroLo    - Lower bound of the zero-initialization range
+//
+// Returns:
+//    Whether the shared stub allocated and initialized the frame.
+//
+bool CodeGen::genWasmSharedPrologue(unsigned frameSize, int zeroHi, int zeroLo)
+{
+    if ((JitConfig.JitWasmSharedPrologue() == 0) || !m_compiler->IsReadyToRun() ||
+        (m_compiler->funCurrentFuncIdx() != ROOT_FUNC_IDX) ||
+        !m_compiler->funGetFunc(ROOT_FUNC_IDX)->needsUnwindableFrame ||
+        !m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg)->lvIsParam || (frameSize == 0))
+    {
+        return false;
+    }
+
+    const bool zeroFrame  = genUseBlockInit;
+    const bool initResume = m_compiler->lvaWasmResumeIP != BAD_VAR_NUM;
+    assert(m_compiler->lvaGetDesc(m_compiler->lvaWasmFunctionIndex)->GetStackOffset() == 0);
+    assert(!initResume || (m_compiler->lvaGetDesc(m_compiler->lvaWasmResumeIP)->GetStackOffset() == 8));
+
+    CorInfoHelpFunc helper =
+        initResume ? (zeroFrame ? CORINFO_HELP_WASM_PROLOGUE_RESUME_ZERO : CORINFO_HELP_WASM_PROLOGUE_RESUME)
+                   : (zeroFrame ? CORINFO_HELP_WASM_PROLOGUE_ZERO : CORINFO_HELP_WASM_PROLOGUE);
+    regNumber homeReg = REG_NA;
+    if (!zeroFrame && !initResume)
+    {
+        for (unsigned localNum = 0; localNum < m_compiler->info.compArgsCount; localNum++)
+        {
+            LclVarDsc*                   local = m_compiler->lvaGetDesc(localNum);
+            const ABIPassingInformation& abi   = m_compiler->lvaGetParameterABIInfo(localNum);
+            if (local->lvPromoted || local->TypeIs(TYP_STRUCT) || !local->lvOnFrame ||
+                (local->lvIsInReg() && !local->IsLiveInOutOfHandler()) || (local->GetStackOffset() != 12) ||
+                !abi.HasExactlyOneRegisterSegment())
+            {
+                continue;
+            }
+            if (local->lvTracked &&
+                !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, local->lvVarIndex) &&
+                !local->HasGCPtr())
+            {
+                continue;
+            }
+            const ABIPassingSegment& segment = abi.Segment(0);
+            if ((segment.Offset != 0) || (genTypeSize(genActualType(local)) != 4) ||
+                (genParamStackType(local, segment) == TYP_FLOAT) ||
+                (m_compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister()) != nullptr))
+            {
+                continue;
+            }
+            homeReg                   = segment.GetRegister();
+            genWasmSharedPrologueHome = localNum;
+            helper                    = CORINFO_HELP_WASM_PROLOGUE_HOME12;
+            break;
+        }
+    }
+
+    CORINFO_CONST_LOOKUP target = m_compiler->compGetHelperFtn(helper);
+    assert(target.accessType == IAT_VALUE);
+    m_compiler->unwindAllocStack(frameSize);
+    emitter* emit = GetEmitter();
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+    emit->emitIns_I(INS_i32_const, EA_4BYTE, frameSize);
+    // The stub adds its own module's table base to this relative function-table identity.
+    emit->emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, ROOT_FUNC_IDX);
+    if (homeReg != REG_NA)
+    {
+        emit->emitIns_I(INS_local_get, EA_4BYTE, WasmRegToIndex(homeReg));
+    }
+    if (zeroFrame)
+    {
+        assert(zeroHi > zeroLo);
+        assert(zeroLo >= 0);
+        emit->emitIns_I(INS_i32_const, EA_4BYTE, zeroLo);
+        emit->emitIns_I(INS_i32_const, EA_4BYTE, zeroHi - zeroLo);
+    }
+    // No call-site GC state or virtual-IP publication: these leaf stubs cannot safepoint or throw managed exceptions.
+    emit->emitIns_I(INS_call, EA_HANDLE_CNS_RELOC, reinterpret_cast<cnsval_ssize_t>(target.addr));
+    emit->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
+    if (GetFramePointerRegIndex() != GetStackPointerRegIndex())
+    {
+        emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+        emit->emitIns_I(INS_local_set, EA_PTRSIZE, GetFramePointerRegIndex());
+    }
+    genWasmSharedPrologueUsed = true;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// genAllocLclFrame: initialize the stack pointer and frame pointer locals.
+//
+// Arguments:
+//    frameSize        - Size of the frame to establish
+//    initReg          - Unused
 //    pInitRegZeroed    - Unused
 //    maskArgRegsLiveIn - Unused
 //
@@ -219,6 +314,10 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    if ((m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX) && genWasmSharedPrologueUsed)
+    {
+        return;
+    }
     if (!genUseBlockInit)
     {
         // Nothing to zero (genCheckUseBlockInit forces block-init for any non-empty range on wasm).
@@ -345,7 +444,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             return;
         }
 
-        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
+        if ((lclNum != genWasmSharedPrologueHome) && varDsc->lvOnFrame &&
+            (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
         {
             var_types storeType = sourceType;
             if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
