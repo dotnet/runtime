@@ -3844,8 +3844,7 @@ void ILMngdMarshaler::EmitCallMngdMarshalerMethod(ILCodeStream* pslILEmit, Metho
 
 bool ILNativeArrayMarshaler::CanMarshalViaPinning()
 {
-    // We can't pin an array if we have a non-default element native type (e.g. ANSICHAR, WINBOOL, CBOOL),
-    // if we have a marshaler for the var type, or if we can't get a method-table representing the array.
+    // Pin only by-value CLR-to-native arrays whose elements need no conversion.
 
     if (!IsCLRToNative(m_dwMarshalFlags) || IsByref(m_dwMarshalFlags))
     {
@@ -3854,9 +3853,9 @@ bool ILNativeArrayMarshaler::CanMarshalViaPinning()
 
     CREATE_MARSHALER_CARRAY_OPERANDS mops;
     m_pargs->m_pMarshalInfo->GetMops(&mops);
-    if (mops.elementNativeType != NATIVE_TYPE_DEFAULT)
+    if (mops.elementNativeType != NATIVE_TYPE_DEFAULT || mops.elementType == VT_CY)
     {
-        // This means that we have some sort of custom marshaling logic.
+        // Currency and non-default native types require element conversion.
         return false;
     }
 
@@ -3865,9 +3864,16 @@ bool ILNativeArrayMarshaler::CanMarshalViaPinning()
         return false;
     }
 
-    TypeHandle elementTypeHandle = m_pargs->na.m_pArrayMT->GetArrayElementTypeHandle();
+    TypeHandle elementTypeHandle = mops.elementTypeHandle;
+    if (elementTypeHandle.IsEnum())
+    {
+        elementTypeHandle = TypeHandle(CoreLibBinder::GetElementType(elementTypeHandle.GetInternalCorElementType()));
+    }
 
-    return elementTypeHandle.IsBlittable() && elementTypeHandle.GetMethodTable()->IsValueType();
+    return elementTypeHandle.IsPointer()
+        || elementTypeHandle.IsFnPtrType()
+        || (elementTypeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_CHAR && mops.elementType == VT_UI2)
+        || (elementTypeHandle.IsBlittable() && elementTypeHandle.GetMethodTable()->IsValueType());
 }
 
 void ILNativeArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
@@ -4126,7 +4132,7 @@ namespace
 {
     // Resolve the managed marshaler MethodTable and the element type it marshals.
     // Both are returned together to guarantee they are consistent.
-    void GetMarshalerAndElementTypes(MarshalInfo* pMarshalInfo, MethodTable** ppMarshalerMT, TypeHandle* pElementType)
+    void GetMarshalerAndElementTypes(MarshalInfo* pMarshalInfo, MethodTable** ppMarshalerMT, TypeHandle* pElementType, bool fixedNativeBuffer)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4136,10 +4142,12 @@ namespace
     bool bestFit = mops.bestfitmapping != 0;
     bool throwOnUnmappable = mops.throwonunmappablechar != 0;
 
-    // Start from the managed element type - this is the authoritative source.
-    MethodTable* pElementMT = mops.methodTable;
-
-    TypeHandle thElement(pElementMT);
+    TypeHandle thElement = mops.elementTypeHandle;
+    if (thElement.IsPointer() || thElement.IsFnPtrType())
+    {
+        // Pointer types cannot be generic arguments, so use nint as the managed marshaler's carrier.
+        thElement = TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR));
+    }
 
     MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
     MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
@@ -4174,9 +4182,9 @@ namespace
         case NATIVE_TYPE_U1:
         {
             _ASSERTE(thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR)));
-            TypeHandle thArgs[2] = { TypeHandle(pBestFitMT), TypeHandle(pThrowOnUnmappableMT) };
+            TypeHandle thArgs[3] = { TypeHandle(pBestFitMT), TypeHandle(pThrowOnUnmappableMT), TypeHandle(fixedNativeBuffer ? pEnabledMT : pDisabledMT) };
             *pElementType = thElement;
-            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__ANSICHAR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__ANSICHAR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 3)).AsMethodTable();
             return;
         }
 
@@ -4331,7 +4339,7 @@ namespace
 
 
     // Instantiate one of the generic StubHelpers array methods with the element type and marshaler type.
-    MethodDesc* GetInstantiatedArrayMethod(MarshalInfo* pMarshalInfo, BinderMethodID methodId)
+    MethodDesc* GetInstantiatedArrayMethod(MarshalInfo* pMarshalInfo, BinderMethodID methodId, bool fixedNativeBuffer = false)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4341,7 +4349,7 @@ namespace
     // to guarantee they are consistent.
     TypeHandle thElementType;
     MethodTable* pMarshalerMT;
-    GetMarshalerAndElementTypes(pMarshalInfo, &pMarshalerMT, &thElementType);
+    GetMarshalerAndElementTypes(pMarshalInfo, &pMarshalerMT, &thElementType, fixedNativeBuffer);
 
     TypeHandle thMarshalerType(pMarshalerMT);
     TypeHandle thArgs[2] = { thElementType, thMarshalerType };
@@ -4369,9 +4377,16 @@ void ILNativeArrayMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit
         pslILEmit->EmitSTLOC(m_dwSavedSizeArg);
     }
 
-    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_SPACE_TO_MANAGED);
+    CREATE_MARSHALER_CARRAY_OPERANDS mops;
+    m_pargs->m_pMarshalInfo->GetMops(&mops);
+    bool isPointerArray = mops.elementTypeHandle.IsPointer() || mops.elementTypeHandle.IsFnPtrType();
 
-    EmitLoadNativeValue(pslILEmit);
+    MethodDesc* pMD = nullptr;
+    if (!isPointerArray)
+    {
+        pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_SPACE_TO_MANAGED);
+        EmitLoadNativeValue(pslILEmit);
+    }
 
     // Dynamically calculate element count using SizeParamIndex argument
     EmitLoadElementCount(pslILEmit);
@@ -4384,7 +4399,24 @@ void ILNativeArrayMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit
         pslILEmit->EmitLDLOC(m_dwSavedSizeArg);
     }
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 1);
+    if (isPointerArray)
+    {
+        // The copy marshaler uses nint, but the allocated array must retain its declared pointer element type.
+        ILCodeLabel* pAllocateArray = pslILEmit->NewCodeLabel();
+        ILCodeLabel* pDone = pslILEmit->NewCodeLabel();
+        EmitLoadNativeValue(pslILEmit);
+        pslILEmit->EmitBRTRUE(pAllocateArray);
+        pslILEmit->EmitPOP();
+        pslILEmit->EmitLDNULL();
+        pslILEmit->EmitBR(pDone);
+        pslILEmit->EmitLabel(pAllocateArray);
+        pslILEmit->EmitNEWARR(pslILEmit->GetToken(mops.elementTypeHandle));
+        pslILEmit->EmitLabel(pDone);
+    }
+    else
+    {
+        pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 1);
+    }
     EmitStoreManagedValue(pslILEmit);
 }
 
@@ -4457,7 +4489,9 @@ void ILNativeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pSkipLabel);
 
-    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
+    // A by-value reverse P/Invoke writes into the caller's buffer, not an allocation we can expand.
+    bool fixedNativeBuffer = !IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags);
+    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, fixedNativeBuffer);
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeValue(pslILEmit);
@@ -4556,7 +4590,7 @@ void ILFixedArrayMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
 
     // new T[cElements]
     pslILEmit->EmitLDC(mops.additive);
-    pslILEmit->EmitNEWARR(pslILEmit->GetToken(mops.methodTable));
+    pslILEmit->EmitNEWARR(pslILEmit->GetToken(mops.elementTypeHandle));
     EmitStoreManagedValue(pslILEmit);
 }
 
@@ -4569,7 +4603,7 @@ void ILFixedArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
 
     // Compute the total native byte size of the inline array so we can
     // zero it when the managed array is null.
-    MethodTable* pElementMT = mops.methodTable;
+    MethodTable* pElementMT = mops.elementTypeHandle.GetMethodTable();
     if (pElementMT->IsEnum())
     {
         pElementMT = CoreLibBinder::GetElementType(pElementMT->GetInternalCorElementType());
@@ -4597,7 +4631,7 @@ void ILFixedArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullLabel);
 
-    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
+    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, true /* fixedNativeBuffer */);
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
@@ -4672,6 +4706,8 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     CREATE_MARSHALER_CARRAY_OPERANDS mops;
     m_pargs->m_pMarshalInfo->GetMops(&mops);
+    _ASSERTE(!mops.elementTypeHandle.IsTypeDesc());
+    MethodTable* pElementMT = mops.elementTypeHandle.AsMethodTable();
 
     DWORD dwFlags = mops.elementType;
     BYTE  fStatic = 0;
@@ -4691,7 +4727,7 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     dwFlags |= ((BYTE)!!m_pargs->m_pMarshalInfo->GetNoLowerBounds()) << 24;
 
     pslILEmit->EmitLDLOC(m_dwMngdMarshalerLocalNum);
-    pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(mops.methodTable));
+    pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(pElementMT));
     pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__TO_INTPTR, 1, 1);
     pslILEmit->EmitLDC(m_pargs->m_pMarshalInfo->GetArrayRank());
     pslILEmit->EmitLDC(dwFlags);
@@ -4701,12 +4737,12 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     BOOL bNativeDataValid = !!(fStatic & MngdSafeArrayMarshaler::SCSF_NativeDataValid);
     MethodDesc* pConvertToNativeMD = GetInstantiatedSafeArrayMethod(
         METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED,
-        mops.elementType, mops.methodTable, FALSE, bNativeDataValid);
+        mops.elementType, pElementMT, FALSE, bNativeDataValid);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToNativeMD));
 
     MethodDesc* pConvertToManagedMD = GetInstantiatedSafeArrayMethod(
         METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED,
-        mops.elementType, mops.methodTable, FALSE);
+        mops.elementType, pElementMT, FALSE);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToManagedMD));
 
     pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 6, 0);

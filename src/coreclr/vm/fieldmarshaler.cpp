@@ -383,7 +383,7 @@ VOID ParseNativeType(Module*                     pModule,
             CREATE_MARSHALER_CARRAY_OPERANDS mops;
             mlInfo.GetMops(&mops);
 
-            MethodTable *pMT = mops.methodTable;
+            MethodTable *pMT = mops.elementTypeHandle.GetMethodTable();
 
             if (pMT->IsEnum())
             {
