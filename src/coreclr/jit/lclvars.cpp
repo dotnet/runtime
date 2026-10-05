@@ -539,6 +539,10 @@ void Compiler::lvaAllocWasmStackPtr()
         LclVarDsc* varDsc              = lvaGetDesc(lvaWasmSpArg);
         varDsc->lvType                 = TYP_I_IMPL;
         varDsc->lvImplicitlyReferenced = 1;
+        // The prolog loads $sp from the __stack_pointer global (see genAllocLclFrame), so this local
+        // is explicitly initialized. Without this the optimizer treats its use-before-def as zero-init
+        // and value-numbers it to 0, folding the shadow-SP argument of outgoing calls to a null base.
+        varDsc->lvHasExplicitInit = 1;
     }
 }
 
@@ -608,6 +612,21 @@ void Compiler::lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned 
 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
+
+        if ((corInfoType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (strip(corInfoType) != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (lvaSecretStubArg != BAD_VAR_NUM)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            lvaSecretStubArg = *curVarNum;
+        }
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
         if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
@@ -931,6 +950,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             wellKnownArg = WellKnownArg::RetBuffer;
         }
+        else if (i == lvaSecretStubArg)
+        {
+            wellKnownArg = WellKnownArg::SecretStubParam;
+        }
 #ifdef SWIFT_SUPPORT
         else if (i == lvaSwiftSelfArg)
         {
@@ -977,7 +1000,9 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
             CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
             if (clsHnd != NO_CLASS_HANDLE)
             {
-                info.compCompHnd->getWasmLowering(clsHnd);
+                eeRunExtraSuperPmiQueries([&]() {
+                    info.compCompHnd->getWasmLowering(clsHnd);
+                });
             }
         }
 #endif // DEBUG
@@ -2467,11 +2492,12 @@ bool Compiler::lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
 // lvaIsImplicitByRefLocal: Is the local an "implicit byref" parameter?
 //
 // We term structs passed via pointers to shadow copies "implicit byrefs".
-// They are used on Windows x64 for structs 3, 5, 6, 7, > 8 bytes in size,
-// and on ARM64/LoongArch64 for structs larger than 16 bytes.
+// They are used on Windows x64, ARM64, LoongArch64, RISC-V and WebAssembly; see
+// "By-value value types passed by reference" in clr-abi.md for the exact rules.
 //
-// They are "byrefs" because the VM sometimes uses memory allocated on the
-// GC heap for the shadow copies.
+// The shadow copies must be outside the GC heap, so stores into them do not
+// require write barriers and the pointers need not be GC reported (see
+// lvaGetImplicitByRefParamType). The caller is responsible for GC reporting their contents.
 //
 // Arguments:
 //    lclNum - The local in question
@@ -2487,11 +2513,25 @@ bool Compiler::lvaIsImplicitByRefLocal(unsigned lclNum) const
     {
         assert(varDsc->lvIsParam);
 
-        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_BYREF));
+        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_I_IMPL, TYP_BYREF));
         return true;
     }
 #endif // FEATURE_IMPLICIT_BYREFS
     return false;
+}
+
+//------------------------------------------------------------------------
+// lvaGetImplicitByRefParamType: Get the type implicit byref parameters are
+//    retyped to by fgRetypeImplicitByRefArgs.
+//
+// Return Value:
+//    TYP_I_IMPL since the storage is never on the GC heap. Async methods use
+//    TYP_BYREF so that derived addresses are not kept live across suspension
+//    points, as the storage is different after resumption.
+//
+var_types Compiler::lvaGetImplicitByRefParamType()
+{
+    return impInlineRoot()->compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
 }
 
 //------------------------------------------------------------------------
@@ -2589,7 +2629,13 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 #ifdef DEBUG
         if (JitConfig.EnableExtraSuperPmiQueries())
         {
+            // makeExtraStructQueries runs real JIT work, so it is not trapped here. It can also set
+            // compFloatingPointUsed, via impNormStructType, GetHfaType, and ClassLayout::Create,
+            // which would let the queries change codegen, so restore that.
+            //
+            const bool savedFloatingPointUsed = compFloatingPointUsed;
             makeExtraStructQueries(layout->GetClassHandle(), 2);
+            compFloatingPointUsed = savedFloatingPointUsed;
         }
 #endif // DEBUG
     }
@@ -2638,7 +2684,8 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
         size_t                   numNodes = ArrLen(nodes);
         info.compCompHnd->getTypeLayout(structHandle, nodes, &numNodes);
     };
-    queryLayout();
+    // Trapped because an AOT compiler rejects this query for an out-of-bubble type.
+    eeRunExtraSuperPmiQueries(queryLayout);
 
     // Bypass fetching instance fields of ref classes for now,
     // as it requires traversing the class hierarchy.
@@ -2895,6 +2942,27 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
 
         return genTypeStSz(varType) * sizeof(int);
     }
+
+#ifdef TARGET_ARM64
+    if (lvaIsUnknownSizeLocal(varNum))
+    {
+        assert(lvaIsOSRLocal(varNum));
+        unsigned size = 0;
+        switch (varDsc->lvType)
+        {
+            case TYP_SIMD:
+                size = getRuntimeVectorTByteLength();
+                break;
+            case TYP_MASK:
+                size = getRuntimeVectorTByteLength() / 8;
+                break;
+            default:
+                unreached();
+        }
+        assert(size != 0);
+        return size;
+    }
+#endif
 
     if (varDsc->lvIsParam && !varDsc->lvIsStructField)
     {
@@ -4371,6 +4439,15 @@ void Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
     {
         assert(curState == FINAL_FRAME_LAYOUT);
         unkSizeFrame.Finalize();
+
+        if (compUsesUnknownSizeFrame)
+        {
+            JITDUMP("*** Final UnknownSizeFrame ***\n");
+            JITDUMP("Total Size in VL: %d\n", unkSizeFrame.VectorBlockSize());
+            JITDUMP("Vector Count    : %d\n", unkSizeFrame.nVector);
+            JITDUMP("Mask Count      : %d\n", unkSizeFrame.nMask);
+            JITDUMP("Start offset    : %d\n", -codeGen->genTotalFrameSize());
+        }
     }
 #endif
 }
@@ -4484,7 +4561,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // Can't be relative to EBP unless we have an EBP
         noway_assert(!varDsc->lvFramePointerBased || codeGen->doubleAlignOrFramePointerUsed());
 
-        if (lvaIsUnknownSizeLocal(lclNum))
+        if (lvaLocalIsOnUnknownSizeFrame(lclNum))
         {
             continue;
         }
@@ -4689,7 +4766,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         int startOffset;
         if (lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(lclNum, &startOffset))
         {
-            assert(!lvaIsUnknownSizeLocal(lclNum));
+            assert(!lvaLocalIsOnUnknownSizeFrame(lclNum));
 
             dsc->SetStackOffset(startOffset + relativeZero);
             JITDUMP("Set V%02u to offset %d\n", lclNum, startOffset);
@@ -5309,7 +5386,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
                 continue;
             }
-            else if (lvaIsUnknownSizeLocal(lclNum))
+            else if (lvaLocalIsOnUnknownSizeFrame(lclNum))
             {
                 // Reserve dynamic stack space for this variable.
                 lvaAllocUnknownSizeLocal(lclNum);
@@ -5337,7 +5414,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg))
+                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg) &&
+                    (lclNum != lvaSecretStubArg))
                 {
                     const ABIPassingInformation& abiInfo =
                         lvaGetParameterABIInfo(varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum);
@@ -5718,8 +5796,10 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 #endif
 
 #if defined(WINDOWS_AMD64_ABI)
-    // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-    return false;
+    // On Windows AMD64, standard register arguments have caller-reserved stack space.
+    unsigned paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+    int      callerOffset;
+    return !lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramLclNum, &callerOffset);
 #else // !WINDOWS_AMD64_ABI
 
     //  A register argument that is not enregistered ends up as
@@ -6310,7 +6390,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
     int       printed = 0;
 
 #ifdef TARGET_ARM64
-    if (lvaIsUnknownSizeLocal(lclNum))
+    if (lvaLocalIsOnUnknownSizeFrame(lclNum))
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
         offset            = unkSizeFrame.GetAddressingOffset(varDsc);
@@ -6539,6 +6619,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (lvaIsOSRLocal(lclNum) && varDsc->lvOnFrame)
     {
         printf(" tier0-frame");
+    }
+    if (lvaLocalIsOnUnknownSizeFrame(lclNum))
+    {
+        printf(" unknown-size-frame");
     }
     if (varDsc->lvIsHoist)
     {

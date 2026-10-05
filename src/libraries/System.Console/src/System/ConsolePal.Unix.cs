@@ -36,12 +36,14 @@ namespace System
         private static int s_cursorTop;     // Cached CursorTop, invalid when s_cursorLeft == -1.
         private static int s_windowWidth;   // Cached WindowWidth, -1 when invalid.
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
-        private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
+        private static byte s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
         private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
 
         /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
-        public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
-        private static readonly Lazy<TerminalFormatStrings> s_terminalFormatStringsInstance = new(() => new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()));
+        public static TerminalFormatStrings TerminalFormatStringsInstance =>
+            field ??
+            Interlocked.CompareExchange(ref field, new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()), null) ??
+            field;
 
         public static Stream OpenStandardInput()
         {

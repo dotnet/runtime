@@ -905,13 +905,33 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
 }
 #endif // HOST_WINDOWS
 
+#if defined(HOST_WINDOWS) && defined(SELF_NO_HOST)
+static INIT_ONCE g_globalSystemInfoInitOnce = INIT_ONCE_STATIC_INIT;
+SYSTEM_INFO g_SystemInfo;
+
+static BOOL CALLBACK InitializeGlobalSystemInfoOnce(PINIT_ONCE /*initOnce*/, PVOID /*parameter*/, PVOID* /*context*/)
+{
+    GetSystemInfo(&g_SystemInfo);
+    return TRUE;
+}
+
+static void InitializeGlobalSystemInfo()
+{
+    InitOnceExecuteOnce(&g_globalSystemInfoInitOnce, InitializeGlobalSystemInfoOnce, NULL, NULL);
+}
+#else
 extern SYSTEM_INFO g_SystemInfo;
+#endif // SELF_NO_HOST && HOST_WINDOWS
 
 int GetTotalProcessorCount()
 {
     LIMITED_METHOD_CONTRACT;
 
 #ifdef HOST_WINDOWS
+#ifdef SELF_NO_HOST
+    InitializeGlobalSystemInfo();
+#endif // SELF_NO_HOST
+
     if (CPUGroupInfo::CanEnableGCCPUGroups())
     {
         return CPUGroupInfo::GetNumActiveProcessors();
@@ -2151,8 +2171,8 @@ INT64 GetLoongArch64JIR(UINT32 * pCode)
 {
     UINT32 pcInstr = *pCode;
 
-    // first get the high 20 bits,
-    INT64 imm = ((INT64)((pcInstr >> 5) & 0xFFFFF) << 18);
+    // first get and sign-extend the high 20 bits,
+    INT64 imm = ((INT32)(pcInstr << 7) >> 12) * 0x40000LL;
 
     // then get the low 18 bits
     pcInstr = *(pCode + 1);

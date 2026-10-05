@@ -23,6 +23,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor_ValueAsCatalogArgument_ShouldSetPartsProperty()
         {
             var expectations = Expectations.GetAssemblies();
@@ -57,6 +58,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor_ValueAsCatalogArgument_ShouldSetPathProperty()
         {
             string path = TemporaryFileCopier.GetNewTemporaryDirectory();
@@ -127,6 +129,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
             string directoryPath = TemporaryFileCopier.GetNewTemporaryDirectory();

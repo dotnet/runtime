@@ -1755,6 +1755,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 m_type = MARSHAL_TYPE_HANDLEREF;
             }
+#ifdef FEATURE_VARARGS
             else if (sig.IsClassThrowing(pModule, "System.ArgIterator", pTypeContext))
             {
                 if (m_ms == MARSHAL_SCENARIO_FIELD)
@@ -1767,6 +1768,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 m_type = MARSHAL_TYPE_ARGITERATOR;
             }
+#endif // FEATURE_VARARGS
 #ifdef FEATURE_COMINTEROP
             else if (sig.IsClassThrowing(pModule, g_ColorClassName, pTypeContext))
             {
@@ -2080,6 +2082,14 @@ VOID MarshalInfo::EmitOrThrowInteropParamException(PInvokeStubLinker* psl, BOOL 
         return;
     }
 #endif // FEATURE_COMINTEROP
+
+    // An unmanaged CALLI stub is created while the calli's caller is being jitted, so its failures
+    // have to be reported when the stub is called rather than failing that compilation.
+    if (SF_IsCALLIStub(psl->GetStubFlags()))
+    {
+        psl->SetInteropParamExceptionInfo(resID, paramIdx);
+        return;
+    }
 
     ThrowInteropParamException(resID, paramIdx);
 }
@@ -3301,13 +3311,22 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
 
     m_thElement = thElement;
 
-    if (m_thElement.IsPointer())
+    if ((arrayNativeType == NATIVE_TYPE_ARRAY || arrayNativeType == NATIVE_TYPE_FIXEDARRAY)
+        && (m_thElement.IsPointer() || m_thElement.IsFnPtrType()))
     {
-        m_flags = (ArrayMarshalInfoFlags)(m_flags | amiIsPtr);
-        m_thElement = ((ParamTypeDesc*)m_thElement.AsTypeDesc())->GetModifiedType();
+        // Marshal pointer-sized values without losing the declared element type.
+        etElement = ELEMENT_TYPE_I;
     }
+    else
+    {
+        if (m_thElement.IsPointer())
+        {
+            m_flags = (ArrayMarshalInfoFlags)(m_flags | amiIsPtr);
+            m_thElement = ((ParamTypeDesc*)m_thElement.AsTypeDesc())->GetModifiedType();
+        }
 
-    etElement = m_thElement.GetSignatureCorElementType();
+        etElement = m_thElement.GetSignatureCorElementType();
+    }
 
     if (IsAMIPtr(m_flags) && (etElement > ELEMENT_TYPE_R8))
     {
@@ -3579,7 +3598,7 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 #include "stubhelpers.h"
 
-extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

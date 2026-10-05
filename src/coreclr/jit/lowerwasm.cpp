@@ -35,11 +35,36 @@ void Lowering::SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 // IsCallTargetInRange: Can a call target address be encoded in-place?
 //
 // Return Value:
-//    Currently always false for Wasm, all managed calls are indirect through the PEP.
+//    False when PEP is enabled, true when it is not enabled.
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    return false;
+    return !m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS);
+}
+
+//---------------------------------------------------------------------------------------------
+// AddWasmPortableEntryPointArg: Add and lower the portable entrypoint argument for a managed call.
+//
+// Arguments:
+//    call  - The managed call.
+//    value - The portable entrypoint value.
+//
+void Lowering::AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value)
+{
+    NewCallArg portableEntryPointArg = NewCallArg::Primitive(value).WellKnown(WellKnownArg::WasmPortableEntryPoint);
+    CallArg*   arg                   = call->gtArgs.PushBack(m_compiler, portableEntryPointArg);
+
+    arg->SetEarlyNode(nullptr);
+    arg->SetLateNode(value);
+    call->gtArgs.PushLateBack(arg);
+
+    unsigned  argIndex = call->gtArgs.CountArgs() - 1;
+    regNumber argReg   = MakeWasmReg(argIndex, WasmValueType::I);
+    arg->AbiInfo =
+        ABIPassingInformation::FromSegmentByValue(m_compiler,
+                                                  ABIPassingSegment::InRegister(argReg, 0, TARGET_POINTER_SIZE));
+    BlockRange().InsertBefore(call, value);
+    LowerArg(call, arg);
 }
 
 //---------------------------------------------------------------------------------------------
@@ -76,24 +101,7 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     DISPTREE(call);
 
     JITDUMP("Add new arg to call arg list corresponding to PEP target");
-    NewCallArg pepTargetArg =
-        NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
-    CallArg* pepArg = call->gtArgs.PushBack(m_compiler, pepTargetArg);
-
-    pepArg->SetEarlyNode(nullptr);
-    pepArg->SetLateNode(callTargetLclForArg);
-    call->gtArgs.PushLateBack(pepArg);
-
-    // Set up ABI information for this arg; PEP's should be passed as the last param to a wasm function
-    unsigned  pepIndex = call->gtArgs.CountArgs() - 1;
-    regNumber pepReg   = MakeWasmReg(pepIndex, WasmValueType::I);
-    pepArg->AbiInfo =
-        ABIPassingInformation::FromSegmentByValue(m_compiler,
-                                                  ABIPassingSegment::InRegister(pepReg, 0, TARGET_POINTER_SIZE));
-    BlockRange().InsertBefore(call, callTargetLclForArg);
-
-    // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
-    LowerArg(call, pepArg);
+    AddWasmPortableEntryPointArg(call, callTargetLclForArg);
     DISPTREE(call);
 
     JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
@@ -186,6 +194,11 @@ GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
     GenTreeAddrMode* const lea = addr->AsAddrMode();
 
     if (!lea->HasBase() || lea->HasIndex() || !varTypeIsGC(lea->Base()) || (lea->Offset() < 0))
+    {
+        return nullptr;
+    }
+
+    if (!IsInvariantInRange(lea->Base(), indirNode))
     {
         return nullptr;
     }

@@ -372,23 +372,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
 #endif  // FEATURE_HIJACK
 
-void PInvokeCalliFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    VASigCookie *pVASigCookie = GetVASigCookie();
-    UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs);
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
-}
-
 #ifndef UNIX_X86_ABI
 void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {

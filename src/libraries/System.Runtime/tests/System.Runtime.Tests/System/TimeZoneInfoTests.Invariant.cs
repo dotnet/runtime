@@ -9,6 +9,7 @@ namespace System.Tests
     public static partial class TimeZoneInfoTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public static void IsInvariant()
         {
             Assert.True(GetInvariant(null));

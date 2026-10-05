@@ -82,6 +82,9 @@ namespace System.Text.Tests
             new CodePageMapping("UTF-32LE", 12000),
             new CodePageMapping("utf-7", 65000),
             new CodePageMapping("utf-8", 65001),
+            new CodePageMapping("utf16", 1200),
+            new CodePageMapping("utf32", 12000),
+            new CodePageMapping("utf8", 65001),
             new CodePageMapping("x-unicode-1-1-utf-7", 65000),
             new CodePageMapping("x-unicode-1-1-utf-8", 65001),
             new CodePageMapping("x-unicode-2-0-utf-7", 65000),
@@ -89,6 +92,7 @@ namespace System.Text.Tests
         };
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public void TestEncodingNameAndCopdepageNumber()
         {
             foreach (var map in s_mapping)
@@ -99,6 +103,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public void GetEncoding_EncodingName()
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
@@ -118,6 +123,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public void GetEncoding_WebName()
         {
             foreach (var mapping in s_codePageToWebNameMappings)

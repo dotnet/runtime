@@ -2646,17 +2646,14 @@ mdTypeRef SigPointer::PeekValueTypeTokenClosed(Module *pModule, const SigTypeCon
 
     *ppModuleOfToken = pModule;
 
-    if (FAILED(PeekElemType(&type)))
+    SigPointer sp(*this);
+    if (FAILED(sp.GetElemType(&type)))
         return mdTokenNil;
 
     switch (type)
     {
     case ELEMENT_TYPE_GENERICINST:
         {
-            SigPointer sp(*this);
-            if (FAILED(sp.GetElemType(NULL)))
-                return mdTokenNil;
-
             CorElementType subtype;
             if (FAILED(sp.GetElemType(&subtype)))
                 return mdTokenNil;
@@ -2672,11 +2669,6 @@ mdTypeRef SigPointer::PeekValueTypeTokenClosed(Module *pModule, const SigTypeCon
     case ELEMENT_TYPE_VAR :
     case ELEMENT_TYPE_MVAR :
         {
-            SigPointer sp(*this);
-
-            if (FAILED(sp.GetElemType(NULL)))
-                return mdTokenNil;
-
             TypeHandle th = sp.GetTypeVariable(type, pTypeContext);
             *ppModuleOfToken = th.GetModule();
             _ASSERTE(!th.IsNull());
@@ -2690,11 +2682,6 @@ mdTypeRef SigPointer::PeekValueTypeTokenClosed(Module *pModule, const SigTypeCon
     default:
         {
             _ASSERTE(type == ELEMENT_TYPE_VALUETYPE);
-            SigPointer sp(*this);
-
-            if (FAILED(sp.GetElemType(NULL)))
-                return mdTokenNil;
-
             if (FAILED(sp.GetToken(&token)))
                 return mdTokenNil;
 
@@ -5165,7 +5152,7 @@ void PromoteCarefully(promote_func   fn,
     // shrink the current reserved stack space. That causes the real limit of the stack to move up and
     // the range can be reused for other purposes. But the sc->stack_limit is stable during the scan.
     // Even on Windows, we care just about the stack above the stack_limit.
-    if ((sc->thread_under_crawl->IsAddressInStack(*ppObj)) && (PTR_TO_TADDR(*ppObj) >= sc->stack_limit))
+    if (sc->thread_under_crawl != NULL && sc->thread_under_crawl->IsAddressInStack(*ppObj) && (PTR_TO_TADDR(*ppObj) >= sc->stack_limit))
     {
         return;
     }

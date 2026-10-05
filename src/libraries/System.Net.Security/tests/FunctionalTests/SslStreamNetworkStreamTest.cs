@@ -160,7 +160,13 @@ namespace System.Net.Security.Tests
                 certBundle.Add(clientCert);
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(Configuration.Security.TlsRenegotiationServer, certBundle, SslProtocols.Tls12, false);
+                await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = Configuration.Security.TlsRenegotiationServer,
+                    ClientCertificates = certBundle,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowTlsResume = false,
+                });
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
@@ -760,7 +766,8 @@ namespace System.Net.Security.Tests
                 Assert.Equal(string.Empty, client.TargetHostName);
                 Assert.Equal(string.Empty, server.TargetHostName);
 
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = targetName };
+                // A resumed handshake skips the certificate validation callback.
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = targetName, AllowTlsResume = false };
                 clientOptions.RemoteCertificateValidationCallback =
                     (sender, certificate, chain, sslPolicyErrors) =>
                     {
@@ -811,7 +818,7 @@ namespace System.Net.Security.Tests
 
             int split = Random.Shared.Next(0, _certificates.ServerChain.Count - 1);
 
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost", AllowTlsResume = false };
             clientOptions.CertificateChainPolicy = new X509ChainPolicy()
             {
                 RevocationMode = X509RevocationMode.NoCheck,
@@ -875,10 +882,13 @@ namespace System.Net.Security.Tests
         {
             List<SslStream> streams = new List<SslStream>();
 
-            var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
+            int validationCount = 0;
+            // Exercise credential caching, but require the client to send its chain on every connection.
+            var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true, AllowTlsResume = false };
             serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
             serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
             {
+                validationCount++;
                 // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
                 // from wire or from system store. However, SslStream adds certificates from wire to ExtraStore in RemoteCertificateValidationCallback.
                 // So we verify the operation by checking the ExtraStore. On Windows, that includes leaf itself.
@@ -905,6 +915,8 @@ namespace System.Net.Security.Tests
                 Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+
+                Assert.Equal(i + 1, validationCount);
 
                 // hold to the streams so they stay in credential cache
                 streams.Add(client);

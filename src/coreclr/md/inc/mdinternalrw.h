@@ -15,8 +15,6 @@
 
 #include "../inc/mdlog.h"
 
-class UTSemReadWrite;
-
 class MDInternalRW : public IMDInternalImportENC, public IMDCommon
 {
 public:
@@ -35,7 +33,7 @@ public:
     __checkReturn
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
     STDMETHODIMP_(ULONG) AddRef(void);
-    STDMETHODIMP_(ULONG) Release(void);
+    STDMETHODIMP_(ULONG) Release(void) noexcept;
 
     __checkReturn
     STDMETHODIMP TranslateSigWithScope(
@@ -44,8 +42,8 @@ public:
         ULONG       cbHashValue,            // [IN] count of bytes in the hash value.
         PCCOR_SIGNATURE pbSigBlob,          // [IN] signature in the importing scope
         ULONG       cbSigBlob,              // [IN] count of bytes of signature
-        IMetaDataAssemblyEmit *pAssemEmit,  // [IN] assembly emit scope.
-        IMetaDataEmit *emit,                // [IN] emit interface
+        IMDInternalEmit *pAssemEmit,        // [IN] assembly emit scope.
+        IMDInternalEmit *emit,              // [IN] emit interface
         CQuickBytes *pqkSigEmit,            // [OUT] buffer to hold translated signature
         ULONG       *pcbSig)                // [OUT] count of bytes in the translated signature
         DAC_UNEXPECTED();
@@ -103,22 +101,12 @@ public:
         HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
         DAC_UNEXPECTED();
 
-    STDMETHODIMP_(void) EnumMethodImplReset(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-        HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-        DAC_UNEXPECTED();
-
     __checkReturn
     STDMETHODIMP EnumMethodImplNext(        // return hresult (S_OK = TRUE, S_FALSE = FALSE or error code)
         HENUMInternal   *phEnumBody,        // [IN] input enum for MethodBody
         HENUMInternal   *phEnumDecl,        // [IN] input enum for MethodDecl
         mdToken         *ptkBody,           // [OUT] return token for MethodBody
         mdToken         *ptkDecl)           // [OUT] return token for MethodDecl
-        DAC_UNEXPECTED();
-
-    STDMETHODIMP_(void) EnumMethodImplClose(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-        HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
         DAC_UNEXPECTED();
 
     //*****************************************
@@ -701,13 +689,13 @@ public:
     STDMETHODIMP_(IUnknown *) GetCachedPublicInterface(BOOL fWithLock);       // return the cached public interface
     __checkReturn
     STDMETHODIMP SetCachedPublicInterface(IUnknown *pUnk);      // return hresult
-    STDMETHODIMP_(UTSemReadWrite*) GetReaderWriterLock();       // return the reader writer lock
+    STDMETHODIMP_(minipal_rwlock*) GetReaderWriterLock();       // return the reader writer lock
     __checkReturn
-    STDMETHODIMP SetReaderWriterLock(UTSemReadWrite *pSem)
+    STDMETHODIMP SetReaderWriterLock(minipal_rwlock *pLock)
     {
-        _ASSERTE(m_pSemReadWrite == NULL);
-        m_pSemReadWrite = pSem;
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        _ASSERTE(m_pReadWriteLock == NULL);
+        m_pReadWriteLock = pLock;
+        INDEBUG(if (pLock != NULL) { m_pStgdb->m_MiniMd.Debug_EnableLockCheck(); })
         return NOERROR;
     }
 
@@ -750,7 +738,7 @@ public:
 
 
     FORCEINLINE CLiteWeightStgdbRW* GetMiniStgdb() { return m_pStgdb; }
-    FORCEINLINE UTSemReadWrite *getReaderWriterLock() { return m_pSemReadWrite; }
+    FORCEINLINE minipal_rwlock *getReaderWriterLock() { return m_pReadWriteLock; }
 
 
     CLiteWeightStgdbRW  *m_pStgdb;
@@ -762,8 +750,8 @@ private:
     IUnknown            *m_pUnk;
     IUnknown            *m_pUserUnk;        // Release at shutdown.
     IMetaDataHelper     *m_pIMetaDataHelper;// pointer to cached public interface
-    UTSemReadWrite      *m_pSemReadWrite;   // read write lock for multi-threading.
-    bool                m_fOwnSem;          // Does MDInternalRW own this read write lock object?
+    minipal_rwlock      *m_pReadWriteLock;  // read write lock for multi-threading.
+    bool                m_fOwnLock;         // Does MDInternalRW own this read write lock object?
 
 public:
     STDMETHODIMP_(DWORD) GetMetadataStreamVersion()

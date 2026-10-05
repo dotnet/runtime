@@ -28,7 +28,7 @@ public:
     __checkReturn
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
     STDMETHODIMP_(ULONG) AddRef(void);
-    STDMETHODIMP_(ULONG) Release(void);
+    STDMETHODIMP_(ULONG) Release(void) noexcept;
 
     __checkReturn
     STDMETHODIMP TranslateSigWithScope(
@@ -37,8 +37,8 @@ public:
         ULONG       cbHashValue,            // [IN] count of bytes in the hash value.
         PCCOR_SIGNATURE pbSigBlob,          // [IN] signature in the importing scope
         ULONG       cbSigBlob,              // [IN] count of bytes of signature
-        IMetaDataAssemblyEmit *pAssemEmit,  // [IN] assembly emit scope.
-        IMetaDataEmit *emit,                // [IN] emit interface
+        IMDInternalEmit *pAssemEmit,        // [IN] assembly emit scope.
+        IMDInternalEmit *emit,              // [IN] emit interface
         CQuickBytes *pqkSigEmit,            // [OUT] buffer to hold translated signature
         ULONG       *pcbSig)                // [OUT] count of bytes in the translated signature
         DAC_UNEXPECTED();
@@ -95,20 +95,12 @@ public:
         HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
         HENUMInternal   *phEnumDecl);       // [IN] MethodDecl enumerator.
 
-    STDMETHODIMP_(void) EnumMethodImplReset(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-        HENUMInternal   *phEnumDecl);       // [IN] MethodDecl enumerator.
-
     __checkReturn
     STDMETHODIMP EnumMethodImplNext( // return hresult
         HENUMInternal   *phEnumBody,        // [IN] input enum for MethodBody
         HENUMInternal   *phEnumDecl,        // [IN] input enum for MethodDecl
         mdToken         *ptkBody,           // [OUT] return token for MethodBody
         mdToken         *ptkDecl);          // [OUT] return token for MethodDecl
-
-    STDMETHODIMP_(void) EnumMethodImplClose(
-        HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-        HENUMInternal   *phEnumDecl);       // [IN] MethodDecl enumerator.
 
     //*****************************************
     // Enumerator helpers for memberdef, memberref, interfaceimp,
@@ -693,9 +685,9 @@ public:
     STDMETHODIMP_(IUnknown *) GetCachedPublicInterface(BOOL fWithLock) { return NULL;}  // return the cached public interface
     __checkReturn
     STDMETHODIMP SetCachedPublicInterface(IUnknown *pUnk) { return E_FAIL;} ;// return hresult
-    STDMETHODIMP_(UTSemReadWrite*) GetReaderWriterLock() {return NULL;}   // return the reader writer lock
+    STDMETHODIMP_(minipal_rwlock*) GetReaderWriterLock() {return NULL;}   // return the reader writer lock
     __checkReturn
-    STDMETHODIMP SetReaderWriterLock(UTSemReadWrite *pSem) { return NOERROR; }
+    STDMETHODIMP SetReaderWriterLock(minipal_rwlock *pLock) { return NOERROR; }
     STDMETHODIMP_(mdModule) GetModuleFromScope(void);
 
     // Find a paticular method and pass in the signature comparison routine. Very

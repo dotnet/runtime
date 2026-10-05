@@ -1,8 +1,8 @@
 ---
-applyTo: "src/libraries/System.Security.Cryptography/**"
+applyTo: "src/libraries/System.Security.Cryptography*/**,src/libraries/Microsoft.Bcl.Cryptography/**,src/libraries/Common/src/System/Security/Cryptography/**,src/libraries/Common/tests/System/Security/Cryptography/**"
 ---
 
-# System.Security.Cryptography — Folder-Specific Guidance
+# Guidance for .NET Cryptography Libraries
 
 ## Code Style
 

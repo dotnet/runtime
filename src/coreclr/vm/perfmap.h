@@ -65,7 +65,7 @@ public:
         CONTRACTL_END;
     }
 
-    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType, bool applyGranularityFilter = true)
     {
         CONTRACTL
         {
@@ -167,7 +167,7 @@ public:
 #endif
 
     // Log a set of stub to the map.
-    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType);
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType, bool applyGranularityFilter = true);
 
     // Close the map and flush any remaining data.
     static void Disable();

@@ -52,11 +52,12 @@ extends:
     stages:
     - stage: Build
       jobs:
-        - template: /eng/common/core-templates/job/helix-job-monitor.yml
-          parameters:
-            helixAccessToken: $(HelixApiAccessToken)
-            timeoutInMinutes: 540
-            allowNoHelixJobs: true
+        - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+          - template: /eng/common/core-templates/job/helix-job-monitor.yml
+            parameters:
+              helixAccessToken: $(HelixApiAccessToken)
+              timeoutInMinutes: 540
+              allowNoHelixJobs: true
 
         #
         # Build the whole product with Checked CoreCLR and run runtime tests

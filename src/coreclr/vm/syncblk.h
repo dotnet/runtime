@@ -19,44 +19,23 @@
 
 // #SyncBlockOverview
 //
-// Every Object is preceded by an ObjHeader (at a negative offset). The code:ObjHeader has an index to a
-// code:SyncBlock. This index is 0 for the bulk of all instances, which indicates that the object shares a
-// dummy SyncBlock with most other objects.
+// Every Object is preceded by an ObjHeader (at a negative offset). The header can store one of a thin lock,
+// a hash code, or a nonzero index into the process-global code:g_pSyncTable when the object needs
+// a SyncBlock to store more state than can fit into ObjHeader.
 //
-// The SyncBlock is primarily responsible for object synchronization. However, it is also a "kitchen sink" of
-// sparsely allocated instance data. For instance, the default implementation of Hash() is based on the
-// existence of a code:SyncTableEntry. And objects exposed to or from COM, or through context boundaries, can
-// store sparse data here.
+// SyncBlocks can hold all a full lock state, a hash code, and additional per-object data, such as interop
+// information.
 //
-// SyncTableEntries and SyncBlocks are allocated in non-GC memory. A weak pointer from the SyncTableEntry to
-// the instance is used to ensure that the SyncBlock and SyncTableEntry are reclaimed (recycled) when the
-// instance dies.
+// SyncTableEntry structures and SyncBlocks are allocated outside the GC heap. Each SyncTableEntry contains a
+// weak reference to its object and a pointer to its SyncBlock. During GC, entries for dead objects are returned
+// to the free list, and associated SyncBlocks are queued for cleanup before being returned to the cache.
 //
-// The organization of the SyncBlocks isn't intuitive (at least to me). Here's the explanation:
+// The process-global g_pSyncTable maps indices stored in ObjHeaders to SyncTableEntries. When the table grows,
+// it is replaced by a larger table and its entries are copied. Old tables are retained until a GC can safely
+// reclaim them to allow lock-free access.
 //
-// Before each Object is an code:ObjHeader. If the object has a code:SyncBlock, the code:ObjHeader contains a
-// non-0 index to it.
-//
-// The index is looked up in the code:g_pSyncTable of SyncTableEntries. This means the table is consecutive
-// for all outstanding indices. Whenever it needs to grow, it doubles in size and copies all the original
-// entries. The old table is kept until GC time, when it can be safely discarded.
-//
-// Each code:SyncTableEntry has a backpointer to the object and a forward pointer to the actual SyncBlock.
-// The SyncBlock is allocated out of a SyncBlockArray which is essentially just a block of SyncBlocks.
-//
-// The code:SyncBlockArray s are managed by a code:SyncBlockCache that handles the actual allocations and
-// frees of the blocks.
-//
-// So...
-//
-// Each allocation and release has to handle free lists in the table of entries and the table of blocks.
-//
-// We burn an extra 4 bytes for the pointer from the SyncTableEntry to the SyncBlock.
-//
-// The reason for this is that many objects have a SyncTableEntry but no SyncBlock. That's because someone
-// (e.g. HashTable) called Hash() on them.
-//
-// Incidentally, there's a better write-up of all this stuff in the archives.
+// SyncBlocks are allocated from SyncBlockArrays managed by the SyncBlockCache, which manages free SyncBlocks
+// and SyncTableEntries.
 
 #ifdef TARGET_X86
 #include <pshpack4.h>
@@ -82,11 +61,14 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 // to zero out the ObjHeader for the current allocation.  And the limits of the
 // GC space are initialized to respect this "off by one" error.
 
-// m_SyncBlockValue is carved up into an index and a set of bits.  Steal bits by
-// reducing the mask.  We use the very high bit, in _DEBUG, to be sure we never forget
-// to mask the Value to obtain the Index
+// m_SyncBlockValue is carved up into an index and a set of bits. Steal bits by
+// reducing the mask.
 
+#ifdef FEATURE_JAVAMARSHAL
+#define BIT_SBLK_BRIDGE_PENDING             0x80000000
+#else
 #define BIT_SBLK_UNUSED                     0x80000000
+#endif // FEATURE_JAVAMARSHAL
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 
@@ -409,22 +391,8 @@ class SyncBlock
     DWORD GetSyncBlockIndex()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwSyncIndex & ~SyncBlockPrecious;
+        return m_dwSyncIndex;
     }
-
-   // As soon as a syncblock acquires some state that cannot be recreated, we latch
-   // a bit.
-   void SetPrecious()
-   {
-       WRAPPER_NO_CONTRACT;
-       m_dwSyncIndex |= SyncBlockPrecious;
-   }
-
-   BOOL IsPrecious()
-   {
-       LIMITED_METHOD_CONTRACT;
-       return (m_dwSyncIndex & SyncBlockPrecious) != 0;
-   }
 
    // Get the lock information for this sync block.
    // Returns false when the lock is not locked or has not been created yet.
@@ -437,15 +405,6 @@ class SyncBlock
    }
 
    OBJECTHANDLE GetOrCreateLock(OBJECTREF lockObj);
-
-    // True is the syncblock and its index are disposable.
-    // If new members are added to the syncblock, this
-    // method needs to be modified accordingly
-    BOOL IsIDisposable()
-    {
-        WRAPPER_NO_CONTRACT;
-        return !IsPrecious() && m_thinLock == 0u;
-    }
 
     // Gets the InteropInfo block, creates a new one if none is present.
     InteropSyncBlockInfo* GetInteropInfo()
@@ -513,7 +472,6 @@ class SyncBlock
         if (result == 0)
         {
             // the sync block now holds a hash code, which we can't afford to lose.
-            SetPrecious();
             return hashCode;
         }
         else
@@ -530,13 +488,6 @@ class SyncBlock
         LIMITED_METHOD_CONTRACT;
         // We've already destructed.  But retain the memory.
     }
-
-    enum
-    {
-        // This bit indicates that the syncblock is valuable and can neither be discarded
-        // nor re-created.
-        SyncBlockPrecious   = 0x80000000,
-    };
 
     private:
     void InitializeThinLock(DWORD recursionLevel, DWORD threadId);
@@ -660,9 +611,6 @@ class SyncBlockCache
 
     // returns the sync block memory to the free pool but does not destruct sync block (must own cache lock already)
     void    DeleteSyncBlockMemory(SyncBlock *sb);
-
-    // return sync block to cache or delete, called from GC
-    void    GCDeleteSyncBlock(SyncBlock *sb);
 
     void    GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
 
@@ -805,14 +753,6 @@ class ObjHeader
         InterlockedAnd((LONG*)&m_SyncBlockValue, ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX));
     }
 
-    // Used only GC
-    void GCResetIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_SyncBlockValue.RawValue() &=~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX);
-    }
-
     // For now, use interlocked operations to twiddle bits in the bitfield portion.
     // If we ever have high-performance requirements where we can guarantee that no
     // other threads are accessing the ObjHeader, this can be reconsidered for those
@@ -861,6 +801,14 @@ class ObjHeader
         return m_SyncBlockValue.LoadWithoutBarrier();
     }
 
+    DWORD GetBitsAcquire()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return m_SyncBlockValue.Load();
+    }
+
 
     DWORD SetBits(DWORD newBits, DWORD oldBits)
     {
@@ -894,10 +842,14 @@ class ObjHeader
     PTR_SyncBlock PassiveGetSyncBlock()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return g_pSyncTable [(int)GetHeaderSyncBlockIndex()].m_SyncBlock;
-    }
+        // The table load must follow the acquire of the header index.
+        DWORD value = GetBitsAcquire();
+        if ((value & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) != BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+            return NULL;
 
-    DWORD GetSyncBlockIndex();
+        DWORD index = value & MASK_SYNCBLOCKINDEX;
+        return g_pSyncTable[(int)index].m_SyncBlock;
+    }
 
     PTR_Object GetBaseObject()
     {

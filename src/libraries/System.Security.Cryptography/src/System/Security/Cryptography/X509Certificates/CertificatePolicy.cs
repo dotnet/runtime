@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 
@@ -36,11 +37,120 @@ namespace System.Security.Cryptography.X509Certificates
         private readonly CertificatePolicy[] _policies;
         private bool _failAllCertificatePolicies;
 
-        public CertificatePolicyChain(List<X509Certificate2> chain)
+        private CertificatePolicyChain(int count)
         {
-            _policies = new CertificatePolicy[chain.Count];
+            _policies = new CertificatePolicy[count];
+        }
 
-            ReadPolicies(chain);
+        internal static CertificatePolicyChain Build(
+            IEnumerable<X509Certificate2> chain,
+            int chainLength,
+            bool isPartialChain,
+            ref ErrorVector extensionErrors)
+        {
+            CertificatePolicyChain policies = new CertificatePolicyChain(chainLength);
+            bool corruptDeclaredPolicies = false;
+
+            int rootDepth = isPartialChain ? -1 : chainLength - 1;
+            int i = 0;
+
+            foreach (X509Certificate2 cert in chain)
+            {
+                bool error;
+
+                // Windows ignores declared policy corruption on the root cert.
+                if (i == rootDepth)
+                {
+                    bool ignored = false;
+                    policies._policies[i] = ReadPolicy(cert, out error, ref ignored);
+                }
+                else
+                {
+                    policies._policies[i] = ReadPolicy(cert, out error, ref corruptDeclaredPolicies);
+                }
+
+                if (error)
+                {
+                    extensionErrors.Set(i);
+                }
+
+                i++;
+            }
+
+            policies.ApplyRestrictions();
+            policies._failAllCertificatePolicies |= corruptDeclaredPolicies;
+
+            Debug.Assert(i == chainLength);
+            return policies;
+        }
+
+        internal static ErrorVector CheckEncodingOnly(IEnumerable<X509Certificate2> chain, int chainLength)
+        {
+            ErrorVector vector = default;
+            int i = 0;
+
+            foreach (X509Certificate2 cert in chain)
+            {
+                PolicyData policyData = cert.Pal.GetPolicyData();
+
+                try
+                {
+                    if (policyData.ApplicationCertPolicies != null)
+                    {
+                        CheckCertPolicyExtension(policyData.ApplicationCertPolicies);
+                    }
+
+                    if (policyData.CertPolicies != null)
+                    {
+                        CheckCertPolicyExtension(policyData.CertPolicies);
+                    }
+
+                    if (policyData.CertPolicyMappings != null)
+                    {
+                        CheckCertPolicyMappingsExtension(policyData.CertPolicyMappings);
+                    }
+
+                    if (policyData.CertPolicyConstraints != null)
+                    {
+                        _ = PolicyConstraintsAsn.Decode(policyData.CertPolicyConstraints, AsnEncodingRules.DER);
+                    }
+
+                    if (policyData.EnhancedKeyUsage != null)
+                    {
+                        if (policyData.ApplicationCertPolicies == null)
+                        {
+                            CheckExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
+                        }
+                    }
+
+                    if (policyData.InhibitAnyPolicyExtension != null)
+                    {
+                        // Structural read returning a value type
+                        _ = ReadInhibitAnyPolicyExtension(policyData.InhibitAnyPolicyExtension);
+                    }
+                }
+                catch (AsnContentException)
+                {
+                    vector.Set(i);
+                }
+                catch (CryptographicException)
+                {
+                    vector.Set(i);
+                }
+
+                i++;
+            }
+
+            Debug.Assert(i == chainLength);
+            return vector;
+        }
+
+        internal void MatchCertificatePolicies(OidCollection policyOids, ref ErrorVector usageErrors)
+        {
+            foreach (Oid oid in policyOids)
+            {
+                MatchCertificatePolicies(oid, ref usageErrors);
+            }
         }
 
         internal bool MatchesCertificatePolicies(OidCollection policyOids)
@@ -54,6 +164,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return true;
+        }
+
+        internal void MatchCertificatePolicies(Oid policyOid, ref ErrorVector usageErrors)
+        {
+            if (!MatchesCertificatePolicies(policyOid))
+            {
+                usageErrors.Set(0);
+            }
         }
 
         internal bool MatchesCertificatePolicies(Oid policyOid)
@@ -107,6 +225,14 @@ namespace System.Security.Cryptography.X509Certificates
             return true;
         }
 
+        internal void MatchApplicationPolicies(OidCollection policyOids, ref ErrorVector usageErrors)
+        {
+            foreach (Oid oid in policyOids)
+            {
+                MatchApplicationPolicies(oid, ref usageErrors);
+            }
+        }
+
         internal bool MatchesApplicationPolicies(OidCollection policyOids)
         {
             foreach (Oid oid in policyOids)
@@ -118,6 +244,37 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return true;
+        }
+
+        private void MatchApplicationPolicies(Oid policyOid, ref ErrorVector usageErrors)
+        {
+            string oidToCheck = policyOid.Value!;
+            bool invalid = false;
+
+            for (int i = 1; i <= _policies.Length; i++)
+            {
+                // The loop variable (i) matches the definition in RFC 3280,
+                // section 6.1.3. In that description i=1 is the root CA, and n
+                // is the EE/leaf certificate.  In our chain object 0 is the EE cert
+                // and _policies.Length-1 is the root cert.  So we will index things as
+                // _policies.Length - i (because i is 1 indexed).
+                int dataIdx = _policies.Length - i;
+                CertificatePolicy policy = _policies[dataIdx];
+
+                // NotValidForUsage can be inherited from the parent.
+                if (!invalid)
+                {
+                    if (!policy.AllowsAnyApplicationPolicy && policy.DeclaredApplicationPolicies is not null)
+                    {
+                        invalid = !policy.DeclaredApplicationPolicies.Contains(oidToCheck);
+                    }
+                }
+
+                if (invalid)
+                {
+                    usageErrors.Set(dataIdx);
+                }
+            }
         }
 
         internal bool MatchesApplicationPolicies(Oid policyOid)
@@ -153,25 +310,20 @@ namespace System.Security.Cryptography.X509Certificates
             return true;
         }
 
-        private void ReadPolicies(List<X509Certificate2> chain)
+        private void ApplyRestrictions()
         {
-            for (int i = 0; i < chain.Count; i++)
-            {
-                _policies[i] = ReadPolicy(chain[i]);
-            }
-
-            int explicitPolicyDepth = chain.Count;
+            int explicitPolicyDepth = _policies.Length;
             int inhibitAnyPolicyDepth = explicitPolicyDepth;
             int inhibitPolicyMappingDepth = explicitPolicyDepth;
 
-            for (int i = 1; i <= chain.Count; i++)
+            for (int i = 1; i <= _policies.Length; i++)
             {
                 // The loop variable (i) matches the definition in RFC 3280,
                 // section 6.1.3. In that description i=1 is the root CA, and n
                 // is the EE/leaf certificate.  In our chain object 0 is the EE cert
-                // and chain.Count-1 is the root cert.  So we will index things as
-                // chain.Count - i (because i is 1 indexed).
-                int dataIdx = chain.Count - i;
+                // and _policies.Length-1 is for the root cert.  So we will index things as
+                // _policies.Length - i (because i is 1 indexed).
+                int dataIdx = _policies.Length - i;
 
                 CertificatePolicy policy = _policies[dataIdx];
 
@@ -223,66 +375,113 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static CertificatePolicy ReadPolicy(X509Certificate2 cert)
+        private static CertificatePolicy ReadPolicy(X509Certificate2 cert, out bool error, ref bool corruptDeclaredPolicies)
         {
             // If no ApplicationCertPolicies extension is provided then it uses the EKU
             // OIDS.
             HashSet<string>? applicationCertPolicies = null;
-            HashSet<string>? ekus = null;
             CertificatePolicy policy = new CertificatePolicy();
+            error = false;
 
             PolicyData policyData = cert.Pal.GetPolicyData();
 
             if (policyData.ApplicationCertPolicies != null)
             {
-                applicationCertPolicies = ReadCertPolicyExtension(policyData.ApplicationCertPolicies);
+                try
+                {
+                    applicationCertPolicies = ReadCertPolicyExtension(policyData.ApplicationCertPolicies);
+                }
+                catch (CryptographicException)
+                {
+                    error = true;
+                }
             }
 
             if (policyData.CertPolicies != null)
             {
-                policy.DeclaredCertificatePolicies = ReadCertPolicyExtension(policyData.CertPolicies);
+                try
+                {
+                    policy.DeclaredCertificatePolicies = ReadCertPolicyExtension(policyData.CertPolicies);
+                }
+                catch (CryptographicException)
+                {
+                    corruptDeclaredPolicies = true;
+                    error = true;
+                }
             }
 
             if (policyData.CertPolicyMappings != null)
             {
-                policy.PolicyMapping = ReadCertPolicyMappingsExtension(policyData.CertPolicyMappings);
+                try
+                {
+                    policy.PolicyMapping = ReadCertPolicyMappingsExtension(policyData.CertPolicyMappings);
+                }
+                catch (CryptographicException)
+                {
+                    error = true;
+                }
             }
 
             if (policyData.CertPolicyConstraints != null)
             {
-                ReadCertPolicyConstraintsExtension(policyData.CertPolicyConstraints, policy);
+                try
+                {
+                    ReadCertPolicyConstraintsExtension(policyData.CertPolicyConstraints, policy);
+                }
+                catch (CryptographicException)
+                {
+                    error = true;
+                }
             }
 
-            if (policyData.EnhancedKeyUsage != null && applicationCertPolicies == null)
+            if (policyData.EnhancedKeyUsage != null)
             {
-                // No reason to do this if the applicationCertPolicies was already read
-                ekus = ReadExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
+                try
+                {
+                    // If policyData.ApplicationCertPolicies is present, but corrupt, applicationCertPolicies
+                    // should stay null, don't even check EKU for structural validity.
+                    if (policyData.ApplicationCertPolicies is null)
+                    {
+                        applicationCertPolicies = ReadExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
+                    }
+                }
+                catch (CryptographicException)
+                {
+                    error = true;
+                }
             }
 
             if (policyData.InhibitAnyPolicyExtension != null)
             {
-                policy.InhibitAnyDepth = ReadInhibitAnyPolicyExtension(policyData.InhibitAnyPolicyExtension);
+                try
+                {
+                    policy.InhibitAnyDepth = ReadInhibitAnyPolicyExtension(policyData.InhibitAnyPolicyExtension);
+                }
+                catch (CryptographicException)
+                {
+                    error = true;
+                }
             }
 
-            policy.DeclaredApplicationPolicies = applicationCertPolicies ?? ekus;
+            policy.DeclaredApplicationPolicies = applicationCertPolicies;
 
             policy.ImplicitAnyApplicationPolicy = policy.DeclaredApplicationPolicies == null;
             policy.ImplicitAnyCertificatePolicy = policy.DeclaredCertificatePolicies == null;
 
-            policy.SpecifiedAnyApplicationPolicy = CheckExplicitAnyPolicy(policy.DeclaredApplicationPolicies);
-            policy.SpecifiedAnyCertificatePolicy = CheckExplicitAnyPolicy(policy.DeclaredCertificatePolicies);
+            policy.SpecifiedAnyApplicationPolicy = CheckExplicitAnyPolicy(policy.DeclaredApplicationPolicies, Oids.AnyEnhancedKeyUsage);
+            policy.SpecifiedAnyCertificatePolicy = CheckExplicitAnyPolicy(policy.DeclaredCertificatePolicies, Oids.AnyCertPolicy);
 
             return policy;
         }
 
-        private static bool CheckExplicitAnyPolicy(ISet<string>? declaredPolicies)
+        private static bool CheckExplicitAnyPolicy(ISet<string>? declaredPolicies, string anyPolicyOid)
         {
             if (declaredPolicies == null)
             {
                 return false;
             }
 
-            return declaredPolicies.Remove(Oids.AnyCertPolicy);
+            return declaredPolicies.Remove(anyPolicyOid);
         }
 
         private static int ReadInhibitAnyPolicyExtension(byte[] rawData)
@@ -311,6 +510,28 @@ namespace System.Security.Cryptography.X509Certificates
             policy.InhibitMappingDepth = constraints.InhibitMappingDepth;
         }
 
+        private static void CheckExtendedKeyUsageExtension(byte[] rawData)
+        {
+            ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
+            ValueAsnReader sequenceReader = reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
+
+            //OidCollection usages
+            while (sequenceReader.HasData)
+            {
+                // OBJECT IDENTIFIER only has a primitive encoding, so != is fine,
+                // doesn't need to be HasSameClassAndValue
+                if (sequenceReader.PeekTag() != Asn1Tag.ObjectIdentifier)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                // This won't detect an invalidly encoded OID, but Windows doesn't check
+                // that either, at this stage.
+                sequenceReader.ReadEncodedValue();
+            }
+        }
+
         private static HashSet<string> ReadExtendedKeyUsageExtension(byte[] rawData)
         {
             HashSet<string> oids = new HashSet<string>();
@@ -333,6 +554,18 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return oids;
+        }
+
+        private static void CheckCertPolicyExtension(byte[] rawData)
+        {
+            ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
+            ValueAsnReader sequenceReader = reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
+
+            while (sequenceReader.HasData)
+            {
+                PolicyInformationAsn.Decode(ref sequenceReader, rawData, out _);
+            }
         }
 
         internal static HashSet<string> ReadCertPolicyExtension(byte[] rawData)
@@ -364,6 +597,18 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        private static void CheckCertPolicyMappingsExtension(byte[] rawData)
+        {
+            ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
+            ValueAsnReader sequenceReader = reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
+
+            while (sequenceReader.HasData)
+            {
+                CertificatePolicyMappingAsn.Decode(ref sequenceReader, out _);
+            }
+        }
+
         private static List<CertificatePolicyMappingAsn> ReadCertPolicyMappingsExtension(byte[] rawData)
         {
             try
@@ -384,6 +629,46 @@ namespace System.Security.Cryptography.X509Certificates
             catch (AsnContentException e)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal struct ErrorVector
+        {
+            private UInt128 _data;
+
+            internal bool Any => _data != 0;
+
+            internal bool this[int index]
+            {
+                get
+                {
+                    Debug.Assert(index < 128);
+                    Debug.Assert(index >= 0);
+
+                    index = int.Min(index, 127);
+
+                    UInt128 test = 1;
+                    test <<= index;
+
+                    return (_data & test) != 0;
+                }
+            }
+
+            internal void Set(int index)
+            {
+                // In Debug, complain if we see 128 or higher.
+                //
+                // In Release, we'll clamp to 128 items, so any platform
+                // with a ridiculously long chain will report any errors
+                // at 128 or above on all of them.
+                Debug.Assert(index < 128);
+                Debug.Assert(index >= 0);
+
+                index = int.Min(index, 127);
+
+                UInt128 test = 1;
+                test <<= index;
+                _data |= test;
             }
         }
     }

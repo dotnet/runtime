@@ -1724,56 +1724,16 @@ namespace System.Numerics
             }
         }
 
-
-        private static readonly UInt128[] UInt128Powers10 =
-            [
-                new UInt128(0, 1),
-                new UInt128(0, 10),
-                new UInt128(0, 100),
-                new UInt128(0, 1000),
-                new UInt128(0, 10000),
-                new UInt128(0, 100000),
-                new UInt128(0, 1000000),
-                new UInt128(0, 10000000),
-                new UInt128(0, 100000000),
-                new UInt128(0, 1000000000),
-                new UInt128(0, 10000000000),
-                new UInt128(0, 100000000000),
-                new UInt128(0, 1000000000000),
-                new UInt128(0, 10000000000000),
-                new UInt128(0, 100000000000000),
-                new UInt128(0, 1000000000000000),
-                new UInt128(0, 10000000000000000),
-                new UInt128(0, 100000000000000000),
-                new UInt128(0, 1000000000000000000),
-                new UInt128(0, 10000000000000000000),
-                new UInt128(5, 7766279631452241920),
-                new UInt128(54, 3875820019684212736),
-                new UInt128(542, 1864712049423024128),
-                new UInt128(5421, 200376420520689664),
-                new UInt128(54210, 2003764205206896640),
-                new UInt128(542101, 1590897978359414784),
-                new UInt128(5421010, 15908979783594147840),
-                new UInt128(54210108, 11515845246265065472),
-                new UInt128(542101086, 4477988020393345024),
-                new UInt128(5421010862, 7886392056514347008),
-                new UInt128(54210108624, 5076944270305263616),
-                new UInt128(542101086242, 13875954555633532928),
-                new UInt128(5421010862427, 9632337040368467968),
-                new UInt128(54210108624275, 4089650035136921600),
-                new UInt128(542101086242752, 4003012203950112768),
-            ];
-
         static string IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ToDecStr(UInt128 significand)
         {
             return Number.UInt128ToDecStr(significand);
         }
 
-        static unsafe UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
             if (digits <= 19)
             {
-                return Number.DigitsToUInt64(number.DigitsPtr, digits);
+                return Number.DigitsToUInt64(number.Digits.Slice(0, digits));
             }
             else
             {
@@ -1786,11 +1746,11 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ConvertToExponent(UInt128 value) => (int)value;
 
-        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Power10(int exponent) => UInt128Powers10[exponent];
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Power10(int exponent) => UInt128.PowersOf10[exponent];
 
         static (UInt128 Quotient, UInt128 Remainder) IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.DivRemPow10(UInt128 value, int exponent)
         {
-            UInt128 power = UInt128Powers10[exponent];
+            UInt128 power = UInt128.PowersOf10[exponent];
             return UInt128.DivRem(value, power);
         }
 

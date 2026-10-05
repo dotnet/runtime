@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Text;
 
@@ -17,50 +16,12 @@ namespace System.Reflection.Runtime.MethodInfos
 {
     internal static class RuntimeMethodHelpers
     {
-        //
-        // Returns the ParameterInfo objects for the method parameters and return parameter.
-        //
-        // The ParameterInfo objects will report "contextMethod" as their Member property and use it to get type variable information from
-        // the contextMethod's declaring type. The actual metadata, however, comes from "this."
-        //
-        // The methodTypeArguments provides the fill-ins for any method type variable elements in the parameter type signatures.
-        //
-        // Does not array-copy.
-        //
-        internal static RuntimeParameterInfo[] GetRuntimeParameters<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter)
-            where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
-        {
-            TypeContext typeContext = contextMethod.DeclaringType.ToRuntimeTypeInfo().TypeContext;
-            typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
-            QSignatureTypeHandle[] typeSignatures = runtimeMethodCommon.QualifiedMethodSignature;
-            int count = typeSignatures.Length;
-
-            VirtualRuntimeParameterInfoArray result = new VirtualRuntimeParameterInfoArray(count);
-            runtimeMethodCommon.FillInMetadataDescribedParameters(ref result, typeSignatures, contextMethod, typeContext);
-
-            for (int i = 0; i < count; i++)
-            {
-                if (result[i] == null)
-                {
-                    result[i] =
-                        RuntimeThinMethodParameterInfo.GetRuntimeThinMethodParameterInfo(
-                            contextMethod,
-                            i - 1,
-                            typeSignatures[i],
-                            typeContext);
-                }
-            }
-
-            returnParameter = result.First;
-            return result.Remainder;
-        }
-
         // Compute the ToString() value in a pay-to-play-safe way.
         internal static string ComputeToString<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
             where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
         {
-            RuntimeParameterInfo returnParameter;
-            RuntimeParameterInfo[] parameters = GetRuntimeParameters(ref runtimeMethodCommon, contextMethod, methodTypeArguments, out returnParameter);
+            RuntimeParameterInfo returnParameter = RuntimeParameterInfo.GetReturnParameter(ref runtimeMethodCommon, contextMethod, methodTypeArguments);
+            RuntimeParameterInfo[] parameters = RuntimeParameterInfo.GetParameters(ref runtimeMethodCommon, contextMethod, methodTypeArguments);
             return ComputeToString(contextMethod, methodTypeArguments, parameters, returnParameter);
         }
 

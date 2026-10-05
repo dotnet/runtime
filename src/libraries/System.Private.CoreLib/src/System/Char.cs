@@ -208,8 +208,11 @@ namespace System
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            new Rune(this).TryEncodeToUtf8(utf8Destination, out bytesWritten);
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            Rune rune = Rune.TryCreate(this, out Rune value) ? value : Rune.ReplacementChar;
+            return rune.TryEncodeToUtf8(utf8Destination, out bytesWritten);
+        }
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
 
@@ -2072,6 +2075,8 @@ namespace System
         //
         // IUtfChar
         //
+
+        static bool IUtfChar<char>.IsUtf8 => false;
 
         static char IUtfChar<char>.CastFrom(byte value) => (char)value;
         static char IUtfChar<char>.CastFrom(char value) => value;

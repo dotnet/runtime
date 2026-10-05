@@ -8,7 +8,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
     public class ServiceProviderCompilationTest
     {
         // Runs the compilation on a dedicated thread with a small stack size, which requires multithreading support.
@@ -19,7 +18,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(ServiceProviderMode.Runtime, typeof(I999))]
         [InlineData(ServiceProviderMode.ILEmit, typeof(I999))]
         [InlineData(ServiceProviderMode.Expressions, typeof(I999))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         private async Task CompilesInLimitedStackSpace(ServiceProviderMode mode, Type serviceType)
         {
             // Arrange

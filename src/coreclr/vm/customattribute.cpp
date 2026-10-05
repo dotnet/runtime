@@ -904,13 +904,14 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     BYTE** ppBlob,
     BYTE* pEndBlob,
     INT32* pcNamedArgs,
-    QCall::ObjectHandleOnStack result)
+    QCall::ObjectHandleOnStack result,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_REGION_BEGIN();
 
     MethodDesc* pCtorMD = ((REFLECTMETHODREF)pMethod.Get())->GetMethod();
     TypeHandle th = ((REFLECTCLASSBASEREF)pCaType.Get())->GetType();
@@ -918,8 +919,9 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     PCODE pCallTarget;
 
     {
-        GCX_PREEMP();
+        GCX_PREEMP_REGION_BEGIN();
         pCallTarget = pCtorMD->GetSingleCallableAddrOfCode();
+        GCX_PREEMP_REGION_END();
     }
 
     MethodDescCallSite ctorCallSite(pCtorMD, pCallTarget, th);
@@ -1023,6 +1025,8 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     ctorCallSite.CallWithValueTypes(args);
 
+    GCX_COOP_REGION_END();
+
     END_QCALL;
 }
 
@@ -1033,7 +1037,8 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     QCall::StringHandleOnStack pName,
     BOOL* pbIsProperty,
     QCall::ObjectHandleOnStack pType,
-    QCall::ObjectHandleOnStack pValue)
+    QCall::ObjectHandleOnStack pValue,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

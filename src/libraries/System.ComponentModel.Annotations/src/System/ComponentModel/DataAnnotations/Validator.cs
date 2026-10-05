@@ -721,16 +721,16 @@ namespace System.ComponentModel.DataAnnotations
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
                 var tasks = new List<Task<List<ValidationError>>>(properties.Count);
-                foreach (var property in properties)
-                {
-                    var attributes = _store.GetPropertyValidationAttributes(property.Key);
-                    tasks.Add(GetValidationErrorsAsync(
-                        property.Value, property.Key, attributes,
-                        breakOnFirstError, linkedCts.Token));
-                }
-
                 try
                 {
+                    foreach (var property in properties)
+                    {
+                        var attributes = _store.GetPropertyValidationAttributes(property.Key);
+                        tasks.Add(GetValidationErrorsAsync(
+                            property.Value, property.Key, attributes,
+                            breakOnFirstError, linkedCts.Token));
+                    }
+
                     while (tasks.Count > 0)
                     {
                         Task<List<ValidationError>> completed = await Task.WhenAny(tasks).ConfigureAwait(false);
@@ -760,9 +760,9 @@ namespace System.ComponentModel.DataAnnotations
                 }
                 finally
                 {
-                    // Observe any remaining in-flight tasks on every exit path
+                    // Cancel and await any remaining in-flight tasks on every exit path
                     // (success short-circuit, external cancellation, or unexpected exception)
-                    // to prevent UnobservedTaskException from the finalizer thread.
+                    // so control can't return while tasks still use the instance and context.
                     if (tasks.Count > 0)
                     {
                         linkedCts.Cancel();
@@ -865,13 +865,13 @@ namespace System.ComponentModel.DataAnnotations
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
                 var tasks = new List<Task<(AsyncValidationAttribute Attr, ValidationResult? Result)>>(asyncAttributes.Count);
-                foreach (AsyncValidationAttribute asyncAttr in asyncAttributes)
-                {
-                    tasks.Add(RunAsyncValidation(asyncAttr, value, validationContext, linkedCts.Token));
-                }
-
                 try
                 {
+                    foreach (AsyncValidationAttribute asyncAttr in asyncAttributes)
+                    {
+                        tasks.Add(RunAsyncValidation(asyncAttr, value, validationContext, linkedCts.Token));
+                    }
+
                     while (tasks.Count > 0)
                     {
                         Task<(AsyncValidationAttribute Attr, ValidationResult? Result)> completed =
@@ -902,9 +902,9 @@ namespace System.ComponentModel.DataAnnotations
                 }
                 finally
                 {
-                    // Observe any remaining in-flight tasks on every exit path
+                    // Cancel and await any remaining in-flight tasks on every exit path
                     // (success short-circuit, external cancellation, or unexpected exception)
-                    // to prevent UnobservedTaskException from the finalizer thread.
+                    // so control can't return while tasks still use the value and context.
                     if (tasks.Count > 0)
                     {
                         linkedCts.Cancel();
