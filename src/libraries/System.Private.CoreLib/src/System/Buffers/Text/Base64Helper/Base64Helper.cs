@@ -18,11 +18,7 @@ namespace System.Buffers.Text
         [DoesNotReturn]
         internal static void ThrowUnreachableException()
         {
-#if NET
             throw new UnreachableException();
-#else
-            throw new Exception("Unreachable");
-#endif
         }
 
 #if NET

@@ -50,14 +50,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetEncodedLength(int bytesLength)
         {
-#if NET
             ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, MaximumEncodeLength);
-#else
-            if ((uint)bytesLength > MaximumEncodeLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytesLength));
-            }
-#endif
             int whole = bytesLength / 3;
             int remainder = bytesLength - whole * 3;
             return whole * 4 + (remainder > 0 ? remainder + 1 : 0);

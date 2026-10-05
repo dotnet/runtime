@@ -27,14 +27,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMaxDecodedLength(int base64Length)
         {
-#if NET
             ArgumentOutOfRangeException.ThrowIfNegative(base64Length);
-#else
-            if (base64Length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(base64Length));
-            }
-#endif
             int remainder = base64Length % 4;
             return (base64Length / 4) * 3 + (remainder > 0 ? remainder - 1 : 0);
         }
