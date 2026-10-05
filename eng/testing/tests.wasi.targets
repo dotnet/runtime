@@ -20,12 +20,18 @@
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
   <Import Project="$(MSBuildThisFileDirectory)wasi-provisioning.targets" />
-
   <!-- CoreCLR-WASI: WasiApp.CoreCLR.targets links the wasihost corehost per-app (so
        library/test reverse P/Invoke thunks are covered), and the host preloads icudt.dat,
        so the leg runs with full ICU globalization. -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Same opt-in as Apple mobile (tests.mobile.targets). These switches are substituted at trim
+       time, so they apply even though wasihost doesn't read runtimeconfig yet. -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">
+    <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport>true</_DesignerHostSupport>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -97,6 +103,15 @@
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
   <Import Project="$(WasiProjectRoot)build\WasiApp.InTree.targets"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == 'true'">
+    <WasmEnvironmentVariable Include="TEST_READY_TO_RUN_MODE" Value="1" />
+  </ItemGroup>
+
+  <!-- The guest does not see the Helix environment; SkipOnCI looks for DOTNET_CI. -->
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true'">
+    <WasmEnvironmentVariable Include="DOTNET_CI" Value="true" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
@@ -175,5 +190,26 @@
       <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="$(EnvVarCommand) PREPEND_PATH=$(WasmtimeDir)" />
       <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="$(EnvVarCommand) RuntimeIdentifier=wasi-wasm" />
     </ItemGroup>
+
+    <!-- wasmtime has no equivalent of the browser's environment configuration, so pass
+         WasmEnvironmentVariable items to the guest as engine arguments, ahead of the separator between
+         the xharness arguments and the app's arguments. -->
+    <ItemGroup>
+      <_WasiEngineEnvironmentArg Include="@(WasmEnvironmentVariable->'--engine-arg=--env --engine-arg=%(Identity)=%(Value)')" />
+    </ItemGroup>
+    <PropertyGroup Condition="'@(_WasiEngineEnvironmentArg)' != ''">
+      <_WasiEngineEnvironmentArgs>@(_WasiEngineEnvironmentArg, ' ')</_WasiEngineEnvironmentArgs>
+      <RunScriptCommand>$(RunScriptCommand.Replace(' -- ', ' $(_WasiEngineEnvironmentArgs) -- '))</RunScriptCommand>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Like ZipTestArchive does for the bundle and publish dirs: once the AppBundle is zipped for Helix, delete the
+       per-suite ReadyToRun output and the relink/composition stages (relinked host, composite, merged modules).
+       Each suite keeps several whole-program modules there, and the full library test set doesn't fit on a
+       build agent otherwise. The zip still has the composed module that runs. -->
+  <Target Name="_RemoveWasiIntermediatesAfterArchive"
+          AfterTargets="ZipTestArchive"
+          Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <RemoveDir Directories="$(IntermediateOutputPath)R2R;$(IntermediateOutputPath)wasm" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>

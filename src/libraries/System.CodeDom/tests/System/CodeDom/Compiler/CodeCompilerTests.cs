@@ -27,6 +27,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(CodeCompileUnit_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromDom_ValidCodeCompileUnit_ReturnsExpected(CodeCompileUnit compilationUnit)
         {
             ICodeCompiler compiler = new StubCompiler();
@@ -38,6 +39,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(CodeCompileUnit_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromDom_ValidCodeCompileUnit_ThrowsPlatformNotSupportedException(CodeCompileUnit compilationUnit)
         {
             ICodeCompiler compiler = new Compiler();
@@ -55,6 +57,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(CodeCompileUnit_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromDom_ValidCodeCompileUnit_ReturnsExpected(CodeCompileUnit compilationUnit)
         {
             var compiler = new StubCompiler();
@@ -66,6 +69,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(CodeCompileUnit_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromDom_ValidCodeCompileUnit_ThrowsPlatformNotSupportedException(CodeCompileUnit compilationUnit)
         {
             var compiler = new Compiler();
@@ -94,6 +98,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(CodeCompileUnits_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromDomBatch_ValidCodeCompileUnits_ReturnsExpected(CodeCompileUnit[] compilationUnits)
         {
             ICodeCompiler compiler = new StubCompiler();
@@ -103,6 +108,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(CodeCompileUnits_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromDomBatch_ValidCodeCompileUnits_ThrowsPlatformNotSupportedException(CodeCompileUnit[] compilationUnits)
         {
             ICodeCompiler compiler = new Compiler();
@@ -125,6 +131,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(CodeCompileUnits_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromDomBatch_ValidCodeCompileUnits_ReturnsExpected(CodeCompileUnit[] compilationUnits)
         {
             var compiler = new StubCompiler();
@@ -134,6 +141,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(CodeCompileUnits_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromDomBatch_ValidCodeCompileUnits_ThrowsPlatformNotSupportedException(CodeCompileUnit[] compilationUnits)
         {
             var compiler = new Compiler();
@@ -155,6 +163,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromFile_FileExists_ReturnsExpected()
         {
             ICodeCompiler compiler = new StubCompiler();
@@ -166,6 +175,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromFile_FileExists_ThrowsPlatformNotSupportedException()
         {
             ICodeCompiler compiler = new Compiler();
@@ -205,6 +215,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromFile_FileExists_ThrowsPlatformNotSupportedException()
         {
             var compiler = new Compiler();
@@ -243,6 +254,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromFileBatch_ValidFileNames_ReturnsExpected()
         {
             using (var file = new TempFile(Path.GetTempFileName(), 0))
@@ -254,6 +266,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromFileBatch_ValidFileNames_ThrowsPlatformNotSupportedException()
         {
             using (var file = new TempFile(Path.GetTempFileName(), 0))
@@ -338,6 +351,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(Source_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromSource_ValidSource_ReturnsExpected(string source)
         {
             ICodeCompiler compiler = new StubCompiler();
@@ -347,6 +361,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(Source_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromSource_ValidSource_ThrowsPlatformNotSupportedException(string source)
         {
             ICodeCompiler compiler = new Compiler();
@@ -362,6 +377,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(Source_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromSource_ValidSource_ReturnsExpected(string source)
         {
             var compiler = new StubCompiler();
@@ -371,6 +387,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(Source_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromSource_ValidSource_ThrowsPlatformNotSupportedException(string source)
         {
             var compiler = new Compiler();
@@ -394,6 +411,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(Sources_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromSourceBatch_ValidSources_ReturnsExpected(string[] sources)
         {
             ICodeCompiler compiler = new StubCompiler();
@@ -403,6 +421,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(Sources_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void CompileAssemblyFromSourceBatch_ValidSources_ThrowsPlatformNotSupportedException(string[] sources)
         {
             ICodeCompiler compiler = new Compiler();
@@ -425,6 +444,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(Sources_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromSourceBatch_ValidSources_ReturnsExpected(string[] sources)
         {
             var compiler = new StubCompiler();
@@ -434,6 +454,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(Sources_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void FromSourceBatch_ValidSources_ThrowsPlatformNotSupportedException(string[] sources)
         {
             var compiler = new Compiler();
@@ -459,6 +480,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("")]
         [InlineData("cmdArgs")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Occasionally fails in .NET framework, probably caused from a very edge case bug in .NET Framework which we will not be fixing")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void GetResponseFileCmdArgs_ValidCmdArgs_ReturnsExpected(string? cmdArgs)
         {
             var compiler = new Compiler();
