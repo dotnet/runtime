@@ -9,16 +9,18 @@ steps:
   # request itself or its target branch. This lets rolling builds seed the
   # cache without allowing pull requests to modify caches used by main.
   #
-  # The managed configuration is intentionally excluded. Roslyn's
-  # deterministic key includes the compilation options, and some pipeline
-  # legs override the matrix configuration in their build arguments.
+  # Keep Debug and Release entries separate so rolling builds can seed both
+  # configurations without competing for the same immutable cache key.
+  # Roslyn's own deterministic key accounts for legs that override the
+  # matrix configuration in their build arguments.
   - task: Cache@2
     displayName: Roslyn compiler cache
     continueOnError: true
     inputs:
-      key: roslyn | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(Build.BuildId)"
+      key: roslyn | v2 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)" | "$(Build.BuildId)"
       path: $(Pipeline.Workspace)/.roslyn-cache
       restoreKeys: |
+        roslyn | v2 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)"
         roslyn | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
 
   - script: |

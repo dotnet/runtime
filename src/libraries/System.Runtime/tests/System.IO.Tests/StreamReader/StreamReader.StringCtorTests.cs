@@ -55,6 +55,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void NegativeOneBufferSize_ShouldNotThrowException()
         {
             string testfile = Path.GetTempFileName();
@@ -84,6 +85,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void ReadToEnd_detectEncodingFromByteOrderMarks(bool detectEncodingFromByteOrderMarks)
         {
             string testfile = Path.GetTempFileName();
