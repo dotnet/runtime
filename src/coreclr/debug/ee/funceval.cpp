@@ -1255,10 +1255,11 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
         declaringType.Set(pDE->m_ownerTypeHandle.GetManagedClassObject());
         if (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT)
         {
-            ValidateFuncEvalReturnType(pDE->m_evalType, pDE->m_resultType.GetMethodTable());
+            MethodTable* pResultMT = pDE->m_resultType.GetMethodTable();
+            pResultMT->EnsureInstanceActive();
+            ValidateFuncEvalReturnType(pDE->m_evalType, pResultMT);
             if (pDE->m_resultType.IsByRefLike())
             {
-                pDE->m_resultType.GetMethodTable()->EnsureInstanceActive();
                 pContext->pResultData = AllocateFuncEvalExternalResult(pDE);
                 pContext->flags |= FuncEvalExternalResult;
             }
@@ -1333,7 +1334,6 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
     {
         COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
     }
-
     {
         GCX_COOP();
         type.Set(th.GetManagedClassObject());
@@ -1359,19 +1359,14 @@ extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
     return hr;
 }
 
-// TODO: Once byref-like handling is resolved, replace this debugger-specific allocator with
-// RuntimeHelpers.GetUninitializedObject for non-nullable types and a new QCall next to
-// RuntimeMethodHandle.ReboxToNullable for allocating true Nullable<T> boxes.
-extern "C" void QCALLTYPE DebugDebugger_AllocateFuncEvalObject(
-    QCall::TypeHandle type, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError)
+extern "C" void QCALLTYPE DebugDebugger_EnsureFuncEvalTypeActive(
+    QCall::TypeHandle type, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
     {
         GCX_COOP();
-        MethodTable* pMT = type.AsTypeHandle().GetMethodTable();
-        pMT->EnsureInstanceActive();
-        result.Set(AllocateObject(pMT));
+        type.AsTypeHandle().GetMethodTable()->EnsureInstanceActive();
     }
     END_QCALL;
 }

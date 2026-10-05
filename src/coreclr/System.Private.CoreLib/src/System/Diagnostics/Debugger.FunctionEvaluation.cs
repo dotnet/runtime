@@ -684,10 +684,10 @@ namespace System.Diagnostics
 
             private static object AllocateObject(RuntimeType type)
             {
-                object? result = null;
-                // InternalAlloc also runs precise cctors; debugger temporary/return allocation must not.
-                AllocateObject(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref result));
-                Debug.Assert(result is not null);
+                Debug.Assert(!type.IsByRefLike);
+                EnsureTypeActive(new QCallTypeHandle(ref type));
+                object result = RuntimeTypeHandle.InternalAllocNoChecks(type.GetNativeTypeHandle().AsMethodTable());
+                GC.KeepAlive(type);
                 return result;
             }
 
@@ -799,8 +799,8 @@ namespace System.Diagnostics
             private static partial int GetObject(Context* context, uint index, int interior, ObjectHandleOnStack value);
 
             [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_AllocateFuncEvalObject")]
-            private static partial void AllocateObject(QCallTypeHandle type, ObjectHandleOnStack result);
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_EnsureFuncEvalTypeActive")]
+            private static partial void EnsureTypeActive(QCallTypeHandle type);
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CopyFuncEvalValueTypeArgument")]
             [SuppressGCTransition]

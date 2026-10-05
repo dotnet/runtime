@@ -80,8 +80,8 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
     DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type, QCallExceptionStatus* qcallError);
 extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
     DebuggerFuncEvalContext* pContext, UINT32 index, BOOL interior, QCall::ObjectHandleOnStack value);
-extern "C" void QCALLTYPE DebugDebugger_AllocateFuncEvalObject(
-    QCall::TypeHandle type, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_EnsureFuncEvalTypeActive(
+    QCall::TypeHandle type, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
     DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
 extern "C" void QCALLTYPE DebugDebugger_CopyFuncEvalValueTypeArgument(
