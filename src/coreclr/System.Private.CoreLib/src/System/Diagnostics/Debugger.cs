@@ -97,21 +97,10 @@ namespace System.Diagnostics
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [DebuggerHidden]
-#pragma warning disable CS8500
-        internal static unsafe void InvokeFunction(IntPtr context, IntPtr execute, object?* state)
-#pragma warning restore CS8500
+        internal static unsafe void InvokeFunction(IntPtr context)
         {
-            if (execute == IntPtr.Zero)
-            {
-                *state = new FunctionEvaluation((FunctionEvaluation.Context*)context);
-            }
-            else
-            {
-                object? evaluation = *state;
-                Debug.Assert(evaluation is FunctionEvaluation);
-                // Exceptions must reach the native catcher without a managed catch site.
-                ((FunctionEvaluation)evaluation).Invoke();
-            }
+            // Exceptions must reach the native catcher without a managed catch site.
+            FunctionEvaluation.Run((FunctionEvaluation.Context*)context);
         }
     }
 }
