@@ -2528,6 +2528,12 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class ClassWithOneConstructorParameter
+    {
+        public int Y { get; }
+        public ClassWithOneConstructorParameter(int y) => Y = y;
+    }
+
     public class Point_ExtendedPropNames
     {
         public int XValue { get; }

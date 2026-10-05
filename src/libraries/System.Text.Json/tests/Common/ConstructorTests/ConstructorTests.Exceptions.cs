@@ -421,7 +421,7 @@ namespace System.Text.Json.Serialization.Tests
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.DeserializeWrapper<CaseInsensitiveDuplicateParameterClass>("{}"));
 
-            Assert.Contains("Could not find a matching property or field for constructor parameter 'A' of type 'System.Int32'.", ex.Message);
+            Assert.Contains("Parameter 'A' of type 'System.Int32' could not be bound because property or field 'A' is already bound to constructor parameter 'a'.", ex.Message);
         }
 
         [Fact]
@@ -443,7 +443,29 @@ namespace System.Text.Json.Serialization.Tests
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<ClassWithTwoConstructorParameters>("{}", options));
 
-            Assert.Contains("Could not find a matching property or field for constructor parameter 'y' of type 'System.Int32'.", ex.Message);
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound because property or field 'y' is already bound to constructor parameter 'x'.", ex.Message);
+        }
+
+        [Fact]
+        public void ConstructorParameterIncompleteBinding_UnassociatedMatchingProperty_ReportsAccurateMessage()
+        {
+            DefaultJsonTypeInfoResolver resolver = new();
+            resolver.Modifiers.Add(info =>
+            {
+                if (info.Type == typeof(ClassWithOneConstructorParameter))
+                {
+                    info.Properties.Clear();
+                    JsonPropertyInfo prop = info.CreateJsonPropertyInfo(typeof(int), "z");
+                    info.Properties.Add(prop);
+                    prop.Name = "y";
+                }
+            });
+
+            JsonSerializerOptions options = new() { TypeInfoResolver = resolver };
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassWithOneConstructorParameter>("{}", options));
+
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to matching property or field 'y'.", ex.Message);
         }
 
         [Fact]

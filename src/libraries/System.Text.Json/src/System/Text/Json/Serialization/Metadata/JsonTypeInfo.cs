@@ -1478,12 +1478,14 @@ namespace System.Text.Json.Serialization.Metadata
             string parameterName,
             Type parameterType,
             string? matchingPropertyName,
-            Type? matchingPropertyType)
+            Type? matchingPropertyType,
+            string? boundParameterName = null)
         {
             public string ParameterName { get; } = parameterName;
             public Type ParameterType { get; } = parameterType;
             public string? MatchingPropertyName { get; } = matchingPropertyName;
             public Type? MatchingPropertyType { get; } = matchingPropertyType;
+            public string? BoundParameterName { get; } = boundParameterName;
         }
 
         // Untyped, root-level serialization methods
@@ -1682,13 +1684,24 @@ namespace System.Text.Json.Serialization.Metadata
                         JsonPropertyInfo? matchingNameProp = null;
                         foreach (JsonPropertyInfo prop in _propertyCache)
                         {
-                            if (prop.AssociatedParameter is null)
+                            string propName = prop.MemberName ?? prop.Name;
+                            if (string.Equals(propName, param.Name, StringComparison.OrdinalIgnoreCase))
                             {
-                                string propName = prop.MemberName ?? prop.Name;
-                                if (string.Equals(propName, param.Name, StringComparison.OrdinalIgnoreCase) &&
-                                    prop.PropertyType != param.ParameterType)
+                                if (matchingNameProp is null)
                                 {
                                     matchingNameProp = prop;
+                                }
+                                else if (prop.PropertyType == param.ParameterType && matchingNameProp.PropertyType != param.ParameterType)
+                                {
+                                    matchingNameProp = prop;
+                                }
+                                else if (prop.AssociatedParameter is null && matchingNameProp.AssociatedParameter is not null)
+                                {
+                                    matchingNameProp = prop;
+                                }
+
+                                if (matchingNameProp.PropertyType == param.ParameterType && matchingNameProp.AssociatedParameter is null)
+                                {
                                     break;
                                 }
                             }
@@ -1698,7 +1711,8 @@ namespace System.Text.Json.Serialization.Metadata
                             param.Name,
                             param.ParameterType,
                             matchingNameProp?.MemberName ?? matchingNameProp?.Name,
-                            matchingNameProp?.PropertyType);
+                            matchingNameProp?.PropertyType,
+                            matchingNameProp?.AssociatedParameter?.Name);
                         break;
                     }
                 }

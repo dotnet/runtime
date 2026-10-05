@@ -485,6 +485,12 @@
   <data name="ConstructorParamIncompleteBinding_TypeMismatch" xml:space="preserve">
     <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name and type must match with a property or field on the object. Fields are only considered when 'JsonSerializerOptions.IncludeFields' is enabled. The name match can be case-insensitive. Parameter '{1}' of type '{2}' could not be bound to property or field '{3}' of type '{4}'.</value>
   </data>
+  <data name="ConstructorParamIncompleteBinding_MatchingMemberNotBound" xml:space="preserve">
+    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name and type must match with a property or field on the object. Fields are only considered when 'JsonSerializerOptions.IncludeFields' is enabled. The name match can be case-insensitive. Parameter '{1}' of type '{2}' could not be bound to matching property or field '{3}'.</value>
+  </data>
+  <data name="ConstructorParamIncompleteBinding_MemberAlreadyBound" xml:space="preserve">
+    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name and type must match with a property or field on the object. Fields are only considered when 'JsonSerializerOptions.IncludeFields' is enabled. The name match can be case-insensitive. Parameter '{1}' of type '{2}' could not be bound because property or field '{3}' is already bound to constructor parameter '{4}'.</value>
+  </data>
   <data name="ObjectWithParameterizedCtorRefMetadataNotSupported" xml:space="preserve">
     <value>Reference metadata is not supported when deserializing constructor parameters. See type '{0}'.</value>
   </data>

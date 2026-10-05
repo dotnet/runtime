@@ -426,13 +426,34 @@ namespace System.Text.Json
             {
                 if (info.MatchingPropertyName is not null)
                 {
+                    if (info.BoundParameterName is not null)
+                    {
+                        throw new InvalidOperationException(SR.Format(
+                            SR.ConstructorParamIncompleteBinding_MemberAlreadyBound,
+                            jsonTypeInfo.Type,
+                            info.ParameterName,
+                            info.ParameterType,
+                            info.MatchingPropertyName,
+                            info.BoundParameterName));
+                    }
+
+                    if (info.MatchingPropertyType != info.ParameterType)
+                    {
+                        throw new InvalidOperationException(SR.Format(
+                            SR.ConstructorParamIncompleteBinding_TypeMismatch,
+                            jsonTypeInfo.Type,
+                            info.ParameterName,
+                            info.ParameterType,
+                            info.MatchingPropertyName,
+                            info.MatchingPropertyType));
+                    }
+
                     throw new InvalidOperationException(SR.Format(
-                        SR.ConstructorParamIncompleteBinding_TypeMismatch,
+                        SR.ConstructorParamIncompleteBinding_MatchingMemberNotBound,
                         jsonTypeInfo.Type,
                         info.ParameterName,
                         info.ParameterType,
-                        info.MatchingPropertyName,
-                        info.MatchingPropertyType));
+                        info.MatchingPropertyName));
                 }
 
                 throw new InvalidOperationException(SR.Format(
