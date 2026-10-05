@@ -112,7 +112,7 @@ static const Entry s_QCall[] =
     DllImportEntry(DebugDebugger_GetFuncEvalArgument)
     DllImportEntry(DebugDebugger_GetFuncEvalArgumentType)
     DllImportEntry(DebugDebugger_GetFuncEvalObject)
-    DllImportEntry(DebugDebugger_AllocateFuncEvalObject)
+    DllImportEntry(DebugDebugger_EnsureFuncEvalTypeActive)
     DllImportEntry(DebugDebugger_ReadFuncEvalPrimitiveRegister)
     DllImportEntry(DebugDebugger_CopyFuncEvalValueTypeArgument)
     DllImportEntry(DebugDebugger_WriteFuncEvalRegister)
