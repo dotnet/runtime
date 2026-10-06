@@ -109,6 +109,10 @@ namespace System.IO.Compression
                 Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * sizeof(nuint)));
                 Debug.Assert(lengthsAsNuint.Length == sampleLengths.Length);
 
+                const double TrainingSplitPoint = 0.75;
+                const int MinimumTrainingBytes = 8;
+                int trainingSampleCount = (int)(sampleLengths.Length * TrainingSplitPoint);
+                long trainingLength = 0;
                 long totalLength = 0;
                 for (int i = 0; i < sampleLengths.Length; i++)
                 {
@@ -118,6 +122,10 @@ namespace System.IO.Compression
                         throw new ArgumentException(SR.ZstandardDictionary_Train_InvalidSampleLength, nameof(sampleLengths));
                     }
                     totalLength += length;
+                    if (i < trainingSampleCount)
+                    {
+                        trainingLength += length;
+                    }
                     lengthsAsNuint[i] = (nuint)length;
                 }
 
@@ -127,6 +135,13 @@ namespace System.IO.Compression
                 }
 
                 ArgumentOutOfRangeException.ThrowIfLessThan(maxDictionarySize, 256, nameof(maxDictionarySize));
+
+                // zstd checks the total size, but its 75% training subset must contain at least 8 bytes to avoid underflow.
+                // Remove this workaround once https://github.com/facebook/zstd/issues/4827 is fixed in the bundled version.
+                if (trainingLength < MinimumTrainingBytes)
+                {
+                    ZstandardUtils.Throw(Interop.Zstd.ZSTD_error.srcSize_wrong);
+                }
 
                 dictionaryBuffer = ArrayPool<byte>.Shared.Rent(maxDictionarySize);
                 nuint dictSize;
