@@ -503,6 +503,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void OpenDelegateToPrivateGenericBaseMethodDoesNotPolluteDerivedCache()
+        {
+            const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            MethodInfo method = typeof(PrivateGenericBase<string>).GetMethod("Secret", Flags);
+            Func<PrivateGenericDerived, int> openDelegate = method.CreateDelegate<Func<PrivateGenericDerived, int>>();
+
+            Assert.DoesNotContain(typeof(PrivateGenericDerived).GetMethods(Flags), m => m.Name == "Secret");
+            Assert.Equal(42, openDelegate(new PrivateGenericDerived()));
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.DeclaringType);
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.ReflectedType);
+            Assert.DoesNotContain(typeof(PrivateGenericDerived).GetMethods(Flags), m => m.Name == "Secret");
+        }
+
+        private class PrivateGenericBase<T>
+        {
+            private int Secret() => 42;
+        }
+
+        private class PrivateGenericDerived : PrivateGenericBase<string> { }
+
+        [Fact]
         public static void SameMethodObtainedViaDelegateAndReflectionAreSameForClass()
         {
             var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Class().M())).Body).Method;
