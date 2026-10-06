@@ -15,7 +15,6 @@ namespace System.ServiceModel.Syndication.Tests
     public static partial class BasicScenarioTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void SyndicationFeed_CreateNewFeed()
         {
             string filePath = Path.GetTempFileName();
@@ -45,7 +44,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void SyndicationFeed_Load_Write_RSS_Feed()
         {
             string path = Path.GetTempFileName();
@@ -79,7 +77,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void SyndicationFeed_Load_Write_RSS_Feed_()
         {
             string path = Path.GetTempFileName();
@@ -114,7 +111,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void SyndicationFeed_Load_Write_Atom_Feed()
         {
             string path = Path.GetTempFileName();
@@ -148,7 +144,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void SyndicationFeed_Load_Write_Atom_Feed_()
         {
             string path = Path.GetTempFileName();
@@ -182,7 +177,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void SyndicationFeed_Write_RSS_Atom()
         {
             string RssPath = Path.GetTempFileName();
@@ -321,7 +315,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void AtomEntryPositiveTest()
         {
             string file = "TestFeeds/brief-entry-noerror.xml";
@@ -329,7 +322,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void AtomEntryPositiveTest_write()
         {
             string file = "TestFeeds/AtomEntryTest.xml";
@@ -377,7 +369,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void AtomFeedPositiveTest()
         {
             string dataFile = "TestFeeds/atom_feeds.dat";
@@ -391,7 +382,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void RssEntryPositiveTest()
         {
             string file = "TestFeeds/RssEntry.xml";
@@ -399,7 +389,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void RssFeedPositiveTest()
         {
             string dataFile = "TestFeeds/rss_feeds.dat";
