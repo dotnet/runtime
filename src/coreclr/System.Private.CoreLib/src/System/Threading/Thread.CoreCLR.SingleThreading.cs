@@ -40,18 +40,12 @@ namespace System.Threading
         private void Initialize()
         {
             _priority = (int)ThreadPriority.Normal;
-            int lastManagedThreadId;
-            do
+            if (s_nextManagedThreadId == int.MaxValue)
             {
-                lastManagedThreadId = Volatile.Read(ref s_nextManagedThreadId);
-                if (lastManagedThreadId == int.MaxValue)
-                {
-                    throw new OutOfMemoryException();
-                }
+                throw new OutOfMemoryException();
             }
-            while (Interlocked.CompareExchange(ref s_nextManagedThreadId, lastManagedThreadId + 1, lastManagedThreadId) != lastManagedThreadId);
 
-            _managedThreadId = lastManagedThreadId + 1;
+            _managedThreadId = ++s_nextManagedThreadId;
         }
 
         private bool GetIsBackgroundCore()
@@ -73,15 +67,7 @@ namespace System.Threading
         /// <remarks>There are no thread pool threads when multithreading is not supported.</remarks>
         public bool IsThreadPoolThread
         {
-            get
-            {
-                if (_isDead)
-                {
-                    throw new ThreadStateException(SR.ThreadState_Dead_State);
-                }
-
-                return false;
-            }
+            get => false;
             internal set => throw new PlatformNotSupportedException();
         }
 

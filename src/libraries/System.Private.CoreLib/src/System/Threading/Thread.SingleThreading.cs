@@ -36,11 +36,6 @@ namespace System.Threading
             // A thread can't wait for itself to exit, so the join can only complete without blocking.
             Debug.Assert((ThreadState & ThreadState.Unstarted) == 0 || (millisecondsTimeout == 0));
 
-            if (_isDead)
-            {
-                return true;
-            }
-
             if (millisecondsTimeout == 0)
             {
                 return false;
