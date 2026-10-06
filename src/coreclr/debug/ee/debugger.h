@@ -3374,8 +3374,6 @@ public:
 private:
     ExternalMemoryHandle *m_pHandle;
     BYTE                 *m_pMemory;
-    OBJECTREF             m_loaderAllocator;
-    ExternalMemoryHandle *m_loaderAllocatorHandle;
 };
 
 class DebuggerEval
