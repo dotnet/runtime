@@ -839,7 +839,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void PropagationDataSamplingDoesNotCopySamplingTagsTest()
+        public void PropagationDataSamplingCopiesSamplingTagsButNotCreationTagsTest()
         {
             RemoteExecutor.Invoke(() => {
                 using ActivitySource aSource = new ActivitySource("PropagationDataSamplingTagsTest");
@@ -858,19 +858,22 @@ namespace System.Diagnostics.Tests
 
                 ActivitySource.AddActivityListener(listener);
 
-                using (Activity a = aSource.StartActivity("a"))
+                KeyValuePair<string, object>[] tags = [new("creation.tag", "value")];
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, default(ActivityContext), tags))
                 {
                     Assert.NotNull(a);
                     Assert.False(a.IsAllDataRequested);
-                    Assert.Empty(a.TagObjects);
+                    Assert.Equal([new KeyValuePair<string, object>("sampler.tag", "value")], a.TagObjects);
                 }
 
                 result = ActivitySamplingResult.AllData;
 
-                using (Activity a = aSource.StartActivity("a"))
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, default(ActivityContext), tags))
                 {
                     Assert.NotNull(a);
                     Assert.True(a.IsAllDataRequested);
+                    Assert.Contains(a.TagObjects, t => t.Key == "creation.tag" && (string)t.Value == "value");
                     Assert.Contains(a.TagObjects, t => t.Key == "sampler.tag" && (string)t.Value == "value");
                 }
             }).Dispose();

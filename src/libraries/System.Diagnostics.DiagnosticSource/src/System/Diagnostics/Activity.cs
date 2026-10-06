@@ -1197,8 +1197,8 @@ namespace System.Diagnostics
             activity.IdFormat = idFormat;
             activity._traceState = traceState;
 
-            // Links and tags are unnecessary for activities sampled as PropagationData, so skip copying them.
-            bool copyData = request != ActivitySamplingResult.PropagationData;
+            // Links and creation tags are unnecessary for activities sampled as PropagationData, so skip copying them.
+            bool copyData = request is ActivitySamplingResult.AllData or ActivitySamplingResult.AllDataAndRecorded;
 
             if (copyData && links != null)
             {
@@ -1222,7 +1222,7 @@ namespace System.Diagnostics
                 }
             }
 
-            if (copyData && samplerTags != null)
+            if (samplerTags != null)
             {
                 if (activity._tags == null)
                 {
