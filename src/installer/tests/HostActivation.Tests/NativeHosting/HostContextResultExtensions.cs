@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.RegularExpressions;
+
 using FluentAssertions;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
@@ -84,6 +86,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public static AndConstraint<CommandResultAssertions> GetRuntimePropertyValue(this CommandResultAssertions assertion, string prefix, string name, string value)
         {
             return assertion.HaveStdOutContaining($"{prefix}hostfxr_get_runtime_property_value succeeded for property: {name}={value}");
+        }
+
+        public static AndConstraint<CommandResultAssertions> GetRuntimePropertyValueContaining(this CommandResultAssertions assertion, string prefix, string name, string value)
+        {
+            return assertion.HaveStdOutMatching(
+                $"{Regex.Escape(prefix)}hostfxr_get_runtime_property_value succeeded for property: " +
+                $"{Regex.Escape(name)}=[^\\r\\n]*{Regex.Escape(value)}");
         }
 
         public static AndConstraint<CommandResultAssertions> FailToGetRuntimePropertyValue(this CommandResultAssertions assertion, string prefix, string name, int errorCode)

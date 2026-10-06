@@ -18,6 +18,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
+using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
 namespace ILAssembler
 {
@@ -177,7 +178,9 @@ namespace ILAssembler
                 or DiagnosticIds.ParameterIndexOutOfRange
                 or DiagnosticIds.GenericParameterNotFound
                 or DiagnosticIds.UnknownGenericParameter
-                or DiagnosticIds.MissingInstanceCallConv;
+                or DiagnosticIds.MissingInstanceCallConv
+                or DiagnosticIds.BranchOffsetOutOfRange
+                or DiagnosticIds.InvalidExceptionRegion;
         }
 
         private sealed class CurrentMethodContext
