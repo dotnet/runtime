@@ -130,14 +130,8 @@ namespace System.Threading
 
         public int ManagedThreadId => managed_id;
 
-        internal static int OptimalMaxSpinWaitsPerSpinIteration
-        {
-            get
-            {
-                // Default from coreclr (src/utilcode/yieldprocessornormalized.cpp)
-                return 7;
-            }
-        }
+        // Default from coreclr (src/utilcode/yieldprocessornormalized.cpp)
+        internal static int GetOptimalMaxSpinWaitsPerSpinIteration() => 7;
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
         {

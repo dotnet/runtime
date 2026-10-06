@@ -47,6 +47,12 @@ gateway. It validates search and candidate-read behavior, but cannot detect
 gateway-only failures. The toolset checks cover this configuration dependency;
 they are not an end-to-end gateway test.
 
+The focused tests also require the scanner and feedback workflows to select the
+Responses API in both their source and compiled Copilot execution steps.
+Production's firewall runs the CLI in offline/BYOK mode, where GPT-6.1 needs
+`COPILOT_PROVIDER_WIRE_API: responses`; the native Copilot SDK eval does not
+exercise that inference routing.
+
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually
 exist and scores workflow output against them, is deferred.
