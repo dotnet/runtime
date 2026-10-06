@@ -528,5 +528,79 @@ namespace ILAssembler.Tests
 
             Assert.Equal<byte>(first, second);
         }
+
+        private static string MethodWithLocals(string name, string locals) => Method(name, $$"""
+                    .locals init ({{locals}})
+                    .line 1,1 : 1,2 'a.cs'
+                    ldc.i4.0
+                    stloc.0
+                    ret
+            """);
+
+        [Fact]
+        public void LocalSignature_IsTheStandAloneSigRowNumberOfTheBodysLocalSignature()
+        {
+            // Two different local signatures, so the second method's is StandAloneSig row 2.
+            using var pdb = PortablePdbTestReader.Compile(Program(
+                MethodWithLocals("M1", "int32 x") +
+                MethodWithLocals("M2", "int64 y, int32 z")));
+
+            Assert.Equal<(int?, int?)>((1, 2), (pdb.GetBodyLocalSignatureRowNumber("M1"), pdb.GetBodyLocalSignatureRowNumber("M2")));
+            Assert.Equal<(int?, int?)>(
+                (pdb.GetBodyLocalSignatureRowNumber("M1"), pdb.GetBodyLocalSignatureRowNumber("M2")),
+                (pdb.ReadBlobHeader("M1").LocalSignature, pdb.ReadBlobHeader("M2").LocalSignature));
+        }
+
+        [Fact]
+        public void LocalSignature_IsZeroWithoutLocals()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(
+                MethodWithLocals("M1", "int32 x") +
+                Method("M2", """
+                    .line 2,2 : 1,2 'a.cs'
+                    ret
+            """)));
+
+            Assert.Equal(0, pdb.ReadBlobHeader("M2").LocalSignature);
+        }
+
+        [Fact]
+        public void MethodWithLocalsButNoLineDirective_HasNoBlob()
+        {
+            // The spec's nil blob for a method without sequence points: there is no blob, so no LocalSignature,
+            // even though the body has a local signature.
+            using var pdb = PortablePdbTestReader.Compile(Program(
+                MethodWithLocals("M1", "int32 x") +
+                Method("M2", """
+                    .locals init (int64 y)
+                    ldc.i4.0
+                    pop
+                    ret
+            """)));
+
+            MethodDebugInformation debugInformation = pdb.GetDebugInformation("M2");
+            Assert.Equal(2, pdb.GetBodyLocalSignatureRowNumber("M2"));
+            Assert.True(debugInformation.Document.IsNil);
+            Assert.True(debugInformation.SequencePointsBlob.IsNil);
+        }
+
+        [Fact]
+        public void LocalSignature_WithFold_IsTheRowNumberTheSharedBodyReferences()
+        {
+            using var pdb = PortablePdbTestReader.Compile(
+                Program(
+                    MethodWithLocals("M1", "int64 y") +
+                    MethodWithLocals("M2", "int32 x") +
+                    MethodWithLocals("M3", "int32 x")),
+                new Options { Debug = true, Fold = true });
+
+            MethodDefinition second = pdb.Image.GetMethodDefinition(pdb.GetMethodHandle("M2"));
+            MethodDefinition third = pdb.Image.GetMethodDefinition(pdb.GetMethodHandle("M3"));
+            Assert.Equal(second.RelativeVirtualAddress, third.RelativeVirtualAddress);
+            Assert.Equal(2, pdb.GetBodyLocalSignatureRowNumber("M3"));
+            Assert.Equal<(int?, int?)>(
+                (pdb.GetBodyLocalSignatureRowNumber("M2"), pdb.GetBodyLocalSignatureRowNumber("M3")),
+                (pdb.ReadBlobHeader("M2").LocalSignature, pdb.ReadBlobHeader("M3").LocalSignature));
+        }
     }
 }

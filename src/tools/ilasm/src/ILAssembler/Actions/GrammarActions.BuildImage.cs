@@ -710,7 +710,11 @@ namespace ILAssembler
                     singleDocument = sequencePoints[i].DocumentIndex == firstDocument;
                 }
 
-                BlobBuilder sequencePointsBlob = EncodeSequencePoints(sequencePoints, documentHandles, singleDocument);
+                BlobBuilder sequencePointsBlob = EncodeSequencePoints(
+                    sequencePoints,
+                    method.DebugInfo.LocalSignature,
+                    documentHandles,
+                    singleDocument);
                 _pdbBuilder.AddMethodDebugInformation(
                     singleDocument ? documentHandles[firstDocument] : default,
                     _pdbBuilder.GetOrAddBlob(sequencePointsBlob));
@@ -722,27 +726,33 @@ namespace ILAssembler
         /// "Sequence Points Blob").
         /// </summary>
         /// <param name="sequencePoints">The method's sequence points, in increasing IL offset order. Not empty.</param>
+        /// <param name="localSignature">
+        /// The local signature the method body references (<see cref="EntityRegistry.MethodDebugInfo.LocalSignature"/>),
+        /// or a nil handle when it has none.
+        /// </param>
         /// <param name="documentHandles">The Document rows, indexed by <see cref="EntityRegistry.SequencePoint.DocumentIndex"/>.</param>
         /// <param name="singleDocument">
         /// <see langword="true"/> when every point belongs to the document of the first point, which the method's
         /// MethodDebugInformation row then names.
         /// </param>
         /// <remarks>
-        /// The header is the LocalSignature, written as 0, followed, when the points span several documents, by the
-        /// InitialDocument: the document of the first point. A document-record precedes each non-hidden point whose
-        /// document differs from the current one. A hidden point has no document-record of its own and belongs to
-        /// the current document. This is the encoding native ilasm writes.
+        /// The header is the LocalSignature, the StandAloneSig row number of the body's local signature or 0 when
+        /// the body has none, followed, when the points span several documents, by the InitialDocument: the
+        /// document of the first point. A document-record precedes each non-hidden point whose document differs
+        /// from the current one. A hidden point has no document-record of its own and belongs to the current
+        /// document. This is the encoding native ilasm writes.
         /// </remarks>
         private static BlobBuilder EncodeSequencePoints(
             List<EntityRegistry.SequencePoint> sequencePoints,
+            StandaloneSignatureHandle localSignature,
             DocumentHandle[] documentHandles,
             bool singleDocument)
         {
             Debug.Assert(sequencePoints.Count > 0);
             var builder = new BlobBuilder();
 
-            // LocalSignature
-            builder.WriteCompressedInteger(0);
+            // LocalSignature (0 for a nil handle)
+            builder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignature));
 
             int currentDocument = sequencePoints[0].DocumentIndex;
             if (!singleDocument)
