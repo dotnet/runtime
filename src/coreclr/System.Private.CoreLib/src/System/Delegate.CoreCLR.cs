@@ -221,7 +221,8 @@ namespace System
             if (declaringType.IsGenericType)
             {
                 Debug.Assert(!IsUnmanagedFunctionPtr);
-                bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != 0;
+                MethodAttributes attributes = RuntimeMethodHandle.GetAttributes(method);
+                bool isStatic = (attributes & MethodAttributes.Static) != 0;
                 if (!isStatic)
                 {
                     if (IsClosed)
@@ -262,6 +263,19 @@ namespace System
                         // it's an open one, need to fetch the first arg of the instantiation
                         MethodInfo invoke = GetInvokeMethod(GetType());
                         declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
+
+                        if ((attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
+                        {
+                            Type genericDefinition = RuntimeMethodHandle.GetDeclaringType(method).GetGenericTypeDefinition();
+                            for (Type? currentType = declaringType; currentType is not null; currentType = currentType.BaseType)
+                            {
+                                if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == genericDefinition)
+                                {
+                                    declaringType = (RuntimeType)currentType;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             }
