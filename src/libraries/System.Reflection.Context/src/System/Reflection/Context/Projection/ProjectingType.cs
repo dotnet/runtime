@@ -288,6 +288,13 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectMethod(base.GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers));
         }
 
+        protected override MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
+        {
+            types = Projector.Unproject(types);
+
+            return _projector.ProjectMethod(base.GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers));
+        }
+
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetMethods(bindingAttr), _projector.ProjectMethod);

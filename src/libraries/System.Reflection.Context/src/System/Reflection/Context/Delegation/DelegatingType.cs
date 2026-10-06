@@ -428,6 +428,14 @@ namespace System.Reflection.Context.Delegation
                 _typeInfo.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        protected override MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
+        {
+            // Type.GetMethod rejects null types before calling this overload.
+            Debug.Assert(types != null);
+
+            return _typeInfo.GetMethod(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
+        }
+
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             return _typeInfo.GetMethods(bindingAttr);
