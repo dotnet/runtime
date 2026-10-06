@@ -204,7 +204,8 @@ namespace System.Threading
             {
                 return Lse.LoadAdd(ref location1, value);
             }
-#endif
+            return ExchangeAdd(ref location1, value); // Must expand intrinsic
+#else
             int oldValue;
 
             do
@@ -213,6 +214,7 @@ namespace System.Threading
             } while (CompareExchange(ref location1, oldValue + value, oldValue) != oldValue);
 
             return oldValue;
+#endif
         }
 
         [Intrinsic]
@@ -225,7 +227,8 @@ namespace System.Threading
             {
                 return Lse.LoadAdd(ref location1, value);
             }
-#endif
+            return ExchangeAdd(ref location1, value); // Must expand intrinsic
+#else
             long oldValue;
 
             do
@@ -234,6 +237,7 @@ namespace System.Threading
             } while (CompareExchange(ref location1, oldValue + value, oldValue) != oldValue);
 
             return oldValue;
+#endif
         }
 
         #endregion

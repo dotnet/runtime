@@ -2117,6 +2117,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (retType == TYP_STRUCT)
     {
+#ifdef TARGET_ARM64
+        if (isa == InstructionSet_Atomics)
+        {
+            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig,
+                                                /* mustExpand */ true);
+        }
+#endif // TARGET_ARM64
+
         unsigned int sizeBytes;
         simdBaseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
 

@@ -788,7 +788,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         GenTree* value = impPopStack().val;
         GenTree* addr  = impPopStack().val;
 
-        GenTree* node = gtNewAtomicNode(oper, simdBaseType, addr, value, comparand);
+        var_types type = varTypeIsSmall(simdBaseType) ? simdBaseType : genActualType(simdBaseType);
+        GenTree*  node = gtNewAtomicNode(oper, type, addr, value, comparand);
         node->gtFlags |= GTF_ATOMIC_LSE;
         return node;
     }

@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if TARGET_ARM64
+#if !MONO && TARGET_ARM64
 using System.Runtime.Intrinsics.Arm;
 #endif
 
@@ -85,6 +85,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte Exchange(ref byte location1, byte value)
         {
+#if !MONO && TARGET_ARM64
+            if (Lse.IsSupported)
+            {
+                return Lse.Swap(ref location1, value);
+            }
+#endif
 #if (MONO && (TARGET_AMD64 || TARGET_ARM64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
@@ -124,6 +130,12 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static ushort Exchange(ref ushort location1, ushort value)
         {
+#if !MONO && TARGET_ARM64
+            if (Lse.IsSupported)
+            {
+                return Lse.Swap(ref location1, value);
+            }
+#endif
 #if ((MONO && (TARGET_AMD64 || TARGET_ARM64 || TARGET_WASM)) || !MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
@@ -321,6 +333,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte CompareExchange(ref byte location1, byte value, byte comparand)
         {
+#if !MONO && TARGET_ARM64
+            if (Lse.IsSupported)
+            {
+                return Lse.CompareAndSwap(ref location1, value, comparand);
+            }
+#endif
 #if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
@@ -364,6 +382,12 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static ushort CompareExchange(ref ushort location1, ushort value, ushort comparand)
         {
+#if !MONO && TARGET_ARM64
+            if (Lse.IsSupported)
+            {
+                return Lse.CompareAndSwap(ref location1, value, comparand);
+            }
+#endif
 #if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
@@ -583,7 +607,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int And(ref int location1, int value)
         {
-#if TARGET_ARM64
+#if !MONO && TARGET_ARM64
             // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
@@ -622,7 +646,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long And(ref long location1, long value)
         {
-#if TARGET_ARM64
+#if !MONO && TARGET_ARM64
             // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
@@ -740,7 +764,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Or(ref int location1, int value)
         {
-#if TARGET_ARM64
+#if !MONO && TARGET_ARM64
             // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
@@ -779,7 +803,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Or(ref long location1, long value)
         {
-#if TARGET_ARM64
+#if !MONO && TARGET_ARM64
             // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {

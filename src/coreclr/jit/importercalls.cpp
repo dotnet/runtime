@@ -3305,12 +3305,17 @@ bool Compiler::impIsAtomicLightUpCandidate(NamedIntrinsic ni, CORINFO_SIG_INFO* 
         return false;
     }
 
-    // Only the overloads that actually carry the managed check qualify: the ones operating on a
-    // machine word sized integer. The object overloads use a write barrier helper instead, and the
-    // byte and halfword ones funnel through a masking loop, so leaving those unexpanded would just
-    // pessimize them.
+    // Only integer byref overloads carry the managed check; pointer overloads must still expand.
     var_types retType = JITtype2varType(sig->retType);
-    if (!varTypeIsIntegral(retType) || (genTypeSize(retType) < 4) || (genTypeSize(retType) > TARGET_POINTER_SIZE))
+    if (!varTypeIsIntegral(retType) || (genTypeSize(retType) > TARGET_POINTER_SIZE) ||
+        (varTypeIsSmall(retType) && (ni != NI_System_Threading_Interlocked_CompareExchange) &&
+         (ni != NI_System_Threading_Interlocked_Exchange)))
+    {
+        return false;
+    }
+
+    CORINFO_CLASS_HANDLE argClass;
+    if (strip(info.compCompHnd->getArgType(sig, sig->args, &argClass)) != CORINFO_TYPE_BYREF)
     {
         return false;
     }
@@ -4570,7 +4575,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
 
 #if defined(TARGET_ARM64)
-                if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                if (compGetAtomicsImpl() == AtomicsImpl::Lse)
 #endif
                 {
                     assert(sig->numArgs == 2);
