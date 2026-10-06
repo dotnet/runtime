@@ -363,7 +363,7 @@ namespace ILAssembler
                 MethodDefinitionEntity methodDef = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[i];
 
                 int bodyOffset = -1;
-                if (methodDef.MethodBody.CodeBuilder.Count != 0 || methodDef.ExceptionRegions.Count != 0)
+                if (methodDef.HasBody)
                 {
                     BlobBuilder? serializedBody = fold ? new BlobBuilder() : null;
                     MethodBodyStreamEncoder encoder = fold ? new(serializedBody!) : bodyStreamEncoder;
@@ -2003,13 +2003,19 @@ namespace ILAssembler
             /// </summary>
             public List<ExceptionRegion> ExceptionRegions { get; } = new();
 
+            /// <summary>
+            /// Gets whether the method has an IL body to write: instructions or exception regions. A method without
+            /// one (abstract, <c>pinvokeimpl</c>, runtime-implemented, or declared with an empty body) has RVA 0.
+            /// </summary>
+            public bool HasBody => MethodBody.CodeBuilder.Count != 0 || ExceptionRegions.Count != 0;
+
             public int MaxStack { get; set; } = 8;
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
             public MethodImplAttributes ImplementationAttributes { get; set; }
 
             /// <summary>
-            /// Debug information for this method (sequence points, document).
+            /// Debug information for this method (sequence points and their documents).
             /// </summary>
             public MethodDebugInfo DebugInfo { get; } = new();
 
@@ -2219,12 +2225,19 @@ namespace ILAssembler
         }
 
         /// <summary>
-        /// Represents a sequence point mapping IL offset to source location.
+        /// Represents a sequence point: an IL offset, the source document it belongs to and the source span
+        /// it maps to.
         /// </summary>
         public readonly struct SequencePoint
         {
-            public SequencePoint(int ilOffset, int startLine, int startColumn, int endLine, int endColumn)
+            /// <summary>
+            /// Creates a sequence point at <paramref name="ilOffset"/> in the document at
+            /// <paramref name="documentIndex"/> of the compilation's <see cref="PdbDocumentTable"/>, mapping to the
+            /// given start and end line and column. A start line of <c>0xFEEFEE</c> makes it hidden.
+            /// </summary>
+            public SequencePoint(int documentIndex, int ilOffset, int startLine, int startColumn, int endLine, int endColumn)
             {
+                DocumentIndex = documentIndex;
                 ILOffset = ilOffset;
                 StartLine = startLine;
                 StartColumn = startColumn;
@@ -2232,6 +2245,11 @@ namespace ILAssembler
                 EndColumn = endColumn;
             }
 
+            /// <summary>
+            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the document that was current
+            /// when the directive that produced this point was applied.
+            /// </summary>
+            public int DocumentIndex { get; }
             public int ILOffset { get; }
             public int StartLine { get; }
             public int StartColumn { get; }
@@ -2241,18 +2259,18 @@ namespace ILAssembler
             /// <summary>
             /// Creates a hidden sequence point (used for compiler-generated code).
             /// </summary>
-            public static SequencePoint Hidden(int ilOffset) => new(ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
+            public static SequencePoint Hidden(int documentIndex, int ilOffset) => new(documentIndex, ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
 
             public bool IsHidden => StartLine == 0xFEEFEE;
         }
 
         /// <summary>
-        /// Debug information for a method, including sequence points and local scopes.
+        /// Debug information for a method: the sequence points recorded from its <c>.line</c> and <c>#line</c>
+        /// directives, in increasing IL offset order, with at most one point per offset. The points of one method
+        /// may belong to different documents.
         /// </summary>
         public sealed class MethodDebugInfo
         {
-            public string? DocumentPath { get; set; }
-            public Guid LanguageGuid { get; set; }
             public List<SequencePoint> SequencePoints { get; } = new();
         }
 

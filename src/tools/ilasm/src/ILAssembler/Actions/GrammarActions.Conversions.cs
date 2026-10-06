@@ -44,7 +44,7 @@ namespace ILAssembler
         private Guid _currentLanguageVendorGuid = Guid.Empty;
         private Guid _currentDocumentTypeGuid = Guid.Empty;
         private string? _currentDocumentPath;
-        private readonly Dictionary<(string Path, Guid LanguageGuid), DocumentHandle> _documentHandles = new();
+        private readonly PdbDocumentTable _pdbDocuments = new();
         private readonly MetadataBuilder _pdbBuilder = new();
         private readonly List<VTableFixupDeclaration> _vtableFixups = new();
         private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _exportDirectiveContexts = new();
