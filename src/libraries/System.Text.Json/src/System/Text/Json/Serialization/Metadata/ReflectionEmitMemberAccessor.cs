@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
-                JsonTypeInfo.ObjectType,
+                typeof(object),
                 Type.EmptyTypes,
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
@@ -198,7 +198,7 @@ namespace System.Text.Json.Serialization.Metadata
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
                 type,
-                new[] { JsonTypeInfo.ObjectType },
+                new[] { typeof(object) },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -344,7 +344,7 @@ namespace System.Text.Json.Serialization.Metadata
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
                 typeof(void),
-                new[] { collectionType, JsonTypeInfo.ObjectType },
+                new[] { collectionType, typeof(object) },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -697,7 +697,7 @@ namespace System.Text.Json.Serialization.Metadata
             new DynamicMethod(
                 memberName + "Getter",
                 memberType,
-                new[] { JsonTypeInfo.ObjectType },
+                new[] { typeof(object) },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -713,7 +713,7 @@ namespace System.Text.Json.Serialization.Metadata
             new DynamicMethod(
                 memberName + "Setter",
                 typeof(void),
-                new[] { JsonTypeInfo.ObjectType, memberType },
+                new[] { typeof(object), memberType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
