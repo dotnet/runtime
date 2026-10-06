@@ -37,7 +37,7 @@ namespace ILAssembler.Tests
                 END: ret
                 """);
             using MetadataReaderProvider provider = MetadataReaderProvider.FromPortablePdbImage(
-                DocumentCompilerTestHelpers.CompileAndGetPortablePdb(source, new Options { Optimize = optimize }));
+                DocumentCompilerTestHelpers.CompileAndGetPortablePdb(source, new Options { Optimize = optimize, Debug = true }));
             MetadataReader reader = provider.GetMetadataReader();
             SequencePoint[] points = reader.GetMethodDebugInformation(reader.MethodDebugInformation.Single())
                 .GetSequencePoints().ToArray();
@@ -178,7 +178,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
 
             // Read the PDB and verify contents
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
@@ -217,7 +217,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
 
             // Read the PDB and verify contents
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
@@ -256,6 +256,30 @@ namespace ILAssembler.Tests
             using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
 
             // Verify no PDB and no debug directory when no debug directives
+            Assert.Null(result.PortablePdb);
+            Assert.Empty(pe.ReadDebugDirectory());
+        }
+
+        [Fact]
+        public void LineDirective_WithoutDebugOrPdb_ProducesNoPdb()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .line 10 "test.cs"
+                        nop
+                        ret
+                    }
+                }
+                """;
+
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+
+            // As in native ilasm, .line alone produces no PDB: only /DEBUG or /PDB does.
             Assert.Null(result.PortablePdb);
             Assert.Empty(pe.ReadDebugDirectory());
         }
@@ -337,7 +361,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
             using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             var reader = pe.GetMetadataReader();
             var methodHandle = reader.MethodDefinitions.Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "TestMethod");
@@ -390,7 +414,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
             using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             var reader = pe.GetMetadataReader();
             var methodHandle = reader.MethodDefinitions
@@ -428,7 +452,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
             var document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));
@@ -457,7 +481,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
             var document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));

@@ -32,6 +32,42 @@ namespace ILAssembler.Tests.GeneratedCases
         }
 
         [Theory]
+        [MemberData(nameof(PdbCaseGenerator.AnyCaseData), MemberType = typeof(PdbCaseGenerator))]
+        public void Pdb_IsProducedExactlyWhenASwitchRequestsIt(int index, string description)
+        {
+            CompileCase input = PdbCaseGenerator.AnyCases[index];
+
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(input.Program.ToSource(), input.Options.ToOptions());
+
+            Assert.Equal(input.Options.RequestsPdb, result.PortablePdb.HasValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(PdbCaseGenerator.AnyCaseData), MemberType = typeof(PdbCaseGenerator))]
+        public void WithoutAPdbSwitch_ImageHasNoDebugDirectory(int index, string description)
+        {
+            CompileCase input = PdbCaseGenerator.AnyCases[index];
+            GeneratedOptions options = input.Options with { Debug = false, DebugMode = null, Pdb = false };
+
+            (_, ImmutableArray<byte> image) = Compile(input.Program, options);
+            using var pe = new PEReader(image);
+            DirectoryEntry debugTable = pe.PEHeaders.PEHeader!.DebugTableDirectory;
+
+            Assert.Equal((0, 0), (debugTable.RelativeVirtualAddress, debugTable.Size));
+
+            // No debug data either: the Reproducible entry ManagedPEBuilder writes by default into a deterministic
+            // image would make its .text larger than a nondeterministic one's.
+            Assert.Equal(TextSize(input.Program, options with { Deterministic = false }), TextSize(input.Program, options with { Deterministic = true }));
+        }
+
+        private static int TextSize(GeneratedProgram program, GeneratedOptions options)
+        {
+            (_, ImmutableArray<byte> image) = Compile(program, options);
+            using var pe = new PEReader(image);
+            return pe.PEHeaders.SectionHeaders.Single(section => section.Name == ".text").VirtualSize;
+        }
+
+        [Theory]
         [MemberData(nameof(PdbCaseGenerator.PdbRequestedCaseData), MemberType = typeof(PdbCaseGenerator))]
         public void RequestedPdb_IsReferencedByCodeViewThenPdbChecksumThenReproducibleIffDeterministic(int index, string description)
         {

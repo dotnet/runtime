@@ -402,6 +402,51 @@ namespace ILAssembler.Tests
             Assert.NotEmpty(pdbReader.MethodDebugInformation);
         }
 
+        [Theory]
+        [InlineData(DebugMode.Impl)]
+        [InlineData(DebugMode.Opt)]
+        public void DebugModeWithoutDebug_ProducesPortablePdb(DebugMode debugMode)
+        {
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(PortablePdbSource, new Options { DebugMode = debugMode });
+
+            Assert.NotNull(result.PortablePdb);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void WithoutDebugOrPdb_ImageHasNoDebugDirectory(bool deterministic, bool lineDirective)
+        {
+            string source = lineDirective ? PortablePdbSource : PortablePdbSource.Replace(".line 10 'test.cs'", string.Empty);
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Deterministic = deterministic });
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            DirectoryEntry debugTable = pe.PEHeaders.PEHeader!.DebugTableDirectory;
+
+            // As in native ilasm: no debug directory at all, not even the Reproducible entry that
+            // ManagedPEBuilder adds by default to a deterministic image.
+            Assert.Equal((0, 0), (debugTable.RelativeVirtualAddress, debugTable.Size));
+        }
+
+        [Fact]
+        public void WithoutDebugOrPdb_DeterministicImageCarriesNoDebugData()
+        {
+            // Given no debug directory, ManagedPEBuilder writes a Reproducible entry into a deterministic image.
+            // Clearing the PE header's debug directory alone would leave that entry's bytes in .text, so the
+            // deterministic image must have the same .text size as a nondeterministic one.
+            string source = PortablePdbSource.Replace(".line 10 'test.cs'", string.Empty);
+
+            static int TextSize(string source, bool deterministic)
+            {
+                CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Deterministic = deterministic });
+                using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+                return pe.PEHeaders.SectionHeaders.Single(section => section.Name == ".text").VirtualSize;
+            }
+
+            Assert.Equal(TextSize(source, deterministic: false), TextSize(source, deterministic: true));
+        }
+
         [Fact]
         public void PdbOption_DoesNotAddDebuggableAttribute()
         {

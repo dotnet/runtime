@@ -58,8 +58,8 @@ namespace ILAssembler.Tests.GeneratedCases
         string? OutputFileName,
         string? PdbFilePath)
     {
-        /// <summary>Whether an option that produces a PDB is set (<see cref="Options.Debug"/> or <see cref="Options.Pdb"/>).</summary>
-        public bool RequestsPdb => Debug || Pdb;
+        /// <summary>Whether a switch that produces a PDB is set (<c>/DEBUG</c> in any mode, or <c>/PDB</c>).</summary>
+        public bool RequestsPdb => Debug || DebugMode is not null || Pdb;
 
         /// <summary>The PDB path the CodeView entry is expected to name.</summary>
         public string ExpectedCodeViewPath =>

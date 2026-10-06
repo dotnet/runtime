@@ -562,10 +562,10 @@ namespace ILAssembler
         /// </summary>
         /// <remarks>
         /// <para>
-        /// A PDB is produced when <see cref="Options.Debug"/> or <see cref="Options.Pdb"/> is set, or when
-        /// a method has <c>.line</c> sequence points. Otherwise this returns <see langword="null"/>, the image
-        /// has no debug directory (<see cref="ILAssemblerPEBuilder"/>), and <paramref name="portablePdb"/> is
-        /// <see langword="null"/>.
+        /// A PDB is produced when <see cref="Options.Debug"/>, <see cref="Options.DebugMode"/> or
+        /// <see cref="Options.Pdb"/> is set; <c>.line</c> directives alone do not produce one. Otherwise this
+        /// returns <see langword="null"/>, the image has no debug directory (<see cref="ILAssemblerPEBuilder"/>),
+        /// and <paramref name="portablePdb"/> is <see langword="null"/>.
         /// </para>
         /// <para>
         /// The PDB is returned in <paramref name="portablePdb"/> for the caller to write as a separate file;
@@ -588,20 +588,9 @@ namespace ILAssembler
         {
             portablePdb = null;
 
-            // Check if we have any methods with debug info
-            bool hasDebugInfo = false;
-            foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
-            {
-                if (entity is EntityRegistry.MethodDefinitionEntity method &&
-                    method.DebugInfo.SequencePoints.Count > 0)
-                {
-                    hasDebugInfo = true;
-                    break;
-                }
-            }
-
-            // Generate PDB if we have debug info OR if --debug/--pdb options are set
-            bool generatePdb = hasDebugInfo || _options.Debug || _options.Pdb;
+            // As in native ilasm, only /DEBUG (any mode) or /PDB produces a PDB. Without them, sequence
+            // points from .line directives are parsed and validated but not emitted.
+            bool generatePdb = _options.Debug || _options.DebugMode is not null || _options.Pdb;
             if (!generatePdb)
             {
                 return null;

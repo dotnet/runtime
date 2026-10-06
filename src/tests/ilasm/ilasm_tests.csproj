@@ -73,6 +73,10 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>TestFiles\%(FileName)%(Extension)</Link>
     </None>
+    <None Include="PortablePdb\TestFiles\TestPdbFileLine.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
     <None Include="PortablePdb\TestFiles\TestPdbFileMissingInclude.il">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>TestFiles\%(FileName)%(Extension)</Link>

@@ -131,8 +131,9 @@ namespace ILAssembler
         /// When null with Debug=true, uses default (DisableOptimizations).
         /// </summary>
         /// <remarks>
-        /// A non-null value adds a <c>DebuggableAttribute</c> with the selected debugging modes,
-        /// as <see cref="Debug"/> does, and likewise only when the source declares an assembly.
+        /// A non-null value implies <see cref="Debug"/>: it produces a Portable PDB and adds a
+        /// <c>DebuggableAttribute</c> with the selected debugging modes, likewise only when the source
+        /// declares an assembly.
         /// </remarks>
         public DebugMode? DebugMode { get; set; }
 

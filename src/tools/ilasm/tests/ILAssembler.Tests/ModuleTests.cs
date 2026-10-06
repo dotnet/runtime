@@ -219,7 +219,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
             using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             var reader = pe.GetMetadataReader();
             var moduleType = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(1));

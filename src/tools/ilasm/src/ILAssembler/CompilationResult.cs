@@ -24,9 +24,9 @@ public sealed class CompilationResult
     /// Gets the serialized Portable PDB for the image, or <see langword="null"/> when no PDB was requested.
     /// </summary>
     /// <remarks>
-    /// A PDB is produced when <see cref="Options.Debug"/> or <see cref="Options.Pdb"/> is set, or when
-    /// the source has <c>.line</c> sequence points. It is not embedded in the image: the image's debug directory
-    /// holds a CodeView entry that names the PDB path and carries this PDB's id, followed by a PdbChecksum
+    /// A PDB is produced when <see cref="Options.Debug"/>, <see cref="Options.DebugMode"/> or
+    /// <see cref="Options.Pdb"/> is set; <c>.line</c> directives alone do not produce one.
+    /// It is not embedded in the image: the image's debug directory holds a CodeView entry that names the PDB path and carries this PDB's id, followed by a PdbChecksum
     /// entry with the SHA-256 hash of these bytes with the 20-byte PDB id zeroed, and, with
     /// <see cref="Options.Deterministic"/>, a Reproducible entry. The PDB path is
     /// <see cref="Options.PdbFilePath"/> when set; otherwise it is <see cref="Options.OutputFileName"/> with its

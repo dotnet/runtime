@@ -185,6 +185,36 @@ namespace IlasmPortablePdbTests
             Assert.Equal(SHA256.HashData(pdbBytes), checksum.Checksum.ToArray());
         }
 
+        // Without -DEBUG or -PDB there is no PDB file and no debug directory, even with .line directives or -DET.
+        [Theory]
+        [InlineData("TestPdbFile1.il", "")]
+        [InlineData("TestPdbFile1.il", "-det")]
+        [InlineData("TestPdbFileLine.il", "")]
+        [InlineData("TestPdbFileLine.il", "-det")]
+        public static void Native_NoPdbSwitch_WritesNoPdbAndNoDebugDirectory(string ilSource, string switches) =>
+            NoPdbSwitch_WritesNoPdbAndNoDebugDirectory(Native, ilSource, switches);
+
+        [ConditionalTheory(typeof(IlasmPdbFileTester), nameof(HasManagedIlasm))]
+        [InlineData("TestPdbFile1.il", "")]
+        [InlineData("TestPdbFile1.il", "-det")]
+        [InlineData("TestPdbFileLine.il", "")]
+        [InlineData("TestPdbFileLine.il", "-det")]
+        public static void Managed_NoPdbSwitch_WritesNoPdbAndNoDebugDirectory(string ilSource, string switches) =>
+            NoPdbSwitch_WritesNoPdbAndNoDebugDirectory(Managed, ilSource, switches);
+
+        private static void NoPdbSwitch_WritesNoPdbAndNoDebugDirectory(string kind, string ilSource, string switches)
+        {
+            string directory = CreateOutputDirectory($"{nameof(NoPdbSwitch_WritesNoPdbAndNoDebugDirectory)}-{Path.GetFileNameWithoutExtension(ilSource)}{switches}", kind);
+            string dll = Path.Combine(directory, "Output.dll");
+
+            Assert.Equal(0, RunIlasm(kind, ilSource, dll, switches));
+
+            Assert.Equal(new[] { "Output.dll" }, Directory.GetFiles(directory).Select(Path.GetFileName).ToArray());
+            using PEReader pe = ReadImage(dll);
+            DirectoryEntry debugTable = pe.PEHeaders.PEHeader.DebugTableDirectory;
+            Assert.Equal((0, 0), (debugTable.RelativeVirtualAddress, debugTable.Size));
+        }
+
         // -PDB produces the PDB without adding a DebuggableAttribute; -DEBUG adds one.
         [Theory]
         [InlineData("-pdb", false)]
