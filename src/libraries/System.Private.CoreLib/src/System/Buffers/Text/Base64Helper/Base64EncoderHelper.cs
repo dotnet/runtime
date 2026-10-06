@@ -722,7 +722,8 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint Encode(ReadOnlySpan<byte> threeBytes, ReadOnlySpan<byte> encodingMap)
         {
-            uint i = ((uint)BinaryPrimitives.ReadUInt16BigEndian(threeBytes) << 8) | threeBytes[2];
+            // Byte loads avoid a 16-bit MOVBE partial register write that serializes loop iterations.
+            uint i = ((uint)threeBytes[0] << 16) | ((uint)threeBytes[1] << 8) | threeBytes[2];
             return Encode(i, encodingMap);
         }
 
