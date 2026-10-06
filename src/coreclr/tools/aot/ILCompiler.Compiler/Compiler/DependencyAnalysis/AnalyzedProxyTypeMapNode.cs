@@ -14,6 +14,9 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class AnalyzedProxyTypeMapNode(TypeDesc typeMapGroup, IReadOnlyDictionary<TypeDesc, TypeDesc> entries) : SortableDependencyNode, IProxyTypeMapNode
     {
         public TypeDesc TypeMapGroup => typeMapGroup;
+
+        public IReadOnlyDictionary<TypeDesc, TypeDesc> Entries => entries;
+
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new();

@@ -11,6 +11,56 @@ ILLink uses several data formats to control or influence the trimming process. T
 ## Output Data Formats
 
 - [Dependencies Trace](#dependencies-trace-format)
+- [Type Maps](#type-map-output-format)
+
+## Type Map Output Format
+
+ILLink and NativeAOT ILC accept `--output-typemaps` to write a UTF-8 XML
+sidecar describing their retained type maps. This is an opt-in intermediate build
+artifact, independent of dependency tracing. It does not root any additional
+types or maps.
+The filename and location are derived from the producer output. In SDK builds,
+the sidecar stays in the intermediate output directory; it is not published or
+bundled with the application.
+
+```xml
+<typemaps version="1">
+  <group type="Example.JavaUniverse,Example.Interop">
+    <external>
+      <entry key="example/MainActivity" value="Example.MainActivity,Example.App" />
+    </external>
+    <proxy>
+      <entry key="Example.ManagedPeer,Example.App" value="Example.JavaProxy,Example.Interop" />
+    </proxy>
+  </group>
+  <group type="Example.OtherUniverse,Example.Interop">
+    <external />
+  </group>
+</typemaps>
+```
+
+The root `typemaps` element declares format version `1`.
+Each `group` identifies a universe by its type. Its optional `external` and
+`proxy` sections contain the retained mappings of the corresponding kind.
+An absent section means that map kind was not requested/retained. An empty
+section represents a retained map with no reported entries.
+
+Every `entry` has the same two required attributes, `key` and `value`:
+
+| Map kind | `key` | `value` |
+| --- | --- | --- |
+| `external` | The original external string, such as a Java/JNI name. | The mapped managed type name. |
+| `proxy` | The managed source type name. | The mapped proxy type name. |
+
+Managed type names (`group.type`, every `entry.value`, and proxy `entry.key`)
+use reflection type-name syntax with simple assembly qualification. Unusual
+metadata names are not guaranteed to round-trip through a reflection type-name
+parser.
+
+External keys are preserved verbatim, without normalization. Keys containing
+characters that XML 1.0 cannot represent cause artifact generation to fail.
+Consumers should check the format version and only use artifacts from successful
+builds.
 
 # Format Details
 

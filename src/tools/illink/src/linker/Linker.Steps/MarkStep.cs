@@ -269,6 +269,7 @@ namespace Mono.Linker.Steps
             startingAssembly ??= Annotations.GetEntryPointAssembly();
 
             _typeMapHandler.Initialize(Context, this, startingAssembly);
+            Context.TypeMapHandler = _typeMapHandler;
             ProcessMarkedPending();
         }
 

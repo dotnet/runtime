@@ -141,6 +141,12 @@ namespace Mono.Linker
 
         public string? TypeMapEntryAssembly { get; set; }
 
+#if !ILTRIM
+        internal bool TypeMapGenerateXmlFile { get; set; }
+        internal AssemblyDefinition? TypeMapOutputAssembly { get; set; }
+        internal TypeMapHandler? TypeMapHandler { get; set; }
+#endif
+
         /// <summary>
         /// Option to not special case EventSource.
         /// Currently, values are hard-coded and does not have a command line option to control

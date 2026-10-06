@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
+using System.Threading.Tasks;
 using System.Xml;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.CommandLine.Mvid;
@@ -35,6 +36,72 @@ namespace Mono.Linker.Tests.TestCases
             // missing types/methods
             if (!result.OutputAssemblyPath.Exists())
                 Assert.Fail($"The linked assembly is missing.  Should have existed at {result.OutputAssemblyPath}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CanOutputTypeMaps(bool absoluteOutputDirectory)
+        {
+            var runner = new TypeMapArtifactTestRunner();
+            TrimmedTestCaseResult result = TypeMapOutputTests.CreateFixture(runner);
+            string outputDirectory = result.Sandbox.OutputDirectory.ToString();
+            string reportPath = Path.Combine(outputDirectory, "test.typemaps.xml");
+            await RunLinker(generateArtifact: false, expectSuccess: true);
+            byte[] assemblyWithoutReport = File.ReadAllBytes(result.OutputAssemblyPath.ToString());
+            Assert.Empty(Directory.EnumerateFiles(result.Sandbox.OutputDirectory.ToString(), "*typemap*.xml", SearchOption.AllDirectories));
+
+            await RunLinker(generateArtifact: true, expectSuccess: true);
+            TypeMapOutputTests.CheckArtifact(reportPath, nativeAot: false);
+            Assert.Equal(assemblyWithoutReport, File.ReadAllBytes(result.OutputAssemblyPath.ToString()));
+
+            byte[] firstReport = File.ReadAllBytes(reportPath);
+            File.WriteAllText(reportPath, "stale output");
+            await RunLinker(generateArtifact: true, expectSuccess: true);
+            Assert.Equal(firstReport, File.ReadAllBytes(reportPath));
+
+            File.Delete(reportPath);
+            await RunLinker(generateArtifact: true, expectSuccess: true);
+            Assert.Equal(firstReport, File.ReadAllBytes(reportPath));
+
+            TypeMapOutputTests.UseUnrepresentableKey(result);
+            await RunLinker(generateArtifact: true, expectSuccess: false);
+            Assert.False(File.Exists(reportPath));
+
+            async Task RunLinker(bool generateArtifact, bool expectSuccess)
+            {
+                string[] arguments = (string[])runner.Arguments.Clone();
+                int outputOption = Array.IndexOf(arguments, "-o");
+                Assert.True(outputOption >= 0);
+                arguments[outputOption + 1] = absoluteOutputDirectory ? outputDirectory
+                    : Path.GetRelativePath(result.Sandbox.InputDirectory.ToString(), outputDirectory);
+                IEnumerable<string> invocation = generateArtifact ? arguments.Concat(new[] { "--output-typemaps" }) : arguments;
+                (int exitCode, string diagnostics) = await TypeMapOutputTests.RunTool(typeof(Driver).Assembly.Location,
+                    result.Sandbox.InputDirectory.ToString(), invocation);
+                if (expectSuccess)
+                {
+                    Assert.True(exitCode == 0, $"ILLink failed with exit code {exitCode}.\n{diagnostics}");
+                    Assert.True(File.Exists(result.OutputAssemblyPath.ToString()));
+                }
+                else
+                {
+                    Assert.True(exitCode != 0, "ILLink reported success despite failing to write the build artifact.");
+                    Assert.Contains(reportPath, diagnostics, StringComparison.Ordinal);
+                }
+            }
+        }
+
+        private sealed class TypeMapArtifactTestRunner() : TestRunner(new ObjectFactory())
+        {
+            public string[] Arguments { get; private set; } = [];
+
+            protected override void AddTrimmingOptions(TestCaseSandbox sandbox, ManagedCompilationResult compilationResult,
+                TrimmingArgumentBuilder builder, TestCaseMetadataProvider metadataProvider)
+            {
+                base.AddTrimmingOptions(sandbox, compilationResult, builder, metadataProvider);
+                builder.AddAdditionalArgument("--deterministic", ["true"]);
+                Arguments = builder.Build();
+            }
         }
 
         [Fact]

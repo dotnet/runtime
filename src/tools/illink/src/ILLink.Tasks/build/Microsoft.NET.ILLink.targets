@@ -85,6 +85,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TypeMapGenerateXmlFile)' == 'true'">
+    <_TrimmerTypeMapXmlFile>$(IntermediateLinkDir)$(TargetName).typemaps.xml</_TrimmerTypeMapXmlFile>
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --output-typemaps</_ExtraTrimmerArgs>
+  </PropertyGroup>
+
   <!-- Disable Redundant Warning Suppressions by default-->
   <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true' And '$(PublishTrimmed)' == 'true'">
     <NoWarn>$(NoWarn);IL2121</NoWarn>
@@ -141,7 +146,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_RunILLink"
           DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
           Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath)"
-          Outputs="$(_LinkSemaphore)">
+          Outputs="$(_LinkSemaphore);$(_TrimmerTypeMapXmlFile)">
     <NETSdkInformation ResourceName="ILLinkRunning" />
     <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
          In this case, explicitly specify the path to the dotnet host. -->

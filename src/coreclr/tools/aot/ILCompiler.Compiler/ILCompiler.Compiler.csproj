@@ -726,6 +726,7 @@
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\PreinitializationManager.cs" />
+    <Compile Include="Compiler\TypeMapOutput.cs" />
     <Compile Include="Compiler\TypePreinit.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />

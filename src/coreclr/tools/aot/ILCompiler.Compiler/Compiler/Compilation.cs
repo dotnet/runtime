@@ -650,6 +650,16 @@ namespace ILCompiler
             }
         }
 
+        public void WriteTypeMapArtifact(string fileName)
+        {
+            using (FileStream output = new FileStream(fileName, FileMode.Create))
+            {
+                var adapter = new TypeMapOutput();
+                ILLink.Shared.TypeMapXmlWriter.WriteTypeMapsToStream(output, adapter.GetTypeMapGroups(_factory));
+                output.Flush();
+            }
+        }
+
         public IEnumerable<MethodDesc> CompiledMethodBodies
         {
             get

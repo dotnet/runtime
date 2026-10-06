@@ -9,4 +9,11 @@
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="ILLink.Tasks.Tests.DotNetHostPath" Value="$(DotNetTool)" />
+    <RuntimeHostConfigurationOption Include="ILLink.Tasks.Tests.MSBuildPath" Value="$(MSBuildBinPath)/MSBuild.dll" />
+    <RuntimeHostConfigurationOption Include="ILLink.Tasks.Tests.SDKTasksAssembly" Value="$(MicrosoftNETBuildTasksAssembly)" />
+    <RuntimeHostConfigurationOption Include="ILLink.Tasks.Tests.ILLinkTasksAssembly" Value="$(ArtifactsBinDir)ILLink.Tasks/$(Configuration)/net/ILLink.Tasks.dll" />
+  </ItemGroup>
+
 </Project>

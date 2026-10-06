@@ -23,6 +23,11 @@ namespace Mono.Linker.Steps
             if (assembly == null)
                 return;
 
+#if !ILTRIM
+            if (Context.TypeMapGenerateXmlFile && (rootMode == AssemblyRootMode.EntryPoint || Context.TypeMapOutputAssembly is null))
+                Context.TypeMapOutputAssembly = assembly;
+#endif
+
             var di = new DependencyInfo(DependencyKind.RootAssembly, assembly);
             var origin = new MessageOrigin(assembly);
 

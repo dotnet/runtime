@@ -91,6 +91,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
     <IlcCompileOutput>$(NativeObject)</IlcCompileOutput>
+    <_IlcTypeMapXmlFile Condition="'$(TypeMapGenerateXmlFile)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName).typemaps.xml</_IlcTypeMapXmlFile>
 
     <LinkNativeDependsOn>IlcCompile</LinkNativeDependsOn>
 
@@ -270,6 +271,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcDwarfVersion) == '5'" Include="--gdwarf-5" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
       <IlcArg Condition="$(IlcGenerateMstatFile) == 'true'" Include="--mstat:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).mstat" />
+      <IlcArg Condition="'$(TypeMapGenerateXmlFile)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'" Include="--output-typemaps" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--dgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).codegen.dgml.xml" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--scandgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).scan.dgml.xml" />
       <IlcArg Condition="$(IlcMultiModule) != 'true' and $(NativeDebugSymbols) == 'true' and $(EnableSourceLink) == 'true' and $(_targetOS) == 'win'" Include="--sourcelink:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).sourcelink" />
@@ -346,7 +348,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <Target Name="IlcCompile"
       Inputs="@(IlcCompileInput);@(IlcReference);@(IlcSatelliteAssembly);@(RdXmlFile);$(IlcOrderFile);%(ManagedBinary.IlcRspFile)"
-      Outputs="%(ManagedBinary.IlcOutputFile)"
+      Outputs="%(ManagedBinary.IlcOutputFile);$(_IlcTypeMapXmlFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Importance="high" />
 
