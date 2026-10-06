@@ -44,7 +44,7 @@ namespace ILAssembler.Tests
             }, options);
         }
 
-        internal static PEReader CompileAndGetReader(SourceText sourceText, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+        internal static PEReader CompileAndGetReader(SourceText sourceText, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]?> resourceLocator, Options options)
         {
             var documentCompiler = new DocumentCompiler();
             var (diagnostics, result) = documentCompiler.Compile(sourceText, includedDocumentLoader, resourceLocator, options);
@@ -57,6 +57,14 @@ namespace ILAssembler.Tests
 
         internal static ImmutableArray<byte> Compile(string source, Options options)
         {
+            var (diagnostics, result) = CompileWithDiagnostics(source, options);
+            Assert.Empty(diagnostics);
+            Assert.NotNull(result);
+            return Serialize(result);
+        }
+
+        internal static (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Result) CompileWithDiagnostics(string source, Options options)
+        {
             var sourceText = new SourceText(source, "test.il");
             var documentCompiler = new DocumentCompiler();
             var (diagnostics, result) = documentCompiler.Compile(sourceText, _ =>
@@ -64,11 +72,42 @@ namespace ILAssembler.Tests
                 Assert.Fail("Expected no includes");
                 return default;
             }, _ => { Assert.Fail("Expected no resources"); return default; }, options);
-            Assert.Empty(diagnostics);
-            Assert.NotNull(result);
+            return (diagnostics, result);
+        }
+
+        internal static ImmutableArray<byte> Serialize(CompilationResult result)
+        {
             var blobBuilder = new BlobBuilder();
-            result!.Serialize(blobBuilder);
+            result.Serialize(blobBuilder);
             return blobBuilder.ToImmutableArray();
+        }
+
+        internal static string MethodSource(string instructions, string methodHeader = "public static void M(int32 arg)") => $$"""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public Test
+            {
+                .method {{methodHeader}} cil managed
+                {
+                    .maxstack 8
+                    .locals init (int32 local)
+                    {{instructions}}
+                }
+            }
+            """;
+
+        internal static MethodBodyBlock GetMethodBody(PEReader pe, string methodName = "M")
+        {
+            MetadataReader reader = pe.GetMetadataReader();
+            MethodDefinition method = reader.MethodDefinitions.Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == methodName);
+            return pe.GetMethodBody(method.RelativeVirtualAddress);
+        }
+
+        internal static byte[] CompileMethodIL(string instructions, Options options, string methodHeader = "public static void M(int32 arg)")
+        {
+            using PEReader pe = CompileAndGetReader(MethodSource(instructions, methodHeader), options);
+            return GetMethodBody(pe).GetILBytes()!;
         }
 
         internal static ImmutableArray<byte> CompileAndGetImageBytes(string source, Options options)

@@ -380,10 +380,10 @@ private:
 #endif
     };
 
-#ifdef PROFILING_SUPPORTED
+#ifdef PROFILING_SUPPORTED_DATA
     IMetaDataImport2* m_pImporter;
     IMetaDataEmit* m_pEmitter;
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED_DATA
     IMDInternalEmit* m_pMDInternalEmit;
 
     Volatile<LONG>           m_refCount;

@@ -2171,8 +2171,8 @@ INT64 GetLoongArch64JIR(UINT32 * pCode)
 {
     UINT32 pcInstr = *pCode;
 
-    // first get the high 20 bits,
-    INT64 imm = ((INT64)((pcInstr >> 5) & 0xFFFFF) << 18);
+    // first get and sign-extend the high 20 bits,
+    INT64 imm = ((INT32)(pcInstr << 7) >> 12) * 0x40000LL;
 
     // then get the low 18 bits
     pcInstr = *(pCode + 1);

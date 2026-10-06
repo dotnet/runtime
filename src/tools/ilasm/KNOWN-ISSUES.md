@@ -17,14 +17,6 @@ supported by managed ilasm.
 Overriding the metadata stream version with `-MSV` is not supported by
 managed ilasm.
 
-## -OPTIMIZE is a no-op
-
-Currently managed ilasm does not do any optimizations of the IL written by the user.
-
-## -FOLD is a no-op
-
-Currently managed ilasm does not fold identical IL bodies from different methods into the same blob.
-
 ## ARM32 target images are not supported
 
 Managed ilasm does not support generating ARM32 (AArch32) machine images. The native `/ARM`

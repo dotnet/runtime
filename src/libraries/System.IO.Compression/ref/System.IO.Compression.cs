@@ -291,12 +291,18 @@ namespace System.IO.Compression
     {
         public ZstandardCompressionOptions() { }
         public bool AppendChecksum { get { throw null; } set { } }
+        public int ChainLog2 { get { throw null; } set { } }
         public static int DefaultQuality { get { throw null; } }
         public static int DefaultWindowLog2 { get { throw null; } }
         public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } set { } }
         public bool EnableLongDistanceMatching { get { throw null; } set { } }
+        public int HashLog2 { get { throw null; } set { } }
+        public static int MaxChainLog2 { get { throw null; } }
+        public static int MaxHashLog2 { get { throw null; } }
         public static int MaxQuality { get { throw null; } }
         public static int MaxWindowLog2 { get { throw null; } }
+        public static int MinChainLog2 { get { throw null; } }
+        public static int MinHashLog2 { get { throw null; } }
         public static int MinQuality { get { throw null; } }
         public static int MinWindowLog2 { get { throw null; } }
         public int Quality { get { throw null; } set { } }

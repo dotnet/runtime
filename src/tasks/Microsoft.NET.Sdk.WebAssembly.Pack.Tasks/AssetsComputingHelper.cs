@@ -67,6 +67,7 @@ public class AssetsComputingHelper
             ".a" when fromRuntimePack => "extension is .a is not supported.",
             ".c" when fromRuntimePack => "extension is .c is not supported.",
             ".h" when fromRuntimePack => "extension is .h is not supported.",
+            ".hpp" when fromRuntimePack => "extension is .hpp is not supported.",
             // It is safe to filter out all XML files since we are not interested in any XML file from the list
             // of ResolvedFilesToPublish to become a static web asset. Things like this include XML doc files and
             // so on.

@@ -62,6 +62,10 @@ public static class DiagnosticIds
     public const string InvalidVTableWidth = "ILA0042";
     public const string InvalidVTableEntry = "ILA0043";
     public const string DuplicateExportOrdinal = "ILA0044";
+    public const string UnsupportedVTableDeclaration = "ILA0045";
+    public const string InvalidOctalLiteral = "ILA0046";
+    public const string BranchOffsetOutOfRange = "ILA0047";
+    public const string InvalidExceptionRegion = "ILA0048";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -110,4 +114,9 @@ internal static class DiagnosticMessageTemplates
     public const string InvalidVTableEntry = "Method '{0}' references invalid VTable entry {1}";
     public const string InvalidVTableSlot = "Method '{0}' references invalid VTable slot {1}; VTable entry {2} contains {3} slots";
     public const string DuplicateExportOrdinal = "Export '{0}' uses ordinal {1}, which is already assigned to a different VTable target";
+    public const string UnsupportedVTableDeclaration = "Raw .vtable declarations are not supported; use .vtfixup instead";
+    public const string InvalidOctalLiteral = "The value '{0}' is not a valid octal literal";
+    public const string BranchOffsetOutOfRange = "The offset {1} is too large for short branch instruction '{0}'; truncated";
+    public const string InvalidExceptionRegion = "Exception region bounds (try {0} to {1}, handler {2} to {3}) are invalid for a method with {4} bytes of code";
+    public const string InvalidFilterOffset = "Exception filter offset {0} is out of range for a method with {1} bytes of code";
 }

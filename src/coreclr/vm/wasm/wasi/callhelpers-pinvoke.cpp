@@ -94,6 +94,7 @@ extern "C" {
     int32_t SystemNative_GetControlMessageBufferSize (int32_t, int32_t);
     double SystemNative_GetCpuUtilization (void *);
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
+    uint64_t SystemNative_GetCurrentThreadId ();
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
@@ -341,7 +342,8 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetBytesAvailable) // System.Net.Sockets
     DllImportEntry(SystemNative_GetControlMessageBufferSize) // System.Net.Sockets
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression
+    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Security.Cryptography
+    DllImportEntry(SystemNative_GetCurrentThreadId) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Net.NameResolution, System.Private.CoreLib
@@ -369,7 +371,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetSystemTimeAsTicks) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimeZoneData) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimestamp) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetWasiSocketDescriptor) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetWasiSocketDescriptor) // System.Private.CoreLib
     DllImportEntry(SystemNative_IsMemfdSupported) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_LChflags) // System.Private.CoreLib
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag) // System.Private.CoreLib
@@ -446,7 +448,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_TryGetIPPacketInformation) // System.Net.Sockets
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
-    DllImportEntry(SystemNative_WasiSubscribeSocketPollable) // System.Net.Sockets
+    DllImportEntry(SystemNative_WasiSubscribeSocketPollable) // System.Private.CoreLib
     DllImportEntry(SystemNative_Write) // System.Console, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
@@ -521,7 +523,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 148},
+    {"libSystem.Native", s_libSystem_Native, 149},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},

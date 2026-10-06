@@ -282,7 +282,7 @@ namespace System.Diagnostics
             throw new Win32Exception(result);
         }
 
-        public static SafeThreadHandle OpenThread(int threadId, int access)
+        public static SafeThreadHandle OpenThread(uint threadId, int access)
         {
             SafeThreadHandle threadHandle = Interop.Kernel32.OpenThread(access, false, threadId);
             int result = Marshal.GetLastWin32Error();

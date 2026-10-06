@@ -12,6 +12,7 @@ import { mono_exit } from "./exit";
 import { getIcuResourceName } from "./icu";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { mono_log_info } from "./logging";
+import { loaderCallbacks } from "./callbacks";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -628,8 +629,7 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
             }
 
             resourcesLoaded++;
-            if (loaderHelpers.onDownloadResourceProgress)
-                loaderHelpers.onDownloadResourceProgress(resourcesLoaded, totalResources.size);
+            loaderCallbacks.downloadResourceProgress?.(resourcesLoaded, totalResources.size);
         });
         return response;
     } catch (err) {
