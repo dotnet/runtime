@@ -12,7 +12,6 @@ namespace ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {
-
     private static bool ApplyMarshalAs(
         LoweringContext context,
         CustomAttributeValue<SerializationTypeCode> arguments)

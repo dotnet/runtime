@@ -463,7 +463,7 @@ namespace ILAssembler.Tests
                 .class public explicit ansi Test extends [mscorlib]System.Object
                 {
                     .field [4] public int32 Value
-                    .custom instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 {{value}})
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(int32) = (01 00 {{value}} 00 00)
                 }
                 """;
 

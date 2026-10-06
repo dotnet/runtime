@@ -9,7 +9,6 @@ namespace ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {
-
     private readonly record struct EncodedArgumentType(
         SerializationTypeCode Type,
         SerializationTypeCode ArrayType = SerializationTypeCode.Invalid,
@@ -18,17 +17,20 @@ internal static partial class PseudoCustomAttributes
 
     private static EncodedArgumentType ReadEncodedArgumentType(ref BlobReader reader)
     {
-        // The native CustomAttributeParser::GetTag method consumes one byte rather than a
-        // compressed integer, so use BlobReader.ReadByte instead of ReadSerializationTypeCode.
-        SerializationTypeCode type = (SerializationTypeCode)reader.ReadByte();
+        SerializationTypeCode type = reader.ReadSerializationTypeCode();
         SerializationTypeCode arrayType = SerializationTypeCode.Invalid;
         if (type == SerializationTypeCode.SZArray)
         {
-            arrayType = (SerializationTypeCode)reader.ReadByte();
+            arrayType = reader.ReadSerializationTypeCode();
         }
 
         SerializationTypeCode effectiveType =
             type == SerializationTypeCode.SZArray ? arrayType : type;
+        if (effectiveType == SerializationTypeCode.Invalid)
+        {
+            throw new BadImageFormatException();
+        }
+
         string? enumName = null;
         if (effectiveType == SerializationTypeCode.Enum)
         {
@@ -76,16 +78,6 @@ internal static partial class PseudoCustomAttributes
         KnownAttribute known,
         out CustomAttributeValue<SerializationTypeCode> arguments)
     {
-        // The native emitter does not look at the blob at all when the attribute has neither
-        // fixed nor named arguments, so a malformed blob is tolerated for those attributes.
-        if (known.FixedArguments.Length == 0 && known.NamedArguments.Length == 0)
-        {
-            arguments = new(
-                ImmutableArray<CustomAttributeTypedArgument<SerializationTypeCode>>.Empty,
-                ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>>.Empty);
-            return true;
-        }
-
         byte[] blob = context.Attribute.Value.ToArray();
         fixed (byte* blobPointer = blob)
         {
@@ -106,15 +98,17 @@ internal static partial class PseudoCustomAttributes
                     fixedArguments.Add(ReadArgument(ref reader, type));
                 }
 
-                ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>> namedArguments;
-                if (known.NamedArguments.Length == 0 && reader.RemainingBytes == 0)
-                {
-                    namedArguments = ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>>.Empty;
-                }
-                else if (!TryParseNamedArguments(context, known, ref reader, out namedArguments))
+                if (!TryParseNamedArguments(context, known, ref reader,
+                    out ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>> namedArguments))
                 {
                     arguments = default;
                     return false;
+                }
+
+                if (reader.RemainingBytes != 0)
+                {
+                    arguments = default;
+                    return context.InvalidBlob();
                 }
 
                 arguments = new(fixedArguments.MoveToImmutable(), namedArguments);
@@ -134,26 +128,15 @@ internal static partial class PseudoCustomAttributes
         ref BlobReader reader,
         out ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>> namedArguments)
     {
-        // A missing count is treated as "no named arguments" rather than an error, matching the
-        // native emitter's documented Everett-compatible behavior.
-        if (reader.RemainingBytes < sizeof(ushort))
-        {
-            namedArguments = ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>>.Empty;
-            return true;
-        }
-
         ushort actualCount = reader.ReadUInt16();
         var arguments =
             ImmutableArray.CreateBuilder<CustomAttributeNamedArgument<SerializationTypeCode>>(
                 Math.Min(actualCount, (ushort)known.NamedArguments.Length));
         var seenArguments = new bool[known.NamedArguments.Length];
 
-        // The count is deliberately read as a signed 16-bit value: the native emitter stores it in
-        // an INT16 and compares against a wider signed loop counter, so a count with the high bit
-        // set yields no named arguments rather than an error.
-        for (int i = 0; i < (short)actualCount; i++)
+        for (int i = 0; i < actualCount; i++)
         {
-            var kind = (CustomAttributeNamedArgumentKind)reader.ReadByte();
+            var kind = (CustomAttributeNamedArgumentKind)reader.ReadSerializationTypeCode();
             if (kind is not (CustomAttributeNamedArgumentKind.Field or CustomAttributeNamedArgumentKind.Property))
             {
                 namedArguments = default;

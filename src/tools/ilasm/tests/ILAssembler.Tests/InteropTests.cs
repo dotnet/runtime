@@ -870,17 +870,86 @@ namespace ILAssembler.Tests
         [InlineData("00 00 00 00")]
         [InlineData("06 00 00 00")]
         [InlineData("FF FF FF FF")]
-        public void PseudoCustomAttribute_DllImportInvalidCallingConventionDefaultsToWinApi(string valueBytes)
+        public void PseudoCustomAttribute_DllImportInvalidCallingConventionReportsInvalidValue(string valueBytes)
         {
             string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 01 00 "
                 + "53 55 30 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E "
                 + $"11 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E {valueBytes} )";
 
+            AssertInvalidDllImport(blob);
+        }
+
+        [Theory]
+        [InlineData("00 00 00 00")]
+        [InlineData("05 00 00 00")]
+        [InlineData("FF FF FF FF")]
+        public void PseudoCustomAttribute_DllImportInvalidCharSetReportsInvalidValue(string valueBytes)
+        {
+            string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 01 00 "
+                + "53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 "
+                + $"07 43 68 61 72 53 65 74 {valueBytes} )";
+            AssertInvalidDllImport(blob);
+        }
+
+        private static void AssertInvalidDllImport(string blob)
+        {
+            string source = DllImportSource(blob);
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, Assert.Single(diagnostics).Id);
+
+            var compiler = new DocumentCompiler();
+            var (errorTolerantDiagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { ErrorTolerant = true });
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, Assert.Single(errorTolerantDiagnostics).Id);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            var reader = pe.GetMetadataReader();
+            var method = GetMethod(reader, "Native");
+
+            Assert.Equal(default, method.Attributes & MethodAttributes.PinvokeImpl);
+            Assert.Equal(default, method.ImplAttributes & MethodImplAttributes.PreserveSig);
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.ImplMap));
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.ModuleRef));
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("01 00 00 00", MethodImportAttributes.CallingConventionWinApi)]
+        [InlineData("02 00 00 00", MethodImportAttributes.CallingConventionCDecl)]
+        [InlineData("03 00 00 00", MethodImportAttributes.CallingConventionStdCall)]
+        [InlineData("04 00 00 00", MethodImportAttributes.CallingConventionThisCall)]
+        [InlineData("05 00 00 00", MethodImportAttributes.CallingConventionFastCall)]
+        public void PseudoCustomAttribute_DllImportKnownCallingConvention(string valueBytes, MethodImportAttributes expected)
+        {
+            string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 01 00 "
+                + "53 55 30 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E "
+                + $"11 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E {valueBytes} )";
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
             var reader = pe.GetMetadataReader();
-            MethodImport import = GetMethod(reader, "Native").GetImport();
 
-            Assert.Equal(MethodImportAttributes.CallingConventionWinApi, import.Attributes & MethodImportAttributes.CallingConventionMask);
+            Assert.Equal(expected, GetMethod(reader, "Native").GetImport().Attributes);
+        }
+
+        [Theory]
+        [InlineData("01 00 00 00", MethodImportAttributes.None)]
+        [InlineData("02 00 00 00", MethodImportAttributes.CharSetAnsi)]
+        [InlineData("03 00 00 00", MethodImportAttributes.CharSetUnicode)]
+        [InlineData("04 00 00 00", MethodImportAttributes.CharSetAuto)]
+        public void PseudoCustomAttribute_DllImportKnownCharSet(string valueBytes, MethodImportAttributes expected)
+        {
+            string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 01 00 "
+                + "53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 "
+                + $"07 43 68 61 72 53 65 74 {valueBytes} )";
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(expected | MethodImportAttributes.CallingConventionWinApi, GetMethod(reader, "Native").GetImport().Attributes);
         }
 
         [Fact]

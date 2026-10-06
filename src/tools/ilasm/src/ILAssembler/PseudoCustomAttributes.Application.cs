@@ -10,7 +10,6 @@ namespace ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {
-
     private static bool Apply(LoweringContext context, KnownAttribute known)
     {
         if ((known.Targets & GetTarget(context.Owner)) == 0)
@@ -45,7 +44,7 @@ internal static partial class PseudoCustomAttributes
             KnownAttributeKind.WindowsRuntimeImport => AddTypeFlags(context, TypeAttributes.WindowsRuntime),
             KnownAttributeKind.DynamicSecurityMethod => AddMethodFlags(context, MethodAttributes.RequireSecObject),
             KnownAttributeKind.SuppressUnmanagedCodeSecurity => ApplySuppressUnmanagedCodeSecurity(context),
-            _ => true,
+            _ => context.InvalidValue(),
         };
     }
 
@@ -281,15 +280,21 @@ internal static partial class PseudoCustomAttributes
 
         if (FindNamedArgument(arguments, DllImportCallingConvention) is { } callingConventionArgument)
         {
-            flags = (CallingConvention)GetUInt32(callingConventionArgument.Value) switch
+            MethodImportAttributes? callingConventionFlags = (CallingConvention)GetUInt32(callingConventionArgument.Value) switch
             {
-                CallingConvention.Winapi => flags | MethodImportAttributes.CallingConventionWinApi,
-                CallingConvention.Cdecl => flags | MethodImportAttributes.CallingConventionCDecl,
-                CallingConvention.StdCall => flags | MethodImportAttributes.CallingConventionStdCall,
-                CallingConvention.ThisCall => flags | MethodImportAttributes.CallingConventionThisCall,
-                CallingConvention.FastCall => flags | MethodImportAttributes.CallingConventionFastCall,
-                _ => flags | MethodImportAttributes.CallingConventionWinApi,
+                CallingConvention.Winapi => MethodImportAttributes.CallingConventionWinApi,
+                CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
+                CallingConvention.StdCall => MethodImportAttributes.CallingConventionStdCall,
+                CallingConvention.ThisCall => MethodImportAttributes.CallingConventionThisCall,
+                CallingConvention.FastCall => MethodImportAttributes.CallingConventionFastCall,
+                _ => null,
             };
+            if (callingConventionFlags is null)
+            {
+                return context.InvalidValue();
+            }
+
+            flags |= callingConventionFlags.Value;
         }
         else
         {
@@ -298,14 +303,20 @@ internal static partial class PseudoCustomAttributes
 
         if (FindNamedArgument(arguments, DllImportCharSet) is { } charSetArgument)
         {
-            flags = (CharSet)GetUInt32(charSetArgument.Value) switch
+            MethodImportAttributes? charSetFlags = (CharSet)GetUInt32(charSetArgument.Value) switch
             {
-                CharSet.None => flags,
-                CharSet.Ansi => flags | MethodImportAttributes.CharSetAnsi,
-                CharSet.Unicode => flags | MethodImportAttributes.CharSetUnicode,
-                CharSet.Auto => flags | MethodImportAttributes.CharSetAuto,
-                _ => flags,
+                CharSet.None => MethodImportAttributes.None,
+                CharSet.Ansi => MethodImportAttributes.CharSetAnsi,
+                CharSet.Unicode => MethodImportAttributes.CharSetUnicode,
+                CharSet.Auto => MethodImportAttributes.CharSetAuto,
+                _ => null,
             };
+            if (charSetFlags is null)
+            {
+                return context.InvalidValue();
+            }
+
+            flags |= charSetFlags.Value;
         }
 
         if (FindNamedArgument(arguments, DllImportExactSpelling) is { } exactSpellingArgument

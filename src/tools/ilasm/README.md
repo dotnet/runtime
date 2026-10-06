@@ -2,25 +2,6 @@
 
 This directory contains the ILAssembler tool and its build instructions.
 
-## Pseudo Custom Attributes
-
-The assembler lowers attributes such as `DllImport`, `MethodImpl`, `StructLayout`, and
-`MarshalAs` into metadata flags and auxiliary tables. Decoded values follow C# compiler
-conventions where applicable: unspecified method code types default to IL, invalid
-P/Invoke calling conventions default to Winapi, and `StructLayout` maps `CharSet.None`
-to Ansi. IL-specific directives and attribute targets remain supported.
-
-`MethodImpl` options may use any bits that fit in the 16-bit metadata column except
-the code-type bits, which must be set through `MethodCodeType`. This allows prototyping
-new runtime flags without updating the assembler. The assembler does not apply C#
-language restrictions such as limiting `MethodImplOptions.Async` to compiler-generated
-methods.
-
-Attributes with no metadata transform, including `Guid`, `InterfaceType`, `ClassInterface`,
-`TypeLibVersion`, `ComCompatibleVersion`, and `AllowPartiallyTrustedCallers`, are emitted
-unchanged without validating their arguments. Security attributes that affect metadata
-are handled by the same lowering table as the other pseudo custom attributes.
-
 ## Build Instructions
 
 ### Regular Builds

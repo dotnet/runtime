@@ -67,8 +67,8 @@ public static class DiagnosticIds
     public const string PseudoCustomAttributeInvalidTarget = "ILA0047";
     public const string PseudoCustomAttributeInvalidValue = "ILA0048";
     public const string PseudoCustomAttributeInvalidBlob = "ILA0049";
-    public const string PseudoCustomAttributeUnknownArgument = "ILA0051";
-    public const string PseudoCustomAttributeRepeatedArgument = "ILA0052";
+    public const string PseudoCustomAttributeUnknownArgument = "ILA0050";
+    public const string PseudoCustomAttributeRepeatedArgument = "ILA0051";
 }
 
 internal static class DiagnosticMessageTemplates

@@ -9,7 +9,6 @@ namespace ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {
-
     private static bool TryGetAttributeTypeName(EntityRegistry.EntityBase constructor, out string @namespace, out string name)
     {
         switch (constructor)

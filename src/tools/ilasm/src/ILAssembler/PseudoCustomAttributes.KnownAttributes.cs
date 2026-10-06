@@ -8,7 +8,6 @@ namespace ILAssembler;
 
 internal static partial class PseudoCustomAttributes
 {
-
     [Flags]
     private enum CaTargets
     {

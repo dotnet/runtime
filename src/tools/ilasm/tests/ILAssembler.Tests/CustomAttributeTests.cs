@@ -1502,41 +1502,81 @@ namespace ILAssembler.Tests
             Assert.Equal(TypeAttributes.Serializable, first.Attributes & TypeAttributes.Serializable);
         }
 
-        [Fact]
-        public void PseudoCustomAttribute_ZeroArgDescriptor_MalformedBlobSkipped()
+        [Theory]
+        [InlineData("( FF FF DE AD BE EF )")]
+        [InlineData("( )")]
+        [InlineData("( 01 )")]
+        [InlineData("( 01 00 )")]
+        [InlineData("( 01 00 00 )")]
+        [InlineData("( 01 00 00 00 FF )")]
+        [InlineData("( 01 00 01 00 )")]
+        public void PseudoCustomAttribute_ZeroArgDescriptor_MalformedBlobReportsDiagnostic(string value)
         {
-            // SerializableAttribute has zero fixed and zero named-arg descriptors. The native
-            // emitter does not parse the blob at all for such attributes, so even a completely
-            // malformed blob (bad prolog or arbitrary bytes) must produce no diagnostics.
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
-                TypeWithAttribute("System.SerializableAttribute", ".ctor()", "( FF FF DE AD BE EF )"),
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                TypeWithAttribute("System.SerializableAttribute", ".ctor()", value),
                 new Options());
-            var reader = pe.GetMetadataReader();
-            var testType = GetTestType(reader);
 
-            Assert.Equal(TypeAttributes.Serializable, testType.Attributes & TypeAttributes.Serializable);
-            Assert.Empty(testType.GetCustomAttributes());
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+
+            var (errorTolerantDiagnostics, image) = CompileErrorTolerant(
+                TypeWithAttribute("System.SerializableAttribute", ".ctor()", value));
+            using var pe = new PEReader(image);
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, Assert.Single(errorTolerantDiagnostics).Id);
+            Assert.Equal(default, GetTestType(reader).Attributes & TypeAttributes.Serializable);
+            Assert.Empty(GetTestType(reader).GetCustomAttributes());
         }
 
-        [Fact]
-        public void PseudoCustomAttribute_NamedArgCount0x8000_TreatedAsSignedNegativeAndSkipped()
+        [Theory]
+        [InlineData("( 01 00 02 00 )")]
+        [InlineData("( 01 00 02 00 00 )")]
+        [InlineData("( 01 00 02 00 00 80 )")]
+        [InlineData("( 01 00 02 00 FF FF )")]
+        [InlineData("( 01 00 02 00 00 00 FF )")]
+        public void PseudoCustomAttribute_InvalidNamedArgumentCountReportsDiagnostic(string value)
         {
-            // The named-argument count is stored and compared as a signed INT16 in the native
-            // emitter. A count of 0x8000 (-32768 when sign-extended) causes the loop to execute
-            // zero times, so no named arguments are consumed. The fixed layout effect is applied
-            // and the CA row is dropped.
-            // Blob: 01 00 (prolog) 02 00 (I2 = LayoutKind.Explicit) 00 80 (count = 0x8000 LE).
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
                 TypeWithAttribute(
                     "System.Runtime.InteropServices.StructLayoutAttribute",
                     ".ctor(int16)",
-                    "( 01 00 02 00 00 80 )"),
+                    value),
+                new Options());
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        }
+
+        [Theory]
+        [InlineData("53", "80 08")]
+        [InlineData("80 53", "08")]
+        [InlineData("80 54", "80 08")]
+        public void PseudoCustomAttribute_NamedArgumentTypeUsesBlobReaderEncoding(string kindBytes, string typeBytes)
+        {
+            string value = $"( 01 00 00 00 00 00 01 00 {kindBytes} {typeBytes} 04 50 61 63 6B 04 00 00 00 )";
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
                 new Options());
             var reader = pe.GetMetadataReader();
-            var testType = GetTestType(reader);
 
-            Assert.Equal(TypeAttributes.ExplicitLayout, testType.Attributes & TypeAttributes.LayoutMask);
-            Assert.Empty(testType.GetCustomAttributes());
+            Assert.Equal(4, GetTestType(reader).GetLayout().PackingSize);
+        }
+
+        [Theory]
+        [InlineData("FF")]
+        [InlineData("81 00")]
+        [InlineData("80")]
+        public void PseudoCustomAttribute_InvalidSerializationTypeReportsInvalidBlob(string typeBytes)
+        {
+            string value = $"( 01 00 00 00 00 00 01 00 53 {typeBytes} )";
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
+                new Options());
+
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, Assert.Single(diagnostics).Id);
         }
 
         [Fact]
