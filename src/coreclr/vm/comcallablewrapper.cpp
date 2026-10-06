@@ -740,7 +740,6 @@ void SimpleComCallWrapper::InitDispatchExInfo()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
 
         // Make sure the class supports at least IReflect..
         PRECONDITION(SupportsIReflect(m_pMT));
@@ -860,7 +859,6 @@ ConnectionPoint *SimpleComCallWrapper::CreateConnectionPoint(ComCallWrapper *pWr
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pWrap));
         PRECONDITION(CheckPointer(pEventMT));
     }
@@ -876,7 +874,6 @@ CQuickArray<ConnectionPoint*> *SimpleComCallWrapper::CreateCPArray()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1266,7 +1263,6 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(ppEnumCP));
     }
     CONTRACTL_END;
@@ -1526,7 +1522,6 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pTemplate));
         PRECONDITION(CheckPointer(pWrapperCache));
         PRECONDITION(oh != NULL);
@@ -1878,11 +1873,6 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj)
     // grab the sync block from the server
     SyncBlock* pSyncBlock = pServer->GetSyncBlock();
 
-    pSyncBlock->SetPrecious();
-
-    // if the object belongs to a domain neutral class, need to allocate the wrapper in the default domain.
-    // The object is potentially agile so if allocate out of the current domain and then hand out to
-    // multiple domains we might never release the wrapper for that object and hence never unload the CCWC.
     ComCallWrapperCache *pWrapperCache = NULL;
     TypeHandle thClass = pServer->GetTypeHandle();
 
@@ -2664,7 +2654,6 @@ ComCallWrapperCache *ComCallWrapperCache::Create(LoaderAllocator *pLoaderAllocat
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pLoaderAllocator));
     }
     CONTRACTL_END;
@@ -2788,7 +2777,6 @@ namespace
             THROWS;
             GC_NOTRIGGER;
             MODE_PREEMPTIVE;
-            INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END;
 
@@ -2816,7 +2804,6 @@ void ComMethodTable::LayOutClassMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3340,7 +3327,6 @@ void ComMethodTable::LayOutBasicMethodTable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3403,7 +3389,6 @@ DispatchInfo *ComMethodTable::GetDispatchInfo()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3803,7 +3788,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(!pClassMT->IsInterface());
         PRECONDITION(!pClassMT->GetComPlusParentMethodTable() || pClassMT->GetComPlusParentMethodTable()->GetComCallWrapperTemplate());
@@ -4019,7 +4003,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodT
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(pInterfaceMT->IsInterface());
     }
@@ -4096,7 +4079,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -4273,7 +4255,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thClass.IsNull());
     }
     CONTRACTL_END;
@@ -4408,7 +4389,6 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pItfMT));
         PRECONDITION(pItfMT->IsInterface());
     }

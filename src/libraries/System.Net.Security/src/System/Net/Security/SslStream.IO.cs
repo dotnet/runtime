@@ -19,6 +19,7 @@ namespace System.Net.Security
         internal new Stream InnerStream => base.InnerStream;
         private NestedState _nestedAuth;
         private bool _isRenego;
+        private bool _isReAuthentication;
 
         private TlsFrameHelper.TlsFrameInfo _lastFrame;
 
@@ -159,12 +160,14 @@ namespace System.Net.Security
         private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(byte[]? buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+            _isReAuthentication = true;
             try
             {
                 await ForceAuthenticationAsync<TIOAdapter>(receiveFirst: false, buffer, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
+                _isReAuthentication = false;
                 _handshakeWaiter!.SetResult(true);
                 _handshakeWaiter = null;
             }
@@ -865,7 +868,7 @@ namespace System.Net.Security
                 }
 
                 _buffer.Commit(bytesRead);
-                if (frameSize == int.MaxValue && _buffer.EncryptedLength > TlsFrameHelper.HeaderSize)
+                if (frameSize == UnknownTlsFrameLength && _buffer.EncryptedLength >= TlsFrameHelper.HeaderSize)
                 {
                     // recalculate frame size if needed e.g. we could not get it before.
                     frameSize = GetFrameSize(_buffer.EncryptedReadOnlySpan);

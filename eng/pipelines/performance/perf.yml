@@ -8,9 +8,7 @@ trigger:
   branches:
     include:
     - main
-    - release/10.0
-    - release/9.0
-    - release/8.0
+    - release/*.0
   paths:
     include:
     - '*'
@@ -31,14 +29,9 @@ resources:
 
 variables:
 - template: /eng/pipelines/common/variables.yml
+- name: enableHelixJobMonitor
+  value: true
 
-#
-# For the 'schedule' case, only wasm/jsc perf jobs are run.
-# And the rest are build jobs - wasm, mono, coreclr, and libraries.
-#
-# Since, we are not running *any* perf jobs, none of these builds are needed,
-# thus the whole scheduled run can be disabled.
-#
 schedules:
 - cron: "0 0 * * 1"
   displayName: Weekly Monday 12am UTC Build
@@ -52,12 +45,22 @@ extends:
   parameters:
     stages:
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - group: DotNet-HelixApi-Access
       jobs:
+
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
 
       - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
         parameters:
-          #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-          #  runProfile: 'non-v8'
+          runMono: false
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             runProfile: 'v8'
           runtimeRepoAlias: self
@@ -71,6 +74,12 @@ extends:
           parameters:
             runtimeRepoAlias: self
             performanceRepoAlias: performance
+            monoMicro:
+              enabled: false
+            monoInterpreter:
+              enabled: false
+            monoAot:
+              enabled: false
             jobParameters:
               ${{ if parameters.onlySanityCheck }}:
                 onlySanityCheck: true

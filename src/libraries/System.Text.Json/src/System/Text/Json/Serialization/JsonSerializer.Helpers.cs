@@ -42,7 +42,7 @@ namespace System.Text.Json
             // In order to improve performance of polymorphic root-level object serialization,
             // we bypass GetTypeInfoForRootType and cache JsonTypeInfo<object> in a dedicated property.
             // This lets any derived types take advantage of the cache in GetTypeInfoForRootType themselves.
-            return inputType == JsonTypeInfo.ObjectType
+            return inputType == typeof(object)
                 ? options.ObjectTypeInfo
                 : options.GetTypeInfoForRootType(inputType);
         }

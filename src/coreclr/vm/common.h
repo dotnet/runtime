@@ -56,15 +56,16 @@ using std::min;
 
 //-----------------------------------------------------------------------------------------------------------
 
-#include "stdmacros.h"
-
 #define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:0xCCCCCCCCCCCCCCCCLL))
 
+#include <contract.h>
 #include "switches.h"
 #include "holder.h"
 #include "classnames.h"
 #include "util.hpp"
 #include "corpriv.h"
+
+#include <stdmacros.h>
 
 #include <daccess.h>
 
@@ -145,8 +146,8 @@ typedef PTR_Object OBJECTREF;
 typedef DPTR(OBJECTREF) PTR_OBJECTREF;
 typedef DPTR(PTR_OBJECTREF) PTR_PTR_OBJECTREF;
 
-Thread* GetThread();
-Thread* GetThreadNULLOk();
+Thread* GetThread() noexcept;
+Thread* GetThreadNULLOk() noexcept;
 
 EXTERN_C Thread* STDCALL GetThreadHelper();
 
@@ -210,7 +211,6 @@ namespace Loader
 #include "cgensys.h"
 #include "ceemain.h"
 #include "hash.h"
-#include "eecontract.h"
 #include "pedecoder.h"
 #include "sstring.h"
 #include "slist.h"
@@ -347,5 +347,4 @@ extern DummyGlobalContract ___contract;
 void LogErrorToHost(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 
 #endif // !_common_h_
-
 

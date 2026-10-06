@@ -8,6 +8,13 @@
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Emit into stable, version-independent folder names instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <OutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -37,46 +44,18 @@
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <!-- .NETCoreApp -->
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\Microsoft.NET.WebAssembly.Webcil.dll"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)net\$(MSBuildProjectName)*"
+                      TargetPath="tasks\net" />
+      <FilesToPackage Include="$(OutputPath)net\Microsoft.NET.WebAssembly.Webcil.dll"
+                      TargetPath="tasks\net" />
 
       <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*"
-                      TargetPath="tasks\$(NetFrameworkToolCurrent)" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''"
+                      Include="$(OutputPath)netframework\*"
+                      TargetPath="tasks\netframework" />
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
-
-  <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
-      <ItemGroup>
-        <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />
-        <WasmPInvokeModule Include="libSystem.Native" />
-        <WasmPInvokeModule Include="libSystem.Native.Browser" />
-        <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
-        <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-        <WasmPInvokeModule Include="libSystem.Native.Browser" />
-        <WasmPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
-      </ItemGroup>
-
-      <PropertyGroup>
-        <_RunGeneratorTargetOS Condition="'$(TargetOS)' == ''">browser</_RunGeneratorTargetOS>
-        <_RunGeneratorTargetOS Condition="'$(TargetOS)' != ''">$(TargetOS)</_RunGeneratorTargetOS>
-      </PropertyGroup>
-
-      <Message Importance="high" Text="Running ManagedToNativeGenerator on @(WasmPInvokeAssembly) for TargetOS=$(_RunGeneratorTargetOS)" />
-      <ManagedToNativeGenerator
-          Assemblies="@(WasmPInvokeAssembly)"
-          PInvokeModules="@(WasmPInvokeModule)"
-          TargetOS="$(_RunGeneratorTargetOS)"
-          PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-pinvoke.cpp"
-          ReversePInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
-          InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp">
-          <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-      </ManagedToNativeGenerator>
-  </Target>
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)net\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
 
 </Project>

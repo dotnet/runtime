@@ -23,6 +23,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_StrippedILBodies = 0x00000200,         // IL method bodies have been stripped from the image
         READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
         READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
+        READYTORUN_FLAG_VerifyGCModeTransitions = 0x00001000,  // Code in this image verifies that GC mode transitions are legal. Catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -36,9 +37,9 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunImportSectionFlags : ushort
     {
-        None     = 0x0000,
-        Eager    = 0x0001, // Section at module load time.
-        PCode    = 0x0004, // Section contains pointers to code
+        None  = 0x0000,
+        Eager = 0x0001, // Section before module activation.
+        PCode = 0x0004, // Section contains pointers to code
     }
 
     /// <summary>
@@ -124,6 +125,9 @@ namespace Internal.ReadyToRunConstants
         DispatchStubAddrSlot = 5,
         FieldDescSlot = 6,
         DeclaringTypeHandleSlot = 7,
+        // Only used by ReadyToRun signatures (ReadyToRunFixupKind.DeclaringTypeHandle). The signature encodes a
+        // method and the slot is populated with the type which declares that method.
+        DeclaringTypeHandleFromMethodSlot = 8,
     }
 
     public enum ReadyToRunFixupKind
@@ -174,7 +178,7 @@ namespace Internal.ReadyToRunConstants
         Check_FieldOffset = 0x2B,
 
         DelegateCtor = 0x2C,                // optimized delegate ctor
-        DeclaringTypeHandle = 0x2D,
+        DeclaringTypeHandle = 0x2D,         // Type which declares the method described by the (method) signature
 
         IndirectPInvokeTarget = 0x2E,       // Target (indirect) of an inlined pinvoke
         PInvokeTarget = 0x2F,               // Target of an inlined pinvoke
@@ -196,6 +200,8 @@ namespace Internal.ReadyToRunConstants
         InjectStringThunks = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
 
         StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
+
+        MethodEntry_ReadyToRun = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
@@ -251,6 +257,7 @@ namespace Internal.ReadyToRunConstants
         CheckedWriteBarrier         = 0x31,
         ByRefWriteBarrier           = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
         BulkWriteBarrier            = 0x33,
+        BulkWriteBarrierSmall       = 0x34,
 
         // Array helpers
         Stelem_Ref                  = 0x38,
@@ -267,6 +274,7 @@ namespace Internal.ReadyToRunConstants
         GCPoll                      = 0x44,
         ReversePInvokeEnter         = 0x45,
         ReversePInvokeExit          = 0x46,
+        ResumeAfterCatch            = 0x47,
 
         // Get string handle lazily
         GetString = 0x50,
@@ -403,6 +411,24 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+
+        // NativeAOT allocation helpers
+        NewFast,
+        NewFinalizable,
+        NewFastAlign8,
+        NewFinalizableAlign8,
+        NewFastMisalign,
+        NewPtrArrayFast,
+        NewArrayFastAlign8,
+        NewArrayFast,
+
+        // NativeAOT interface dispatch helpers
+        InterfaceDispatch,
+        InterfaceDispatchGuarded,
+        ResolveInterfaceMethodFast,
+        ResolveInterfaceMethod,
+
+        TlsGetAddr,
     }
 
     // Enum used for HFA type recognition.

@@ -20,7 +20,7 @@ public class DacDbiMultiModuleDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     private IEnumerable<ModuleHandle> GetAllModules()
     {

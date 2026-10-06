@@ -1483,6 +1483,8 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(obj));
         }
 
+// ActiveIssue https://github.com/dotnet/runtime/issues/132855
+#if !WASM_READYTORUN
         [Fact]
         public async Task TestClassWithManyConstructorParameters()
         {
@@ -1493,6 +1495,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(value, result); // Type is C# record that implements structural equality.
         }
+#endif
 
         public class ClassWithDefaultCtorParams
         {
@@ -1888,6 +1891,34 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithRequiredProperty
         {
             public required string? Bar { get; set; }
+        }
+
+        [Theory]
+        [InlineData(typeof(PrivateCtorWithInParameters),
+            """{"Value":42,"Label":"test"}""",
+            """{"Value":42,"Label":"test"}""")]
+        [InlineData(typeof(PrivateCtorWithByRefParameters<int>),
+            """{"Value":42,"InValue":17,"ReadOnlyValue":23,"Count":5}""",
+            """{"Value":42,"InValue":17,"ReadOnlyValue":23,"Count":5,"Output":42}""")]
+        [InlineData(typeof(PrivateCtorWithByRefParameters<string>),
+            """{"Value":"ref","InValue":"in","ReadOnlyValue":"readonly","Count":5}""",
+            """{"Value":"ref","InValue":"in","ReadOnlyValue":"readonly","Count":5,"Output":"ref"}""")]
+        [InlineData(typeof(PrivateStructCtorWithByRefParameters),
+            """{"Value":42,"Label":"in","Number":17,"Count":5}""",
+            """{"Value":42,"Label":"in","Number":17,"Count":5,"Output":43}""")]
+        [InlineData(typeof(PrivateGenericStructCtorWithByRefParameters<int>),
+            """{"Value":42,"InValue":17,"ReadOnlyValue":23,"Count":5}""",
+            """{"Value":42,"InValue":17,"ReadOnlyValue":23,"Count":5,"Output":42}""")]
+        [InlineData(typeof(PrivateGenericStructCtorWithByRefParameters<string>),
+            """{"Value":"ref","InValue":"in","ReadOnlyValue":"readonly","Count":5}""",
+            """{"Value":"ref","InValue":"in","ReadOnlyValue":"readonly","Count":5,"Output":"ref"}""")]
+        [InlineData(typeof(PrivateCtorWithOutParameters), "{}", """{"Value":42,"Label":"output"}""")]
+        [InlineData(typeof(PrivateCtorWithOutParameters), """{"Value":99,"Label":"ignored"}""", """{"Value":42,"Label":"output"}""")]
+        public async Task NonPublicCtors_WithByRefParameters(Type type, string json, string expectedJson)
+        {
+            object result = await Serializer.DeserializeWrapper(json, type);
+            Assert.IsType(type, result);
+            JsonTestHelper.AssertJsonEqual(expectedJson, await Serializer.SerializeWrapper(result, type));
         }
 
         [Fact]

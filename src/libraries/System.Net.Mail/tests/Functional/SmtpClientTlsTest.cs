@@ -144,6 +144,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public async Task AuthenticationException_Propagates()
         {
+            Server.SslOptions.AllowTlsResume = false;
             _serverCertValidationCallback = (cert, chain, errors) =>
             {
                 return false; // force auth errors
@@ -183,6 +184,27 @@ namespace System.Net.Mail.Tests
             await SendMail(msg);
             Assert.True(Server.IsEncrypted, "TLS was not negotiated.");
             Assert.Equal(clientCert, receivedClientCert);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120959", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
+        [Fact]
+        public async Task EnableSsl_ChangedAfterConnect_EstablishesNewEncryptedConnection()
+        {
+            Server.ReceiveMultipleConnections = true;
+            _serverCertValidationCallback = (cert, chain, errors) => true;
+
+            // First send happens over a plaintext connection.
+            await SendMail(new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo"));
+            Assert.Equal(1, Server.ConnectionCount);
+            Assert.False(Server.IsEncrypted, "First connection should not be encrypted.");
+
+            // Enabling SSL must invalidate the cached plaintext connection so the next send
+            // establishes a new, encrypted connection instead of reusing the old one.
+            Smtp.EnableSsl = true;
+
+            await SendMail(new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo"));
+            Assert.Equal(2, Server.ConnectionCount);
+            Assert.True(Server.IsEncrypted, "Second connection should be encrypted after enabling SSL.");
         }
 
         private bool ServerCertValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)

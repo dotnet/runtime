@@ -255,7 +255,6 @@ VOID ParseNativeType(Module*                     pModule,
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pNFD));
     }
     CONTRACTL_END;
@@ -383,7 +382,7 @@ VOID ParseNativeType(Module*                     pModule,
             CREATE_MARSHALER_CARRAY_OPERANDS mops;
             mlInfo.GetMops(&mops);
 
-            MethodTable *pMT = mops.methodTable;
+            MethodTable *pMT = mops.elementTypeHandle.GetMethodTable();
 
             if (pMT->IsEnum())
             {

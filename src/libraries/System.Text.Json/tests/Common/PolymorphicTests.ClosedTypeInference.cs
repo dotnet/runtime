@@ -46,6 +46,25 @@ namespace System.Text.Json.Serialization.Tests
             };
         }
 
+        public static IEnumerable<object[]> NestedClosedHierarchyData()
+        {
+            yield return new object[]
+            {
+                new ClosedCat { Name = "Mittens", Indoor = true },
+                """{"$type":"ClosedCat","Indoor":true,"Name":"Mittens"}""",
+            };
+            yield return new object[]
+            {
+                new ClosedLabrador { Name = "Rex", GoodBoy = true, Color = "black" },
+                """{"$type":"ClosedLabrador","Color":"black","GoodBoy":true,"Name":"Rex"}""",
+            };
+            yield return new object[]
+            {
+                new ClosedCollie { Name = "Lassie", GoodBoy = true, Herding = true },
+                """{"$type":"ClosedCollie","Herding":true,"GoodBoy":true,"Name":"Lassie"}""",
+            };
+        }
+
         [Theory]
         [MemberData(nameof(BasicClosedHierarchyData))]
         public async Task ClosedTypeInference_BasicHierarchy_EmitsAndReadsTypeDiscriminator(
@@ -107,6 +126,75 @@ namespace System.Text.Json.Serialization.Tests
             ClosedNumberPayload numberResult = Assert.IsType<ClosedNumberPayload>(numberRoundtripped);
             Assert.Equal("number", numberResult.Id);
             Assert.Equal(42, numberResult.Number);
+        }
+
+        [Theory]
+        [MemberData(nameof(NestedClosedHierarchyData))]
+        public async Task ClosedTypeInference_NestedHierarchy_RoundTripsConcreteDescendants(
+            ClosedPet value,
+            string expectedJson)
+        {
+            JsonSerializerOptions options = ClosedTypeInferenceOptions;
+            Type expectedDerivedType = value.GetType();
+
+            string json = await Serializer.SerializeWrapper(value, options);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            ClosedPet roundtripped = await Serializer.DeserializeWrapper<ClosedPet>(json, options);
+            Assert.IsType(expectedDerivedType, roundtripped);
+        }
+
+        [Fact]
+        public async Task ClosedTypeInference_NestedHierarchy_UsesIndependentBaseContracts()
+        {
+            JsonSerializerOptions options = ClosedTypeInferenceOptions;
+            Assert.Equal(
+                [
+                    (typeof(ClosedCat), nameof(ClosedCat)),
+                    (typeof(ClosedCollie), nameof(ClosedCollie)),
+                    (typeof(ClosedLabrador), nameof(ClosedLabrador)),
+                ],
+                GetInferredDerivedTypes(options, typeof(ClosedPet)));
+
+            var labrador = new ClosedLabrador { Name = "Rex", GoodBoy = true, Color = "black" };
+            string petJson = await Serializer.SerializeWrapper(labrador, typeof(ClosedPet), options);
+            string dogJson = await Serializer.SerializeWrapper(labrador, typeof(ClosedDog), options);
+
+            JsonTestHelper.AssertJsonEqual(
+                """{"$type":"ClosedLabrador","Color":"black","GoodBoy":true,"Name":"Rex"}""",
+                petJson);
+            JsonTestHelper.AssertJsonEqual(
+                """{"$dog":"lab","Color":"black","GoodBoy":true,"Name":"Rex"}""",
+                dogJson);
+
+            var collie = new ClosedCollie { Name = "Lassie", GoodBoy = true, Herding = true };
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => Serializer.SerializeWrapper(collie, typeof(ClosedDog), options));
+        }
+
+        [Fact]
+        public async Task ClosedTypeInference_NestedHierarchy_IgnoresIntermediateOptOutAndConverter()
+        {
+            JsonSerializerOptions options = ClosedTypeInferenceOptions;
+            var value = new ClosedNestedConverterLeaf { Value = 42 };
+
+            string rootJson =
+                await Serializer.SerializeWrapper(value, typeof(ClosedNestedConverterRoot), options);
+
+            JsonTestHelper.AssertJsonEqual(
+                """{"$type":"ClosedNestedConverterLeaf","Value":42}""",
+                rootJson);
+        }
+
+        [Fact]
+        public void ClosedTypeInference_NestedHierarchyWithoutTerminalDerivedTypes_Throws()
+        {
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(
+                    value: null,
+                    ClosedTypeInferenceOptions.GetTypeInfo(typeof(ClosedNestedEmptyRoot))));
+
+            Assert.Contains(typeof(ClosedNestedEmptyRoot).ToString(), exception.Message);
         }
 
         [Fact]
@@ -343,6 +431,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ClosedTypeInference_NonClosedBranch_RemainsAnInferenceBoundary()
+        {
+            JsonSerializerOptions options = ClosedTypeInferenceOptions;
+            Assert.Equal(
+                [(typeof(ClosedOpenBranch), nameof(ClosedOpenBranch))],
+                GetInferredDerivedTypes(options, typeof(ClosedOpenRoot)));
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => Serializer.SerializeWrapper(
+                    new ClosedOpenLeaf(),
+                    typeof(ClosedOpenRoot),
+                    options));
+        }
+
+        [Fact]
         public async Task ClosedTypeInference_PlainAbstractClass_IsNotInferred()
         {
             JsonSerializerOptions options = ClosedTypeInferenceOptions;
@@ -553,6 +656,27 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(expectedJson, roundtrippedJson);
         }
 
+        [Fact]
+        public async Task ClosedTypeInference_NestedGenericHierarchy_ResolvesAndRoundTripsDerivedType()
+        {
+            Type baseType = typeof(ClosedNestedGenericRoot<List<int[]>>);
+            var value = new ClosedNestedGenericLeaf<int>
+            {
+                BaseValue = [[1, 2]],
+                MiddleValue = [3, 4],
+                LeafValue = 5,
+            };
+            const string ExpectedJson =
+                """{"$type":"ClosedNestedGenericLeaf","LeafValue":5,"MiddleValue":[3,4],"BaseValue":[[1,2]]}""";
+
+            string json = await Serializer.SerializeWrapper(value, baseType, ClosedTypeInferenceOptions);
+            JsonTestHelper.AssertJsonEqual(ExpectedJson, json);
+
+            object roundtripped =
+                await Serializer.DeserializeWrapper(json, baseType, ClosedTypeInferenceOptions);
+            Assert.IsType<ClosedNestedGenericLeaf<int>>(roundtripped);
+        }
+
         public static IEnumerable<object[]> InvalidGenericClosedHierarchyData()
         {
             yield return new object[]
@@ -620,6 +744,15 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ClosedTypeInference_NestedDuplicateDiscriminator_ThrowsInvalidOperationException()
+        {
+            ClosedNestedCollisionBase value = new ClosedNestedCollisionHolderA.Node();
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.SerializeWrapper(value, ClosedTypeInferenceOptions));
+            Assert.Contains(nameof(ClosedNestedCollisionHolderA.Node), exception.Message);
+        }
+
+        [Fact]
         public async Task ClosedTypeInference_DuplicateGenericNameAcrossArities_ThrowsInvalidOperationException()
         {
             ClosedDuplicateArityBase<int, int> value = new ClosedDuplicateArityDerived<int>();
@@ -653,6 +786,14 @@ namespace System.Text.Json.Serialization.Tests
         {
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.SerializeWrapper(value, baseType, ClosedTypeInferenceOptions));
+        }
+
+        [Fact]
+        public async Task ClosedTypeInference_NestedInaccessibleDerivedType()
+        {
+            ClosedNestedAccessBase value = new ClosedNestedAccessDerived();
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.SerializeWrapper(value, ClosedTypeInferenceOptions));
         }
 
         [Theory]
@@ -727,6 +868,66 @@ namespace System.Text.Json.Serialization.Tests
         public int Height { get; set; }
     }
 
+    public closed class ClosedPet
+    {
+        public string? Name { get; set; }
+    }
+
+    public sealed class ClosedCat : ClosedPet
+    {
+        public bool Indoor { get; set; }
+    }
+
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "$dog")]
+    [JsonDerivedType(typeof(ClosedLabrador), "lab")]
+    public closed class ClosedDog : ClosedPet
+    {
+        public bool GoodBoy { get; set; }
+    }
+
+    public sealed class ClosedLabrador : ClosedDog
+    {
+        public string? Color { get; set; }
+    }
+
+    public sealed class ClosedCollie : ClosedDog
+    {
+        public bool Herding { get; set; }
+    }
+
+    public closed class ClosedNestedEmptyRoot;
+
+    public closed class ClosedNestedEmptyMiddle : ClosedNestedEmptyRoot;
+
+    public closed class ClosedNestedConverterRoot;
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false)]
+    [JsonConverter(typeof(ClosedNestedConverter))]
+    public closed class ClosedNestedConverterMiddle : ClosedNestedConverterRoot;
+
+    public sealed class ClosedNestedConverterLeaf : ClosedNestedConverterMiddle
+    {
+        public int Value { get; set; }
+    }
+
+    public sealed class ClosedNestedConverter : JsonConverter<ClosedNestedConverterMiddle>
+    {
+        public override ClosedNestedConverterMiddle? Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options) => throw new NotSupportedException();
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            ClosedNestedConverterMiddle value,
+            JsonSerializerOptions options)
+        {
+            writer.WriteStartObject();
+            writer.WriteBoolean("FromIntermediateConverter", true);
+            writer.WriteEndObject();
+        }
+    }
+
     [JsonPolymorphic(
         InferClosedTypePolymorphism = true,
         TypeDiscriminatorPropertyName = "$kind")]
@@ -786,6 +987,12 @@ namespace System.Text.Json.Serialization.Tests
     public sealed class ClosedNumberPayload : ClosedPayload { public int Number { get; set; } }
 
     public closed class ClosedEmptyBase;
+
+    public closed class ClosedOpenRoot;
+
+    public class ClosedOpenBranch : ClosedOpenRoot;
+
+    public sealed class ClosedOpenLeaf : ClosedOpenBranch;
 
     [JsonPolymorphic(InferClosedTypePolymorphism = true)]
     public closed class ClosedEmptyAttributeOptInBase
@@ -944,6 +1151,21 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public closed class ClosedNestedGenericRoot<T>
+    {
+        public T? BaseValue { get; set; }
+    }
+
+    public closed class ClosedNestedGenericMiddle<T> : ClosedNestedGenericRoot<List<T>>
+    {
+        public T? MiddleValue { get; set; }
+    }
+
+    public sealed class ClosedNestedGenericLeaf<T> : ClosedNestedGenericMiddle<T[]>
+    {
+        public T? LeafValue { get; set; }
+    }
+
     public closed class ClosedMixedBase<T>
     {
         public T? BaseValue { get; set; }
@@ -1029,9 +1251,23 @@ namespace System.Text.Json.Serialization.Tests
     public static class ClosedCollisionHolderA { public sealed class Node : ClosedCollisionBase; }
     public static class ClosedCollisionHolderB { public sealed class Node : ClosedCollisionBase; }
 
+    public closed class ClosedNestedCollisionBase;
+
+    public static class ClosedNestedCollisionHolderA { public sealed class Node : ClosedNestedCollisionBase; }
+
+    public closed class ClosedNestedCollisionMiddle : ClosedNestedCollisionBase;
+
+    public static class ClosedNestedCollisionHolderB { public sealed class Node : ClosedNestedCollisionMiddle; }
+
     public closed class ClosedAccessBase;
     public sealed class ClosedAccessiblePublicDerived : ClosedAccessBase;
     internal sealed class ClosedAccessInternalDerived : ClosedAccessBase;
+
+    public closed class ClosedNestedAccessBase;
+
+    public closed class ClosedNestedAccessMiddle : ClosedNestedAccessBase;
+
+    internal sealed class ClosedNestedAccessDerived : ClosedNestedAccessMiddle;
 
     public closed class ClosedProtectedAccessBase;
     public sealed class ClosedProtectedAccessibleDerived : ClosedProtectedAccessBase;

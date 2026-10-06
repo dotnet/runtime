@@ -854,6 +854,7 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromInt128_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135116", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ExplicitConversion_FromInt128(Int128 i, BFloat16 expected)
         {
             BFloat16 b16 = (BFloat16)i;
@@ -885,6 +886,7 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromUInt128_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135116", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ExplicitConversion_FromUInt128(UInt128 i, BFloat16 expected)
         {
             BFloat16 b16 = (BFloat16)i;
@@ -1325,6 +1327,26 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
+        [InlineData(0.00031415927f, "F3", "0.000")]
+        [InlineData(0.00031415927f, "F4", "0.0003")]
+        [InlineData(0.00031415927f, "F5", "0.00031")]
+        [InlineData(-0.00031415927f, "F4", "-0.0003")]
+        [InlineData(0.00031415927f, "C4", "\u00A40.0003")]
+        [InlineData(0.00031415927f, "N4", "0.0003")]
+        [InlineData(0.00031415927f, "P2", "0.03 %")]
+        [InlineData(0.00031415927f, "P4", "0.0315 %")]
+        [InlineData(9.18355E-41f, "F4", "0.0000")]
+        [InlineData(-9.18355E-41f, "F4", "-0.0000")]
+        [InlineData(0.0f, "F4", "0.0000")]
+        [InlineData(-0.0f, "F4", "-0.0000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            BFloat16 b = (BFloat16)value;
+            Assert.Equal(expected, b.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(b, format, NumberFormatInfo.InvariantInfo, expected);
+        }
+
+        [Theory]
         [InlineData(1.0f, "x", "0x1p+0")]
         [InlineData(1.5f, "x", "0x1.8p+0")]
         [InlineData(2.0f, "x", "0x1p+1")]
@@ -1375,6 +1397,68 @@ namespace System.Numerics.Tests
 
             Assert.True(BFloat16.TryParse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo, out result));
             Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+        }
+
+        [Theory]
+        [InlineData(0.0f, "x", "plus", "minus", "0x0pplus0")]
+        [InlineData(-0.0f, "X", "plus", "minus", "minus0X0Pplus0")]
+        [InlineData(0.0f, "x3", "plus", "minus", "0x0.000pplus0")]
+        [InlineData(-0.0f, "X3", "plus", "minus", "minus0X0.000Pplus0")]
+        [InlineData(3.0f, "x", "plus", "minus", "0x1.8pplus1")]
+        [InlineData(-0.75f, "X", "plus", "minus", "minus0X1.8Pminus1")]
+        [InlineData(3.0f, "X", "\u200E+", "\u200E-", "0X1.8P\u200E+1")]
+        [InlineData(-0.75f, "x", "\u200E+", "\u200E-", "\u200E-0x1.8p\u200E-1")]
+        [InlineData(3.0f, "x", "\u061C+", "\u061C-", "0x1.8p\u061C+1")]
+        [InlineData(-0.75f, "X", "\u061C+", "\u061C-", "\u061C-0X1.8P\u061C-1")]
+        [InlineData(0.75f, "x", "+", "\u2212", "0x1.8p\u22121")]
+        [InlineData(3.0f, "X", "", "~", "0X1.8P1")]
+        [InlineData(3.0f, "x", "-+", "-", "0x1.8p-+1")]
+        [InlineData(3.0f, "X", "-", "-+", "0X1.8P-1")]
+        [InlineData(3.0f, "x", "-", "+", "0x1.8p-1")]
+        [InlineData(0.75f, "X", "-", "+", "0X1.8P+1")]
+        [InlineData(-3.0f, "X", "-", "+", "+0X1.8P-1")]
+        [InlineData(-3.0f, "x", "-+", "-", "-0x1.8p-+1")]
+        [InlineData(-3.0f, "X", "-", "-+", "-+0X1.8P-1")]
+        [InlineData(-0.75f, "x", "-", "-+", "-+0x1.8p-+1")]
+        [InlineData(0.75f, "x", "-", "-+", "0x1.8p-+1")]
+        public static void ToStringHexFloat_CustomSigns(float f, string format, string positiveSign, string negativeSign, string expected)
+        {
+            BFloat16 value = (BFloat16)f;
+            var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };
+            Assert.Equal(expected, value.ToString(format, info));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, info, expected, formatCasingMatchesOutput: false);
+
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(BFloat16.Parse(expected, NumberStyles.HexFloat, info)));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(BFloat16.Parse(expected.AsSpan(), NumberStyles.HexFloat, info)));
+            byte[] utf8 = Encoding.UTF8.GetBytes(expected);
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(BFloat16.Parse(utf8, NumberStyles.HexFloat, info)));
+
+            Assert.True(BFloat16.TryParse(expected, NumberStyles.HexFloat, info, out BFloat16 result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
+            Assert.True(BFloat16.TryParse(expected.AsSpan(), NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
+            Assert.True(BFloat16.TryParse(utf8, NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
+        }
+
+        [Theory]
+        [InlineData(-3.0f, "E-0")]
+        [InlineData(-0.75f, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(float f, string exponentSign)
+        {
+            BFloat16 value = (BFloat16)f;
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(BFloat16.TryParse(formatted, NumberStyles.Float, info, out BFloat16 result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
+            Assert.True(BFloat16.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(BFloat16.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.BFloat16ToUInt16Bits(value), BitConverter.BFloat16ToUInt16Bits(result));
         }
 
         [Fact]
@@ -2592,6 +2676,33 @@ namespace System.Numerics.Tests
         {
             AssertEqual(-expectedResult, BFloat16.RadiansToDegrees(-value), allowedVariance);
             AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones the bulk data cannot reach: zero, the subnormal range
+        // on either side of the conversion, and an overflow.
+        [Theory]
+        [InlineData(0x0000, 0x0000, 0x0000)] // 0
+        [InlineData(0x0001, 0x0000, 0x0039)] // Epsilon
+        [InlineData(0x0040, 0x0001, 0x02E5)] // 0x1p-133
+        [InlineData(0x0080, 0x0002, 0x0365)] // MinNormal
+        [InlineData(0x3F80, 0x3C8F, 0x4265)] // One
+        [InlineData(0x7F7F, 0x7C8E, 0x7F80)] // MaxValue, overflows for RadiansToDegrees
+        [InlineData(0x7F80, 0x7F80, 0x7F80)] // PositiveInfinity
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ushort valueBits, ushort degreesToRadiansBits, ushort radiansToDegreesBits)
+        {
+            const ushort SignMask = 0x8000;
+
+            BFloat16 value = BitConverter.UInt16BitsToBFloat16(valueBits);
+
+            AssertEqual(BitConverter.UInt16BitsToBFloat16(degreesToRadiansBits), BFloat16.DegreesToRadians(value));
+            AssertEqual(BitConverter.UInt16BitsToBFloat16(radiansToDegreesBits), BFloat16.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            BFloat16 negativeValue = BitConverter.UInt16BitsToBFloat16((ushort)(valueBits ^ SignMask));
+
+            AssertEqual(BitConverter.UInt16BitsToBFloat16((ushort)(degreesToRadiansBits ^ SignMask)), BFloat16.DegreesToRadians(negativeValue));
+            AssertEqual(BitConverter.UInt16BitsToBFloat16((ushort)(radiansToDegreesBits ^ SignMask)), BFloat16.RadiansToDegrees(negativeValue));
         }
 
         [Theory]

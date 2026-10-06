@@ -1332,7 +1332,6 @@ HRESULT MulticoreJitProfilePlayer::JITThreadProc(Thread * pThread)
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1368,7 +1367,6 @@ DWORD WINAPI MulticoreJitProfilePlayer::StaticJITThreadProc(void *args)
         GC_TRIGGERS;
         MODE_ANY;
         ENTRY_POINT;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 

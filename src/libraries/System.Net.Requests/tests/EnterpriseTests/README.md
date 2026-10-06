@@ -11,4 +11,5 @@ These tests validate FTP operations with SSL/TLS (FTPS) against a ProFTPD server
 The tests cover:
 - FTP file upload with explicit SSL/TLS
 - FTP file download with explicit SSL/TLS
+- FTP directory listing with explicit SSL/TLS
 - Proper SSL/TLS stream closure to prevent protocol violations

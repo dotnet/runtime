@@ -172,6 +172,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Fact]
         [OuterLoop("Stress test for deep nesting")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66118", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public void LeadingPrefix_DeepCaptureNesting_DoesNotStackOverflow()
         {
             // Deeply nested pure captures like (((((...ab...))))) exercise the iterative
@@ -186,10 +187,23 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [OuterLoop("Stress test for deep nesting")]
         [InlineData(5, "(", ")")]
-        [InlineData(5_000, "(", ")")]
         [InlineData(5, "(?>", ")")]
-        [InlineData(5_000, "(?>", ")")]
         public void LeadingPrefix_InterleavedNesting_DoesNotStackOverflow(int depth, string open, string close)
+        {
+            VerifyInterleavedNesting(depth, open, close);
+        }
+
+        [Theory]
+        [OuterLoop("Stress test for deep nesting")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/66118", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
+        [InlineData(5_000, "(", ")")]
+        [InlineData(5_000, "(?>", ")")]
+        public void LeadingPrefix_DeepInterleavedNesting_DoesNotStackOverflow(int depth, string open, string close)
+        {
+            VerifyInterleavedNesting(depth, open, close);
+        }
+
+        private static void VerifyInterleavedNesting(int depth, string open, string close)
         {
             // Build a pattern that interleaves group and Concatenate nodes, e.g.: (…(ab)ab…)ab
             // or (?>…(?>ab)ab…)ab. This exercises the recursive unwrapping and inner-Concatenate

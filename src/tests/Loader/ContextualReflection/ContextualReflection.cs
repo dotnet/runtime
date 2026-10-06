@@ -34,6 +34,7 @@ namespace ContextualReflectionTest
 
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/165", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131925", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public static void TestEntryPoint()
         {
@@ -785,4 +786,3 @@ namespace ContextualReflectionTest
         }
     }
 }
-

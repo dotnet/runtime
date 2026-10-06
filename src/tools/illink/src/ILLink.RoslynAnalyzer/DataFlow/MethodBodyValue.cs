@@ -12,15 +12,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
     // along with its control flow graph. It implements IEquatable for the method.
     public readonly struct MethodBodyValue : IEquatable<MethodBodyValue>
     {
-        // Usually an IMethodSymbol, but may also be an IFieldSymbol or IPropertySymbol
-        // for field initializers.
+        // Usually an IMethodSymbol, but may also be an IFieldSymbol, IPropertySymbol, or
+        // IEventSymbol for initializers.
         public ISymbol OwningSymbol { get; }
 
         public ControlFlowGraph ControlFlowGraph { get; }
 
         public MethodBodyValue(ISymbol owningSymbol, ControlFlowGraph cfg)
         {
-            Debug.Assert(owningSymbol is (IMethodSymbol or IFieldSymbol or IPropertySymbol));
+            Debug.Assert(owningSymbol is (IMethodSymbol or IFieldSymbol or IPropertySymbol or IEventSymbol));
             OwningSymbol = owningSymbol;
             ControlFlowGraph = cfg;
         }

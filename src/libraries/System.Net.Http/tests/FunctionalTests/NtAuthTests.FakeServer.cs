@@ -22,12 +22,13 @@ namespace System.Net.Http.Functional.Tests
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
 
-        internal static async Task HandleAuthenticationRequestWithFakeServer(LoopbackServer.Connection connection, bool useNtlm)
+        internal static async Task<int> HandleAuthenticationRequestWithFakeServer(LoopbackServer.Connection connection, bool useNtlm)
         {
             HttpRequestData request = await connection.ReadRequestDataAsync();
             FakeNtlmServer? fakeNtlmServer = null;
             FakeNegotiateServer? fakeNegotiateServer = null;
             string authHeader = null;
+            int successfulResponseCount = 0;
 
             foreach (HttpHeaderData header in request.Headers)
             {
@@ -99,20 +100,31 @@ namespace System.Net.Http.Functional.Tests
                 if (outBlob != null)
                 {
                     authHeader = $"WWW-Authenticate: {tokens[0]} {Convert.ToBase64String(outBlob)}\r\n";
+                    if (isAuthenticated)
+                    {
+                        authHeader += "Connection: close\r\n";
+                        successfulResponseCount++;
+                    }
+
                     await connection.SendResponseAsync(isAuthenticated ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, authHeader);
-                    connection.CompleteRequestProcessing();
 
                     if (!isAuthenticated)
                     {
+                        connection.CompleteRequestProcessing();
                         request = await connection.ReadRequestDataAsync();
                     }
+                }
+                else if (isAuthenticated)
+                {
+                    successfulResponseCount++;
+                    await connection.SendResponseAsync(HttpStatusCode.OK, "Connection: close\r\n");
                 }
             }
             while (!isAuthenticated);
 
             fakeNtlmServer?.Dispose();
 
-            await connection.SendResponseAsync(HttpStatusCode.OK);
+            return successfulResponseCount;
         }
 
         private static HttpAgnosticOptions CreateHttpAgnosticOptions() => new HttpAgnosticOptions
@@ -307,10 +319,11 @@ namespace System.Net.Http.Functional.Tests
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         Assert.IsType<LoopbackServer.Connection>(connection);
-                        await HandleAuthenticationRequestWithFakeServer((LoopbackServer.Connection)connection, useNtlm);
+                        int successfulResponseCount = await HandleAuthenticationRequestWithFakeServer((LoopbackServer.Connection)connection, useNtlm);
+                        Assert.Equal(1, successfulResponseCount);
                     });
 
-                    // Third connection: HTTP/1.1 for second request (no auth needed, new connection).
+                    // Third connection: HTTP/1.1 for second request after the authenticated connection was closed.
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         Assert.IsType<LoopbackServer.Connection>(connection);

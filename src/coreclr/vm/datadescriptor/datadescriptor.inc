@@ -23,7 +23,7 @@
 // src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
 // to match.
 #ifndef CDAC_RECOMMENDED_READER_VERSION
-#define CDAC_RECOMMENDED_READER_VERSION 1
+#define CDAC_RECOMMENDED_READER_VERSION 2
 #endif
 
 // When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
@@ -483,13 +483,21 @@ CDAC_TYPE_FIELD(AppDomain, TYPE(ArrayListBase), AssemblyList, cdac_data<AppDomai
 CDAC_TYPE_FIELD(AppDomain, T_POINTER, FriendlyName, cdac_data<AppDomain>::FriendlyName)
 CDAC_TYPE_END(AppDomain)
 
+CDAC_TYPE_BEGIN(ExternalMemoryHandle)
+CDAC_TYPE_INDETERMINATE(ExternalMemoryHandle)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Next, cdac_data<ExternalMemoryHandle>::Next)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, MethodTable, cdac_data<ExternalMemoryHandle>::MethodTable)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_POINTER, Memory, cdac_data<ExternalMemoryHandle>::Memory)
+CDAC_TYPE_FIELD(ExternalMemoryHandle, T_UINT32, GCFlags, cdac_data<ExternalMemoryHandle>::GCFlags)
+CDAC_TYPE_END(ExternalMemoryHandle)
+
 CDAC_TYPE_BEGIN(SystemDomain)
 CDAC_TYPE_INDETERMINATE(SystemDomain)
 CDAC_TYPE_FIELD(SystemDomain, TYPE(LoaderAllocator), GlobalLoaderAllocator, cdac_data<SystemDomain>::GlobalLoaderAllocator)
 CDAC_TYPE_FIELD(SystemDomain, T_POINTER, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
 CDAC_TYPE_BEGIN(Debugger)
 CDAC_TYPE_INDETERMINATE(Debugger)
 CDAC_TYPE_FIELD(Debugger, T_INT32, LeftSideInitialized, offsetof(Debugger, m_fLeftSideInitialized))
@@ -524,7 +532,7 @@ CDAC_TYPE_SIZE(sizeof(MemoryRange))
 CDAC_TYPE_FIELD(MemoryRange, T_POINTER, StartAddress, cdac_data<MemoryRange>::StartAddress)
 CDAC_TYPE_FIELD(MemoryRange, T_NUINT, Size, cdac_data<MemoryRange>::Size)
 CDAC_TYPE_END(MemoryRange)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 
 CDAC_TYPE_BEGIN(ArrayListBase)
 CDAC_TYPE_INDETERMINATE(ArrayListBase)
@@ -545,11 +553,13 @@ CDAC_TYPE_FIELD(Signature, T_POINTER, SignaturePointer, cdac_data<Signature>::Si
 CDAC_TYPE_FIELD(Signature, T_UINT32, SignatureLength, cdac_data<Signature>::SignatureLength)
 CDAC_TYPE_END(Signature)
 
+#ifdef FEATURE_VARARGS
 CDAC_TYPE_BEGIN(VASigCookie)
 CDAC_TYPE_INDETERMINATE(VASigCookie)
 CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, offsetof(VASigCookie, sizeOfArgs))
 CDAC_TYPE_FIELD(VASigCookie, TYPE(Signature), Signature, cdac_data<VASigCookie>::Signature)
 CDAC_TYPE_END(VASigCookie)
+#endif // FEATURE_VARARGS
 
 // RuntimeTypeSystem
 
@@ -594,7 +604,21 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::Nu
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
 CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
+CDAC_TYPE_FIELD(EEClass, T_UINT32, VMFlags, cdac_data<EEClass>::VMFlags)
 CDAC_TYPE_END(EEClass)
+
+// LayoutInfo aliases unrelated memory unless EEClass::HasLayout() is true.
+CDAC_TYPE_BEGIN(LayoutEEClass)
+CDAC_TYPE_INDETERMINATE(LayoutEEClass)
+CDAC_TYPE_FIELD(LayoutEEClass, TYPE(EEClassLayoutInfo), LayoutInfo, cdac_data<LayoutEEClass>::LayoutInfo)
+CDAC_TYPE_END(LayoutEEClass)
+
+CDAC_TYPE_BEGIN(EEClassLayoutInfo)
+CDAC_TYPE_INDETERMINATE(EEClassLayoutInfo)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, LayoutType, cdac_data<EEClassLayoutInfo>::LayoutType)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, AlignmentRequirement, cdac_data<EEClassLayoutInfo>::AlignmentRequirement)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, Flags, cdac_data<EEClassLayoutInfo>::Flags)
+CDAC_TYPE_END(EEClassLayoutInfo)
 
 CDAC_TYPE_BEGIN(EEClassOptionalFields)
 CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)
@@ -766,6 +790,9 @@ CDAC_TYPE_FIELD(MethodDesc, T_UINT16, Flags, cdac_data<MethodDesc>::Flags)
 CDAC_TYPE_FIELD(MethodDesc, T_UINT16, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
 CDAC_TYPE_FIELD(MethodDesc, T_UINT8, EntryPointFlags, cdac_data<MethodDesc>::EntryPointFlags)
 CDAC_TYPE_FIELD(MethodDesc, T_POINTER, CodeData, cdac_data<MethodDesc>::CodeData)
+#ifdef FEATURE_INTERPRETER
+CDAC_TYPE_FIELD(MethodDesc, T_POINTER, InterpreterCode, cdac_data<MethodDesc>::InterpreterCode)
+#endif // FEATURE_INTERPRETER
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(MethodDesc, T_POINTER, GCCoverageInfo, offsetof(MethodDesc, m_GcCover))
 #endif // HAVE_GCCOVER
@@ -846,7 +873,9 @@ CDAC_TYPE_END(CodePointer)
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_BEGIN(PortableEntryPoint)
 CDAC_TYPE_INDETERMINATE(PortableEntryPoint)
+CDAC_TYPE_FIELD(PortableEntryPoint, T_POINTER, ActualCode, cdac_data<PortableEntryPoint>::ActualCode)
 CDAC_TYPE_FIELD(PortableEntryPoint, T_POINTER, MethodDesc, cdac_data<PortableEntryPoint>::MethodDesc)
+CDAC_TYPE_FIELD(PortableEntryPoint, T_INT32, Flags, cdac_data<PortableEntryPoint>::Flags)
 CDAC_TYPE_END(PortableEntryPoint)
 #endif
 
@@ -957,6 +986,12 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, MinVirtualIP, cdac_data<ReadyToRunInf
 CDAC_TYPE_END(ReadyToRunInfo)
 
 #ifdef TARGET_WASM
+CDAC_TYPE_BEGIN(VirtualIPRangeSection)
+CDAC_TYPE_INDETERMINATE(VirtualIPRangeSection)
+CDAC_TYPE_FIELD(VirtualIPRangeSection, TYPE(RangeSection), RangeSection, cdac_data<VirtualIPRangeSection>::RangeSection)
+CDAC_TYPE_FIELD(VirtualIPRangeSection, T_POINTER, Next, cdac_data<VirtualIPRangeSection>::Next)
+CDAC_TYPE_END(VirtualIPRangeSection)
+
 CDAC_TYPE_BEGIN(FunctionTableIndexRangeSection)
 CDAC_TYPE_INDETERMINATE(FunctionTableIndexRangeSection)
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, MinFunctionTableIndex, cdac_data<FunctionTableIndexRangeSection>::MinFunctionTableIndex)
@@ -1318,11 +1353,6 @@ CDAC_TYPE_BEGIN(ExternalMethodFrame)
 CDAC_TYPE_SIZE(sizeof(ExternalMethodFrame))
 CDAC_TYPE_FIELD(ExternalMethodFrame, T_POINTER, Indirection, cdac_data<ExternalMethodFrame>::Indirection)
 CDAC_TYPE_END(ExternalMethodFrame)
-
-CDAC_TYPE_BEGIN(PInvokeCalliFrame)
-CDAC_TYPE_SIZE(sizeof(PInvokeCalliFrame))
-CDAC_TYPE_FIELD(PInvokeCalliFrame, T_POINTER, VASigCookiePtr, cdac_data<PInvokeCalliFrame>::VASigCookiePtr)
-CDAC_TYPE_END(PInvokeCalliFrame)
 
 CDAC_TYPE_BEGIN(DynamicHelperFrame)
 CDAC_TYPE_SIZE(sizeof(DynamicHelperFrame))
@@ -1703,7 +1733,7 @@ CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 #if defined(TARGET_AMD64)
 CDAC_GLOBAL_POINTER(DebuggerPatchTable, cdac_data<DebuggerController>::PatchTable)
@@ -1711,7 +1741,7 @@ CDAC_GLOBAL_POINTER(DebuggerPatchTable, cdac_data<DebuggerController>::PatchTabl
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
 CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 CDAC_GLOBAL(MaxHijackFunctions, T_UINT32, cdac_data<Debugger>::MaxHijackFunctions)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
 #endif
@@ -1779,6 +1809,7 @@ CDAC_GLOBAL_POINTER(CanonMethodTable, &::g_pCanonMethodTableClass)
 CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
 CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
+CDAC_GLOBAL_POINTER(ExternalMemoryHandles, cdac_data<ExternalMemoryHandle>::HandlesHead)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(MulticastDelegateMethodTable, &::g_pMulticastDelegateClass)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
@@ -1797,6 +1828,7 @@ CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfac
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
 CDAC_GLOBAL_POINTER(JITNotificationTable, &::g_pNotificationTable)
 CDAC_GLOBAL(JITNotificationTableSize, T_UINT32, JIT_NOTIFICATION_TABLE_SIZE)
+// Unused by the runtime - see "Pending cleanup" at the end of this file.
 CDAC_GLOBAL_POINTER(GlobalAllocContext, &::g_global_alloc_context)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
@@ -1815,7 +1847,11 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
+#ifdef FEATURE_INTERPRETER
+CDAC_GLOBAL_POINTER(InterpreterJitManagerAddress, cdac_data<ExecutionManager>::InterpreterJitManagerAddress)
+#endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
+CDAC_GLOBAL_POINTER(VirtualIPRangeList, cdac_data<ExecutionManager>::VirtualIPRangeListAddress)
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
 #endif // TARGET_WASM
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
@@ -1865,9 +1901,9 @@ CDAC_GLOBAL_CONTRACT(ComWrappers, c1)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ConditionalWeakTable, c1)
 CDAC_GLOBAL_CONTRACT(DacStreams, c1)
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(Debugger, c1)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(DebugInfo, c1)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, c1)
 #ifdef FEATURE_METADATA_UPDATER
@@ -1875,6 +1911,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeMutableTypeSystem, c1)
 #endif // FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(Exception, c1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, c1)
+CDAC_GLOBAL_CONTRACT(ExternalMemoryHandles, c1)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
 CDAC_GLOBAL_CONTRACT(ManagedTypeSource, c1)
@@ -1885,7 +1922,11 @@ CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
 CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL_CONTRACT(PrecodeStubs, c2)
+#else
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, c1)
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(ReJIT, c1)
 #endif // PROFILING_SUPPORTED
@@ -1900,3 +1941,13 @@ CDAC_GLOBAL_CONTRACT(Thread, c1)
 CDAC_GLOBAL_CONTRACT(WindowsErrorReporting, c1)
 
 CDAC_GLOBALS_END()
+
+// Pending cleanup
+//
+// Data descriptor entries that the runtime itself no longer uses, but that cannot be deleted
+// without breaking a frozen contract version. Each one can only go away together with a bump of
+// the contract version that requires it. Keep this list up to date so that the next version bump
+// does not have to rediscover them.
+//
+// - Delete GlobalAllocContext (and ::g_global_alloc_context, together with its dacvars.h entry
+//   that keeps it captured in mini/triage dumps) once the GC contract version is bumped to c2.
