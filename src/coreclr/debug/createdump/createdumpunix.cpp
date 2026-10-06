@@ -4,45 +4,39 @@
 #include "createdump.h"
 #include <minipal/ospagesize.h>
 
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
-long g_pageSize = 0;
-#endif
-
 //
 // The Linux/MacOS create dump code
 //
+// There is a simplified version of this CreateDump function available in nativeaot_createdump_main.cpp.
+// If changes are made to this function, consider updating the other one.
 bool
 CreateDump(const CreateDumpOptions& options)
 {
-    ReleaseHolder<CrashInfo> crashInfo{ new CrashInfo(options) };
-    DumpWriter dumpWriter(*crashInfo);
+    ProcessInfo processInfo(options);
+    ReleaseHolder<CrashInfo> crashInfo{ new CrashInfo(options, processInfo) };
     std::string dumpPath;
+    bool processInitialized = false;
     bool result = false;
 
     // Initialize PAGE_SIZE
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
+#ifdef CREATEDUMP_RUNTIME_PAGE_SIZE
     g_pageSize = minipal_getpagesize();
 #endif
     TRACE("PAGE_SIZE %lu\n", (unsigned long)PAGE_SIZE);
 
-    if (options.CrashReport && (options.AppModel == AppModelType::SingleFile || options.AppModel == AppModelType::NativeAOT))
+    if (!ValidateDumpOptions(&options))
     {
-        printf_error("The app model does not support crash report generation\n");
         goto exit;
     }
 
-    if (options.DumpType != DumpType::Full && options.AppModel == AppModelType::NativeAOT)
+    if (!processInfo.Initialize())
     {
-        printf_error("The app model only supports full dump generation\n");
         goto exit;
     }
 
-    // Initialize the crash info 
-    if (!crashInfo->Initialize())
-    {
-        goto exit;
-    }
-    printf_status("Gathering state for process %d %s\n", options.Pid, crashInfo->Name().c_str());
+    processInitialized = true;
+
+    printf_status("Gathering state for process %d %s\n", options.Pid, crashInfo->Name());
 
     if (options.Signal != 0 || options.CrashThread != 0)
     {
@@ -50,20 +44,50 @@ CreateDump(const CreateDumpOptions& options)
     }
 
     // Suspend all the threads in the target process and build the list of threads
-    if (!crashInfo->EnumerateAndSuspendThreads())
+    if (!processInfo.EnumerateAndSuspendThreads())
     {
         goto exit;
     }
-    // Gather all the info about the process, threads (registers, etc.) and memory regions
+
+    // The following three steps gather all the info about the process, threads (registers, etc.) and memory regions
+    if (!processInfo.GatherCrashInfo(crashInfo->GetDumpRegionStore()))
+    {
+        goto exit;
+    }
+    if (!crashInfo->PopulateFromProcessInfo())
+    {
+        goto exit;
+    }
     if (!crashInfo->GatherCrashInfo(options.DumpType))
     {
         goto exit;
     }
-    // Format the dump pattern template now that the process name on MacOS has been obtained
-    if (!FormatDumpName(dumpPath, options.DumpPathTemplate, crashInfo->Name().c_str(), options.Pid))
+
+    // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
+    if (!AddSpecialDiagInfoRegion(crashInfo->GetDumpRegionStore()))
     {
         goto exit;
     }
+
+    // Determine which memory regions should be included in the dump based on the dump type
+    if (!processInfo.SelectDumpRegions(crashInfo->GetDumpRegionStore(), options.DumpType))
+    {
+        goto exit;
+    }
+
+    if (options.DumpType != DumpType::Full)
+    {
+        crashInfo->AddThreadStacks();
+    }
+
+    char pathName[MAX_DUMP_PATH];
+    // Format the dump pattern template now that the process name on MacOS has been obtained
+    if (!FormatDumpName(pathName, sizeof(pathName), options.DumpPathTemplate, crashInfo->Name(), options.Pid))
+    {
+        goto exit;
+    }
+
+    dumpPath = pathName;
     // Write the crash report json file if enabled
     if (options.CrashReport)
     {
@@ -82,38 +106,31 @@ CreateDump(const CreateDumpOptions& options)
     
         printf_status("Writing %s to file %s\n", GetDumpTypeString(options.DumpType), dumpPath.c_str());
 
-        // Write the actual dump file
-        if (!dumpWriter.OpenDump(dumpPath.c_str()))
+#ifdef __APPLE__
+        DumpWriter dumpWriter(*crashInfo);
+#else
+        DynamicArray<ModuleRegion> moduleMappings;
+        DynamicArray<MemoryRegion> dumpRegions;
+        if (!crashInfo->CopyDumpWriterRegions(moduleMappings, dumpRegions))
         {
             goto exit;
         }
-        if (!dumpWriter.WriteDump())
+        DumpWriter dumpWriter(processInfo, moduleMappings, dumpRegions);
+#endif
+        // Write the actual dump file
+        if (!dumpWriter.OpenAndWriteDump(dumpPath.c_str()))
         {
-            printf_error("Writing dump FAILED\n");
-
-            // Delete the partial dump file on error
-            remove(dumpPath.c_str());
             goto exit;
         }
     }
     result = true;
 exit:
-    if (kill(options.Pid, 0) == 0)
-    {
-        printf_status("Target process is alive\n");
-    }
-    else
-    {
-        int err = errno;
-        if (err == ESRCH)
-        {
-            printf_error("Target process terminated\n");
-        }
-        else
-        {
-            printf_error("kill(%d, 0) FAILED %s (%d)\n", options.Pid, strerror(err), err);
-        }
-    }
+    LogProcessStatus(options.Pid);
     crashInfo->CleanupAndResumeProcess();
+    if (processInitialized)
+    {
+        processInfo.CleanupAndResumeProcess();
+    }
+
     return result;
 }
