@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/dbgmsg.h
 
 Abstract:
     Header file for Debug Message utilities. Output macros, type definitions,
     extern variables. See overview section below for usage details.
-
 --*/
 
 /*
@@ -449,5 +444,3 @@ void PAL_DisplayDialogFormatted(const char *szTitle, const char *szTextFormat, .
 #endif // __cplusplus
 
 #endif /* _PAL_DBGMSG_H_ */
-
-

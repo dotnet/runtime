@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-/************************************************************************/
-/*                           Assembler.h                                */
-/************************************************************************/
 
 #ifndef Assember_h
 #define Assember_h
@@ -1263,5 +1260,3 @@ public:
 #ifdef _MSC_VER
 #pragma warning(default : 4640)
 #endif
-
-

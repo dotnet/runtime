@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 // callbacks for diasymreader when using SymConverter
-
 
 #include "stdafx.h"
 #include "symbolinfo.h"
@@ -1390,5 +1388,3 @@ STDMETHODIMP SymbolInfo::MergeEnd ()             // S_OK or error.
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 }
-
-

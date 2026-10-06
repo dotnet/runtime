@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     machexception.h
 
 Abstract:
     Private mach exception handling utilities for SEH
-
 --*/
 
 #ifndef _MACHEXCEPTION_H_
@@ -40,4 +37,3 @@ PAL_NORETURN void MachSetThreadContext(CONTEXT *lpContext);
 #endif // __cplusplus
 
 #endif /* _MACHEXCEPTION_H_ */
-

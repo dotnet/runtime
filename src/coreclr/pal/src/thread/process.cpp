@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     process.cpp
 
 Abstract:
-
     Implementation of process object and functions related to processes.
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -2068,7 +2064,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     // Abort the process after waiting for the core dump to complete
     abort();
 }
-
 
 /*++
 Function:

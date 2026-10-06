@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// --------------------------------------------------------------------------------
-// PEDecoder.cpp
-//
-
-// --------------------------------------------------------------------------------
 
 #include "stdafx.h"
 
@@ -1545,7 +1540,6 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
     CHECK_OK;
 }
 #endif // TARGET_X86
-
 
 READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
 {

@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: CEELOAD.H
-//
-
 //
 // CEELOAD.H defines the class use to represent the PE file
 // ===========================================================================
@@ -1053,8 +1052,6 @@ public:
 
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
 #endif // PROFILING_SUPPORTED
-
-
 
     LPCWSTR GetPathForErrorMessages() final;
 

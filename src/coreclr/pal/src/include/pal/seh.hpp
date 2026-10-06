@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/seh.hpp
 
 Abstract:
     Header file for public Structured Exception Handling stuff
-
-
-
 --*/
 
 #ifndef _PAL_SEH_HPP_
@@ -130,4 +123,3 @@ extern int g_hardware_exception_context_locvar_offset;
 extern int g_inject_activation_context_locvar_offset;
 
 #endif /* _PAL_SEH_HPP_ */
-

@@ -57,7 +57,6 @@ public:
     static void             DetachCurrentThread();
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
-#else
 #endif
 
     void        Destroy();

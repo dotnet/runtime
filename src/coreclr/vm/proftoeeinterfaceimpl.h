@@ -1,18 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
+// ======================================================================================
 // FILE: ProfToEEInterfaceImpl.h
 //
 // Declaration of class that implements the ICorProfilerInfo* interfaces, which allow the
 // Profiler to communicate with the EE.  This allows the Profiler DLL to get
 // access to private EE data structures and other things that should never be exported
 // outside of the EE.
-//
-
-//
-
 // ======================================================================================
-
 
 #ifndef __PROFTOEEINTERFACEIMPL_H__
 #define __PROFTOEEINTERFACEIMPL_H__
@@ -803,5 +799,3 @@ protected:
 #endif // PROFILING_SUPPORTED
 
 #endif // __PROFTOEEINTERFACEIMPL_H__
-
-

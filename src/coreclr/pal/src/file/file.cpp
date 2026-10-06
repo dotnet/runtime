@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     file.cpp
 
 Abstract:
-
     Implementation of the file WIN API for the PAL
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -2007,7 +2003,6 @@ FlushFileBuffers(
     PERF_EXIT(FlushFileBuffers);
     return NO_ERROR == palError;
 }
-
 
 /*++
 Function:

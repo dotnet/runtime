@@ -51,4 +51,3 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     );
 
 #endif //_WIN_PATH_APIS_WRAPPER_
-

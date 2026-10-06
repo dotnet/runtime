@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     list.h
 
 Abstract:
-
     Doubly-linked list manipulation macros (from ntrtl.h)
-
-Revision History:
-
-
-
 --*/
 
 #ifndef _LIST_H_INCLUDED
@@ -125,4 +115,3 @@ typedef struct _LIST_ENTRY {
 #endif // __cplusplus
 
 #endif // _LIST_H_INCLUDED
-

@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgIO.h
-//
-
 //
 // This module handles disk/memory i/o for a generic set of storage solutions,
 // including:
@@ -33,6 +32,7 @@
 //      only the portion of the file with the .clb in it.
 //</REVISIT_TODO>
 //*****************************************************************************
+
 #include "stdafx.h"                     // Standard headers.
 #include "stgio.h"                      // Our definitions.
 #include "corerror.h"
@@ -1298,4 +1298,3 @@ void FreeMemory(void *pbData)
     _ASSERTE(pbData);
     delete [] (BYTE *) pbData;
 }
-

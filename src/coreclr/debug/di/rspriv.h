@@ -10486,7 +10486,6 @@ public:
     }
     void ClearState(CordbUnmanagedThreadState state) {LIMITED_METHOD_CONTRACT;  m_state = (CordbUnmanagedThreadState)(m_state & ~state); }
 
-
     CordbUnmanagedEvent *IBEvent()  {LIMITED_METHOD_CONTRACT;  return &m_IBEvent; }
     CordbUnmanagedEvent *IBEvent2() {LIMITED_METHOD_CONTRACT;  return &m_IBEvent2; }
     CordbUnmanagedEvent *OOBEvent() { return &m_OOBEvent; }

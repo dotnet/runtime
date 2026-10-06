@@ -530,7 +530,6 @@ struct HijackArgs
     };
 };
 
-
 // ClrFlushInstructionCache is used when we want to call FlushInstructionCache
 // for a specific architecture in the common code, but not for other architectures.
 // We call ClrFlushInstructionCache whenever we create or modify code in the heap.

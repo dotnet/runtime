@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     debug.c
 
 Abstract:
-
     Implementation of Win32 debugging API functions.
-
-Revision History:
-
-
-
 --*/
 
 
@@ -76,9 +66,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 using namespace CorUnix;
 
 extern "C" void DBG_DebugBreak_End();
-
-#if HAVE_PROCFS_CTL
-#endif   // HAVE_PROCFS_CTL
 
 /* ------------------- Constant definitions ----------------------------------*/
 

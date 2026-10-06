@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // FilterManager.cpp
 //
-
-//
 // contains utility code to MD directory
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 #include "filtermanager.h"
 
@@ -1424,5 +1423,3 @@ ErrExit:
     return hr;
 
 } // HRESULT FilterManager::UnmarkTypeDef()
-
-

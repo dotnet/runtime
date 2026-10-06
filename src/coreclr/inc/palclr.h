@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: palclr.h
 //
 // Various macros and constants that are necessary to make the CLR portable.
-//
-
 // ===========================================================================
 
 #ifndef __PALCLR_H__
@@ -381,7 +380,6 @@
 #define PAL_CPP_CATCH_NON_DERIVED(type, obj) catch (type obj)
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) catch (type)
 #define PAL_CPP_CATCH_ALL catch (...)
-
 
 #if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(CROSS_COMPILE) && !defined(DISABLE_CONTRACTS)
 #define PAL_TRY_HANDLER_DBG_BEGIN                                               \

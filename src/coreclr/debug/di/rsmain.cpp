@@ -39,8 +39,6 @@ RSDebuggingInfo * g_pRSDebuggingInfo = &g_RSDebuggingInfo_OutOfProc;
 // The following instances are used for invoking overloaded new/delete
 forDbiWorker forDbi;
 
-
-
 //-----------------------------------------------------------------------------
 // Per-thread state for Debug builds...
 //-----------------------------------------------------------------------------

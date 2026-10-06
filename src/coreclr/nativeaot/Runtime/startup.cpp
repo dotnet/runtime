@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -31,7 +32,6 @@
 #endif
 
 #ifndef DACCESS_COMPILE
-
 
 #ifdef HOST_WINDOWS
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
@@ -131,10 +131,8 @@ static bool InitDLL(HANDLE hPalInstance)
     }
 #endif // STRESS_LOG
 
-
     if (!InitializeGC())
         return false;
-
 
 #ifdef FEATURE_PERFTRACING
     // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
