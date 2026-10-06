@@ -341,12 +341,6 @@ extends:
       # uploaded under <jit_ee_version>/browser/x64/ (the wasm mch_arch override in
       # superpmi.py maps target_arch=wasm to mch_arch=<host_arch>=x64).
       #
-      # NOTE: this collection was previously named 'corelib'. Replay downloads every MCH
-      # under <jit_ee_version>/browser/x64/, so the now-orphaned
-      # corelib.crossgen2.windows.x64.checked.mch (and its .mct) has to be deleted from the
-      # superpmi collections container by hand; nothing overwrites it any more, and it
-      # would otherwise be replayed until the JIT-EE GUID rolls.
-      #
       # Uses buildConfig: checked so the wasm cross-targeting JIT used during collection
       # is a Checked build.
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -369,9 +363,11 @@ extends:
             # CoreLib) get compiled instead of being skipped as cross-bubble. Measured on
             # this collection: 82,870 -> 109,684 contexts (+32%).
             crossgen2Composite: true
-            # Keep the collection partitioned. Each work item roots only its own partition
-            # but takes the rest of the framework as unrooted bubble inputs, so every
-            # partition still gets the full version bubble; the redundant work between
+            # Keep the collection partitioned. Each work item roots eligible methods from
+            # its partition's positional input assemblies. The rest of the framework is
+            # included as -u unrooted composite inputs in the same compilation and version
+            # bubble: not independently rooted, but able to contribute compiled methods
+            # and generic instantiations as dependencies. The redundant work between
             # partitions is deduplicated by the merge step (177,230 contexts collected,
             # 109,684 kept). That costs CPU rather than coverage, and keeps a failed
             # partition from losing the whole collection. Work items ran 1-2 minutes each.

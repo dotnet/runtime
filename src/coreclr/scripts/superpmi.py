@@ -1113,10 +1113,11 @@ class SuperPMICollect:
 
                         In the default (non-composite) mode `input_assemblies` holds a single
                         assembly and each assembly is compiled in its own version bubble. In
-                        composite mode it holds every assembly this work item roots; they are
-                        compiled together, and the rest of the reference set is passed as
-                        unrooted inputs so the whole framework is in the version bubble and
-                        cross-assembly generic instantiations get compiled too.
+                        composite mode it holds the partition's positional input assemblies,
+                        which root eligible methods. The rest of the framework is passed as
+                        -u unrooted composite inputs in the same compilation and version bubble,
+                        not independently rooted, but able to contribute compiled methods and
+                        generic instantiations as dependencies.
                     """
 
                     is_composite = self.coreclr_args.crossgen2_composite
@@ -1142,10 +1143,10 @@ class SuperPMICollect:
                     # <dll to compile>                 /// one line per input assembly
                     # -o:<output dll>
                     # --composite                      /// composite mode only
-                    # -u:<reference_dir>\<other>.dll   /// composite mode only, for each assembly not rooted here
+                    # -u:"<reference_dir>\<other>.dll" /// composite mode only, for each unrooted input
                     # -r:<reference_dir>\System.*.dll
                     # -r:<reference_dir>\Microsoft.*.dll
-                    # -r:<reference_dir>\System.Private.CoreLib.dll
+                    # -r:<reference_dir>\mscorlib.dll   /// System.*.dll above includes CoreLib
                     # -r:<reference_dir>\netstandard.dll
                     # --jitpath:<self.collection_shim_name>
                     # --codegenopt:<option>=<value>   /// for each member of dotnet_env
@@ -1153,6 +1154,8 @@ class SuperPMICollect:
                     # where <reference_dir> is Core_Root unless -crossgen2_reference_directory
                     # was passed, which cross-target collections use to resolve references
                     # against target-built assemblies instead of the host's.
+                    # Positional input paths remain unquoted, matching RunReadyToRunCompiler.
+                    # Response-file lines are individual tokens; -u values use its quoting convention.
                     #
                     # invoke with:
                     #
@@ -1171,11 +1174,10 @@ class SuperPMICollect:
                             rsp_write_handle.write(input_assembly + "\n")
                         rsp_write_handle.write("-o:" + crossgen2_output_assembly_filename + "\n")
                         if is_composite:
-                            # Compile the inputs as one composite image. Every input -- rooted
-                            # and unrooted -- lands in the version bubble, so pass the rest of
-                            # the framework as unrooted inputs: that puts it in the bubble
-                            # (enabling generic instantiations over its types to be compiled)
-                            # without re-rooting methods this work item already covers.
+                            # Positional inputs root eligible methods in this partition. The
+                            # rest of the framework joins the same compilation and version
+                            # bubble as -u unrooted composite inputs, contributing methods and
+                            # generic instantiations as dependencies without independent rooting.
                             rsp_write_handle.write("--composite" + "\n")
                             # crossgen2 keys modules by assembly simple name, so exclude by
                             # simple name rather than file name: a rooted `Foo.exe` and a
@@ -1192,7 +1194,7 @@ class SuperPMICollect:
                                 # and reference directories such as Core_Root contain plenty.
                                 if not is_managed_assembly(unrooted_assembly):
                                     continue
-                                rsp_write_handle.write("-u:" + unrooted_assembly + "\n")
+                                rsp_write_handle.write('-u:"' + unrooted_assembly + '"\n')
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "System.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
@@ -1226,8 +1228,8 @@ class SuperPMICollect:
                         stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
                         stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
 
-                        proc = await asyncio.create_subprocess_shell(
-                            command_string,
+                        proc = await asyncio.create_subprocess_exec(
+                            *command,
                             stdout=stdout_file_handle,
                             stderr=stderr_file_handle)
 

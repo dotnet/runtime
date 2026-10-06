@@ -167,8 +167,10 @@
     <TargetArgs>$(TargetArgs) -crossgen2_reference_directory $(SuperPMIDirectory)$(FileSeparatorChar)$(Crossgen2ReferenceDirName)</TargetArgs>
   </PropertyGroup>
   <!-- Composite mode puts the whole reference set in the version bubble, so cross-assembly
-       generic instantiations get compiled too. Partitioning still applies: each work item
-       roots its own assemblies and takes the rest as unrooted bubble inputs. -->
+       generic instantiations get compiled too. Each work item roots eligible methods from
+       its partition's positional input assemblies. The rest are -u unrooted composite inputs
+       in the same compilation and bubble, not independently rooted, but able to contribute
+       compiled methods and generic instantiations as dependencies. -->
   <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' and '$(Crossgen2Composite)' == 'true' ">
     <TargetArgs>$(TargetArgs) --crossgen2_composite</TargetArgs>
   </PropertyGroup>
