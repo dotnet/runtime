@@ -24,6 +24,13 @@ steps:
         archType: ${{ parameters.archType }}
         nameSuffix: ${{ parameters.nameSuffix }}
 
+    - template: /eng/pipelines/coreclr/templates/setup-illink-cache.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup }}
+        archType: ${{ parameters.archType }}
+        nameSuffix: ${{ parameters.nameSuffix }}
+
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
