@@ -370,6 +370,7 @@ namespace ILAssembler
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
+                    methodDef.DebugInfo.LocalSignature = localsSigHandle;
                     MethodBodyAttributes bodyAttributes = methodDef.BodyAttributes;
                     if (methodDef.MaxStack < 8
                         && methodDef.MethodBody.CodeBuilder.Count < 64
@@ -2266,12 +2267,19 @@ namespace ILAssembler
 
         /// <summary>
         /// Debug information for a method: the sequence points recorded from its <c>.line</c> and <c>#line</c>
-        /// directives, in increasing IL offset order, with at most one point per offset. The points of one method
-        /// may belong to different documents.
+        /// directives, in increasing IL offset order, with at most one point per offset, and the local signature
+        /// of its body. The points of one method may belong to different documents.
         /// </summary>
         public sealed class MethodDebugInfo
         {
             public List<SequencePoint> SequencePoints { get; } = new();
+
+            /// <summary>
+            /// Gets or sets the local signature that the method body references, or a nil handle when the method
+            /// has no locals or no body. <see cref="WriteContentTo"/> sets it when it writes the body, before the
+            /// PDB is built.
+            /// </summary>
+            public StandaloneSignatureHandle LocalSignature { get; set; }
         }
 
         /// <summary>

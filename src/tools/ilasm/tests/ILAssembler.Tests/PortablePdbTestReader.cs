@@ -149,6 +149,19 @@ namespace ILAssembler.Tests
         public int GetDocumentRowNumber(string name)
             => MetadataTokens.GetRowNumber(Pdb.Documents.Single(handle => GetDocumentName(handle) == name));
 
+        /// <summary>
+        /// Gets the StandAloneSig row number of the local signature that the method's body references, 0 when the
+        /// body has no locals, or <see langword="null"/> when the method has no body (RVA 0: abstract,
+        /// <c>pinvokeimpl</c> or runtime-implemented).
+        /// </summary>
+        public int? GetBodyLocalSignatureRowNumber(string methodName)
+        {
+            MethodDefinition method = Image.GetMethodDefinition(GetMethodHandle(methodName));
+            return method.RelativeVirtualAddress == 0
+                ? null
+                : MetadataTokens.GetRowNumber(_image.GetMethodBody(method.RelativeVirtualAddress).LocalSignature);
+        }
+
         /// <summary>Releases the image and PDB readers.</summary>
         public void Dispose()
         {

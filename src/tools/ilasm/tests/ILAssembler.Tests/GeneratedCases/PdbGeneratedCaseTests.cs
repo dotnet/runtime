@@ -241,6 +241,30 @@ namespace ILAssembler.Tests.GeneratedCases
         }
 
         [Theory]
+        [MemberData(nameof(PdbCaseGenerator.DocumentCaseData), MemberType = typeof(PdbCaseGenerator))]
+        public void Documents_LocalSignatureIsTheBodysStandAloneSigRowNumber(int index, string description)
+        {
+            GeneratedDocumentProgram program = PdbCaseGenerator.DocumentCases[index];
+            using PortablePdbTestReader pdb = CompileDocumentProgram(index);
+
+            for (int i = 0; i < program.Methods.Length; i++)
+            {
+                int? bodyLocalSignature = pdb.GetBodyLocalSignatureRowNumber($"M{i}");
+                if (program.Methods[i].Bodyless)
+                {
+                    Assert.Null(bodyLocalSignature);
+                    continue;
+                }
+
+                Assert.Equal(program.Methods[i].Locals is null, bodyLocalSignature == 0);
+                if (!program.ExpectedSequencePoints[i].IsEmpty)
+                {
+                    Assert.Equal(bodyLocalSignature, pdb.ReadBlobHeader($"M{i}").LocalSignature);
+                }
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(PdbCaseGenerator.OutputWriteStates), MemberType = typeof(PdbCaseGenerator))]
         public void OutputFileWriter_NeverLeavesATemporaryFile(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
         {
