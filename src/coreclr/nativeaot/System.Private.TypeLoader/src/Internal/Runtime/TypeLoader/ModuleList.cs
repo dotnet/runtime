@@ -53,15 +53,7 @@ namespace Internal.Runtime.TypeLoader
 
         internal unsafe bool TryFindBlob(ReflectionMapBlob blobId, out byte* pBlob, out uint cbBlob)
         {
-            pBlob = null;
-            cbBlob = 0;
-            fixed (byte** ppBlob = &pBlob)
-            {
-                fixed (uint* pcbBlob = &cbBlob)
-                {
-                    return RuntimeAugments.FindBlob(Handle, (int)blobId, new IntPtr(ppBlob), new IntPtr(pcbBlob));
-                }
-            }
+            return TryFindBlob((int)blobId, out pBlob, out cbBlob);
         }
 
         public unsafe bool TryFindBlob(int blobId, out byte* pBlob, out uint cbBlob)
@@ -79,10 +71,7 @@ namespace Internal.Runtime.TypeLoader
     }
 
     /// <summary>
-    /// This class represents a linear module list and a dictionary mapping module handles
-    /// to its indices. When a new module is registered, a new instance of this class gets
-    /// constructed and atomically updates the _loadedModuleMap so that at any point in time
-    /// all threads see the map as consistent.
+    /// The initially loaded modules and a mapping from module handles to their indices.
     /// </summary>
     internal sealed class ModuleMap
     {
@@ -239,7 +228,7 @@ namespace Internal.Runtime.TypeLoader
     /// </summary>
     public sealed class ModuleList
     {
-        private ModuleMap _loadedModuleMap;
+        private readonly ModuleMap _loadedModuleMap;
 
         /// <summary>
         /// Module list is a process-wide singleton that physically lives in the TypeLoaderEnvironment instance.
@@ -362,18 +351,7 @@ namespace Internal.Runtime.TypeLoader
         /// <returns>Module handle of the module containing the given reader</returns>
         public TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader)
         {
-            foreach (ModuleInfo moduleInfo in _loadedModuleMap.Modules)
-            {
-                NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
-                if (nativeFormatModuleInfo != null && nativeFormatModuleInfo.MetadataReader == reader)
-                {
-                    return moduleInfo.Handle;
-                }
-            }
-
-            // We should never have a reader that is not associated with a module (where does it come from?!)
-            Debug.Assert(false);
-            return default(TypeManagerHandle);
+            return GetModuleInfoForMetadataReader(reader)?.Handle ?? default;
         }
 
         /// <summary>

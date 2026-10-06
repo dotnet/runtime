@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
-using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
 using Internal.Text;
@@ -17,7 +16,7 @@ using Internal.TypeSystem;
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// Base class for WebAssembly object file format writers.
+    /// Base class for WebAssembly object writers.
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
@@ -63,6 +62,7 @@ namespace ILCompiler.ObjectWriter
         /// logical WebAssembly indices and must not be used to resolve index relocations.
         /// </summary>
         private protected Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
+        private readonly Dictionary<Utf8String, INodeWithTypeSignature> _externalFunctions = new();
         private int[] _sectionEmitOrder;
 
         /// <summary>
@@ -86,6 +86,25 @@ namespace ILCompiler.ObjectWriter
         protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
+        }
+
+        private protected override void PrepareImportsForUndefinedSymbols()
+        {
+            // Imports must be registered before layout consumes function indices. Only actual unresolved
+            // references require imports; a marked extern can also resolve to a definition in this object.
+            foreach (Utf8String name in GetUndefinedSymbols())
+            {
+                if (_externalFunctions.TryGetValue(name, out INodeWithTypeSignature function))
+                {
+                    if (function.Signature is null)
+                    {
+                        throw new InvalidOperationException($"Extern function '{name}' has no known signature and cannot be imported on Wasm");
+                    }
+
+                    int typeIndex = RegisterSignature(WasmLowering.GetSignature(function).FuncType);
+                    WriteImport(new WasmImport("env", name.ToString(), new WasmFunctionImportType(typeIndex)));
+                }
+            }
         }
 
         private protected static void EmitWasmHeader(Stream outputFileStream)
@@ -143,8 +162,24 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
+            if (node is not ISymbolDefinitionNode && !node.RepresentsIndirectionCell)
+            {
+                _externalFunctions.TryAdd(GetMangledName(node), node);
+            }
+        }
+
+        private protected override void RecordMethodDefinition(INodeWithTypeSignature node)
+        {
             WriteSignatureIndexForFunction(node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
+            Utf8String methodName = new(node.GetMangledName(_nodeFactory.NameMangler));
+            RegisterFunctionSymbol(methodName);
+
+            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
+            if (!alternateName.IsNull)
+            {
+                _wasmSymbolManager.AddAlias(ExternCName(alternateName), methodName);
+            }
+
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
@@ -248,12 +283,12 @@ namespace ILCompiler.ObjectWriter
         private protected void WriteGlobalExport(string name, int globalIndex) =>
             WriteExport(name, WasmExportKind.Global, globalIndex);
 
-        private protected void WriteElementSegment(ReadOnlyMemory<int> functionIndices)
+        private protected void WriteElementSegment(ReadOnlyMemory<int> functionIndices, WasmInstructionGroup offsetExpr)
         {
             WasmElementSection section = GetOrCreateSection<WasmElementSection>(
                 WasmObjectNodeSection.ElementSection,
                 out SectionWriter writer);
-            section.WriteEntry(writer, functionIndices);
+            section.WriteEntry(writer, new WasmElementSegment(functionIndices, offsetExpr));
         }
 
         private protected SectionDataEmitter GetOrCreateSection(
@@ -313,7 +348,7 @@ namespace ILCompiler.ObjectWriter
         private protected void RegisterFunctionSymbol(Utf8String name) =>
             _wasmSymbolManager.AddDefinition(name, WasmIndexSpace.Function);
 
-        // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
+        // This effectively recreates the logic of RecordMethodDefinition, but for manually inserted stubs that are not
         // represented by nodes in the dependency graph.
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
         private protected void RegisterStubIndexAndSignature(WasmFuncType signature)
@@ -363,11 +398,11 @@ namespace ILCompiler.ObjectWriter
         {
             WriteImports();
             WriteGlobalSection();
-            WriteExports();
             WriteElements();
 
-            // Register defined symbols for future use during relocation resolution.
+            // Register defined symbols for use when resolving exports and relocations.
             _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
+            WriteExports();
         }
 
         private protected abstract void WriteImports();
@@ -382,9 +417,12 @@ namespace ILCompiler.ObjectWriter
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
                 .SetEntryCount(MethodCount);
 
-            Debug.Assert(_sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
-            Debug.Assert(_sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
-            Debug.Assert(_sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.FunctionSection.Name)
+                || _sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.ImportSection.Name)
+                || _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.GlobalSection.Name)
+                || _sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
 

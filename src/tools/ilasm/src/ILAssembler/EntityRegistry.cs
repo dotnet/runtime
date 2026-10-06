@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
 namespace ILAssembler
 {
@@ -55,6 +56,19 @@ namespace ILAssembler
             }
         }
 
+        private sealed class MethodBodyContentEqualityComparer : IEqualityComparer<byte[]>
+        {
+            public bool Equals(byte[]? x, byte[]? y) =>
+                x is null ? y is null : y is not null && x.AsSpan().SequenceEqual(y);
+
+            public int GetHashCode(byte[] obj)
+            {
+                HashCode hash = default;
+                hash.AddBytes(obj);
+                return hash.ToHashCode();
+            }
+        }
+
         private sealed class MethodSpecEqualityComparer : IEqualityComparer<(EntityBase, BlobBuilder)>
         {
             public bool Equals((EntityBase, BlobBuilder) x, (EntityBase, BlobBuilder) y)
@@ -92,7 +106,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic, bool fold)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -190,10 +204,6 @@ namespace ILAssembler
 
             foreach (GenericParameterEntity genericParam in allGenericParams)
             {
-                // GenericParam index is stored as a 2-byte value; skip params beyond the limit
-                if (genericParam.Index > ushort.MaxValue)
-                    continue;
-
                 RecordEntityInTable(TableIndex.GenericParam, genericParam);
             }
 
@@ -319,7 +329,9 @@ namespace ILAssembler
                 }
                 builder.AddFieldDefinition(
                     fieldAttributes,
-                    builder.GetOrAddString(fieldDef.Name),
+                    builder.GetOrAddString((fieldAttributes & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope
+                        ? NameHelpers.GetPrivateScopeMetadataName(fieldDef.Name, isMethod: false)
+                        : fieldDef.Name),
                     fieldDef.Signature!.Count == 0 ? default : builder.GetOrAddBlob(RewriteSignatureBlob(fieldDef.Signature, signatureRewriter)));
 
                 if (fieldDef.Offset is not null)
@@ -344,77 +356,54 @@ namespace ILAssembler
             }
 
             var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
+            Dictionary<byte[], int>? foldedBodies = fold ? new(new MethodBodyContentEqualityComparer()) : null;
 
             for (int i = 0; i < GetSeenEntities(TableIndex.MethodDef).Count; i++)
             {
                 MethodDefinitionEntity methodDef = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[i];
 
                 int bodyOffset = -1;
-                if (methodDef.MethodBody.CodeBuilder.Count != 0)
+                if (methodDef.MethodBody.CodeBuilder.Count != 0 || methodDef.ExceptionRegions.Count != 0)
                 {
-                    // Add deferred exception regions now that TypeRef-to-TypeDef resolution is complete.
-                    // Catch clause type handles are read here, after resolution has set the real handle.
-                    foreach (var region in methodDef.ExceptionRegions)
-                    {
-                        switch (region)
-                        {
-                            case ExceptionRegion.CatchRegion catchRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddCatchRegion(catchRegion.TryStart, catchRegion.TryEnd, catchRegion.HandlerStart, catchRegion.HandlerEnd, catchRegion.CatchType.Handle);
-                                break;
-                            case ExceptionRegion.FinallyRegion finallyRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFinallyRegion(finallyRegion.TryStart, finallyRegion.TryEnd, finallyRegion.HandlerStart, finallyRegion.HandlerEnd);
-                                break;
-                            case ExceptionRegion.FaultRegion faultRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFaultRegion(faultRegion.TryStart, faultRegion.TryEnd, faultRegion.HandlerStart, faultRegion.HandlerEnd);
-                                break;
-                            case ExceptionRegion.FilterRegion filterRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFilterRegion(filterRegion.TryStart, filterRegion.TryEnd, filterRegion.HandlerStart, filterRegion.HandlerEnd, filterRegion.FilterStart);
-                                break;
-                        }
-                    }
-
+                    BlobBuilder? serializedBody = fold ? new BlobBuilder() : null;
+                    MethodBodyStreamEncoder encoder = fold ? new(serializedBody!) : bodyStreamEncoder;
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
-                    try
+                    MethodBodyAttributes bodyAttributes = methodDef.BodyAttributes;
+                    if (methodDef.MaxStack < 8
+                        && methodDef.MethodBody.CodeBuilder.Count < 64
+                        && localsSigHandle.IsNil
+                        && methodDef.ExceptionRegions.Count == 0)
                     {
-                        bodyOffset = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody,
-                            methodDef.MaxStack,
-                            localsSigHandle,
-                            methodDef.BodyAttributes);
+                        // COMPAT: Native ilasm preserves maxstack values below 8 by forcing a fat
+                        // header via InitLocals for methods that would otherwise qualify for a tiny
+                        // header. InitLocals has no other effect because tiny-header methods have no
+                        // locals.
+                        bodyAttributes |= MethodBodyAttributes.InitLocals;
                     }
-                    catch (InvalidOperationException)
+
+                    bodyOffset = methodDef.MethodBody.WriteTo(encoder, methodDef.MaxStack,
+                        localsSigHandle, bodyAttributes, methodDef.ExceptionRegions, hasDynamicStackAllocation: true);
+
+                    if (fold)
                     {
-                        // Method has unresolved labels or other body errors.
-                        // Emit a minimal valid method body containing the raw IL bytes so
-                        // the PE can still be emitted (error diagnostics are already recorded).
-                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody.CodeBuilder.Count,
-                            methodDef.MaxStack,
-                            exceptionRegionCount: 0,
-                            hasSmallExceptionRegions: true,
-                            localsSigHandle,
-                            methodDef.BodyAttributes);
-                        bodyOffset = fallbackBody.Offset;
-                        var writer1 = new BlobWriter(fallbackBody.Instructions);
-                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer1);
-                    }
-                    catch (ArgumentOutOfRangeException)
-                    {
-                        // Exception handler regions have invalid ranges (e.g., from parse
-                        // errors that produced malformed control flow). Emit the IL in a
-                        // minimal valid method body and omit exception regions in fallback.
-                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody.CodeBuilder.Count,
-                            methodDef.MaxStack,
-                            exceptionRegionCount: 0,
-                            hasSmallExceptionRegions: true,
-                            localsSigHandle,
-                            methodDef.BodyAttributes);
-                        bodyOffset = fallbackBody.Offset;
-                        var writer2 = new BlobWriter(fallbackBody.Instructions);
-                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer2);
+                        byte[] content = serializedBody!.ToArray();
+                        if (foldedBodies!.TryGetValue(content, out int existingOffset))
+                        {
+                            bodyOffset = existingOffset;
+                        }
+                        else
+                        {
+                            // Fat method headers must be aligned relative to the IL stream.
+                            if ((content[0] & 0x3) == 0x3)
+                            {
+                                ilStream.Align(4);
+                            }
+                            bodyOffset = ilStream.Count;
+                            ilStream.WriteBytes(content);
+                            foldedBodies.Add(content, bodyOffset);
+                        }
                     }
                 }
 
@@ -426,7 +415,9 @@ namespace ILAssembler
                 builder.AddMethodDefinition(
                     methodAttributes,
                     methodDef.ImplementationAttributes,
-                    builder.GetOrAddString(methodDef.Name),
+                    builder.GetOrAddString((methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope
+                        ? NameHelpers.GetPrivateScopeMetadataName(methodDef.Name, isMethod: true)
+                        : methodDef.Name),
                     builder.GetOrAddBlob(RewriteSignatureBlob(methodDef.MethodSignature!, signatureRewriter)),
                     bodyOffset,
                     GetParameterHandleForList(methodDef.Parameters, GetSeenEntities(TableIndex.MethodDef), method => ((MethodDefinitionEntity)method).Parameters, i));
@@ -478,7 +469,7 @@ namespace ILAssembler
             foreach (MethodImplementationEntity impl in GetSeenEntities(TableIndex.MethodImpl))
             {
                 builder.AddMethodImplementation(
-                    (TypeDefinitionHandle)impl.MethodBody.ContainingType.Handle,
+                    (TypeDefinitionHandle)impl.Type.Handle,
                     impl.MethodBody.Handle,
                     impl.MethodDeclaration.Handle);
             }
@@ -490,9 +481,20 @@ namespace ILAssembler
                 {
                     continue;
                 }
+
+                string name = memberRef.Name;
+                if (memberRef.Parent.Handle.Kind == HandleKind.MethodDefinition)
+                {
+                    var method = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[MetadataTokens.GetRowNumber(memberRef.Parent.Handle) - 1];
+                    if ((method.MethodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope)
+                    {
+                        name = NameHelpers.GetPrivateScopeMetadataName(name, isMethod: true);
+                    }
+                }
+
                 builder.AddMemberReference(
                     memberRef.Parent.Handle,
-                    builder.GetOrAddString(memberRef.Name),
+                    builder.GetOrAddString(name),
                     builder.GetOrAddBlob(RewriteSignatureBlob(memberRef.Signature, signatureRewriter)));
             }
 
@@ -506,6 +508,12 @@ namespace ILAssembler
 
             foreach (CustomAttributeEntity customAttr in GetSeenEntities(TableIndex.CustomAttribute))
             {
+                if (customAttr.Owner is null
+                    || customAttr.Constructor.Handle.IsNil)
+                {
+                    continue;
+                }
+
                 EntityHandle parent = customAttr.Owner switch
                 {
                     AssemblyEntity => EntityHandle.AssemblyDefinition,
@@ -530,7 +538,7 @@ namespace ILAssembler
                 builder.AddEvent(
                     evt.Attributes,
                     builder.GetOrAddString(evt.Name),
-                    evt.Type.Handle);
+                    evt.Type?.Handle ?? default(TypeDefinitionHandle));
 
                 foreach (var accessor in evt.Accessors)
                 {
@@ -636,14 +644,13 @@ namespace ILAssembler
 
             foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
             {
-                // GenericParam index is stored as a 2-byte value; skip params beyond the limit
-                if (genericParam.Index > ushort.MaxValue)
-                    continue;
+                // Error-tolerant output preserves rows past the encodable index range by
+                // wrapping the value to the GenericParam table's 2-byte Number column.
                 builder.AddGenericParameter(
                     genericParam.Owner!.Handle,
                     genericParam.Attributes,
                     builder.GetOrAddString(genericParam.Name),
-                    genericParam.Index);
+                    unchecked((ushort)genericParam.Index));
             }
 
             foreach (GenericParameterConstraintEntity constraint in GetSeenEntities(TableIndex.GenericParamConstraint))
@@ -888,7 +895,17 @@ namespace ILAssembler
             // COMPAT: When the resolution scope is a corelib assembly ref (mscorlib, System.Runtime, etc.),
             // redirect to the preferred corelib assembly ref to match native ilasm behavior.
             // Native ilasm always uses the preferred corelib for well-known types.
-            if (resolutionContext is AssemblyReferenceEntity asmRefScope && IsCoreLibAssemblyName(asmRefScope.Name))
+            bool isWellKnownCoreLibType = false;
+            if (name.ContainingTypeName is null)
+            {
+                var (typeNamespace, typeName) = NameHelpers.SplitDottedNameToNamespaceAndName(name.DottedName);
+                isWellKnownCoreLibType = typeNamespace == "System"
+                    && typeName is "String" or "Object" or "ValueType" or "Enum";
+            }
+
+            if (isWellKnownCoreLibType
+                && resolutionContext is AssemblyReferenceEntity asmRefScope
+                && IsCoreLibAssemblyName(asmRefScope.Name))
             {
                 var preferredCoreLib = GetCoreLibAssemblyReference();
                 if (preferredCoreLib != asmRefScope)
@@ -1369,17 +1386,20 @@ namespace ILAssembler
                     var sig = decoder.DecodeMethodSignature(ref reader);
 
                     var newBlob = new BlobBuilder();
-                    var encoder = new BlobEncoder(newBlob);
-                    encoder.MethodSignature(sig.Header.CallingConvention, sig.GenericParameterCount, sig.Header.Attributes.HasFlag(SignatureAttributes.Instance))
-                        .Parameters(sig.ParameterTypes.Length, out var retBuilder, out var paramsBuilder);
-                    sig.ReturnType.WriteBlobTo(retBuilder.Builder);
+                    newBlob.WriteByte(bytes[0]);
+                    if (sig.Header.IsGeneric)
+                    {
+                        newBlob.WriteCompressedInteger(sig.GenericParameterCount);
+                    }
+                    newBlob.WriteCompressedInteger(sig.ParameterTypes.Length);
+                    sig.ReturnType.WriteBlobTo(newBlob);
                     for (int i = 0; i < sig.ParameterTypes.Length; i++)
                     {
                         if (sig.RequiredParameterCount != sig.ParameterTypes.Length && i == sig.RequiredParameterCount)
                         {
-                            paramsBuilder.StartVarArgs();
+                            newBlob.WriteByte((byte)SignatureTypeCode.Sentinel);
                         }
-                        sig.ParameterTypes[i].WriteBlobTo(paramsBuilder.AddParameter().Builder);
+                        sig.ParameterTypes[i].WriteBlobTo(newBlob);
                     }
                     return newBlob;
                 }
@@ -1460,6 +1480,11 @@ namespace ILAssembler
             //   - This produces compat with the existing ILASM, which always resolves local field references to FieldDef tokens
 
             var signature = memberRef.Signature.ToArray();
+            if (signature.Length == 0)
+            {
+                return;
+            }
+
             SignatureHeader header = new(signature[0]);
             if (header.Kind == SignatureKind.Method)
             {
@@ -1531,7 +1556,7 @@ namespace ILAssembler
         private void UpdateMemberRefForVarargSignatures(MemberReferenceEntity memberRef, byte[] signature)
         {
             var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(new SignatureRewriter(), null!, default);
-            BlobEncoder methodDefSig = new(new BlobBuilder());
+            BlobBuilder methodDefSig = new();
             bool hasVarargParameters = false;
             // TODO-SRM: Propose a public API to construct a blob reader over a byte array or ReadOnlyMemory<byte>
             // to avoid the unsafe block.
@@ -1549,12 +1574,16 @@ namespace ILAssembler
                         {
                             hasVarargParameters = true;
 
-                            methodDefSig.MethodSignature(methodSignature.Header.CallingConvention, methodSignature.GenericParameterCount, methodSignature.Header.Attributes.HasFlag(SignatureAttributes.Instance))
-                                .Parameters(methodSignature.RequiredParameterCount, out var retTypeBuilder, out var parametersEncoder);
-                            methodSignature.ReturnType.WriteBlobTo(retTypeBuilder.Builder);
+                            methodDefSig.WriteByte(signature[0]);
+                            if (methodSignature.Header.IsGeneric)
+                            {
+                                methodDefSig.WriteCompressedInteger(methodSignature.GenericParameterCount);
+                            }
+                            methodDefSig.WriteCompressedInteger(methodSignature.RequiredParameterCount);
+                            methodSignature.ReturnType.WriteBlobTo(methodDefSig);
                             for (int i = 0; i < methodSignature.RequiredParameterCount; i++)
                             {
-                                methodSignature.ParameterTypes[i].WriteBlobTo(parametersEncoder.AddParameter().Builder);
+                                methodSignature.ParameterTypes[i].WriteBlobTo(methodDefSig);
                             }
                         }
                     }
@@ -1571,12 +1600,11 @@ namespace ILAssembler
             // If the method has vararg parameters, then this needs to be a MemberRef whose parent is a reference to the method with the signature without any vararg parameters.
             if (hasVarargParameters)
             {
-                var methodRef = new MemberReferenceEntity(memberRef.Parent, memberRef.Name, methodDefSig.Builder);
-                ResolveAndRecordMemberReference(methodRef);
-                // Only reparent the call-site MemberRef if the base method resolved to a MethodDef.
-                // MemberRef is not a valid MemberRefParent in the coded index, so we can only
-                // reparent when the inner ref resolved to MethodDef.
-                if (methodRef.Handle.Kind == HandleKind.MethodDefinition)
+                var methodRef = new MemberReferenceEntity(memberRef.Parent, memberRef.Name, methodDefSig);
+                // Native ilasm only creates a MethodDef-parented MemberRef when the fixed
+                // signature resolves to a local method. Recording an unresolved helper
+                // MemberRef would create an unused row and shift every subsequent token.
+                if (TryResolveMethodReference(methodRef))
                 {
                     memberRef.SetMemberRefParent(methodRef);
                 }
@@ -1614,7 +1642,12 @@ namespace ILAssembler
 
         public static MethodImplementationEntity CreateUnrecordedMethodImplementation(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration)
         {
-            return new MethodImplementationEntity(methodBody, methodDeclaration);
+            return new MethodImplementationEntity(methodBody.ContainingType, methodBody, methodDeclaration);
+        }
+
+        public static MethodImplementationEntity CreateUnrecordedMethodImplementation(TypeDefinitionEntity type, MemberReferenceEntity methodBody, MemberReferenceEntity methodDeclaration)
+        {
+            return new MethodImplementationEntity(type, methodBody, methodDeclaration);
         }
 
         public FileEntity GetOrCreateFile(string name, bool hasMetadata, BlobBuilder? hash)
@@ -1903,23 +1936,19 @@ namespace ILAssembler
 
             public StandaloneSignatureEntity? LocalsSignature { get; set; }
 
-            // TODO: https://github.com/dotnet/runtime/issues/127261
-            // InstructionEncoder produces corrupted IL when mixing OpCode() with
-            // direct CodeBuilder.WriteByte() across BlobBuilder chunk boundaries.
-            // Using a larger initial capacity avoids multi-chunk operation.
-            public InstructionEncoder MethodBody { get; } = new(new BlobBuilder(4096), new ControlFlowBuilder());
+            public MethodBodyWriter MethodBody { get; } = new();
 
             public MethodBodyAttributes BodyAttributes { get; set; }
 
             /// <summary>
-            /// Deferred exception regions. Registered during parsing but added to
-            /// <see cref="InstructionEncoder.ControlFlowBuilder"/> during emission
+            /// Deferred exception regions. Registered during parsing but written by
+            /// <see cref="MethodBodyWriter"/> during emission
             /// so that TypeRef-to-TypeDef resolution has completed before catch type
             /// handles are read.
             /// </summary>
             public List<ExceptionRegion> ExceptionRegions { get; } = new();
 
-            public int MaxStack { get; set; }
+            public int MaxStack { get; set; } = 8;
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
             public MethodImplAttributes ImplementationAttributes { get; set; }
@@ -2019,9 +2048,10 @@ namespace ILAssembler
             public BlobBuilder Value { get; } = value;
         }
 
-        public sealed class MethodImplementationEntity(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration) : EntityBase
+        public sealed class MethodImplementationEntity(TypeDefinitionEntity type, EntityBase methodBody, MemberReferenceEntity methodDeclaration) : EntityBase
         {
-            public MethodDefinitionEntity MethodBody { get; } = methodBody;
+            public TypeDefinitionEntity Type { get; } = type;
+            public EntityBase MethodBody { get; } = methodBody;
             public MemberReferenceEntity MethodDeclaration { get; } = methodDeclaration;
         }
 
@@ -2049,10 +2079,10 @@ namespace ILAssembler
             public TypeEntity InterfaceType { get; } = interfaceType;
         }
 
-        public sealed class EventEntity(EventAttributes attributes, TypeEntity type, string name) : EntityBase
+        public sealed class EventEntity(EventAttributes attributes, TypeEntity? type, string name) : EntityBase
         {
             public EventAttributes Attributes { get; } = attributes;
-            public TypeEntity Type { get; } = type;
+            public TypeEntity? Type { get; } = type;
             public string Name { get; } = name;
 
             public List<(MethodSemanticsAttributes Semantic, EntityBase Method)> Accessors { get; } = new();
@@ -2160,19 +2190,20 @@ namespace ILAssembler
         public sealed class MethodDebugInfo
         {
             public string? DocumentPath { get; set; }
+            public Guid LanguageGuid { get; set; }
             public List<SequencePoint> SequencePoints { get; } = new();
         }
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the
-        /// <see cref="ControlFlowBuilder"/> during emission, after TypeRef-to-TypeDef resolution.
+        /// <see cref="MethodBodyWriter"/> during emission, after TypeRef-to-TypeDef resolution.
         /// </summary>
-        internal abstract record ExceptionRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd)
+        internal abstract record ExceptionRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location)
         {
-            internal sealed record CatchRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, TypeEntity CatchType) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FinallyRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FaultRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FilterRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, LabelHandle FilterStart) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
+            internal sealed record CatchRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, TypeEntity CatchType, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FinallyRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FaultRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FilterRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, LabelHandle FilterStart, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
         }
     }
 }

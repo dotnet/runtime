@@ -537,6 +537,7 @@ DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
 
 DEFINE_CLASS(INSTANCE_CALLI_HELPER, Reflection,             InstanceCalliHelper)
+DEFINE_CLASS(INTRINSIC_INVOKE_HELPER, Reflection,           IntrinsicInvokeHelper)
 
 DEFINE_CLASS_U(Reflection,          RuntimeMethodInfo,      NoClass)
 DEFINE_FIELD_U(m_handle,            ReflectMethodObject,    m_pMD)
@@ -1063,6 +1064,7 @@ DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
+DEFINE_METHOD(BUFFER,               MEMCOPYGC_SMALL,        BulkMoveWithWriteBarrierInternal, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
 #ifdef FEATURE_COMINTEROP
@@ -1128,7 +1130,6 @@ DEFINE_METHOD(STUBHELPERS,          CALC_VA_LIST_SIZE,                  CalcVaLi
 #endif // FEATURE_VARARGS
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    ValidateObject,                 SM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
@@ -1262,7 +1263,7 @@ DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
 DEFINE_CLASS(VARIANT_BOOL_MARSHALER, StubHelpers,            VariantBoolMarshaler)
 DEFINE_CLASS(BOOL_MARSHALER,        StubHelpers,            BoolMarshaler`1)
 DEFINE_CLASS(LPWSTR_MARSHALER,      StubHelpers,            LPWSTRMarshaler)
-DEFINE_CLASS(ANSICHAR_ARRAY_ELEMENT_MARSHALER, StubHelpers,  AnsiCharArrayMarshaler`2)
+DEFINE_CLASS(ANSICHAR_ARRAY_ELEMENT_MARSHALER, StubHelpers,  AnsiCharArrayMarshaler`3)
 DEFINE_CLASS(LPSTR_ARRAY_ELEMENT_MARSHALER,    StubHelpers,  LPSTRArrayElementMarshaler`2)
 DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMarshaler)
 #ifdef FEATURE_COMINTEROP

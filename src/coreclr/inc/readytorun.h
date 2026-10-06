@@ -19,7 +19,7 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 28
+#define READYTORUN_MAJOR_VERSION 31
 #define READYTORUN_MINOR_VERSION 0x0000
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
@@ -69,6 +69,17 @@
 // R2R Version 26.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
 // R2R Version 27 redefines READYTORUN_FIXUP_DeclaringTypeHandle to be encoded as a method signature instead of a pair of type signatures
 // R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
+// R2R Version 29 adds the WasmAsyncResumeInfo fixup section and stores method-relative virtual IPs in Wasm async resume information.
+//     R2R 29 is not backward compatible with 28.x or earlier.
+// R2R Version 29.1 adds READYTORUN_HELPER_ResumeAfterCatch for WebAssembly exception resumption.
+// R2R Version 29.2 adds READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS, which records that the image was
+// compiled with the GC mode transition verification scaffolding (and therefore emits
+// READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
+// consumes the scaffolding, so the flag is only ever set on WebAssembly images.
+// R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
+// R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
+// R2R Version 31 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun for initializing a
+// method's ReadyToRun entry point and fixups.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -109,6 +120,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_STRIPPED_IL_BODIES          = 0x00000200,   // IL method bodies have been stripped from the image
     READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
     READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
+    READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS  = 0x00001000,   // Code in this image verifies that GC mode transitions are legal. WebAssembly only; its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -140,6 +152,7 @@ enum class ReadyToRunSectionType : uint32_t
     ExternalTypeMaps            = 124, // Added in V18.3
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
+    WasmAsyncResumeInfo         = 127, // Added in V29
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -164,9 +177,9 @@ enum class ReadyToRunImportSectionType : uint8_t
 
 enum class ReadyToRunImportSectionFlags : uint16_t
 {
-    None     = 0x0000,
-    Eager    = 0x0001, // Section at module load time.
-    PCode    = 0x0004, // Section contains pointers to code
+    None  = 0x0000,
+    Eager = 0x0001, // Fixups must be resolved at module load time before any code in the module runs.
+    PCode = 0x0004, // Section contains pointers to code
 };
 
 // All values in this enum should within a nibble (4 bits).
@@ -327,6 +340,8 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
+    READYTORUN_FIXUP_MethodEntry_ReadyToRun       = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
+
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
 };
@@ -378,6 +393,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
     READYTORUN_HELPER_ByRefWriteBarrier         = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
     READYTORUN_HELPER_BulkWriteBarrier          = 0x33,
+    READYTORUN_HELPER_BulkWriteBarrierSmall     = 0x34,
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
@@ -394,6 +410,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GCPoll                    = 0x44,
     READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
     READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
+    READYTORUN_HELPER_ResumeAfterCatch          = 0x47,
 
     // Get string handle lazily
     READYTORUN_HELPER_GetString                 = 0x50, // No longer supported as of READYTORUN_MAJOR_VERSION 17.0

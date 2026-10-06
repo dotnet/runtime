@@ -87,6 +87,13 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134200 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Dynamic.Runtime.Tests\System.Dynamic.Runtime.Tests.csproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/132855 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+  </ItemGroup>
+
   <!-- Wasm aot on all platforms -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
     <!-- https://github.com/dotnet/runtime/issues/66118 -->
@@ -185,6 +192,19 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
+  <!-- Same policy as the browser/CoreCLR long-running suites above: under the interpreter these suites exceed the
+       default Helix work-item timeout on WASI. They complete within it with ReadyToRun, and outerloop
+       (RunLongRunningWasmTests) runs them with extended timeouts. -->
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' != 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunLongRunningWasmTests)' != 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri\tests\FunctionalTests\System.Private.Uri.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\System.Private.Xml.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(RunDisabledAndroidTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
@@ -218,6 +238,10 @@
   <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisabledAndroidTests)' != 'true'">
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Static.Test.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' != 'CoreCLR'">
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InProcCrashReport\**\*.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledAndroidTests)' != 'true'">
@@ -379,6 +403,22 @@
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RunDisabledWasiTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledWasiTests)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134915 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(EnableAggressiveTrimming)' == 'true' and '$(RunDisabledWasiTests)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/135045 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition\tests\System.ComponentModel.Composition.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(RunDisabledWasiTests)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/135118 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestSingleFile)' == 'true' and '$(TestNativeAot)' != 'true'">
@@ -573,10 +613,13 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
   </ItemGroup>
 
-  <!-- wasi smoke tests CoreCLR. Start minimal (single library) for the bring-up leg;
-       expand as gaps close. See https://github.com/dotnet/runtime/issues/130129. -->
+  <!-- WASI smoke tests for CoreCLR. Keep broad System.Runtime coverage in the interpreter
+       lane and use a focused suite for the more expensive trimmed R2R publish path. -->
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RunAOTCompilation)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <SmokeTestProject Remove="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj"
+                      Condition="'$(TestWasmReadyToRun)' == 'true'" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj"
+                      Condition="'$(TestWasmReadyToRun)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
@@ -678,6 +721,21 @@
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'"
                       BuildInParallel="$(BuildTestInParallel)" />
+
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InProcCrashReport\**\*.Test.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TestAssemblies)' == 'true' and '$(ArchiveTests)' == 'true' and
+                                 '$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and
+                                 '$(TestNativeAOT)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+                      BuildInParallel="false" />
+
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\InProcCrashReport\**\*.Test.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TestAssemblies)' == 'true' and '$(ArchiveTests)' == 'true' and
+                                 ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst') and
+                                 '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'CoreCLR' and
+                                 '$(TestNativeAOT)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+                      BuildInParallel="false" />
 
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />

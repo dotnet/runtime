@@ -1307,6 +1307,26 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0.00031415927f, "F4", "0.0003")]
+        [InlineData(0.00031415927f, "F5", "0.00031")]
+        [InlineData(0.00031415927f, "F6", "0.000314")]
+        [InlineData(-0.00031415927f, "F5", "-0.00031")]
+        [InlineData(0.00031415927f, "C5", "\u00A40.00031")]
+        [InlineData(0.00031415927f, "N5", "0.00031")]
+        [InlineData(0.00031415927f, "P3", "0.031 %")]
+        [InlineData(0.00031415927f, "P5", "0.03142 %")]
+        [InlineData(5.9604645E-08f, "F5", "0.00000")]
+        [InlineData(-5.9604645E-08f, "F5", "-0.00000")]
+        [InlineData(0.0f, "F5", "0.00000")]
+        [InlineData(-0.0f, "F5", "-0.00000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            Half h = (Half)value;
+            Assert.Equal(expected, h.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(h, format, NumberFormatInfo.InvariantInfo, expected);
+        }
+
+        [Theory]
         [InlineData(1.0f, "x", "0x1p+0")]
         [InlineData(1.5f, "x", "0x1.8p+0")]
         [InlineData(2.0f, "x", "0x1p+1")]
@@ -1371,6 +1391,68 @@ namespace System.Tests
 
             Assert.True(Half.TryParse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo, out result));
             Assert.True(Half.IsNegative(result) && result == (Half)0.0f);
+        }
+
+        [Theory]
+        [InlineData(0.0f, "x", "plus", "minus", "0x0pplus0")]
+        [InlineData(-0.0f, "X", "plus", "minus", "minus0X0Pplus0")]
+        [InlineData(0.0f, "x3", "plus", "minus", "0x0.000pplus0")]
+        [InlineData(-0.0f, "X3", "plus", "minus", "minus0X0.000Pplus0")]
+        [InlineData(3.0f, "x", "plus", "minus", "0x1.8pplus1")]
+        [InlineData(-0.75f, "X", "plus", "minus", "minus0X1.8Pminus1")]
+        [InlineData(3.0f, "X", "\u200E+", "\u200E-", "0X1.8P\u200E+1")]
+        [InlineData(-0.75f, "x", "\u200E+", "\u200E-", "\u200E-0x1.8p\u200E-1")]
+        [InlineData(3.0f, "x", "\u061C+", "\u061C-", "0x1.8p\u061C+1")]
+        [InlineData(-0.75f, "X", "\u061C+", "\u061C-", "\u061C-0X1.8P\u061C-1")]
+        [InlineData(0.75f, "x", "+", "\u2212", "0x1.8p\u22121")]
+        [InlineData(3.0f, "X", "", "~", "0X1.8P1")]
+        [InlineData(3.0f, "x", "-+", "-", "0x1.8p-+1")]
+        [InlineData(3.0f, "X", "-", "-+", "0X1.8P-1")]
+        [InlineData(3.0f, "x", "-", "+", "0x1.8p-1")]
+        [InlineData(0.75f, "X", "-", "+", "0X1.8P+1")]
+        [InlineData(-3.0f, "X", "-", "+", "+0X1.8P-1")]
+        [InlineData(-3.0f, "x", "-+", "-", "-0x1.8p-+1")]
+        [InlineData(-3.0f, "X", "-", "-+", "-+0X1.8P-1")]
+        [InlineData(-0.75f, "x", "-", "-+", "-+0x1.8p-+1")]
+        [InlineData(0.75f, "x", "-", "-+", "0x1.8p-+1")]
+        public static void ToStringHexFloat_CustomSigns(float f, string format, string positiveSign, string negativeSign, string expected)
+        {
+            Half value = (Half)f;
+            var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };
+            Assert.Equal(expected, value.ToString(format, info));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, info, expected, formatCasingMatchesOutput: false);
+
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(Half.Parse(expected, NumberStyles.HexFloat, info)));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(Half.Parse(expected.AsSpan(), NumberStyles.HexFloat, info)));
+            byte[] utf8 = Encoding.UTF8.GetBytes(expected);
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(Half.Parse(utf8, NumberStyles.HexFloat, info)));
+
+            Assert.True(Half.TryParse(expected, NumberStyles.HexFloat, info, out Half result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            Assert.True(Half.TryParse(expected.AsSpan(), NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            Assert.True(Half.TryParse(utf8, NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+        }
+
+        [Theory]
+        [InlineData(-3.0f, "E-0")]
+        [InlineData(-0.75f, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(float f, string exponentSign)
+        {
+            Half value = (Half)f;
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(Half.TryParse(formatted, NumberStyles.Float, info, out Half result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            Assert.True(Half.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(Half.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.HalfToInt16Bits(value), BitConverter.HalfToInt16Bits(result));
         }
 
         [Fact]

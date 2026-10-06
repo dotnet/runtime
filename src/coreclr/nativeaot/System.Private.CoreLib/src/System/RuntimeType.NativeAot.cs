@@ -212,7 +212,15 @@ namespace System
         {
             MethodTable* pEEType = _pUnderlyingEEType;
             if (pEEType != null)
-                return ((nuint)pEEType).GetHashCode();
+            {
+                // Fibonacci hashing moves the entropy in aligned handles into the high bits.
+#if TARGET_64BIT
+                return (int)(((ulong)(nuint)pEEType * 0x9E3779B97F4A7C15UL) >> 32);
+#else
+                uint hash = (uint)(nuint)pEEType * 0x9E3779B9U;
+                return (int)(hash ^ (hash >> 16));
+#endif
+            }
             return RuntimeHelpers.GetHashCode(this);
         }
 

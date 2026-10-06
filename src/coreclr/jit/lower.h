@@ -137,11 +137,7 @@ private:
     static bool CheckBlock(Compiler* compiler, BasicBlock* block);
 #endif // DEBUG
 
-    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalSet;
-
-    void     MapParameterRegisterLocals();
-    void     FindInducedParameterRegisterLocals();
-    unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
+    void MapParameterRegisterLocals();
 
     void     LowerBlock(BasicBlock* block);
     void     AfterLowerBlocks();
@@ -158,6 +154,7 @@ private:
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
 #ifdef TARGET_WASM
+    void AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value);
     void LowerPEPCall(GenTreeCall* call);
 #endif
     void MovePutArgNodesUpToCall(GenTreeCall* call);

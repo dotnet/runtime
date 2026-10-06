@@ -14,6 +14,42 @@ public class PredicateInstructions
     private static readonly float[] s_floatValues = new float[64];
     private static readonly double[] s_doubleValues = new double[64];
 
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
+    public static void TestMaskElementGranularity()
+    {
+        int[] integers = new int[Vector<int>.Count];
+        Array.Fill(integers, 1);
+        integers[0] = 0;
+
+        short[] shorts = new short[Vector<short>.Count];
+        Array.Fill(shorts, (short)1);
+        shorts[0] = 0;
+
+        Vector<int> right = new Vector<int>(integers);
+        Vector<byte> reversed = ReverseReinterpretedComparison(Vector<int>.Zero, right);
+        Vector<byte> anded = AndReinterpretedComparisons(Vector<int>.Zero, right, Vector<short>.Zero, new Vector<short>(shorts));
+        Vector<byte> selected = SelectReinterpretedComparisons(Vector<byte>.AllBitsSet, Vector<int>.Zero, right);
+
+        for (int i = 0; i < Vector<byte>.Count; i++)
+        {
+            Assert.Equal(i >= Vector<byte>.Count - sizeof(int) ? byte.MaxValue : (byte)0, reversed[i]);
+            Assert.Equal(i < sizeof(short) ? byte.MaxValue : (byte)0, anded[i]);
+            Assert.Equal(i < sizeof(int) ? byte.MaxValue : (byte)0, selected[i]);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> ReverseReinterpretedComparison(Vector<int> left, Vector<int> right) =>
+        Sve.ReverseElement(Vector.AsVectorByte(Sve.CompareEqual(left, right)));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> AndReinterpretedComparisons(Vector<int> left, Vector<int> right, Vector<short> leftShort, Vector<short> rightShort) =>
+        Sve.And(Vector.AsVectorByte(Sve.CompareEqual(left, right)), Vector.AsVectorByte(Sve.CompareEqual(leftShort, rightShort)));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<byte> SelectReinterpretedComparisons(Vector<byte> condition, Vector<int> left, Vector<int> right) =>
+        Sve.ConditionalSelect(condition, Vector.AsVectorByte(Sve.CompareEqual(left, right)), Vector.AsVectorByte(Sve.CompareGreaterThan(left, right)));
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     [Fact]
     public static void TestPredicateInstructions()

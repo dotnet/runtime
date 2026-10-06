@@ -3,7 +3,7 @@ description: Dynamic behavior gate for the CI failure fixer's safe-output, run w
 
 defaults:
   judge_model: claude-opus-4.8
-  model: claude-opus-4.8
+  model: gpt-5.6-terra
   runs: 1
   timeout: 25m
 
