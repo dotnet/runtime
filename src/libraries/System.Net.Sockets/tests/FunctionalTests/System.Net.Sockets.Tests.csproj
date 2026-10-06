@@ -67,6 +67,8 @@
              Link="SocketCommon\Configuration.Sockets.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Sockets\TestSettings.cs"
              Link="SocketCommon\TestSettings.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\UnixDomainSocketTestHelpers.cs"
+             Link="SocketCommon\UnixDomainSocketTestHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Sockets\Fletcher32.cs"
              Link="SocketCommon\Fletcher32.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestExtensions.cs"

@@ -4755,21 +4755,16 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
         {
+            UnixDomainSocketTestHelpers.SkipIfFileSystemBindIsDenied();
+
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             string guid = $"{Guid.NewGuid():N}";
-            string socketDirectory = Path.GetTempPath();
+            string socketDirectory = UnixDomainSocketTestHelpers.GetSocketDirectory();
             if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
             {
                 // Keep the name short for app container paths, and avoid an all-numeric URI host.
                 guid = "s" + guid.Substring(0, 7);
-
-                // Simulator app container paths can exceed the native socket path limit.
-                string relativeDirectory = Path.GetRelativePath(Environment.CurrentDirectory, socketDirectory);
-                if (Encoding.UTF8.GetByteCount(relativeDirectory) < Encoding.UTF8.GetByteCount(socketDirectory))
-                {
-                    socketDirectory = relativeDirectory;
-                }
             }
             string socketPath = Path.Combine(socketDirectory, guid);
             UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(socketPath);
