@@ -430,9 +430,11 @@ for inputAssemblyName in glob.glob("*.dll"):
       if not is_managed_debug_assembly(inputAssemblyName):
         ilasmSwitches = ilasmSwitches + " -DEBUG"
 
-      pdbName = inputAssemblyName.replace('.dll', '.pdb')
+      # Assemble to an image of its own and hash that image and the PDB that ilasm writes beside it.
+      pdbCheckAssemblyName = os.path.join("IL-RT", assemblyNameWithoutExtension + ".pdbcheck.dll")
+      pdbName = os.path.join("IL-RT", assemblyNameWithoutExtension + ".pdbcheck.pdb")
 
-      ilasm_args = f'{ilasm_path} -output={pdbName} {ilasmSwitches} {disassemblyName}'
+      ilasm_args = f'{ilasm_path} -output={pdbCheckAssemblyName} {ilasmSwitches} {disassemblyName}'
       print(ilasm_args)
       proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -446,9 +448,10 @@ for inputAssemblyName in glob.glob("*.dll"):
           print(f"ILASM failed with exit code {proc.returncode}")
           sys.exit(1)
 
+      imageHash = hash_file(pdbCheckAssemblyName)
       hash = hash_file(pdbName)
 
-      ilasm_args = f'{ilasm_path} -output={pdbName} {ilasmSwitches} {disassemblyName}'
+      ilasm_args = f'{ilasm_path} -output={pdbCheckAssemblyName} {ilasmSwitches} {disassemblyName}'
       print(ilasm_args)
       proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -461,6 +464,10 @@ for inputAssemblyName in glob.glob("*.dll"):
       if proc.returncode != 0:
           print(f"ILASM failed with exit code {proc.returncode}")
           sys.exit(1)
+
+      if imageHash != hash_file(pdbCheckAssemblyName):
+        print("ILASM determinism with -DEBUG failed")
+        sys.exit(1)
 
       if hash != hash_file(pdbName):
         print("ILASM PDB determinism failed")
