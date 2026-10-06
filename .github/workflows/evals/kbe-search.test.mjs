@@ -124,6 +124,24 @@ test("scanner eval and production use the same GitHub backend toolsets", async (
     );
 });
 
+for (const workflowId of ["ci-failure-scan", "ci-failure-scan-feedback"]) {
+    test(`${workflowId} uses the Responses API in the firewall's offline provider mode`, async () => {
+        const workflow = await readFile(new URL(`../${workflowId}.md`, import.meta.url), "utf8");
+        const engine = workflow.match(/^engine:\r?\n((?:^ .*(?:\r?\n|$))+)/m);
+        assert.ok(engine, "production engine configuration was not found");
+        assert.match(engine[1], /^    COPILOT_PROVIDER_WIRE_API: responses\r?$/m);
+
+        const compiled = await readFile(new URL(`../${workflowId}.lock.yml`, import.meta.url), "utf8");
+        const executionSteps = [...compiled.matchAll(
+            /^      - name: Execute GitHub Copilot CLI\r?\n([\s\S]*?)(?=^      - )/gm
+        )];
+        assert.equal(executionSteps.length, 2, "expected agent and detection Copilot execution steps");
+        for (const [, step] of executionSteps) {
+            assert.match(step, /^          COPILOT_PROVIDER_WIRE_API: responses\r?$/m);
+        }
+    });
+}
+
 test("production wrapper rejects incomplete results", async () => {
     await assert.rejects(
         runProductionSearch({ ...validResult(), incomplete_results: true }),
