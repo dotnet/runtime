@@ -17,7 +17,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Test
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
     public class ConfigurationTests : IDisposable
     {
         private const int _retries = 150;
@@ -1125,6 +1124,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135225", TestPlatforms.Wasi)]
         public async Task TouchingFileWillReloadForUserSecrets()
         {
             // A unique id keeps concurrently running assemblies from sharing the same secrets folder.

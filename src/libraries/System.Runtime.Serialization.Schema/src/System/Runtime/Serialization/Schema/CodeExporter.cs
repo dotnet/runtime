@@ -1309,7 +1309,7 @@ namespace System.Runtime.Serialization
             if (xmlDataContract.IsAnonymous && !xmlDataContract.HasRoot)
             {
                 type.CustomAttributes.Add(new CodeAttributeDeclaration(
-                    GetClrTypeFullName(ImportGlobals.TypeOfXmlSchemaProviderAttribute),
+                    GetClrTypeFullName(typeof(XmlSchemaProviderAttribute)),
                     new CodeAttributeArgument(NullReference),
                     new CodeAttributeArgument(ImportGlobals.IsAnyProperty, new CodePrimitiveExpression(true)))
                 );
@@ -1317,16 +1317,16 @@ namespace System.Runtime.Serialization
             else
             {
                 type.CustomAttributes.Add(new CodeAttributeDeclaration(
-                    GetClrTypeFullName(ImportGlobals.TypeOfXmlSchemaProviderAttribute),
+                    GetClrTypeFullName(typeof(XmlSchemaProviderAttribute)),
                     new CodeAttributeArgument(new CodePrimitiveExpression(ImportGlobals.ExportSchemaMethod)))
                 );
 
-                CodeMemberField typeNameField = new CodeMemberField(ImportGlobals.TypeOfXmlQualifiedName, TypeNameFieldName);
+                CodeMemberField typeNameField = new CodeMemberField(typeof(XmlQualifiedName), TypeNameFieldName);
                 typeNameField.Attributes |= MemberAttributes.Static | MemberAttributes.Private;
                 XmlQualifiedName typeName = xmlDataContract.IsAnonymous
                     ? XsdDataContractImporter.ImportActualType(xmlDataContract.XsdType?.Annotation, xmlDataContract.XmlName, xmlDataContract.XmlName)
                     : xmlDataContract.XmlName;
-                typeNameField.InitExpression = new CodeObjectCreateExpression(ImportGlobals.TypeOfXmlQualifiedName, new CodePrimitiveExpression(typeName.Name), new CodePrimitiveExpression(typeName.Namespace));
+                typeNameField.InitExpression = new CodeObjectCreateExpression(typeof(XmlQualifiedName), new CodePrimitiveExpression(typeName.Name), new CodePrimitiveExpression(typeName.Namespace));
                 type.Members.Add(typeNameField);
 
                 type.Members.Add(GetSchemaStaticMethod);
@@ -1716,7 +1716,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                return CreateProperty(GetCodeTypeReference(ImportGlobals.TypeOfXmlNodeArray), ImportGlobals.NodeArrayPropertyName, ImportGlobals.NodeArrayFieldName, false/*isValueType*/);
+                return CreateProperty(GetCodeTypeReference(typeof(XmlNode[])), ImportGlobals.NodeArrayPropertyName, ImportGlobals.NodeArrayFieldName, false/*isValueType*/);
             }
         }
 
@@ -1725,7 +1725,7 @@ namespace System.Runtime.Serialization
             get
             {
                 CodeMemberField nodeArrayField = new CodeMemberField();
-                nodeArrayField.Type = GetCodeTypeReference(ImportGlobals.TypeOfXmlNodeArray);
+                nodeArrayField.Type = GetCodeTypeReference(typeof(XmlNode[]));
                 nodeArrayField.Name = ImportGlobals.NodeArrayFieldName;
                 nodeArrayField.Attributes = MemberAttributes.Private;
                 return nodeArrayField;
@@ -1796,7 +1796,7 @@ namespace System.Runtime.Serialization
             {
                 CodeMemberMethod getSchemaStaticMethod = new CodeMemberMethod();
                 getSchemaStaticMethod.Name = ImportGlobals.ExportSchemaMethod;
-                getSchemaStaticMethod.ReturnType = GetCodeTypeReference(ImportGlobals.TypeOfXmlQualifiedName);
+                getSchemaStaticMethod.ReturnType = GetCodeTypeReference(typeof(XmlQualifiedName));
                 CodeParameterDeclarationExpression paramDeclaration = new CodeParameterDeclarationExpression(typeof(XmlSchemaSet), "schemas");
                 getSchemaStaticMethod.Parameters.Add(paramDeclaration);
                 getSchemaStaticMethod.Attributes = MemberAttributes.Static | MemberAttributes.Public;

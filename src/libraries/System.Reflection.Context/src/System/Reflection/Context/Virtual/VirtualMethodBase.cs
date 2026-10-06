@@ -114,6 +114,18 @@ namespace System.Reflection.Context.Virtual
             return false;
         }
 
+        // A method added by the context has no metadata definition, so it only matches itself,
+        // also when a derived type reports it as an InheritedMethodInfo.
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            if (other is InheritedMethodInfo inheritedMethod)
+                other = inheritedMethod.UnderlyingMethod;
+
+            return Equals(other);
+        }
+
         public override bool Equals(object? obj)
         {
             // We don't need to compare the invokees

@@ -37,6 +37,22 @@ harness with a successful, unfiltered `issue_read`. Focused Node tests keep the
 workflow-frontmatter and CLI wrapper behavior in sync and exercise the grader's
 candidate correlation.
 
+The scanner's focused tests also require the production and eval GitHub backend
+toolsets to match and retain `repos`, which the production integrity gateway
+needs for its internal `search_repositories` visibility check. The agent-facing
+allowlist remains limited to issue reads and PR reads/searches.
+
+The scanner eval connects directly to GitHub MCP, without production's filtering
+gateway. It validates search and candidate-read behavior, but cannot detect
+gateway-only failures. The toolset checks cover this configuration dependency;
+they are not an end-to-end gateway test.
+
+The focused tests also require the scanner and feedback workflows to select the
+Responses API in both their source and compiled Copilot execution steps.
+Production's firewall runs the CLI in offline/BYOK mode, where GPT-6.1 needs
+`COPILOT_PROVIDER_WIRE_API: responses`; the native Copilot SDK eval does not
+exercise that inference routing.
+
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually
 exist and scores workflow output against them, is deferred.
@@ -88,6 +104,12 @@ token for on the eval step. Live runs are non-deterministic and depend on what
 is failing at eval time.
 
 ## Run locally
+
+The deterministic scanner tests need Node, but no credentials or network access:
+
+```bash
+node --test .github/workflows/evals/kbe-search.test.mjs
+```
 
 The deterministic fixer tests need Python 3, Bash, jq, and Node with the eval
 dependencies installed (`npm ci --prefix .github/workflows/evals`), but no
