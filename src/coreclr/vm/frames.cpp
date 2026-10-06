@@ -1468,24 +1468,6 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
 
-void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    ValueClassInfo *pVCInfo = m_pVCInfo;
-    while (pVCInfo != NULL)
-    {
-        _ASSERTE(pVCInfo->pMT->IsValueType());
-        ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
-        pVCInfo = pVCInfo->pNext;
-    }
-}
-
 //
 // Promote Caller Stack
 //
