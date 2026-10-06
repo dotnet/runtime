@@ -69,3 +69,13 @@ MyInlineArray accept_and_return_inlinearray (MyInlineArray arg) {
 MyInlineArray accept_and_return_fixedarray (MyInlineArray arg) {
     return accept_and_return_inlinearray (arg);
 }
+
+// Regression coverage for https://github.com/dotnet/runtime/issues/112262:
+// a pinvoke whose argument is a 64-bit enum must be passed as a real i64 on wasm.
+unsigned long long accept_and_return_ulong (unsigned long long arg) {
+    return arg + 1;
+}
+
+long long accept_and_return_long (long long arg) {
+    return arg + 1;
+}
