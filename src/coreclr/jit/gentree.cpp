@@ -9269,9 +9269,39 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
+//------------------------------------------------------------------------
+// gtNewValueSize: Create a node that produces a value size in bytes.
+//
+// Arguments:
+//    size -- An exact size or the platform vector length.
+//    type -- The integral result type.
+//
+// Return Value:
+//    A node that produces the size in bytes.
+//
+GenTree* Compiler::gtNewValueSize(ValueSize size, var_types type)
+{
+    assert(varTypeIsIntegral(type));
+    assert(genActualType(type) == type);
+
+    if (size.IsExact())
+    {
+        return gtNewIconNode(size.GetExact(), type);
+    }
+
+#ifdef FEATURE_SIMD
+    if (size.IsVector())
+    {
+        return gtNewVectorTSizeNode(type);
+    }
+#endif
+
+    unreached();
+}
+
 #ifdef FEATURE_SIMD
 //------------------------------------------------------------------------
-// gtNewVectorLengthNode: Create a node that produces the Vector<T> length in bytes.
+// gtNewVectorTSizeNode: Create a node that produces the Vector<T> length in bytes.
 //
 // Arguments:
 //    type -- The integral result type.

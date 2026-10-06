@@ -3325,8 +3325,10 @@ public:
     GenTreeIntCon* gtNewTrue();
     GenTreeIntCon* gtNewFalse();
 
+    GenTree* gtNewValueSize(ValueSize size, var_types type);
+
 #ifdef FEATURE_SIMD
-    GenTree*       gtNewVectorTSizeNode(var_types type);
+    GenTree* gtNewVectorTSizeNode(var_types type);
 #endif
 
     GenTreeILOffset* gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset));

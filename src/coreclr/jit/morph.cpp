@@ -3069,20 +3069,10 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 #endif // TARGET_64BIT
 
     // Scale the index value if necessary.
-    GenTree* multiplier = nullptr;
-    if (elemSize.IsExact() && elemSize.GetExact() > 1)
+    if (!elemSize.IsExact() || (elemSize.GetExact() > 1))
     {
-        multiplier = gtNewIconNode(elemSize.GetExact(), TYP_I_IMPL);
-    }
-#ifdef FEATURE_SIMD
-    else if (elemSize.IsVector())
-    {
-        multiplier = gtNewVectorTSizeNode(TYP_I_IMPL);
-    }
-#endif
+        GenTree* multiplier = gtNewValueSize(elemSize, TYP_I_IMPL);
 
-    if (multiplier != nullptr)
-    {
         // Fix 392756 WP7 Crossgen
         //
         // During codegen optGetArrayRefScaleAndIndex() makes the assumption that op2 of a GT_MUL node
