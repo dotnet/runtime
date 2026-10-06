@@ -2655,19 +2655,19 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
     CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
 
+    // See if arguments are the same - in that case we can optimize to constant true
+    ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
+    ValueNum arg2VN = optConservativeNormalVN(arg2->GetNode());
+    if ((arg1VN != ValueNumStore::NoVN) && (arg1VN == arg2VN))
+    {
+        JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
+        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+    }
+
     ValueNum lenVN = optConservativeNormalVN(lenArg->GetNode());
     size_t   len;
     if (!vnStore->IsVNIntegralConstant(lenVN, &len))
     {
-        // See if arguments are the same - in that case we can optimize to constant true
-        ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
-        ValueNum arg2VN = optConservativeNormalVN(arg2->GetNode());
-        if ((arg1VN != ValueNumStore::NoVN) && (arg1VN == arg2VN))
-        {
-            JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
-            return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
-        }
-
         JITDUMP("...length is not a constant - bail out.\n");
         return nullptr;
     }
