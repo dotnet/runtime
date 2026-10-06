@@ -119,71 +119,141 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        ApplySourceDirective(value);
+        ApplySourceDirective(value, context.Start);
     }
 
     /// <summary>
-    /// Applies a <c>.line</c> or <c>#line</c> directive: a non-empty file name defines that file as a PDB
-    /// document and makes it the current document, and inside a method body the directive adds a sequence point
-    /// at the current IL offset in the current document.
+    /// Applies a <c>.line</c> or <c>#line</c> directive to the source it appears in: a non-empty file name defines
+    /// that file as a PDB document and makes it the source's current document, and the directive's coordinates
+    /// become the coordinates of the instructions that follow in that source. The directive records no sequence
+    /// point itself; the next instruction does (<see cref="RecordSequencePoint"/>), wherever it is.
     /// </summary>
+    /// <param name="value">The directive.</param>
+    /// <param name="directiveToken">The directive's <c>.line</c> or <c>#line</c> token, which identifies its source.</param>
     /// <remarks>
-    /// An empty file name (<c>''</c> or <c>""</c>) leaves the current document unchanged, as in native ilasm:
-    /// ildasm writes it for "the same file as the previous directive", including on the first directive of a
-    /// method. A directive without a file name uses the current document, which is the input file until a
-    /// directive names another. A directive at the same offset as the previous point replaces that point,
-    /// coordinates and document. There is always a current document here: <see cref="DocumentCompiler"/> calls
-    /// <see cref="BeginDocument"/>, which defines the input file, before it parses anything.
+    /// As in native ilasm, the directive stays in effect until the next directive or the end of its source (the input
+    /// file, or one inclusion of an <c>#include</c>d file), wherever it is and across methods, and the next
+    /// instruction always gets a point. An empty file name (<c>''</c> or <c>""</c>), which ildasm writes for "the
+    /// same file", and a missing one keep the source's current document: the source itself until a directive in it
+    /// names another file. A start line of <c>0xFEEFEE</c> makes the points hidden.
     /// </remarks>
-    private void ApplySourceDirective(SourceDirectiveValue value)
+    private void ApplySourceDirective(SourceDirectiveValue value, IToken directiveToken)
     {
-        Debug.Assert(_currentDocument >= 0, "BeginDocument defines the input file before any directive is applied.");
+        SourceLineState state = GetSourceLineState(directiveToken);
         if (!string.IsNullOrEmpty(value.DocumentPath))
         {
-            _currentDocument = _pdbDocuments.GetOrAdd(value.DocumentPath, _currentLanguageGuid);
+            state.Document = _pdbDocuments.GetOrAdd(value.DocumentPath, _currentLanguageGuid);
         }
 
-        if (_currentMethod is null)
+        int endColumn = value.EndColumn;
+        if (value.EndLine == value.StartLine && endColumn == value.StartColumn)
+        {
+            endColumn++;
+        }
+
+        // A start line of 0xFEEFEE makes the points hidden (EntityRegistry.SequencePoint.IsHidden); their
+        // columns are not written.
+        state.DirectiveCoordinates = (value.StartLine, value.StartColumn, value.EndLine, endColumn);
+        _lastSequencePointSpan = null;
+    }
+
+    /// <summary>
+    /// Records the sequence point of an instruction that is about to be emitted at the method body's current IL
+    /// offset, when a PDB is requested (<see cref="GeneratesPdb"/>).
+    /// </summary>
+    /// <param name="method">The method the instruction is emitted into.</param>
+    /// <param name="opcodeToken">The instruction's opcode token, which identifies its source and its line.</param>
+    /// <remarks>
+    /// <para>
+    /// With no <c>.line</c> or <c>#line</c> directive in effect in the instruction's source, the point is on the
+    /// instruction's own line of that source (the input <c>.il</c> file or the <c>#include</c>d file), columns 1 to
+    /// 2, as native ilasm records it; otherwise it has the coordinates of the directive in effect, in the source's
+    /// current document (<see cref="ApplySourceDirective"/>).
+    /// </para>
+    /// <para>
+    /// As in native ilasm, the instruction gets a point only when its span differs from the last point's, in any
+    /// method, or a directive has been applied since. So a later method without a <c>.line</c> of its own gets no
+    /// point while an earlier directive's span is still current, which is the shape ildasm writes for a method that
+    /// had no sequence points, when it writes <c>.line</c> directives at all. Unlike native ilasm, which compares
+    /// only lines and columns, the span includes the document.
+    /// </para>
+    /// </remarks>
+    private void RecordSequencePoint(CurrentMethodContext method, IToken opcodeToken)
+    {
+        if (!GeneratesPdb)
         {
             return;
         }
 
-        int document = _currentDocument;
-        int ilOffset = _currentMethod.Definition.MethodBody.Offset;
-        EntityRegistry.MethodDebugInfo debugInfo = _currentMethod.Definition.DebugInfo;
-
-        EntityRegistry.SequencePoint sequencePoint;
-        if (value.StartLine == 0xFEEFEE)
+        SourceLineState state = GetSourceLineState(opcodeToken);
+        int document = state.Document ??= _pdbDocuments.GetOrAdd(state.SourceName, _currentLanguageGuid);
+        (int startLine, int startColumn, int endLine, int endColumn) =
+            state.DirectiveCoordinates ?? (opcodeToken.Line, 1, opcodeToken.Line, 2);
+        var span = new SequencePointSpan(document, startLine, startColumn, endLine, endColumn);
+        if (_lastSequencePointSpan == span)
         {
-            sequencePoint = EntityRegistry.SequencePoint.Hidden(document, ilOffset);
-        }
-        else
-        {
-            int endColumn = value.EndColumn;
-            if (value.EndLine == value.StartLine && endColumn == value.StartColumn)
-            {
-                endColumn++;
-            }
-
-            sequencePoint = new EntityRegistry.SequencePoint(
-                document,
-                ilOffset,
-                value.StartLine,
-                value.StartColumn,
-                value.EndLine,
-                endColumn);
+            return;
         }
 
-        List<EntityRegistry.SequencePoint> sequencePoints = debugInfo.SequencePoints;
+        _lastSequencePointSpan = span;
+        int ilOffset = method.Definition.MethodBody.Offset;
+        var point = new EntityRegistry.SequencePoint(document, ilOffset, startLine, startColumn, endLine, endColumn);
+        List<EntityRegistry.SequencePoint> sequencePoints = method.Definition.DebugInfo.SequencePoints;
+        Debug.Assert(sequencePoints.Count == 0 || sequencePoints[^1].ILOffset <= ilOffset, "IL offsets never decrease.");
         if (sequencePoints.Count > 0 && sequencePoints[^1].ILOffset == ilOffset)
         {
-            sequencePoints[^1] = sequencePoint;
+            // The last point's instruction wrote no bytes, so this instruction is the one at that offset. The blob
+            // cannot hold two points at one offset: a zero offset delta is read as a document-record.
+            sequencePoints[^1] = point;
         }
         else
         {
-            sequencePoints.Add(sequencePoint);
+            sequencePoints.Add(point);
         }
     }
+
+    /// <summary>Gets the <c>.line</c> state of the source a token was read from, creating it on first use.</summary>
+    private SourceLineState GetSourceLineState(IToken token)
+    {
+        object source = (object?)token.TokenSource ?? Location.GetSourceName(token);
+        if (!_sourceLineStates.TryGetValue(source, out SourceLineState? state))
+        {
+            state = new SourceLineState(Location.GetSourceName(token));
+            _sourceLineStates.Add(source, state);
+        }
+
+        return state;
+    }
+
+    /// <summary>
+    /// The <c>.line</c> state of one source of the input file being parsed: the input file itself, or one inclusion
+    /// of an <c>#include</c>d file. As in native ilasm, which parses each input file and each inclusion in its own
+    /// environment, a directive applies only to the rest of its source: an included file starts without one, and
+    /// does not change the state of the source that includes it.
+    /// </summary>
+    /// <param name="sourceName">The source's <see cref="SourceText.Path"/>.</param>
+    private sealed class SourceLineState(string sourceName)
+    {
+        /// <summary>Gets the source's name, which is the name of its own PDB document.</summary>
+        public string SourceName { get; } = sourceName;
+
+        /// <summary>
+        /// Gets or sets the index in the compilation's <see cref="PdbDocumentTable"/> of the source's current document:
+        /// the file named by the last directive of the source that named one, otherwise the source itself. It is
+        /// <see langword="null"/> while it is the source itself and no point has needed it, so that an included
+        /// file becomes a document only when one of its instructions gets a point.
+        /// </summary>
+        public int? Document { get; set; }
+
+        /// <summary>
+        /// Gets or sets the start line, start column, end line and end column of the last directive applied in the
+        /// source, or <see langword="null"/> when none has been.
+        /// </summary>
+        public (int StartLine, int StartColumn, int EndLine, int EndColumn)? DirectiveCoordinates { get; set; }
+    }
+
+    /// <summary>The document and source span of a recorded sequence point.</summary>
+    private readonly record struct SequencePointSpan(int Document, int StartLine, int StartColumn, int EndLine, int EndColumn);
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
     internal string ParseLanguageString(IToken token)
