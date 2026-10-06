@@ -226,7 +226,6 @@ namespace System
                 if (!isStatic)
                 {
                     Type targetType;
-                    RuntimeType methodDeclaringType = declaringType;
                     if (IsClosed)
                     {
                         targetType = _target!.GetType();
@@ -248,7 +247,7 @@ namespace System
                     Type? currentType;
                     for (currentType = targetType; currentType is not null; currentType = currentType.BaseType)
                     {
-                        if (currentType.HasSameMetadataDefinitionAs(methodDeclaringType))
+                        if (currentType.HasSameMetadataDefinitionAs(declaringType))
                         {
                             declaringType = (RuntimeType)currentType;
                             break;
