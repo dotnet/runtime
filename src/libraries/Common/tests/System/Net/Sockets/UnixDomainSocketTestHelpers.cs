@@ -4,7 +4,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
-using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Test.Common
 {
