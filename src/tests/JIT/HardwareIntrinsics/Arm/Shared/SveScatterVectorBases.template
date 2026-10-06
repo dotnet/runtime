@@ -93,7 +93,7 @@ namespace {Namespace}._Sve
                 int sizeOfOutArray = outArray.Length * sizeof({Op1BaseType});
                 int sizeOfInOffset = inAddress.Length * sizeof({Op2BaseType});
 
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfInMask || (alignment * 2) < sizeOfInOffset || (alignment * 2) < sizeOfInData)
+                if (!int.IsPow2(alignment) || (alignment * 2) < sizeOfInMask || (alignment * 2) < sizeOfInOffset || (alignment * 2) < sizeOfInData)
                 {
                     throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfInMask: {sizeOfInMask}, sizeOfInOffset: {sizeOfInOffset}, sizeOfInData: {sizeOfInData}");
                 }
@@ -214,7 +214,7 @@ namespace {Namespace}._Sve
             }
         }
 
-        private static readonly int LargestVectorSize = 64;
+        private static readonly int LargestVectorSize = Math.Max(64, (int)BitOperations.RoundUpToPowerOf2((uint)Vector<byte>.Count));
 
         // A large enough buffer to hold many values.
         // Values in address will point to locations within this buffer.
