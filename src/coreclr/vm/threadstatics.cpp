@@ -7,7 +7,7 @@
 InFlightTLSData::InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), hTLSData(0) { }
 InFlightTLSData::~InFlightTLSData()
     {
-        if (!IsHandleNullUnchecked(hTLSData))
+        if (hTLSData != nullptr)
         {
             DestroyTypedHandle(hTLSData);
         }
@@ -484,7 +484,7 @@ void FreeThreadStaticData(Thread* pThread)
 
     for (int32_t iTlsSlot = 0; iTlsSlot < oldCollectibleTlsDataCount; ++iTlsSlot)
     {
-        if (!IsHandleNullUnchecked(pOldCollectibleTlsArrayData[iTlsSlot]))
+        if (pOldCollectibleTlsArrayData[iTlsSlot] != nullptr)
         {
             DestroyLongWeakHandle(pOldCollectibleTlsArrayData[iTlsSlot]);
         }
@@ -614,7 +614,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         OBJECTHANDLE* pCollectibleTlsArrayData = t_ThreadStatics.pCollectibleTlsArrayData;
         pCollectibleTlsArrayData += index.GetIndexOffset();
         OBJECTHANDLE objHandle = *pCollectibleTlsArrayData;
-        if (IsHandleNullUnchecked(objHandle))
+        if (objHandle == nullptr)
         {
             objHandle = GetAppDomain()->CreateLongWeakHandle(NULL);
             *pCollectibleTlsArrayData = objHandle;
@@ -926,7 +926,7 @@ void CleanupRetiredTLSIndices()
                 }
             }
 
-            if (!IsHandleNullUnchecked(hTlsData))
+            if (hTlsData != nullptr)
             {
                 DestroyLongWeakHandle(hTlsData);
             }
