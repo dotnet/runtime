@@ -17,9 +17,9 @@ namespace ILAssembler.Tests.GeneratedCases
 {
     /// <summary>
     /// The PDB rules, checked over seeded generated programs and option combinations
-    /// (<see cref="PdbCaseGenerator"/>), and for the output writer over every combination of output name,
-    /// pre-existing output, pre-existing PDB path and PDB presence that <see cref="PdbCaseGenerator.OutputWriteStates"/>
-    /// enumerates.
+    /// (<see cref="PdbCaseGenerator"/>), and for the output file writer (<see cref="OutputFileWriter"/>) over every
+    /// combination of output name, pre-existing output, pre-existing PDB path and PDB presence that
+    /// <see cref="PdbCaseGenerator.OutputWriteStates"/> enumerates.
     /// </summary>
     public class PdbGeneratedCaseTests
     {
@@ -166,7 +166,7 @@ namespace ILAssembler.Tests.GeneratedCases
 
         [Theory]
         [MemberData(nameof(PdbCaseGenerator.OutputWriteStates), MemberType = typeof(PdbCaseGenerator))]
-        public void OutputWriter_NeverLeavesATemporaryFile(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
+        public void OutputFileWriter_NeverLeavesATemporaryFile(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
         {
             foreach (bool imageWriteFails in new[] { false, true })
             {
@@ -177,7 +177,7 @@ namespace ILAssembler.Tests.GeneratedCases
 
         [Theory]
         [MemberData(nameof(PdbCaseGenerator.OutputWriteStates), MemberType = typeof(PdbCaseGenerator))]
-        public void OutputWriter_WhenTheImageWriteFails_LeavesThePdbPathUnchanged(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
+        public void OutputFileWriter_WhenTheImageWriteFails_LeavesThePdbPathUnchanged(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
         {
             RunOutputWrite(outputFileName, existingOutput, existingPdb, withPdb, imageWriteFails: true, (_, pdbPath, exception) =>
             {
@@ -199,7 +199,7 @@ namespace ILAssembler.Tests.GeneratedCases
 
         [Theory]
         [MemberData(nameof(PdbCaseGenerator.OutputWriteStates), MemberType = typeof(PdbCaseGenerator))]
-        public void OutputWriter_AfterTheImageIsWritten_LeavesTheNewPdbOrDeletesOnlyTheReplacedImagesPdb(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
+        public void OutputFileWriter_AfterTheImageIsWritten_LeavesTheNewPdbOrDeletesOnlyTheReplacedImagesPdb(string outputFileName, ExistingOutput existingOutput, ExistingPdb existingPdb, bool withPdb)
         {
             RunOutputWrite(outputFileName, existingOutput, existingPdb, withPdb, imageWriteFails: false, (_, pdbPath, exception) =>
             {
@@ -240,7 +240,7 @@ namespace ILAssembler.Tests.GeneratedCases
             try
             {
                 string outputPath = Path.Combine(directory, outputFileName);
-                string pdbPath = OutputWriter.GetPdbPath(outputPath);
+                string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
                 switch (existingOutput)
                 {
                     case ExistingOutput.ImageOfThePdb:
@@ -267,7 +267,7 @@ namespace ILAssembler.Tests.GeneratedCases
                         break;
                 }
 
-                Exception? exception = Record.Exception(() => OutputWriter.Write(
+                Exception? exception = Record.Exception(() => OutputFileWriter.Write(
                     outputPath,
                     pdbPath,
                     stream =>

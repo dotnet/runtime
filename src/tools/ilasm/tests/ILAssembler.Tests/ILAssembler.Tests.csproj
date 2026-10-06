@@ -22,8 +22,8 @@
     <Compile Include="..\..\src\ilasm\NativeCommandLine.cs">
       <Link>NativeCommandLine.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\ilasm\OutputWriter.cs">
-      <Link>OutputWriter.cs</Link>
+    <Compile Include="..\..\src\ilasm\OutputFileWriter.cs">
+      <Link>OutputFileWriter.cs</Link>
     </Compile>
   </ItemGroup>
 

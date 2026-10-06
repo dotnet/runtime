@@ -118,7 +118,7 @@ namespace ILAssembler.Tests.GeneratedCases
     /// <summary>
     /// The inputs of the generated-case theories. Compilation cases come from a <see cref="Random"/> with a fixed
     /// seed, so every run builds the same cases and a failing case is reproduced by its index; the display name
-    /// also describes it. The output writer's states are few, so they are enumerated exhaustively.
+    /// also describes it. The output file writer's states are few, so they are enumerated exhaustively.
     /// </summary>
     public static class PdbCaseGenerator
     {
@@ -141,7 +141,7 @@ namespace ILAssembler.Tests.GeneratedCases
         public static TheoryData<int, string> PdbRequestedCaseData => ToTheoryData(PdbRequestedCases);
 
         /// <summary>
-        /// An image and the PDB its CodeView entry refers to, which the output writer states place at the output and
+        /// An image and the PDB its CodeView entry refers to, which the output file writer states place at the output and
         /// PDB paths, and an image of another PDB.
         /// </summary>
         public static (ImmutableArray<byte> Image, ImmutableArray<byte> Pdb) ExistingPair { get; } = DocumentCompilerTestHelpers.CompileImageAndPdb("A");

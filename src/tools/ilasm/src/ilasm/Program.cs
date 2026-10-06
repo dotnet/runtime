@@ -65,7 +65,7 @@ internal sealed class Program
         {
             // As in native ilasm, the PDB is <output without extension>.pdb beside the output, and the
             // image's CodeView entry records its full path.
-            string pdbPath = OutputWriter.GetPdbPath(outputPath);
+            string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
 
             // Report each file being assembled
             foreach (string file in inputFiles)
@@ -258,7 +258,7 @@ internal sealed class Program
             // Every failure above returns before this, leaving the existing files as they are.
             var blobBuilder = new BlobBuilder();
             compilationResult.Serialize(blobBuilder);
-            OutputWriteResult written = OutputWriter.Write(
+            OutputWriteResult written = OutputFileWriter.Write(
                 outputPath,
                 pdbPath,
                 stream => blobBuilder.WriteContentTo(stream),

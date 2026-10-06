@@ -2,16 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using System.Linq;
 using System.Reflection.PortableExecutable;
 using Xunit;
 
 namespace ILAssembler.Tests;
 
-public sealed class OutputWriterTests : IDisposable
+/// <summary>
+/// Tests of <see cref="OutputWriter"/> on in-memory streams, without the file system: the order of the writes,
+/// which existing PDB is deleted, and the refusal to overwrite the output with its PDB.
+/// </summary>
+public class OutputWriterTests
 {
+    private const string CloseOutput = "CloseOutput";
+
     private static readonly byte[] s_image = [0x4D, 0x5A, 0x01, 0x02];
     private static readonly ImmutableArray<byte> s_pdb = [0x42, 0x53, 0x4A, 0x42, 0x03];
     private static readonly byte[] s_stale = [0xDE, 0xAD];
@@ -22,205 +28,227 @@ public sealed class OutputWriterTests : IDisposable
     private static readonly (ImmutableArray<byte> Image, ImmutableArray<byte> Pdb) s_otherPair = DocumentCompilerTestHelpers.CompileImageAndPdb("B");
     private static readonly ImmutableArray<byte> s_imageWithoutPdb = DocumentCompilerTestHelpers.CompileImageWithoutPdb("A");
 
-    private readonly string _directory = Directory.CreateTempSubdirectory("ilasm-output-").FullName;
-
-    public void Dispose() => Directory.Delete(_directory, recursive: true);
-
-    private string PathOf(string fileName) => Path.Combine(_directory, fileName);
-
-    private string[] FileNames() => Directory.EnumerateFileSystemEntries(_directory).Select(Path.GetFileName).Order().ToArray()!;
-
     private static void WriteImage(Stream stream) => stream.Write(s_image);
 
-    [Theory]
-    [InlineData("Min.dll", "Min.pdb")]
-    [InlineData("Min", "Min.pdb")]
-    [InlineData("a.b/Min", "a.b/Min.pdb")]
-    public void GetPdbPath_ReplacesTheExtensionAndReturnsTheFullPath(string outputPath, string expectedPdbPath)
-    {
-        Assert.Equal(Path.GetFullPath(expectedPdbPath), OutputWriter.GetPdbPath(outputPath));
-    }
+    // The previous output is the image of the PDB at the PDB path.
+    private static MemoryOutputStreams ImageAndItsPdb() => new() { Output = s_pair.Image.ToArray(), Pdb = s_pair.Pdb.ToArray() };
 
     [Fact]
-    public void Write_WithPdb_WritesTheImageAndThenThePdb()
+    public void Write_WithPdb_WritesTheImageAndThePdb()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        bool pdbExistedDuringImageWrite = true;
+        var output = new MemoryOutputStreams();
 
-        OutputWriteResult result = OutputWriter.Write(
-            outputPath,
-            pdbPath,
-            stream =>
-            {
-                pdbExistedDuringImageWrite = File.Exists(pdbPath);
-                WriteImage(stream);
-            },
-            s_pdb);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, s_pdb);
 
         Assert.Equal(OutputWriteResult.ImageAndPdbWritten, result);
-        Assert.False(pdbExistedDuringImageWrite);
-        Assert.Equal(s_image, File.ReadAllBytes(outputPath));
-        Assert.Equal(s_pdb.ToArray(), File.ReadAllBytes(pdbPath));
-        Assert.Equal(new[] { "Min.dll", "Min.pdb" }, FileNames());
+        Assert.Equal(s_image, output.Output);
+        Assert.Equal(s_pdb.ToArray(), output.Pdb);
     }
 
     [Fact]
-    public void Write_WithPdb_ReplacesAnExistingPdb()
+    public void Write_WithPdb_WritesThePdbAfterTheImageIsClosed()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(pdbPath, s_stale);
+        var output = new MemoryOutputStreams();
 
-        OutputWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+        OutputWriter.Write(output, WriteImage, s_pdb);
 
-        Assert.Equal(s_pdb.ToArray(), File.ReadAllBytes(pdbPath));
+        Assert.Equal(new[] { nameof(IOutputStreams.CreateOutput), CloseOutput, nameof(IOutputStreams.WritePdb) }, output.Calls);
     }
 
     [Fact]
-    public void Write_WithPdb_RenamesANewFileOverTheExistingPdbInsteadOfRewritingIt()
+    public void Write_WithPdb_DoesNotReadTheExistingOutput()
     {
-        // Renaming a completed temporary file over the PDB path is what keeps a failed write from leaving a
-        // partial PDB. It is observable as a reader of the old PDB still seeing the old content afterwards.
-        // Renaming over a file that is open depends on the Windows version, so this runs elsewhere.
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
+        MemoryOutputStreams output = ImageAndItsPdb();
 
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(pdbPath, s_stale);
-        using var oldPdbReader = new FileStream(pdbPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        OutputWriter.Write(output, WriteImage, s_pdb);
 
-        OutputWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
-
-        byte[] oldContent = new byte[s_stale.Length];
-        oldPdbReader.ReadExactly(oldContent);
-        Assert.Equal(s_stale, oldContent);
-        Assert.Equal(s_pdb.ToArray(), File.ReadAllBytes(pdbPath));
+        Assert.DoesNotContain(nameof(IOutputStreams.OpenExistingOutput), output.Calls);
     }
 
     [Fact]
     public void Write_WithoutPdb_DeletesThePdbOfTheImageItReplaces()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, s_pair.Image.ToArray());
-        File.WriteAllBytes(pdbPath, s_pair.Pdb.ToArray());
+        MemoryOutputStreams output = ImageAndItsPdb();
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, portablePdb: null);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
 
         Assert.Equal(OutputWriteResult.ImageWrittenStalePdbDeleted, result);
-        Assert.Equal(new[] { "Min.dll" }, FileNames());
+        Assert.Null(output.Pdb);
+        Assert.Equal(s_image, output.Output);
+    }
+
+    [Fact]
+    public void Write_WithoutPdb_ReadsTheReplacedImageBeforeCreatingTheOutput()
+    {
+        MemoryOutputStreams output = ImageAndItsPdb();
+
+        OutputWriter.Write(output, WriteImage, portablePdb: null);
+
+        int read = output.Calls.IndexOf(nameof(IOutputStreams.OpenExistingOutput));
+        int create = output.Calls.IndexOf(nameof(IOutputStreams.CreateOutput));
+        Assert.True(read >= 0 && read < create, string.Join(", ", output.Calls));
     }
 
     [Fact]
     public void Write_WithoutPdb_KeepsAPdbWhenNoImageIsReplaced()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(pdbPath, s_pair.Pdb.ToArray());
+        var output = new MemoryOutputStreams { Pdb = s_pair.Pdb.ToArray() };
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, portablePdb: null);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
 
         Assert.Equal(OutputWriteResult.ImageWritten, result);
-        Assert.Equal(s_pair.Pdb.ToArray(), File.ReadAllBytes(pdbPath));
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Fact]
     public void Write_WithoutPdb_KeepsAPdbThatTheReplacedImageDoesNotReference()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, s_otherPair.Image.ToArray());
-        File.WriteAllBytes(pdbPath, s_pair.Pdb.ToArray());
-        Assert.NotEqual(OutputWriter.TryReadPortablePdbId(pdbPath), OutputWriter.TryReadCodeViewPdbId(outputPath));
+        var output = new MemoryOutputStreams { Output = s_otherPair.Image.ToArray(), Pdb = s_pair.Pdb.ToArray() };
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, portablePdb: null);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
 
         Assert.Equal(OutputWriteResult.ImageWritten, result);
-        Assert.Equal(s_pair.Pdb.ToArray(), File.ReadAllBytes(pdbPath));
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Fact]
     public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedImageHasNoDebugDirectory()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, s_imageWithoutPdb.ToArray());
-        File.WriteAllBytes(pdbPath, s_pair.Pdb.ToArray());
+        var output = new MemoryOutputStreams { Output = s_imageWithoutPdb.ToArray(), Pdb = s_pair.Pdb.ToArray() };
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, portablePdb: null);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
 
         Assert.Equal(OutputWriteResult.ImageWritten, result);
-        Assert.Equal(s_pair.Pdb.ToArray(), File.ReadAllBytes(pdbPath));
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Fact]
-    public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedFileIsNotAnImage()
+    public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedOutputIsNotAnImage()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, s_stale);
-        File.WriteAllBytes(pdbPath, s_pair.Pdb.ToArray());
+        var output = new MemoryOutputStreams { Output = s_stale, Pdb = s_pair.Pdb.ToArray() };
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, portablePdb: null);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
 
         Assert.Equal(OutputWriteResult.ImageWritten, result);
-        Assert.Equal(s_pair.Pdb.ToArray(), File.ReadAllBytes(pdbPath));
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Fact]
-    public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedFileIsACoffObject()
+    public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedOutputIsACoffObject()
     {
-        // System.Reflection.Metadata reads a file that does not start with "MZ" as a COFF object file, which has no
+        // System.Reflection.Metadata reads bytes that do not start with "MZ" as a COFF object file, which has no
         // PE header and so no debug directory. Twenty zero bytes read as one with no sections.
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, new byte[20]);
-        File.WriteAllBytes(pdbPath, s_pair.Pdb.ToArray());
-        using (var coff = new PEReader(File.ReadAllBytes(outputPath).ToImmutableArray()))
+        byte[] coff = new byte[20];
+        using (var reader = new PEReader(coff.ToImmutableArray()))
         {
-            Assert.True(coff.PEHeaders.IsCoffOnly);
+            Assert.True(reader.PEHeaders.IsCoffOnly);
         }
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, portablePdb: null);
+        var output = new MemoryOutputStreams { Output = coff, Pdb = s_pair.Pdb.ToArray() };
+
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
 
         Assert.Equal(OutputWriteResult.ImageWritten, result);
-        Assert.Equal(s_image, File.ReadAllBytes(outputPath));
-        Assert.Equal(s_pair.Pdb.ToArray(), File.ReadAllBytes(pdbPath));
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Fact]
-    public void TryReadCodeViewPdbId_ReturnsNullForAFileLongerThanAnImageCanBe()
+    public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedOutputIsLongerThanAnImageCanBe()
     {
         // System.Reflection.Metadata rejects a stream longer than int.MaxValue bytes with an ArgumentException.
-        using var stream = new LengthOnlyStream(int.MaxValue + 1L);
+        var output = new MemoryOutputStreams
+        {
+            Pdb = s_pair.Pdb.ToArray(),
+            OpenExistingOutputOverride = () => new LengthOnlyStream(int.MaxValue + 1L),
+        };
 
-        Assert.Null(OutputWriter.TryReadCodeViewPdbId(stream));
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
+
+        Assert.Equal(OutputWriteResult.ImageWritten, result);
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Fact]
-    public void TryReadPortablePdbId_ReturnsNullForAFileLongerThanAPdbCanBe()
+    public void Write_WithoutPdb_KeepsAFileLongerThanAPdbCanBe()
     {
-        using var stream = new LengthOnlyStream(int.MaxValue + 1L);
+        var output = new MemoryOutputStreams
+        {
+            Output = s_pair.Image.ToArray(),
+            OpenExistingPdbOverride = () => new LengthOnlyStream(int.MaxValue + 1L),
+        };
 
-        Assert.Null(OutputWriter.TryReadPortablePdbId(stream));
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
+
+        Assert.Equal(OutputWriteResult.ImageWritten, result);
+        Assert.DoesNotContain(nameof(IOutputStreams.TryDeletePdb), output.Calls);
     }
 
     [Fact]
     public void Write_WithoutPdb_KeepsAFileThatIsNotAPortablePdb()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, s_pair.Image.ToArray());
-        File.WriteAllBytes(pdbPath, s_stale);
+        var output = new MemoryOutputStreams { Output = s_pair.Image.ToArray(), Pdb = s_stale };
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, portablePdb: null);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
 
         Assert.Equal(OutputWriteResult.ImageWritten, result);
-        Assert.Equal(s_stale, File.ReadAllBytes(pdbPath));
+        Assert.Equal(s_stale, output.Pdb);
+    }
+
+    [Fact]
+    public void Write_WithoutPdb_DeletesNothingWhenThereIsNoPdb()
+    {
+        var output = new MemoryOutputStreams { Output = s_pair.Image.ToArray() };
+
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
+
+        Assert.Equal(OutputWriteResult.ImageWritten, result);
+        Assert.DoesNotContain(nameof(IOutputStreams.TryDeletePdb), output.Calls);
+    }
+
+    public static TheoryData<Type> OpenFailures { get; } = new() { typeof(IOException), typeof(UnauthorizedAccessException) };
+
+    [Theory]
+    [MemberData(nameof(OpenFailures))]
+    public void Write_WithoutPdb_KeepsAPdbWhenTheReplacedOutputCannotBeOpened(Type exceptionType)
+    {
+        var output = new MemoryOutputStreams
+        {
+            Pdb = s_pair.Pdb.ToArray(),
+            OpenExistingOutputOverride = () => throw (Exception)Activator.CreateInstance(exceptionType)!,
+        };
+
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
+
+        Assert.Equal(OutputWriteResult.ImageWritten, result);
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
+    }
+
+    [Theory]
+    [MemberData(nameof(OpenFailures))]
+    public void Write_WithoutPdb_KeepsAPdbThatCannotBeOpened(Type exceptionType)
+    {
+        var output = new MemoryOutputStreams
+        {
+            Output = s_pair.Image.ToArray(),
+            OpenExistingPdbOverride = () => throw (Exception)Activator.CreateInstance(exceptionType)!,
+        };
+
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
+
+        Assert.Equal(OutputWriteResult.ImageWritten, result);
+        Assert.DoesNotContain(nameof(IOutputStreams.TryDeletePdb), output.Calls);
+    }
+
+    [Fact]
+    public void Write_WithoutPdb_ReportsAPdbThatCannotBeDeletedAsNotDeleted()
+    {
+        MemoryOutputStreams output = ImageAndItsPdb();
+        output.PdbDeleteFails = true;
+
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
+
+        Assert.Equal(OutputWriteResult.ImageWritten, result);
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Theory]
@@ -228,13 +256,10 @@ public sealed class OutputWriterTests : IDisposable
     [InlineData(false)]
     public void Write_WhenTheImageWriteFails_LeavesTheExistingPdbUnchanged(bool withPdb)
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(pdbPath, s_stale);
+        MemoryOutputStreams output = ImageAndItsPdb();
 
         Assert.Throws<IOException>(() => OutputWriter.Write(
-            outputPath,
-            pdbPath,
+            output,
             stream =>
             {
                 stream.WriteByte(0x4D);
@@ -242,8 +267,7 @@ public sealed class OutputWriterTests : IDisposable
             },
             withPdb ? s_pdb : null));
 
-        Assert.Equal(s_stale, File.ReadAllBytes(pdbPath));
-        Assert.Equal(new[] { "Min.dll", "Min.pdb" }, FileNames());
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Theory]
@@ -253,143 +277,125 @@ public sealed class OutputWriterTests : IDisposable
     {
         // The image is closed before the PDB is touched: a PDB written, or the replaced image's PDB deleted,
         // before the image stream is disposed would show here.
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, s_pair.Image.ToArray());
-        File.WriteAllBytes(pdbPath, s_pair.Pdb.ToArray());
+        MemoryOutputStreams output = ImageAndItsPdb();
+        output.OutputCloseFails = true;
 
-        Assert.Throws<IOException>(() => OutputWriter.Write(
-            outputPath,
-            pdbPath,
-            WriteImage,
-            withPdb ? s_pdb : null,
-            path => new ThrowOnDisposeStream(File.Create(path))));
+        Assert.Throws<IOException>(() => OutputWriter.Write(output, WriteImage, withPdb ? s_pdb : null));
 
-        Assert.Equal(s_pair.Pdb.ToArray(), File.ReadAllBytes(pdbPath));
+        Assert.Equal(s_pair.Pdb.ToArray(), output.Pdb);
     }
 
     [Fact]
-    public void Write_WhenThePdbCannotBeWritten_RemovesOnlyItsTemporaryFile()
+    public void Write_WithPdbWhenThePdbPathNamesTheOutput_WritesNothing()
     {
-        string outputPath = PathOf("Min.dll");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
+        var output = new MemoryOutputStreams { Output = s_stale, PdbPathIsOutputPath = true };
 
-        // A directory at the PDB path makes the final rename fail after the temporary file is written.
-        Directory.CreateDirectory(pdbPath);
-
-        Assert.ThrowsAny<Exception>(() => OutputWriter.Write(outputPath, pdbPath, WriteImage, s_pdb));
-
-        Assert.Equal(new[] { "Min.dll", "Min.pdb" }, FileNames());
-        Assert.True(Directory.Exists(pdbPath));
-    }
-
-    [Fact]
-    public void WritePdb_WhenItsTemporaryPathExists_LeavesThePdbUnchanged()
-    {
-        string pdbPath = PathOf("Min.pdb");
-        string temporaryPath = PathOf("Min.pdb.existing.tmp");
-        File.WriteAllBytes(pdbPath, s_stale);
-        File.WriteAllBytes(temporaryPath, s_image);
-
-        Assert.Throws<IOException>(() => OutputWriter.WritePdb(pdbPath, temporaryPath, s_pdb));
-
-        Assert.Equal(s_stale, File.ReadAllBytes(pdbPath));
-    }
-
-    [Fact]
-    public void WritePdb_WhenItsTemporaryPathExists_KeepsTheFileThere()
-    {
-        string pdbPath = PathOf("Min.pdb");
-        string temporaryPath = PathOf("Min.pdb.existing.tmp");
-        File.WriteAllBytes(temporaryPath, s_image);
-
-        Assert.Throws<IOException>(() => OutputWriter.WritePdb(pdbPath, temporaryPath, s_pdb));
-
-        Assert.Equal(s_image, File.ReadAllBytes(temporaryPath));
-    }
-
-    [Fact]
-    public void Write_WithPdbNamedLikeTheOutput_WritesNothing()
-    {
-        string outputPath = PathOf("Min.pdb");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, s_stale);
-
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, s_pdb);
 
         Assert.Equal(OutputWriteResult.PdbWouldOverwriteOutput, result);
-        Assert.Equal(s_stale, File.ReadAllBytes(outputPath));
+        Assert.Equal(s_stale, output.Output);
+        Assert.Empty(output.Calls);
     }
 
     [Fact]
-    public void Write_WithoutPdb_KeepsAnOutputNamedLikeThePdb()
+    public void Write_WithoutPdbWhenThePdbPathNamesTheOutput_WritesTheImageAndDoesNotReadTheReplacedOutput()
     {
-        string outputPath = PathOf("Min.pdb");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
+        // The file at the PDB path is the new image, so the replaced output's PDB id must not be compared with it.
+        var output = new MemoryOutputStreams { Output = s_pair.Image.ToArray(), PdbPathIsOutputPath = true };
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, portablePdb: null);
+        OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);
 
         Assert.Equal(OutputWriteResult.ImageWritten, result);
-        Assert.Equal(s_image, File.ReadAllBytes(outputPath));
+        Assert.Equal(s_image, output.Output);
+        Assert.DoesNotContain(nameof(IOutputStreams.OpenExistingOutput), output.Calls);
     }
 
-    [Fact]
-    public void Write_WithoutPdb_NeverDeletesTheOutputItWrote()
+    // The output and the PDB in memory, recording the calls made on it in order, with CloseOutput when the output
+    // stream is disposed. Output and Pdb are the bytes at each path, or null when there is no file; creating the
+    // output empties it, as creating a file does, and it holds what was written once the stream is closed.
+    private sealed class MemoryOutputStreams : IOutputStreams
     {
-        // The output is named like its PDB, the image it replaces refers to a PDB, and the bytes written are that
-        // PDB's: the file at the PDB path then reads as the replaced image's PDB, but it is the new output.
-        string outputPath = PathOf("Min.pdb");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
-        File.WriteAllBytes(outputPath, s_pair.Image.ToArray());
+        public byte[]? Output { get; set; }
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, stream => stream.Write(s_pair.Pdb.AsSpan()), portablePdb: null);
+        public byte[]? Pdb { get; set; }
 
-        Assert.Equal(OutputWriteResult.ImageWritten, result);
-        Assert.Equal(s_pair.Pdb.ToArray(), File.ReadAllBytes(outputPath));
-    }
+        public bool PdbPathIsOutputPath { get; init; }
 
-    [Fact]
-    public void Write_WithPdb_TreatsAnOutputDifferingFromThePdbOnlyInCaseAsTheDefaultFileSystemDoes()
-    {
-        // Min.PDB and Min.pdb are one file on the default Windows and macOS file systems, and two elsewhere.
-        bool caseInsensitive = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
-        string outputPath = PathOf("Min.PDB");
-        string pdbPath = OutputWriter.GetPdbPath(outputPath);
+        public bool OutputCloseFails { get; set; }
 
-        OutputWriteResult result = OutputWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+        public bool PdbDeleteFails { get; set; }
 
-        Assert.Equal(caseInsensitive ? OutputWriteResult.PdbWouldOverwriteOutput : OutputWriteResult.ImageAndPdbWritten, result);
-    }
+        // Called instead of opening Output or Pdb, to supply a stream that cannot be held in memory or to fail.
+        public Func<Stream>? OpenExistingOutputOverride { get; init; }
 
-    // A stream that writes through to another and fails when it is closed.
-    private sealed class ThrowOnDisposeStream(Stream inner) : Stream
-    {
-        public override bool CanRead => inner.CanRead;
-        public override bool CanSeek => inner.CanSeek;
-        public override bool CanWrite => inner.CanWrite;
-        public override long Length => inner.Length;
+        public Func<Stream>? OpenExistingPdbOverride { get; init; }
 
-        public override long Position
+        public List<string> Calls { get; } = [];
+
+        public Stream? OpenExistingOutput()
         {
-            get => inner.Position;
-            set => inner.Position = value;
+            Calls.Add(nameof(OpenExistingOutput));
+            return OpenExistingOutputOverride is { } open ? open() : Output is null ? null : new MemoryStream(Output, writable: false);
         }
 
-        public override void Flush() => inner.Flush();
-        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
-        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
-        public override void SetLength(long value) => inner.SetLength(value);
-        public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
-
-        protected override void Dispose(bool disposing)
+        public Stream CreateOutput()
         {
-            inner.Dispose();
-            throw new IOException("Injected image close failure");
+            Calls.Add(nameof(CreateOutput));
+            Output = [];
+            return new OutputStream(this);
+        }
+
+        public void WritePdb(ImmutableArray<byte> pdb)
+        {
+            Calls.Add(nameof(WritePdb));
+            Pdb = pdb.ToArray();
+        }
+
+        public Stream? OpenExistingPdb()
+        {
+            Calls.Add(nameof(OpenExistingPdb));
+            return OpenExistingPdbOverride is { } open ? open() : Pdb is null ? null : new MemoryStream(Pdb, writable: false);
+        }
+
+        public bool TryDeletePdb()
+        {
+            Calls.Add(nameof(TryDeletePdb));
+            if (PdbDeleteFails)
+            {
+                return false;
+            }
+
+            Pdb = null;
+            return true;
+        }
+
+        private sealed class OutputStream(MemoryOutputStreams owner) : MemoryStream
+        {
+            private bool _closed;
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing && !_closed)
+                {
+                    _closed = true;
+                    owner.Output = ToArray();
+                    owner.Calls.Add(CloseOutput);
+                    base.Dispose(disposing);
+                    if (owner.OutputCloseFails)
+                    {
+                        throw new IOException("Injected image close failure");
+                    }
+
+                    return;
+                }
+
+                base.Dispose(disposing);
+            }
         }
     }
 
     // A readable, seekable stream that reports a length and holds no data, so a length check can be tested without
-    // a file of that size.
+    // that many bytes.
     private sealed class LengthOnlyStream(long length) : Stream
     {
         public override bool CanRead => true;
