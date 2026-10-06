@@ -473,9 +473,22 @@ namespace Internal.JitInterface
 
     unsafe partial class CorInfoImpl
     {
+        internal readonly struct ManagedHelperProbeResult(
+            bool compilationSucceeded,
+            bool requiresInstructionSetSupportFixup,
+            bool retryRequested,
+            MethodDesc[] methodsRequiringILBodies)
+        {
+            public bool CompilationSucceeded { get; } = compilationSucceeded;
+            public bool RequiresInstructionSetSupportFixup { get; } = requiresInstructionSetSupportFixup;
+            public bool RetryRequested { get; } = retryRequested;
+            public MethodDesc[] MethodsRequiringILBodies { get; } = methodsRequiringILBodies;
+        }
+
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
         private readonly ReadyToRunCodegenCompilation _compilation;
+        private bool _isCompilationProbe;
         private MethodWithGCInfo _methodCodeNode;
         private MethodColdCodeNode _methodColdCodeNode;
         private OffsetMapping[] _debugLocInfos;
@@ -708,7 +721,9 @@ namespace Internal.JitInterface
 
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
-            if ((_ilBodiesNeeded == null) && _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
+            if (!_isCompilationProbe &&
+                (_ilBodiesNeeded == null) &&
+                _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
             {
                 HashCode hashCode = default(HashCode);
                 hashCode.AddBytes(_code);
@@ -741,9 +756,13 @@ namespace Internal.JitInterface
             }
 
             // If any il bodies need to be recomputed, force recompilation
-            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)
+            if ((_ilBodiesNeeded != null) ||
+                (!_isCompilationProbe && (InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)))
             {
-                _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
+                if (!_isCompilationProbe)
+                {
+                    _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
+                }
                 result = CompilationResult.CompilationRetryRequested;
             }
         }
@@ -763,7 +782,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public static bool IsMethodCompilable(Compilation compilation, MethodDesc method)
+        public static bool IsMethodCompilable(Compilation compilation, MethodDesc method, bool isJitHelper)
         {
             // This logic must mirror the logic in CompileMethod used to get to the point of calling CompileMethodInternal
             if (ShouldSkipCompilation(compilation.InstructionSetSupport, method) || MethodSignatureIsUnstable(method.Signature, out var _))
@@ -773,7 +792,7 @@ namespace Internal.JitInterface
             if (methodIL == null)
                 return false;
 
-            if (FunctionJustThrows(methodIL))
+            if (!isJitHelper && FunctionJustThrows(methodIL))
                 return false;
 
             if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, compilation.NodeFactory.CompilationModuleGroup))
@@ -784,7 +803,24 @@ namespace Internal.JitInterface
 
         public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode, Logger logger)
         {
+            CompileMethod(methodCodeNodeNeedingCode, logger, publishCode: true);
+        }
+
+        public ManagedHelperProbeResult ProbeManagedHelper(MethodDesc method, Logger logger)
+        {
+            MethodWithGCInfo methodCodeNode = new MethodWithGCInfo(method)
+            {
+                IsJitHelper = true,
+            };
+
+            return CompileMethod(methodCodeNode, logger, publishCode: false);
+        }
+
+        private ManagedHelperProbeResult CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode, Logger logger, bool publishCode)
+        {
             bool codeGotPublished = false;
+            ManagedHelperProbeResult result = default;
+            _isCompilationProbe = !publishCode;
             _methodCodeNode = methodCodeNodeNeedingCode;
 
             try
@@ -793,39 +829,39 @@ namespace Internal.JitInterface
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is skipped.");
-                    return;
+                    return result;
                 }
 
                 if (MethodSignatureIsUnstable(MethodBeingCompiled.Signature, out var _))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has an non version resilient signature.");
-                    return;
+                    return result;
                 }
                 MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
                 if (methodIL == null)
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because IL code could not be found for the method.");
-                    return;
+                    return result;
                 }
 
-                if (FunctionJustThrows(methodIL))
+                if (!_methodCodeNode.IsJitHelper && FunctionJustThrows(methodIL))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it always throws an exception");
-                    return;
+                    return result;
                 }
 
                 if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, _compilation.NodeFactory.CompilationModuleGroup))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has a non referenceable catch clause");
-                    return;
+                    return result;
                 }
 
                 var typicalDef = MethodBeingCompiled.GetTypicalMethodDefinition();
-                if (typicalDef is EcmaMethod or AsyncMethodVariant)
+                if (ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(MethodBeingCompiled) is not null)
                 {
                     var ecmaMethod = (EcmaMethod)typicalDef.GetPrimaryMethodDesc();
                     if ((methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == typicalDef.Context.SystemModule) ||
@@ -878,16 +914,60 @@ namespace Internal.JitInterface
                 {
                     logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` triggered recompilation to acquire stable tokens for cross module inline.");
                 }
+
+                if (!publishCode)
+                {
+                    MethodDesc[] methodsRequiringILBodies = _ilBodiesNeeded is null ? null : [.. _ilBodiesNeeded];
+                    if (compilationResult == CompilationResult.CompilationComplete)
+                    {
+                        ValidatePrecodeFixups();
+                    }
+
+                    result = new ManagedHelperProbeResult(
+                        compilationResult == CompilationResult.CompilationComplete,
+                        compilationResult == CompilationResult.CompilationComplete && RequiresInstructionSetSupportFixup(),
+                        compilationResult == CompilationResult.CompilationRetryRequested,
+                        methodsRequiringILBodies);
+                }
             }
             finally
             {
-                if (!codeGotPublished)
+                if (publishCode && !codeGotPublished)
                 {
                     PublishEmptyCode();
                 }
 
                 HasColdCode = (_methodColdCodeNode != null);
                 CompileMethodCleanup();
+                _isCompilationProbe = false;
+            }
+
+            return result;
+        }
+
+        private void ValidatePrecodeFixups()
+        {
+            if (_precodeFixups is null)
+                return;
+
+            foreach (ISymbolNode fixup in _precodeFixups)
+            {
+                ValidatePrecodeFixup(fixup);
+            }
+        }
+
+        private void ValidatePrecodeFixup(ISymbolNode fixup)
+        {
+            if (fixup is IMethodNode methodNode)
+            {
+                try
+                {
+                    _compilation.NodeFactory.DetectGenericCycles(_methodCodeNode.Method, methodNode.Method);
+                }
+                catch (TypeLoadException)
+                {
+                    throw new RequiresRuntimeJitException("Requires runtime JIT - potential generic cycle detected");
+                }
             }
         }
 
@@ -1001,8 +1081,31 @@ namespace Internal.JitInterface
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
 
-        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
+        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
+            MethodDesc managedHelper = ReadyToRunJitHelperRootProvider.GetManagedHelper(
+                _compilation.TypeSystemContext,
+                ftnNum);
+
+            if (managedHelper is not null &&
+                _compilation.IsDirectManagedHelperEligible(managedHelper))
+            {
+                Debug.Assert(_compilation.CompilationModuleGroup.ContainsMethodBody(managedHelper, unboxingStub: false));
+                helperMethod = managedHelper;
+                MethodWithGCInfo helperMethodNode = _compilation.NodeFactory.CompiledMethodNode(managedHelper);
+                MethodWithToken helperMethodWithToken = new MethodWithToken(
+                    managedHelper,
+                    _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(managedHelper, true, true),
+                    constrainedType: null,
+                    unboxing: false,
+                    genericContextObject: MethodBeingCompiled);
+                AddAdditionalDependency(
+                    _compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(helperMethodWithToken),
+                    "Eager ReadyToRun method entry");
+                return helperMethodNode;
+            }
+
+            helperMethod = null;
             ReadyToRunHelper id;
 
             switch (ftnNum)
@@ -1364,6 +1467,26 @@ namespace Internal.JitInterface
                 false,
                 false);
             pResult = CreateConstLookupToSymbol(entrypoint);
+        }
+
+        private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
+        {
+            // Only Wasm calls this; other targets use the dynamically composed delegate constructor helpers.
+            Debug.Assert(_compilation.NodeFactory.Target.IsWasm);
+
+            MethodDesc targetMethod = HandleToObject(targetMethodHnd);
+            MethodDesc delegateInvoke = HandleToObject(clsHnd).GetKnownMethod("Invoke"u8, null);
+            MetadataType systemDelegate = _compilation.TypeSystemContext.SystemModule.GetKnownType("System"u8, "Delegate"u8);
+
+            // Closed over a reference type instance, matching COMDelegate::GetDelegateCtor.
+            if (!targetMethod.Signature.IsStatic &&
+                !targetMethod.OwningType.IsValueType &&
+                delegateInvoke.Signature.Length == targetMethod.Signature.Length)
+            {
+                return ObjectToHandle(systemDelegate.GetKnownMethod("CtorClosed"u8, null));
+            }
+
+            return ObjectToHandle(systemDelegate.GetKnownMethod("DelegateConstruct"u8, null));
         }
 
         private FieldWithToken ComputeFieldWithToken(FieldDesc field, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
@@ -2438,9 +2561,21 @@ namespace Internal.JitInterface
         {
             if (!type.IsPrimitive)
             {
-                ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
-                AddPrecodeFixup(node);
+                Import typeHandle = GetTypeHandleImport(type);
+                if (typeHandle.Table.IsEager)
+                {
+                    AddAdditionalDependency(typeHandle, "Module eager type handle");
+                }
+                else
+                {
+                    AddPrecodeFixup(typeHandle);
+                }
             }
+        }
+
+        private Import GetTypeHandleImport(TypeDesc type)
+        {
+            return _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
         }
 
         private static bool MethodSignatureIsUnstable(MethodSignature methodSig, out string unstableMessage)
@@ -2547,6 +2682,19 @@ namespace Internal.JitInterface
             // We validate the safety of the signature here, as it could have been adjusted
             // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
             ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
+
+            if (_compilation.NodeFactory.Target.IsWasm && targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8)
+            {
+                // The hidden-argument flags come from the resolved call signature: a shared generic
+                // delegate supplies its generic context through 'this', which the Invoke method's own
+                // instantiation flags do not reflect.
+                WasmLowering.LoweringFlags loweringFlags = WasmLowering.GetLoweringFlags(&pResult->sig);
+                Debug.Assert(!loweringFlags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly));
+
+                MethodSignature closedStaticSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(targetMethod.Signature);
+                WasmSignature wasmSignature = WasmLowering.GetSignature(closedStaticSignature, loweringFlags);
+                AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSignature), "R2R-to-interpreter thunk for closed-static delegate target");
+            }
 
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
             // the caller.  No other kinds of virtual calls have extra information attached.
@@ -3008,7 +3156,7 @@ namespace Internal.JitInterface
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
                 throw new RequiresRuntimeJitException(type.ToString());
 
-            Import typeHandleImport = (Import)_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
+            Import typeHandleImport = GetTypeHandleImport(type);
             Debug.Assert(typeHandleImport.RepresentsIndirectionCell);
             ppIndirection = (void*)ObjectToHandle(typeHandleImport);
             return null;
@@ -3050,9 +3198,7 @@ namespace Internal.JitInterface
                             }
                             else
                             {
-                                symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                    ReadyToRunHelperId.TypeHandle,
-                                    typeHandleType);
+                                symbolNode = GetTypeHandleImport(typeHandleType);
                             }
                         }
                         break;
@@ -3817,6 +3963,17 @@ namespace Internal.JitInterface
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
                 {
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                    MethodDesc method = methodHandle is null ? null : HandleToObject(methodHandle);
+                    // A closed static delegate target needs an adapter only when Invoke returns
+                    // through a hidden buffer ('S') and has no async-continuation hidden argument.
+                    if (method is not null &&
+                        method.OwningType.IsDelegate &&
+                        method.Name == "Invoke"u8 &&
+                        wasmSig.SignatureString[0] == 'S' &&
+                        !wasmSig.SignatureString.Contains('a'))
+                    {
+                        AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
+                    }
                 }
             }
         }
@@ -3847,8 +4004,38 @@ namespace Internal.JitInterface
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
                 {
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                    ReadOnlySpan<WasmValueType> parameters = wasmSig.FuncType.Params.Types;
+                    // The adapter accepts the managed instance shape
+                    // (sp, this, retbuf, ..., pep). Require an indirect aggregate return,
+                    // no async-continuation argument, and pointer-typed this/retbuf positions.
+                    if (!sig.IsStatic &&
+                        wasmSig.SignatureString[0] == 'S' &&
+                        !wasmSig.SignatureString.Contains('a') &&
+                        parameters.Length >= 4 &&
+                        parameters[1] == WasmValueType.I32 &&
+                        parameters[2] == WasmValueType.I32)
+                    {
+                        AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
+                    }
                 }
             }
+        }
+
+        private void AddWasmClosedStaticRetBufThunkDependencies(WasmSignature signature)
+        {
+            AddAdditionalDependency(
+                _compilation.NodeFactory.WasmClosedStaticRetBufThunk(signature),
+                "Closed static return-buffer thunk for call site");
+
+            // D code is shared by physical signature, but each target I thunk must preserve
+            // the full interpreter layout, including aggregate sizes and alignment.
+            MethodSignature delegateSignature = WasmLowering.RaiseSignature(signature, _compilation.TypeSystemContext);
+            MethodSignature targetSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(delegateSignature);
+            WasmSignature targetWasmSignature = WasmLowering.GetSignature(targetSignature, WasmLowering.LoweringFlags.None);
+            Debug.Assert(targetWasmSignature.FuncType.Equals(signature.FuncType));
+            AddAdditionalDependency(
+                _compilation.NodeFactory.WasmR2RToInterpreterThunk(targetWasmSignature),
+                "Interpreter fallback for closed static delegate target");
         }
     }
 }

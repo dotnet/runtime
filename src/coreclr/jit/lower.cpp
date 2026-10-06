@@ -2987,7 +2987,17 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // the call according to the portable entrypoint abi
     if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        LowerPEPCall(call);
+        if (call->gtDirectCallAddress != nullptr)
+        {
+            // A direct call target has no portable entrypoint to dispatch through, so there is
+            // nothing meaningful to pass here. The argument still needs to be present to satisfy
+            // the calling convention shared with indirect PEP calls, so pass a constant zero.
+            AddWasmPortableEntryPointArg(call, m_compiler->gtNewIconNode(0, TYP_I_IMPL));
+        }
+        else
+        {
+            LowerPEPCall(call);
+        }
     }
 #endif // TARGET_WASM
 
@@ -6259,7 +6269,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 // SpillStructCallResult: Spill call result to memory.
 //
 // Arguments:
-//     call - call with 3, 5, 6 or 7 return size that has to be spilled to memory.
+//     call - call returning a struct in a single register whose layout has no primitive register type.
 //
 // Return Value:
 //    load of the spilled variable.
@@ -6267,12 +6277,18 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
 {
     // TODO-1stClassStructs: we can support this in codegen for `GT_STORE_BLK` without new temps.
-    const unsigned spillNum = m_compiler->lvaGrabTemp(true DEBUGARG("Return value temp for an odd struct return size"));
+    const unsigned spillNum =
+        m_compiler->lvaGrabTemp(true DEBUGARG("Return value temp for a non-enregisterable struct return"));
     m_compiler->lvaSetVarDoNotEnregister(spillNum DEBUGARG(DoNotEnregisterReason::LocalField));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     m_compiler->lvaSetStruct(spillNum, retClsHnd, false);
-    unsigned       offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
-    GenTreeLclFld* spill  = m_compiler->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
+#if FEATURE_MULTIREG_RET
+    unsigned offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
+#else
+    // No ReturnTypeDesc without FEATURE_MULTIREG_RET.
+    unsigned offset = 0;
+#endif
+    GenTreeLclFld* spill = m_compiler->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
 
     BlockRange().InsertAfter(call, spill);
     ContainCheckStoreLoc(spill);
@@ -6341,6 +6357,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             // For JIT helper based tailcall (only used on x86) the target
             // address is passed as an arg to the helper so we want a node for
             // it.
+#ifdef TARGET_WASM
+            if (m_compiler->IsReadyToRun())
+            {
+                // IAT_VALUE identifies a directly callable symbol rather than a portable entrypoint cell.
+                call->gtDirectCallAddress = addr;
+                break;
+            }
+#endif
             if (!IsCallTargetInRange(addr) || call->IsTailCallViaJitHelper())
             {
                 result = AddrGen(addr);
@@ -6502,7 +6526,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // [originalThis + firstTgtOffs]
 
     unsigned targetOffs = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
-    GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
+    GenTree* result     = new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_BYREF, base, nullptr, 0, targetOffs);
     GenTree* callTarget = Ind(result);
 
     // don't need to sequence and insert this tree, caller will do it
@@ -7678,11 +7702,11 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
-        !m_compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
+    if (parent->OperIs(GT_STOREIND) && parent->AsIndir()->IsVolatile() &&
+        m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(parent->AsStoreInd()))
     {
-        // For Arm64 we avoid using LEA for volatile INDs
-        // because we won't be able to use ldar/star
+        // Early out here so we don't report an RCPC2 dependency for a store that will ultimately
+        // be a write barrier instead of a volatile RCPC2 store
         return false;
     }
 
@@ -7728,8 +7752,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // Generally, we try to avoid creating addressing modes for volatile INDs so we can then use
         // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
         // addressing modes (if the offset fits into 9 bits)
-        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Rcpc2));
-
         if ((scale > 1) || (!emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset)) || (index != nullptr))
         {
             return false;
@@ -7764,6 +7786,14 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         DISPNODE(addr);
         return false;
     }
+
+#ifdef TARGET_ARM64
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
+        !m_compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
+    {
+        return false;
+    }
+#endif
 
     JITDUMP("Addressing mode:\n");
     JITDUMP("  Base\n    ");
@@ -8900,6 +8930,12 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 #endif // FEATURE_SIMD
 }
 
+//------------------------------------------------------------------------
+// Lowering::DoPhase -- lower the IR
+//
+// Returns:
+//    suitable phase status
+//
 PhaseStatus Lowering::DoPhase()
 {
     // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
@@ -8956,54 +8992,62 @@ PhaseStatus Lowering::DoPhase()
 
     AfterLowerBlocks();
 
-#ifdef DEBUG
-    JITDUMP("Lower has completed modifying nodes.\n");
-    if (VERBOSE)
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        m_compiler->fgDispBasicBlocks(true);
+        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
+        // do this everywhere.
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
     }
-#endif
+
+    // Remove dead blocks before stack level setting analyzes throw helper usage.
+    //
+    m_compiler->fgRemoveBlocksOutsideDfsTree();
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgLateLiveness -- rerun liveness after lower / stacklevelsetter
+//
+// Returns:
+//    suitable phase status
+//
+PhaseStatus Compiler::fgLateLiveness()
+{
+    if (!backendRequiresLocalVarLifetimes())
+    {
+        fgInvalidateDfsTree();
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    assert(backendRequiresLocalVarLifetimes());
+    assert(m_dfsTree != nullptr);
 
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
     const bool setSlotNumbers = false;
-    m_compiler->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    if (m_compiler->m_dfsTree == nullptr)
+    assert(opts.OptimizationEnabled());
+
+    fgPostLowerLiveness();
+    // local var liveness can delete code, which may create empty blocks
+    bool modified = fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+
+    if (modified)
     {
-        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
-        // do this everywhere. The dead blocks are removed below, however, some of
-        // lowering may use the DFS tree, so we compute that here.
-        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
+        fgDfsBlocksAndRemove();
+        JITDUMP("had to run another liveness pass:\n");
+        fgPostLowerLiveness();
     }
 
-    // Remove dead blocks. We want to remove unreachable blocks even in
-    // MinOpts.
-    m_compiler->fgRemoveBlocksOutsideDfsTree();
+    // Recompute local var ref counts again after liveness to reflect
+    // impact of any dead code removal. Note this may leave us with
+    // tracked vars that have zero refs.
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    if (m_compiler->backendRequiresLocalVarLifetimes())
-    {
-        assert(m_compiler->opts.OptimizationEnabled());
-
-        m_compiler->fgPostLowerLiveness();
-        // local var liveness can delete code, which may create empty blocks
-        bool modified = m_compiler->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
-
-        if (modified)
-        {
-            m_compiler->fgDfsBlocksAndRemove();
-            JITDUMP("had to run another liveness pass:\n");
-            m_compiler->fgPostLowerLiveness();
-        }
-
-        // Recompute local var ref counts again after liveness to reflect
-        // impact of any dead code removal. Note this may leave us with
-        // tracked vars that have zero refs.
-        m_compiler->lvaComputeRefCounts(isRecompute, setSlotNumbers);
-    }
-
-    m_compiler->fgInvalidateDfsTree();
+    fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

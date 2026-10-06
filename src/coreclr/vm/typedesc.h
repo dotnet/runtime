@@ -128,7 +128,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;
+        return (VolatileLoad(&_typeAndFlags) & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     VOID SetIsFullyLoaded()

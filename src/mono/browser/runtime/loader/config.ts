@@ -11,6 +11,7 @@ import { mono_log_error, mono_log_debug } from "./logging";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
 import { browserVirtualAppBase } from "./globals";
+import { loaderCallbacks } from "./callbacks";
 
 export function deep_merge_config (target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -240,14 +241,11 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
         await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
 
-        if (module.onConfigLoaded) {
-            try {
-                await module.onConfigLoaded(loaderHelpers.config, exportedRuntimeAPI);
-                normalizeConfig();
-            } catch (err: any) {
-                mono_log_error("onConfigLoaded() failed", err);
-                throw err;
-            }
+        try {
+            await loaderCallbacks.configLoaded?.(loaderHelpers.config, exportedRuntimeAPI);
+        } catch (err: any) {
+            mono_log_error("onConfigLoaded() failed", err);
+            throw err;
         }
 
         normalizeConfig();
@@ -268,4 +266,3 @@ export function isDebuggingSupported (): boolean {
 
     return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
-

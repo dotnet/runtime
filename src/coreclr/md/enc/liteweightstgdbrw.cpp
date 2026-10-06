@@ -433,6 +433,7 @@ HRESULT CLiteWeightStgdbRW::InitNew()
     return m_MiniMd.InitNew();
 }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Determine what the size of the saved data will be.
 //*****************************************************************************
@@ -911,6 +912,7 @@ ErrExit:
         delete pStorage;
     return hr;
 } // CLiteWeightStgdbRW::Save
+#endif
 
 //*****************************************************************************
 // Pull the PEKind and Machine out of PE headers -- if we have PE headers.

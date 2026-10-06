@@ -31,9 +31,23 @@ environment: copilot-pat-pool
 
 engine:
   id: copilot
-  model: claude-opus-4.8
   env:
     COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
+
+model: gpt-6.1-sol
+max-ai-credits: 2500
+
+# gpt-6.1-sol is not yet in the built-in gh-aw v0.86.2 pricing table.
+models:
+  providers:
+    github-copilot:
+      models:
+        gpt-6.1-sol:
+          cost:
+            input: "2e-06"
+            output: "1e-05"
+            cache_read: "1e-07"
+            cache_write: "2.5e-06"
 
 concurrency:
   group: "ci-failure-scan"
@@ -41,15 +55,85 @@ concurrency:
 
 tools:
   github:
-    toolsets: [pull_requests, repos, issues, search]
+    type: remote
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    toolsets: [pull_requests, issues]
+    allowed: [issue_read, search_pull_requests, pull_request_read]
+    allowed-repos: [dotnet/runtime]
     min-integrity: approved
   edit:
   bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
+
+mcp-scripts:
+  search-kbe-issues:
+    description: "Search only dotnet/runtime issues and return inert candidate identifiers with author metadata. Use issue_read to inspect every candidate."
+    inputs:
+      query:
+        type: string
+        required: true
+        description: "GitHub issue search query without a repo qualifier. The tool adds repo:dotnet/runtime and is:issue."
+    script: |
+      if (typeof query !== "string" || !query.trim()) {
+        throw new Error("query must be a non-empty string");
+      }
+      const token = process.env.GITHUB_TOKEN;
+      if (!token) {
+        throw new Error("GITHUB_TOKEN must be set");
+      }
+      const { execFile } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const { stdout } = await promisify(execFile)("gh", [
+        "api",
+        "search/issues",
+        "--method",
+        "GET",
+        "--raw-field",
+        `q=${query.trim()} repo:dotnet/runtime is:issue`,
+        "--field",
+        "per_page=10"
+      ], {
+        env: { ...process.env, GH_TOKEN: token, GITHUB_TOKEN: token },
+        maxBuffer: 1024 * 1024
+      });
+      let result;
+      try {
+        result = JSON.parse(stdout);
+      } catch {
+        throw new Error("gh issue search returned invalid JSON");
+      }
+      if (result.incomplete_results !== false ||
+          !Array.isArray(result.items) ||
+          !Number.isInteger(result.total_count)) {
+        throw new Error("GitHub issue search returned an invalid response");
+      }
+      if (result.total_count > result.items.length) {
+        throw new Error("GitHub issue search returned more matches than the page limit; narrow the query");
+      }
+      if (result.total_count !== result.items.length) {
+        throw new Error("GitHub issue search returned an invalid response");
+      }
+      return result.items.map((item) => {
+        if (item.repository_url !== "https://api.github.com/repos/dotnet/runtime" ||
+            item.pull_request !== undefined ||
+            !Number.isInteger(item.number) ||
+            typeof item.user?.login !== "string" ||
+            item.user.login.length === 0) {
+          throw new Error("GitHub issue search returned an invalid candidate");
+        }
+        return {
+          number: item.number,
+          user: { login: item.user.login }
+        };
+      });
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 checkout:
   fetch-depth: 50
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-issue:
     max: 5
     labels: [agentic-workflows, "Known Build Error"]
@@ -64,6 +148,9 @@ network:
     - dev.azure.com
     - helix.dot.net
     - "*.blob.core.windows.net"
+  blocked:
+    - github
+    - api.github.com
 ---
 
 # CI Outer-Loop Failure Scanner
@@ -72,7 +159,7 @@ You are a CI triage agent. Each scheduled run, you scan a fixed list of `dnceng-
 
 This workflow is **detection only**. It files KBEs and stops. Mitigation — small fix PRs and looping in owners — is owned by the companion [`ci-failure-fix`](ci-failure-fix.md) workflow, which walks the open `[ci-scan]` KBEs on its own cadence. This scan never opens PRs and never disables, skips, or mutes tests.
 
-To suggest changes, edit this file or comment on the issues it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback daily, and opens (or updates) a single draft PR with proposed edits.
+To suggest changes, edit this file or comment on the issues it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback every two weeks and lists proposed edits in the `[ci-scan-feedback] KPI Tracker` issue.
 
 The agent runs read-only. All writes go through `safe-outputs`.
 
@@ -90,6 +177,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 10. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
 11. **AzDO API: anonymous only.** Stay on `_apis/build/...`. Never call `_apis/test/...` or `vstmr.dev.azure.com` (both redirect to sign-in).
 12. **Don't add `area-*` references to issue titles.** Multi-area titles produce multi-label assignments from the labeler bot.
+13. **Issue search transport is fixed.** Use only `search-kbe-issues` for GitHub issue searches, then inspect every returned candidate with `github` `issue_read` method `get`. Never use `github` `search_issues` or shell `gh` issue search.
 
 ## What this run must accomplish
 
@@ -291,6 +379,16 @@ Follow exactly these sections from `.github/workflows/shared/create-kbe.instruct
 3. `<a id="search-area-team-tracker"></a>` / `## Search for an area-team tracker`
 4. `<a id="search-existing-prs"></a>` / `## Search for existing PRs already handling the failure`
 5. `<a id="verify-embedded-issues"></a>` / `## Verify every embedded issue number exists`
+
+All issue-search query variants in those sections MUST go through
+`search-kbe-issues`. The wrapper adds `repo:dotnet/runtime is:issue` and returns
+at most 10 inert candidate records containing only the issue number and
+`user.login`. For every returned number, call `github` `issue_read` with
+`owner: dotnet`, `repo: runtime`, and `method: get` before making any semantic
+duplicate or tracker decision. A wrapper failure or integrity-filtered/failed
+candidate read must fail closed as specified in the shared instructions.
+Use the built-in `search_pull_requests` and `pull_request_read` tools only for
+the PR searches in that flow.
 
 When searching, account for the fact that the same signature can be filed in
 different `ErrorMessage` representations. A KBE recorded in `<a id="kbe-array-form"></a>`
