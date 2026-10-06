@@ -807,6 +807,14 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     continue;
                 }
 
+#ifdef TARGET_WASM
+                // The shadow stack pointer is never stored to, so it cannot interfere.
+                if (prevArg.GetWellKnownArg() == WellKnownArg::WasmShadowStackPointer)
+                {
+                    continue;
+                }
+#endif
+
                 if (((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
                     comp->gtMayHaveStoreInterference(argx, prevArg.GetEarlyNode()))
                 {
