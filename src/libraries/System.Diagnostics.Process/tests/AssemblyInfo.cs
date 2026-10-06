@@ -5,6 +5,7 @@ using Xunit;
 
 #if TARGET_OSX
 // Retain serialization until process-management hangs under concurrent test classes on macOS are resolved.
+// https://github.com/dotnet/runtime/issues/135294
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 #endif
 
