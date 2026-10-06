@@ -340,29 +340,6 @@ extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnSta
     END_QCALL;
 }
 
-extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId(QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    UINT64 threadId = 0;
-
-    BEGIN_QCALL;
-
-    // The Windows API GetCurrentThreadId returns a 32-bit integer thread ID.
-    // On some non-Windows platforms (e.g. OSX), the thread ID is a 64-bit value.
-    // We special case the API for non-Windows to get the 64-bit value and zero-extend
-    // the Windows value to return a single data type on all platforms.
-
-#ifndef TARGET_UNIX
-    threadId = (UINT64) GetCurrentThreadId();
-#else
-    threadId = (UINT64) PAL_GetCurrentOSThreadId();
-#endif
-    END_QCALL;
-
-    return threadId;
-}
-
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
