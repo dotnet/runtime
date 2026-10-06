@@ -79,11 +79,12 @@ internal sealed class Program
                 }
             }
 
-            // Build individual SourceText for each input file
+            // Build individual SourceText for each input file. Its path is the full path, which the PDB records
+            // as the input file's document name, as native ilasm does.
             var documents = ImmutableArray.CreateBuilder<SourceText>(inputFiles.Length);
             foreach (string file in inputFiles)
             {
-                documents.Add(new SourceText(File.ReadAllText(file), file));
+                documents.Add(new SourceText(File.ReadAllText(file), Path.GetFullPath(file)));
             }
 
             // Build options

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using Xunit;
 
 namespace ILAssembler.Tests
@@ -306,6 +308,225 @@ namespace ILAssembler.Tests
             using var pdb = new PortablePdbTestReader(result!);
 
             Assert.Equal(new[] { "a.cs", "b.cs" }, pdb.GetSequencePointDocumentNames("M"));
+        }
+
+        private static readonly Guid ILAssemblyLanguage = new("af046cd3-d0e1-11d2-977c-00a0c9b4d50c");
+        private static readonly Guid CSharpLanguage = new("3f5162f8-07c6-11d3-9053-00c04fa302a1");
+
+        private static CompilationResult CompileDocuments(Options options, params SourceText[] documents)
+        {
+            var (diagnostics, result) = new DocumentCompiler().Compile(
+                documents.ToImmutableArray(),
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                options);
+            Assert.Empty(diagnostics);
+            Assert.NotNull(result);
+            return result!;
+        }
+
+        [Fact]
+        public void InputFile_IsTheFirstDocument()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    .line 1,1 : 1,2 'a.cs'
+                    ret
+            """)));
+
+            Assert.Equal(new[] { "test.il", "a.cs" }, pdb.DocumentNames);
+        }
+
+        [Fact]
+        public void LineWithoutFileNameBeforeAnyNamedFile_IsInTheInputFile()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    .line 5
+                    ret
+            """)));
+
+            Assert.Equal("test.il", pdb.GetMethodDocumentName("M"));
+        }
+
+        [Fact]
+        public void Documents_AreInTheOrderTheyAreNamed_NotInMethodDefinitionOrder()
+        {
+            // The global method comes after the class in the source, but its MethodDef row comes first.
+            using var pdb = PortablePdbTestReader.Compile($$"""
+                .assembly extern System.Runtime { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                {{Method("M", """
+                    .line 1,1 : 1,2 'a.cs'
+                    ret
+            """)}}
+                }
+                .method public static void G() cil managed
+                {
+                    .line 2,2 : 1,2 'b.cs'
+                    ret
+                }
+                """);
+
+            Assert.True(MetadataTokens.GetRowNumber(pdb.GetMethodHandle("G")) < MetadataTokens.GetRowNumber(pdb.GetMethodHandle("M")));
+            Assert.Equal(new[] { "test.il", "a.cs", "b.cs" }, pdb.DocumentNames);
+        }
+
+        [Theory]
+        [InlineData("top level")]
+        [InlineData("class level")]
+        [InlineData("replaced in a method")]
+        public void FileNamedByALineDirective_IsADocumentEvenWithoutSequencePoints(string where)
+        {
+            string unused = ".line 5,5 : 1,2 'unused.cs'";
+            string methodBody = where == "replaced in a method"
+                ? $"{unused}\n.line 1,1 : 1,2 'a.cs'\nret"
+                : ".line 1,1 : 1,2 'a.cs'\nret";
+            string source = $$"""
+                .assembly extern System.Runtime { }
+                .assembly test { }
+                {{(where == "top level" ? unused : "")}}
+                .class public auto ansi beforefieldinit Test
+                {
+                    {{(where == "class level" ? unused : "")}}
+                    .method public static void M() cil managed
+                    {
+                        {{methodBody}}
+                    }
+                }
+                """;
+
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            Assert.Equal(new[] { "test.il", "unused.cs", "a.cs" }, pdb.DocumentNames);
+        }
+
+        [Fact]
+        public void Documents_DefaultToTheILAssemblyLanguage()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    .line 1,1 : 1,2 'a.cs'
+                    ret
+            """)));
+
+            Assert.Equal(
+                new[] { ILAssemblyLanguage, ILAssemblyLanguage },
+                pdb.Pdb.Documents.Select(handle => pdb.Pdb.GetGuid(pdb.Pdb.GetDocument(handle).Language)));
+        }
+
+        [Fact]
+        public void LanguageDirective_AppliesToDocumentsDefinedAfterIt()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(
+                Method("M1", """
+                    .line 1,1 : 1,2 'a.cs'
+                    ret
+            """) +
+                $"    .language '{CSharpLanguage}'\n" +
+                Method("M2", """
+                    .line 2,2 : 1,2 'b.cs'
+                    ret
+            """)));
+
+            Assert.Equal(
+                (ILAssemblyLanguage, ILAssemblyLanguage, CSharpLanguage),
+                (pdb.GetDocumentLanguage("test.il"), pdb.GetDocumentLanguage("a.cs"), pdb.GetDocumentLanguage("b.cs")));
+        }
+
+        [Fact]
+        public void FileNamedAgainAfterALanguageDirective_IsTheSameDocumentWithItsFirstLanguage()
+        {
+            using var pdb = PortablePdbTestReader.Compile(Program(
+                Method("M1", """
+                    .line 1,1 : 1,2 'a.cs'
+                    ret
+            """) +
+                $"    .language '{CSharpLanguage}'\n" +
+                Method("M2", """
+                    .line 2,2 : 1,2 'a.cs'
+                    ret
+            """)));
+
+            Assert.Equal(new[] { "test.il", "a.cs" }, pdb.DocumentNames);
+            Assert.Equal(ILAssemblyLanguage, pdb.GetDocumentLanguage("a.cs"));
+            Assert.Equal("a.cs", pdb.GetMethodDocumentName("M2"));
+        }
+
+        [Fact]
+        public void FileNamesDifferingOnlyInCase_AreDifferentDocuments()
+        {
+            // Native ilasm compares document names with strcmp.
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
+                    .line 1,1 : 1,2 'a.cs'
+                    nop
+                    .line 2,2 : 1,2 'A.cs'
+                    ret
+            """)));
+
+            Assert.Equal(new[] { "test.il", "a.cs", "A.cs" }, pdb.DocumentNames);
+        }
+
+        [Fact]
+        public void LanguageDirectiveInOneInputFile_AppliesToDocumentsDefinedInTheNextInputFile()
+        {
+            CompilationResult result = CompileDocuments(
+                new Options { Pdb = true },
+                new SourceText($".assembly test {{ }}\n.language '{CSharpLanguage}'\n", "first.il"),
+                new SourceText(Program(Method("M", """
+                    .line 1,1 : 1,2 'x.cs'
+                    ret
+            """)).Replace(".assembly test { }", string.Empty), "second.il"));
+            using var pdb = new PortablePdbTestReader(result);
+
+            Assert.Equal(
+                (ILAssemblyLanguage, CSharpLanguage, CSharpLanguage),
+                (pdb.GetDocumentLanguage("first.il"), pdb.GetDocumentLanguage("second.il"), pdb.GetDocumentLanguage("x.cs")));
+        }
+
+        [Fact]
+        public void EachInputFile_IsADocument()
+        {
+            CompilationResult result = CompileDocuments(
+                new Options { Pdb = true },
+                new SourceText(".assembly test { }", "first.il"),
+                new SourceText(".class public auto ansi Test { }", "second.il"));
+            using var pdb = new PortablePdbTestReader(result);
+
+            Assert.Equal(new[] { "first.il", "second.il" }, pdb.DocumentNames);
+        }
+
+        [Fact]
+        public void Deterministic_MultiDocumentProgram_GivesIdenticalPdbBytes()
+        {
+            SourceText[] documents =
+            [
+                new SourceText(Program(
+                    Method("M1", TwoDocumentMethod) +
+                    Method("M2", """
+                    .line 3,3 : 1,2 ''
+                    nop
+                    .line 4,4 : 1,2 'c.cs'
+                    ret
+            """)), "first.il"),
+                new SourceText("""
+                    .class public auto ansi beforefieldinit Second
+                    {
+                        .method public static void M3() cil managed
+                        {
+                            .line 5
+                            nop
+                            .line 6 'a.cs'
+                            ret
+                        }
+                    }
+                    """, "second.il"),
+            ];
+            var options = new Options { Debug = true, Deterministic = true };
+
+            ImmutableArray<byte> first = DocumentCompilerTestHelpers.GetPortablePdb(CompileDocuments(options, documents));
+            ImmutableArray<byte> second = DocumentCompilerTestHelpers.GetPortablePdb(CompileDocuments(options, documents));
+
+            Assert.Equal<byte>(first, second);
         }
     }
 }
