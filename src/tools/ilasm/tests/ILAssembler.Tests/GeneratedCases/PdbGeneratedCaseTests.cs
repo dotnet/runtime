@@ -166,9 +166,10 @@ namespace ILAssembler.Tests.GeneratedCases
 
         private static PortablePdbTestReader CompileDocumentProgram(int index)
         {
+            GeneratedDocumentProgram program = PdbCaseGenerator.DocumentCases[index];
             var (diagnostics, result) = new DocumentCompiler().Compile(
-                PdbCaseGenerator.DocumentCases[index].ToSources(),
-                _ => throw new InvalidOperationException("Unexpected include"),
+                program.ToSources(),
+                path => program.IncludedSources[path],
                 _ => throw new InvalidOperationException("Unexpected resource"),
                 new Options { Debug = true });
             Assert.Empty(diagnostics);
@@ -191,6 +192,41 @@ namespace ILAssembler.Tests.GeneratedCases
                     expected.Select(point => (point.Offset, point.Hidden, point.Document)),
                     actual.Select(point => (point.Offset, point.IsHidden, pdb.GetDocumentName(point.Document))));
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(PdbCaseGenerator.DocumentCaseData), MemberType = typeof(PdbCaseGenerator))]
+        public void SequencePoints_AreAtTheExpectedInstructionsWithTheExpectedSpans(int index, string description)
+        {
+            GeneratedDocumentProgram program = PdbCaseGenerator.DocumentCases[index];
+            using PortablePdbTestReader pdb = CompileDocumentProgram(index);
+
+            for (int i = 0; i < program.Methods.Length; i++)
+            {
+                // A reader gives a hidden point's span as lines 0xFEEFEE and columns 0, which is what the model has.
+                Assert.Equal(
+                    program.ExpectedSequencePoints[i].Select(point => (point.Offset, point.StartLine, point.StartColumn, point.EndLine, point.EndColumn)),
+                    pdb.GetSequencePoints($"M{i}").Select(point => (point.Offset, point.StartLine, point.StartColumn, point.EndLine, point.EndColumn)));
+            }
+        }
+
+        [Fact]
+        public void DocumentCases_CoverEveryShape()
+        {
+            // Each shape the generator draws must occur often enough for the theories above to exercise it. The
+            // minimums are well below the counts the seed gives (printed by the assertion message on failure).
+            var totals = new System.Collections.Generic.SortedDictionary<string, int>();
+            foreach (GeneratedDocumentProgram program in PdbCaseGenerator.DocumentCases)
+            {
+                foreach ((string shape, int count) in program.Shapes)
+                {
+                    totals[shape] = totals.GetValueOrDefault(shape) + count;
+                }
+            }
+
+            string summary = string.Join(", ", totals.Select(pair => $"{pair.Key}={pair.Value}"));
+            Assert.All(totals, pair => Assert.True(pair.Value >= 20, $"{pair.Key}: {pair.Value} ({summary})"));
+            Assert.Equal(14, totals.Count);
         }
 
         [Theory]

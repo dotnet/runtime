@@ -12,7 +12,7 @@ internal sealed partial class GrammarActions
 {
     internal void EmitMethodReferenceInstruction(IToken opcodeToken, CILParser.MethodRefContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
@@ -37,7 +37,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitFieldReferenceInstruction(IToken opcodeToken, CILParser.FieldRefContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
@@ -48,7 +48,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitMetadataTokenInstruction(IToken opcodeToken, CILParser.MdtokenContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
@@ -59,7 +59,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitTypeReferenceInstruction(IToken opcodeToken, CILParser.TypeSpecContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
@@ -70,7 +70,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitCalliInstruction(IToken opcodeToken, CILParser.CalliSignatureContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }
@@ -84,7 +84,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitOwnerTokenInstruction(IToken opcodeToken, CILParser.OwnerTypeContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
+        if (context.HasSyntaxError || StartInstruction(opcodeToken) is not { } instruction)
         {
             return;
         }

@@ -101,39 +101,103 @@ namespace ILAssembler.Tests.GeneratedCases
             (Hidden ? $".line {HiddenLine},{HiddenLine} : 0,0" : $".line {Line},{Line} : 1,2") +
             (FileName is null ? "" : $" '{FileName}'");
 
+        /// <summary>The start line, start column, end line and end column of the points the directive gives.</summary>
+        public (int StartLine, int StartColumn, int EndLine, int EndColumn) Span =>
+            Hidden ? (HiddenLine, 0, HiddenLine, 0) : (Line, 1, Line, 2);
+
         public override string ToString() => (Hidden ? "H" : Line.ToString()) + (FileName is null ? "" : $"'{FileName}'");
     }
 
+    /// <summary>Where the text of a generated method is.</summary>
+    public enum GeneratedInclusion
+    {
+        /// <summary>In the input file.</summary>
+        None,
+
+        /// <summary>The whole method declaration is in a file that the input file <c>#include</c>s at class level.</summary>
+        Method,
+
+        /// <summary>
+        /// A run of the method's instructions, with their directives and filler lines, is in a file that the method
+        /// body <c>#include</c>s.
+        /// </summary>
+        Body,
+    }
+
     /// <summary>
-    /// A method of a generated multi-document program: optionally preceded by a class-level <c>.language</c>
-    /// directive and a class-level <c>.line</c> directive. A method with a body optionally declares locals and has
-    /// <c>nop</c> instructions and a final <c>ret</c>; <see cref="Slots"/> holds the directives that precede each
-    /// instruction, and instruction <c>i</c> is at IL offset <c>i</c>. A <see cref="Bodyless"/> method is abstract;
-    /// its one slot holds the directives inside its braces, and it has no instructions.
+    /// A method of a generated multi-document program, optionally preceded by a class-level <c>.language</c>
+    /// directive and a class-level <c>.line</c> directive.
     /// </summary>
+    /// <remarks>
+    /// A method with a body optionally declares locals and has one-byte <c>nop</c> or, where <see cref="TwoByte"/>[i]
+    /// is set, two-byte <c>ldc.i4.s</c> instructions and a final <c>ret</c>; instruction <c>i</c> is at IL offset
+    /// <see cref="OffsetOf"/>(i). Before instruction <c>i</c> come <see cref="Fillers"/>[i] blank
+    /// or comment lines, then the directives of <see cref="Slots"/>[i], each on its own line; the instruction is on
+    /// a line of its own, or, when <see cref="SameLine"/>[i] is set, on the line of the previous instruction (it then
+    /// has no fillers and no directives). <see cref="Trailing"/> holds the directives after the last instruction.
+    /// A <see cref="Bodyless"/> method is abstract; its one slot holds the directives inside its braces, and it has
+    /// no instructions. With <see cref="GeneratedInclusion.Body"/>, instructions <see cref="IncludeStart"/> to
+    /// <see cref="IncludeEnd"/> (exclusive) and what precedes each of them are in the included file.
+    /// </remarks>
     public sealed record GeneratedLineMethod(
         bool LanguageBefore,
         GeneratedLineDirective? ClassLevelDirective,
         bool Bodyless,
         string? Locals,
-        ImmutableArray<ImmutableArray<GeneratedLineDirective>> Slots)
+        ImmutableArray<ImmutableArray<GeneratedLineDirective>> Slots,
+        ImmutableArray<int> Fillers,
+        ImmutableArray<bool> SameLine,
+        ImmutableArray<bool> TwoByte,
+        ImmutableArray<GeneratedLineDirective> Trailing,
+        GeneratedInclusion Inclusion,
+        int IncludeStart,
+        int IncludeEnd)
     {
+        /// <summary>Whether instruction <paramref name="index"/> is in the file the method body includes.</summary>
+        public bool IsInBodyInclude(int index) => Inclusion == GeneratedInclusion.Body && index >= IncludeStart && index < IncludeEnd;
+
+        /// <summary>The IL offset of instruction <paramref name="index"/>: one byte per instruction before it, two for <c>ldc.i4.s</c>.</summary>
+        public int OffsetOf(int index) => index + TwoByte.Take(index).Count(twoByte => twoByte);
+
+        /// <summary>The text of instruction <paramref name="index"/>.</summary>
+        public string InstructionText(int index) =>
+            index == Slots.Length - 1 ? "ret" : TwoByte[index] ? $"ldc.i4.s {index + 1}" : "nop";
+
         public override string ToString() =>
             (LanguageBefore ? "lang " : "") +
             (ClassLevelDirective is { } directive ? $"class:{directive} " : "") +
             (Bodyless ? "abstract " : "") +
             (Locals is null ? "" : $"locals({Locals}) ") +
-            "[" + string.Join(" ", Slots.Select((slot, offset) => slot.IsEmpty ? "_" : $"{offset}:{string.Join(",", slot)}")) + "]";
+            (Inclusion switch { GeneratedInclusion.Method => "inc ", GeneratedInclusion.Body => $"inc{IncludeStart}-{IncludeEnd} ", _ => "" }) +
+            "[" + string.Join(" ", Slots.Select((slot, offset) =>
+                (Fillers[offset] > 0 ? "~" : "") + (SameLine[offset] ? "=" : "") + (TwoByte[offset] ? "2" : "") +
+                (slot.IsEmpty ? "_" : $"{offset}:{string.Join(",", slot)}"))) + "]" +
+            (Trailing.IsEmpty ? "" : " trail:" + string.Join(",", Trailing));
     }
 
-    /// <summary>A point that a generated method is expected to have, with the document a reader resolves for it.</summary>
-    public sealed record ExpectedSequencePoint(int Offset, bool Hidden, string RecordedDocument, string Document);
+    /// <summary>
+    /// A point that a generated method is expected to have: its IL offset, whether it is hidden, its span, the
+    /// document it is recorded in, the document a reader resolves for it from the blob (a hidden point has no
+    /// document-record of its own), and whether it is an implicit point on a line of the <c>.il</c> source.
+    /// </summary>
+    public sealed record ExpectedSequencePoint(
+        int Offset,
+        bool Hidden,
+        int StartLine,
+        int StartColumn,
+        int EndLine,
+        int EndColumn,
+        string RecordedDocument,
+        string Document,
+        bool Implicit);
 
     /// <summary>
-    /// A generated program whose <c>.line</c> directives move between a few documents, in one input file or split
-    /// across two, with the PDB documents and sequence points it is expected to produce, computed independently of
-    /// the assembler. The model follows native ilasm's rules for <c>.line</c> directives and documents; it does not
-    /// model the sequence points native ilasm adds for the lines of the <c>.il</c> source itself.
+    /// A generated program whose instructions are on lines of the <c>.il</c> source and whose <c>.line</c> directives
+    /// move between a few documents, in one input file or split across two, with methods or runs of instructions in
+    /// <c>#include</c>d files; and the PDB documents and sequence points it is expected to produce, computed
+    /// from the source the program writes. The model follows native ilasm's rules with this assembler's declared
+    /// differences (see <see cref="Expect"/>); it mirrors the rules the assembler implements, so it checks them
+    /// against the layout of generated sources, not against native ilasm.
     /// </summary>
     /// <param name="Methods">The methods, named <c>M0</c>, <c>M1</c>, ... in order.</param>
     /// <param name="SecondInputStart">
@@ -152,78 +216,160 @@ namespace ILAssembler.Tests.GeneratedCases
 
         public static readonly Guid CSharpLanguage = new("3f5162f8-07c6-11d3-9053-00c04fa302a1");
 
+        /// <summary>The name, which is also the path, of the file that method <paramref name="method"/> includes or is in.</summary>
+        public static string IncludeName(int method) => $"inc{method}.il";
+
         /// <summary>The input files, in the order they are compiled.</summary>
-        public ImmutableArray<SourceText> ToSources()
+        public ImmutableArray<SourceText> ToSources() => Layout().Inputs;
+
+        /// <summary>The included files, by the name the <c>#include</c> directives give, which is also their path.</summary>
+        public ImmutableDictionary<string, SourceText> IncludedSources => Layout().Includes;
+
+        /// <summary>Lines of a source being written; the first line is line 1, as ilasm counts them.</summary>
+        private sealed class SourceLines
+        {
+            private readonly List<string> _lines = new();
+
+            /// <summary>Adds a line and returns its number.</summary>
+            public int Add(string line)
+            {
+                _lines.Add(line);
+                return _lines.Count;
+            }
+
+            /// <summary>Appends text to the last line and returns its number.</summary>
+            public int AppendToLast(string text)
+            {
+                _lines[^1] += text;
+                return _lines.Count;
+            }
+
+            public SourceText ToSourceText(string path) => new(string.Join("\n", _lines) + "\n", path);
+        }
+
+        /// <summary>
+        /// Writes the input files and the included files, and returns, for each method, the line of each of its
+        /// instructions in the file the instruction is in.
+        /// </summary>
+        private (ImmutableArray<SourceText> Inputs, ImmutableDictionary<string, SourceText> Includes, ImmutableArray<ImmutableArray<int>> InstructionLines) Layout()
         {
             int split = SecondInputStart ?? Methods.Length;
-            var first = new StringBuilder();
-            first.AppendLine(".assembly extern System.Runtime { }");
-            first.AppendLine(".assembly test { }");
+            var includes = ImmutableDictionary.CreateBuilder<string, SourceText>();
+            var instructionLines = ImmutableArray.CreateBuilder<ImmutableArray<int>>(Methods.Length);
+
+            var first = new SourceLines();
+            first.Add(".assembly extern System.Runtime { }");
+            first.Add(".assembly test { }");
             AppendClass(first, "Test", 0, split);
             if (SecondInputStart is null)
             {
-                return [new SourceText(first.ToString(), InputDocument)];
+                return ([first.ToSourceText(InputDocument)], includes.ToImmutable(), instructionLines.MoveToImmutable());
             }
 
-            var second = new StringBuilder();
+            var second = new SourceLines();
             AppendClass(second, "Test2", split, Methods.Length);
-            return [new SourceText(first.ToString(), InputDocument), new SourceText(second.ToString(), SecondInputDocument)];
-        }
+            return ([first.ToSourceText(InputDocument), second.ToSourceText(SecondInputDocument)], includes.ToImmutable(), instructionLines.MoveToImmutable());
 
-        private void AppendClass(StringBuilder source, string className, int start, int end)
-        {
-            source.AppendLine($".class public abstract auto ansi beforefieldinit {className}");
-            source.AppendLine("{");
-            for (int i = start; i < end; i++)
+            void AppendClass(SourceLines source, string className, int start, int end)
+            {
+                source.Add($".class public abstract auto ansi beforefieldinit {className}");
+                source.Add("{");
+                for (int i = start; i < end; i++)
+                {
+                    instructionLines.Add(AppendMethod(source, i));
+                }
+
+                source.Add("}");
+            }
+
+            ImmutableArray<int> AppendMethod(SourceLines outer, int i)
             {
                 GeneratedLineMethod method = Methods[i];
                 if (method.LanguageBefore)
                 {
-                    source.AppendLine($"    .language '{CSharpLanguage}'");
+                    outer.Add($"    .language '{CSharpLanguage}'");
                 }
 
                 if (method.ClassLevelDirective is { } classLevelDirective)
                 {
-                    source.AppendLine("    " + classLevelDirective.ToSource());
+                    outer.Add("    " + classLevelDirective.ToSource());
                 }
 
+                SourceLines target = outer;
+                if (method.Inclusion == GeneratedInclusion.Method)
+                {
+                    outer.Add($"#include \"{IncludeName(i)}\"");
+                    target = new SourceLines();
+                }
+
+                var lines = ImmutableArray.CreateBuilder<int>();
                 if (method.Bodyless)
                 {
-                    source.AppendLine($"    .method public hidebysig newslot abstract virtual instance void M{i}() cil managed");
-                    source.AppendLine("    {");
+                    target.Add($"    .method public hidebysig newslot abstract virtual instance void M{i}() cil managed");
+                    target.Add("    {");
                     foreach (GeneratedLineDirective directive in method.Slots.SelectMany(slot => slot))
                     {
-                        source.AppendLine("        " + directive.ToSource());
+                        target.Add("        " + directive.ToSource());
                     }
 
-                    source.AppendLine("    }");
-                    continue;
+                    target.Add("    }");
                 }
-
-                source.AppendLine($"    .method public static void M{i}() cil managed");
-                source.AppendLine("    {");
-                if (method.Locals is { } locals)
+                else
                 {
-                    source.AppendLine($"        .locals init ({locals})");
-                }
-
-                for (int offset = 0; offset < method.Slots.Length; offset++)
-                {
-                    foreach (GeneratedLineDirective directive in method.Slots[offset])
+                    target.Add($"    .method public static void M{i}() cil managed");
+                    target.Add("    {");
+                    if (method.Locals is { } locals)
                     {
-                        source.AppendLine("        " + directive.ToSource());
+                        target.Add($"        .locals init ({locals})");
                     }
 
-                    source.AppendLine(offset == method.Slots.Length - 1 ? "        ret" : "        nop");
+                    SourceLines body = target;
+                    for (int offset = 0; offset < method.Slots.Length; offset++)
+                    {
+                        if (method.Inclusion == GeneratedInclusion.Body && offset == method.IncludeStart)
+                        {
+                            target.Add($"#include \"{IncludeName(i)}\"");
+                            body = new SourceLines();
+                        }
+
+                        for (int filler = 0; filler < method.Fillers[offset]; filler++)
+                        {
+                            body.Add(filler % 2 == 0 ? "" : "        // a comment line");
+                        }
+
+                        foreach (GeneratedLineDirective directive in method.Slots[offset])
+                        {
+                            body.Add("        " + directive.ToSource());
+                        }
+
+                        string instruction = method.InstructionText(offset);
+                        lines.Add(method.SameLine[offset] ? body.AppendToLast(" " + instruction) : body.Add("        " + instruction));
+
+                        if (method.Inclusion == GeneratedInclusion.Body && offset == method.IncludeEnd - 1)
+                        {
+                            includes.Add(IncludeName(i), body.ToSourceText(IncludeName(i)));
+                            body = target;
+                        }
+                    }
+
+                    foreach (GeneratedLineDirective directive in method.Trailing)
+                    {
+                        target.Add("        " + directive.ToSource());
+                    }
+
+                    target.Add("    }");
                 }
 
-                source.AppendLine("    }");
-            }
+                if (method.Inclusion == GeneratedInclusion.Method)
+                {
+                    includes.Add(IncludeName(i), target.ToSourceText(IncludeName(i)));
+                }
 
-            source.AppendLine("}");
+                return lines.ToImmutable();
+            }
         }
 
-        /// <summary>The documents, in the order they are first named, with the language current at that point.</summary>
+        /// <summary>The documents, in the order they are first defined, with the language current at that point.</summary>
         public ImmutableArray<(string Name, Guid Language)> ExpectedDocuments => Expect().Documents;
 
         /// <summary>The sequence points of each method, in IL offset order.</summary>
@@ -241,40 +387,65 @@ namespace ILAssembler.Tests.GeneratedCases
                 : null;
         }
 
+        /// <summary>The model's state for one source: an input file, or one inclusion of a file.</summary>
+        private sealed class SourceState(string name)
+        {
+            public string Name { get; } = name;
+
+            /// <summary>The source's current document; <see langword="null"/> while it is the source itself.</summary>
+            public string? Document { get; set; }
+
+            /// <summary>The last directive applied in the source, or <see langword="null"/>.</summary>
+            public GeneratedLineDirective? Directive { get; set; }
+        }
+
+        /// <summary>
+        /// Computes the expected documents and points. The rules are native ilasm's, except where marked (the
+        /// differences listed in MANAGED-ILASM-FIXES.md): each input file is defined
+        /// as a document when its parsing begins, and the <c>.language</c> state carries over from one input file to
+        /// the next. Each input file and each inclusion is a source with its own state. A directive with a non-empty
+        /// file name defines that file (once, with the language current then) and makes it the source's current
+        /// document; every directive becomes the source's directive in effect, wherever it is (method body, class
+        /// level, a method without a body, after the last instruction). Each instruction, when emitted, has a span:
+        /// the span of its source's directive in effect, or, with none, its own line of its source, columns 1 to 2;
+        /// and a document: its source's current document, which is the source itself until a directive in it names
+        /// another file (native: after an include, the including file again). The instruction gets a point when its
+        /// span and document (native: span only) differ from those of the last point recorded, in any method or input
+        /// file, or a directive has been applied since. An included file becomes a document when a point first needs
+        /// it, with the language current then (native: at the include, with the IL language). A reader resolves a
+        /// point's document from the blob, where a hidden point has no document-record and so is in the current
+        /// document of the encoding.
+        /// </summary>
         private (ImmutableArray<(string Name, Guid Language)> Documents, ImmutableArray<ImmutableArray<ExpectedSequencePoint>> Points) Expect()
         {
-            // The rules: each input file is defined as a document when its parsing begins and becomes the current
-            // document; the .language state carries over from one input file to the next. A directive with a
-            // non-empty file name defines that file (once, with the language current then) and makes it current,
-            // in a method with or without a body. Each directive in a method with a body records a point in the
-            // current document; a directive at the offset of the previous point replaces it. A method without a body
-            // has no points. A reader resolves a point's document from the blob, where a hidden point has no
-            // document-record and so is in the current document of the encoding.
-            // This model records points when the directive is applied. Native ilasm records them as it emits
-            // instructions (a class-level .line can give a following method's first instruction a point, and a .line
-            // after the last instruction gives none); the model changes when the assembler does.
+            ImmutableArray<ImmutableArray<int>> instructionLines = Layout().InstructionLines;
             var documents = new List<(string Name, Guid Language)>();
             Guid language = ILAssemblyLanguage;
-            string current = InputDocument;
-            void Define(string name)
+            (string Document, int StartLine, int StartColumn, int EndLine, int EndColumn)? last = null;
+
+            string Define(string name)
             {
                 if (!documents.Any(document => document.Name == name))
                 {
                     documents.Add((name, language));
                 }
 
-                current = name;
+                return name;
             }
 
-            void Apply(GeneratedLineDirective directive)
+            void Apply(SourceState source, GeneratedLineDirective directive)
             {
                 if (!string.IsNullOrEmpty(directive.FileName))
                 {
-                    Define(directive.FileName);
+                    source.Document = Define(directive.FileName);
                 }
+
+                source.Directive = directive;
+                last = null;
             }
 
             Define(InputDocument);
+            var input = new SourceState(InputDocument);
             var methods = ImmutableArray.CreateBuilder<ImmutableArray<ExpectedSequencePoint>>(Methods.Length);
             for (int i = 0; i < Methods.Length; i++)
             {
@@ -282,6 +453,7 @@ namespace ILAssembler.Tests.GeneratedCases
                 if (i == SecondInputStart)
                 {
                     Define(SecondInputDocument);
+                    input = new SourceState(SecondInputDocument);
                 }
 
                 if (method.LanguageBefore)
@@ -291,41 +463,58 @@ namespace ILAssembler.Tests.GeneratedCases
 
                 if (method.ClassLevelDirective is { } classLevelDirective)
                 {
-                    Apply(classLevelDirective);
+                    Apply(input, classLevelDirective);
                 }
 
-                var recorded = new List<(int Offset, bool Hidden, string Document)>();
-                for (int offset = 0; offset < method.Slots.Length; offset++)
-                {
-                    foreach (GeneratedLineDirective directive in method.Slots[offset])
-                    {
-                        Apply(directive);
-                        if (recorded.Count > 0 && recorded[^1].Offset == offset)
-                        {
-                            recorded[^1] = (offset, directive.Hidden, current);
-                        }
-                        else
-                        {
-                            recorded.Add((offset, directive.Hidden, current));
-                        }
-                    }
-                }
-
+                SourceState methodSource = method.Inclusion == GeneratedInclusion.Method ? new SourceState(IncludeName(i)) : input;
+                SourceState? bodyInclude = method.Inclusion == GeneratedInclusion.Body ? new SourceState(IncludeName(i)) : null;
+                var recorded = new List<(int Offset, GeneratedLineDirective? Directive, int StartLine, int StartColumn, int EndLine, int EndColumn, string Document)>();
                 if (method.Bodyless)
                 {
-                    recorded.Clear();
+                    foreach (GeneratedLineDirective directive in method.Slots.SelectMany(slot => slot))
+                    {
+                        Apply(methodSource, directive);
+                    }
+                }
+                else
+                {
+                    for (int offset = 0; offset < method.Slots.Length; offset++)
+                    {
+                        SourceState source = method.IsInBodyInclude(offset) ? bodyInclude! : methodSource;
+                        foreach (GeneratedLineDirective directive in method.Slots[offset])
+                        {
+                            Apply(source, directive);
+                        }
+
+                        string document = source.Document ??= Define(source.Name);
+                        int line = instructionLines[i][offset];
+                        (int startLine, int startColumn, int endLine, int endColumn) = source.Directive?.Span ?? (line, 1, line, 2);
+                        if (last != (document, startLine, startColumn, endLine, endColumn))
+                        {
+                            last = (document, startLine, startColumn, endLine, endColumn);
+                            recorded.Add((method.OffsetOf(offset), source.Directive, startLine, startColumn, endLine, endColumn, document));
+                        }
+                    }
+
+                    foreach (GeneratedLineDirective directive in method.Trailing)
+                    {
+                        Apply(methodSource, directive);
+                    }
                 }
 
                 var points = ImmutableArray.CreateBuilder<ExpectedSequencePoint>(recorded.Count);
                 string encodingDocument = recorded.Count > 0 ? recorded[0].Document : InputDocument;
-                foreach ((int offset, bool hidden, string document) in recorded)
+                foreach (var point in recorded)
                 {
+                    bool hidden = point.Directive?.Hidden == true;
                     if (!hidden)
                     {
-                        encodingDocument = document;
+                        encodingDocument = point.Document;
                     }
 
-                    points.Add(new ExpectedSequencePoint(offset, hidden, document, encodingDocument));
+                    points.Add(new ExpectedSequencePoint(
+                        point.Offset, hidden, point.StartLine, point.StartColumn, point.EndLine, point.EndColumn,
+                        point.Document, encodingDocument, Implicit: point.Directive is null));
                 }
 
                 methods.Add(points.MoveToImmutable());
@@ -337,6 +526,42 @@ namespace ILAssembler.Tests.GeneratedCases
             }
 
             return (documents.ToImmutableArray(), methods.MoveToImmutable());
+        }
+
+        /// <summary>How many times the program has each generated shape, to check that the cases cover them.</summary>
+        public ImmutableSortedDictionary<string, int> Shapes
+        {
+            get
+            {
+                ImmutableArray<ImmutableArray<ExpectedSequencePoint>> points = ExpectedSequencePoints;
+                var shapes = new SortedDictionary<string, int>();
+                void Count(string shape, int count)
+                {
+                    shapes[shape] = shapes.GetValueOrDefault(shape) + count;
+                }
+
+                for (int i = 0; i < Methods.Length; i++)
+                {
+                    GeneratedLineMethod method = Methods[i];
+                    Count("class-level directive", method.ClassLevelDirective is null ? 0 : 1);
+                    Count("trailing directive", method.Trailing.IsEmpty ? 0 : 1);
+                    Count("method in an included file", method.Inclusion == GeneratedInclusion.Method ? 1 : 0);
+                    Count("instructions included in a body", method.Inclusion == GeneratedInclusion.Body ? 1 : 0);
+                    Count("blank or comment lines", method.Fillers.Count(count => count > 0));
+                    Count("instruction on the previous instruction's line", method.SameLine.Count(sameLine => sameLine));
+                    Count("two-byte instruction", method.TwoByte.Count(twoByte => twoByte));
+                    Count("implicit point", points[i].Count(point => point.Implicit));
+                    Count("directive point", points[i].Count(point => !point.Implicit));
+                    Count("point in an included file", points[i].Count(point => point.RecordedDocument.StartsWith("inc", StringComparison.Ordinal)));
+                    Count("method with a body and no point", !method.Bodyless && points[i].IsEmpty ? 1 : 0);
+                    Count("instruction without a point of its own", method.Bodyless ? 0 : method.Slots.Length - points[i].Length);
+                    Count("method whose points mix implicit and directive points",
+                        points[i].Any(point => point.Implicit) && points[i].Any(point => !point.Implicit) ? 1 : 0);
+                }
+
+                Count("second input file", SecondInputStart is null ? 0 : 1);
+                return shapes.ToImmutableSortedDictionary();
+            }
         }
 
         public override string ToString()
@@ -513,32 +738,76 @@ namespace ILAssembler.Tests.GeneratedCases
             while (programs.Count < DocumentCaseCount)
             {
                 var methods = ImmutableArray.CreateBuilder<GeneratedLineMethod>();
-                int methodCount = random.Next(1, 4);
+                int methodCount = random.Next(1, 5);
                 for (int i = 0; i < methodCount; i++)
                 {
                     // Sometimes an abstract method: its directives still name files, but it has no points.
                     bool bodyless = random.Next(8) == 0;
-                    var slots = ImmutableArray.CreateBuilder<ImmutableArray<GeneratedLineDirective>>();
-                    int instructionCount = bodyless ? 1 : random.Next(1, 6);
+                    int instructionCount = bodyless ? 1 : random.Next(1, 7);
+
+                    // Sometimes the whole method, or a run of its instructions, is in an included file.
+                    GeneratedInclusion inclusion = random.Next(8) switch
+                    {
+                        0 => GeneratedInclusion.Method,
+                        1 when !bodyless => GeneratedInclusion.Body,
+                        _ => GeneratedInclusion.None,
+                    };
+                    int includeStart = inclusion == GeneratedInclusion.Body ? random.Next(instructionCount) : 0;
+                    int includeEnd = inclusion == GeneratedInclusion.Body ? random.Next(includeStart + 1, instructionCount + 1) : 0;
+
+                    // Many methods have no directive of their own, so their points come from the lines of the source
+                    // or from a directive still in effect, which may give them no point at all.
+                    bool withDirectives = random.Next(5) >= 2;
+                    var slots = ImmutableArray.CreateBuilder<ImmutableArray<GeneratedLineDirective>>(instructionCount);
+                    var fillers = ImmutableArray.CreateBuilder<int>(instructionCount);
+                    var sameLine = ImmutableArray.CreateBuilder<bool>(instructionCount);
+                    var twoByte = ImmutableArray.CreateBuilder<bool>(instructionCount);
                     for (int offset = 0; offset < instructionCount; offset++)
                     {
-                        // Mostly one directive before an instruction; sometimes none, sometimes two at one offset.
-                        int directiveCount = random.Next(10) switch { < 3 => 0, < 9 => 1, _ => 2 };
+                        // Mostly no directive or one before an instruction; sometimes two at one offset.
+                        int directiveCount = withDirectives ? random.Next(10) switch { < 4 => 0, < 9 => 1, _ => 2 } : 0;
                         var slot = ImmutableArray.CreateBuilder<GeneratedLineDirective>(directiveCount);
                         for (int d = 0; d < directiveCount; d++)
                         {
                             slot.Add(NextDirective(allowHidden: true));
                         }
 
+                        int fillerCount = random.Next(4) == 0 ? random.Next(1, 3) : 0;
+
+                        // An instruction can share the previous instruction's line when nothing comes between them,
+                        // including an #include boundary.
+                        bool atIncludeBoundary = inclusion == GeneratedInclusion.Body && (offset == includeStart || offset == includeEnd);
+                        bool onPreviousLine = !bodyless && offset > 0 && directiveCount == 0 && fillerCount == 0 && !atIncludeBoundary &&
+                            random.Next(4) == 0;
+
+                        // Sometimes a two-byte instruction, so that offsets differ from instruction indices.
+                        bool twoByteInstruction = !bodyless && offset < instructionCount - 1 && random.Next(3) == 0;
+
                         slots.Add(slot.MoveToImmutable());
+                        fillers.Add(bodyless ? 0 : fillerCount);
+                        sameLine.Add(onPreviousLine);
+                        twoByte.Add(twoByteInstruction);
                     }
+
+                    // Sometimes a directive after the last instruction: it gives this method no point, and applies to
+                    // the next instruction, which is in a later method.
+                    ImmutableArray<GeneratedLineDirective> trailing = !bodyless && random.Next(6) == 0
+                        ? [NextDirective(allowHidden: true)]
+                        : [];
 
                     methods.Add(new GeneratedLineMethod(
                         LanguageBefore: random.Next(8) == 0,
                         ClassLevelDirective: random.Next(6) == 0 ? NextDirective(allowHidden: false) : null,
                         Bodyless: bodyless,
                         Locals: bodyless ? null : s_locals[random.Next(s_locals.Length)],
-                        Slots: slots.ToImmutable()));
+                        Slots: slots.MoveToImmutable(),
+                        Fillers: fillers.MoveToImmutable(),
+                        SameLine: sameLine.MoveToImmutable(),
+                        TwoByte: twoByte.MoveToImmutable(),
+                        Trailing: trailing,
+                        Inclusion: inclusion,
+                        IncludeStart: includeStart,
+                        IncludeEnd: includeEnd));
                 }
 
                 // Sometimes a second input file, holding the methods from a split point on (possibly none).

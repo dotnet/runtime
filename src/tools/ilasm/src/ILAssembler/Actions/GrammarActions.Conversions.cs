@@ -44,9 +44,12 @@ namespace ILAssembler
         private Guid _currentLanguageVendorGuid = Guid.Empty;
         private Guid _currentDocumentTypeGuid = Guid.Empty;
         private readonly PdbDocumentTable _pdbDocuments;
-        // The index in _pdbDocuments of the current document: the input file being parsed, or the file named by
-        // the last .line or #line directive applied since its parsing began. -1 before the first input file.
-        private int _currentDocument = -1;
+        // The .line state of each source of the input file being parsed: the input file and each inclusion of an
+        // #include'd file, keyed by the token source (lexer) that reads it. See SourceLineState.
+        private readonly Dictionary<object, SourceLineState> _sourceLineStates = new();
+        // The span of the last sequence point recorded, across methods and input files, or null when a .line or
+        // #line directive has been applied since. An instruction gets a point only when its span differs.
+        private SequencePointSpan? _lastSequencePointSpan;
         private readonly MetadataBuilder _pdbBuilder = new();
         private readonly List<VTableFixupDeclaration> _vtableFixups = new();
         private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _exportDirectiveContexts = new();
