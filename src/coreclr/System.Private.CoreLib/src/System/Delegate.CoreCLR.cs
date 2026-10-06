@@ -240,7 +240,6 @@ namespace System
                         {
                             targetType = targetType.GetElementType()!;
                         }
-                        declaringType = (RuntimeType)targetType;
                     }
 
                     // The target may be of a derived type that doesn't have visibility onto the
