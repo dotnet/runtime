@@ -365,7 +365,6 @@ namespace System.Data.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void SerializeDataSet()
         {
             // see GetReady() for current culture
@@ -386,7 +385,6 @@ namespace System.Data.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void SerializeDataSet2()
         {
             DataSet quota = new DataSet("Quota");
@@ -478,7 +476,6 @@ namespace System.Data.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void DeserializeDataSet()
         {
             string xml = @"<DataSet>
@@ -1359,7 +1356,6 @@ namespace System.Data.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void DeserializeModifiedDataSet()
         {
             // Serialization begins

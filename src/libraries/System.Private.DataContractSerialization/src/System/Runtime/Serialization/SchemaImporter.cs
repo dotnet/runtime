@@ -12,6 +12,7 @@ using System.Linq;
 using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 using System.Xml.Schema;
+using System.Xml.Serialization;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 using SchemaObjectDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
@@ -203,7 +204,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            return dataContract is PrimitiveDataContract && ((PrimitiveDataContract)dataContract).UnderlyingType == Globals.TypeOfObject;
+            return dataContract is PrimitiveDataContract && ((PrimitiveDataContract)dataContract).UnderlyingType == typeof(object);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -502,7 +503,7 @@ namespace System.Runtime.Serialization
             if (_dataContractSet.TryGetReferencedType(typeName, dataContract, out referencedType)
                 || (string.IsNullOrEmpty(type.Name) && _dataContractSet.TryGetReferencedType(ImportActualType(type.Annotation, typeName, typeName), dataContract, out referencedType)))
             {
-                if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(referencedType))
+                if (typeof(IXmlSerializable).IsAssignableFrom(referencedType))
                 {
                     RemoveFailedContract(typeName);
                     return ImportXmlDataType(typeName, type, isAnonymous);
@@ -737,17 +738,17 @@ namespace System.Runtime.Serialization
                 XmlQualifiedName xlinqTypeName = new XmlQualifiedName("XElement", "http://schemas.datacontract.org/2004/07/System.Xml.Linq");
                 Type? referencedType;
                 if (_dataContractSet.TryGetReferencedType(xlinqTypeName, null, out referencedType)
-                    && Globals.TypeOfIXmlSerializable.IsAssignableFrom(referencedType))
+                    && typeof(IXmlSerializable).IsAssignableFrom(referencedType))
                 {
                     XmlDataContract xmlDataContract = new XmlDataContract(referencedType);
                     AddDataContract(xmlDataContract);
                     return xmlDataContract;
                 }
                 //otherwise, assume XmlElement
-                return (XmlDataContract?)DataContract.GetBuiltInDataContract(Globals.TypeOfXmlElement);
+                return (XmlDataContract?)DataContract.GetBuiltInDataContract(typeof(XmlElement));
             }
             if (IsXmlAnyType(complexType))
-                return (XmlDataContract?)DataContract.GetBuiltInDataContract(Globals.TypeOfXmlNodeArray);
+                return (XmlDataContract?)DataContract.GetBuiltInDataContract(typeof(XmlNode[]));
             return null;
         }
 
@@ -1118,7 +1119,7 @@ namespace System.Runtime.Serialization
                 {
                     _dataContractSet.Remove(keyValueContract.XmlName);
 
-                    GenericInfo genericInfo = new GenericInfo(DataContract.GetXmlName(Globals.TypeOfKeyValue), Globals.TypeOfKeyValue.FullName);
+                    GenericInfo genericInfo = new GenericInfo(DataContract.GetXmlName(typeof(KeyValue<,>)), typeof(KeyValue<,>).FullName);
                     genericInfo.Add(GetGenericInfoForDataMember(key));
                     genericInfo.Add(GetGenericInfoForDataMember(value));
                     genericInfo.AddToLevel(0, 2);
@@ -1136,7 +1137,7 @@ namespace System.Runtime.Serialization
             GenericInfo genericInfo;
             if (dataMember.MemberTypeContract.IsValueType && dataMember.IsNullable)
             {
-                genericInfo = new GenericInfo(DataContract.GetXmlName(Globals.TypeOfNullable), Globals.TypeOfNullable.FullName);
+                genericInfo = new GenericInfo(DataContract.GetXmlName(typeof(Nullable<>)), typeof(Nullable<>).FullName);
                 genericInfo.Add(new GenericInfo(dataMember.MemberTypeContract.XmlName, null));
             }
             else
@@ -1304,7 +1305,7 @@ namespace System.Runtime.Serialization
                     if (nestedLevelAttribute != null)
                     {
                         if (!int.TryParse(nestedLevelAttribute.Value, out argumentLevel))
-                            throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationHasInvalidAttributeValue, argumentElement.LocalName, argumentElement.NamespaceURI, type.Name, nestedLevelAttribute.Value, nestedLevelAttribute.LocalName, Globals.TypeOfInt.Name));
+                            throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationHasInvalidAttributeValue, argumentElement.LocalName, argumentElement.NamespaceURI, type.Name, nestedLevelAttribute.Value, nestedLevelAttribute.LocalName, nameof(Int32)));
                     }
                     if (argumentLevel < currentLevel)
                         throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationForNestedLevelMustBeIncreasing, argumentElement.LocalName, argumentElement.NamespaceURI, type.Name));
@@ -1319,7 +1320,7 @@ namespace System.Runtime.Serialization
             {
                 int nestedLevels;
                 if (!int.TryParse(typeNestedLevelsAttribute.Value, out nestedLevels))
-                    throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationHasInvalidAttributeValue, typeElement.LocalName, typeElement.NamespaceURI, type.Name, typeNestedLevelsAttribute.Value, typeNestedLevelsAttribute.LocalName, Globals.TypeOfInt.Name));
+                    throw new InvalidDataContractException(SR.Format(SR.GenericAnnotationHasInvalidAttributeValue, typeElement.LocalName, typeElement.NamespaceURI, type.Name, typeNestedLevelsAttribute.Value, typeNestedLevelsAttribute.LocalName, nameof(Int32)));
                 if ((nestedLevels - 1) > currentLevel)
                     genInfo.AddToLevel(nestedLevels - 1, 0);
             }
@@ -1334,7 +1335,7 @@ namespace System.Runtime.Serialization
             {
                 Collection<Type> knownTypes = new Collection<Type>();
                 DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
-                DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject, name, ns, knownTypes,
+                DataContractSerializer serializer = new DataContractSerializer(typeof(object), name, ns, knownTypes,
                     false /*ignoreExtensionDataObject*/, true /*preserveObjectReferences*/);
                 return serializer.ReadObject(new XmlNodeReader(typeElement));
             }

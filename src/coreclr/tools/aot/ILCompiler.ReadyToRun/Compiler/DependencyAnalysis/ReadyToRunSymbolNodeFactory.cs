@@ -60,6 +60,21 @@ namespace ILCompiler.DependencyAnalysis
 
             _r2rHelpers = new NodeCache<ReadyToRunHelperKey, Import>(CreateReadyToRunHelper);
 
+            _eagerReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
+            {
+                // These fixups must be sorted last: running one permanently commits the
+                // target method to using R2R code. Every other eager fixup in the module must
+                // run first, since those are what establish whether it is even legal to use any
+                // R2R code in the module at all.
+                return new Import(
+                    _codegenNodeFactory.EagerImports,
+                    _codegenNodeFactory.MethodSignature(
+                        ReadyToRunFixupKind.MethodEntry_ReadyToRun,
+                        method,
+                        isInstantiatingStub: false),
+                    sortLast: true);
+            });
+
             _instructionSetSupportFixups = new NodeCache<string, Import>(key =>
             {
                 return new PrecodeHelperImport(
@@ -304,8 +319,14 @@ namespace ILCompiler.DependencyAnalysis
             return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
+        private NodeCache<MethodWithToken, Import> _eagerReadyToRunMethodEntries;
         private NodeCache<string, Import> _instructionSetSupportFixups;
         private NodeCache<MethodWithGCInfo, Import> _resumptionStubEntryPointFixups;
+
+        public Import EagerReadyToRunMethodEntry(MethodWithToken method)
+        {
+            return _eagerReadyToRunMethodEntries.GetOrAdd(method);
+        }
 
         public Import PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)
         {

@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using TestLibrary;
 using Xunit;
 
@@ -652,4 +656,1257 @@ public class ArrayMarshal
             return 101;
         }
     }
+}
+
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+public unsafe class ArrayPinningTests
+{
+    private const string NativeLibraryName = "MarshalArrayLPArrayNative";
+
+    private enum SByteEnum : sbyte { }
+    private enum ByteEnum : byte { }
+    private enum Int16Enum : short { }
+    private enum UInt16Enum : ushort { }
+    private enum Int32Enum : int { }
+    private enum UInt32Enum : uint { }
+    private enum Int64Enum : long { }
+    private enum UInt64Enum : ulong { }
+
+    public enum CharacterMarshalling
+    {
+        Unicode,
+        AnsiAsInt16,
+        AnsiAsUInt16,
+        Ansi,
+        UnicodeAsInt8,
+        UnicodeAsUInt8
+    }
+
+    public static IEnumerable<object[]> ArrayCases()
+    {
+        foreach (int length in new[] { -1, 0, 1, 5, 21 })
+        {
+            yield return new object[] { length, false };
+            yield return new object[] { length, true };
+        }
+    }
+
+    public static IEnumerable<object[]> CharacterCases()
+    {
+        foreach (CharacterMarshalling kind in Enum.GetValues<CharacterMarshalling>())
+        {
+            foreach (object[] testCase in ArrayCases())
+            {
+                yield return new object[] { kind, testCase[0], testCase[1] };
+            }
+        }
+    }
+
+    public static IEnumerable<object[]> CurrencyCases()
+    {
+        foreach (object[] testCase in ArrayCases())
+        {
+            for (int direction = 0; direction < 4; direction++)
+            {
+                yield return new object[] { testCase[0], testCase[1], direction };
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+    [MemberData(nameof(CurrencyCases))]
+    public static void CurrencyArrayDoesNotPassManagedContentsDirectly(int length, bool useDelegate, int direction)
+    {
+        decimal[] values = CreateDecimalArray(length);
+        decimal[] expected = values is null ? null : (decimal[])values.Clone();
+        if (expected is not null && direction >= 2)
+        {
+            for (int i = 0; i < expected.Length; i++)
+            {
+                expected[i] = direction == 2 ? 0 : decimal.FromOACurrency(decimal.ToOACurrency(expected[i]));
+            }
+            Array.Reverse(expected);
+        }
+
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        Func<decimal[], int, int, nint> reverse = direction switch
+        {
+            0 => useDelegate ? Marshal.GetDelegateForFunctionPointer<CurrencyArrayReverser>(target).Invoke : ReverseCurrencyArray,
+            1 => useDelegate ? Marshal.GetDelegateForFunctionPointer<CurrencyArrayInReverser>(target).Invoke : ReverseCurrencyArrayIn,
+            2 => useDelegate ? Marshal.GetDelegateForFunctionPointer<CurrencyArrayOutReverser>(target).Invoke : ReverseCurrencyArrayOut,
+            3 => useDelegate ? Marshal.GetDelegateForFunctionPointer<CurrencyArrayInOutReverser>(target).Invoke : ReverseCurrencyArrayInOut,
+            _ => throw new ArgumentOutOfRangeException(nameof(direction))
+        };
+
+        if (values is null)
+        {
+            Assert.Equal(nint.Zero, reverse(null, 0, sizeof(long)));
+            return;
+        }
+
+        fixed (decimal* address = &MemoryMarshal.GetArrayDataReference(values))
+        {
+            Assert.NotEqual((nint)address, reverse(values, values.Length, sizeof(long)));
+        }
+        Assert.Equal(expected, values);
+    }
+
+    [Theory]
+    [MemberData(nameof(ArrayCases))]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    public static void DecimalArrayPassesManagedContentsDirectly(int length, bool useDelegate)
+    {
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        VerifyArrayPassesManagedContentsDirectly(CreateDecimalArray(length), sizeof(decimal), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<DecimalArrayReverser>(target).Invoke : ReverseDecimalArray);
+    }
+
+    private static decimal[] CreateDecimalArray(int length)
+    {
+        if (length < 0)
+        {
+            return null;
+        }
+
+        ReadOnlySpan<decimal> pattern = [1m, -2m, 12.3456m, 0.00006m, decimal.FromOACurrency(long.MinValue), decimal.FromOACurrency(long.MaxValue)];
+        decimal[] values = new decimal[length];
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = pattern[i % pattern.Length];
+        }
+        return values;
+    }
+
+    [Theory]
+    [MemberData(nameof(ArrayCases))]
+    public static void EnumArrayPassesManagedContentsDirectly(int length, bool useDelegate)
+    {
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<SByteEnum>(length), sizeof(sbyte), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<SByteEnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<ByteEnum>(length), sizeof(byte), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<ByteEnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<Int16Enum>(length), sizeof(short), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<Int16EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<UInt16Enum>(length), sizeof(ushort), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt16EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<Int32Enum>(length), sizeof(int), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<Int32EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<UInt32Enum>(length), sizeof(uint), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt32EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<Int64Enum>(length), sizeof(long), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<Int64EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<UInt64Enum>(length), sizeof(ulong), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt64EnumReverser>(target).Invoke : ReverseArrayElements);
+    }
+
+    [Theory]
+    [MemberData(nameof(CharacterCases))]
+    [SkipOnMono("Mono character-array marshalling uses different pinning semantics.")]
+    public static void CharacterArraysUseSelectedRepresentation(CharacterMarshalling kind, int length, bool useDelegate)
+    {
+        bool passesManagedContentsDirectly = kind is CharacterMarshalling.Unicode or CharacterMarshalling.AnsiAsInt16 or CharacterMarshalling.AnsiAsUInt16;
+        char[] values = length < 0 ? null : new char[length];
+        if (values is not null)
+        {
+            ReadOnlySpan<char> pattern = passesManagedContentsDirectly ? ['A', '\u03A9', '\uD83D', '\uDE00', '\0'] : ['A', 'B', 'C', 'D', 'E'];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = pattern[i % pattern.Length];
+            }
+        }
+
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        Func<char[], int, int, nint> reverse = kind switch
+        {
+            CharacterMarshalling.Unicode => useDelegate ? Marshal.GetDelegateForFunctionPointer<UnicodeCharReverser>(target).Invoke : ReverseUnicodeChars,
+            CharacterMarshalling.AnsiAsInt16 => useDelegate ? Marshal.GetDelegateForFunctionPointer<AnsiCharAsInt16Reverser>(target).Invoke : ReverseAnsiCharsAsInt16,
+            CharacterMarshalling.AnsiAsUInt16 => useDelegate ? Marshal.GetDelegateForFunctionPointer<AnsiCharAsUInt16Reverser>(target).Invoke : ReverseAnsiCharsAsUInt16,
+            CharacterMarshalling.Ansi => useDelegate ? Marshal.GetDelegateForFunctionPointer<AnsiCharReverser>(target).Invoke : ReverseAnsiChars,
+            CharacterMarshalling.UnicodeAsInt8 => useDelegate ? Marshal.GetDelegateForFunctionPointer<UnicodeCharAsInt8Reverser>(target).Invoke : ReverseUnicodeCharsAsInt8,
+            CharacterMarshalling.UnicodeAsUInt8 => useDelegate ? Marshal.GetDelegateForFunctionPointer<UnicodeCharAsUInt8Reverser>(target).Invoke : ReverseUnicodeCharsAsUInt8,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+        VerifyArrayPassesManagedContentsDirectly(values, passesManagedContentsDirectly ? sizeof(char) : sizeof(byte), passesManagedContentsDirectly, reverse);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void BooleanArrayDoesNotPassManagedContentsDirectly(bool oneByte, bool useDelegate)
+    {
+        bool[] values = [true, false, true, false, false];
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        Func<bool[], int, int, nint> reverse = oneByte
+            ? (useDelegate ? Marshal.GetDelegateForFunctionPointer<ByteBoolReverser>(target).Invoke : ReverseByteBooleans)
+            : (useDelegate ? Marshal.GetDelegateForFunctionPointer<BoolReverser>(target).Invoke : ReverseBooleans);
+        VerifyArrayPassesManagedContentsDirectly(values, oneByte ? sizeof(byte) : sizeof(int), false, reverse);
+    }
+
+    private static T[] CreateEnumArray<T>(int length) where T : unmanaged, Enum
+    {
+        if (length < 0)
+        {
+            return null;
+        }
+
+        T[] values = new T[length];
+        Span<byte> bytes = MemoryMarshal.AsBytes(values.AsSpan());
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            bytes[i] = unchecked((byte)(0x81 + i * 17));
+        }
+
+        return values;
+    }
+
+    private static void VerifyArrayPassesManagedContentsDirectly<T>(T[] values, int nativeElementSize, bool passesManagedContentsDirectly, Func<T[], int, int, nint> reverse) where T : unmanaged
+    {
+        if (values is null)
+        {
+            Assert.Equal(nint.Zero, reverse(null, 0, nativeElementSize));
+            return;
+        }
+
+        T[] expected = (T[])values.Clone();
+        if (passesManagedContentsDirectly)
+        {
+            Array.Reverse(expected);
+        }
+
+        fixed (T* address = &MemoryMarshal.GetArrayDataReference(values))
+        {
+            nint actual = reverse(values, values.Length, nativeElementSize);
+            if (passesManagedContentsDirectly)
+            {
+                Assert.Equal((nint)address, actual);
+            }
+            else
+            {
+                Assert.NotEqual((nint)address, actual);
+            }
+        }
+
+        Assert.Equal(expected, values);
+    }
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetArrayElementReverser();
+
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseCurrencyArray([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseCurrencyArrayIn([In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseCurrencyArrayOut([Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseCurrencyArrayInOut([In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseDecimalArray(decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint CurrencyArrayReverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint CurrencyArrayInReverser([In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint CurrencyArrayOutReverser([Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint CurrencyArrayInOutReverser([In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint DecimalArrayReverser(decimal[] values, int count, int elementSize);
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(SByteEnum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(ByteEnum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(Int16Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(UInt16Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(Int32Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(UInt32Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(Int64Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(UInt64Enum[] values, int count, int elementSize);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint SByteEnumReverser(SByteEnum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint ByteEnumReverser(ByteEnum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint Int16EnumReverser(Int16Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint UInt16EnumReverser(UInt16Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint Int32EnumReverser(Int32Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint UInt32EnumReverser(UInt32Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint Int64EnumReverser(Int64Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint UInt64EnumReverser(UInt64Enum[] values, int count, int elementSize);
+
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern nint ReverseUnicodeChars(char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern nint ReverseAnsiCharsAsInt16([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I2)] char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern nint ReverseAnsiCharsAsUInt16([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern nint ReverseAnsiChars(char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern nint ReverseUnicodeCharsAsInt8([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern nint ReverseUnicodeCharsAsUInt8([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)] char[] values, int count, int elementSize);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private delegate nint UnicodeCharReverser(char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private delegate nint AnsiCharAsInt16Reverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I2)] char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private delegate nint AnsiCharAsUInt16Reverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private delegate nint AnsiCharReverser(char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private delegate nint UnicodeCharAsInt8Reverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private delegate nint UnicodeCharAsUInt8Reverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)] char[] values, int count, int elementSize);
+
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseBooleans(bool[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseByteBooleans([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] bool[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint BoolReverser(bool[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint ByteBoolReverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] bool[] values, int count, int elementSize);
+}
+
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/133395", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+public unsafe class AnsiCharArrayTests
+{
+    private const uint CpAcp = 0;
+    private const uint WcNoBestFitChars = 0x400;
+
+    public enum StringKind
+    {
+        Empty,
+        Ascii,
+        TwoByte,
+        ThreeByte,
+        SurrogatePair,
+        EmbeddedNull,
+        Long
+    }
+
+    public static IEnumerable<object[]> StringCases()
+    {
+        foreach (StringKind kind in Enum.GetValues<StringKind>())
+        {
+            yield return new object[] { kind };
+        }
+    }
+
+    public static IEnumerable<object[]> NonEmptyStringCases() => StringCases().Where(static testCase => (StringKind)testCase[0] != StringKind.Empty);
+
+    private static string GetString(StringKind kind) => kind switch
+    {
+        StringKind.Empty => "",
+        StringKind.Ascii => "A",
+        StringKind.TwoByte => "\u00E9",
+        StringKind.ThreeByte => "\u4E2D",
+        StringKind.SurrogatePair => "\uD83D\uDE00",
+        StringKind.EmbeddedNull => "A\0\u00E9\u4E2DZ",
+        StringKind.Long => new string('\u00E9', 33),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind))
+    };
+
+    public static IEnumerable<object[]> ConversionCases()
+    {
+        foreach (object[] testCase in StringCases())
+        {
+            foreach (bool bestFit in new[] { false, true })
+            {
+                foreach (bool copyBack in new[] { false, true })
+                {
+                    yield return new object[] { testCase[0], bestFit, copyBack };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ConversionCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    public static void ConvertAnsiCharArray(StringKind kind, bool bestFit, bool copyBack)
+    {
+        string value = GetString(kind);
+        char[] values = value.ToCharArray();
+        byte[] expectedBytes = GetEncodedBytes(value, bestFit);
+        byte[] replacement = new byte[expectedBytes.Length];
+        replacement.AsSpan().Fill(0xFF);
+        replacement.AsSpan(0, Math.Min(values.Length, replacement.Length)).Fill((byte)'X');
+        nint target = (nint)(delegate* unmanaged[Cdecl]<byte*, int, byte*, byte*, int>)&ValidateAndReplaceBytes;
+        ArrayConverter convert = (bestFit, copyBack) switch
+        {
+            (false, false) => Marshal.GetDelegateForFunctionPointer<AnsiArrayIn>(target).Invoke,
+            (true, false) => Marshal.GetDelegateForFunctionPointer<AnsiArrayBestFitIn>(target).Invoke,
+            (false, true) => Marshal.GetDelegateForFunctionPointer<AnsiArrayInOut>(target).Invoke,
+            (true, true) => Marshal.GetDelegateForFunctionPointer<AnsiArrayBestFitInOut>(target).Invoke
+        };
+
+        fixed (byte* expected = expectedBytes)
+        fixed (byte* changed = replacement)
+        {
+            Assert.Equal(1, convert(values, expectedBytes.Length, expected, copyBack ? changed : null));
+        }
+
+        char[] expectedValues = value.ToCharArray();
+        if (copyBack)
+        {
+            expectedValues.AsSpan().Clear();
+            expectedValues.AsSpan(0, Math.Min(values.Length, replacement.Length)).Fill('X');
+        }
+        Assert.Equal(expectedValues, values);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    public static void ExplicitAnsiArraySubType(bool unsigned)
+    {
+        char[] values = "\u00E9\u4E2D".ToCharArray();
+        byte[] expectedBytes = GetEncodedBytes(new string(values), bestFit: false);
+        nint target = (nint)(delegate* unmanaged[Cdecl]<byte*, int, byte*, byte*, int>)&ValidateAndReplaceBytes;
+        ArrayConverter convert = unsigned
+            ? Marshal.GetDelegateForFunctionPointer<AnsiArrayU1>(target).Invoke
+            : Marshal.GetDelegateForFunctionPointer<AnsiArrayI1>(target).Invoke;
+        fixed (byte* expected = expectedBytes)
+        {
+            Assert.Equal(1, convert(values, expectedBytes.Length, expected, null));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StringCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    public static void AnsiOutArrayUsesNativeByteCount(StringKind kind)
+    {
+        string value = GetString(kind);
+        byte[] bytes = GetEncodedBytes(value, bestFit: false);
+        CreateAnsiArray create = Marshal.GetDelegateForFunctionPointer<CreateAnsiArray>(
+            (nint)(delegate* unmanaged[Cdecl]<byte**, int, byte*, void>)&AllocateBytes);
+        fixed (byte* native = bytes)
+        {
+            create(out char[] actual, bytes.Length, native);
+            Assert.Equal(GetExpectedCharacters(bytes), actual);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StringCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    public static void ReverseAnsiArrayKeepsNativeByteCapacity(StringKind kind)
+    {
+        byte[] bytes = GetEncodedBytes(GetString(kind), bestFit: false);
+        char[] expected = GetExpectedCharacters(bytes);
+        byte[] buffer = new byte[bytes.Length + 8];
+        buffer.AsSpan().Fill(0xA5);
+        bytes.CopyTo(buffer, 0);
+        AnsiArrayCallback callback = (values, count) =>
+        {
+            if (values.Length != count || !values.AsSpan().SequenceEqual(expected))
+            {
+                return 0;
+            }
+            values.AsSpan().Fill('Y');
+            return 1;
+        };
+        delegate* unmanaged[Cdecl]<byte*, int, int> target =
+            (delegate* unmanaged[Cdecl]<byte*, int, int>)Marshal.GetFunctionPointerForDelegate(callback);
+        fixed (byte* native = buffer)
+        {
+            Assert.Equal(1, target(native, bytes.Length));
+        }
+        GC.KeepAlive(callback);
+        Assert.Equal(-1, buffer.AsSpan(0, bytes.Length).IndexOfAnyExcept((byte)'Y'));
+        Assert.Equal(-1, buffer.AsSpan(bytes.Length).IndexOfAnyExcept((byte)0xA5));
+    }
+
+    [Theory]
+    [MemberData(nameof(NonEmptyStringCases))]
+    public static void AsAnyAnsiCharArrayUsesExpandedBuffer(StringKind kind)
+    {
+        string value = GetString(kind);
+        byte[] expected = GetEncodedBytes(value, bestFit: true);
+        char[] values = value.ToCharArray();
+        for (int i = 0; i < expected.Length; i++)
+        {
+            Assert.Equal(expected[i], Marshal.ReadByte(values, i));
+        }
+    }
+
+    [Theory]
+    [InlineData("AB")]
+    [InlineData("\u00E9A")]
+    [InlineData("\u4E2DB")]
+    [InlineData("\uD83D\uDE00")]
+    public static void FixedAnsiCharArrayKeepsInlineByteCapacity(string value)
+    {
+        FixedAnsiChars managed = new() { Before = 0x11, Values = value.ToCharArray(), After = 0x22 };
+        Assert.Equal(4, Marshal.SizeOf<FixedAnsiChars>());
+        byte* native = stackalloc byte[12];
+        new Span<byte>(native, 12).Fill(0xA5);
+        byte[] expected = GetEncodedBytes(value, bestFit: false);
+        if (expected.Length > 2)
+        {
+            nint address = (nint)native;
+            Assert.Throws<ArgumentException>(() => Marshal.StructureToPtr(managed, address, false));
+        }
+        else
+        {
+            Marshal.StructureToPtr(managed, (nint)native, false);
+            Assert.Equal(0x11, native[0]);
+            Assert.True(new ReadOnlySpan<byte>(native + 1, expected.Length).SequenceEqual(expected));
+            Assert.Equal(0x22, native[3]);
+        }
+        Assert.Equal(-1, new ReadOnlySpan<byte>(native + 4, 8).IndexOfAnyExcept((byte)0xA5));
+    }
+
+    private static char[] GetExpectedCharacters(byte[] bytes)
+    {
+        char[] expected = new char[bytes.Length];
+        if (bytes.Length != 0)
+        {
+            fixed (byte* native = bytes)
+            {
+                Marshal.PtrToStringAnsi((nint)native, bytes.Length).AsSpan().CopyTo(expected);
+            }
+        }
+        return expected;
+    }
+
+    private static byte[] GetEncodedBytes(string value, bool bestFit)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return Encoding.UTF8.GetBytes(value);
+        }
+        if (value.Length == 0)
+        {
+            return Array.Empty<byte>();
+        }
+
+        fixed (char* chars = value)
+        {
+            uint flags = bestFit ? 0u : WcNoBestFitChars;
+            int count = WideCharToMultiByte(CpAcp, flags, chars, value.Length, null, 0, null, null);
+            Assert.True(count > 0);
+            byte[] bytes = new byte[count];
+            fixed (byte* native = bytes)
+            {
+                Assert.Equal(count, WideCharToMultiByte(CpAcp, flags, chars, value.Length, native, count, null, null));
+            }
+            return bytes;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static int ValidateAndReplaceBytes(byte* values, int count, byte* expected, byte* replacement)
+    {
+        if (!new ReadOnlySpan<byte>(values, count).SequenceEqual(new ReadOnlySpan<byte>(expected, count)))
+        {
+            return 0;
+        }
+        if (replacement is not null)
+        {
+            new ReadOnlySpan<byte>(replacement, count).CopyTo(new Span<byte>(values, count));
+        }
+        return 1;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static void AllocateBytes(byte** values, int count, byte* source)
+    {
+        *values = (byte*)Marshal.AllocCoTaskMem(count);
+        new ReadOnlySpan<byte>(source, count).CopyTo(new Span<byte>(*values, count));
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    [BestFitMapping(false)]
+    private struct FixedAnsiChars
+    {
+        public byte Before;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+        public char[] Values;
+        public byte After;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern int WideCharToMultiByte(uint codePage, uint flags, char* chars, int charCount, byte* bytes, int byteCount, byte* defaultChar, int* usedDefaultChar);
+    private delegate int ArrayConverter(char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false)]
+    private delegate int AnsiArrayIn([In, MarshalAs(UnmanagedType.LPArray)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = true)]
+    private delegate int AnsiArrayBestFitIn([In, MarshalAs(UnmanagedType.LPArray)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false)]
+    private delegate int AnsiArrayInOut([In, Out, MarshalAs(UnmanagedType.LPArray)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = true)]
+    private delegate int AnsiArrayBestFitInOut([In, Out, MarshalAs(UnmanagedType.LPArray)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode, BestFitMapping = false)]
+    private delegate int AnsiArrayI1([In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode, BestFitMapping = false)]
+    private delegate int AnsiArrayU1([In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private delegate void CreateAnsiArray([Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out char[] values, int count, byte* source);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false)]
+    private delegate int AnsiArrayCallback([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] char[] values, int count);
+}
+
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+public unsafe class PointerArrayTests
+{
+    private const string NativeLibraryName = "MarshalArrayLPArrayNative";
+    private const int ArrayLength = 5;
+
+    public enum ElementKind
+    {
+        Byte,
+        Int32,
+        Int64,
+        Single,
+        Boolean,
+        Char,
+        UnicodeChar,
+        Void,
+        Structure,
+        Pointer,
+        IntPtr,
+        UIntPtr,
+        UnmanagedFunction,
+        ManagedFunction
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size = 16)]
+    private struct Pointee
+    {
+    }
+
+    public static bool IsMonoCompiled => PlatformDetection.IsMonoRuntime && !PlatformDetection.IsMonoInterpreter;
+
+    public static IEnumerable<object[]> ArrayCases()
+    {
+        foreach (ElementKind kind in Enum.GetValues<ElementKind>())
+        {
+            foreach (int length in new[] { -1, 0, 1, 4, ArrayLength, 21 })
+            {
+                yield return new object[] { kind, length };
+            }
+        }
+    }
+
+    public static IEnumerable<object[]> DelegateCases()
+    {
+        foreach (object[] testCase in ArrayCases())
+        {
+            if ((ElementKind)testCase[0] is ElementKind.Byte or ElementKind.IntPtr or ElementKind.UIntPtr or ElementKind.UnmanagedFunction)
+            {
+                yield return testCase;
+            }
+        }
+    }
+
+    public static IEnumerable<object[]> ElementKinds()
+    {
+        foreach (ElementKind kind in Enum.GetValues<ElementKind>())
+        {
+            yield return new object[] { kind };
+        }
+    }
+
+    public static IEnumerable<object[]> NonFunctionPointerArrayCases()
+        => ArrayCases().Where(static testCase => !IsNonNullFunctionPointerArrayCase(testCase));
+
+    public static IEnumerable<object[]> FunctionPointerArrayCases()
+        => ArrayCases().Where(IsNonNullFunctionPointerArrayCase);
+
+    public static IEnumerable<object[]> NonFunctionPointerDelegateCases()
+        => DelegateCases().Where(static testCase => !IsNonNullFunctionPointerArrayCase(testCase));
+
+    public static IEnumerable<object[]> FunctionPointerDelegateCases()
+        => DelegateCases().Where(IsNonNullFunctionPointerArrayCase);
+
+    public static IEnumerable<object[]> NonFunctionPointerElementKinds()
+        => ElementKinds().Where(static testCase => (ElementKind)testCase[0] is not (ElementKind.UnmanagedFunction or ElementKind.ManagedFunction));
+
+    public static IEnumerable<object[]> NonNullArrayCases()
+        => ArrayCases().Where(static testCase => (int)testCase[1] >= 0);
+
+    public static IEnumerable<object[]> NullArrayCases()
+        => ArrayCases().Where(static testCase => (int)testCase[1] == -1);
+
+    public static IEnumerable<object[]> NonNullDelegateCases()
+        => DelegateCases().Where(static testCase => (int)testCase[1] >= 0);
+
+    public static IEnumerable<object[]> NullDelegateCases()
+        => DelegateCases().Where(static testCase => (int)testCase[1] == -1);
+
+    private static bool IsNonNullFunctionPointerArrayCase(object[] testCase)
+        => (int)testCase[1] >= 0 && (ElementKind)testCase[0] is ElementKind.UnmanagedFunction or ElementKind.ManagedFunction;
+
+    [Theory]
+    [MemberData(nameof(NonFunctionPointerArrayCases))]
+    public static void PinArray(ElementKind kind, int length)
+        => PinArrayCore(kind, length);
+
+    [Theory]
+    [MemberData(nameof(FunctionPointerArrayCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
+    public static void PinFunctionPointerArray(ElementKind kind, int length)
+        => PinArrayCore(kind, length);
+
+    private static void PinArrayCore(ElementKind kind, int length)
+    {
+        Array values = CreateArray(kind, length);
+        nuint[] expected = CreateValues(kind, length);
+        Initialize(values, expected);
+
+        ref byte data = ref Unsafe.NullRef<byte>();
+        if (values is not null)
+        {
+            data = ref MemoryMarshal.GetArrayDataReference(values);
+        }
+
+        fixed (byte* address = &data)
+        {
+            Assert.Equal((nint)address, GetAddress(kind, values, null, 0));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NonFunctionPointerDelegateCases))]
+    public static void PinArrayThroughDelegate(ElementKind kind, int length)
+        => PinArrayThroughDelegateCore(kind, length);
+
+    [Theory]
+    [MemberData(nameof(FunctionPointerDelegateCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
+    public static void PinFunctionPointerArrayThroughDelegate(ElementKind kind, int length)
+        => PinArrayThroughDelegateCore(kind, length);
+
+    private static void PinArrayThroughDelegateCore(ElementKind kind, int length)
+    {
+        Array values = CreateArray(kind, length);
+        Initialize(values, CreateValues(kind, length));
+        nint target = (nint)(delegate* unmanaged[Cdecl]<nuint*, nint>)&GetAddressManaged;
+
+        ref byte data = ref Unsafe.NullRef<byte>();
+        if (values is not null)
+        {
+            data = ref MemoryMarshal.GetArrayDataReference(values);
+        }
+
+        fixed (byte* address = &data)
+        {
+            nint actual = kind switch
+            {
+                ElementKind.Byte => Marshal.GetDelegateForFunctionPointer<ByteArrayDelegate>(target)((byte*[])values),
+                ElementKind.IntPtr => Marshal.GetDelegateForFunctionPointer<IntPtrArrayDelegate>(target)((nint[])values),
+                ElementKind.UIntPtr => Marshal.GetDelegateForFunctionPointer<UIntPtrArrayDelegate>(target)((nuint[])values),
+                ElementKind.UnmanagedFunction => Marshal.GetDelegateForFunctionPointer<FunctionArrayDelegate>(target)((delegate* unmanaged[Cdecl]<nint, nint>[])values),
+                _ => throw new ArgumentOutOfRangeException(nameof(kind))
+            };
+            Assert.Equal((nint)address, actual);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NonFunctionPointerElementKinds))]
+    public static void PinArrayAcrossCollection(ElementKind kind)
+        => PinArrayAcrossCollectionCore(kind);
+
+    [Theory]
+    [InlineData(ElementKind.UnmanagedFunction)]
+    [InlineData(ElementKind.ManagedFunction)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
+    public static void PinFunctionPointerArrayAcrossCollection(ElementKind kind)
+        => PinArrayAcrossCollectionCore(kind);
+
+    private static void PinArrayAcrossCollectionCore(ElementKind kind)
+    {
+        Array values = CreateArray(kind, ArrayLength);
+        nuint[] expected = CreateValues(kind, values.Length);
+        Initialize(values, expected);
+        using (GCHandle<Array> handle = new(values))
+        {
+            Assert.NotEqual(nint.Zero, GetAddress(kind, values, &GetAddressAfterCollection, GCHandle<Array>.ToIntPtr(handle)));
+            Assert.True(Contents(values).SequenceEqual(expected));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NonNullArrayCases))]
+    [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
+    public static void CopyArrayByRef(ElementKind kind, int length)
+        => CopyArrayByRefCore(kind, length);
+
+    [Theory]
+    [MemberData(nameof(NullArrayCases))]
+    [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    public static void CopyNullArrayByRef(ElementKind kind, int length)
+        => CopyArrayByRefCore(kind, length);
+
+    private static void CopyArrayByRefCore(ElementKind kind, int length)
+    {
+        Array values = CreateArray(kind, length);
+        nuint[] expected = CreateValues(kind, length);
+        Initialize(values, expected);
+
+        ref byte data = ref Unsafe.NullRef<byte>();
+        if (values is not null)
+        {
+            data = ref MemoryMarshal.GetArrayDataReference(values);
+        }
+
+        fixed (byte* address = &data)
+        fixed (nuint* expectedAddress = expected)
+        {
+            Assert.Equal(1, ReverseByRef(kind, ref values, Math.Max(0, length), length == -1 ? null : expectedAddress, (nuint*)address));
+        }
+
+        AssertResult(kind, length, values, expected, reversed: true);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
+    public static void CopyInOnlyArrayByRef(bool functionPointers)
+    {
+        ElementKind kind = functionPointers ? ElementKind.UnmanagedFunction : ElementKind.Byte;
+        Array values = CreateArray(kind, ArrayLength);
+        Array original = values;
+        nuint[] expected = CreateValues(kind, values.Length);
+        Initialize(values, expected);
+
+        fixed (byte* address = &MemoryMarshal.GetArrayDataReference(values))
+        fixed (nuint* expectedAddress = expected)
+        {
+            if (functionPointers)
+            {
+                delegate* unmanaged[Cdecl]<nint, nint>[] typed = (delegate* unmanaged[Cdecl]<nint, nint>[])values;
+                Assert.Equal(1, ReversePointerArrayIn(ref typed, typed.Length, expectedAddress, (nuint*)address));
+                values = typed;
+            }
+            else
+            {
+                byte*[] typed = (byte*[])values;
+                Assert.Equal(1, ReversePointerArrayIn(ref typed, typed.Length, expectedAddress, (nuint*)address));
+                values = typed;
+            }
+        }
+
+        Assert.Same(original, values);
+        AssertResult(kind, values.Length, values, expected, reversed: false);
+    }
+
+    [Theory]
+    [MemberData(nameof(NonNullDelegateCases))]
+    [SkipOnMono("Pointer-array copy-back, including function-pointer layout, has not been validated on Mono.")]
+    public static void CopyOutArray(ElementKind kind, int length)
+        => CopyOutArrayCore(kind, length);
+
+    [Theory]
+    [MemberData(nameof(NullDelegateCases))]
+    [SkipOnMono("Pointer-array copy-back, including function-pointer layout, has not been validated on Mono.")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    public static void CopyNullOutArray(ElementKind kind, int length)
+        => CopyOutArrayCore(kind, length);
+
+    private static void CopyOutArrayCore(ElementKind kind, int length)
+    {
+        nuint[] expected = CreateValues(kind, length);
+        Array values;
+        fixed (nuint* expectedAddress = expected)
+        {
+            nuint* source = length == -1 ? null : expectedAddress;
+            int count = Math.Max(0, length);
+            switch (kind)
+            {
+                case ElementKind.Byte:
+                    Assert.Equal(1, CreatePointerArray(out byte*[] bytes, count, source));
+                    values = bytes;
+                    break;
+                case ElementKind.IntPtr:
+                    Assert.Equal(1, CreatePointerArray(out nint[] integers, count, source));
+                    values = integers;
+                    break;
+                case ElementKind.UIntPtr:
+                    Assert.Equal(1, CreatePointerArray(out nuint[] unsignedIntegers, count, source));
+                    values = unsignedIntegers;
+                    break;
+                case ElementKind.UnmanagedFunction:
+                    Assert.Equal(1, CreatePointerArray(out delegate* unmanaged[Cdecl]<nint, nint>[] functions, count, source));
+                    values = functions;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+        }
+
+        AssertResult(kind, length, values, expected, reversed: false);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public static void PinArrayDirectionAttributes(int direction)
+    {
+        byte*[] values = new byte*[ArrayLength];
+        nuint[] expected = CreateValues(ElementKind.Byte, values.Length);
+        Initialize(values, expected);
+
+        fixed (byte** address = values)
+        fixed (nuint* expectedAddress = expected)
+        {
+            int result = direction switch
+            {
+                0 => ReversePointerArray(values, values.Length, expectedAddress, (nuint*)address, 1),
+                1 => ReversePointerArrayIn(values, values.Length, expectedAddress, (nuint*)address, 1),
+                2 => ReversePointerArrayOut(values, values.Length, expectedAddress, (nuint*)address, 1),
+                3 => ReversePointerArrayInOut(values, values.Length, expectedAddress, (nuint*)address, 1),
+                _ => throw new ArgumentOutOfRangeException(nameof(direction))
+            };
+            Assert.Equal(1, result);
+        }
+
+        AssertResult(ElementKind.Byte, values.Length, values, expected, reversed: true);
+    }
+
+    [Theory]
+    [InlineData(false, -1)]
+    [InlineData(false, 0)]
+    [InlineData(true, -1)]
+    [InlineData(true, 0)]
+    [SkipOnMono("Reverse pointer-array marshalling, including function-pointer layout, has not been validated on Mono.")]
+    public static void CopyArrayInReversePInvoke(bool functionPointers, int length)
+        => CopyArrayInReversePInvokeCore(functionPointers, length);
+
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(false, 4)]
+    [InlineData(false, ArrayLength)]
+    [InlineData(false, 21)]
+    [InlineData(true, 1)]
+    [InlineData(true, 4)]
+    [InlineData(true, ArrayLength)]
+    [InlineData(true, 21)]
+    [SkipOnMono("Reverse pointer-array marshalling, including function-pointer layout, has not been validated on Mono.")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    public static void CopyNonEmptyArrayInReversePInvoke(bool functionPointers, int length)
+        => CopyArrayInReversePInvokeCore(functionPointers, length);
+
+    private static void CopyArrayInReversePInvokeCore(bool functionPointers, int length)
+    {
+        ElementKind kind = functionPointers ? ElementKind.UnmanagedFunction : ElementKind.Byte;
+        nuint[] expected = CreateValues(kind, length);
+        nuint[] values = (nuint[])expected.Clone();
+        fixed (nuint* address = values)
+        fixed (nuint* expectedAddress = expected)
+        {
+            nuint* nativeValues = length == -1 ? null : address;
+            nuint* nativeExpected = length == -1 ? null : expectedAddress;
+            int count = Math.Max(0, length);
+            int result = functionPointers
+                ? CallPointerArrayCallback(ReverseFunctionArray, nativeValues, count, nativeExpected)
+                : CallPointerArrayCallback(ReverseByteArray, nativeValues, count, nativeExpected);
+            Assert.Equal(1, result);
+        }
+    }
+
+    private static Array CreateArray(ElementKind kind, int length)
+    {
+        if (length == -1)
+        {
+            return null;
+        }
+
+        return kind switch
+        {
+            ElementKind.Byte => new byte*[length],
+            ElementKind.Int32 => new int*[length],
+            ElementKind.Int64 => new long*[length],
+            ElementKind.Single => new float*[length],
+            ElementKind.Boolean => new bool*[length],
+            ElementKind.Char or ElementKind.UnicodeChar => new char*[length],
+            ElementKind.Void => new void*[length],
+            ElementKind.Structure => new Pointee*[length],
+            ElementKind.Pointer => new byte**[length],
+            ElementKind.IntPtr => new nint[length],
+            ElementKind.UIntPtr => new nuint[length],
+            ElementKind.UnmanagedFunction => new delegate* unmanaged[Cdecl]<nint, nint>[length],
+            ElementKind.ManagedFunction => new delegate*<nint, nint>[length],
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+    }
+
+    private static nuint[] CreateValues(ElementKind kind, int length)
+    {
+        nuint[] values = new nuint[Math.Max(1, length)];
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = (i % 3) == 2 ? 0 : kind switch
+            {
+                ElementKind.UnmanagedFunction => (i & 1) == 0
+                    ? (nuint)(delegate* unmanaged[Cdecl]<nint, nint>)&UnmanagedIdentity
+                    : (nuint)(delegate* unmanaged[Cdecl]<nint, nint>)&UnmanagedNegate,
+                ElementKind.ManagedFunction => (i & 1) == 0
+                    ? (nuint)(delegate*<nint, nint>)&ManagedIdentity
+                    : (nuint)(delegate*<nint, nint>)&ManagedNegate,
+                _ => (IntPtr.Size == 8 ? unchecked((nuint)0x1234567810203040UL) : 0x10203040u) + (nuint)(i * 0x01010101)
+            };
+        }
+
+        if (values.Length >= ArrayLength)
+        {
+            values[ArrayLength - 1] = 21;
+        }
+
+        return values;
+    }
+
+    private static Span<nuint> Contents(Array values)
+        => MemoryMarshal.CreateSpan(ref Unsafe.As<byte, nuint>(ref MemoryMarshal.GetArrayDataReference(values)), values.Length);
+
+    private static void Initialize(Array values, nuint[] expected)
+    {
+        if (values is not null)
+        {
+            expected.AsSpan(0, values.Length).CopyTo(Contents(values));
+        }
+    }
+
+    private static void AssertResult(ElementKind kind, int length, Array values, nuint[] expected, bool reversed)
+    {
+        if (length == -1)
+        {
+            Assert.Null(values);
+            return;
+        }
+
+        Assert.NotNull(values);
+        Assert.Equal(CreateArray(kind, 0).GetType(), values.GetType());
+        Assert.Equal(length, values.Length);
+        Span<nuint> contents = Contents(values);
+        for (int i = 0; i < length; i++)
+        {
+            Assert.Equal(expected[reversed ? length - i - 1 : i], contents[i]);
+        }
+    }
+
+    private static nint GetAddress(ElementKind kind, Array values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context)
+        => kind switch
+        {
+            ElementKind.Byte => GetPointerArrayAddress((byte*[])values, callback, context),
+            ElementKind.Int32 => GetPointerArrayAddress((int*[])values, callback, context),
+            ElementKind.Int64 => GetPointerArrayAddress((long*[])values, callback, context),
+            ElementKind.Single => GetPointerArrayAddress((float*[])values, callback, context),
+            ElementKind.Boolean => GetPointerArrayAddress((bool*[])values, callback, context),
+            ElementKind.Char => GetPointerArrayAddress((char*[])values, callback, context),
+            ElementKind.UnicodeChar => GetPointerArrayAddressUnicode((char*[])values, callback, context),
+            ElementKind.Void => GetPointerArrayAddress((void*[])values, callback, context),
+            ElementKind.Structure => GetPointerArrayAddress((Pointee*[])values, callback, context),
+            ElementKind.Pointer => GetPointerArrayAddress((byte**[])values, callback, context),
+            ElementKind.IntPtr => GetPointerArrayAddress((nint[])values, callback, context),
+            ElementKind.UIntPtr => GetPointerArrayAddress((nuint[])values, callback, context),
+            ElementKind.UnmanagedFunction => GetPointerArrayAddress((delegate* unmanaged[Cdecl]<nint, nint>[])values, callback, context),
+            ElementKind.ManagedFunction => GetPointerArrayAddress((delegate*<nint, nint>[])values, callback, context),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+
+    private delegate int ByRefArrayCall<TArray>(ref TArray values, int count, nuint* expected, nuint* original);
+
+    private static int CallByRef<TArray>(ByRefArrayCall<TArray> call, ref Array values, int count, nuint* expected, nuint* original)
+        where TArray : class
+    {
+        TArray typed = (TArray)(object)values;
+        int result = call(ref typed, count, expected, original);
+        values = (Array)(object)typed;
+        return result;
+    }
+
+    private static int ReverseByRef(ElementKind kind, ref Array values, int count, nuint* expected, nuint* original)
+        => kind switch
+        {
+            ElementKind.Byte => CallByRef<byte*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.Int32 => CallByRef<int*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.Int64 => CallByRef<long*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.Single => CallByRef<float*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.Boolean => CallByRef<bool*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.Char => CallByRef<char*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.UnicodeChar => CallByRef<char*[]>(ReversePointerArrayByRefUnicode, ref values, count, expected, original),
+            ElementKind.Void => CallByRef<void*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.Structure => CallByRef<Pointee*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.Pointer => CallByRef<byte**[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.IntPtr => CallByRef<nint[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.UIntPtr => CallByRef<nuint[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.UnmanagedFunction => CallByRef<delegate* unmanaged[Cdecl]<nint, nint>[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.ManagedFunction => CallByRef<delegate*<nint, nint>[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static nint GetAddressManaged(nuint* values) => (nint)values;
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static nuint* GetAddressAfterCollection(nuint* values, nint context)
+    {
+        Array array = GCHandle<Array>.FromIntPtr(context).Target;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        fixed (byte* address = &MemoryMarshal.GetArrayDataReference(array))
+        {
+            return (nuint*)address;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static nint UnmanagedIdentity(nint value) => value;
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static nint UnmanagedNegate(nint value) => -value;
+
+    private static nint ManagedIdentity(nint value) => value;
+    private static nint ManagedNegate(nint value) => -value;
+
+    private static int ReverseByteArray(byte*[] values, int count, nuint* expected)
+        => ReverseCallback(values, typeof(byte*[]), count, expected);
+
+    private static int ReverseFunctionArray(delegate* unmanaged[Cdecl]<nint, nint>[] values, int count, nuint* expected)
+        => ReverseCallback(values, typeof(delegate* unmanaged[Cdecl]<nint, nint>[]), count, expected);
+
+    private static int ReverseCallback(Array values, Type expectedType, int count, nuint* expected)
+    {
+        if (values is null)
+        {
+            return expected is null ? 1 : 0;
+        }
+
+        if (values.GetType() != expectedType || values.Length != count || !Contents(values).SequenceEqual(new ReadOnlySpan<nuint>(expected, count)))
+        {
+            return 0;
+        }
+
+        Contents(values).Reverse();
+        return 1;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint ByteArrayDelegate(byte*[] values);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint IntPtrArrayDelegate(nint[] values);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint UIntPtrArrayDelegate(nuint[] values);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint FunctionArrayDelegate(delegate* unmanaged[Cdecl]<nint, nint>[] values);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ReverseByteArrayDelegate([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte*[] values, int count, nuint* expected);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ReverseFunctionArrayDelegate([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] delegate* unmanaged[Cdecl]<nint, nint>[] values, int count, nuint* expected);
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(byte*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(int*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(long*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(float*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(bool*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(char*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(GetPointerArrayAddress), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern nint GetPointerArrayAddressUnicode(char*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(void*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(Pointee*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(byte**[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(nint[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(nuint[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(delegate* unmanaged[Cdecl]<nint, nint>[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(delegate*<nint, nint>[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref byte*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref int*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref long*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref float*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref bool*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref char*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReversePointerArrayByRef), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern int ReversePointerArrayByRefUnicode([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref char*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref void*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref Pointee*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref byte**[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref nint[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref nuint[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref delegate* unmanaged[Cdecl]<nint, nint>[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref delegate*<nint, nint>[] values, int count, nuint* expected, nuint* original);
+
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReversePointerArrayByRef), CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayIn([In] ref byte*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReversePointerArrayByRef), CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayIn([In] ref delegate* unmanaged[Cdecl]<nint, nint>[] values, int count, nuint* expected, nuint* original);
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int CreatePointerArray([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out byte*[] values, int count, nuint* expected);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int CreatePointerArray([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out nint[] values, int count, nuint* expected);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int CreatePointerArray([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out nuint[] values, int count, nuint* expected);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int CreatePointerArray([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out delegate* unmanaged[Cdecl]<nint, nint>[] values, int count, nuint* expected);
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArray(byte*[] values, int count, nuint* expected, nuint* original, int pinned);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReversePointerArray), CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayIn([In] byte*[] values, int count, nuint* expected, nuint* original, int pinned);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReversePointerArray), CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayOut([Out] byte*[] values, int count, nuint* expected, nuint* original, int pinned);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReversePointerArray), CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayInOut([In, Out] byte*[] values, int count, nuint* expected, nuint* original, int pinned);
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int CallPointerArrayCallback(ReverseByteArrayDelegate callback, nuint* values, int count, nuint* expected);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int CallPointerArrayCallback(ReverseFunctionArrayDelegate callback, nuint* values, int count, nuint* expected);
 }
