@@ -735,6 +735,191 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void PropagationDataSamplingDoesNotCopyTagsAndLinksTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity.ForceDefaultIdFormat = true;
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                using ActivitySource aSource = new ActivitySource("PropagationDataTagsAndLinksTest");
+
+                ActivitySamplingResult result = ActivitySamplingResult.PropagationData;
+                int sampledTags = 0;
+                int sampledLinks = 0;
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => ReferenceEquals(activitySource, aSource),
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                    {
+                        sampledTags = activityOptions.Tags.Count();
+                        sampledLinks = activityOptions.Links.Count();
+                        return result;
+                    }
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                KeyValuePair<string, object>[] tags = [new("tag1", "value1"), new("tag2", "value2")];
+                ActivityLink[] links = [new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None))];
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, default(ActivityContext), tags, links))
+                {
+                    Assert.NotNull(a);
+                    Assert.False(a.IsAllDataRequested);
+                    Assert.Empty(a.TagObjects);
+                    Assert.Empty(a.Links);
+                    Assert.Equal(2, sampledTags);
+                    Assert.Equal(1, sampledLinks);
+                }
+
+                result = ActivitySamplingResult.AllData;
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, default(ActivityContext), tags, links))
+                {
+                    Assert.NotNull(a);
+                    Assert.True(a.IsAllDataRequested);
+                    Assert.Equal(2, a.TagObjects.Count());
+                    Assert.Single(a.Links);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void PropagationDataSamplingWithParentIdDoesNotCopyTagsAndLinksTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity.ForceDefaultIdFormat = true;
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                using ActivitySource aSource = new ActivitySource("PropagationDataParentIdTest");
+
+                ActivitySamplingResult result = ActivitySamplingResult.PropagationData;
+                int sampledTags = 0;
+                int sampledLinks = 0;
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => ReferenceEquals(activitySource, aSource),
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                    {
+                        sampledTags = activityOptions.Tags.Count();
+                        sampledLinks = activityOptions.Links.Count();
+                        return result;
+                    }
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                string parentId = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01";
+                KeyValuePair<string, object>[] tags = [new("tag1", "value1")];
+                ActivityLink[] links = [new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None))];
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, parentId, tags, links))
+                {
+                    Assert.NotNull(a);
+                    Assert.False(a.IsAllDataRequested);
+                    Assert.Equal(parentId, a.ParentId);
+                    Assert.Empty(a.TagObjects);
+                    Assert.Empty(a.Links);
+                    Assert.Equal(1, sampledTags);
+                    Assert.Equal(1, sampledLinks);
+                }
+
+                result = ActivitySamplingResult.AllData;
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, parentId, tags, links))
+                {
+                    Assert.NotNull(a);
+                    Assert.True(a.IsAllDataRequested);
+                    Assert.Single(a.TagObjects);
+                    Assert.Single(a.Links);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void PropagationDataSamplingDoesNotCopySamplingTagsTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("PropagationDataSamplingTagsTest");
+
+                ActivitySamplingResult result = ActivitySamplingResult.PropagationData;
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => ReferenceEquals(activitySource, aSource),
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                    {
+                        activityOptions.SamplingTags.Add("sampler.tag", "value");
+                        return result;
+                    }
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                using (Activity a = aSource.StartActivity("a"))
+                {
+                    Assert.NotNull(a);
+                    Assert.False(a.IsAllDataRequested);
+                    Assert.Empty(a.TagObjects);
+                }
+
+                result = ActivitySamplingResult.AllData;
+
+                using (Activity a = aSource.StartActivity("a"))
+                {
+                    Assert.NotNull(a);
+                    Assert.True(a.IsAllDataRequested);
+                    Assert.Contains(a.TagObjects, t => t.Key == "sampler.tag" && (string)t.Value == "value");
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void PropagationDataSamplingWithMultipleListenersCopiesTagsAndLinksIfAnyRequestsDataTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("PropagationDataMultipleListenersTest");
+
+                using ActivityListener propagationListener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => ReferenceEquals(activitySource, aSource),
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.PropagationData
+                };
+
+                ActivitySource.AddActivityListener(propagationListener);
+
+                KeyValuePair<string, object>[] tags = [new("tag1", "value1")];
+                ActivityLink[] links = [new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None))];
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, default(ActivityContext), tags, links))
+                {
+                    Assert.NotNull(a);
+                    Assert.False(a.IsAllDataRequested);
+                    Assert.Empty(a.TagObjects);
+                    Assert.Empty(a.Links);
+                }
+
+                using ActivityListener allDataListener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => ReferenceEquals(activitySource, aSource),
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData
+                };
+
+                ActivitySource.AddActivityListener(allDataListener);
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, default(ActivityContext), tags, links))
+                {
+                    Assert.NotNull(a);
+                    Assert.True(a.IsAllDataRequested);
+                    Assert.Single(a.TagObjects);
+                    Assert.Single(a.Links);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestExpectedListenersReturnValues()
         {
             RemoteExecutor.Invoke(() => {
