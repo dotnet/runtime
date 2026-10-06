@@ -97,6 +97,14 @@ void ExternalMemoryHandle::GCScanRoot(promote_func *fn, ScanContext *sc)
     }
     CONTRACTL_END;
 
+#ifndef DACCESS_COMPILE
+    if (sc->promotion)
+    {
+        // Native storage has no object header to keep its MethodTable's loader allocator alive.
+        GcReportLoaderAllocator(fn, sc, m_pMT->GetLoaderAllocator());
+    }
+#endif // !DACCESS_COMPILE
+
     PTR_VOID fromAddress = m_pMemory;
     if (m_pMT->IsValueType())
     {
