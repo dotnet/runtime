@@ -353,6 +353,15 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectType(base.MakeByRefType());
         }
 
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            return other is ProjectingType otherType &&
+                Projector == otherType.Projector &&
+                UnderlyingType.HasSameMetadataDefinitionAs(otherType.UnderlyingType);
+        }
+
         public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is ProjectingType other &&

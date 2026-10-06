@@ -10,6 +10,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
@@ -377,6 +378,51 @@ namespace System.Threading
 #if !MONO
         [Intrinsic]
         internal static void FastPollGC() => FastPollGC();
+
+        // Max iterations to be done in SpinWait without switching GC modes.
+        private const int SpinWaitCoopThreshold = 1024;
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Thread_SpinWait")]
+        [SuppressGCTransition]
+        internal static partial void SpinWaitInternal(int iterations);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Thread_SpinWait")]
+        private static partial void LongSpinWaitInternal(int iterations);
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
+        private static void LongSpinWait(int iterations) => LongSpinWaitInternal(iterations);
+
+        /// <summary>
+        /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
+        /// only take a few machine instructions.  Calling this API is preferable to coding
+        /// a explicit busy loop because the hardware can be informed that it is busy waiting.
+        /// </summary>
+        public static void SpinWait(int iterations)
+        {
+            if (!RuntimeFeature.IsMultithreadingSupported) return;
+
+            if (iterations < SpinWaitCoopThreshold)
+            {
+                SpinWaitInternal(iterations);
+            }
+            else
+            {
+                LongSpinWait(iterations);
+            }
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Thread_Yield")]
+        private static partial Interop.BOOL YieldInternal();
+
+        public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
+
+        /// <summary>
+        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
+        /// appropriate for the processor.
+        /// </summary>
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Thread_GetOptimalMaxSpinWaitsPerSpinIteration")]
+        [SuppressGCTransition]
+        internal static partial int GetOptimalMaxSpinWaitsPerSpinIteration();
 #endif
 
         internal static Thread CurrentThreadAssumedInitialized

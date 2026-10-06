@@ -25,98 +25,11 @@ namespace System.Runtime.Serialization
 
         internal static XmlQualifiedName IdQualifiedName => field ??= new XmlQualifiedName(Globals.IdLocalName, Globals.SerializationNamespace);
         internal static XmlQualifiedName RefQualifiedName => field ??= new XmlQualifiedName(Globals.RefLocalName, Globals.SerializationNamespace);
-        internal static Type TypeOfObject => field ??= typeof(object);
-        internal static Type TypeOfValueType => field ??= typeof(ValueType);
-        internal static Type TypeOfArray => field ??= typeof(Array);
-        internal static Type TypeOfString => field ??= typeof(string);
-        internal static Type TypeOfInt => field ??= typeof(int);
-        internal static Type TypeOfULong => field ??= typeof(ulong);
-        internal static Type TypeOfVoid => field ??= typeof(void);
-        internal static Type TypeOfByteArray => field ??= typeof(byte[]);
-        internal static Type TypeOfTimeSpan => field ??= typeof(TimeSpan);
-        internal static Type TypeOfGuid => field ??= typeof(Guid);
-        internal static Type TypeOfDateTimeOffset => field ??= typeof(DateTimeOffset);
-        internal static Type TypeOfDateTimeOffsetAdapter => field ??= typeof(DateTimeOffsetAdapter);
-        internal static Type TypeOfDateOnly => field ??= typeof(DateOnly);
-        internal static Type TypeOfTimeOnly => field ??= typeof(TimeOnly);
-        internal static Type TypeOfMemoryStream => field ??= typeof(MemoryStream);
-        internal static Type TypeOfMemoryStreamAdapter => field ??= typeof(MemoryStreamAdapter);
-        internal static Type TypeOfUri => field ??= typeof(Uri);
-        internal static Type TypeOfTypeEnumerable => field ??= typeof(IEnumerable<Type>);
-        internal static Type TypeOfStreamingContext => field ??= typeof(StreamingContext);
-        internal static Type TypeOfISerializable => field ??= typeof(ISerializable);
-        internal static Type TypeOfIDeserializationCallback => field ??= typeof(IDeserializationCallback);
-#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
-        internal static Type TypeOfIObjectReference => field ??= typeof(IObjectReference);
-#pragma warning restore SYSLIB0050
-        internal static Type TypeOfXmlFormatClassWriterDelegate => field ??= typeof(XmlFormatClassWriterDelegate);
-        internal static Type TypeOfXmlFormatCollectionWriterDelegate => field ??= typeof(XmlFormatCollectionWriterDelegate);
-        internal static Type TypeOfXmlFormatClassReaderDelegate => field ??= typeof(XmlFormatClassReaderDelegate);
-        internal static Type TypeOfXmlFormatCollectionReaderDelegate => field ??= typeof(XmlFormatCollectionReaderDelegate);
-        internal static Type TypeOfXmlFormatGetOnlyCollectionReaderDelegate => field ??= typeof(XmlFormatGetOnlyCollectionReaderDelegate);
-        internal static Type TypeOfKnownTypeAttribute => field ??= typeof(KnownTypeAttribute);
-        internal static Type TypeOfDataContractAttribute => field ??= typeof(DataContractAttribute);
-        internal static Type TypeOfDataMemberAttribute => field ??= typeof(DataMemberAttribute);
-        internal static Type TypeOfEnumMemberAttribute => field ??= typeof(EnumMemberAttribute);
-        internal static Type TypeOfCollectionDataContractAttribute => field ??= typeof(CollectionDataContractAttribute);
-        internal static Type TypeOfOptionalFieldAttribute => field ??= typeof(OptionalFieldAttribute);
-        internal static Type TypeOfObjectArray => field ??= typeof(object[]);
-        internal static Type TypeOfOnSerializingAttribute => field ??= typeof(OnSerializingAttribute);
-        internal static Type TypeOfOnSerializedAttribute => field ??= typeof(OnSerializedAttribute);
-        internal static Type TypeOfOnDeserializingAttribute => field ??= typeof(OnDeserializingAttribute);
-        internal static Type TypeOfOnDeserializedAttribute => field ??= typeof(OnDeserializedAttribute);
-        internal static Type TypeOfFlagsAttribute => field ??= typeof(FlagsAttribute);
-        internal static Type TypeOfIXmlSerializable => field ??= typeof(IXmlSerializable);
-        internal static Type TypeOfXmlSchemaProviderAttribute => field ??= typeof(XmlSchemaProviderAttribute);
-        internal static Type TypeOfXmlRootAttribute => field ??= typeof(XmlRootAttribute);
-        internal static Type TypeOfXmlQualifiedName => field ??= typeof(XmlQualifiedName);
-        internal static Type TypeOfXmlSchemaType => field ??= typeof(XmlSchemaType);
-        internal static Type TypeOfIExtensibleDataObject => field ??= typeof(IExtensibleDataObject);
-        internal static Type TypeOfExtensionDataObject => field ??= typeof(ExtensionDataObject);
-        internal static Type TypeOfISerializableDataNode => field ??= typeof(ISerializableDataNode);
-        internal static Type TypeOfClassDataNode => field ??= typeof(ClassDataNode);
-        internal static Type TypeOfCollectionDataNode => field ??= typeof(CollectionDataNode);
-        internal static Type TypeOfXmlDataNode => field ??= typeof(XmlDataNode);
-        internal static Type TypeOfNullable => field ??= typeof(Nullable<>);
-        internal static Type TypeOfReflectionPointer => field ??= typeof(System.Reflection.Pointer);
-        internal static Type TypeOfIDictionaryGeneric => field ??= typeof(IDictionary<,>);
-        internal static Type TypeOfIDictionary => field ??= typeof(IDictionary);
-        internal static Type TypeOfIListGeneric => field ??= typeof(IList<>);
-        internal static Type TypeOfIList => field ??= typeof(IList);
-        internal static Type TypeOfICollectionGeneric => field ??= typeof(ICollection<>);
-        internal static Type TypeOfICollection => field ??= typeof(ICollection);
-        internal static Type TypeOfIEnumerableGeneric =>  field ??= typeof(IEnumerable<>);
-        internal static Type TypeOfIEnumerable => field ??= typeof(IEnumerable);
-        internal static Type TypeOfIEnumeratorGeneric => field ??= typeof(IEnumerator<>);
-        internal static Type TypeOfIEnumerator => field ??= typeof(IEnumerator);
-        internal static Type TypeOfKeyValuePair => field ??= typeof(KeyValuePair<,>);
-        internal static Type TypeOfKeyValue => field ??= typeof(KeyValue<,>);
-        internal static Type TypeOfIDictionaryEnumerator => field ??= typeof(IDictionaryEnumerator);
-        internal static Type TypeOfDictionaryEnumerator => field ??= typeof(CollectionDataContract.DictionaryEnumerator);
-        internal static Type TypeOfGenericDictionaryEnumerator =>  field ??= typeof(CollectionDataContract.GenericDictionaryEnumerator<,>);
-        internal static Type TypeOfDictionaryGeneric => field ??= typeof(Dictionary<,>);
-        internal static Type TypeOfHashtable
-        {
-            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
-            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get => field ??= TypeOfDictionaryGeneric.MakeGenericType(TypeOfObject, TypeOfObject);
-        }
-
-        internal static Type TypeOfXmlElement => field ??= typeof(XmlElement);
-        internal static Type TypeOfXmlNodeArray => field ??= typeof(XmlNode[]);
-        internal static Type TypeOfDBNull => field ??= typeof(DBNull);
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
+        internal static Type TypeOfSchemaDefinedType => typeof(SchemaDefinedType);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-        private static Type? s_typeOfSchemaDefinedType;
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-        internal static Type TypeOfSchemaDefinedType =>
-            s_typeOfSchemaDefinedType ??= typeof(SchemaDefinedType);
-
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-        private static Type? s_typeOfSchemaDefinedEnum;
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-        internal static Type TypeOfSchemaDefinedEnum =>
-            s_typeOfSchemaDefinedEnum ??= typeof(SchemaDefinedEnum);
+        internal static Type TypeOfSchemaDefinedEnum => typeof(SchemaDefinedEnum);
 
         internal static MemberInfo SchemaMemberInfoPlaceholder => field ??= TypeOfSchemaDefinedType.GetField(nameof(SchemaDefinedType._xmlName), BindingFlags.NonPublic | BindingFlags.Instance)!;
         internal static Uri DataContractXsdBaseNamespaceUri => field ??= new Uri(DataContractXsdBaseNamespace);

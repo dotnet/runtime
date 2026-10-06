@@ -303,48 +303,6 @@ namespace System.Threading
             return millisecondsTimeout;
         }
 
-        /// <summary>
-        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. Currently, the value comes from
-        /// defaults in CoreCLR's Thread::InitializeYieldProcessorNormalized(). This value is supposed to be normalized to be
-        /// appropriate for the processor.
-        /// TODO: See issue https://github.com/dotnet/corert/issues/4430
-        /// </summary>
-        internal const int OptimalMaxSpinWaitsPerSpinIteration = 8;
-
-        // Max iterations to be done in RhSpinWait.
-        // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
-        private const int SpinWaitCoopThreshold = 1024;
-
-        internal static void SpinWaitInternal(int iterations)
-        {
-            Debug.Assert(iterations <= SpinWaitCoopThreshold);
-            if (iterations > 0)
-            {
-                RuntimeImports.RhSpinWait(iterations);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        private static void LongSpinWait(int iterations)
-        {
-            RuntimeImports.RhLongSpinWait(iterations);
-        }
-
-        public static void SpinWait(int iterations)
-        {
-            if (iterations > SpinWaitCoopThreshold)
-            {
-                LongSpinWait(iterations);
-            }
-            else
-            {
-                SpinWaitInternal(iterations);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        public static bool Yield() => RuntimeImports.RhYield();
-
         private void StartCore()
         {
             using (_lock.EnterScope())

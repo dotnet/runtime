@@ -670,14 +670,6 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
     END_QCALL;
 }
 
-FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
-{
-    FCALL_CONTRACT;
-
-    return (INT32)YieldProcessorNormalization::GetOptimalMaxNormalizedYieldsPerSpinIteration();
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     INT_PTR status,
     QCall::ObjectHandleOnStack exception,
@@ -719,18 +711,6 @@ FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
 }
 FCIMPLEND
 #endif // TARGET_WASM
-
-extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
-{
-    FCALL_CONTRACT;
-
-    if (iterations <= 0)
-    {
-        return;
-    }
-
-    YieldProcessorNormalized(iterations);
-}
 
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
@@ -781,21 +761,6 @@ extern "C" void QCALLTYPE ThreadNative_PollGC()
 {
     // This is an intentional no-op.  The call is made to ensure that the thread goes through a GC transition
     // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
-}
-
-extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
-
-    BEGIN_QCALL;
-
-    ret = minipal_switch_to_thread(0);
-
-    END_QCALL;
-
-    return ret;
 }
 
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError)

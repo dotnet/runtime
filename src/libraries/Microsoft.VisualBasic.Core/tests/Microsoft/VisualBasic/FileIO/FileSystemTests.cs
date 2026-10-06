@@ -601,7 +601,6 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void GetTempFileName()
         {
             var TempFile = FileIO.FileSystem.GetTempFileName();
