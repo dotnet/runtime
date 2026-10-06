@@ -50,6 +50,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ILLink.Tasks.Tests" />
+
     <ProjectReference Include="..\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
     <ProjectReference Include="..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
     <ProjectReference Include="..\linker\Mono.Linker.csproj" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
