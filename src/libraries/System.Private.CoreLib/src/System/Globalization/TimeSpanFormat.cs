@@ -41,7 +41,7 @@ namespace System.Globalization
             }
 
             var vlb = new ValueListBuilder<char>(stackalloc char[256]);
-            FormatCustomized(value, format, DateTimeFormatInfo.GetInstance(formatProvider), ref vlb);
+            FormatCustomized(value, format, ref vlb);
             string resultString = vlb.AsSpan().ToString();
             vlb.Dispose();
             return resultString;
@@ -74,8 +74,8 @@ namespace System.Globalization
                 }
             }
 
-            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[256]);
-            FormatCustomized(value, format, DateTimeFormatInfo.GetInstance(formatProvider), ref vlb);
+            var vlb = new ValueListBuilder<TChar>(destination);
+            FormatCustomized(value, format, ref vlb);
             bool result = vlb.TryCopyTo(destination, out charsWritten);
             vlb.Dispose();
             return result;
@@ -342,10 +342,8 @@ namespace System.Globalization
         }
 
         /// <summary>Format the TimeSpan instance using the specified format.</summary>
-        private static void FormatCustomized<TChar>(TimeSpan value, scoped ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
+        private static void FormatCustomized<TChar>(TimeSpan value, scoped ReadOnlySpan<char> format, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(dtfi != null);
-
             int day = (int)(value.Ticks / TimeSpan.TicksPerDay);
             long time = value.Ticks % TimeSpan.TicksPerDay;
 
@@ -464,7 +462,7 @@ namespace System.Globalization
                         if (nextChar >= 0 && nextChar != (int)'%')
                         {
                             char nextCharChar = (char)nextChar;
-                            FormatCustomized(value, new ReadOnlySpan<char>(in nextCharChar), dtfi, ref result);
+                            FormatCustomized(value, new ReadOnlySpan<char>(in nextCharChar), ref result);
                             tokenLen = 2;
                         }
                         else
