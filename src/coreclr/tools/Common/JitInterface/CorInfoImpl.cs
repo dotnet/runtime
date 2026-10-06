@@ -1426,6 +1426,17 @@ namespace Internal.JitInterface
         private void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
 #pragma warning restore CA1822 // Mark members as static
         {
+#if READYTORUN
+            // On Wasm, explicit tail calls cannot be honored reliably from precompiled code: the callee may
+            // run in the interpreter, and the R2R-to-interpreter transition thunk does not preserve tail call
+            // semantics, so the native stack grows with every call. Calls that cannot be fast tail calls are
+            // silently demoted to regular calls, which has the same problem. Leave such methods to the
+            // interpreter, which honors explicit tail calls.
+            if (fIsTailPrefix && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
+            {
+                throw new RequiresRuntimeJitException(nameof(reportTailCallDecision));
+            }
+#endif
         }
 
         private void getEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
