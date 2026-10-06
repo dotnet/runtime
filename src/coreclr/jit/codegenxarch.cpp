@@ -1041,21 +1041,10 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // we can convert it into reg1 = reg1 op reg2 and emit
     // the same code as above. Or we need both operands to
     // be the same local.
-    else if (op2reg == targetReg)
+    else if ((op2reg == targetReg) && (GenTree::OperIsCommutative(oper) || genIsSameLocalVar(op1, op2)))
     {
-        if (GenTree::OperIsCommutative(oper) || genIsSameLocalVar(op1, op2))
-        {
-            dst = op2;
-            src = op1;
-        }
-        else
-        {
-            // LSRA only lets a non-commutative op reuse op2's register when it is emitted as APX NDD.
-            eligibleForNDD = emit->DoJitUseApxNDD(ins, op2);
-            assert(eligibleForNDD);
-            dst = op1;
-            src = op2;
-        }
+        dst = op2;
+        src = op1;
     }
     // now we know there are 3 different operands so attempt to use LEA
     else if (oper == GT_ADD && !varTypeIsFloating(treeNode) && !treeNode->gtOverflowEx() // LEA does not set flags
@@ -1082,11 +1071,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     else
     {
         // when reg3 != reg1 && reg3 != reg2, and NDD is available, we can use APX-EVEX.ND to optimize the codegen.
+        // LSRA also allows reg3 == reg2 for a non-commutative op, but only when it is emitted as NDD.
         eligibleForNDD = emit->DoJitUseApxNDD(ins, op2);
         if (!eligibleForNDD)
         {
             var_types op1Type = op1->TypeGet();
-            // The mov must not clobber a base/index register of a contained op2; LSRA delay-frees those.
+            // The mov must not clobber op2: its register, or a base/index register of a contained op2.
+            noway_assert(op2reg != targetReg);
             assert((op2->gtGetContainedRegMask() & genRegMask(targetReg)) == 0);
             inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
             regSet.verifyRegUsed(targetReg);
