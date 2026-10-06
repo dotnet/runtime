@@ -3473,7 +3473,7 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
                         bool const     hasDominatingDef =
                             previousInfo->m_appearanceMap->Lookup(enumeratorLocal, &previousEnumeratorVar) &&
                             (previousEnumeratorVar->m_def != nullptr) &&
-                            m_compiler->m_domTree->Dominates(previousEnumeratorVar->m_def->m_block, block);
+                            comp->m_domTree->Dominates(previousEnumeratorVar->m_def->m_block, block);
 
                         if (block->HasFlag(BBF_BACKWARD_JUMP) || !hasDominatingDef)
                         {
