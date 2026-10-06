@@ -12,6 +12,7 @@
     <Compile Include="PortablePdb\IlasmPortablePdbTester.cs" />
     <Compile Include="PortablePdb\IlasmPortablePdbTesterCommon.cs" />
     <Compile Include="PortablePdb\IlasmPortablePdbTesterTypes.cs" />
+    <Compile Include="PortablePdb\IlasmPdbFileTester.cs" />
     <Compile Include="MethodImplOptions\MethodImplOptionsTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -61,6 +62,22 @@
       <Link>TestFiles\%(FileName)%(Extension)</Link>
     </None>
     <None Include="PortablePdb\TestFiles\TestPdbDebugDirectory2.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestPdbFile1.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestPdbFileError.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestPdbFileMissingInclude.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestPdbFileRecoverableError.il">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>TestFiles\%(FileName)%(Extension)</Link>
     </None>

@@ -454,10 +454,22 @@ namespace ILAssembler.Tests
                 Pdb = true,
             };
 
-            ImmutableArray<byte> firstPdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
-            ImmutableArray<byte> secondPdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+            CompilationResult first = DocumentCompilerTestHelpers.CompileAndGetResult(source, options);
+            CompilationResult second = DocumentCompilerTestHelpers.CompileAndGetResult(source, options);
+            ImmutableArray<byte> firstPdb = DocumentCompilerTestHelpers.GetPortablePdb(first);
+            ImmutableArray<byte> secondPdb = DocumentCompilerTestHelpers.GetPortablePdb(second);
 
             Assert.Equal<byte>(firstPdb, secondPdb);
+            Assert.Equal(GetCodeViewPdbId(first), GetCodeViewPdbId(second));
+        }
+
+        private static (Guid Guid, uint Stamp) GetCodeViewPdbId(CompilationResult result)
+        {
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            DebugDirectoryEntry codeViewEntry = Assert.Single(
+                pe.ReadDebugDirectory(),
+                entry => entry.Type == DebugDirectoryEntryType.CodeView);
+            return (pe.ReadCodeViewDebugDirectoryData(codeViewEntry).Guid, codeViewEntry.Stamp);
         }
 
         [Theory]
@@ -483,7 +495,7 @@ namespace ILAssembler.Tests
                 Pdb = true,
             };
 
-            ImmutableArray<byte> pdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+            ImmutableArray<byte> pdb = DocumentCompilerTestHelpers.CompileAndGetPortablePdb(source, options);
             using MetadataReaderProvider pdbProvider = MetadataReaderProvider.FromPortablePdbImage(pdb);
             BlobContentId pdbId = new(pdbProvider.GetMetadataReader().DebugMetadataHeader!.Id);
 
