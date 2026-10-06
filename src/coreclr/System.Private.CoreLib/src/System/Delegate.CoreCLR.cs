@@ -225,7 +225,7 @@ namespace System
                 bool isStatic = (attributes & MethodAttributes.Static) != 0;
                 if (!isStatic)
                 {
-                    Type targetType;
+                    Type? targetType;
                     if (IsClosed)
                     {
                         targetType = _target!.GetType();
@@ -237,7 +237,7 @@ namespace System
                         targetType = invoke.GetParametersAsSpan()[0].ParameterType;
                         if (targetType.IsByRef)
                         {
-                            targetType = targetType.GetElementType()!;
+                            targetType = null;
                         }
                     }
 
@@ -261,7 +261,7 @@ namespace System
                     Debug.Assert(
                         !IsClosed || currentType is not null
                         || _target!.GetType().IsCOMObject
-                        || targetType.IsInterface, "The class hierarchy should declare the method or be a DIM");
+                        || targetType is { IsInterface: true }, "The class hierarchy should declare the method or be a DIM");
                 }
             }
 
