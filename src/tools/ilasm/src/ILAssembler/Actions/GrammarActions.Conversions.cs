@@ -199,6 +199,8 @@ namespace ILAssembler
                         ArgumentNames[param.Name] = param.Sequence - 1;
                     }
                 }
+
+                OpenScopes.Add(new LexicalScope(startOffset: 0));
             }
 
             public EntityRegistry.MethodDefinitionEntity Definition { get; }
@@ -209,9 +211,17 @@ namespace ILAssembler
 
             public Dictionary<string, int> ArgumentNames { get; } = new();
 
-            public List<Dictionary<string, int>> LocalsScopes { get; } = new();
+            /// <summary>
+            /// Gets the open lexical scopes of the method body, outermost first: the method's root scope, then one
+            /// scope per enclosing <c>{ }</c> block. A local name resolves to its declaration in the innermost
+            /// scope that declares it.
+            /// </summary>
+            public List<LexicalScope> OpenScopes { get; } = new();
 
-            public List<SignatureArg> AllLocals { get; } = new();
+            /// <summary>
+            /// Gets the method's local slots, indexed by slot. The body's local signature has one entry per slot.
+            /// </summary>
+            public List<LocalSlot> LocalSlots { get; } = new();
         }
 
         private CurrentMethodContext? _currentMethod;
