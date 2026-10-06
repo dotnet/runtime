@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Exercise the native ReadyToRun class initialization fixup. -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(TargetsUnix)' != 'true'">true</CLRTestTargetUnsupported>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test135234.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>
