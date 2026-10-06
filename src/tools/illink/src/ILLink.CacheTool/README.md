@@ -11,11 +11,12 @@ dotnet illink-cache purge --cache-directory /path/to/cache --before 2026-10-01T1
 Both options are required. The cutoff must be an ISO 8601 UTC timestamp, with `Z` or `+00:00`.
 Entries last used strictly before the cutoff are deleted; entries at or after it are kept.
 The tool prints deleted, kept, and error counts. Argument or maintenance errors return a
-nonzero exit code. Missing or invalid usage markers are reported as errors, not assigned an age.
+nonzero exit code. Missing, invalid, or unreadable usage markers use the entry directory's
+creation time instead; this fallback is reported on stderr but does not count as an error.
 
 **No build may use the cache during purging.** The tool does not coordinate with active
 readers or writers. Staging directories and unrelated directories are left alone.
-Clear caches created before usage markers were introduced; there is no migration support.
+There is no migration of entries created before usage markers were introduced.
 
 ## Building locally
 

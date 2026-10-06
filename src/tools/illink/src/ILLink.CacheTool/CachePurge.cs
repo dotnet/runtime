@@ -25,11 +25,7 @@ internal static class CachePurge
 
                 try
                 {
-                    DateTimeOffset lastUsed = DateTimeOffset.ParseExact(
-                        File.ReadAllText(Path.Combine(entry, ILLinkCacheEntry.LastUsedFileName)),
-                        "O", CultureInfo.InvariantCulture);
-                    if (lastUsed.Offset != TimeSpan.Zero)
-                        throw new InvalidDataException("The last-used timestamp must be UTC.");
+                    DateTimeOffset lastUsed = GetLastUsed(entry, error);
 
                     if (lastUsed >= cutoff)
                     {
@@ -55,5 +51,28 @@ internal static class CachePurge
 
         output.WriteLine($"ILLink cache purge: Deleted: {deleted}, Kept: {kept}, Errors: {errors}");
         return errors == 0 ? 0 : 1;
+    }
+
+    private static DateTimeOffset GetLastUsed(string entry, TextWriter error)
+    {
+        string marker = Path.Combine(entry, ILLinkCacheEntry.LastUsedFileName);
+        string reason = "missing or invalid";
+        try
+        {
+            if (File.Exists(marker) &&
+                DateTimeOffset.TryParseExact(File.ReadAllText(marker), "O", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out DateTimeOffset lastUsed) &&
+                lastUsed.Offset == TimeSpan.Zero)
+            {
+                return lastUsed;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            reason = ex.Message;
+        }
+
+        error.WriteLine($"Could not read a valid last-used marker for ILLink cache entry '{entry}' ({reason}); using directory creation time.");
+        return new DateTimeOffset(Directory.GetCreationTimeUtc(entry), TimeSpan.Zero);
     }
 }

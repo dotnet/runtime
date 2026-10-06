@@ -54,11 +54,17 @@ public class CachePurgeTests
     }
 
     [Theory]
-    [InlineData("missing")]
-    [InlineData("malformed")]
-    [InlineData("directory")]
-    [InlineData("non-utc")]
-    public void InvalidMarkerReportsErrorAndDoesNotDeleteEntry(string damage)
+    [InlineData("missing", false)]
+    [InlineData("malformed", false)]
+    [InlineData("empty", false)]
+    [InlineData("directory", false)]
+    [InlineData("non-utc", false)]
+    [InlineData("missing", true)]
+    [InlineData("malformed", true)]
+    [InlineData("empty", true)]
+    [InlineData("directory", true)]
+    [InlineData("non-utc", true)]
+    public void InvalidMarkerUsesEntryCreationTime(string damage, bool delete)
     {
         using var cache = new TestCache();
         string damagedEntry = cache.AddEntry('a', TestCache.Cutoff.AddDays(-1));
@@ -72,6 +78,9 @@ public class CachePurgeTests
             case "malformed":
                 File.WriteAllText(marker, "invalid timestamp");
                 break;
+            case "empty":
+                File.WriteAllText(marker, "");
+                break;
             case "directory":
                 File.Delete(marker);
                 Directory.CreateDirectory(marker);
@@ -81,12 +90,14 @@ public class CachePurgeTests
                 break;
         }
 
-        Assert.Equal(1, cache.Run());
+        Assert.Equal(0, cache.Run(delete ? DateTimeOffset.UtcNow.AddMinutes(1) : TestCache.Cutoff));
 
-        Assert.True(Directory.Exists(damagedEntry));
+        Assert.Equal(!delete, Directory.Exists(damagedEntry));
         Assert.False(Directory.Exists(validEntry));
         Assert.Contains(damagedEntry, cache.Error.ToString());
-        Assert.Contains("Deleted: 1, Kept: 0, Errors: 1", cache.Output.ToString());
+        Assert.Contains("using directory creation time", cache.Error.ToString());
+        Assert.Equal($"ILLink cache purge: Deleted: {(delete ? 2 : 1)}, Kept: {(delete ? 0 : 1)}, Errors: 0{Environment.NewLine}",
+            cache.Output.ToString());
     }
 
     [Fact]
@@ -186,12 +197,10 @@ public class CachePurgeTests
     public void CommandPropagatesMaintenanceFailure()
     {
         using var cache = new TestCache();
-        string entry = cache.AddEntry('a', TestCache.Cutoff.AddDays(-1));
-        File.Delete(Path.Combine(entry, ILLinkCacheEntry.LastUsedFileName));
+        Directory.Delete(cache.Entries);
 
         Assert.Equal(1, Program.Run(new[] { "purge", "--cache-directory", cache.Root, "--before", "2025-01-02T03:04:05Z" }, cache.Output, cache.Error));
 
-        Assert.True(Directory.Exists(entry));
         Assert.Contains("Errors: 1", cache.Output.ToString());
     }
 
@@ -224,7 +233,7 @@ public class CachePurgeTests
             return entry;
         }
 
-        internal int Run() => CachePurge.Run(Root, Cutoff, Output, Error);
+        internal int Run(DateTimeOffset? cutoff = null) => CachePurge.Run(Root, cutoff ?? Cutoff, Output, Error);
 
         public void Dispose()
         {

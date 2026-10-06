@@ -95,11 +95,12 @@ directories, unrelated directories, and other layout versions are not purged. Th
 size limit or automatic eviction during linking.
 
 **Run purge only when no build is using that cache.** Purge and manual deletion are not
-coordinated with readers or writers. Clear old caches before adopting usage markers; no
-migration or fallback age is provided. Missing, malformed, or unreadable markers are reported
-as errors and their entries are retained. The tool reports deleted/kept/error counts and
-returns nonzero for argument or maintenance failures. Usage-marker update failures in the
-task are logged without failing linking.
+coordinated with readers or writers. Missing, malformed, non-UTC, or unreadable markers use
+the entry directory's creation time as a fallback; the tool reports this on stderr without
+counting it as an error. Such entries may be deleted despite recent use, or retained if
+restoring a cache snapshot reset directory creation times. The tool reports
+deleted/kept/error counts and returns nonzero for argument or maintenance failures.
+Usage-marker update failures in the task are logged without failing linking.
 
 ### CI purge ordering
 
