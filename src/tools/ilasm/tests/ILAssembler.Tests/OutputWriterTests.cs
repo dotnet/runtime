@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Xunit;
 
@@ -32,6 +34,21 @@ public class OutputWriterTests
 
     // The previous output is the image of the PDB at the PDB path.
     private static MemoryOutputStreams ImageAndItsPdb() => new() { Output = s_pair.Image.ToArray(), Pdb = s_pair.Pdb.ToArray() };
+
+    // The PDB id (GUID and stamp) that an image's CodeView entry refers to, and the id of a Portable PDB, read
+    // without the writer's own readers.
+    private static BlobContentId CodeViewPdbId(ImmutableArray<byte> image)
+    {
+        using var reader = new PEReader(image);
+        DebugDirectoryEntry codeView = reader.ReadDebugDirectory().Single(entry => entry.Type == DebugDirectoryEntryType.CodeView);
+        return new BlobContentId(reader.ReadCodeViewDebugDirectoryData(codeView).Guid, codeView.Stamp);
+    }
+
+    private static BlobContentId PortablePdbId(ImmutableArray<byte> pdb)
+    {
+        using MetadataReaderProvider provider = MetadataReaderProvider.FromPortablePdbImage(pdb);
+        return new BlobContentId(provider.GetMetadataReader().DebugMetadataHeader!.Id);
+    }
 
     [Fact]
     public void Write_WithPdb_WritesTheImageAndThePdb()
@@ -103,6 +120,8 @@ public class OutputWriterTests
     [Fact]
     public void Write_WithoutPdb_KeepsAPdbThatTheReplacedImageDoesNotReference()
     {
+        // The replaced image refers to a PDB, but not to the one at the PDB path.
+        Assert.NotEqual(PortablePdbId(s_pair.Pdb), CodeViewPdbId(s_otherPair.Image));
         var output = new MemoryOutputStreams { Output = s_otherPair.Image.ToArray(), Pdb = s_pair.Pdb.ToArray() };
 
         OutputWriteResult result = OutputWriter.Write(output, WriteImage, portablePdb: null);

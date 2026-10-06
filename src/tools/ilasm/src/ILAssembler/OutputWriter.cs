@@ -181,9 +181,11 @@ public static class OutputWriter
 /// </summary>
 /// <remarks>
 /// <see cref="OutputWriter.Write"/> uses these members in this order, each at most once:
-/// <see cref="PdbPathIsOutputPath"/>; <see cref="OpenExistingOutput"/>, only when no PDB is produced;
-/// <see cref="CreateOutput"/>; then either <see cref="WritePdb"/>, or <see cref="OpenExistingPdb"/> followed by
-/// <see cref="TryDeletePdb"/> when the existing PDB belongs to the replaced image. It disposes every stream it is
+/// <see cref="PdbPathIsOutputPath"/>; <see cref="OpenExistingOutput"/>, only when no PDB is produced and
+/// <see cref="PdbPathIsOutputPath"/> is <see langword="false"/>; <see cref="CreateOutput"/>, unless the PDB would
+/// overwrite the output; then either <see cref="WritePdb"/>, when a PDB is produced, or
+/// <see cref="OpenExistingPdb"/>, only when the replaced output yielded a PDB id, followed by
+/// <see cref="TryDeletePdb"/>, only when that id equals the id of the existing PDB. It disposes every stream it is
 /// given.
 /// </remarks>
 public interface IOutputStreams
