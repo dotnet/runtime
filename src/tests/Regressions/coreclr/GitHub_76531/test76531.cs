@@ -40,14 +40,22 @@ namespace Test76531
     public class Program
     {
         [ActiveIssue("Assembly.GetExecutingAssembly().Location returns NULL on WASM", TestPlatforms.Browser)]
-        [Fact]
-        public static void TestExternalMethodFixupWorker()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestExternalMethodFixupWorker(bool useMethodInvoker)
         {
             File.Delete(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "dependencytodelete.dll"));
-            Assert.Throws<TargetInvocationException>(() =>
+            MethodInfo method = typeof(TailCallInvoker).GetMethod(nameof(TailCallInvoker.Test))!;
+            if (useMethodInvoker)
             {
-                typeof(TailCallInvoker).GetMethod("Test")!.Invoke(null, null);
-            });
+                Assert.Throws<FileNotFoundException>(() => MethodInvoker.Create(method).Invoke(null));
+            }
+            else
+            {
+                TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, null));
+                Assert.IsType<FileNotFoundException>(exception.InnerException);
+            }
         }
 
         [ActiveIssue("Assembly.GetExecutingAssembly().Location returns NULL on WASM", TestPlatforms.Browser)]

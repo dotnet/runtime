@@ -5,6 +5,7 @@
 
 #include <limits>
 #include <functional>
+#include <type_traits>
 
 #include "threads.h"
 #include "gcenv.h"
@@ -238,15 +239,24 @@ LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 template<typename Function>
 std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
 {
+    using Result = std::invoke_result_t<Function>;
+
     struct Local
     {
         Function function;
-        std::invoke_result_t<Function> result;
+        std::conditional_t<std::is_void_v<Result>, bool, Result> result;
     } local { function };
 
     PAL_TRY(Local *, pParam, &local)
     {
-        pParam->result = pParam->function();
+        if constexpr (std::is_void_v<Result>)
+        {
+            pParam->function();
+        }
+        else
+        {
+            pParam->result = pParam->function();
+        }
     }
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
     {
@@ -262,7 +272,10 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     }
     PAL_ENDTRY
 
-    return local.result;
+    if constexpr (!std::is_void_v<Result>)
+    {
+        return local.result;
+    }
 }
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
@@ -594,7 +607,16 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
         pContinuationRet = &continuationUnused;
     }
 
+#ifdef HOST_WINDOWS
+    // Loading failures from managed calli targets can arrive as SEH exceptions.
+    // Redispatch them after the native call and loader frames have unwound.
+    CallWithSEHWrapper(
+        [pHeader, pArgs, pRet, pContinuationRet]() {
+            pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+        });
+#else // HOST_WINDOWS
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+#endif // HOST_WINDOWS
 }
 
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
