@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
 
     <IsPackable>false</IsPackable>
+    <!-- The linked Program.cs has the CLI's Main, so the test SDK must not generate a second entry point. -->
+    <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,8 +16,11 @@
     <ProjectReference Include="..\..\src\ILAssembler\ILAssembler.csproj" />
   </ItemGroup>
 
-  <!-- Link CLI parsing and output writing so they can be tested without referencing the self-contained executable project. -->
+  <!-- Link the CLI (parsing, output writing and Program, which the tests run in process) so it can be tested without referencing the self-contained executable project. -->
   <ItemGroup>
+    <Compile Include="..\..\src\ilasm\Program.cs">
+      <Link>Program.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\ilasm\IlasmRootCommand.cs">
       <Link>IlasmRootCommand.cs</Link>
     </Compile>
