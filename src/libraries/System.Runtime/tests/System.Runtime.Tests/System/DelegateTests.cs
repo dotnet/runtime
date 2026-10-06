@@ -523,9 +523,23 @@ namespace System.Tests
         private class PrivateGenericBase<T>
         {
             private int Secret() => 42;
+            public int PublicMethod() => 43;
         }
 
         private class PrivateGenericDerived : PrivateGenericBase<string> { }
+
+        [Fact]
+        public static void OpenDelegateToPublicGenericBaseMethodUsesBaseReflectedType()
+        {
+            MethodInfo method = typeof(PrivateGenericBase<string>).GetMethod(nameof(PrivateGenericBase<string>.PublicMethod));
+            Func<PrivateGenericDerived, int> openDelegate = method.CreateDelegate<Func<PrivateGenericDerived, int>>();
+            Func<int> closedDelegate = method.CreateDelegate<Func<int>>(new PrivateGenericDerived());
+
+            Assert.Equal(43, openDelegate(new PrivateGenericDerived()));
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.DeclaringType);
+            Assert.Equal(closedDelegate.Method.ReflectedType, openDelegate.Method.ReflectedType);
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.ReflectedType);
+        }
 
         [Fact]
         public static void SameMethodObtainedViaDelegateAndReflectionAreSameForClass()
@@ -1364,6 +1378,7 @@ namespace System.Tests
                 typeof(NullableIntToString), mi);
             string s = toString(ref num);
             Assert.Equal(num.ToString(), s);
+            Assert.Equal(typeof(int?), toString.Method.ReflectedType);
         }
 
         [Fact]

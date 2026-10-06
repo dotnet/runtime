@@ -226,6 +226,7 @@ namespace System
                 if (!isStatic)
                 {
                     Type targetType;
+                    RuntimeType methodDeclaringType = declaringType;
                     if (IsClosed)
                     {
                         targetType = _target!.GetType();
@@ -235,36 +236,37 @@ namespace System
                         // it's an open one, need to fetch the first arg of the instantiation
                         MethodInfo invoke = GetInvokeMethod(GetType());
                         targetType = invoke.GetParametersAsSpan()[0].ParameterType;
-                    }
-
-                    if (IsClosed || (attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
-                    {
-                        // The target may be of a derived type that doesn't have visibility onto the
-                        // target method. Walk the hierarchy to find the exact instantiation of its
-                        // declaring type before creating a MethodInfo for that reflected type.
-                        Type? currentType;
-                        for (currentType = targetType; currentType is not null; currentType = currentType.BaseType)
+                        if (targetType.IsByRef)
                         {
-                            if (currentType.HasSameMetadataDefinitionAs(declaringType))
-                            {
-                                declaringType = (RuntimeType)currentType;
-                                break;
-                            }
+                            targetType = targetType.GetElementType()!;
                         }
+                        if ((attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Private)
+                        {
+                            declaringType = (RuntimeType)targetType;
+                        }
+                    }
 
-                        // RCWs don't need to be "strongly-typed" in which case we don't find a base type
-                        // that matches the declaring type of the method. This is fine because interop needs
-                        // to work with exact methods anyway so declaringType is never shared at this point.
-                        // The targetType may also be an interface with a Default interface method (DIM).
-                        Debug.Assert(
-                            !IsClosed || currentType is not null
-                            || _target!.GetType().IsCOMObject
-                            || targetType.IsInterface, "The class hierarchy should declare the method or be a DIM");
-                    }
-                    else
+                    // The target may be of a derived type that doesn't have visibility onto the
+                    // target method. Walk the hierarchy to find the exact instantiation of its
+                    // declaring type before creating a MethodInfo for that reflected type.
+                    Type? currentType;
+                    for (currentType = targetType; currentType is not null; currentType = currentType.BaseType)
                     {
-                        declaringType = (RuntimeType)targetType;
+                        if (currentType.HasSameMetadataDefinitionAs(methodDeclaringType))
+                        {
+                            declaringType = (RuntimeType)currentType;
+                            break;
+                        }
                     }
+
+                    // RCWs don't need to be "strongly-typed" in which case we don't find a base type
+                    // that matches the declaring type of the method. This is fine because interop needs
+                    // to work with exact methods anyway so declaringType is never shared at this point.
+                    // The targetType may also be an interface with a Default interface method (DIM).
+                    Debug.Assert(
+                        !IsClosed || currentType is not null
+                        || _target!.GetType().IsCOMObject
+                        || targetType.IsInterface, "The class hierarchy should declare the method or be a DIM");
                 }
             }
 
