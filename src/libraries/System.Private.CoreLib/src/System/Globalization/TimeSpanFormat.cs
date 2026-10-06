@@ -74,7 +74,7 @@ namespace System.Globalization
                 }
             }
 
-            var vlb = new ValueListBuilder<TChar>(destination);
+            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[256]);
             FormatCustomized(value, format, ref vlb);
             bool result = vlb.TryCopyTo(destination, out charsWritten);
             vlb.Dispose();
