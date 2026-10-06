@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -13,44 +12,34 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
+    /// <summary>
+    /// Declares the locals of a <c>.locals</c> directive in the innermost open lexical scope of the current method
+    /// (<see cref="DeclareLocals"/>), at their explicit <c>[n]</c> slots where given.
+    /// </summary>
     internal void EndLocalsDirective(
         CILParser.LocalsDeclContext context,
         int initialSyntaxErrorCount)
     {
-        bool hasSyntaxError =
-            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
-            context.exception is not null;
-        if (hasSyntaxError || _currentMethod is null || context.arguments is null)
+        try
         {
-            return;
-        }
-
-        if (context.initialize is not null)
-        {
-            _currentMethod.Definition.BodyAttributes = MethodBodyAttributes.InitLocals;
-        }
-
-        Dictionary<string, int> localsScope;
-        if (_currentMethod.LocalsScopes.Count > 0)
-        {
-            localsScope = _currentMethod.LocalsScopes[^1];
-        }
-        else
-        {
-            localsScope = new();
-            _currentMethod.LocalsScopes.Add(localsScope);
-        }
-
-        ImmutableArray<SignatureArg> locals =
-            MaterializeSignatureArguments(context.arguments.Value);
-        foreach (SignatureArg local in locals)
-        {
-            if (local.Name is not null)
+            bool hasSyntaxError =
+                HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+                context.exception is not null;
+            if (hasSyntaxError || _currentMethod is null || context.arguments is null)
             {
-                localsScope.TryAdd(local.Name, _currentMethod.AllLocals.Count);
+                return;
             }
 
-            _currentMethod.AllLocals.Add(local);
+            if (context.initialize is not null)
+            {
+                _currentMethod.Definition.BodyAttributes = MethodBodyAttributes.InitLocals;
+            }
+
+            DeclareLocals(_currentMethod, ApplyExplicitLocalSlots(context.arguments.Value), context);
+        }
+        finally
+        {
+            _explicitLocalSlots.Clear();
         }
     }
 
