@@ -308,7 +308,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetIsBackground)
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
-    DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Initialize)
     DllImportEntry(ThreadNative_GetThreadState)
@@ -319,7 +318,6 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
-    DllImportEntry(ThreadNative_SpinWait)
 #ifdef TARGET_WINDOWS
     DllImportEntry(ThreadNative_CheckForPendingInterrupt)
     DllImportEntry(ThreadNative_Interrupt)
@@ -415,6 +413,9 @@ static const Entry s_QCall[] =
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
+    DllImportEntry(Thread_SpinWait)
+    DllImportEntry(Thread_Yield)
+    DllImportEntry(Thread_GetOptimalMaxSpinWaitsPerSpinIteration)
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(MetadataImport_Enum)

@@ -33,6 +33,17 @@ namespace System.Reflection.Context.Virtual
             }
         }
 
+        public override MethodInfo[] GetAccessors(bool nonPublic)
+        {
+            MethodInfo[] underlyingAccessors = UnderlyingProperty.GetAccessors(nonPublic);
+            MethodInfo[] accessors = new MethodInfo[underlyingAccessors.Length];
+
+            for (int i = 0; i < underlyingAccessors.Length; i++)
+                accessors[i] = new InheritedMethodInfo(underlyingAccessors[i], _reflectedType);
+
+            return accessors;
+        }
+
         public override MethodInfo? GetGetMethod(bool nonPublic)
         {
             MethodInfo? underlyingGetter = UnderlyingProperty.GetGetMethod(nonPublic);
@@ -49,6 +60,11 @@ namespace System.Reflection.Context.Virtual
                 return null;
             else
                 return new InheritedMethodInfo(underlyingSetter, _reflectedType);
+        }
+
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            return UnderlyingProperty.HasSameMetadataDefinitionAs(other);
         }
 
         public override bool Equals([NotNullWhen(true)] object? o)
