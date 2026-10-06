@@ -328,6 +328,12 @@ internal sealed partial class GrammarActions
         method.Definition.MethodBody.Switch(labels, Location.From(builder.OpcodeToken, _documents));
     }
 
+    /// <summary>
+    /// Starts emitting an instruction into the current method: records its sequence point at the current IL offset
+    /// (<see cref="RecordSequencePoint"/>) and parses its opcode. Every instruction passes through here before its
+    /// bytes are written, and the caller must write them.
+    /// </summary>
+    /// <returns>The current method and the opcode, or <see langword="null"/> outside a method body.</returns>
     private (CurrentMethodContext Method, ILOpCode OpCode)? StartInstruction(IToken opcodeToken)
     {
         if (_currentMethod is not { } method)
@@ -336,6 +342,7 @@ internal sealed partial class GrammarActions
         }
 
         ILOpCode opcode = ParseOpCodeFromToken(opcodeToken);
+        RecordSequencePoint(method, opcodeToken);
         return (method, opcode);
     }
 

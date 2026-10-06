@@ -9,7 +9,7 @@ internal sealed partial class GrammarActions
 {
     /// <summary>
     /// Resets the semantic state that must not flow from one document to the next, and defines the input file
-    /// as a PDB document and makes it the current document.
+    /// as a PDB document.
     /// </summary>
     /// <param name="path">The input file's name as the PDB records it (<see cref="SourceText.Path"/>).</param>
     /// <remarks>
@@ -17,6 +17,8 @@ internal sealed partial class GrammarActions
     /// that they share an entity registry. Every rule that introduces namespace, type, method or
     /// scope state releases it from its own <c>finally</c> block, so this is only a safety net for
     /// release builds. The <c>.language</c> state carries over from the previous input file, as in native ilasm.
+    /// The <c>.line</c> state does not: the new input file starts without an active <c>.line</c> directive, and its
+    /// current document is the file itself (<see cref="SourceLineState"/>).
     /// </remarks>
     internal void BeginDocument(string path)
     {
@@ -32,7 +34,8 @@ internal sealed partial class GrammarActions
         ResetTypeScopes();
         ClearPendingCustomAttributeOwners();
         _pendingClassMethodOverrides.Clear();
-        _currentDocument = _pdbDocuments.GetOrAdd(path, _currentLanguageGuid);
+        _pdbDocuments.GetOrAdd(path, _currentLanguageGuid);
+        _sourceLineStates.Clear();
         _syntaxErrorCount = 0;
     }
 }

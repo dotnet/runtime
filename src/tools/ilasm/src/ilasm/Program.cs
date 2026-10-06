@@ -193,19 +193,21 @@ internal sealed class Program
             string? includePath = Get(_command.IncludePath);
             string baseDir = Path.GetDirectoryName(Path.GetFullPath(inputFiles[0])) ?? ".";
 
+            // An included file is named by its full path, as native ilasm names it: its instructions' sequence
+            // points are in a PDB document of that name.
             SourceText LoadIncludedDocument(string path)
             {
                 // Try the path as-is first
                 if (File.Exists(path))
                 {
-                    return new SourceText(File.ReadAllText(path), path);
+                    return new SourceText(File.ReadAllText(path), Path.GetFullPath(path));
                 }
 
                 // Try relative to the base directory
                 string fullPath = Path.Combine(baseDir, path);
                 if (File.Exists(fullPath))
                 {
-                    return new SourceText(File.ReadAllText(fullPath), fullPath);
+                    return new SourceText(File.ReadAllText(fullPath), Path.GetFullPath(fullPath));
                 }
 
                 // Try the include path if specified
@@ -214,7 +216,7 @@ internal sealed class Program
                     fullPath = Path.Combine(includePath, path);
                     if (File.Exists(fullPath))
                     {
-                        return new SourceText(File.ReadAllText(fullPath), fullPath);
+                        return new SourceText(File.ReadAllText(fullPath), Path.GetFullPath(fullPath));
                     }
                 }
 

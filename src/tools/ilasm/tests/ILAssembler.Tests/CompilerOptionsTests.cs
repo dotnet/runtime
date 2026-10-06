@@ -398,9 +398,15 @@ namespace ILAssembler.Tests
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
 
-            // Without .line directives the only document is the input file.
-            Assert.Equal("test.il", pdbReader.GetString(pdbReader.GetDocument(Assert.Single(pdbReader.Documents)).Name));
-            Assert.NotEmpty(pdbReader.MethodDebugInformation);
+            // Without .line directives the only document is the input file, and each instruction has a point on its
+            // own line of it, columns 1 to 2, as with /DEBUG.
+            DocumentHandle document = Assert.Single(pdbReader.Documents);
+            Assert.Equal("test.il", pdbReader.GetString(pdbReader.GetDocument(document).Name));
+            MethodDebugInformation debugInformation = pdbReader.GetMethodDebugInformation(Assert.Single(pdbReader.MethodDebugInformation));
+            Assert.Equal(document, debugInformation.Document);
+            Assert.Equal(
+                new[] { (0, 6, 1, 6, 2), (1, 7, 1, 7, 2) },
+                debugInformation.GetSequencePoints().Select(point => (point.Offset, point.StartLine, point.StartColumn, point.EndLine, point.EndColumn)));
         }
 
         [Theory]

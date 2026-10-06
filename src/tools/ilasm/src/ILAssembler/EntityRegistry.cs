@@ -2247,8 +2247,9 @@ namespace ILAssembler
             }
 
             /// <summary>
-            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the document that was current
-            /// when the directive that produced this point was applied.
+            /// Gets the index in the compilation's <see cref="PdbDocumentTable"/> of the point's document: the
+            /// <c>.il</c> source the instruction is in when no <c>.line</c> directive is in effect, otherwise the
+            /// current document of that source.
             /// </summary>
             public int DocumentIndex { get; }
             public int ILOffset { get; }
@@ -2257,18 +2258,14 @@ namespace ILAssembler
             public int EndLine { get; }
             public int EndColumn { get; }
 
-            /// <summary>
-            /// Creates a hidden sequence point (used for compiler-generated code).
-            /// </summary>
-            public static SequencePoint Hidden(int documentIndex, int ilOffset) => new(documentIndex, ilOffset, 0xFEEFEE, 0, 0xFEEFEE, 0);
-
+            /// <summary>Gets whether the point is hidden: its start line is <c>0xFEEFEE</c>, and its columns are not written.</summary>
             public bool IsHidden => StartLine == 0xFEEFEE;
         }
 
         /// <summary>
-        /// Debug information for a method: the sequence points recorded from its <c>.line</c> and <c>#line</c>
-        /// directives, in increasing IL offset order, with at most one point per offset, and the local signature
-        /// of its body. The points of one method may belong to different documents.
+        /// Debug information for a method: the sequence points recorded as its instructions were emitted, in
+        /// increasing IL offset order, with at most one point per offset, and the local signature of its body. The
+        /// points of one method may belong to different documents. Points are recorded only when a PDB is requested.
         /// </summary>
         public sealed class MethodDebugInfo
         {
