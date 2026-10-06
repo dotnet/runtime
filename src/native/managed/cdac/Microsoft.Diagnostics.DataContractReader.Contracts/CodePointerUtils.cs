@@ -11,6 +11,7 @@ internal static class CodePointerUtils
 {
     private const uint Arm32ThumbBit = 1;
     private const ulong Arm64PtrAuthMask = 0x0000FFFFFFFFFFFF;
+    private const ulong WindowsArm64PtrAuthMask = 0x00007FFFFFFFFFFF;
 
     internal static TargetCodePointer CodePointerFromAddress(TargetPointer address, Target target)
     {
@@ -52,7 +53,11 @@ internal static class CodePointerUtils
         CodePointerFlags flags = metadata.GetCodePointerFlags();
         if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
         {
-            return new TargetCodePointer(returnAddress.Value & Arm64PtrAuthMask);
+            // Windows uses 47-bit user addresses, so bit 47 can also contain PAC.
+            ulong mask = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows
+                ? WindowsArm64PtrAuthMask
+                : Arm64PtrAuthMask;
+            return new TargetCodePointer(returnAddress.Value & mask);
         }
         return returnAddress;
     }

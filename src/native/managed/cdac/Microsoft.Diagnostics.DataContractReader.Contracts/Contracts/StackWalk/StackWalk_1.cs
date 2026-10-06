@@ -866,7 +866,7 @@ internal partial class StackWalk_1 : IStackWalk
             case StackWalkState.InitialNativeContext:
             case StackWalkState.NativeMarker:
             {
-                TargetCodePointer ip = CodePointerUtils.CodePointerFromAddress(handle.Context.InstructionPointer.AsTargetPointer, _target);
+                TargetCodePointer ip = handle.Context.InstructionPointer;
                 HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(ip);
                 if (hijackKind != HijackKind.None)
                 {
@@ -1401,8 +1401,7 @@ internal partial class StackWalk_1 : IStackWalk
 
     private bool IsManaged(TargetCodePointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
-        TargetCodePointer codeIp = CodePointerUtils.CodePointerFromAddress(ip.AsTargetPointer, _target);
-        if (_eman.GetCodeBlockHandle(codeIp) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
+        if (_eman.GetCodeBlockHandle(ip) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
         {
             codeBlockHandle = cbh;
             return true;
@@ -1443,8 +1442,7 @@ internal partial class StackWalk_1 : IStackWalk
     /// </summary>
     private bool IsInterpreterCode(TargetCodePointer ip)
     {
-        TargetCodePointer codeIp = CodePointerUtils.CodePointerFromAddress(ip.AsTargetPointer, _target);
-        return _eman.GetCodeKind(codeIp) == CodeKind.Interpreter;
+        return _eman.GetCodeKind(ip) == CodeKind.Interpreter;
     }
 
     #endregion Interpreter

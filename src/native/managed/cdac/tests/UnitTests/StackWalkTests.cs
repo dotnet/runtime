@@ -416,6 +416,7 @@ public unsafe class StackWalkTests
                 [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
             })
             .AddMockContract(executionManager.Object)
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
 
         ARM64Context context = new()
