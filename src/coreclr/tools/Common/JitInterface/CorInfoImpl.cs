@@ -1427,11 +1427,8 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
 #if READYTORUN
-            // On Wasm, explicit tail calls cannot be honored reliably from precompiled code: the callee may
-            // run in the interpreter, and the R2R-to-interpreter transition thunk does not preserve tail call
-            // semantics, so the native stack grows with every call. Calls that cannot be fast tail calls are
-            // silently demoted to regular calls, which has the same problem. Leave such methods to the
-            // interpreter, which honors explicit tail calls.
+            // R2R/interpreter transitions do not preserve tail calls, and explicit tail calls that cannot be
+            // fast are demoted to regular calls. Leave methods with explicit tail calls to the interpreter.
             if (fIsTailPrefix && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
             {
                 throw new RequiresRuntimeJitException(nameof(reportTailCallDecision));
