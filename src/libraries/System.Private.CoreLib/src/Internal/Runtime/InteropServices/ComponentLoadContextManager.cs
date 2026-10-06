@@ -38,7 +38,7 @@ namespace Internal.Runtime.InteropServices
         /// Gets the assembly load context for a component.
         /// </summary>
         /// <param name="loadContext">The load context specification.</param>
-        /// <param name="componentAssemblyPath">The path to the component assembly.</param>
+        /// <param name="componentAssemblyPath">The optional path to the component assembly.</param>
         /// <param name="cacheIsolatedContext">Whether to cache an isolated load context by component path.</param>
         /// <returns>The assembly load context for the component.</returns>
         /// <remarks>
@@ -48,16 +48,22 @@ namespace Internal.Runtime.InteropServices
         ///   - A <c>coreclr_load_context*</c>: ALC shared by all components with the same identifier
         /// </remarks>
         [RequiresUnreferencedCode("The trimmer might remove assemblies that are loaded by this method", Url = "https://aka.ms/dotnet-illink/nativehost")]
-        internal static unsafe AssemblyLoadContext Get(IntPtr loadContext, string componentAssemblyPath, bool cacheIsolatedContext = true)
+        internal static unsafe AssemblyLoadContext Get(IntPtr loadContext, string? componentAssemblyPath = null, bool cacheIsolatedContext = true)
         {
             if (loadContext == IntPtr.Zero)
             {
-                AddResolverToDefaultContext(componentAssemblyPath);
+                if (componentAssemblyPath is not null)
+                {
+                    AddResolverToDefaultContext(componentAssemblyPath);
+                }
+
                 return AssemblyLoadContext.Default;
             }
 
             if (loadContext == IsolatedContext)
             {
+                ArgumentNullException.ThrowIfNull(componentAssemblyPath);
+
                 if (cacheIsolatedContext)
                 {
                     lock (s_isolatedLoadContextsByPath)
@@ -89,7 +95,7 @@ namespace Internal.Runtime.InteropServices
                     alc = ComponentLoadContext.CreateNamed(identifier, componentAssemblyPath);
                     s_loadContextsByIdentifier.Add(identifier, alc);
                 }
-                else
+                else if (componentAssemblyPath is not null)
                 {
                     alc.AddComponent(componentAssemblyPath);
                 }
@@ -99,7 +105,7 @@ namespace Internal.Runtime.InteropServices
         }
 
         [RequiresUnreferencedCode("The trimmer might remove assemblies that are loaded by this method", Url = "https://aka.ms/dotnet-illink/nativehost")]
-        internal static void AddResolverToDefaultContext(string componentAssemblyPath)
+        private static void AddResolverToDefaultContext(string componentAssemblyPath)
         {
             lock (s_defaultResolversByPath)
             {

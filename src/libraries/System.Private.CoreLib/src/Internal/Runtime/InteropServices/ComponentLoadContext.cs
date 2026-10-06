@@ -28,16 +28,24 @@ namespace Internal.Runtime.InteropServices
         private AssemblyDependencyResolver[] _resolvers;
         private readonly HashSet<string> _componentAssemblyPaths;
 
-        private ComponentLoadContext(string name, string componentAssemblyPath) : base(name)
+        private ComponentLoadContext(string name, string? componentAssemblyPath) : base(name)
         {
-            _resolvers = [new AssemblyDependencyResolver(componentAssemblyPath)];
-            _componentAssemblyPaths = new(s_pathComparer) { componentAssemblyPath };
+            if (componentAssemblyPath is null)
+            {
+                _resolvers = [];
+                _componentAssemblyPaths = new(s_pathComparer);
+            }
+            else
+            {
+                _resolvers = [new AssemblyDependencyResolver(componentAssemblyPath)];
+                _componentAssemblyPaths = new(s_pathComparer) { componentAssemblyPath };
+            }
         }
 
         internal static ComponentLoadContext CreateIsolated(string componentAssemblyPath) =>
             new($"IsolatedComponentLoadContext({componentAssemblyPath})", componentAssemblyPath);
 
-        internal static ComponentLoadContext CreateNamed(string identifier, string componentAssemblyPath) =>
+        internal static ComponentLoadContext CreateNamed(string identifier, string? componentAssemblyPath) =>
             new($"ComponentLoadContext({identifier})", componentAssemblyPath);
 
         internal void AddComponent(string componentAssemblyPath)

@@ -442,7 +442,7 @@ int get_function_pointer_fn(
     /*out*/ void **delegate)
 ```
 
-Calling this function will find the specified type in the default load context, locate the required method on it and return a native function pointer to that method. The method's signature can be specified via the delegate type name.
+Calling this function will find the specified type in the selected load context, locate the required method on it and return a native function pointer to that method. The method's signature can be specified via the delegate type name.
 * `type_name` - Assembly qualified type name to find
 * `method_name` - Name of the method on the `type_name` to find. The method must be `static` and must match the signature of `delegate_type_name`.
 * `delegate_type_name` - Assembly qualified delegate type name for the method signature, or null. If this is null, the method signature is assumed to be:
@@ -454,13 +454,13 @@ Calling this function will find the specified type in the default load context, 
     int component_entry_point_fn(void *arg, int32_t arg_size_in_bytes);
     ```
     The `delegate_type_name` can be also specified as `UNMANAGEDCALLERSONLY_METHOD` (defined as `(const char_t*)-1`) which means that the managed method is marked with `UnmanagedCallersOnlyAttribute`.
-* `load_context` - eventually this parameter should support specifying which load context should be used to locate the type/method specified in previous parameters. For .NET 5 this parameter must be `NULL` and the API will only locate the type/method in the default load context.
+* `load_context` - the load context that will be used to locate the type and method. `NULL` selects the default load context. **[.NET 11 and above]** A pointer to a `coreclr_load_context` selects a non-default context shared by all components using the same identifier.
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 * `delegate` - out parameter which receives the native function pointer to the requested managed method.
 
-The helper will lookup the `type_name` from the default load context (`AssemblyLoadContext.Default`) and then return method on it. If the type and method lookup requires assemblies which have not been loaded by the Default ALC yet, this process will resolve them against the Default ALC and load them there (most likely from TPA). This helper will not register any additional assembly resolution logic onto the Default ALC, it will solely rely on the existing functionality of the Default ALC.
+The helper will look up the `type_name` from the selected load context and then return the method on it. When the default load context is selected, type and method lookup relies on the existing functionality of the default load context and does not register additional assembly resolution logic.
 
-It is allowed to ask for this helper on any valid host context. Because the helper operates on default load context only it should mostly be used with context initialized via `hostfxr_initialize_for_dotnet_command_line` as in that case the default load context will have the application code available in it. Contexts initialized via `hostfxr_initialize_for_runtime_config` have only the framework assemblies available in the default load context. The `type_name` must resolve within the default load context, so in the case where only framework assemblies are loaded into the default load context it would have to come from one of the framework assemblies only.
+It is allowed to ask for this helper on any valid host context. When the default load context is selected, it should mostly be used with a context initialized via `hostfxr_initialize_for_dotnet_command_line`, as in that case the default load context will have the application code available in it. Contexts initialized via `hostfxr_initialize_for_runtime_config` have only the framework assemblies available in the default load context. A named load context can instead be populated using `hdt_load_assembly` or `hdt_load_assembly_bytes` before requesting a function pointer from it.
 
 It is allowed to call the returned runtime helper many times for different types or methods. It is not required to get the helper every time.
 
@@ -476,9 +476,9 @@ int load_assembly(
     void         *reserved);
 ```
 
-Calling this function will load the specified assembly in the default load context. It uses `AssemblyDependencyResolver` to register additional dependency resolution for the load context.
+Calling this function will load the specified assembly in the selected load context. It uses `AssemblyDependencyResolver` to register additional dependency resolution for the load context.
 * `assembly_path` - Path to the assembly to load - requirements match the `assemblyPath` parameter of [AssemblyLoadContext.LoadFromAssemblyPath](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.loadfromassemblypath). This path will also be used for dependency resolution via any `.deps.json` corresponding to the assembly.
-* `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
+* `load_context` - the load context that will be used to load the assembly. `NULL` selects the default load context. **[.NET 11 and above]** A pointer to a `coreclr_load_context` selects a non-default context shared by all components using the same identifier.
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 
 The runtime delegate type `hdt_load_assembly_bytes` allows loading a managed assembly from a byte array. Calling `hostfxr_get_runtime_delegate(handle, hdt_load_assembly_bytes, &helper)` returns a function pointer to the runtime helper with this signature:
@@ -492,12 +492,12 @@ int load_assembly_bytes(
     void       *reserved);
 ```
 
-Calling this function will load the specified assembly in the default load context. It does not provide a mechanism for registering additional dependency resolution, as mechanisms like `.deps.json` and `AssemblyDependencyResolver` are file-based. Dependencies can be pre-loaded (for example, via a previous call to this function) or the specified assembly can explicitly register its own resolution logic (for example, via the [`AssemblyLodContext.Resolving`](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.resolving) event).
+Calling this function will load the specified assembly in the selected load context. It does not provide a mechanism for registering additional dependency resolution, as mechanisms like `.deps.json` and `AssemblyDependencyResolver` are file-based. Dependencies can be pre-loaded into the same context (for example, via a previous call to this function) or the specified assembly can explicitly register its own resolution logic (for example, via the [`AssemblyLoadContext.Resolving`](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.resolving) event).
 * `assembly_bytes` - Bytes of the assembly to load.
 * `assembly_bytes_len` - Byte length of the assembly to load.
 * `symbols_bytes` - Bytes of the symbols for the assembly to load.
 * `symbols_bytes_len` - Byte length of the symbols for the assembly to load.
-* `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
+* `load_context` - the load context that will be used to load the assembly. `NULL` selects the default load context. **[.NET 11 and above]** A pointer to a `coreclr_load_context` selects a non-default context shared by all components using the same identifier.
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 
 These runtime delegates simply load the assembly. They do not return any representation of the loaded assembly and do not execute code in the assembly. To run code from the assembly, the delegate for [calling a managed function](#calling-managed-function-net-5-and-above) can be used to get a function pointer to a method in a loaded assembly by specifying the assembly-qualified type name containing the method.
