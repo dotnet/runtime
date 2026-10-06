@@ -912,6 +912,11 @@ namespace System.Text
 
         public unsafe string GetString(ReadOnlySpan<byte> bytes)
         {
+            if (this is UTF8Encoding.UTF8EncodingSealed utf8Encoding && bytes.Length <= UTF8Encoding.UTF8EncodingSealed.MaxSmallInputElementCount)
+            {
+                return utf8Encoding.GetStringForSmallInput(bytes);
+            }
+
             fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
             {
                 return string.CreateStringFromEncoding(bytesPtr, bytes.Length, this);

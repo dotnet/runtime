@@ -697,6 +697,11 @@ namespace System.Text
             if (count == 0)
                 return string.Empty;
 
+            if (this is UTF8EncodingSealed utf8Encoding && count <= UTF8EncodingSealed.MaxSmallInputElementCount)
+            {
+                return utf8Encoding.GetStringForSmallInput(bytes.AsSpan(index, count));
+            }
+
             fixed (byte* pBytes = bytes)
             {
                 return string.CreateStringFromEncoding(pBytes + index, count, this);

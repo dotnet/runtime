@@ -19,7 +19,7 @@ namespace System.Text
             /// <summary>
             /// Maximum number of input elements we'll allow for going through the fast one-pass stackalloc code paths.
             /// </summary>
-            private const int MaxSmallInputElementCount = 32;
+            internal const int MaxSmallInputElementCount = 32;
 
             public UTF8EncodingSealed(bool encoderShouldEmitUTF8Identifier) : base(encoderShouldEmitUTF8Identifier) { }
 
@@ -130,9 +130,8 @@ namespace System.Text
                 }
             }
 
-            private unsafe string GetStringForSmallInput(byte[] bytes)
+            internal unsafe string GetStringForSmallInput(ReadOnlySpan<byte> bytes)
             {
-                Debug.Assert(bytes != null);
                 Debug.Assert(bytes.Length <= MaxSmallInputElementCount);
 
                 char* pDestination = stackalloc char[MaxSmallInputElementCount]; // each byte produces at most one char

@@ -271,7 +271,9 @@ namespace System
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
-        static bool IUtf8SpanParsable<char>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out char result)
+        static bool IUtf8SpanParsable<char>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out char result) => TryParseUtf8(utf8Text, out result);
+
+        private static bool TryParseUtf8(ReadOnlySpan<byte> utf8Text, out char result)
         {
             if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out int bytesConsumed) != Buffers.OperationStatus.Done ||
                 bytesConsumed != utf8Text.Length ||
@@ -1976,6 +1978,8 @@ namespace System
         static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
+
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result) => TryParseUtf8(utf8Text, out result);
 
         static bool INumberBase<char>.TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
         {
