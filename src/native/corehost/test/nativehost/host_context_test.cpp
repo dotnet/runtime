@@ -326,6 +326,7 @@ namespace
         get_function_pointer_fn delegate,
         const pal::char_t *type_name,
         const pal::char_t *method_name,
+        const pal::char_t *load_context_identifier,
         const pal::char_t *log_prefix,
         pal::stringstream_t &test_output)
     {
@@ -338,14 +339,16 @@ namespace
             << type_name << _X("\", \"")
             << method_name << _X("\", ")
             << to_printable_delegate_name(delegate_name) << _X(", ")
-            << _X("nullptr, nullptr, &functionPointerDelegate)")
+            << (load_context_identifier == nullptr ? _X("nullptr") : load_context_identifier)
+            << _X(", nullptr, &functionPointerDelegate)")
             << std::endl;
 
+        coreclr_load_context context{ sizeof(context), load_context_identifier };
         component_entry_point_fn functionPointerDelegate = nullptr;
         int rc = delegate(type_name,
                           method_name,
                           delegate_name,
-                          nullptr /* reserved */,
+                          load_context_identifier == nullptr ? nullptr : &context,
                           nullptr /* reserved */,
                           (void **)&functionPointerDelegate);
 
@@ -360,14 +363,16 @@ namespace
     bool call_load_assembly(
         load_assembly_fn load_assembly,
         const pal::char_t *assembly_path,
+        const pal::char_t *load_context_identifier,
         const pal::char_t *log_prefix,
         pal::stringstream_t &test_output)
     {
         test_output << log_prefix << _X("calling load_assembly(\"")
             << assembly_path << _X("\")")
             << std::endl;
+        coreclr_load_context context{ sizeof(context), load_context_identifier };
         int rc = load_assembly(assembly_path,
-                               nullptr /* load_context */,
+                               load_context_identifier == nullptr ? nullptr : &context,
                                nullptr /* reserved */);
         bool success = rc == StatusCode::Success;
         test_output << log_prefix << _X("load_assembly ") << (success ? _X("succeeded: ") : _X("failed: ")) << std::hex << std::showbase << rc << std::endl;
@@ -378,6 +383,7 @@ namespace
         load_assembly_bytes_fn load_assembly_bytes,
         const pal::char_t *assembly_path,
         const pal::char_t *symbols_path,
+        const pal::char_t *load_context_identifier,
         const pal::char_t *log_prefix,
         pal::stringstream_t &test_output)
     {
@@ -398,12 +404,13 @@ namespace
             << std::hex << (size_t)(symbols_bytes.data()) << _X(", ") << symbols_bytes.size()
             << _X(")") << std::endl;
 
+        coreclr_load_context context{ sizeof(context), load_context_identifier };
         int rc = load_assembly_bytes(
             (unsigned char *)assembly_bytes.data(),
             assembly_bytes.size(),
             symbols_bytes.empty() ? nullptr : (unsigned char *)symbols_bytes.data(),
             symbols_bytes.size(),
-            nullptr /* load_context */,
+            load_context_identifier == nullptr ? nullptr : &context,
             nullptr /* reserved */);
         bool success = rc == StatusCode::Success;
         test_output << log_prefix << _X("load_assembly_bytes ") << (success ? _X("succeeded: ") : _X("failed: ")) << std::hex << std::showbase << rc << std::endl;
@@ -431,14 +438,15 @@ namespace
         success &= get_runtime_delegate(hostfxr, handle, hdt, (void **)&get_function_pointer, log_prefix, test_output);
         if (success)
         {
-            for (int i = 0; i <= argc - 3; i += 3)
+            for (int i = 0; i <= argc - 4; i += 4)
             {
-                const pal::char_t *assembly_path = argv[i];
-                success &= call_load_assembly(load_assembly, assembly_path, log_prefix, test_output);
+                const pal::char_t *load_context_identifier = pal::strcmp(argv[i], _X("<default>")) == 0 ? nullptr : argv[i];
+                const pal::char_t *assembly_path = argv[i + 1];
+                success &= call_load_assembly(load_assembly, assembly_path, load_context_identifier, log_prefix, test_output);
 
-                const pal::char_t *type_name = argv[i + 1];
-                const pal::char_t *method_name = argv[i + 2];
-                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, log_prefix, test_output);
+                const pal::char_t *type_name = argv[i + 2];
+                const pal::char_t *method_name = argv[i + 3];
+                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, load_context_identifier, log_prefix, test_output);
             }
         }
 
@@ -472,11 +480,11 @@ namespace
             for (int i = 1; i <= argc - 3; i += 3)
             {
                 const pal::char_t *assembly_path = argv[i];
-                success &= call_load_assembly(load_assembly, assembly_path, log_prefix, test_output);
+                success &= call_load_assembly(load_assembly, assembly_path, nullptr, log_prefix, test_output);
 
                 const pal::char_t *type_name = argv[i + 1];
                 const pal::char_t *method_name = argv[i + 2];
-                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, log_prefix, test_output);
+                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, nullptr, log_prefix, test_output);
             }
         }
         int rcClose = hostfxr.close(handle);
@@ -506,15 +514,16 @@ namespace
         success &= get_runtime_delegate(hostfxr, handle, hdt, (void **)&get_function_pointer, log_prefix, test_output);
         if (success)
         {
-            for (int i = 0; i <= argc - 4; i += 4)
+            for (int i = 0; i <= argc - 5; i += 5)
             {
-                const pal::char_t *assembly_path = argv[i];
-                const pal::char_t *symbols_path = argv[i + 1];
-                success &= call_load_assembly_bytes(load_assembly_bytes, assembly_path, symbols_path, log_prefix, test_output);
+                const pal::char_t *load_context_identifier = pal::strcmp(argv[i], _X("<default>")) == 0 ? nullptr : argv[i];
+                const pal::char_t *assembly_path = argv[i + 1];
+                const pal::char_t *symbols_path = argv[i + 2];
+                success &= call_load_assembly_bytes(load_assembly_bytes, assembly_path, symbols_path, load_context_identifier, log_prefix, test_output);
 
-                const pal::char_t *type_name = argv[i + 2];
-                const pal::char_t *method_name = argv[i + 3];
-                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, log_prefix, test_output);
+                const pal::char_t *type_name = argv[i + 3];
+                const pal::char_t *method_name = argv[i + 4];
+                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, load_context_identifier, log_prefix, test_output);
             }
         }
 
@@ -549,11 +558,11 @@ namespace
             {
                 const pal::char_t *assembly_path = argv[i];
                 const pal::char_t *symbols_path = argv[i + 1];
-                success &= call_load_assembly_bytes(load_assembly_bytes, assembly_path, symbols_path, log_prefix, test_output);
+                success &= call_load_assembly_bytes(load_assembly_bytes, assembly_path, symbols_path, nullptr, log_prefix, test_output);
 
                 const pal::char_t *type_name = argv[i + 2];
                 const pal::char_t *method_name = argv[i + 3];
-                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, log_prefix, test_output);
+                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, nullptr, log_prefix, test_output);
             }
         }
         int rcClose = hostfxr.close(handle);
@@ -648,7 +657,7 @@ namespace
             {
                 const pal::char_t *type_name = argv[i];
                 const pal::char_t *method_name = argv[i + 1];
-                success &= call_get_function_pointer_flavour(delegate, type_name, method_name, log_prefix, test_output);
+                success &= call_get_function_pointer_flavour(delegate, type_name, method_name, nullptr, log_prefix, test_output);
             }
         }
 
@@ -679,7 +688,7 @@ namespace
             {
                 const pal::char_t *type_name = argv[i];
                 const pal::char_t *method_name = argv[i + 1];
-                success &= call_get_function_pointer_flavour(delegate, type_name, method_name, log_prefix, test_output);
+                success &= call_get_function_pointer_flavour(delegate, type_name, method_name, nullptr, log_prefix, test_output);
             }
         }
 

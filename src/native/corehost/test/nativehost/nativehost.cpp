@@ -223,9 +223,9 @@ int main(const int argc, const pal::char_t *argv[])
     }
     else if (pal::strcmp(command, _X("component_load_assembly")) == 0)
     {
-        // args: ... <hostfxr_path> <config_path> <assembly_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
+        // args: ... <hostfxr_path> <config_path> <load_context_identifier> <assembly_path> <type_name> <method_name> [...]
         const int min_argc = 4;
-        if (argc < min_argc + 3)
+        if (argc < min_argc + 4)
         {
             std::cerr << "Invalid arguments" << std::endl;
             return -1;
@@ -272,11 +272,11 @@ int main(const int argc, const pal::char_t *argv[])
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     }
-        else if (pal::strcmp(command, _X("component_load_assembly_bytes")) == 0)
+    else if (pal::strcmp(command, _X("component_load_assembly_bytes")) == 0)
     {
-        // args: ... <hostfxr_path> <config_path> <assembly_path> <symbols_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
+        // args: ... <hostfxr_path> <config_path> <load_context_identifier> <assembly_path> <symbols_path> <type_name> <method_name> [...]
         const int min_argc = 4;
-        if (argc < min_argc + 4)
+        if (argc < min_argc + 5)
         {
             std::cerr << "Invalid arguments" << std::endl;
             return -1;
