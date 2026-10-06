@@ -26,6 +26,7 @@ public:
 
     static load_context_storage create_named(const pal::char_t* identifier)
     {
+        assert(identifier != nullptr);
         return load_context_storage(identifier);
     }
 
