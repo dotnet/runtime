@@ -398,7 +398,8 @@ namespace ILAssembler.Tests
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
 
-            Assert.Empty(pdbReader.Documents);
+            // Without .line directives the only document is the input file.
+            Assert.Equal("test.il", pdbReader.GetString(pdbReader.GetDocument(Assert.Single(pdbReader.Documents)).Name));
             Assert.NotEmpty(pdbReader.MethodDebugInformation);
         }
 

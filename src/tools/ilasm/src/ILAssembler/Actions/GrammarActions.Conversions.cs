@@ -40,11 +40,13 @@ namespace ILAssembler
         private int _syntaxErrorCount;
 
         // Debug info tracking
-        private Guid _currentLanguageGuid = Guid.Empty;
+        private Guid _currentLanguageGuid = PdbDocumentTable.ILAssemblyLanguage;
         private Guid _currentLanguageVendorGuid = Guid.Empty;
         private Guid _currentDocumentTypeGuid = Guid.Empty;
-        private string? _currentDocumentPath;
         private readonly PdbDocumentTable _pdbDocuments = new();
+        // The index in _pdbDocuments of the current document: the input file being parsed, or the file named by
+        // the last .line or #line directive applied since its parsing began. -1 before the first input file.
+        private int _currentDocument = -1;
         private readonly MetadataBuilder _pdbBuilder = new();
         private readonly List<VTableFixupDeclaration> _vtableFixups = new();
         private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _exportDirectiveContexts = new();

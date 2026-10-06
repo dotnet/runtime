@@ -184,11 +184,9 @@ namespace ILAssembler.Tests
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
 
-            // Verify document exists with correct name and language
-            Assert.NotEmpty(pdbReader.Documents);
-            var document = pdbReader.GetDocument(pdbReader.Documents.First());
-            var docName = pdbReader.GetString(document.Name);
-            Assert.Contains("test.cs", docName);
+            // The input file is the first document; the .line file follows with the language declared before it
+            Assert.Equal(new[] { "test.il", "test.cs" }, pdbReader.Documents.Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name)));
+            var document = pdbReader.GetDocument(pdbReader.Documents.ElementAt(1));
 
             var languageGuid = pdbReader.GetGuid(document.Language);
             Assert.Equal(Guid.Parse(CSharpLanguageGuid), languageGuid);
@@ -223,11 +221,9 @@ namespace ILAssembler.Tests
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
 
-            // Verify document exists with correct name and language
-            Assert.NotEmpty(pdbReader.Documents);
-            var document = pdbReader.GetDocument(pdbReader.Documents.First());
-            var docName = pdbReader.GetString(document.Name);
-            Assert.Contains("test.cs", docName);
+            // The input file is the first document; the .line file follows with the language declared before it
+            Assert.Equal(new[] { "test.il", "test.cs" }, pdbReader.Documents.Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name)));
+            var document = pdbReader.GetDocument(pdbReader.Documents.ElementAt(1));
 
             var languageGuid = pdbReader.GetGuid(document.Language);
             Assert.Equal(Guid.Parse(CSharpLanguageGuid), languageGuid);
@@ -455,12 +451,13 @@ namespace ILAssembler.Tests
             CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
-            var document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));
+            // The input file is the first document; the .line file follows.
+            Assert.Equal(new[] { "test.il", "document.cs" }, pdbReader.Documents.Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name)));
+            var document = pdbReader.GetDocument(pdbReader.Documents.ElementAt(1));
 
             Assert.Equal(
                 new Guid("3f5162f8-07c6-11d3-9053-00c04fa302a1"),
                 pdbReader.GetGuid(document.Language));
-            Assert.Contains("document.cs", pdbReader.GetString(document.Name));
         }
 
         [Fact]
@@ -484,12 +481,13 @@ namespace ILAssembler.Tests
             CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
-            var document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));
+            // The input file is the first document; the class-level .line file follows.
+            Assert.Equal(new[] { "test.il", "class.cs" }, pdbReader.Documents.Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name)));
+            var document = pdbReader.GetDocument(pdbReader.Documents.ElementAt(1));
 
             Assert.Equal(
                 new Guid("3f5162f8-07c6-11d3-9053-00c04fa302a1"),
                 pdbReader.GetGuid(document.Language));
-            Assert.Contains("class.cs", pdbReader.GetString(document.Name));
         }
 
         [Fact]
@@ -539,9 +537,8 @@ namespace ILAssembler.Tests
                 .Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name))
                 .ToArray();
 
-            Assert.Equal(2, documentNames.Length);
-            Assert.Contains(documentNames, name => name.Contains("doc1.cs", StringComparison.Ordinal));
-            Assert.Contains(documentNames, name => name.Contains("doc2.cs", StringComparison.Ordinal));
+            // Each input file is a document, followed by the .line files it names, in the order they appear.
+            Assert.Equal(new[] { "doc1.il", "doc1.cs", "doc2.il", "doc2.cs" }, documentNames);
             Assert.Equal(pe.GetMetadataReader().MethodDefinitions.Count, pdbReader.MethodDebugInformation.Count);
         }
 
@@ -653,11 +650,16 @@ namespace ILAssembler.Tests
             MethodDebugInformation secondDebugInformation = pdbReader.GetMethodDebugInformation(
                 MetadataTokens.MethodDebugInformationHandle(MetadataTokens.GetRowNumber(secondMethod)));
 
+            // The second file's .line without a file name is in the second input file, not in first.cs.
+            Assert.Equal(new[] { "first.il", "first.cs", "second.il" }, pdbReader.Documents.Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name)));
             Assert.False(firstDebugInformation.SequencePointsBlob.IsNil);
-            Assert.True(secondDebugInformation.SequencePointsBlob.IsNil);
-            Assert.Contains(
+            Assert.False(secondDebugInformation.SequencePointsBlob.IsNil);
+            Assert.Equal(
                 "first.cs",
                 pdbReader.GetString(pdbReader.GetDocument(firstDebugInformation.Document).Name));
+            Assert.Equal(
+                "second.il",
+                pdbReader.GetString(pdbReader.GetDocument(secondDebugInformation.Document).Name));
         }
 
         [Fact]
@@ -696,7 +698,9 @@ namespace ILAssembler.Tests
             using MetadataReaderProvider pdbProvider =
                 DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result!);
             MetadataReader pdbReader = pdbProvider.GetMetadataReader();
-            Document document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));
+            // The two input files are documents too; document.cs is the third.
+            Assert.Equal(new[] { "broken.il", "valid.il", "document.cs" }, pdbReader.Documents.Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name)));
+            Document document = pdbReader.GetDocument(pdbReader.Documents.ElementAt(2));
 
             Assert.Equal(Guid.Parse(CSharpLanguageGuid), pdbReader.GetGuid(document.Language));
         }
