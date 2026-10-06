@@ -581,6 +581,7 @@ public unsafe class StackWalkTests
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
             .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
             .AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
     }
 
