@@ -77,8 +77,6 @@
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
-//    +-ProtectValueClassFrame
-//    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
 //    |
 //    +-DebuggerExitFrame - marker frame to indicate control flow has left the runtime
@@ -1788,60 +1786,6 @@ struct cdac_data<GCFrame>
 };
 
 //-----------------------------------------------------------------------------
-
-struct ValueClassInfo;
-typedef DPTR(struct ValueClassInfo) PTR_ValueClassInfo;
-
-struct ValueClassInfo
-{
-    PTR_ValueClassInfo  pNext;
-    PTR_MethodTable     pMT;
-    PTR_VOID            pData;
-
-    ValueClassInfo(PTR_VOID aData, PTR_MethodTable aMT, PTR_ValueClassInfo aNext)
-        : pNext(aNext), pMT(aMT), pData(aData)
-    {
-    }
-};
-
-//-----------------------------------------------------------------------------
-// ProtectValueClassFrame
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class ProtectValueClassFrame) PTR_ProtectValueClassFrame;
-
-class ProtectValueClassFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    ProtectValueClassFrame()
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(NULL)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push();
-    }
-
-    ProtectValueClassFrame(Thread *pThread, ValueClassInfo *vcInfo)
-        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(vcInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push(pThread);
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext *sc);
-
-    ValueClassInfo ** GetValueClassInfoList()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pVCInfo;
-    }
-
-private:
-
-    ValueClassInfo *m_pVCInfo;
-};
-
 
 #ifdef _DEBUG
 BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef);
