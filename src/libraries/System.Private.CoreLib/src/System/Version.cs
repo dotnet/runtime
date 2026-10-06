@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Text;
@@ -20,7 +20,7 @@ namespace System
 
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable, IUtf8SpanFormattable, IUtf8SpanParsable<Version>
+    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable, IUtf8SpanFormattable, IUtf8SpanParsable<Version>, ISpanParsable<Version>
     {
         // AssemblyName depends on the order staying the same
         private readonly int _Major; // Do not rename (binary serialization)
@@ -288,13 +288,28 @@ namespace System
             return ParseVersion(input.AsSpan(), throwOnFailure: true)!;
         }
 
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)"/>
+        static Version IParsable<Version>.Parse(string s, IFormatProvider? provider)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+            return ParseHelper(s.AsSpan());
+        }
+
         public static Version Parse(ReadOnlySpan<char> input) =>
             ParseVersion(input, throwOnFailure: true)!;
 
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)"/>
+        static Version ISpanParsable<Version>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) =>
+            ParseHelper(s);
+
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)"/>
-        static Version IUtf8SpanParsable<Version>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        static Version IUtf8SpanParsable<Version>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) =>
+            ParseHelper(utf8Text);
+
+        private static Version ParseHelper<TChar>(ReadOnlySpan<TChar> input)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
-            Version? result = ParseVersion(utf8Text, throwOnFailure: false);
+            Version? result = ParseVersion(input, throwOnFailure: false);
             // Required to throw FormatException for invalid input according to contract.
             if (result == null)
             {
@@ -327,11 +342,19 @@ namespace System
             return result is not null;
         }
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)"/>
+        static bool IParsable<Version>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out Version? result) =>
+            TryParse(s, out result);
+
         public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out Version? result)
         {
             result = ParseVersion(input, throwOnFailure: false);
             return result is not null;
         }
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)"/>
+        static bool ISpanParsable<Version>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out Version? result) =>
+            TryParse(s, out result);
 
         /// <summary>
         /// Tries to convert the UTF-8 representation of a version number to an equivalent Version object, and returns a value that indicates whether the conversion succeeded.

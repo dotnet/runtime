@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using Xunit;
 
@@ -501,6 +502,143 @@ namespace System.Tests
                 AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.TryFormat(dest, -1, out bytesWritten)); // Index < 0
                 AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.TryFormat(dest, maxFieldCount + 1, out bytesWritten)); // Index > version.fieldCount
             }
+        }
+
+        private static T GenericParse<T>(string s, IFormatProvider? provider = null) where T : IParsable<T> =>
+            T.Parse(s, provider);
+
+        private static bool GenericTryParse<T>(string? s, IFormatProvider? provider, out T? result) where T : IParsable<T> =>
+            T.TryParse(s, provider, out result);
+
+        private static T GenericSpanParse<T>(ReadOnlySpan<char> s, IFormatProvider? provider = null) where T : ISpanParsable<T> =>
+            T.Parse(s, provider);
+
+        private static bool GenericSpanTryParse<T>(ReadOnlySpan<char> s, IFormatProvider? provider, out T? result) where T : ISpanParsable<T> =>
+            T.TryParse(s, provider, out result);
+
+        private static T GenericUtf8SpanParse<T>(ReadOnlySpan<byte> s, IFormatProvider? provider = null) where T : IUtf8SpanParsable<T> =>
+            T.Parse(s, provider);
+
+        private static bool GenericUtf8SpanTryParse<T>(ReadOnlySpan<byte> s, IFormatProvider? provider, out T? result) where T : IUtf8SpanParsable<T> =>
+            T.TryParse(s, provider, out result);
+
+        public static IEnumerable<object[]> Parse_Invalid_NonNull_TestData()
+        {
+            foreach (object[] data in Parse_Invalid_TestData())
+            {
+                if (data[0] != null)
+                {
+                    yield return new object[] { data[0] };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Valid_TestData))]
+        public static void IParsable_Parse_ValidInput_ReturnsExpected(string input, Version expected)
+        {
+            Assert.Equal(expected, GenericParse<Version>(input, null));
+            Assert.Equal(expected, GenericParse<Version>(input, CultureInfo.InvariantCulture));
+
+            Assert.True(GenericTryParse<Version>(input, null, out Version? result));
+            Assert.Equal(expected, result);
+            Assert.True(GenericTryParse<Version>(input, CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Valid_TestData))]
+        public static void ISpanParsable_Parse_ValidInput_ReturnsExpected(string input, Version expected)
+        {
+            Assert.Equal(expected, GenericSpanParse<Version>(input.AsSpan(), null));
+            Assert.Equal(expected, GenericSpanParse<Version>(input.AsSpan(), CultureInfo.InvariantCulture));
+
+            Assert.True(GenericSpanTryParse<Version>(input.AsSpan(), null, out Version? result));
+            Assert.Equal(expected, result);
+            Assert.True(GenericSpanTryParse<Version>(input.AsSpan(), CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Valid_TestData))]
+        public static void IUtf8SpanParsable_Parse_ValidInput_ReturnsExpected(string input, Version expected)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(input);
+            Assert.Equal(expected, GenericUtf8SpanParse<Version>(utf8, null));
+            Assert.Equal(expected, GenericUtf8SpanParse<Version>(utf8, CultureInfo.InvariantCulture));
+
+            Assert.True(GenericUtf8SpanTryParse<Version>(utf8, null, out Version? result));
+            Assert.Equal(expected, result);
+            Assert.True(GenericUtf8SpanTryParse<Version>(utf8, CultureInfo.InvariantCulture, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public static void IParsable_Parse_NullInput_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("s", () => GenericParse<Version>(null!, null));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => GenericParse<Version>(null!, CultureInfo.InvariantCulture));
+
+            Assert.False(GenericTryParse<Version>(null, null, out Version? result));
+            Assert.Null(result);
+            Assert.False(GenericTryParse<Version>(null, CultureInfo.InvariantCulture, out result));
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_NonNull_TestData))]
+        public static void IParsable_Parse_InvalidInput_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => GenericParse<Version>(input, null));
+            Assert.Throws<FormatException>(() => GenericParse<Version>(input, CultureInfo.InvariantCulture));
+
+            Assert.False(GenericTryParse<Version>(input, null, out Version? result));
+            Assert.Null(result);
+            Assert.False(GenericTryParse<Version>(input, CultureInfo.InvariantCulture, out result));
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_NonNull_TestData))]
+        public static void ISpanParsable_Parse_InvalidInput_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => GenericSpanParse<Version>(input.AsSpan(), null));
+            Assert.Throws<FormatException>(() => GenericSpanParse<Version>(input.AsSpan(), CultureInfo.InvariantCulture));
+
+            Assert.False(GenericSpanTryParse<Version>(input.AsSpan(), null, out Version? result));
+            Assert.Null(result);
+            Assert.False(GenericSpanTryParse<Version>(input.AsSpan(), CultureInfo.InvariantCulture, out result));
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_NonNull_TestData))]
+        public static void IUtf8SpanParsable_Parse_InvalidInput_ThrowsFormatException(string input)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(input);
+            Assert.Throws<FormatException>(() => GenericUtf8SpanParse<Version>(utf8, null));
+            Assert.Throws<FormatException>(() => GenericUtf8SpanParse<Version>(utf8, CultureInfo.InvariantCulture));
+
+            Assert.False(GenericUtf8SpanTryParse<Version>(utf8, null, out Version? result));
+            Assert.Null(result);
+            Assert.False(GenericUtf8SpanTryParse<Version>(utf8, CultureInfo.InvariantCulture, out result));
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [InlineData(".")]
+        [InlineData("1.")]
+        [InlineData("1.0.")]
+        [InlineData("1.0.0.")]
+        public static void IParsable_ISpanParsable_Parse_TrailingDot_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => GenericParse<Version>(input, null));
+            Assert.Throws<FormatException>(() => GenericSpanParse<Version>(input.AsSpan(), null));
+
+            Assert.False(GenericTryParse<Version>(input, null, out Version? result));
+            Assert.Null(result);
+            Assert.False(GenericSpanTryParse<Version>(input.AsSpan(), null, out result));
+            Assert.Null(result);
         }
     }
 }

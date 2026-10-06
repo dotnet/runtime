@@ -7895,7 +7895,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string? ToString() { throw null; }
     }
-    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Version>
+    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.IParsable<System.Version>, System.ISpanFormattable, System.ISpanParsable<System.Version>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Version>
     {
         public Version() { }
         public Version(int major, int minor) { }
@@ -7924,7 +7924,11 @@ namespace System
         public static System.Version Parse(System.ReadOnlySpan<char> input) { throw null; }
         public static System.Version Parse(string input) { throw null; }
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        static System.Version System.IParsable<System.Version>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<System.Version>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version result) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static System.Version System.ISpanParsable<System.Version>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<System.Version>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version result) { throw null; }
         bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         static System.Version System.IUtf8SpanParsable<System.Version>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         static bool System.IUtf8SpanParsable<System.Version>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version result) { throw null; }
