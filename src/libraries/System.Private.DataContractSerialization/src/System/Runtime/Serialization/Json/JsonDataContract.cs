@@ -242,7 +242,7 @@ namespace System.Runtime.Serialization.Json
                             dataContract = new JsonByteArrayDataContract((ByteArrayDataContract)traditionalDataContract);
                         }
                         else if (traditionalDataContract.IsPrimitive ||
-                            traditionalDataContract.UnderlyingType == Globals.TypeOfXmlQualifiedName)
+                            traditionalDataContract.UnderlyingType == typeof(XmlQualifiedName))
                         {
                             dataContract = new JsonDataContract(traditionalDataContract);
                         }
@@ -295,7 +295,7 @@ namespace System.Runtime.Serialization.Json
                             if (collectionDataContract.ItemType.IsGenericType
                                 && collectionDataContract.ItemType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
                             {
-                                DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GenericTypeArguments));
+                                DataContract itemDataContract = DataContract.GetDataContract(typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(collectionDataContract.ItemType.GenericTypeArguments));
                                 _knownDataContracts.TryAdd(itemDataContract.XmlName, itemDataContract);
                             }
 
