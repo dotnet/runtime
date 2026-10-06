@@ -285,6 +285,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 
         handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
         g_registered_activation_handler = true;
+        UnmaskActivationSignal();
     }
 #endif
 
@@ -934,8 +935,8 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 {
     // Only accept activations from the current process
     if (g_activationFunction != NULL && (siginfo->si_pid == getpid()
-#ifdef HOST_OSX
-    // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+#ifdef HOST_APPLE
+    // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
     // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
     || siginfo->si_pid == 0
 #endif
