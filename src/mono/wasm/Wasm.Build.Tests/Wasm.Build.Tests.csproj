@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Project="$(RepositoryEngineeringDir)restore\browserWasmMibcProfile.props" />
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
@@ -68,6 +69,10 @@
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(BrowserWasmMibcProfile)"
+          Condition="'$(BrowserWasmMibcProfile)' != ''"
+          Link="data\DotNet_Blazor_Wasm.mibc"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Deploy dotnet-pgo (and its managed dependencies) into a dotnet-pgo/ subfolder next to the test so

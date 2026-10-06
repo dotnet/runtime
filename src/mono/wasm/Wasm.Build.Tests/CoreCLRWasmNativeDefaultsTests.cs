@@ -171,7 +171,7 @@ namespace Wasm.Build.Tests
         public void WasmReadyToRunProfileControlsPartialAndPgoInput(bool profileSet, bool r2r, bool expectPartial)
         {
             Configuration config = Configuration.Release;
-            string profilePath = Path.Combine(BuildEnvironment.TestDataPath, "ReadyToRunPartial.mibc");
+            string profilePath = Path.Combine(BuildEnvironment.TestDataPath, "DotNet_Blazor_Wasm.mibc");
             string printValueTarget = """
                 <Target Name="PrintR2RProfileFlow"
                         DependsOnTargets="_WasmCoreClrSelectR2RDirectories">

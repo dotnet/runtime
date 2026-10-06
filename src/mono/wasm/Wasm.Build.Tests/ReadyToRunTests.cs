@@ -120,7 +120,7 @@ namespace Wasm.Build.Tests
         [TestCategory("no-workload")]
         public async Task PublishPartialProfileRunsAllPages(Configuration config)
         {
-            string profile = Path.Combine(BuildEnvironment.TestDataPath, "ReadyToRunPartial.mibc");
+            string profile = Path.Combine(BuildEnvironment.TestDataPath, "DotNet_Blazor_Wasm.mibc");
             Assert.True(File.Exists(profile), $"Missing test profile '{profile}'.");
             ProjectInfo info = CopyTestAsset(
                 config,
