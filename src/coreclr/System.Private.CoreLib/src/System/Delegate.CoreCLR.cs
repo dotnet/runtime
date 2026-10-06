@@ -240,10 +240,7 @@ namespace System
                         {
                             targetType = targetType.GetElementType()!;
                         }
-                        if ((attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Private)
-                        {
-                            declaringType = (RuntimeType)targetType;
-                        }
+                        declaringType = (RuntimeType)targetType;
                     }
 
                     // The target may be of a derived type that doesn't have visibility onto the
