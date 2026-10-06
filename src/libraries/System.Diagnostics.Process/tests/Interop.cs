@@ -95,11 +95,17 @@ internal static partial class Interop
     [DllImport("kernel32.dll")]
     internal static extern int GetConsoleOutputCP();
 
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern int SetConsoleCP(int codePage);
 
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern int SetConsoleOutputCP(int codePage);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern int FreeConsole();
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern int AllocConsole();
 
     [DllImport("advapi32.dll")]
     internal static extern bool OpenProcessToken(SafeProcessHandle ProcessHandle, uint DesiredAccess, out SafeProcessHandle TokenHandle);
