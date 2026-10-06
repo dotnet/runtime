@@ -225,26 +225,29 @@ namespace System
                 bool isStatic = (attributes & MethodAttributes.Static) != 0;
                 if (!isStatic)
                 {
+                    Type targetType;
                     if (IsClosed)
                     {
+                        targetType = _target!.GetType();
+                    }
+                    else
+                    {
+                        // it's an open one, need to fetch the first arg of the instantiation
+                        MethodInfo invoke = GetInvokeMethod(GetType());
+                        targetType = invoke.GetParametersAsSpan()[0].ParameterType;
+                    }
+
+                    if (IsClosed || (attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
+                    {
                         // The target may be of a derived type that doesn't have visibility onto the
-                        // target method. We don't want to call RuntimeType.GetMethodBase below with that
-                        // or reflection can end up generating a MethodInfo where the ReflectedType cannot
-                        // see the MethodInfo itself and that breaks an important invariant. But the
-                        // target type could include important generic type information we need in order
-                        // to work out what the exact instantiation of the method's declaring type is. So
-                        // we'll walk up the inheritance chain (which will yield exactly instantiated
-                        // types at each step) until we find the declaring type. Since the declaring type
-                        // we get from the method is probably shared and those in the hierarchy we're
-                        // walking won't be we compare using the generic type definition forms instead.
-                        Type targetType = declaringType.GetGenericTypeDefinition();
+                        // target method. Walk the hierarchy to find the exact instantiation of its
+                        // declaring type before creating a MethodInfo for that reflected type.
                         Type? currentType;
-                        for (currentType = _target!.GetType(); currentType != null; currentType = currentType.BaseType)
+                        for (currentType = targetType; currentType is not null; currentType = currentType.BaseType)
                         {
-                            if (currentType.IsGenericType &&
-                                currentType.GetGenericTypeDefinition() == targetType)
+                            if (currentType.HasSameMetadataDefinitionAs(declaringType))
                             {
-                                declaringType = currentType as RuntimeType;
+                                declaringType = (RuntimeType)currentType;
                                 break;
                             }
                         }
@@ -254,28 +257,13 @@ namespace System
                         // to work with exact methods anyway so declaringType is never shared at this point.
                         // The targetType may also be an interface with a Default interface method (DIM).
                         Debug.Assert(
-                            currentType != null
-                            || _target.GetType().IsCOMObject
+                            !IsClosed || currentType is not null
+                            || _target!.GetType().IsCOMObject
                             || targetType.IsInterface, "The class hierarchy should declare the method or be a DIM");
                     }
                     else
                     {
-                        // it's an open one, need to fetch the first arg of the instantiation
-                        MethodInfo invoke = GetInvokeMethod(GetType());
-                        declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
-
-                        if ((attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
-                        {
-                            Type genericDefinition = RuntimeMethodHandle.GetDeclaringType(method).GetGenericTypeDefinition();
-                            for (Type? currentType = declaringType; currentType is not null; currentType = currentType.BaseType)
-                            {
-                                if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == genericDefinition)
-                                {
-                                    declaringType = (RuntimeType)currentType;
-                                    break;
-                                }
-                            }
-                        }
+                        declaringType = (RuntimeType)targetType;
                     }
                 }
             }

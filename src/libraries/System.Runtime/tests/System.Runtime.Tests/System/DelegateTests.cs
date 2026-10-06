@@ -514,6 +514,10 @@ namespace System.Tests
             Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.DeclaringType);
             Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.ReflectedType);
             Assert.DoesNotContain(typeof(PrivateGenericDerived).GetMethods(Flags), m => m.Name == "Secret");
+
+            Func<int> closedDelegate = method.CreateDelegate<Func<int>>(new PrivateGenericDerived());
+            Assert.Equal(42, closedDelegate());
+            Assert.Equal(typeof(PrivateGenericBase<string>), closedDelegate.Method.ReflectedType);
         }
 
         private class PrivateGenericBase<T>
