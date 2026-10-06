@@ -265,6 +265,7 @@ namespace System.Net.ServerSentEvents
                     return true;
                 }
 
+                _eventType = null;
                 _lineBuffer.Discard(advance);
                 sseItem = default;
                 return false;

@@ -170,6 +170,25 @@ namespace System.Net.ServerSentEvents.Tests
 
         [Theory]
         [MemberData(nameof(NewlineTrickleAsyncData))]
+        public async Task Parse_EventWithoutData_ResetsEventType(string newline, bool trickle, bool useAsync)
+        {
+            using Stream stream = GetStream(
+                $"event: stale{newline}id: 2{newline}retry: 300{newline}{newline}" +
+                $"data: first{newline}data: second{newline}{newline}" +
+                $"event: stale{newline}{newline}data: third{newline}{newline}", trickle);
+
+            List<SseItem<string>> items = useAsync ?
+                await ReadAllEventsAsync(stream) :
+                ReadAllEvents(stream);
+
+            Assert.Equal(2, items.Count);
+            AssertSseItemEqual(new SseItem<string>("first\nsecond", "message")
+                { EventId = "2", ReconnectionInterval = TimeSpan.FromMilliseconds(300) }, items[0]);
+            AssertSseItemEqual(new SseItem<string>("third", "message"), items[1]);
+        }
+
+        [Theory]
+        [MemberData(nameof(NewlineTrickleAsyncData))]
         public async Task Parse_HtmlSpec_Example2(string newline, bool trickle, bool useAsync)
         {
             using Stream stream = GetStream(
