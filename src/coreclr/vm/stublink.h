@@ -115,8 +115,6 @@ class StubLinker
         VOID Emit8 (uint8_t  u8);
         VOID Emit16(uint16_t u16);
         VOID Emit32(uint32_t u32);
-        VOID Emit64(uint64_t u64);
-        VOID EmitPtr(const VOID *pval);
 
         //---------------------------------------------------------------
         // Append an instruction containing a reference to a label.

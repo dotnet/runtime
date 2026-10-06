@@ -263,8 +263,6 @@ public:
         return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
     }
 
-    void DumpFreeList();
-
 // Extra CallTracing support
     void UnlockedClearEvents();     //Discard saved events
     void UnlockedCompactEvents();   //Discard matching alloc/free events
@@ -460,9 +458,6 @@ public:
 
     size_t AllocMem_TotalSize(size_t dwRequestedSize);
 public:
-#ifdef _DEBUG
-    void DumpFreeList();
-#endif
 private:
     static void ValidateFreeList(UnlockedLoaderHeap *pHeap);
     static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap);

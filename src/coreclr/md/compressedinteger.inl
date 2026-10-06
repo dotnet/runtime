@@ -25,34 +25,6 @@ namespace MetaData
 // Returns FALSE if the value cannot be encoded as compressed integer, doesn't fill *pcbEncodingSize then.
 //
 __checkReturn
-//static
-inline
-BOOL
-CompressedInteger::GetEncodingSize(
-          UINT32  nValue,
-    _Out_ UINT32 *pcbEncodingSize)
-{
-    // Does it fit into 1-byte encoding?
-    if (nValue <= const_Max1Byte)
-    {   // The value fits into 1 byte (binary format 0xxx xxxx)
-        *pcbEncodingSize = 1;
-        return TRUE;
-    }
-    // Does it fit into 2-bytes encoding?
-    if (nValue <= const_Max2Bytes)
-    {   // The value fits into 2 bytes (binary format 10xx xxxx yyyy yyyy)
-        *pcbEncodingSize = 2;
-        return TRUE;
-    }
-    // Does it fit into 4-bytes encoding?
-    if (nValue <= const_Max4Bytes)
-    {   // The value fits into 4 bytes (binary format 110x xxxx yyyy yyyy zzzz zzzz wwww wwww)
-        *pcbEncodingSize = 4;
-        return TRUE;
-    }
-    // The value cannot be encoded as compressed integer
-    return FALSE;
-} // CompressedInteger::GetEncodingSize
 
 // --------------------------------------------------------------------------------------
 //

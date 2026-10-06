@@ -354,49 +354,6 @@ Unknown_ReleaseSpecial_Internal(IUnknown* pUnk)
     return cbRef;
 } // Unknown_Release
 
-
-HRESULT __stdcall
-Unknown_QueryInterface_IErrorInfo_Simple(IUnknown* pUnk, REFIID riid, void** ppv)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(IsInProcCCWTearOff(pUnk));
-        PRECONDITION(CheckPointer(ppv, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    if (!ppv)
-        return E_POINTER;
-    *ppv = NULL;
-
-    EX_TRY
-    {
-        hr = E_NOINTERFACE;
-
-        _ASSERTE(!IsInnerUnknown(pUnk) && IsSimpleTearOff(pUnk));
-
-        SimpleComCallWrapper* pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-
-        // we must not switch to cooperative GC mode here, so respond only to the
-        // two interfaces we always support
-        if (riid == IID_IUnknown || riid == IID_IErrorInfo)
-        {
-            *ppv = pUnk;
-            pSimpleWrap->AddRef();
-            hr = S_OK;
-        }
-    }
-    EX_CATCH_HRESULT_NO_ERRORINFO(hr);
-
-    return hr;
-}  // Unknown_QueryInterface_IErrorInfo_Simple
-
 // ---------------------------------------------------------------------------
 ULONG __stdcall
 Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)

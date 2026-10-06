@@ -6900,33 +6900,6 @@ CordbUnmanagedThread *CordbProcess::HandleUnmanagedCreateThread(DWORD dwThreadId
 }
 #endif // FEATURE_INTEROP_DEBUGGING
 
-
-//-----------------------------------------------------------------------------
-// Initializes the DAC
-// Arguments: none--initializes the DAC for this CordbProcess instance
-// Note: Throws on error
-//-----------------------------------------------------------------------------
-void CordbProcess::InitDac()
-{
-    // Go-Go DAC power!!
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        InitializeDac();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    // We Need DAC to debug for both Managed & Interop.
-    if (FAILED(hr))
-    {
-        // We assert here b/c we're trying to be friendly. Most likely, the cause is either:
-        // - a bad installation
-        // - a CLR dev built mscorwks but didn't build DAC.
-        SIMPLIFYING_ASSUMPTION_MSGF(false, ("Failed to load DAC while for debugging. hr=0x%08x", hr));
-        ThrowHR(hr);
-    }
-} //CordbProcess::InitDac
-
 // Update the entire RS copy of the debugger control block by reading the LS copy. The RS copy is treated as
 // a throw-away temporary buffer, rather than a true cache. That is, we make no assumptions about the
 // validity of the information over time. Thus, before using any of the values, we need to update it. We
@@ -7928,26 +7901,6 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
     return hr;
 }
 
-// Check if the left side has exited. If so, get the right-side
-// into shutdown mode. Only use this to avert us from going into
-// an unrecoverable error.
-bool CordbProcess::CheckIfLSExited()
-{
-// Check by waiting on the handle with no timeout.
-    if (WaitHandle::Wait(*m_handle, 0) == 0)
-    {
-        Lock();
-        m_terminated = true;
-        m_exiting = true;
-        Unlock();
-    }
-
-    LOG((LF_CORDB, LL_INFO10, "CP::IsLSExited() returning '%s'\n",
-        m_exiting ? "true" : "false"));
-
-    return m_exiting;
-}
-
 // Call this if something really bad happened and we can't do
 // anything meaningful with the CordbProcess.
 void CordbProcess::UnrecoverableError(HRESULT errorHR,
@@ -8906,99 +8859,6 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
 
     // Rethrow
     ThrowHR(hr);
-}
-
-
-//---------------------------------------------------------------------------------------
-// Marshals over a string buffer in a managed event
-//
-// Arguments:
-//    pTarget - data-target for read the buffer from the LeftSide.
-//
-// Throws on error
-void Ls_Rs_BaseBuffer::CopyLSDataToRSWorker(ICorDebugDataTarget * pTarget)
-{
-    //
-    const DWORD cbCacheSize = m_cbSize;
-
-    // SHOULD not happen for more than once in well-behaved case.
-    if (m_pbRS != NULL)
-    {
-        SIMPLIFYING_ASSUMPTION(!"m_pbRS is non-null; is this a corrupted event?");
-        ThrowHR(E_INVALIDARG);
-    }
-
-    NewArrayHolder<BYTE> pData(new BYTE[cbCacheSize]);
-
-    ULONG32 cbRead;
-    HRESULT hrRead = pTarget->ReadVirtual(PTR_TO_CORDB_ADDRESS(m_pbLS), pData, cbCacheSize , &cbRead);
-
-    if(FAILED(hrRead))
-    {
-        hrRead = CORDBG_E_READVIRTUAL_FAILURE;
-    }
-
-    if (SUCCEEDED(hrRead) && (cbCacheSize != cbRead))
-    {
-        hrRead = HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY);
-    }
-    IfFailThrow(hrRead);
-
-    // Now do Transfer
-    m_pbRS = pData;
-    pData.SuppressRelease();
-}
-
-//---------------------------------------------------------------------------------------
-// Marshals over a Byte buffer in a managed event
-//
-// Arguments:
-//    pTarget - data-target for read the buffer from the LeftSide.
-//
-// Throws on error
-void Ls_Rs_ByteBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
-{
-    CopyLSDataToRSWorker(pTarget);
-}
-
-//---------------------------------------------------------------------------------------
-// Marshals over a string buffer in a managed event
-//
-// Arguments:
-//    pTarget - data-target for read the buffer from the LeftSide.
-//
-// Throws on error
-void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
-{
-    CopyLSDataToRSWorker(pTarget);
-
-    // Ensure we're a valid, well-formed string.
-    // @dbgtodo - this should only happen in corrupted scenarios. Perhaps a better HR here?
-    // - null terminated.
-    // - no embedded nulls.
-
-    const WCHAR * pString = GetString();
-    SIZE_T dwExpectedLenWithNull = m_cbSize / sizeof(WCHAR);
-
-    // Should at least have 1 character for the null-terminator.
-    if (dwExpectedLenWithNull == 0)
-    {
-        ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
-    }
-
-    // Ensure that there's a null where we expect it to be.
-    if (pString[dwExpectedLenWithNull-1] != 0)
-    {
-        ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
-    }
-
-    // Now we know it's safe to call u16_strlen. The buffer is local, so we know the pages are there.
-    // And we know there's a null capping the max length of the string.
-    SIZE_T dwActualLenWithNull = u16_strlen(pString) + 1;
-    if (dwActualLenWithNull != dwExpectedLenWithNull)
-    {
-        ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
-    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -12905,16 +12765,8 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL: IB event completing, continuing ue=0x%p\n", pUnmanagedEvent));
 
         DequeueUnmanagedEvent(pUnmanagedThread);
-        // If this event came from RaiseException then flush the context to ensure we won't use it until we re-enter
-        if(pUnmanagedEvent->m_owner->IsRaiseExceptionHijacked())
-        {
-            pUnmanagedEvent->m_owner->RestoreFromRaiseExceptionHijack();
-            pUnmanagedEvent->m_owner->ClearRaiseExceptionEntryContext();
-        }
-        else // otherwise we should have been stepping
-        {
-            pUnmanagedThread->EndStepping();
-        }
+        // We should have been stepping
+        pUnmanagedThread->EndStepping();
         pW32EventThread->ForceDbgContinue(this, pUnmanagedThread,
             pUnmanagedEvent->IsExceptionCleared() ? DBG_CONTINUE : DBG_EXCEPTION_NOT_HANDLED, false);
 

@@ -71,12 +71,7 @@ class SymbolInfo:  IMetaDataEmit,  IMetaDataImport
 public:
     SymbolInfo();
 
-    HRESULT AddDocument(DWORD id, ISymUnmanagedDocumentWriter* Document);
-    HRESULT MapDocument(DWORD id, ISymUnmanagedDocumentWriter** Document);
-    HRESULT AddScope(ULONG32 left, ULONG32 right);
-    HRESULT MapScope(ULONG32 left, ULONG32* pRight);
     HRESULT SetMethodProps(mdToken method, mdTypeDef cls, LPCWSTR wszName);
-    HRESULT SetClassProps(mdTypeDef cls, DWORD flags, LPCWSTR wszName, mdTypeDef enclosingCls);
     HRESULT AddSignature(SBuffer& sig, mdSignature token);
 
     // IUnknown methods

@@ -54,7 +54,6 @@ c_runtime/wcscpy/test1/paltest_wcscpy_test1
 c_runtime/wcslen/test1/paltest_wcslen_test1
 c_runtime/wcsncmp/test1/paltest_wcsncmp_test1
 c_runtime/wcsncpy/test1/paltest_wcsncpy_test1
-c_runtime/wcspbrk/test1/paltest_wcspbrk_test1
 c_runtime/wcsrchr/test1/paltest_wcsrchr_test1
 c_runtime/wcsstr/test1/paltest_wcsstr_test1
 c_runtime/wcstod/test1/paltest_wcstod_test1
@@ -66,10 +65,6 @@ c_runtime/wcstoul/test4/paltest_wcstoul_test4
 c_runtime/wcstoul/test5/paltest_wcstoul_test5
 c_runtime/wcstoul/test6/paltest_wcstoul_test6
 c_runtime/_alloca/test1/paltest_alloca_test1
-c_runtime/_putenv/test1/paltest_putenv_test1
-c_runtime/_putenv/test2/paltest_putenv_test2
-c_runtime/_putenv/test3/paltest_putenv_test3
-c_runtime/_putenv/test4/paltest_putenv_test4
 c_runtime/_rotl/test1/paltest_rotl_test1
 c_runtime/_rotr/test1/paltest_rotr_test1
 c_runtime/_vsnprintf_s/test1/paltest_vsnprintf_test1
@@ -172,7 +167,6 @@ file_io/GetFullPathNameW/test4/paltest_getfullpathnamew_test4
 file_io/GetStdHandle/test1/paltest_getstdhandle_test1
 file_io/GetStdHandle/test2/paltest_getstdhandle_test2
 file_io/gettemppatha/test1/paltest_gettemppatha_test1
-file_io/GetTempPathW/test1/paltest_gettemppathw_test1
 file_io/ReadFile/test1/paltest_readfile_test1
 file_io/ReadFile/test2/paltest_readfile_test2
 file_io/ReadFile/test3/paltest_readfile_test3

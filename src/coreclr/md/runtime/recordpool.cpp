@@ -277,39 +277,6 @@ void *RecordPool::GetFirstRecord(        // Pointer to Record in pool.
 } // void *RecordPool::GetFirstRecord()
 
 //*****************************************************************************
-// Given a pointer to a record, return a pointer to the next record.
-//  Note that this scheme does pretty minimal error checking. In particular,
-//  this will let the caller walk off of the end of valid data in the last
-//  segment.
-//*****************************************************************************
-void *RecordPool::GetNextRecord(        // Pointer to Record in pool.
-    void        *pRecord,                // Current record.
-    void        **pContext)                // Stored context here.
-{
-    BYTE        *pbRec = reinterpret_cast<BYTE*>(pRecord);
-    StgPoolSeg    **ppSeg = reinterpret_cast<StgPoolSeg**>(pContext);
-
-    // Get the next record.
-    pbRec += m_cbRec;
-
-    // Is the next record outside of the current segment?
-    if (static_cast<ULONG>(pbRec - (*ppSeg)->m_pSegData) >= (*ppSeg)->m_cbSegSize)
-    {
-        // Better be exactly one past current segment.
-        _ASSERTE(static_cast<ULONG>(pbRec - (*ppSeg)->m_pSegData) == (*ppSeg)->m_cbSegSize);
-        // Switch the context pointer.
-        *ppSeg = (*ppSeg)->m_pNextSeg;
-        // Next record is start of next segment.
-        if (*ppSeg)
-            return (*ppSeg)->m_pSegData;
-        else
-            return 0;
-    }
-
-    return pbRec;
-} // void *RecordPool::GetNextRecord()
-
-//*****************************************************************************
 // Given a pointer to a record, determine the index corresponding to the
 // record.
 //*****************************************************************************
@@ -338,27 +305,6 @@ ULONG RecordPool::GetIndexForRecord(    // 1-based index of Record in pool.
             return 0;
     }
 } // ULONG RecordPool::GetIndexForRecord()
-
-//*****************************************************************************
-// Given a purported pointer to a record, determine if the pointer is valid.
-//*****************************************************************************
-int RecordPool::IsValidPointerForRecord(// true or false.
-    const void *pvRecord)                // Pointer to Record in pool.
-{
-    const StgPoolSeg *pSeg;
-    const BYTE  *pRecord = reinterpret_cast<const BYTE*>(pvRecord);
-    const BYTE  *pSegData = NULL;
-    for (pSeg = this; (pSeg); pSeg = pSeg->GetNextSeg())
-    {    // Does the current segment contain the record?
-        pSegData = pSeg->GetSegData();
-        if ((pRecord >= pSegData) && (pRecord < pSegData + pSeg->GetSegSize()))
-        {    // The pointer should be to the start of a record.
-            return (((pRecord - pSegData) % m_cbRec) == 0);
-        }
-        _ASSERTE((pSeg->GetSegSize() % m_cbRec) == 0);
-    }
-    return 0;
-} // int RecordPool::IsValidPointerForRecord()
 
 //*****************************************************************************
 // Replace the contents of this pool with those from another pool.  The other

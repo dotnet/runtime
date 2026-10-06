@@ -2642,24 +2642,6 @@ HRESULT ProfToEEInterfaceImpl::GetEventMask2(DWORD *pdwEventsLow, DWORD *pdwEven
 }
 
 // static
-void ProfToEEInterfaceImpl::MethodTableCallback(void* context, void* objectUNSAFE)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // each callback identifies the address of a method table within the frozen object segment
-    // that pointer is an object ID by definition -- object references point to the method table
-    CDynArray< ObjectID >* objects = reinterpret_cast< CDynArray< ObjectID >* >(context);
-
-    *objects->Append() = reinterpret_cast< ObjectID >(objectUNSAFE);
-}
-
-// static
 void ProfToEEInterfaceImpl::ObjectRefCallback(void* context, void* objectUNSAFE)
 {
     // we don't care about embedded object references, ignore them

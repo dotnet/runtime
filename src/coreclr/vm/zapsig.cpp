@@ -538,25 +538,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     return TRUE;
 }
 
-/*static*/
-BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle typeHnd2)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pTypeHnd));
-        PRECONDITION(CheckPointer(typeHnd2));
-    }
-    CONTRACTL_END
-
-    // Ensure that the compiler won't fetch the value twice
-    SIZE_T fixup = VolatileLoadWithoutBarrier((SIZE_T *)pTypeHnd);
-
-    return TypeHandle::FromTAddr(fixup) == typeHnd2;
-}
-
 #ifndef DACCESS_COMPILE
 ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
                                       DWORD index)

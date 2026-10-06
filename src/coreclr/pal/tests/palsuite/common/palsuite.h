@@ -188,7 +188,6 @@ DeleteFileW(
 #define wcsncmp       PAL_wcsncmp
 #define wcschr        PAL_wcschr
 #define wcsrchr        PAL_wcsrchr
-#define wcspbrk       PAL_wcspbrk
 #define wcsstr        PAL_wcsstr
 #define wcscmp        PAL_wcscmp
 #define wcsncpy       PAL_wcsncpy

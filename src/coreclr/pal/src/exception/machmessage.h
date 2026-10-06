@@ -165,9 +165,6 @@ public:
     // exception messages or passed explicitly for reply messages).
     mach_msg_type_number_t GetThreadState(thread_state_flavor_t eFlavor, thread_state_t pState, thread_act_t thread = NULL);
 
-    // Fetch the return code from a reply type message.
-    kern_return_t GetReturnCode();
-
     // Initialize and send a request to set the register context of a particular thread.
     void SendSetThread(mach_port_t hServerPort, CONTEXT *pContext);
 

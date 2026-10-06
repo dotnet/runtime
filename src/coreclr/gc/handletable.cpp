@@ -33,7 +33,6 @@ DWORD g_dwHandles = 0;
 
 #ifdef _DEBUG
 void DEBUG_PostGCScanHandler(HandleTable *pTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, ScanCallbackInfo *info);
-void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level);
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -768,37 +767,6 @@ void HndVerifyTable(HHANDLETABLE hTable, const uint32_t *types, uint32_t typeCou
     }
 }
 
-
-/*
- * HndNotifyGcCycleComplete
- *
- * Informs the handle table that a GC has completed.
- *
- */
-void HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t maxgen)
-{
-#ifdef _DEBUG
-    WRAPPER_NO_CONTRACT;
-
-    // fetch the handle table pointer
-    HandleTable *pTable = Table(hTable);
-
-    {
-        // lock the table down
-        CrstHolder ch(&pTable->Lock);
-
-        // if this was a full GC then dump a cumulative log of scanning stats
-        if (condemned >= maxgen)
-            DEBUG_LogScanningStatistics(pTable, LL_INFO10);
-    }
-#else
-    LIMITED_METHOD_CONTRACT;
-    UNREFERENCED_PARAMETER(hTable);
-    UNREFERENCED_PARAMETER(condemned);
-    UNREFERENCED_PARAMETER(maxgen);
-#endif
-}
-
 /*
  * HndCountHandles
  *
@@ -987,53 +955,6 @@ void DEBUG_PostGCScanHandler(HandleTable *pTable, const uint32_t *types, uint32_
 
         // dump a footer for the stats
         LOG((LF_GC, LL_INFO1000, "--------------------------------------------------------------\n"));
-    }
-}
-
-void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
-{
-    WRAPPER_NO_CONTRACT;
-    UNREFERENCED_PARAMETER(level);
-
-    // have we done any GC's yet?
-    if (pTable->_DEBUG_iMaxGen >= 0)
-    {
-        // dump a header for the stats
-        LOG((LF_GC, level, "\n==============================================================\n"));
-        LOG((LF_GC, level, " Cumulative Handle Scan Summary:\n"));
-
-        // for each generation we've collected,  dump the current stats
-        for (int i = 0; i <= pTable->_DEBUG_iMaxGen; i++)
-        {
-            int64_t totalBlocksScanned = pTable->_DEBUG_TotalBlocksScanned[i];
-
-            // dump the generation number and the number of blocks scanned
-            LOG((LF_GC, level,     "--------------------------------------------------------------\n"));
-            LOG((LF_GC, level,     "    Condemned Generation      = %d\n", i));
-            LOG((LF_GC, level,     "    Blocks Scanned            = %" PRId64 "\n", totalBlocksScanned));
-
-            // if we scanned any blocks in this generation then dump some interesting numbers
-            if (totalBlocksScanned)
-            {
-                LOG((LF_GC, level, "    Blocks Examined           = %" PRId64 "\n", pTable->_DEBUG_TotalBlocksScannedNonTrivially[i]));
-                LOG((LF_GC, level, "    Slots Scanned             = %" PRId64 "\n", pTable->_DEBUG_TotalHandleSlotsScanned       [i]));
-                LOG((LF_GC, level, "    Handles Scanned           = %" PRId64 "\n", pTable->_DEBUG_TotalHandlesActuallyScanned   [i]));
-
-                double blocksScanned  = (double) totalBlocksScanned;
-                double blocksExamined = (double) pTable->_DEBUG_TotalBlocksScannedNonTrivially[i];
-                double slotsScanned   = (double) pTable->_DEBUG_TotalHandleSlotsScanned       [i];
-                double handlesScanned = (double) pTable->_DEBUG_TotalHandlesActuallyScanned   [i];
-                double totalSlots     = (double) (totalBlocksScanned * HANDLE_HANDLES_PER_BLOCK);
-
-                LOG((LF_GC, level, "    Block Scan Ratio          = %1.1lf%%\n", (100.0 * (blocksExamined / blocksScanned)) ));
-                LOG((LF_GC, level, "    Clump Scan Ratio          = %1.1lf%%\n", (100.0 * (slotsScanned   / totalSlots))    ));
-                LOG((LF_GC, level, "    Scanned Clump Saturation  = %1.1lf%%\n", (100.0 * (handlesScanned / slotsScanned))  ));
-                LOG((LF_GC, level, "    Overall Handle Scan Ratio = %1.1lf%%\n", (100.0 * (handlesScanned / totalSlots))    ));
-            }
-        }
-
-        // dump a footer for the stats
-        LOG((LF_GC, level, "==============================================================\n\n"));
     }
 }
 

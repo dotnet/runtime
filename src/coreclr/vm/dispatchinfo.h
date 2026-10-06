@@ -280,12 +280,6 @@ public:
                                                int*                  pManagedMethodParamIndexMap,
                                                VARIANT**             aByrefArgOleVariant);
 
-    // Methods to retrieve the cached MD's
-    static MethodDesc*      GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFieldInfoType);
-    static MethodDesc*      GetPropertyInfoMD(BinderMethodID Method, TypeHandle hndPropInfoType);
-    static MethodDesc*      GetMethodInfoMD(BinderMethodID Method, TypeHandle hndMethodInfoType);
-    static MethodDesc*      GetCustomAttrProviderMD(TypeHandle hndCustomAttrProvider);
-
     // This method synchronizes the DispatchInfo's members with the ones in managed world.
     // The return value will be set to TRUE if the object was out of synch and members where
     // added and it will be set to FALSE otherwise.

@@ -72,25 +72,6 @@ inline Assembly * MethodTable::GetAssembly()
 }
 
 //==========================================================================================
-inline BOOL MethodTable::IsClassPointerValid()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    LowBits lowBits = union_getLowBits(m_pCanonMT);
-    if (lowBits == UNION_EECLASS)
-    {
-        return m_pEEClass != NULL;
-    }
-    else
-    {
-        // pointer to canonical MethodTable.
-        TADDR canonicalMethodTable = union_getPointer(m_pCanonMT);
-        return PTR_MethodTable(canonicalMethodTable)->m_pEEClass != NULL;
-    }
-}
-
-//==========================================================================================
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;

@@ -246,10 +246,6 @@ public:
     // possible to reserve memory in such range, the method returns NULL.
     void* ReserveWithinRange(size_t size, const void* loAddress, const void* hiAddress);
 
-    // Reserve the specified amount of virtual address space for executable mapping
-    // exactly at the given address.
-    void* ReserveAt(void* baseAddressRX, size_t size);
-
     // Commit the specified range of memory. The memory can be committed as executable (RX)
     // or non-executable (RW) based on the passed in isExecutable flag. The non-executable
     // allocations are used to allocate data structures that need to be close to the

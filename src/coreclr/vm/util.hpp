@@ -712,7 +712,6 @@ public:
     static void DoJITNotification(MethodDesc *MethodDescPtr, TADDR NativeCodeLocation);
     static void DoModuleLoadNotification(Module *Module);
     static void DoModuleUnloadNotification(Module *Module);
-    static void DoExceptionNotification(class Thread* ThreadPtr);
     static void DoGCNotification(const GcEvtArgs& evtargs);
     static void DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, DWORD nativeOffset);
 

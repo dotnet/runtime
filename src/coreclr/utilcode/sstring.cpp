@@ -1648,31 +1648,6 @@ void SString::LowerCase(__inout_z LPWSTR wszString)
 }
 
 //-----------------------------------------------------------------------------
-// Convert string to unicode uppercase using the invariant culture
-// Note: Please don't use it in PATH as multiple character can map to the same
-// upper case symbol
-//-----------------------------------------------------------------------------
-void SString::UpperCase()
-{
-    SS_CONTRACT_VOID
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(this));
-        if (IsRepresentation(REPRESENTATION_UNICODE)) NOTHROW; else THROWS;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    SS_CONTRACT_END;
-
-    ConvertToUnicode();
-
-    for (WCHAR *pwch = GetRawUnicode(); pwch < GetRawUnicode() + GetRawCount(); ++pwch)
-    {
-        *pwch = (CAN_SIMPLE_UPCASE(*pwch) ? SIMPLE_UPCASE(*pwch) : MapChar(*pwch, LCMAP_UPPERCASE));
-    }
-}
-
-//-----------------------------------------------------------------------------
 // Safe version of sprintf.
 // Prints formatted ansi text w/ var args to this buffer.
 //-----------------------------------------------------------------------------

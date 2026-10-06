@@ -467,7 +467,6 @@ private:
     const WCHAR *GetUnicode(const CIterator &i) const;
 
     void LowerCase();
-    void UpperCase();
 
     // Helper function to convert string in-place to lower-case (no allocation overhead for SString instance)
     static void LowerCase(__inout_z LPWSTR wszString);
@@ -685,7 +684,6 @@ public:
 private:
     void ClearNormalized() const;
 
-    void EnsureWritable() const;
     void ConvertToFixed() const;
     void ConvertToIteratable() const;
 

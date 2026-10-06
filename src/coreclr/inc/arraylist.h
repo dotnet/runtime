@@ -96,7 +96,6 @@ class ArrayListBase
     HRESULT Append(void *element);
 
     enum { NOT_FOUND = -1 };
-    DWORD FindElement(DWORD start, PTR_VOID element) const;
 
     void Clear() noexcept;
 

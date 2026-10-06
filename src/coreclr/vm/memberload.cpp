@@ -1367,33 +1367,6 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
 
 //*******************************************************************************
 MethodDesc *
-MemberLoader::FindPropertyMethod(MethodTable * pMT, LPCUTF8 pszName, EnumPropertyMethods Method, FM_Flags flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(Method < 2);
-    } CONTRACTL_END;
-
-    // The format strings for the getter and setter. These must stay in synch with the
-    // EnumPropertyMethods enum defined in class.h
-    static const LPCUTF8 aFormatStrings[] =
-    {
-        "get_%s",
-        "set_%s"
-    };
-
-    CQuickBytes qbMethName;
-    size_t len = strlen(pszName) + strlen(aFormatStrings[Method]) + 1;
-    LPUTF8 strMethName = (LPUTF8) qbMethName.AllocThrows(len);
-    sprintf_s(strMethName, len, aFormatStrings[Method], pszName);
-
-    return FindMethodByName(pMT, strMethName, flags);
-}
-
-//*******************************************************************************
-MethodDesc *
 MemberLoader::FindEventMethod(MethodTable * pMT, LPCUTF8 pszName, EnumEventMethods Method, FM_Flags flags)
     {
     CONTRACTL {

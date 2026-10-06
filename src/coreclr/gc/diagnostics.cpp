@@ -730,63 +730,6 @@ void gc_heap::bgc_verify_mark_array_cleared (heap_segment* seg, bool always_veri
 #endif //_DEBUG
 }
 
-void gc_heap::verify_mark_bits_cleared (uint8_t* obj, size_t s)
-{
-#ifdef VERIFY_HEAP
-    size_t start_mark_bit = mark_bit_of (obj) + 1;
-    size_t end_mark_bit = mark_bit_of (obj + s);
-    unsigned int startbit = mark_bit_bit (start_mark_bit);
-    unsigned int endbit = mark_bit_bit (end_mark_bit);
-    size_t startwrd = mark_bit_word (start_mark_bit);
-    size_t endwrd = mark_bit_word (end_mark_bit);
-    unsigned int result = 0;
-
-    unsigned int firstwrd = ~(lowbits (~0, startbit));
-    unsigned int lastwrd = ~(highbits (~0, endbit));
-
-    if (startwrd == endwrd)
-    {
-        unsigned int wrd = firstwrd & lastwrd;
-        result = mark_array[startwrd] & wrd;
-        if (result)
-        {
-            FATAL_GC_ERROR();
-        }
-        return;
-    }
-
-    // verify the first mark word is cleared.
-    if (startbit)
-    {
-        result = mark_array[startwrd] & firstwrd;
-        if (result)
-        {
-            FATAL_GC_ERROR();
-        }
-        startwrd++;
-    }
-
-    for (size_t wrdtmp = startwrd; wrdtmp < endwrd; wrdtmp++)
-    {
-        result = mark_array[wrdtmp];
-        if (result)
-        {
-            FATAL_GC_ERROR();
-        }
-    }
-
-    // set the last mark word.
-    if (endbit)
-    {
-        result = mark_array[endwrd] & lastwrd;
-        if (result)
-        {
-            FATAL_GC_ERROR();
-        }
-    }
-#endif //VERIFY_HEAP
-}
-
 void gc_heap::verify_mark_array_cleared()
 {
 #ifdef VERIFY_HEAP
@@ -847,75 +790,6 @@ void gc_heap::verify_soh_segment_list()
 // sweep.
 // NOTE - to be able to call this function during background sweep, we need to temporarily
 // NOT clear the mark array bits as we go.
-#ifdef BACKGROUND_GC
-void gc_heap::verify_partial()
-{
-    // Different ways to fail.
-    BOOL mark_missed_p = FALSE;
-    BOOL bad_ref_p = FALSE;
-    BOOL free_ref_p = FALSE;
-
-    for (int i = get_start_generation_index(); i < total_generation_count; i++)
-    {
-        generation* gen = generation_of (i);
-        int align_const = get_alignment_constant (i == max_generation);
-        heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
-
-        while (seg)
-        {
-            uint8_t* o = heap_segment_mem (seg);
-            uint8_t* end = heap_segment_allocated (seg);
-
-            while (o < end)
-            {
-                size_t s = size (o);
-
-                BOOL marked_p = background_object_marked (o, FALSE);
-
-                if (marked_p)
-                {
-                    go_through_object_cl (method_table (o), o, s, oo,
-                        {
-                            if (*oo)
-                            {
-                                //dprintf (3, ("VOM: verifying member %zx in obj %zx", (size_t)*oo, o));
-                                MethodTable *pMT = method_table (*oo);
-
-                                if (pMT == g_gc_pFreeObjectMethodTable)
-                                {
-                                    free_ref_p = TRUE;
-                                    FATAL_GC_ERROR();
-                                }
-
-                                if (!pMT->SanityCheck())
-                                {
-                                    bad_ref_p = TRUE;
-                                    dprintf (1, ("Bad member of %zx %zx",
-                                                (size_t)oo, (size_t)*oo));
-                                    FATAL_GC_ERROR();
-                                }
-
-                                if (current_bgc_state == bgc_final_marking)
-                                {
-                                    if (marked_p && !background_object_marked (*oo, FALSE))
-                                    {
-                                        mark_missed_p = TRUE;
-                                        FATAL_GC_ERROR();
-                                    }
-                                }
-                            }
-                        }
-                    );
-                }
-
-                o = o + Align(s, align_const);
-            }
-            seg = heap_segment_next_rw (seg);
-        }
-    }
-}
-
-#endif //BACKGROUND_GC
 #ifdef VERIFY_HEAP
 void gc_heap::verify_committed_bytes_per_heap()
 {
@@ -1768,30 +1642,5 @@ void gc_heap::walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_la
     walk_heap_per_heap(fn, context, gen_number, walk_large_object_heap_p);
 #endif //MULTIPLE_HEAPS
 }
-
-void gc_heap::walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef)
-{
-    uint8_t *o = heap_segment_mem(seg);
-
-    int alignment = get_alignment_constant(TRUE);
-
-    while (o < heap_segment_allocated(seg))
-    {
-        pfnMethodTable(pvContext, o);
-
-        if (contain_pointers (o))
-        {
-            go_through_object_nostart (method_table (o), o, size(o), oo,
-                   {
-                       if (*oo)
-                           pfnObjRef(pvContext, oo);
-                   }
-            );
-        }
-
-        o += Align(size(o), alignment);
-    }
-}
-
 
 } // namespace WKS/SVR

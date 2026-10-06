@@ -2379,7 +2379,6 @@ private:
 
 public:
     BYTE * AllocateFromEmergencyJumpStubReserve(const BYTE * loAddr, const BYTE * hiAddr, SIZE_T * pReserveSize);
-    VOID EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SIZE_T reserveSize);
 #endif
 
 public:

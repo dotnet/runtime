@@ -96,7 +96,6 @@ public:
 
     const static ReadyToRun_TypeGenericInfoMap EmptyInstance;
 
-    HRESULT IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const;
     HRESULT GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport) const;
     bool IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const;
     uint32_t GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const;

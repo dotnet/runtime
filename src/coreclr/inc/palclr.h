@@ -381,12 +381,6 @@
 #define PAL_CPP_CATCH_NON_DERIVED(type, obj) catch (type obj)
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) catch (type)
 #define PAL_CPP_CATCH_ALL catch (...)
-#define PAL_CPP_CATCH_EXCEPTION_NOARG catch (Exception *)
-
-
-#if defined(SOURCE_FORMATTING)
-#define __annotation(x)
-#endif
 
 
 #if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(CROSS_COMPILE) && !defined(DISABLE_CONTRACTS)

@@ -725,54 +725,6 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
 }
 //#endif
 
-HRESULT Assembler::GetCAName(mdToken tkCA, _Out_ LPWSTR *ppszName)
-{
-    HRESULT hr = S_OK;
-    DWORD cchName;
-    LPWSTR name;
-
-    *ppszName = NULL;
-
-    if (TypeFromToken(tkCA) == mdtMemberRef)
-    {
-        mdToken parent;
-        if (FAILED(hr = m_pImporter->GetMemberRefProps( tkCA, &parent, NULL, 0, NULL, NULL, NULL)))
-            return hr;
-        tkCA = parent;
-    }
-    else if (TypeFromToken(tkCA) == mdtMethodDef)
-    {
-        mdToken parent;
-        if (FAILED(hr = m_pImporter->GetMemberProps( tkCA, &parent, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)))
-            return hr;
-        tkCA = parent;
-    }
-
-    if (TypeFromToken(tkCA) == mdtTypeRef)
-    {
-        // A TypeRef
-        if (FAILED(hr = m_pImporter->GetTypeRefProps(tkCA, NULL, NULL, 0, &cchName)))
-            return hr;
-        if ((name = new WCHAR[cchName + 1]) == NULL)
-            return E_OUTOFMEMORY;
-        hr = m_pImporter->GetTypeRefProps(tkCA, NULL, name, cchName, &cchName);
-    }
-    else
-    {
-        hr = m_pImporter->GetTypeDefProps(tkCA, NULL, 0, &cchName, NULL, NULL);
-        if (hr != S_OK)
-            return hr;
-        if ((name = new WCHAR[cchName + 1]) == NULL)
-            return E_OUTOFMEMORY;
-        hr = m_pImporter->GetTypeDefProps(tkCA, name, cchName, &cchName, NULL, NULL);
-    }
-    if (SUCCEEDED(hr))
-        *ppszName = name;
-    else
-        delete [] name;
-    return hr;
-}
-
 BYTE HexToByte (CHAR wc)
 {
     if (!iswxdigit(wc)) return (BYTE) 0xff;

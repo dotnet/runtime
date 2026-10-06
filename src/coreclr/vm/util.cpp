@@ -1524,23 +1524,6 @@ void DACNotify::DoModuleUnloadNotification(Module *ModulePtr)
     }
 }
 
-void DACNotify::DoExceptionNotification(Thread* ThreadPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_EXCEPTION) != 0)
-    {
-        TADDR Args[2] = { EXCEPTION_NOTIFICATION, (TADDR) ThreadPtr};
-        DACNotifyExceptionHelper(Args, 2);
-    }
-}
-
 void DACNotify::DoGCNotification(const GcEvtArgs& args)
 {
     CONTRACTL

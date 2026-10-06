@@ -3341,8 +3341,6 @@ public:
 
     void MarkAllThreadsDirty();
 
-    bool CheckIfLSExited();
-
     void Lock()
     {
         // Lock Hierarchy - shouldn't have List lock when taking/release the process lock.
@@ -3981,9 +3979,6 @@ public:
 #define DPT_TERMINATING_INDEX (UINT32_MAX)
     // Index into m_pPatchTable of the first patch (first used entry).
     ULONG                  m_iFirstPatch;
-
-    // Initializes the DAC
-    void InitDac();
 
     // copy new data from LS DCB to RS buffer
     void UpdateRightSideDCB();
@@ -10388,13 +10383,9 @@ enum CordbUnmanagedThreadState
     // regardless of what the user wants it to be
     CUTS_IsSSFlagNeeded              = 0x0004,
     CUTS_GenericHijacked             = 0x0008,
-    // when the m_raiseExceptionEntryContext is valid
-    CUTS_HasRaiseExceptionEntryCtx   = 0x0010,
     CUTS_BlockingForSync             = 0x0020,
     CUTS_Suspended                   = 0x0040,
     CUTS_IsSpecialDebuggerThread     = 0x0080,
-    // when the thread is re-executing RaiseException to retrigger an exception
-    CUTS_IsRaiseExceptionHijacked    = 0x0100,
     CUTS_HasIBEvent                  = 0x0200,
     CUTS_HasOOBEvent                 = 0x0400,
     CUTS_HasSpecialStackOverflowCase = 0x0800,
@@ -10456,8 +10447,6 @@ public:
     HRESULT GetThreadContext(DT_CONTEXT * pContext);
     HRESULT SetThreadContext(DT_CONTEXT * pContext);
 
-    // Turns on and off the internal usage of the SS flag
-    VOID BeginStepping();
     VOID EndStepping();
 
     // An accessor for &m_context, this value generally stores
@@ -10487,8 +10476,6 @@ public:
     BOOL IsContextSet() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasContextSet; }
     BOOL IsSSFlagNeeded() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagNeeded; }
     BOOL IsSSFlagHidden() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagHidden; }
-    BOOL HasRaiseExceptionEntryCtx() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasRaiseExceptionEntryCtx; }
-    BOOL IsRaiseExceptionHijacked() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsRaiseExceptionHijacked; }
 
     void SetState(CordbUnmanagedThreadState state)
     {
@@ -10499,11 +10486,6 @@ public:
     }
     void ClearState(CordbUnmanagedThreadState state) {LIMITED_METHOD_CONTRACT;  m_state = (CordbUnmanagedThreadState)(m_state & ~state); }
 
-    void HijackToRaiseException();
-    void RestoreFromRaiseExceptionHijack();
-    void SaveRaiseExceptionEntryContext();
-    void ClearRaiseExceptionEntryContext();
-    BOOL IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord);
 
     CordbUnmanagedEvent *IBEvent()  {LIMITED_METHOD_CONTRACT;  return &m_IBEvent; }
     CordbUnmanagedEvent *IBEvent2() {LIMITED_METHOD_CONTRACT;  return &m_IBEvent2; }
@@ -10553,15 +10535,6 @@ private:
     // See CordbUnmanagedThread::GetThreadContext for details
     DT_CONTEXT                 m_context;
 
-    // The context of the thread the last time it called into kernel32!RaiseException
-    DT_CONTEXT                 m_raiseExceptionEntryContext;
-
-    DWORD                      m_raiseExceptionExceptionCode;
-    DWORD                      m_raiseExceptionExceptionFlags;
-    DWORD                      m_raiseExceptionNumberParameters;
-    ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
-
-
 #ifdef TARGET_X86
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
@@ -10587,7 +10560,6 @@ public:
 
     bool GetEEPGCDisabled();
     void GetEEState(bool *threadStepping, bool *specialManagedException);
-    bool GetEEFrame();
 };
 #endif // FEATURE_INTEROP_DEBUGGING
 

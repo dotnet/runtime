@@ -66,8 +66,6 @@ class OleVariant
 
     static BOOL IsValidArrayForSafeArrayElementType(BASEARRAYREF* pArrayRef, VARTYPE vtExpected);
 
-    static BOOL CheckVariant(VARIANT *pOle);
-
     // Type conversion utilities
     static void ExtractContentsFromByrefVariant(VARIANT* pByrefVar, VARIANT* pDestVar);
     static void InsertContentsIntoByRefVariant(VARIANT* pSrcVar, VARIANT* pByrefVar);

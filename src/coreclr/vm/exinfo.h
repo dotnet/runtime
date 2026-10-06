@@ -57,7 +57,6 @@ struct ExInfo
         void Reset();
         bool IsEmpty();
         bool IsSupersededBy(StackFrame sf);
-        void CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange);
         bool Contains(StackFrame sf);
         void ExtendUpperBound(StackFrame sf);
         void ExtendLowerBound(StackFrame sf);

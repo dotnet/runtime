@@ -1054,9 +1054,6 @@ public:
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
 #endif // PROFILING_SUPPORTED
 
-#if defined(FEATURE_READYTORUN)
-    BOOL IsInSameVersionBubble(Module *target);
-#endif // FEATURE_READYTORUN
 
 
     LPCWSTR GetPathForErrorMessages() final;

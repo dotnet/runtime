@@ -30,34 +30,6 @@ HRESULT PESectionMan::Cleanup()
 }
 
 /*****************************************************************/
-// <REVISIT_TODO>this class is located in it's own DLL (MsCorXvt.dll)
-// Since DLL allocates, The DLL must delete; we can't simply delete from
-// the client (This is a bug in VC, see knowledge base Q122675)</REVISIT_TODO>
-void PESectionMan::sectionDestroy(PESection **section)
-{
-    // check if this section is referenced in other sections' relocs
-    for(PESection** ptr = sectStart; ptr < sectCur; ptr++)
-    {
-        if(ptr != section)
-        {
-            for(PESectionReloc* cur = (*ptr)->m_relocStart; cur < (*ptr)->m_relocCur; cur++)
-            {
-                if(cur->section == *section) // here it is! Delete the reference
-                {
-                    for(PESectionReloc* tmp = cur; tmp < (*ptr)->m_relocCur; tmp++)
-                    {
-                        memcpy(tmp,(tmp+1),sizeof(PESectionReloc));
-                    }
-                    (*ptr)->m_relocCur--;
-                    cur--; // no position shift this time
-                }
-            }
-        }
-    }
-    delete *section;
-    *section = NULL;
-}
-/*****************************************************************/
 
 /******************************************************************/
 // Apply the relocs for all the sections

@@ -429,23 +429,6 @@ void PinnedHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 
 #undef LOADERHEAP_PROFILE_COUNTER
 
-void AppDomain::ClearBinderContext()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_pDefaultBinder)
-    {
-        delete m_pDefaultBinder;
-        m_pDefaultBinder = NULL;
-    }
-}
-
 void AppDomain::ShutdownFreeLoaderAllocators()
 {
     // If we're called from managed code (i.e. the finalizer thread) we take a lock in
@@ -767,26 +750,6 @@ void SystemDomain::DetachBegin()
 
     if(m_pSystemDomain)
         m_pSystemDomain->Stop();
-}
-
-void SystemDomain::DetachEnd()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    // Shut down the domain and its children (but don't deallocate anything just
-    // yet).
-    if(m_pSystemDomain)
-    {
-        GCX_PREEMP();
-        AppDomain* pAppDomain = GetAppDomain();
-        if (pAppDomain)
-            pAppDomain->ClearBinderContext();
-    }
 }
 
 void SystemDomain::Stop()
@@ -1442,26 +1405,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     return SWA_ABORT;
 }
 
-/*private static*/
-StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
-{
-    LIMITED_METHOD_CONTRACT;
-    MethodDesc *pFunc = pCf->GetFunction();
-
-    /* We asked to be called back only for functions */
-    _ASSERTE(pFunc);
-
-    CallersData* pCaller = (CallersData*) data;
-    if(pCaller->skip == 0) {
-        pCaller->pMethod = pFunc;
-        return SWA_ABORT;
-    }
-    else {
-        pCaller->skip--;
-        return SWA_CONTINUE;
-    }
-}
-
 void AppDomain::Create()
 {
     STANDARD_VM_CONTRACT;
@@ -1558,45 +1501,6 @@ void SystemDomain::NotifyProfilerStartup()
     }
 }
 
-HRESULT SystemDomain::NotifyProfilerShutdown()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System());
-        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) System());
-        END_PROFILER_CALLBACK();
-    }
-
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System());
-        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) System(), S_OK);
-        END_PROFILER_CALLBACK();
-    }
-
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(AppDomain::GetCurrentDomain());
-        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) AppDomain::GetCurrentDomain());
-        END_PROFILER_CALLBACK();
-    }
-
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(AppDomain::GetCurrentDomain());
-        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) AppDomain::GetCurrentDomain(), S_OK);
-        END_PROFILER_CALLBACK();
-    }
-    return S_OK;
-}
 #endif // PROFILING_SUPPORTED
 
 AppDomain::AppDomain()

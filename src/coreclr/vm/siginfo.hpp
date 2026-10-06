@@ -833,10 +833,6 @@ class MetaSig
             }
         } // NextArgNormalized
 
-        // Tests if the return type is an object ref.  Loads types
-        // if needed (though it shouldn't really need to)
-        BOOL IsObjectRefReturnType();
-
         //------------------------------------------------------------------------
         // Compute element size from CorElementType and optional valuetype.
         //------------------------------------------------------------------------

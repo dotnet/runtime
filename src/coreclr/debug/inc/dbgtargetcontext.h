@@ -16,15 +16,6 @@
 // platform we'll provide a hand-rolled version.
 //
 
-//
-// For cross platform cases we also need to provide a helper function for byte-swapping a context structure
-// should the endian-ness of the debugger and debuggee platforms differ. This is called ByteSwapContext and is
-// obviously a no-op for those cases where the left and right sides agree on storage format.
-//
-// NOTE: Any changes to the field layout of DT_CONTEXT must be tracked in the associated definition of
-// ByteSwapContext.
-//
-
 // ****
 // **** NOTE: T_CONTEXT (in pal/inc/pal.h) can now be larger than DT_CONTEXT (currently T_CONTEXT on Linux/MacOS
 // ****       x64 includes the XSTATE registers). This means the following:
@@ -129,51 +120,6 @@ typedef struct {
 } DT_CONTEXT;
 
 static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size on X86");
-
-// Since the target is little endian in this case we only have to provide a real implementation of
-// ByteSwapContext if the platform we're building on is big-endian.
-#ifdef BIGENDIAN
-inline void ByteSwapContext(DT_CONTEXT *pContext)
-{
-    // Our job is simplified since the context has large contiguous ranges with fields of the same size. Keep
-    // the following logic in sync with the definition of DT_CONTEXT above.
-    BYTE *pbContext = (BYTE*)pContext;
-
-    // The first span consists of 4 byte fields.
-    DWORD cbFields = (offsetof(DT_CONTEXT, FloatSave) + offsetof(DT_FLOATING_SAVE_AREA, RegisterArea)) / 4;
-    for (DWORD i = 0; i < cbFields; i++)
-    {
-        ByteSwapPrimitive(pbContext, pbContext, 4);
-        pbContext += 4;
-    }
-
-    // Then there's a float save area containing 8 byte fields.
-    cbFields = sizeof(pContext->FloatSave.RegisterArea);
-    for (DWORD i = 0; i < cbFields; i++)
-    {
-        ByteSwapPrimitive(pbContext, pbContext, 8);
-        pbContext += 8;
-    }
-
-    // Back to 4 byte fields.
-    cbFields = (offsetof(DT_CONTEXT, ExtendedRegisters) - offsetof(DT_CONTEXT, SegGs)) / 4;
-    for (DWORD i = 0; i < cbFields; i++)
-    {
-        ByteSwapPrimitive(pbContext, pbContext, 4);
-        pbContext += 4;
-    }
-
-    // We don't know the formatting of the extended register area, but the debugger doesn't access this data
-    // on the left side, so just leave it in left-side format for now.
-
-    // Validate that we converted up to where we think we did as a hedge against DT_CONTEXT layout changes.
-    _PASSERT((pbContext - ((BYTE*)pContext)) == (sizeof(DT_CONTEXT) - sizeof(pContext->ExtendedRegisters)));
-}
-#else // BIGENDIAN
-inline void ByteSwapContext(DT_CONTEXT *pContext)
-{
-}
-#endif // BIGENDIAN
 
 #elif defined(DTCONTEXT_IS_AMD64)
 

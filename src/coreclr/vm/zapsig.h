@@ -108,8 +108,6 @@ public:
     BOOL GetSignatureForTypeHandle(TypeHandle typeHandle,
                                    SigBuilder * pSigBuilder);
 
-    static BOOL CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle typeHnd2);
-
 private:
     BOOL GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder);
 

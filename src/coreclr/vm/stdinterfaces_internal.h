@@ -13,8 +13,6 @@
 // prototypes IUnknown methods
 HRESULT Unknown_QueryInterface_Internal (
                         ComCallWrapper* pWrap, IUnknown* pUnk, REFIID riid, void** ppv);
-HRESULT __stdcall   Unknown_QueryInterface_IErrorInfo_Simple (
-                        IUnknown* pUnk, REFIID riid, void** ppv);
 
 ULONG __stdcall     Unknown_AddRef_Internal(IUnknown* pUnk);
 ULONG __stdcall     Unknown_Release_Internal(IUnknown* pUnk);

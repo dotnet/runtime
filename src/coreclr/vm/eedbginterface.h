@@ -92,12 +92,6 @@ public:
 
     virtual void *GetObjectFromHandle(OBJECTHANDLE handle) = 0;
 
-    virtual OBJECTHANDLE GetHandleFromObject(void *obj,
-                                      bool fStrongNewRef,
-                                      AppDomain *pAppDomain) = 0;
-
-    virtual void DbgDestroyHandle( OBJECTHANDLE oh, bool fStrongNewRef ) = 0;
-
     virtual OBJECTHANDLE GetThreadException(Thread *pThread) = 0;
 
     virtual bool IsThreadExceptionNull(Thread *pThread) = 0;

@@ -60,7 +60,7 @@ Function:
 Add the environment variable string provided to the PAL version
 of the environment.
 --*/
-BOOL EnvironPutenv(const char *string, BOOL deleteIfEmpty);
+BOOL EnvironPutenv(const char *string);
 
 /*++
 Function:

@@ -78,9 +78,6 @@ using namespace CorUnix;
 extern "C" void DBG_DebugBreak_End();
 
 #if HAVE_PROCFS_CTL
-#define CTL_ATTACH      "attach"
-#define CTL_DETACH      "detach"
-#define CTL_WAIT        "wait"
 #endif   // HAVE_PROCFS_CTL
 
 /* ------------------- Constant definitions ----------------------------------*/
@@ -365,7 +362,7 @@ DebugBreakCommand()
            variables in the child process, but if we do that we can't check
            for errors. putenv/setenv can fail when out of memory */
 
-        if (!EnvironPutenv (pid_buf, FALSE) || !EnvironPutenv (exe_buf, FALSE))
+        if (!EnvironPutenv (pid_buf) || !EnvironPutenv (exe_buf))
         {
             goto FAILED;
         }

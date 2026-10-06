@@ -58,7 +58,6 @@ public:
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
 #else
-    static PTR_Thread       GetThreadFromTEB(TADDR pvTEB);
 #endif
 
     void        Destroy();

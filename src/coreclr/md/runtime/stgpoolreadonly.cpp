@@ -73,27 +73,6 @@ void StgPoolReadOnly::Uninit() noexcept
     m_pNextSeg = 0;
 }
 
-
-//*****************************************************************************
-// Convert a string to UNICODE into the caller's buffer.
-//*****************************************************************************
-HRESULT StgPoolReadOnly::GetStringW(        // Return code.
-    ULONG       iOffset,                    // Offset of string in pool.
-    _Out_writes_(cchBuffer) LPWSTR szOut,   // Output buffer for string.
-    int         cchBuffer)                  // Size of output buffer.
-{
-    STATIC_CONTRACT_NOTHROW;
-    HRESULT hr;
-    LPCSTR  pString;                // The string in UTF8.
-    int     iChars;
-
-    IfFailRet(GetString(iOffset, &pString));
-    iChars = ::MultiByteToWideChar(CP_UTF8, 0, pString, -1, szOut, cchBuffer);
-    if (iChars == 0)
-        return (BadError(HRESULT_FROM_NT(GetLastError())));
-    return S_OK;
-}
-
 //*****************************************************************************
 // Return a pointer to a null terminated blob given an offset previously
 // handed out by Addblob or Findblob.

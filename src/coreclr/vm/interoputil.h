@@ -75,7 +75,6 @@ BOOL IsComObjectClass(TypeHandle type);
 //---------------------------------------------------------
 VOID ReadBestFitCustomAttribute(MethodDesc* pMD, BOOL* BestFit, BOOL* ThrowOnUnmappableChar);
 VOID ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* ThrowOnUnmappableChar);
-int  InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, _Out_writes_bytes_opt_(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar);
 
 //---------------------------------------------------------
 // Read the ClassInterfaceType custom attribute info from
@@ -191,11 +190,6 @@ ULONG SafeAddRefPreemp(IUnknown* pUnk);
 // Release helper, enables and disables GC during call-outs
 HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
                               unsigned short wFlags, VARTYPE vt);
-
-//--------------------------------------------------------------------------------
-// Release helper, enables and disables GC during call-outs
-HRESULT SafeVariantChangeTypeEx(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
-                          LCID lcid, unsigned short wFlags, VARTYPE vt);
 
 //--------------------------------------------------------------------------------
 // Init helper, enables and disables GC during call-outs

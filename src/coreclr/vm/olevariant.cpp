@@ -1310,40 +1310,6 @@ void OleVariant::MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VA
 
 // Used by customer checked build to test validity of VARIANT
 
-BOOL OleVariant::CheckVariant(VARIANT* pOle)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pOle));
-    }
-    CONTRACTL_END;
-
-    BOOL bValidVariant = FALSE;
-
-    // We need a try/catch here since VariantCopy could cause an AV if the VARIANT isn't valid.
-    EX_TRY
-    {
-        VARIANT pOleCopy;
-        SafeVariantInit(&pOleCopy);
-
-        GCX_PREEMP();
-        if (SUCCEEDED(VariantCopy(&pOleCopy, pOle)))
-        {
-            SafeVariantClear(&pOleCopy);
-            bValidVariant = TRUE;
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH
-
-    return bValidVariant;
-}
-
 HRESULT OleVariant::ClearAndInsertContentsIntoByrefRecordVariant(VARIANT* pOle, OBJECTREF* pObj)
 {
     CONTRACTL

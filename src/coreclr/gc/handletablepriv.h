@@ -659,11 +659,6 @@ TableSegment *SegmentAlloc(HandleTable *pTable);
 void SegmentFree(TableSegment *pSegment);
 
 /*
- * Check if a handle is part of a HandleTable
- */
-BOOL TableContainHandle(HandleTable *pTable, OBJECTHANDLE handle);
-
-/*
  * SegmentRemoveFreeBlocks
  *
  * Removes a block from a block list in a segment.  The block is returned to

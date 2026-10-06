@@ -32,9 +32,6 @@ public:
         unsigned flags, // IMAGE_SCN_* flags. eg. IMAGE_SCN_CNT_INITIALIZED_DATA
         PESection **section);
 
-    // Since we allocate, we must delete (Bug in VC, see knowledge base Q122675)
-    void sectionDestroy(PESection **section);
-
     // Apply all the relocs for in memory conversion
     HRESULT applyRelocs(CeeGenTokenMapper *pTokenMapper);
 

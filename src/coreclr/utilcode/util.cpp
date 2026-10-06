@@ -1057,29 +1057,6 @@ int GetCurrentProcessCpuCount()
     return count;
 }
 
-#ifdef HOST_WINDOWS
-DWORD_PTR GetCurrentProcessCpuMask()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-#ifdef HOST_WINDOWS
-    DWORD_PTR pmask, smask;
-
-    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
-        return 1;
-
-    return pmask;
-#else
-    return 0;
-#endif
-}
-#endif // HOST_WINDOWS
-
 //=============================================================================
 // AssemblyNamesList
 //=============================================================================

@@ -153,12 +153,6 @@ public:
         LPSECURITY_ATTRIBUTES pAttributes=0); // Security token.
 
 //*****************************************************************************
-// Free the mapping object for shared memory but keep the rest of the internal
-// state intact.
-//*****************************************************************************
-    HRESULT ReleaseMappingObject();         // Return code.
-
-//*****************************************************************************
 // Resets the logical base address and size to the value given.  This is for
 // cases like finding a section embedded in another format, like the .clb inside
 // of an image.  GetPtrForMem, Read, and Seek will then behave as though only

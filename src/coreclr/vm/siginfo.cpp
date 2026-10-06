@@ -5428,25 +5428,6 @@ CorElementType MetaSig::GetReturnTypeNormalized(TypeHandle * pthValueType) const
     return m_corNormalizedRetType;
 }
 
-BOOL MetaSig::IsObjectRefReturnType()
-{
-    WRAPPER_NO_CONTRACT;
-
-    switch (GetReturnTypeNormalized())
-        {
-        case ELEMENT_TYPE_CLASS:
-        case ELEMENT_TYPE_SZARRAY:
-        case ELEMENT_TYPE_ARRAY:
-        case ELEMENT_TYPE_STRING:
-        case ELEMENT_TYPE_OBJECT:
-        case ELEMENT_TYPE_VAR:
-            return TRUE;
-        default:
-            break;
-        }
-    return FALSE;
-}
-
 CorElementType MetaSig::GetReturnType() const
 {
     WRAPPER_NO_CONTRACT;

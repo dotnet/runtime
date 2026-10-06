@@ -383,7 +383,6 @@ public:
 
     // Add/Remove/Find transient method details.
     void AddTransientMethodDetails(TransientMethodDetails details);
-    TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
 protected:

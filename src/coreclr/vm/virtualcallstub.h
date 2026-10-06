@@ -779,8 +779,6 @@ class VirtualCallStubManagerManager : public StubManager
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
 
-    static MethodDesc *Entry2MethodDesc(PCODE stubStartAddress, MethodTable *pMT);
-
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual LPCWSTR GetStubManagerName(PCODE addr)

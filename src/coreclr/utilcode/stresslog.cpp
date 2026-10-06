@@ -712,23 +712,6 @@ BOOL StressLog::ReserveStressLogChunks (unsigned chunksToReserve)
 
 void (*FSwitchToSOTolerant)();
 void (*FSwitchToSOIntolerant)();
-void TrackSO(BOOL tolerance)
-{
-    if (tolerance)
-    {
-        if (FSwitchToSOTolerant)
-        {
-            FSwitchToSOTolerant();
-        }
-    }
-    else
-    {
-        if (FSwitchToSOIntolerant)
-        {
-            FSwitchToSOIntolerant();
-        }
-    }
-}
 
 /*********************************************************************************/
 /* fetch a buffer that can be used to write a stress message, it is thread safe */

@@ -239,24 +239,6 @@ inline BOOL PEDecoder::Has32BitNTHeaders() const
     return FindNTHeaders()->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC);
 }
 
-inline const void *PEDecoder::GetHeaders(COUNT_T *pSize) const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //even though some data in OptionalHeader is different for 32 and 64, this field is the same
-    if (pSize != NULL)
-        *pSize = VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders);
-
-    return (const void *) m_base;
-}
-
 inline BOOL PEDecoder::IsDll() const
 {
     CONTRACTL
@@ -405,58 +387,6 @@ inline WORD PEDecoder::GetCharacteristics() const
     CONTRACTL_END;
 
     return VAL16(FindNTHeaders()->FileHeader.Characteristics);
-}
-
-inline SIZE_T PEDecoder::GetSizeOfHeapReserve() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (Has32BitNTHeaders())
-        return (SIZE_T) VAL32(GetNTHeaders32()->OptionalHeader.SizeOfHeapReserve);
-    else
-        return (SIZE_T) VAL64(GetNTHeaders64()->OptionalHeader.SizeOfHeapReserve);
-}
-
-
-inline SIZE_T PEDecoder::GetSizeOfHeapCommit() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (Has32BitNTHeaders())
-        return (SIZE_T) VAL32(GetNTHeaders32()->OptionalHeader.SizeOfHeapCommit);
-    else
-        return (SIZE_T) VAL64(GetNTHeaders64()->OptionalHeader.SizeOfHeapCommit);
-}
-
-inline UINT32 PEDecoder::GetLoaderFlags() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (Has32BitNTHeaders())
-        return VAL32(GetNTHeaders32()->OptionalHeader.LoaderFlags);
-    else
-        return VAL32(GetNTHeaders64()->OptionalHeader.LoaderFlags);
 }
 
 inline UINT32 PEDecoder::GetWin32VersionValue() const

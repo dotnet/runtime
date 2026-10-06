@@ -31,7 +31,6 @@ struct LineCodeDescr
 };
 
 void printLine(void* GUICookie, _In_ __nullterminated const char* string);
-void printLineW(void* GUICookie, _In_ __nullterminated const WCHAR* string);
 void printError(void* GUICookie, _In_ __nullterminated const char* string);
 
 char* AnsiToUtf(_In_ __nullterminated const char* sz);

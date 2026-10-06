@@ -203,7 +203,6 @@ public:
     // Returns TRUE on success and moves the memory block behind the written data.
     __checkReturn
     __success(return)
-    inline BOOL StoreCompressedU(UINT32 nValue);
 
     // Writes data from *pSource to the data blob and skips the written data.
     // Returns FALSE if there's not enough data in the blob.

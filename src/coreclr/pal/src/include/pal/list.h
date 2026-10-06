@@ -62,10 +62,6 @@ typedef struct _LIST_ENTRY {
 //      );
 //
 
-#define RemoveHeadList(ListHead) \
-    (ListHead)->Flink;\
-    {RemoveEntryList((ListHead)->Flink)}
-
 //
 //  PLIST_ENTRY
 //  RemoveTailList(
@@ -119,17 +115,6 @@ typedef struct _LIST_ENTRY {
 //      PLIST_ENTRY Entry
 //      );
 //
-
-#define InsertHeadList(ListHead,Entry) {\
-    PLIST_ENTRY _EX_Flink;\
-    PLIST_ENTRY _EX_ListHead;\
-    _EX_ListHead = (ListHead);\
-    _EX_Flink = _EX_ListHead->Flink;\
-    (Entry)->Flink = _EX_Flink;\
-    (Entry)->Blink = _EX_ListHead;\
-    _EX_Flink->Blink = (Entry);\
-    _EX_ListHead->Flink = (Entry);\
-    }
 
 #define CONTAINING_RECORD(address, type, field) ((type *)( \
                                                   (PCHAR)(address) - \

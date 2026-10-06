@@ -163,7 +163,6 @@ public:
 
     // Internal Housekeeping
 
-    static void MethodTableCallback(void* context, void* methodTable);
     static void ObjectRefCallback(void* context, void* objectRefUNSAFE);
 
     ProfToEEInterfaceImpl();

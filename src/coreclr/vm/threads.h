@@ -2763,7 +2763,6 @@ public:
     void ClearThreadCurrNotification();
 
 private:
-    void SetLastThrownObjectHandle(OBJECTHANDLE h);
 
     ThreadExceptionState  m_ExceptionState;
 
@@ -2865,7 +2864,6 @@ private:
         return InterlockedCompareExchange64((LONGLONG *)overflowCount, 0, 0); // prevent tearing
     }
 
-    static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
 #endif // !DACCESS_COMPILE
 
 public:
@@ -3252,8 +3250,6 @@ public:
 #endif
 
 public:
-    // Is the current thread currently executing within a constrained execution region?
-    static BOOL IsExecutingWithinCer();
 
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.

@@ -92,12 +92,6 @@ public:
         const void *pRecord);                // Pointer to Record in pool.
 
 //*****************************************************************************
-// Given a purported pointer to a record, determine if the pointer is valid.
-//*****************************************************************************
-    virtual int IsValidPointerForRecord(    // true or false.
-        const void *pRecord);                // Pointer to Record in pool.
-
-//*****************************************************************************
 // How many objects are there in the pool?  If the count is 0, you don't need
 // to persist anything at all to disk.
 //*****************************************************************************
@@ -139,16 +133,6 @@ public:
 //*****************************************************************************
     void *GetFirstRecord(                    // Pointer to Record in pool.
         void        **pContext);            // Store context here.
-
-//*****************************************************************************
-// Given a pointer to a record, return a pointer to the next record.
-//  Note that this scheme does pretty minimal error checking. In particular,
-//  this will let the caller walk off of the end of valid data in the last
-//  segment.
-//*****************************************************************************
-    void *GetNextRecord(                    // Pointer to Record in pool.
-        void        *pRecord,                // Current record.
-        void        **pContext);            // Stored context here.
 
 private:
     DAC_ALIGNAS(StgPool) // Align first member to alignment of base class

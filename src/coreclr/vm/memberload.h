@@ -231,12 +231,6 @@ public:
        LPCUTF8 pszName,
        FM_Flags flags = FM_Default);
 
-    static MethodDesc *FindPropertyMethod(
-       MethodTable * pMT,
-       LPCUTF8 pszName,
-       EnumPropertyMethods Method,
-       FM_Flags flags = FM_Default);
-
     static MethodDesc *FindEventMethod(
        MethodTable * pMT,
        LPCUTF8 pszName,

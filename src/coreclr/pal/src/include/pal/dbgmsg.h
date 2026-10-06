@@ -39,7 +39,7 @@ Available macros :
 
     usage : TRACE("printf format string", params...);
 
-    - TRACE_, ENTRY_, WARN_, ERROR_, DBGOUT_
+    - TRACE_, ERROR_
 
     Use this to autput debug messages to a channel other than the default.
 
@@ -234,14 +234,10 @@ extern Volatile<BOOL> dbg_master_switch ;
 #define TRACE     NOTRACE
 #define TRACE_(x) NOTRACE
 #define WARN      NOTRACE
-#define WARN_(x)  NOTRACE
 #define ENTRY_EXTERNAL NOTRACE
 #define ENTRY     NOTRACE
-#define ENTRY_(x) NOTRACE
 #define LOGEXIT   NOTRACE
-#define LOGEXIT_(x) NOTRACE
 #define DBGOUT     NOTRACE
-#define DBGOUT_(x) NOTRACE
 #define ERROR     NOTRACE
 #define ERROR_(x) NOTRACE
 #define DBG_PRINTF(level, channel, bHeader) NOTRACE
@@ -271,9 +267,6 @@ extern Volatile<BOOL> dbg_master_switch ;
 #define WARN \
     DBG_PRINTF(DLI_WARN,defdbgchan,TRUE)
 
-#define WARN_(x) \
-    DBG_PRINTF(DLI_WARN,DCI_##x,TRUE)
-
 #if _DEBUG && defined(__APPLE__)
 bool DBG_ShouldCheckStackAlignment();
 #define CHECK_STACK_ALIGN   if (DBG_ShouldCheckStackAlignment()) DBG_CheckStackAlignment()
@@ -289,21 +282,11 @@ bool DBG_ShouldCheckStackAlignment();
     CHECK_STACK_ALIGN; \
     DBG_PRINTF(DLI_ENTRY, defdbgchan,TRUE)
 
-#define ENTRY_(x) \
-    CHECK_STACK_ALIGN; \
-    DBG_PRINTF(DLI_ENTRY, DCI_##x,TRUE)
-
 #define LOGEXIT \
     DBG_PRINTF(DLI_EXIT, defdbgchan,TRUE)
 
-#define LOGEXIT_(x) \
-    DBG_PRINTF(DLI_EXIT, DCI_##x,TRUE)
-
 #define DBGOUT \
     DBG_PRINTF(DLI_TRACE,defdbgchan,FALSE)
-
-#define DBGOUT_(x) \
-    DBG_PRINTF(DLI_TRACE,DCI_##x,FALSE)
 
 /*Added this  code here to stop error messages
  *from appearing in retail build*/
@@ -385,43 +368,6 @@ BOOL DBG_init_channels(void);
 
 /*++
 Function :
-    DBG_close_channels
-
-    Close the output file for debug messages.
-
-    (no parameters, no return value)
---*/
-void DBG_close_channels(void);
-
-/*++
-Function :
-    DBG_preprintf
-
-    Internal function for debug channels; don't use.
-    This function outputs the header information for debug messages (channel,
-    level, etc).
-
-Parameters :
-    DBG_CHANNEL_ID channel : debug channel to use
-    DBG_LEVEL_ID level : debug message level
-    BOOL bHeader : whether or not to output message header (thread id, etc)
-    LPSTR file : current file
-    INT line : line number
-
-Return Value :
-    TRUE if there's an output file, FALSE otherwise. this is so that
-    DBG_printf_plain doesn't get called unnecessarily.
-
-Notes :
-    This function is only used with compilers that don't support
-    variable-argument macros. It enters a critical section, which is left in
-    DBG_printf_plain.
---*/
-BOOL DBG_preprintf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
-                   LPSTR file, INT line);
-
-/*++
-Function :
     DBG_printf
 
     Internal function for debug channels; don't use.
@@ -455,27 +401,6 @@ int DBG_printf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
 int DBG_printf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
                LPCSTR function, LPCSTR file, INT line, LPCSTR format, ...);
 #endif
-
-/*++
-Function :
-    DBG_printf_plain
-
-    Internal function for debug channels; don't use.
-    This function output the user-specified part of a debug-message.
-
-Parameters :
-    LPSTR format, ... : standard printf parameter list.
-
-Return value :
-    always 1.
-
-Notes :
-    This function is only used with compilers that don't support
-    variable-argument macros. It will leave the critical section entered in
-    DBG_preprintf.
-
---*/
-int DBG_printf_plain(LPSTR format, ...);
 
 /*++
 Function :

@@ -1688,29 +1688,6 @@ inline void SString::CloseBuffer(COUNT_T finalCount)
     NullTerminate();
 }
 
-//----------------------------------------------------------------------------
-// EnsureWritable
-// Ensures that the buffer is writable
-//----------------------------------------------------------------------------
-inline void SString::EnsureWritable() const
-{
-#ifdef SSTRING_EXTRA_CHECKS
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(this));
-        THROWS;
-    }
-    CONTRACTL_END;
-#else //SSTRING_EXTRA_CHECKS
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_THROWS;
-#endif //SSTRING_EXTRA_CHECKS
-
-    if (IsLiteral())
-        const_cast<SString *>(this)->Resize(GetRawCount(), GetRepresentation(), PRESERVE);
-}
-
 //-----------------------------------------------------------------------------
 // Convert the internal representation to be a fixed size
 //-----------------------------------------------------------------------------

@@ -82,38 +82,6 @@ bool MethodInModule::operator !=(const MethodInModule& other) const
            m_module != other.m_module;
 }
 
-
-void InlineTrackingEntry::SortAndDeduplicate()
-{
-    STANDARD_VM_CONTRACT;
-
-    //Sort
-    MethodInModule *begin = &m_inliners[0];
-    MethodInModule *end = begin + m_inliners.GetCount();
-    util::sort(begin, end);
-
-    //Deduplicate
-    MethodInModule *left = begin;
-    MethodInModule *right = left + 1;
-    while (right < end)
-    {
-        auto rvalue = *right;
-        if (*left != rvalue)
-        {
-            left++;
-            if (left != right)
-            {
-                *left = rvalue;
-            }
-        }
-        right++;
-    }
-
-    //Shrink
-    int newCount = (int)(left - begin + 1);
-    m_inliners.SetCount(newCount);
-}
-
 InlineTrackingEntry::InlineTrackingEntry(const InlineTrackingEntry& other)
     :m_inlinee(other.m_inlinee)
 {

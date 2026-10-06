@@ -966,34 +966,3 @@ HRESULT TiggerStorage::VerifyHeader()
 //*****************************************************************************
 // Print the sizes of the various streams.
 //*****************************************************************************
-#if defined(_DEBUG)
-ULONG TiggerStorage::PrintSizeInfo(bool verbose)
-{
-    ULONG total = 0;
-
-    printf("Storage Header:  %zu\n", sizeof(STORAGEHEADER));
-    if (m_pStreamList != NULL)
-    {
-        PSTORAGESTREAM storStream = m_pStreamList;
-        PSTORAGESTREAM pNext;
-        for (int i = 0; i < m_StgHdr.GetiStreams(); i++)
-        {
-            pNext = storStream->NextStream();
-            printf("Stream #%d (%s) Header: %zd, Data: %u\n",i,storStream->GetName(), (size_t)((BYTE*)pNext - (BYTE*)storStream), storStream->GetSize());
-            total += storStream->GetSize();
-            storStream = pNext;
-        }
-    }
-    else
-    {
-        //<REVISIT_TODO>todo: Add support for the case where m_Streams exists and m_pStreamList does not</REVISIT_TODO>
-    }
-
-    if (m_pbExtra != NULL)
-    {
-        printf("Extra bytes: %d\n",*(ULONG*)m_pbExtra);
-        total += *(ULONG*)m_pbExtra;
-    }
-    return total;
-}
-#endif // _DEBUG

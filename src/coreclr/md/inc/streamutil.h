@@ -61,29 +61,6 @@ HRESULT WriteToStream( IStream * strm, BYTE val, UINT32 * totalBytes = NULL )
     return WritePODToStream( strm, val, totalBytes );
 }
 
-
-//  Align to DWORD boundary
-//
-inline
-HRESULT AlignDWORD( IStream * strm, UINT32 * totalBytes )
-{
-    HRESULT hr = S_OK;
-
-    UINT32 aligned = (*totalBytes + 3) & ~3;
-    if (aligned > *totalBytes)
-    {   // The *totalBytes were not aligned to DWORD, we need to add padding
-        DWORD data = 0;
-        hr = WriteToStream( strm, & data, aligned - *totalBytes, totalBytes );
-    }
-    else if (aligned < *totalBytes)
-    {   // We got an integer overflow in 'aligned' expression above
-        hr = COR_E_OVERFLOW;
-    }
-
-    return hr;
-}
-
-
 //  Get stream position
 //
 inline

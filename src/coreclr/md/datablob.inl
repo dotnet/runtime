@@ -489,57 +489,6 @@ DataBlob::Debug_GetByteAtOffset(UINT32 nOffset) const
 
 // --------------------------------------------------------------------------------------
 //
-// Writes compressed integer (1, 2 or 4 bytes of format code:CompressedInteger#Format) to the data blob
-// and skips the written data.
-// Returns FALSE if there's not enough data in the blob or the value cannot be encoded as compressed
-// integer (bigger than code:CompressedInteger::const_Max).
-// Returns TRUE on success and moves the memory block behind the written data.
-//
-__checkReturn
-inline
-BOOL
-DataBlob::StoreCompressedU(UINT32 nValue)
-{
-    if (nValue <= CompressedInteger::const_Max1Byte)
-    {   // The value fits into 1 byte
-        if (m_cbSize < 1)
-        {   // The data blob is empty, we cannot store compressed integer as 1 byte
-            return FALSE;
-        }
-        *m_pbData = (BYTE)nValue;
-        SkipBytes_InternalInsecure(1);
-        return TRUE;
-    }
-    if (nValue <= CompressedInteger::const_Max2Bytes)
-    {   // The value fits into 2 bytes
-        if (m_cbSize < 2)
-        {   // The data blob is too short, we cannot store compressed integer as 2 bytes
-            return FALSE;
-        }
-        *m_pbData = (BYTE)(nValue >> 8) | 0x80;
-        *(m_pbData + 1) = (BYTE)(nValue & 0xff);
-        SkipBytes_InternalInsecure(2);
-        return TRUE;
-    }
-    if (nValue <= CompressedInteger::const_Max4Bytes)
-    {   // The value fits into 4 bytes
-        if (m_cbSize < 4)
-        {   // The data blob is too short, we cannot store compressed integer as 4 bytes
-            return FALSE;
-        }
-        *m_pbData = (BYTE)(nValue >> 24) | 0xC0;
-        *(m_pbData + 1) = (BYTE)((nValue >> 16) & 0xff);
-        *(m_pbData + 2) = (BYTE)((nValue >> 8) & 0xff);
-        *(m_pbData + 3) = (BYTE)(nValue & 0xff);
-        SkipBytes_InternalInsecure(4);
-        return TRUE;
-    }
-    // The value cannot be encoded as compressed integer
-    return FALSE;
-} // DataBlob::StoreCompressedU
-
-// --------------------------------------------------------------------------------------
-//
 // Writes data from *pSource to the data blob and skips the written data.
 // Returns FALSE if there's not enough data in the blob.
 // Returns TRUE on success and moves memory block behind the written data.

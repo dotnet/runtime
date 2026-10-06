@@ -63,7 +63,6 @@ void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF secondary);
 
 #ifndef DACCESS_COMPILE
 uint32_t     GetVariableHandleType(OBJECTHANDLE handle);
-void         UpdateVariableHandleType(OBJECTHANDLE handle, uint32_t type);
 uint32_t     CompareExchangeVariableHandleType(OBJECTHANDLE handle, uint32_t oldType, uint32_t newType);
 
 /*

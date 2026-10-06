@@ -293,17 +293,11 @@ public:
 
     virtual void LockDebuggerForShutdown(void) = 0;
 
-    virtual void DisableDebugger(void) = 0;
-
     virtual HRESULT NameChangeEvent(AppDomain *pAppDomain,
                                     Thread *pThread) = 0;
 
     // send an event to the RS indicating that there's a Ctrl-C or Ctrl-Break
     virtual BOOL SendCtrlCToDebugger(DWORD dwCtrlType) = 0;
-
-    // Allows the debugger to keep an up to date list of special threads
-    virtual HRESULT UpdateSpecialThreadList(DWORD cThreadArrayLength,
-                                            DWORD *rgdwThreadIDArray) = 0;
 
     virtual DWORD GetRCThreadId(void) = 0;
 
@@ -352,7 +346,6 @@ public:
 
     virtual HRESULT ReDaclEvents(PSECURITY_DESCRIPTOR securityDescriptor) = 0;
 
-    virtual BOOL ShouldAutoAttach() = 0;
     virtual BOOL FallbackJITAttachPrompt() = 0;
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -377,7 +370,6 @@ public:
 
 #ifndef DACCESS_COMPILE
     virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
-    virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
     virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
     virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
     virtual void ProcessAnyPendingEvals(Thread* pThread) = 0;

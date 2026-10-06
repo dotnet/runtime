@@ -83,14 +83,6 @@ namespace CorUnix
         );
 
     PAL_ERROR
-    InternalCreateDummyThread(
-        CPalThread *pThread,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        CPalThread **ppDummyThread,
-        HANDLE *phThread
-        );
-
-    PAL_ERROR
     CreateThreadData(
         CPalThread **ppThread
         );
@@ -164,15 +156,6 @@ namespace CorUnix
                 DWORD,
                 SIZE_T*,
                 HANDLE*
-                );
-
-        friend
-            PAL_ERROR
-            InternalCreateDummyThread(
-                CPalThread *pThread,
-                LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                CPalThread **ppDummyThread,
-                HANDLE *phThread
                 );
 
         friend

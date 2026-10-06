@@ -567,7 +567,7 @@ SetEnvironmentVariableA(
         }
 
         sprintf_s(string, iLen, "%s=%s", lpName, lpValue);
-        nResult = EnvironPutenv(string, FALSE) ? 0 : -1;
+        nResult = EnvironPutenv(string) ? 0 : -1;
 
         free(string);
         string = nullptr;
@@ -693,20 +693,16 @@ Parameters
 
     entry
             [in] The variable string to add. Should be in the format
-                 "name=value", where value might be empty (see below).
-    deleteIfEmpty
-            [in] If this is TRUE, "name=" will unset the 'name' variable.
+                 "name=value", where value might be empty.
 
 Return Values
 
     TRUE on success, FALSE otherwise
 
 --*/
-BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
+BOOL EnvironPutenv(const char* entry)
 {
     BOOL result = FALSE;
-
-    bool fOwningCS = false;
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
 
@@ -725,83 +721,59 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
 
     int nameLength = equalsSignPosition - entry;
 
-    if (equalsSignPosition[1] == '\0' && deleteIfEmpty)
+    // See if we are replacing an item or adding one.
+
+    minipal_mutex_enter(&gcsEnvironment);
+
+    int i;
+    for (i = 0; palEnvironment[i] != nullptr; i++)
     {
-        // "foo=" removes foo from the environment in _putenv() on Windows.
-        // The same string can result from a call to SetEnvironmentVariable()
-        // with the empty string as the value, but in that case we want to
-        // set the variable's value to "". deleteIfEmpty will be FALSE in
-        // that case.
+        const char *existingEquals = strchr(palEnvironment[i], '=');
+        if (existingEquals == nullptr)
+        {
+            // The PAL screens out malformed strings, but the strings which
+            // came from the system during initialization might not have the
+            // equals sign. We treat the entire string as a name in that case.
+            existingEquals = palEnvironment[i] + strlen(palEnvironment[i]);
+        }
 
-        // Change '=' to '\0'
-        copy[nameLength] = '\0';
+        if (existingEquals - palEnvironment[i] == nameLength)
+        {
+            if (memcmp(entry, palEnvironment[i], nameLength) == 0)
+            {
+                free(palEnvironment[i]);
+                palEnvironment[i] = copy;
 
-        EnvironUnsetenv(copy);
-        free(copy);
+                result = TRUE;
+                break;
+            }
+        }
+    }
+
+    if (palEnvironment[i] == nullptr)
+    {
+        _ASSERTE(i < palEnvironmentCapacity);
+        if (i == (palEnvironmentCapacity - 1))
+        {
+            // We found the first null, but it's the last element in our environment
+            // block. We need more space in our environment, so let's double its size.
+            int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
+            if (resizeRet != TRUE)
+            {
+                free(copy);
+                goto done;
+            }
+        }
+
+        _ASSERTE(copy != nullptr);
+        palEnvironment[i] = copy;
+        palEnvironment[i + 1] = nullptr;
+        palEnvironmentCount++;
 
         result = TRUE;
     }
-    else
-    {
-        // See if we are replacing an item or adding one.
-
-        minipal_mutex_enter(&gcsEnvironment);
-        fOwningCS = true;
-
-        int i;
-        for (i = 0; palEnvironment[i] != nullptr; i++)
-        {
-            const char *existingEquals = strchr(palEnvironment[i], '=');
-            if (existingEquals == nullptr)
-            {
-                // The PAL screens out malformed strings, but the strings which
-                // came from the system during initialization might not have the
-                // equals sign. We treat the entire string as a name in that case.
-                existingEquals = palEnvironment[i] + strlen(palEnvironment[i]);
-            }
-
-            if (existingEquals - palEnvironment[i] == nameLength)
-            {
-                if (memcmp(entry, palEnvironment[i], nameLength) == 0)
-                {
-                    free(palEnvironment[i]);
-                    palEnvironment[i] = copy;
-
-                    result = TRUE;
-                    break;
-                }
-            }
-        }
-
-        if (palEnvironment[i] == nullptr)
-        {
-            _ASSERTE(i < palEnvironmentCapacity);
-            if (i == (palEnvironmentCapacity - 1))
-            {
-                // We found the first null, but it's the last element in our environment
-                // block. We need more space in our environment, so let's double its size.
-                int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
-                if (resizeRet != TRUE)
-                {
-                    free(copy);
-                    goto done;
-                }
-            }
-
-            _ASSERTE(copy != nullptr);
-            palEnvironment[i] = copy;
-            palEnvironment[i + 1] = nullptr;
-            palEnvironmentCount++;
-
-            result = TRUE;
-        }
-    }
 done:
-
-    if (fOwningCS)
-    {
-        minipal_mutex_leave(&gcsEnvironment);
-    }
+    minipal_mutex_leave(&gcsEnvironment);
 
     return result;
 }
@@ -974,38 +946,6 @@ EnvironInitialize(void)
     }
 
     minipal_mutex_leave(&gcsEnvironment);
-    return ret;
-}
-
-/*++
-
-Function : _putenv.
-
-See MSDN for more details.
-
-Note:   The BSD implementation can cause
-        memory leaks. See man pages for more details.
---*/
-int
-__cdecl
-_putenv( const char * envstring )
-{
-    int ret = -1;
-
-    PERF_ENTRY(_putenv);
-    ENTRY( "_putenv( %p (%s) )\n", envstring ? envstring : "NULL", envstring ? envstring : "NULL") ;
-
-    if (envstring != nullptr)
-    {
-        ret = EnvironPutenv(envstring, TRUE) ? 0 : -1;
-    }
-    else
-    {
-        ERROR( "_putenv() called with NULL envstring!\n");
-    }
-
-    LOGEXIT( "_putenv returning %d\n", ret);
-    PERF_EXIT(_putenv);
     return ret;
 }
 

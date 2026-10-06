@@ -48,7 +48,6 @@ private:
 
         HRESULT MarkCustomAttributesWithParentToken(mdToken tkParent);
         HRESULT MarkDeclSecuritiesWithParentToken(mdToken tkParent);
-        HRESULT MarkMemberRefsWithParentToken(mdToken tk);
 
         HRESULT MarkParam(mdParamDef pd);
         HRESULT MarkMethod(mdMethodDef md);

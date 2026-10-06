@@ -67,9 +67,6 @@ public:
 public:
     GCHeap(){};
 
-    /* BaseGCHeap Methods*/
-    PER_HEAP_ISOLATED   HRESULT StaticShutdown ();
-
     size_t  GetTotalBytesInUse ();
     // Gets the amount of bytes objects currently occupy on the GC heap.
     size_t  GetCurrentObjSize();

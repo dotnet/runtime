@@ -194,28 +194,6 @@ void printLine(void* GUICookie, _In_ __nullterminated const char* string)
     ToGUIOrFile(sz,GUICookie);
 }
 
-void printLineW(void* GUICookie, _In_ __nullterminated const WCHAR* string)
-{
-    const char* sz = (const char*)string;
-
-    if (GUICookie == NULL)
-    {
-        UnicodeToConsoleOrMsgBox(string);
-        return;
-    }
-    if(g_uCodePage == 0xFFFFFFFF)
-    {
-        UnicodeToFile(string,(FILE*)GUICookie);
-        return;
-    }
-    else if(g_uCodePage == CP_UTF8)
-        sz = UnicodeToUtf(string);
-    else if(g_uCodePage == g_uConsoleCP)
-        sz = UnicodeToAnsi(string);
-
-    ToGUIOrFile(sz,GUICookie);
-}
-
 char * DumpQString(void* GUICookie,
                    _In_ __nullterminated const char* szToDump,
                    _In_ __nullterminated const char* szPrefix,

@@ -736,9 +736,6 @@ protected:
         UINT_PTR    uArg;
     };
 
-    static void PatchInstructionArgument(ILCodeLabel* pLabel, UINT_PTR uNewArg
-        DEBUG_ARG(UINT16 uExpectedInstruction));
-
 #ifdef _DEBUG
     bool IsInCodeStreamList(ILCodeStream* pcs);
 #endif // _DEBUG

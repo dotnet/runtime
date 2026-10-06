@@ -230,8 +230,6 @@ function_name() to call the system's implementation
 #define TEMP_DIRECTORY_PATH "/data/local/tmp/"
 #endif
 
-#define PROCESS_PIPE_NAME_PREFIX ".dotnet-pal-processpipe"
-
 #ifdef __APPLE__
 #define APPLICATION_CONTAINER_BASE_PATH_SUFFIX "/Library/Group Containers/"
 

@@ -2421,25 +2421,6 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
 }
 
-HRESULT ReadyToRun_TypeGenericInfoMap::IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const
-{
-    bool foundResult;
-    bool result;
-    HRESULT hr;
-    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
-    if (!foundResult)
-    {
-        HENUMInternalHolder hEnumTyPars(pImport);
-        IfFailRet(hEnumTyPars.EnumInitNoThrow(mdtGenericParam, input));
-        result = (pImport->EnumGetCount(&hEnumTyPars) != 0);
-    }
-    else
-        result = !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
-
-    *pIsGeneric = result;
-    return S_OK;
-}
-
 uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const
 {
     bool foundResult;

@@ -427,35 +427,6 @@ void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable 
     CopyValueClassUnchecked(argDest->GetDestinationAddress(), src, pMT);
 }
 
-// Initialize the value class argument to zeros
-void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-#if defined(UNIX_AMD64_ABI)
-
-    if (argDest->IsStructPassedInRegs())
-    {
-        argDest->ZeroStructInRegisters(pMT->GetNumInstanceFieldBytes());
-        return;
-    }
-
-#endif
-
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (argDest->IsStructPassedInRegs())
-    {
-        *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 0;
-        *(UINT64*)(argDest->GetDestinationAddress()) = 0;
-        return;
-    }
-#endif
-
-    InitValueClass(argDest->GetDestinationAddress(), pMT);
-}
-
 #if defined (VERIFY_HEAP)
 
 #include "dbginterface.h"

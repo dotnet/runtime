@@ -167,7 +167,6 @@ public:
     void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
 
     BOOL IsILOnly();
-    BOOL IsReferenceAssembly();
     BOOL IsComponentAssembly();
 
     PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL);

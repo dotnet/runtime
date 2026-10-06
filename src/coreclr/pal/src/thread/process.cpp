@@ -224,11 +224,6 @@ struct UnambiguousProcessDescriptor
 #pragma pack(pop)
 
 static
-DWORD
-StartupHelperThread(
-    LPVOID p);
-
-static
 BOOL
 GetProcessIdDisambiguationKey(
     IN DWORD processId,
@@ -2074,16 +2069,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     abort();
 }
 
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            PROCAbort(); \
-        } \
-    } \
-    while(0)
 
 /*++
 Function:
@@ -2192,7 +2177,6 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     if(locked && PALIsInitialized())
     {
         PROCNotifyProcessShutdown();
-        PALCommonCleanup();
     }
 }
 

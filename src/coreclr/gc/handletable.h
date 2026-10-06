@@ -120,8 +120,6 @@ void            HndScanHandlesForGC(HHANDLETABLE hTable,
 void            HndResetAgeMap(HHANDLETABLE hTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags);
 void            HndVerifyTable(HHANDLETABLE hTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags);
 
-void            HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t maxgen);
-
 /*
  * Handle counting
  */

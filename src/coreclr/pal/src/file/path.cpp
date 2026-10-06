@@ -374,64 +374,6 @@ GetTempPathA(
 
 /*++
 Function:
-  GetTempPathW
-
-See MSDN.
-See also the comment for GetTempPathA.
---*/
-DWORD
-PALAPI
-GetTempPathW(
-	     IN DWORD nBufferLength,
-	     OUT LPWSTR lpBuffer)
-{
-    PERF_ENTRY(GetTempPathW);
-    ENTRY("GetTempPathW(nBufferLength=%u, lpBuffer=%p)\n",
-          nBufferLength, lpBuffer);
-
-    if (!lpBuffer)
-    {
-        ERROR("lpBuffer was not a valid pointer.\n")
-        SetLastError(ERROR_INVALID_PARAMETER);
-        LOGEXIT("GetTempPathW returns DWORD 0\n");
-        PERF_EXIT(GetTempPathW);
-        return 0;
-    }
-
-    char* tempBuffer = (char*)alloca(nBufferLength > 0 ? nBufferLength : 1);
-    DWORD dwRetVal = GetTempPathA( nBufferLength, tempBuffer );
-
-    if ( dwRetVal >= nBufferLength )
-    {
-        ERROR( "lpBuffer was not large enough.\n" )
-        SetLastError( ERROR_INSUFFICIENT_BUFFER );
-        *lpBuffer = '\0';
-    }
-    else if ( dwRetVal != 0 )
-    {
-        /* Convert to wide. */
-        if ( 0 == MultiByteToWideChar( CP_ACP, 0, tempBuffer, -1,
-                                       lpBuffer, dwRetVal + 1 ) )
-        {
-            ASSERT( "An error occurred while converting the string to wide.\n" );
-            SetLastError( ERROR_INTERNAL_ERROR );
-            dwRetVal = 0;
-        }
-    }
-    else
-    {
-        ERROR( "The function failed.\n" );
-        *lpBuffer = '\0';
-    }
-
-    LOGEXIT("GetTempPathW returns DWORD %u\n", dwRetVal );
-    PERF_EXIT(GetTempPathW);
-    return dwRetVal;
-}
-
-
-/*++
-Function:
   FILEGetDirectoryFromFullPathA
 
 Parse the given path. If it contains a directory part and a file part,

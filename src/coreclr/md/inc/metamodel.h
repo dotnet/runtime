@@ -434,14 +434,6 @@ public:
         ULONG       ulTarget,           // target for search
         RID        *pRid) = 0;
 
-    // Search for a custom value with a given type.
-    __checkReturn
-    HRESULT FindCustomAttributeFor(// RID of custom value, or 0.
-        RID         rid,                // The object's rid.
-        mdToken     tkOjb,              // The object's type.
-        mdToken     tkType,             // Type of custom value.
-        RID        *pFoundRid);
-
     // Search for the specified Column Definition array in the global cache
     BOOL FindSharedColDefs(// TRUE if we found a match in the global cache and updated pTable, FALSE otherwise
         CMiniTableDef *pTable,          // The table def that wants the column definition array

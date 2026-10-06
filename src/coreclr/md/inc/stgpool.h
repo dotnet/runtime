@@ -260,15 +260,6 @@ public:
     }
 
 //*****************************************************************************
-// Convert a string to UNICODE into the caller's buffer.
-//*****************************************************************************
-    __checkReturn
-    virtual HRESULT GetStringW(                         // Return code.
-        ULONG                          iOffset,         // Offset of string in pool.
-        _Out_writes_(cchBuffer) LPWSTR szOut,           // Output buffer for string.
-        int                            cchBuffer);      // Size of output buffer.
-
-//*****************************************************************************
 // Copy a GUID into the caller's buffer.
 //*****************************************************************************
     __checkReturn

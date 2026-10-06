@@ -55,26 +55,6 @@ extern int gApplicationGroupIdLength;
 extern PathCharString *gSharedFilesPath;
 
 /*++
-Function:
-  PROCCreateInitialProcess
-
-Abstract
-  Initialize all the structures for the initial process.
-
-Parameter
-  lpwstrCmdLine:   Command line.
-  lpwstrFullPath : Full path to executable
-
-Return
-  TRUE: if successful
-  FALSE: otherwise
-
-Notes :
-    This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
---*/
-BOOL PROCCreateInitialProcess(LPWSTR lpwstrCmdLine, LPWSTR lpwstrFullPath);
-
-/*++
 Function
   PROCAbortInitialize()
 

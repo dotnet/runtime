@@ -72,7 +72,6 @@ public:
 #endif
     PEImageLayout();
     virtual ~PEImageLayout();
-    static BOOL CompareBase(UPTR path, UPTR mapping);
 
     // Refcount above images.
     void AddRef();

@@ -263,13 +263,6 @@ public:
     void DumpStatistics();
 #endif // HASHTABLE_PROFILE
 
-#if 0 // Test-only code for debugging this class.
-#ifndef DACCESS_COMPILE
-    static void LookupPerfTest(HashMap * table, const unsigned int MinThreshold);
-    static void HashMapTest();
-#endif // !DACCESS_COMPILE
-#endif // 0 // Test-only code for debugging this class.
-
 protected:
     // static helper function
     static UPTR PutEntry (Bucket* rgBuckets, UPTR key, UPTR value);

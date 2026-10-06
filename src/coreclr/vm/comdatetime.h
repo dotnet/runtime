@@ -39,7 +39,6 @@ public:
 
 	// Native util functions for other classes.
 	static INT64 DoubleDateToTicks(const double d);  // From OleAut Date
-	static double TicksToDoubleDate(const INT64 ticks);
 };
 
 #include <poppack.h>

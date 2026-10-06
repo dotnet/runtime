@@ -910,42 +910,6 @@ ErrExit:
     return (hr);
 }
 
-
-//*****************************************************************************
-// Free the mapping object for shared memory but keep the rest of the internal
-// state intact.
-//*****************************************************************************
-HRESULT StgIO::ReleaseMappingObject()   // Return code.
-{
-    // Check type first.
-    if (m_iType != STGIO_SHAREDMEM)
-    {
-        _ASSERTE(FALSE);
-        return S_OK;
-    }
-
-    // Must have an allocated handle.
-    _ASSERTE(m_hMapping != 0);
-
-    // Freeing the mapping object doesn't do any good if you still have the file.
-    _ASSERTE(m_hFile == INVALID_HANDLE_VALUE);
-
-    // Unmap the memory we allocated before freeing the handle.  But keep the
-    // memory address intact.
-    if (m_pData)
-        VERIFY(UnmapViewOfFile(m_pData));
-
-    // Free the handle.
-    if (m_hMapping != 0)
-    {
-        VERIFY(CloseHandle(m_hMapping));
-        m_hMapping = 0;
-    }
-    return S_OK;
-}
-
-
-
 //*****************************************************************************
 // Resets the logical base address and size to the value given.  This is for
 // cases like finding a section embedded in another format, like the .clb inside

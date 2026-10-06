@@ -271,11 +271,6 @@ public:
     StgIO *GetStgIO()
     { return (m_pStgIO); }
 
-#if defined(_DEBUG)
-    ULONG PrintSizeInfo(                // Size of streams.
-        bool verbose);                  // Be verbose?
-#endif
-
 protected:
     HRESULT Write(                      // Return code.
         LPCSTR      szName,             // Name of stream we're writing.

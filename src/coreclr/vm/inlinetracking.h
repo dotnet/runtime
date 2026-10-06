@@ -86,7 +86,6 @@ struct InlineTrackingEntry
     }
 
     void Add(PTR_MethodDesc inliner);
-    void SortAndDeduplicate();
 };
 
 class InlineTrackingMapTraits : public NoRemoveSHashTraits <DefaultSHashTraits<InlineTrackingEntry> >

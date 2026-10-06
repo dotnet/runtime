@@ -1245,7 +1245,6 @@ public:
     };
     unsigned NumTypeDefs() {return m_TypeDefDList.COUNT();};
 private:
-    HRESULT GetCAName(mdToken tkCA, _Out_ LPWSTR *ppszName);
 
 public:
     void RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars);

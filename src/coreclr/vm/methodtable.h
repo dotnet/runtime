@@ -2209,8 +2209,6 @@ public:
 
     BOOL ValidateWithPossibleAV();
 
-    BOOL IsClassPointerValid();
-
     static UINT32 GetOffsetOfFlags()
     {
         LIMITED_METHOD_CONTRACT;

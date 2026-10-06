@@ -768,11 +768,6 @@ public:
 #endif // FEATURE_PGO
 #endif // !defined(DACCESS_COMPILE)
 
-
-    // This function is only safe to call if the handle is known to be a handle in a collectible
-    // LoaderAllocator, and the handle is allocated, and the LoaderAllocator is also not collected.
-    FORCEINLINE OBJECTREF GetHandleValueFastCannotFailType2(LOADERHANDLE handle);
-
     // These functions are designed to be used for maximum performance to access handle values
     // The GetHandleValueFast will handle the scenario where a loader allocator pointer does not
     // need to be acquired to do the handle lookup, and the GetHandleValueFastPhase2 handles

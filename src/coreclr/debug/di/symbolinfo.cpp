@@ -24,69 +24,6 @@ SymbolInfo::~SymbolInfo()
     }
 }
 
-HRESULT SymbolInfo::AddDocument(DWORD id, ISymUnmanagedDocumentWriter* pDocument)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr=S_OK;
-    EX_TRY
-    {
-        while(m_Documents.GetCount()<=id)
-            m_Documents.Append(NULL);
-        _ASSERTE(m_Documents.Get(id) == NULL);
-        m_Documents.Set(id,pDocument);
-        pDocument->AddRef();
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-HRESULT SymbolInfo::MapDocument(DWORD id, ISymUnmanagedDocumentWriter** pDocument)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr=E_FAIL;
-    if(m_Documents.GetCount()>id)
-    {
-        *pDocument=(ISymUnmanagedDocumentWriter*)m_Documents.Get(id);
-        if (*pDocument == NULL)
-            return E_FAIL;
-        (*pDocument)->AddRef();
-        hr=S_OK;
-    }
-    return hr;
-}
-
-HRESULT SymbolInfo::SetClassProps(mdToken cls, DWORD flags, LPCWSTR wszName, mdToken parent)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr=S_OK;
-    EX_TRY
-    {
-        if(m_Classes.Lookup(cls) == NULL)
-        {
-            NewHolder<ClassProps> classProps (new ClassProps(cls,flags,wszName,parent));
-            m_Classes.Add(classProps);
-            classProps.SuppressRelease();
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 HRESULT SymbolInfo::AddSignature(SBuffer& sig, mdSignature token)
 {
     CONTRACTL
@@ -121,49 +58,6 @@ SymbolInfo::SignatureProps* SymbolInfo::FindSignature(SBuffer& sig)
     WRAPPER_NO_CONTRACT;
     return m_Signatures.Lookup(sig);
 }
-
-HRESULT SymbolInfo::AddScope(ULONG32 left, ULONG32 right)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr=S_OK;
-    EX_TRY
-    {
-        if (m_Scopes.Lookup(left) == NULL)
-        {
-            NewHolder<ScopeMap> map (new ScopeMap(left,right));
-            m_Scopes.Add(map);
-            map.SuppressRelease();
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-
-}
-
-HRESULT SymbolInfo::MapScope(ULONG32 left, ULONG32* pRight)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    ScopeMap* props = m_Scopes.Lookup(left);
-    if(props == NULL)
-    {
-        _ASSERTE(FALSE);
-        return E_FAIL;
-    }
-    *pRight=props->right;
-    return S_OK;
-}
-
-
 
 HRESULT SymbolInfo::SetMethodProps(mdToken method, mdToken cls, LPCWSTR wszName)
 {

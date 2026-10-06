@@ -122,10 +122,6 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 
 typedef DPTR(class PEDecoder) PTR_PEDecoder;
 
-typedef bool (*PEDecoder_ResourceTypesCallbackFunction)(LPCWSTR lpType, void* context);
-typedef bool (*PEDecoder_ResourceNamesCallbackFunction)(LPCWSTR lpName, LPCWSTR lpType, void* context);
-typedef bool (*PEDecoder_ResourceCallbackFunction)(LPCWSTR lpName, LPCWSTR lpType, DWORD langid, BYTE* data, COUNT_T cbData, void* context);
-
 class PEDecoder
 {
     friend class PEImageLayout;
@@ -205,11 +201,6 @@ class PEDecoder
     // Look up a named symbol in the export directory
     PTR_VOID GetExport(LPCSTR exportName) const;
 
-    // Win32 resources
-    bool EnumerateWin32ResourceTypes(PEDecoder_ResourceTypesCallbackFunction callback, void* context) const;
-    bool EnumerateWin32ResourceNames(LPCWSTR lpType, PEDecoder_ResourceNamesCallbackFunction callback, void* context) const;
-    bool EnumerateWin32Resources(LPCWSTR lpName, LPCWSTR lpType, PEDecoder_ResourceCallbackFunction callback, void* context) const;
-
     // COR header fields
 
     CHECK CheckCorHeader() const;
@@ -234,17 +225,12 @@ class PEDecoder
     // Not part of the standalone PEDecoder public API.
     // ------------------------------------------------------------
 
-    const void *GetHeaders(COUNT_T *pSize = NULL) const;
-
     WORD GetSubsystem() const;
     WORD GetDllCharacteristics() const;
     DWORD GetCheckSum() const;
     WORD GetCharacteristics() const;
     SIZE_T GetSizeOfStackReserve() const;
     SIZE_T GetSizeOfStackCommit() const;
-    SIZE_T GetSizeOfHeapReserve() const;
-    SIZE_T GetSizeOfHeapCommit() const;
-    UINT32 GetLoaderFlags() const;
     UINT32 GetWin32VersionValue() const;
     COUNT_T GetNumberOfRvaAndSizes() const;
 
@@ -281,8 +267,6 @@ class PEDecoder
     CHECK CheckTls() const;
     PTR_VOID GetTlsRange(COUNT_T *pSize = NULL) const;
     UINT32 GetTlsIndex() const;
-
-    void *GetWin32Resource(LPCWSTR lpName, LPCWSTR lpType, COUNT_T *pSize = NULL) const;
 
     const void *GetResources(COUNT_T *pSize = NULL) const;
     CHECK CheckResource(COUNT_T offset) const;

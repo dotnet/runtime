@@ -412,9 +412,6 @@ enum
 // however, almost no one implements more than 4 of each.
 //
 
-#define LOONGARCH64_MAX_BREAKPOINTS     8
-#define LOONGARCH64_MAX_WATCHPOINTS     2
-
 #ifndef CONTEXT_UNWOUND_TO_CALL
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
 #endif
@@ -546,9 +543,6 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 // Specify the number of breakpoints and watchpoints that the OS
 // will track.
 //
-
-#define RISCV64_MAX_BREAKPOINTS     8
-#define RISCV64_MAX_WATCHPOINTS     2
 
 #ifndef CONTEXT_UNWOUND_TO_CALL
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000

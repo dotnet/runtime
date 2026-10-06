@@ -913,10 +913,6 @@ public:
 
 #ifdef _DEBUG
 public:
-    // DEBUG An internal debugging routine, it iterates
-    //      through the hashtable, stopping at every
-    //      single entry, no matter what it's state.
-    void CheckPatchTable();
 #endif // _DEBUG
 
     // Count how many patches are in the table.
@@ -1376,8 +1372,6 @@ public:
     void Dequeue();
 
   protected:
-    // Helper function that is called on each virtual trace call target to set a trace patch
-    static void PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID* pUserData);
 
     DebuggerControllerPatch *AddILPrimaryPatch(Module *module,
                   mdMethodDef md,

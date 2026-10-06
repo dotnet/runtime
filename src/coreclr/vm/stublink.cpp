@@ -222,49 +222,6 @@ VOID StubLinker::Emit32(uint32_t val)
 }
 
 //---------------------------------------------------------------
-// Append code bytes.
-//---------------------------------------------------------------
-VOID StubLinker::Emit64(uint64_t val)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    CodeRun *pCodeRun = GetLastCodeRunIfAny();
-    if (pCodeRun && (CODERUNSIZE - pCodeRun->m_numcodebytes) >= sizeof(val)) {
-        SET_UNALIGNED_64(pCodeRun->m_codebytes + pCodeRun->m_numcodebytes, val);
-        pCodeRun->m_numcodebytes += sizeof(val);
-    } else {
-        EmitBytes((BYTE*)&val, sizeof(val));
-    }
-}
-
-//---------------------------------------------------------------
-// Append pointer value.
-//---------------------------------------------------------------
-VOID StubLinker::EmitPtr(const VOID *val)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    CodeRun *pCodeRun = GetLastCodeRunIfAny();
-    if (pCodeRun && (CODERUNSIZE - pCodeRun->m_numcodebytes) >= sizeof(val)) {
-        SET_UNALIGNED_PTR(pCodeRun->m_codebytes + pCodeRun->m_numcodebytes, (UINT_PTR)val);
-        pCodeRun->m_numcodebytes += sizeof(val);
-    } else {
-        EmitBytes((BYTE*)&val, sizeof(val));
-    }
-}
-
-
-//---------------------------------------------------------------
 // Create a new undefined label. Label must be assigned to a code
 // location using EmitLabel() prior to final linking.
 // Throws exception on failure.

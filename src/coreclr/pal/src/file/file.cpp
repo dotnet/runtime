@@ -2008,11 +2008,6 @@ FlushFileBuffers(
     return NO_ERROR == palError;
 }
 
-#define ENSURE_UNIQUE_NOT_ZERO \
-    if ( uUniqueSeed == 0 ) \
-    {\
-        uUniqueSeed++;\
-    }
 
 /*++
 Function:

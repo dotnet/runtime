@@ -415,9 +415,6 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
     ZeroMemoryInGCHeap(dest, pMT->GetNumInstanceFieldBytes());
 }
 
-// Initialize value class argument
-void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
-
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)
 #define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)

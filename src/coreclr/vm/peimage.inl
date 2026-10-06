@@ -199,29 +199,6 @@ inline BOOL PEImage::IsOpened()
     return m_pLayouts[IMAGE_LOADED]!=NULL || m_pLayouts[IMAGE_FLAT] !=NULL;
 }
 
-
-inline BOOL PEImage::IsReferenceAssembly()
-{
-    CONTRACTL
-    {
-        PRECONDITION(HasCorHeader());
-    }
-    CONTRACTL_END;
-
-    IMDInternalImport* mdImport = this->GetMDImport();
-    HRESULT hr = mdImport->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly),
-                                           g_ReferenceAssemblyAttribute,
-                                           NULL,
-                                           NULL);
-    IfFailThrow(hr);
-    if (hr == S_OK) {
-        return TRUE;
-    }
-    _ASSERTE(hr == S_FALSE);
-    return FALSE;
-}
-
-
 inline BOOL PEImage::HasHeaders()
 {
     WRAPPER_NO_CONTRACT;

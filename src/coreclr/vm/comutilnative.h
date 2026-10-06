@@ -152,7 +152,6 @@ private:
 
 public:
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
-    static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
     FCDECL0(static INT64,   GetTotalPauseDuration);
     FCDECL2(static void,    GetMemoryInfo, Object* objUNSAFE, int kind);

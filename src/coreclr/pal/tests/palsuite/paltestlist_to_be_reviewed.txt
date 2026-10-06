@@ -41,7 +41,6 @@ file_io/GetFullPathNameA/test2/paltest_getfullpathnamea_test2
 file_io/GetFullPathNameW/test2/paltest_getfullpathnamew_test2
 file_io/GetStdHandle/test1/paltest_getstdhandle_test1
 file_io/gettemppatha/test1/paltest_gettemppatha_test1
-file_io/GetTempPathW/test1/paltest_gettemppathw_test1
 file_io/ReadFile/test1/paltest_readfile_test1
 file_io/WriteFile/test2/paltest_writefile_test2
 loader/LoadLibraryA/test1/paltest_loadlibrarya_test1

@@ -118,24 +118,6 @@ Cor_RtlImageRvaToSection64(PTR_IMAGE_NT_HEADERS64 NtHeaders,
     return NULL;
 }
 
-EXTERN_C PIMAGE_SECTION_HEADER
-Cor_RtlImageRvaToSection(PTR_IMAGE_NT_HEADERS NtHeaders,
-                         ULONG Rva,
-                         ULONG FileLength)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (NtHeaders->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC))
-        return Cor_RtlImageRvaToSection32((PTR_IMAGE_NT_HEADERS32)NtHeaders,
-                                          Rva, FileLength);
-    else if(NtHeaders->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR64_MAGIC))
-        return Cor_RtlImageRvaToSection64((PTR_IMAGE_NT_HEADERS64)NtHeaders,
-                                          Rva, FileLength);
-    else {
-        _ASSERTE(!"Invalid File Type");
-        return NULL;
-    }
-}
-
 EXTERN_C PBYTE Cor_RtlImageRvaToVa32(PTR_IMAGE_NT_HEADERS32 NtHeaders,
                                      PBYTE Base,
                                      ULONG Rva,
@@ -172,88 +154,4 @@ EXTERN_C PBYTE Cor_RtlImageRvaToVa64(PTR_IMAGE_NT_HEADERS64 NtHeaders,
                 VAL32(NtSection->PointerToRawData));
     else
         return NULL;
-}
-
-EXTERN_C PBYTE Cor_RtlImageRvaToVa(PTR_IMAGE_NT_HEADERS NtHeaders,
-                                   PBYTE Base,
-                                   ULONG Rva,
-                                   ULONG FileLength)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (NtHeaders->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC))
-        return Cor_RtlImageRvaToVa32((PTR_IMAGE_NT_HEADERS32)NtHeaders,
-                                     Base, Rva, FileLength);
-    else if(NtHeaders->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR64_MAGIC))
-        return Cor_RtlImageRvaToVa64((PTR_IMAGE_NT_HEADERS64)NtHeaders,
-                                     Base, Rva, FileLength);
-    else {
-        _ASSERTE(!"Invalid File Type");
-        return NULL;
-    }
-}
-
-EXTERN_C PBYTE Cor_RtlImageDirToVa(PTR_IMAGE_NT_HEADERS NtHeaders,
-                                   PBYTE Base,
-                                   UINT  DirIndex,
-                                   ULONG FileLength)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (NtHeaders->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC))
-        return Cor_RtlImageRvaToVa32((PTR_IMAGE_NT_HEADERS32)NtHeaders, Base,
-                                     VAL32(((PTR_IMAGE_NT_HEADERS32)NtHeaders)->OptionalHeader.DataDirectory[DirIndex].VirtualAddress),
-                                     FileLength);
-    else if(NtHeaders->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR64_MAGIC))
-        return Cor_RtlImageRvaToVa64((PTR_IMAGE_NT_HEADERS64)NtHeaders, Base,
-                                     VAL32(((PTR_IMAGE_NT_HEADERS64)NtHeaders)->OptionalHeader.DataDirectory[DirIndex].VirtualAddress),
-                                     FileLength);
-    else {
-        _ASSERTE(!"Invalid File Type");
-        return NULL;
-    }
-}
-
-EXTERN_C PIMAGE_SECTION_HEADER
-Cor_RtlImageRvaRangeToSection(PTR_IMAGE_NT_HEADERS NtHeaders,
-                              ULONG Rva,
-                              ULONG Range,
-                              ULONG FileLength)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG i;
-    PTR_IMAGE_SECTION_HEADER NtSection;
-
-    if (!Range)
-        return Cor_RtlImageRvaToSection(NtHeaders, Rva, FileLength);
-
-    NtSection = PTR_IMAGE_FIRST_SECTION( NtHeaders );
-    for (i=0; i<VAL16(NtHeaders->FileHeader.NumberOfSections); i++) {
-        if (FileLength &&
-            ((VAL32(NtSection->PointerToRawData) > FileLength) ||
-             (VAL32(NtSection->SizeOfRawData) > FileLength - VAL32(NtSection->PointerToRawData))))
-            return NULL;
-        if (Rva >= VAL32(NtSection->VirtualAddress) &&
-            Rva + Range <= VAL32(NtSection->VirtualAddress) + VAL32(NtSection->SizeOfRawData))
-            return NtSection;
-
-        ++NtSection;
-    }
-
-    return NULL;
-}
-
-EXTERN_C DWORD Cor_RtlImageRvaToOffset(PTR_IMAGE_NT_HEADERS NtHeaders,
-                                       ULONG Rva,
-                                       ULONG FileLength)
-{
-    LIMITED_METHOD_CONTRACT;
-    PIMAGE_SECTION_HEADER NtSection =
-        Cor_RtlImageRvaToSection(NtHeaders,
-                                 Rva,
-                                 FileLength);
-
-    if (NtSection)
-        return ((Rva - VAL32(NtSection->VirtualAddress)) +
-                VAL32(NtSection->PointerToRawData));
-    else
-        return 0;
 }
