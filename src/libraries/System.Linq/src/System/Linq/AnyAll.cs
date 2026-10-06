@@ -37,6 +37,11 @@ namespace System.Linq
                 return ngc.Count != 0;
             }
 
+            if (source is IReadOnlyCollection<TSource> rocollection)
+            {
+                return rocollection.Count != 0;
+            }
+
             using IEnumerator<TSource> e = source.GetEnumerator();
             return e.MoveNext();
         }

@@ -30,6 +30,11 @@ namespace System.Linq
                 return collection.Count;
             }
 
+            if (source is IReadOnlyCollection<TSource> rocollection)
+            {
+                return rocollection.Count;
+            }
+
             int count = 0;
             using IEnumerator<TSource> e = source.GetEnumerator();
             checked
@@ -126,6 +131,12 @@ namespace System.Linq
             if (source is ICollection collection)
             {
                 count = collection.Count;
+                return true;
+            }
+
+            if (source is IReadOnlyCollection<TSource> rocollection)
+            {
+                count = rocollection.Count;
                 return true;
             }
 

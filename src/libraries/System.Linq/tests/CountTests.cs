@@ -178,6 +178,8 @@ namespace System.Linq.Tests
             yield return WrapArgs(4, new List<int>([1, 2, 3, 4]));
             yield return WrapArgs(4, new Stack<int>([1, 2, 3, 4]));
 
+            yield return WrapArgs(4, new TestReadOnlyCollection<int>([1, 2, 3, 4]));
+
             yield return WrapArgs(0, Enumerable.Empty<string>());
 
             yield return WrapArgs(100, Enumerable.Range(1, 100));
