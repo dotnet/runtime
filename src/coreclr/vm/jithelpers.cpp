@@ -794,7 +794,7 @@ void IL_Throw_Impl(Object* obj, TransitionBlock* transitionBlock)
 EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
 #endif
 {
-    FCALL_CONTRACT;
+    FCALL_CONTRACT_WITH_FRAME;
 
     /* Make no assumptions about the current machine state */
     ResetCurrentContext();
@@ -833,7 +833,7 @@ void IL_Rethrow_Impl(TransitionBlock* transitionBlock)
 EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 #endif
 {
-    FCALL_CONTRACT;
+    FCALL_CONTRACT_WITH_FRAME;
 
     Thread *pThread = GetThread();
 
@@ -862,7 +862,7 @@ void IL_ThrowExact_Impl(Object* obj, TransitionBlock* transitionBlock)
 EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
 #endif
 {
-    FCALL_CONTRACT;
+    FCALL_CONTRACT_WITH_FRAME;
 
     /* Make no assumptions about the current machine state */
     ResetCurrentContext();
@@ -895,7 +895,7 @@ HCIMPLEND
 // just pass NULL for the transition block, but the check is left in place for future implementation of R2R stack walking on WASM.
 HCIMPL1(void, IL_Throw, Object* obj)
 {
-    FCALL_CONTRACT;
+    FCALL_CONTRACT_WITH_FRAME;
 
     TransitionBlock block;
     block.m_ReturnAddress = 0;
@@ -907,7 +907,7 @@ HCIMPLEND
 
 HCIMPL0(void, IL_Rethrow)
 {
-    FCALL_CONTRACT;
+    FCALL_CONTRACT_WITH_FRAME;
 
     TransitionBlock block;
     block.m_ReturnAddress = 0;
@@ -919,7 +919,7 @@ HCIMPLEND
 
 HCIMPL1(void, IL_ThrowExact, Object* obj)
 {
-    FCALL_CONTRACT;
+    FCALL_CONTRACT_WITH_FRAME;
     TransitionBlock block;
     block.m_ReturnAddress = 0;
     block.m_StackPointer = callersStackPointer;
