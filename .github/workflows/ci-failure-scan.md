@@ -57,7 +57,8 @@ tools:
   github:
     type: remote
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    toolsets: [pull_requests, issues]
+    # The integrity gateway uses search_repositories to check repository visibility.
+    toolsets: [pull_requests, repos, issues]
     allowed: [issue_read, search_pull_requests, pull_request_read]
     allowed-repos: [dotnet/runtime]
     min-integrity: approved
