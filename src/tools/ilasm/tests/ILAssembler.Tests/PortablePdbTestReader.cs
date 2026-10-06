@@ -1,0 +1,159 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+using Xunit;
+
+namespace ILAssembler.Tests
+{
+    /// <summary>
+    /// Reads a compilation's image and Portable PDB together, so that tests can look up a method's
+    /// MethodDebugInformation by method name and read document names and the sequence points blob.
+    /// </summary>
+    internal sealed class PortablePdbTestReader : IDisposable
+    {
+        private readonly PEReader _image;
+        private readonly MetadataReaderProvider _pdbProvider;
+
+        /// <summary>Opens the image and the Portable PDB of a compilation that produced a PDB.</summary>
+        public PortablePdbTestReader(CompilationResult result)
+        {
+            _image = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            _pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+            Image = _image.GetMetadataReader();
+            Pdb = _pdbProvider.GetMetadataReader();
+        }
+
+        /// <summary>Compiles a single source named <c>test.il</c> and opens its image and PDB.</summary>
+        public static PortablePdbTestReader Compile(string source, Options? options = null)
+            => new(DocumentCompilerTestHelpers.CompileAndGetResult(source, options ?? new Options { Debug = true }));
+
+        /// <summary>Gets the image's metadata.</summary>
+        public MetadataReader Image { get; }
+
+        /// <summary>Gets the Portable PDB's metadata.</summary>
+        public MetadataReader Pdb { get; }
+
+        /// <summary>Gets the names of the PDB's documents, in Document table order.</summary>
+        public string[] DocumentNames => Pdb.Documents.Select(GetDocumentName).ToArray();
+
+        /// <summary>Gets the name of a PDB document.</summary>
+        public string GetDocumentName(DocumentHandle handle) => Pdb.GetString(Pdb.GetDocument(handle).Name);
+
+        /// <summary>Gets the language GUID of the only document with this name.</summary>
+        public Guid GetDocumentLanguage(string name)
+            => Pdb.GetGuid(Pdb.GetDocument(Pdb.Documents.Single(handle => GetDocumentName(handle) == name)).Language);
+
+        /// <summary>Gets the MethodDef handle of the only method with this name.</summary>
+        public MethodDefinitionHandle GetMethodHandle(string methodName)
+            => Image.MethodDefinitions.Single(handle => Image.GetString(Image.GetMethodDefinition(handle).Name) == methodName);
+
+        /// <summary>Gets the MethodDebugInformation row of the only method with this name.</summary>
+        public MethodDebugInformation GetDebugInformation(string methodName)
+            => Pdb.GetMethodDebugInformation(GetMethodHandle(methodName));
+
+        /// <summary>Gets the name of the document that the method's MethodDebugInformation row names, or null when it is nil.</summary>
+        public string? GetMethodDocumentName(string methodName)
+        {
+            DocumentHandle document = GetDebugInformation(methodName).Document;
+            return document.IsNil ? null : GetDocumentName(document);
+        }
+
+        /// <summary>Gets the method's sequence points as a reader decodes them, with their documents resolved.</summary>
+        public SequencePoint[] GetSequencePoints(string methodName)
+            => GetDebugInformation(methodName).GetSequencePoints().ToArray();
+
+        /// <summary>Gets the name of each sequence point's document, as a reader resolves it from the blob.</summary>
+        public string[] GetSequencePointDocumentNames(string methodName)
+            => GetSequencePoints(methodName).Select(point => GetDocumentName(point.Document)).ToArray();
+
+        /// <summary>
+        /// Reads the header of the method's sequence points blob: the LocalSignature row number and, when the
+        /// row's document is nil, the InitialDocument row number. Asserts that the method has a blob.
+        /// </summary>
+        public (int LocalSignature, int? InitialDocument) ReadBlobHeader(string methodName)
+        {
+            MethodDebugInformation debugInformation = GetDebugInformation(methodName);
+            Assert.False(debugInformation.SequencePointsBlob.IsNil);
+            BlobReader blob = Pdb.GetBlobReader(debugInformation.SequencePointsBlob);
+            int localSignature = blob.ReadCompressedInteger();
+            int? initialDocument = debugInformation.Document.IsNil ? blob.ReadCompressedInteger() : null;
+            return (localSignature, initialDocument);
+        }
+
+        /// <summary>
+        /// Reads the records of the method's sequence points blob after its header, in order, as written:
+        /// <c>point@&lt;offset&gt;</c> for a sequence-point-record, <c>hidden@&lt;offset&gt;</c> for a
+        /// hidden-sequence-point-record and <c>document#&lt;row&gt;</c> for a document-record. Unlike
+        /// <see cref="GetSequencePoints"/>, this shows whether a document-record was written, including one that
+        /// names the document that is already current. Asserts that the method has a blob.
+        /// </summary>
+        public string[] ReadBlobRecords(string methodName)
+        {
+            MethodDebugInformation debugInformation = GetDebugInformation(methodName);
+            Assert.False(debugInformation.SequencePointsBlob.IsNil);
+            BlobReader blob = Pdb.GetBlobReader(debugInformation.SequencePointsBlob);
+            blob.ReadCompressedInteger();
+            if (debugInformation.Document.IsNil)
+            {
+                blob.ReadCompressedInteger();
+            }
+
+            var records = new List<string>();
+            int offset = 0;
+            bool first = true;
+            bool afterNonHiddenPoint = false;
+            while (blob.RemainingBytes > 0)
+            {
+                int offsetDelta = blob.ReadCompressedInteger();
+                if (offsetDelta == 0 && !first)
+                {
+                    records.Add($"document#{blob.ReadCompressedInteger()}");
+                    continue;
+                }
+
+                offset = first ? offsetDelta : offset + offsetDelta;
+                first = false;
+                int deltaLines = blob.ReadCompressedInteger();
+                int deltaColumns = deltaLines == 0 ? blob.ReadCompressedInteger() : blob.ReadCompressedSignedInteger();
+                if (deltaLines == 0 && deltaColumns == 0)
+                {
+                    records.Add($"hidden@{offset}");
+                    continue;
+                }
+
+                if (afterNonHiddenPoint)
+                {
+                    blob.ReadCompressedSignedInteger();
+                    blob.ReadCompressedSignedInteger();
+                }
+                else
+                {
+                    blob.ReadCompressedInteger();
+                    blob.ReadCompressedInteger();
+                    afterNonHiddenPoint = true;
+                }
+
+                records.Add($"point@{offset}");
+            }
+
+            return records.ToArray();
+        }
+
+        /// <summary>Gets the Document row number of the document with this name.</summary>
+        public int GetDocumentRowNumber(string name)
+            => MetadataTokens.GetRowNumber(Pdb.Documents.Single(handle => GetDocumentName(handle) == name));
+
+        /// <summary>Releases the image and PDB readers.</summary>
+        public void Dispose()
+        {
+            _pdbProvider.Dispose();
+            _image.Dispose();
+        }
+    }
+}

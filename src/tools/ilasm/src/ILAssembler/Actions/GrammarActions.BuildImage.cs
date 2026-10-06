@@ -662,9 +662,31 @@ namespace ILAssembler
                 : "assembly.pdb";
         }
 
+        /// <summary>
+        /// Adds the Document rows and one MethodDebugInformation row per MethodDef row to the PDB metadata.
+        /// </summary>
+        /// <remarks>
+        /// The documents are added in <see cref="PdbDocumentTable"/> order. A method without sequence points, or
+        /// without an IL body (<see cref="EntityRegistry.MethodDefinitionEntity.HasBody"/>), gets a row with a nil
+        /// document and no sequence points blob; a <c>.line</c> directive in a method without a body still defines
+        /// its file and makes it the current document. A method whose sequence points all belong to one
+        /// document names that document in its row; a method whose points span several documents has a nil
+        /// document in its row, and its blob names the documents (<see cref="EncodeSequencePoints"/>).
+        /// </remarks>
         private void BuildPdbMetadata()
         {
-            // Add documents and sequence points to the PDB metadata builder
+            IReadOnlyList<PdbDocument> documents = _pdbDocuments.Documents;
+            var documentHandles = new DocumentHandle[documents.Count];
+            for (int i = 0; i < documents.Count; i++)
+            {
+                PdbDocument document = documents[i];
+                documentHandles[i] = _pdbBuilder.AddDocument(
+                    _pdbBuilder.GetOrAddDocumentName(document.Name),
+                    hashAlgorithm: default,
+                    hash: default,
+                    language: document.Language != Guid.Empty ? _pdbBuilder.GetOrAddGuid(document.Language) : default);
+            }
+
             foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
             {
                 if (entity is not EntityRegistry.MethodDefinitionEntity method)
@@ -672,54 +694,62 @@ namespace ILAssembler
                     continue;
                 }
 
-                var debugInfo = method.DebugInfo;
-                if (debugInfo.SequencePoints.Count == 0)
+                List<EntityRegistry.SequencePoint> sequencePoints = method.DebugInfo.SequencePoints;
+                if (sequencePoints.Count == 0 || !method.HasBody)
                 {
-                    // Add empty debug info entry for methods without sequence points
+                    // A method without an IL body has no offsets for its .line directives to map, as in native
+                    // ilasm, which records sequence points as it emits instructions.
                     _pdbBuilder.AddMethodDebugInformation(default, default);
                     continue;
                 }
 
-                // Get or create document handle
-                DocumentHandle documentHandle = default;
-                if (debugInfo.DocumentPath is not null)
+                int firstDocument = sequencePoints[0].DocumentIndex;
+                bool singleDocument = true;
+                for (int i = 1; i < sequencePoints.Count && singleDocument; i++)
                 {
-                    (string Path, Guid LanguageGuid) documentKey =
-                        (debugInfo.DocumentPath, debugInfo.LanguageGuid);
-                    if (!_documentHandles.TryGetValue(documentKey, out documentHandle))
-                    {
-                        var nameHandle = _pdbBuilder.GetOrAddDocumentName(debugInfo.DocumentPath);
-                        var languageGuidHandle = debugInfo.LanguageGuid != Guid.Empty
-                            ? _pdbBuilder.GetOrAddGuid(debugInfo.LanguageGuid)
-                            : default;
-                        documentHandle = _pdbBuilder.AddDocument(
-                            nameHandle,
-                            default, // hash algorithm
-                            default, // hash
-                            languageGuidHandle);
-                        _documentHandles[documentKey] = documentHandle;
-                    }
+                    singleDocument = sequencePoints[i].DocumentIndex == firstDocument;
                 }
 
-                // Encode sequence points
-                var sequencePointsBlob = EncodeSequencePoints(debugInfo.SequencePoints);
-                var sequencePointsBlobHandle = _pdbBuilder.GetOrAddBlob(sequencePointsBlob);
-
-                _pdbBuilder.AddMethodDebugInformation(documentHandle, sequencePointsBlobHandle);
+                BlobBuilder sequencePointsBlob = EncodeSequencePoints(sequencePoints, documentHandles, singleDocument);
+                _pdbBuilder.AddMethodDebugInformation(
+                    singleDocument ? documentHandles[firstDocument] : default,
+                    _pdbBuilder.GetOrAddBlob(sequencePointsBlob));
             }
         }
 
-        private static BlobBuilder EncodeSequencePoints(List<EntityRegistry.SequencePoint> sequencePoints)
+        /// <summary>
+        /// Encodes a method's sequence points as a sequence points blob (docs/design/specs/PortablePdb-Metadata.md,
+        /// "Sequence Points Blob").
+        /// </summary>
+        /// <param name="sequencePoints">The method's sequence points, in increasing IL offset order. Not empty.</param>
+        /// <param name="documentHandles">The Document rows, indexed by <see cref="EntityRegistry.SequencePoint.DocumentIndex"/>.</param>
+        /// <param name="singleDocument">
+        /// <see langword="true"/> when every point belongs to the document of the first point, which the method's
+        /// MethodDebugInformation row then names.
+        /// </param>
+        /// <remarks>
+        /// The header is the LocalSignature, written as 0, followed, when the points span several documents, by the
+        /// InitialDocument: the document of the first point. A document-record precedes each non-hidden point whose
+        /// document differs from the current one. A hidden point has no document-record of its own and belongs to
+        /// the current document. This is the encoding native ilasm writes.
+        /// </remarks>
+        private static BlobBuilder EncodeSequencePoints(
+            List<EntityRegistry.SequencePoint> sequencePoints,
+            DocumentHandle[] documentHandles,
+            bool singleDocument)
         {
+            Debug.Assert(sequencePoints.Count > 0);
             var builder = new BlobBuilder();
 
-            if (sequencePoints.Count == 0)
-            {
-                return builder;
-            }
-
-            // LocalSignature (not used here, write 0)
+            // LocalSignature
             builder.WriteCompressedInteger(0);
+
+            int currentDocument = sequencePoints[0].DocumentIndex;
+            if (!singleDocument)
+            {
+                // InitialDocument
+                builder.WriteCompressedInteger(MetadataTokens.GetRowNumber(documentHandles[currentDocument]));
+            }
 
             int previousOffset = 0;
             int previousStartLine = -1;
@@ -727,6 +757,14 @@ namespace ILAssembler
 
             foreach (var sp in sequencePoints)
             {
+                if (!sp.IsHidden && sp.DocumentIndex != currentDocument)
+                {
+                    // document-record: a zero IL offset delta, then the Document row number.
+                    currentDocument = sp.DocumentIndex;
+                    builder.WriteCompressedInteger(0);
+                    builder.WriteCompressedInteger(MetadataTokens.GetRowNumber(documentHandles[currentDocument]));
+                }
+
                 // IL offset delta
                 int offsetDelta = sp.ILOffset - previousOffset;
                 builder.WriteCompressedInteger(offsetDelta);

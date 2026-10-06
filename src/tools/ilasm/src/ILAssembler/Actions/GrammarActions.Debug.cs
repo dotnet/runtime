@@ -121,9 +121,19 @@ internal sealed partial class GrammarActions
         ApplySourceDirective(value);
     }
 
+    /// <summary>
+    /// Applies a <c>.line</c> or <c>#line</c> directive: a non-empty file name makes that file the current
+    /// document, and inside a method body the directive adds a sequence point at the current IL offset in the
+    /// current document.
+    /// </summary>
+    /// <remarks>
+    /// An empty file name (<c>''</c> or <c>""</c>) leaves the current document unchanged, as in native ilasm:
+    /// ildasm writes it for "the same file as the previous directive", including on the first directive of a
+    /// method. A directive at the same offset as the previous point replaces that point, coordinates and document.
+    /// </remarks>
     private void ApplySourceDirective(SourceDirectiveValue value)
     {
-        if (value.DocumentPath is not null)
+        if (!string.IsNullOrEmpty(value.DocumentPath))
         {
             _currentDocumentPath = value.DocumentPath;
         }
@@ -133,18 +143,14 @@ internal sealed partial class GrammarActions
             return;
         }
 
+        int document = _pdbDocuments.GetOrAdd(_currentDocumentPath, _currentLanguageGuid);
         int ilOffset = _currentMethod.Definition.MethodBody.Offset;
         EntityRegistry.MethodDebugInfo debugInfo = _currentMethod.Definition.DebugInfo;
-        if (debugInfo.DocumentPath is null)
-        {
-            debugInfo.DocumentPath = _currentDocumentPath;
-            debugInfo.LanguageGuid = _currentLanguageGuid;
-        }
 
         EntityRegistry.SequencePoint sequencePoint;
         if (value.StartLine == 0xFEEFEE)
         {
-            sequencePoint = EntityRegistry.SequencePoint.Hidden(ilOffset);
+            sequencePoint = EntityRegistry.SequencePoint.Hidden(document, ilOffset);
         }
         else
         {
@@ -155,6 +161,7 @@ internal sealed partial class GrammarActions
             }
 
             sequencePoint = new EntityRegistry.SequencePoint(
+                document,
                 ilOffset,
                 value.StartLine,
                 value.StartColumn,
