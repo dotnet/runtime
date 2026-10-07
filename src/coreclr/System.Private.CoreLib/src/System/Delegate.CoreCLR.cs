@@ -261,7 +261,7 @@ namespace System
                     Debug.Assert(
                         !IsClosed || currentType is not null
                         || _target!.GetType().IsCOMObject
-                        || targetType is { IsInterface: true }, "The class hierarchy should declare the method or be a DIM");
+                        || declaringType.IsInterface, "The class hierarchy should declare the method or be a DIM");
                 }
             }
 
