@@ -55,7 +55,7 @@ public class RefWalkExternalMemoryHandlesContractTests
             })
             .AddGlobals((nameof(Constants.Globals.ObjectToMethodTableUnmask), 0ul))
             .AddContract<ILoader>(version: "c1")
-            .AddContract<IExternalMemoryHandles>(version: "c2")
+            .AddContract<IExternalMemoryHandles>(version: "c1")
             .AddMockContract(mockGC)
             .AddMockContract(rts);
 
