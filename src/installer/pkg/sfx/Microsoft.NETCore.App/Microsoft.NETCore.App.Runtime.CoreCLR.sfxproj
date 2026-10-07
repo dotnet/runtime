@@ -39,7 +39,7 @@
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
     <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunEmitSymbols>false</PublishReadyToRunEmitSymbols>
-    <_PublishReadyToRunCrossgen2ExtraArgs>--opt-cross-module:*;--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</_PublishReadyToRunCrossgen2ExtraArgs>
+    <_PublishReadyToRunCrossgen2ExtraArgs>--opt-cross-module:*</_PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <!-- Use the Mach-O format for Apple mobile platforms as we can't load native code from PE files on these platforms -->

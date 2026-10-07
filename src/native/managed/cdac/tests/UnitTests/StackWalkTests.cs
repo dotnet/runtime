@@ -519,7 +519,9 @@ public unsafe class StackWalkTests
         MockTarget.Architecture arch,
         Action<MockThreadBuilder> configure,
         Action<MockFrameBuilder>? configureFrames = null,
-        RuntimeInfoArchitecture? runtimeArchitecture = null)
+        RuntimeInfoArchitecture? runtimeArchitecture = null,
+        Action<TestPlaceholderTarget.Builder>? configureTarget = null,
+        IExecutionManager? executionManager = null)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
@@ -567,6 +569,8 @@ public unsafe class StackWalkTests
             targetBuilder.AddMockContract(runtimeInfo.Object);
         }
 
+        configureTarget?.Invoke(targetBuilder);
+
         return targetBuilder
             .AddContract<IThread>(version: "c1")
             .AddContract<IStackWalk>(version: "c1")
@@ -574,7 +578,7 @@ public unsafe class StackWalkTests
             // when constructing its GcScanner. Our tests only exercise GetFrames /
             // IsExceptionHandlingHelperInlinedCallFrame / GetDebuggerEvalData, none of which
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
-            .AddMockContract(Mock.Of<IExecutionManager>())
+            .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
             .AddMockContract(Mock.Of<IGCInfo>())
             .Build();
     }
@@ -882,6 +886,282 @@ public unsafe class StackWalkTests
         Assert.Equal(0x0004_2000ul, context.InstructionPointer.Value);
         Assert.Equal(0x0004_3000ul, context.FramePointer.Value);
         Assert.Equal(0x8000000u, context.RawContextFlags);
+    }
+
+    // An InlinedCallFrame pushed by R2R code on WASM stores INLINED_PINVOKE_FROM_R2R (1) instead of
+    // a return address. Like native InlinedCallFrame::UpdateRegDisplay_Impl, the handler takes SP
+    // from CallSiteSP and derives the virtual IP from the R2R shadow frame at that SP.
+    [Fact]
+    public void UpdateContextFromFrame_WasmR2RInlinedCallFrame_DerivesVirtualIPFromCallSiteSP()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const uint FunctionTableIndex = 5;
+        const ulong MinVirtualIP = 0x0005_0000;
+        const uint FunctionBeginAddress = 0x100;
+        const uint LocalVirtualIPHalf = 3;
+
+        ulong shadowFrameAddr = 0;
+        MockInlinedCallFrame? icf = null;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder => icf = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 1, datum: 0, callSiteSP: 0, calleeSavedFP: 0xBAD0),
+            configureTarget: targetBuilder =>
+            {
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                AddWasmR2RFunction(targetBuilder, allocator, FunctionTableIndex, MinVirtualIP, FunctionBeginAddress);
+
+                MockMemorySpace.HeapFragment shadowFrame = allocator.Allocate(8, "R2RShadowFrame");
+                targetBuilder.MemoryBuilder.TargetTestHelpers.Write(shadowFrame.Data.AsSpan(0, sizeof(uint)), FunctionTableIndex);
+                targetBuilder.MemoryBuilder.TargetTestHelpers.Write(shadowFrame.Data.AsSpan(4, sizeof(uint)), LocalVirtualIPHalf);
+                shadowFrameAddr = shadowFrame.Address;
+                icf!.CallSiteSP = shadowFrameAddr;
+            });
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(icf!.Address);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.Equal(shadowFrameAddr, context.StackPointer.Value);
+        Assert.Equal(MinVirtualIP + FunctionBeginAddress + LocalVirtualIPHalf * 2, context.InstructionPointer.Value);
+        Assert.Equal(shadowFrameAddr, context.FramePointer.Value);
+    }
+
+    // A WASM walk seeded from the Frame chain must terminate when an active InlinedCallFrame does
+    // not lead to managed code: either an R2R marker whose shadow frame yields no virtual IP, or a
+    // return address outside any code range. WASM advertises the Debugger contract with a null
+    // g_pDebugger (no in-process debugger), which reports no hijacks.
+    [Theory]
+    [InlineData(1ul)]
+    [InlineData(0x0004_2000ul)]
+    public void CreateStackWalk_WasmActiveInlinedCallFrameWithoutManagedCaller_Terminates(ulong callerReturnAddress)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        MockThread? thread = null;
+        ulong icfAddr = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                // CallSiteSP below the linear-stack floor: no R2R shadow frame to resolve.
+                icfAddr = frameBuilder.AddInlinedCallFrame(callerReturnAddress, datum: 0, callSiteSP: 0x800).Address;
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0010_4000);
+                AddWasmR2RFunction(targetBuilder, allocator, functionTableIndex: 5, minVirtualIP: 0x0005_0000, functionBeginAddress: 0x100);
+                AddWasmNullDebugger(targetBuilder, allocator);
+            });
+        thread!.Frame = icfAddr;
+
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread.Address));
+        IStackDataFrameHandle[] frames = stackWalk.CreateStackWalk(threadData).Take(16).ToArray();
+
+        Assert.InRange(frames.Length, 1, 2);
+        Assert.Equal(icfAddr, stackWalk.GetFrameAddress(frames[^1]).Value);
+    }
+
+    // An interpreted P/Invoke pushes an active InlinedCallFrame whose CallSiteSP is the top
+    // InterpMethodContextFrame of the owning InterpreterFrame that follows it. Like native
+    // InlinedCallFrame::IsInInterpreter handling, the walk must move from that ICF to the
+    // InterpreterFrame and walk its interpreted chain exactly once, whether it is seeded from a
+    // native context below the ICF or from the Frame chain (which yields the ICF's context).
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CreateStackWalk_WasmInterpretedPInvoke_WalksInterpretedChainOnce(bool seedFromNativeContext)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong InterpIp1 = 0x0005_1000;
+        const ulong InterpIp2 = 0x0005_2000;
+        const ulong NativeCallerIp = 0x0009_0000;
+
+        MockThread? thread = null;
+        MockFrameBuilder? frames = null;
+        ulong imcfLeaf = 0;
+        ulong icfAddr = 0;
+        ulong interpreterFrameAddr = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                frames = frameBuilder;
+                ulong imcfRoot = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: InterpIp2, stack: 0x0006_2000).Address;
+                imcfLeaf = frameBuilder.AddInterpMethodContextFrame(parentPtr: imcfRoot, ip: InterpIp1, stack: 0x0006_1000).Address;
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                ulong terminator = uint.MaxValue;
+                AddWasmR2RFunction(targetBuilder, allocator, functionTableIndex: 5, minVirtualIP: 0x0005_0000, functionBeginAddress: 0x100);
+                AddWasmNullDebugger(targetBuilder, allocator);
+
+                // TransitionBlock: ReturnAddress followed by the (empty) callee-saved register area.
+                MockMemorySpace.HeapFragment transitionBlock = allocator.Allocate((ulong)pointerSize, "TransitionBlock");
+                helpers.WritePointer(transitionBlock.Data.AsSpan(0, pointerSize), NativeCallerIp);
+
+                // InterpreterFrame derives from FramedMethodFrame.
+                Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
+                int topOffset = fmfLayout.Size;
+                int isFaultingOffset = topOffset + pointerSize;
+                Dictionary<string, Target.FieldInfo> interpreterFrameFields = new(TargetTestHelpers.CreateTypeInfo(fmfLayout).Fields)
+                {
+                    [nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)] = new() { Offset = topOffset },
+                    [nameof(Data.InterpreterFrame.IsFaulting)] = new() { Offset = isFaultingOffset },
+                };
+                MockMemorySpace.HeapFragment interpreterFrame = allocator.Allocate((ulong)(isFaultingOffset + pointerSize), "InterpreterFrame");
+                MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
+                fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
+                fmf.Next = terminator;
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(fmfLayout.Fields.Single(f => f.Name == nameof(Data.FramedMethodFrame.TransitionBlockPtr)).Offset, pointerSize), transitionBlock.Address);
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(topOffset, pointerSize), imcfLeaf);
+                interpreterFrameAddr = interpreterFrame.Address;
+
+                // The ICF is pushed below (at a lower address than) the owning InterpreterFrame.
+                Layout<MockInlinedCallFrame> icfLayout = frames.InlinedCallFrameLayout;
+                MockMemorySpace.HeapFragment icfFragment = targetBuilder.MemoryBuilder.CreateAllocator(0x001F_0000, 0x001F_1000).Allocate((ulong)icfLayout.Size, "InlinedCallFrame");
+                MockInlinedCallFrame icf = icfLayout.Create(icfFragment);
+                icf.Identifier = MockFrameBuilder.InlinedCallFrameIdentifierValue;
+                icf.Next = interpreterFrameAddr;
+                icf.CallerReturnAddress = InterpIp1;
+                icf.CallSiteSP = imcfLeaf;
+                icfAddr = icf.Address;
+                thread!.Frame = icfAddr;
+
+                targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = (uint)(isFaultingOffset + pointerSize) },
+                    [DataType.TransitionBlock] = new()
+                    {
+                        Fields = new Dictionary<string, Target.FieldInfo>
+                        {
+                            [nameof(Data.TransitionBlock.ReturnAddress)] = new() { Offset = 0 },
+                            [nameof(Data.TransitionBlock.CalleeSavedRegisters)] = new() { Offset = pointerSize },
+                            [nameof(Data.TransitionBlock.ArgumentRegisters)] = new() { Offset = pointerSize },
+                            [nameof(Data.TransitionBlock.FirstGCRefMapSlot)] = new() { Offset = pointerSize },
+                        },
+                        Size = (uint)pointerSize,
+                    },
+                    [DataType.CalleeSavedRegisters] = new() { Fields = new Dictionary<string, Target.FieldInfo>(), Size = 0 },
+                });
+            },
+            executionManager: CreateInterpreterExecutionManager(InterpIp1, InterpIp2));
+
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
+        IEnumerable<IStackDataFrameHandle> walk;
+        if (seedFromNativeContext)
+        {
+            ContextHolder<WasmContext> nativeContext = new() { InstructionPointer = new TargetCodePointer(0x0009_9000) };
+            walk = stackWalk.CreateStackWalk(threadData, nativeContext.GetBytes());
+        }
+        else
+        {
+            walk = stackWalk.CreateStackWalk(threadData);
+        }
+
+        IStackDataFrameHandle[] walked = walk.Take(32).ToArray();
+        ulong[] interpretedIps = walked
+            .Select(f => stackWalk.GetInstructionPointer(f).Value)
+            .Where(ip => ip is InterpIp1 or InterpIp2)
+            .ToArray();
+        ulong[] explicitFrames = walked
+            .Select(f => stackWalk.GetFrameAddress(f).Value)
+            .Where(a => a != 0)
+            .ToArray();
+
+        Assert.Equal([InterpIp1, InterpIp2], interpretedIps);
+        Assert.Equal(NativeCallerIp, stackWalk.GetInstructionPointer(walked[^1]).Value);
+        if (seedFromNativeContext)
+        {
+            Assert.Equal([icfAddr, interpreterFrameAddr], explicitFrames.Distinct());
+        }
+        Assert.True(walked.Length <= 8, $"Walk did not terminate: {walked.Length} frames");
+    }
+
+    private static IExecutionManager CreateInterpreterExecutionManager(params ulong[] interpreterIps)
+    {
+        Mock<IExecutionManager> executionManager = new();
+        executionManager
+            .Setup(em => em.GetCodeBlockHandle(It.IsAny<TargetCodePointer>()))
+            .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value) ? new CodeBlockHandle(new TargetPointer(ip.Value)) : null);
+        executionManager
+            .Setup(em => em.GetCodeKind(It.IsAny<TargetCodePointer>()))
+            .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value) ? CodeKind.Interpreter : default);
+        return executionManager.Object;
+    }
+
+    // WASM advertises the Debugger contract, but the in-process debugger is not built there, so
+    // g_pDebugger stays null.
+    private static void AddWasmNullDebugger(TestPlaceholderTarget.Builder targetBuilder, MockMemorySpace.BumpAllocator allocator)
+    {
+        MockMemorySpace.HeapFragment debuggerSlot = allocator.Allocate(4, "g_pDebugger");
+        targetBuilder.AddGlobals((Constants.Globals.Debugger, debuggerSlot.Address));
+        targetBuilder.AddContract<IDebugger>(version: "c1");
+    }
+
+    private static void AddWasmR2RFunction(
+        TestPlaceholderTarget.Builder targetBuilder,
+        MockMemorySpace.BumpAllocator allocator,
+        uint functionTableIndex,
+        ulong minVirtualIP,
+        uint functionBeginAddress)
+    {
+        MockTarget.Architecture arch = targetBuilder.MemoryBuilder.TargetTestHelpers.Arch;
+        TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+
+        int hashMapStride = MockHashMap.CreateLayout(arch).Size;
+        var moduleLayout = MockLoaderModule.CreateLayout(arch);
+        var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(arch, hashMapStride, isWasm: true);
+        TargetTestHelpers.LayoutResult runtimeFunctionLayout = helpers.LayoutFields([
+            new(nameof(Data.RuntimeFunction.BeginAddress), DataType.uint32),
+            new(nameof(Data.RuntimeFunction.UnwindData), DataType.uint32),
+        ]);
+        TargetTestHelpers.LayoutResult rangeSectionLayout = helpers.LayoutFields([
+            new(nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex), DataType.uint32),
+            new(nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions), DataType.uint32),
+            new(nameof(Data.FunctionTableIndexRangeSection.R2RModule), DataType.pointer),
+            new(nameof(Data.FunctionTableIndexRangeSection.Next), DataType.pointer),
+        ]);
+
+        MockMemorySpace.HeapFragment runtimeFunction = allocator.Allocate(runtimeFunctionLayout.Stride, "RuntimeFunction");
+        helpers.Write(runtimeFunction.Data.AsSpan(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functionBeginAddress);
+
+        MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
+        r2rInfo.CompositeInfo = r2rInfo.Address;
+        r2rInfo.NumRuntimeFunctions = 1;
+        r2rInfo.RuntimeFunctions = runtimeFunction.Address;
+        r2rInfo.MinVirtualIP = minVirtualIP;
+
+        MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
+        module.ReadyToRunInfo = r2rInfo.Address;
+
+        MockMemorySpace.HeapFragment section = allocator.Allocate(rangeSectionLayout.Stride, "FunctionTableIndexRangeSection");
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), functionTableIndex);
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), 1u);
+        helpers.WritePointer(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RModule)].Offset, helpers.PointerSize), module.Address);
+
+        MockMemorySpace.HeapFragment listSlot = allocator.Allocate((ulong)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
+        helpers.WritePointer(listSlot.Data.AsSpan(), section.Address);
+
+        targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.RuntimeFunction] = new() { Fields = runtimeFunctionLayout.Fields, Size = runtimeFunctionLayout.Stride },
+                [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(r2rInfoLayout),
+                [DataType.Module] = TargetTestHelpers.CreateTypeInfo(moduleLayout),
+                [DataType.FunctionTableIndexRangeSection] = new() { Fields = rangeSectionLayout.Fields, Size = rangeSectionLayout.Stride },
+            })
+            .AddGlobals((Constants.Globals.FunctionTableIndexRangeList, listSlot.Address));
     }
 
     // When an active InlinedCallFrame is directly followed by an InterpreterFrame, WasmFrameHandler

@@ -1195,7 +1195,7 @@ bool
 session_requested_sampling (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	return ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ());
+	return ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ()) != NULL;
 }
 
 static

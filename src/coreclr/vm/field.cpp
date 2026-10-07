@@ -276,16 +276,14 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         Module* pModule = GetModule();
         if (offset == FIELD_OFFSET_DYNAMIC_RVA)
         {
-#ifdef FEATURE_METADATA_UPDATER
             _ASSERTE(!IsEnCNew());
-            _ASSERTE(pModule->IsEditAndContinueEnabled());
-            LOG((LF_ENC, LL_INFO1000, "FD::GSAH: Dynamic (EnC) - RVA\n"));
+            _ASSERTE(pModule->IsReflectionEmit() || pModule->IsEditAndContinueEnabled());
+            LOG((LF_CORDB, LL_INFO1000, "FD::GSAH: Dynamic RVA\n"));
             retVal = PTR_VOID(pModule->GetDynamicRvaField(GetMemberDef()));
-#endif // FEATURE_METADATA_UPDATER
         }
         else
         {
-            _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(offset));
+            _ASSERTE(!pModule->IsRvaFieldTls(offset));
             retVal = pModule->GetRvaField(offset);
         }
     }

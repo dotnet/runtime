@@ -13,7 +13,6 @@
 //*
 //******************************************************
 HRESULT RefClassWriter::Init(
-    ICeeGenInternal *pCeeGen,
     IMDInternalEmit *pEmitter,
     IMDInternalImport *pInternalImport,
     LPCWSTR szName)
@@ -21,7 +20,6 @@ HRESULT RefClassWriter::Init(
     CONTRACTL {
         STANDARD_VM_CHECK;
 
-        PRECONDITION(CheckPointer(pCeeGen));
         PRECONDITION(CheckPointer(pEmitter));
         PRECONDITION(CheckPointer(pInternalImport));
     }
@@ -31,9 +29,6 @@ HRESULT RefClassWriter::Init(
     m_emitter = NULL;
     m_internalimport = NULL;
     m_ulResourceSize = 0;
-
-    m_pCeeGen = pCeeGen;
-    pCeeGen->AddRef();
 
     m_emitter = pEmitter;
     m_emitter->AddRef();
@@ -73,10 +68,5 @@ RefClassWriter::~RefClassWriter()
 
     if (m_internalimport) {
         m_internalimport->Release();
-    }
-
-    if (m_pCeeGen) {
-        m_pCeeGen->Release();
-        m_pCeeGen = NULL;
     }
 }

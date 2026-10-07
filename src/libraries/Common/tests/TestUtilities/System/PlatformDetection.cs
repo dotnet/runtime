@@ -179,7 +179,7 @@ namespace System
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
         public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;
 
-        public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
+        public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS && !IsWasi;
 
         public static bool IsLinqSpeedOptimized => !IsLinqSizeOptimized;
         public static bool IsLinqSizeOptimized => s_linqIsSizeOptimized.Value;

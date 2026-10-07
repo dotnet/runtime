@@ -52,9 +52,7 @@ namespace System.Net.Mail.Tests
                 ClientCertificateRequired = false,
             };
 
-#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
-            ServicePointManager.ServerCertificateValidationCallback = ServerCertValidationCallback;
-#pragma warning restore SYSLIB0014 // ServicePointManager is obsolete
+            Smtp.SslOptions.RemoteCertificateValidationCallback = ServerCertValidationCallback;
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/120959", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
@@ -158,8 +156,10 @@ namespace System.Net.Mail.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/120959", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
-        [Fact]
-        public async Task ClientCertificateRequired_Sent()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ClientCertificateRequired_Sent(bool useSslOptions)
         {
             Server.SslOptions.ClientCertificateRequired = true;
             X509Certificate2 clientCert = _certificateSetup.ServerCert; // use the server cert as a client cert for testing
@@ -177,7 +177,14 @@ namespace System.Net.Mail.Tests
 
             Smtp.Credentials = new NetworkCredential("foo", "bar");
             Smtp.EnableSsl = true;
-            Smtp.ClientCertificates.Add(clientCert);
+            if (useSslOptions)
+            {
+                Smtp.SslOptions.ClientCertificates = new X509CertificateCollection { clientCert };
+            }
+            else
+            {
+                Smtp.ClientCertificates.Add(clientCert);
+            }
 
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
@@ -207,6 +214,163 @@ namespace System.Net.Mail.Tests
             Assert.True(Server.IsEncrypted, "Second connection should be encrypted after enabling SSL.");
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("smtp.example.com")]
+        public async Task SslOptions_TargetHost(string? targetHost)
+        {
+            Smtp.EnableSsl = true;
+            Smtp.SslOptions.TargetHost = targetHost;
+            _serverCertValidationCallback = (cert, chain, errors) => true;
+            using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
+
+            await SendMail(message);
+
+            Assert.Equal(targetHost ?? Smtp.Host, Server.TlsHostName);
+            Assert.Equal(targetHost, Smtp.SslOptions.TargetHost);
+        }
+
+        [Fact]
+        public async Task SslOptions_DefaultTargetHostFollowsHostChange()
+        {
+            Server.ReceiveMultipleConnections = true;
+            Smtp.EnableSsl = true;
+            string? validatedHost = null;
+            Smtp.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                validatedHost = Assert.IsType<SslStream>(sender).TargetHostName;
+                return true;
+            };
+            using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
+
+            await SendMail(message);
+            Assert.Equal("localhost", validatedHost);
+
+            Smtp.Host = "127.0.0.1";
+            await SendMail(message);
+            Assert.Equal("127.0.0.1", validatedHost);
+            Assert.Equal(2, Server.ConnectionCount);
+            Assert.Null(Smtp.SslOptions.TargetHost);
+        }
+
+        [Fact]
+        public async Task SslOptions_ProtocolSelection()
+        {
+            Smtp.EnableSsl = true;
+            Smtp.SslOptions.EnabledSslProtocols = SslProtocols.Tls12;
+            _serverCertValidationCallback = (cert, chain, errors) => true;
+            using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
+
+            await SendMail(message);
+
+            Assert.Equal(SslProtocols.Tls12, Server.TlsProtocol);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task SslOptions_ApplicationProtocols()
+        {
+            var protocol = new SslApplicationProtocol("smtp-test");
+            Server.SslOptions.ApplicationProtocols = new() { protocol };
+            Smtp.EnableSsl = true;
+            Smtp.SslOptions.ApplicationProtocols = new() { protocol };
+            _serverCertValidationCallback = (cert, chain, errors) => true;
+            using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
+
+            await SendMail(message);
+
+            Assert.Equal(protocol, Server.ApplicationProtocol);
+        }
+
+        [Fact]
+        public async Task SslOptions_DisabledSslDoesNotUseOptions()
+        {
+            bool callbackCalled = false;
+            Smtp.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                callbackCalled = true;
+                return false;
+            };
+            using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
+
+            await SendMail(message);
+
+            Assert.False(Server.IsEncrypted);
+            Assert.False(callbackCalled);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SslOptions_AssignmentInvalidatesConnection(bool sameInstance)
+        {
+            Server.ReceiveMultipleConnections = true;
+            Smtp.EnableSsl = true;
+            X509CertificateCollection certificates = Smtp.ClientCertificates;
+            _serverCertValidationCallback = (cert, chain, errors) => true;
+            using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
+            await SendMail(message);
+            await SendMail(message);
+            Assert.Equal(1, Server.ConnectionCount);
+
+            SslClientAuthenticationOptions options = sameInstance ? Smtp.SslOptions : new SslClientAuthenticationOptions
+            {
+                RemoteCertificateValidationCallback = ServerCertValidationCallback,
+            };
+            options.TargetHost = "smtp.example.com";
+            if (sameInstance)
+            {
+                certificates.Add(_certificateSetup.ServerCert);
+                Assert.Same(certificates, options.ClientCertificates);
+                await SendMail(message);
+                Assert.Equal(1, Server.ConnectionCount);
+                Assert.Equal("localhost", Server.TlsHostName);
+            }
+
+            Smtp.SslOptions = options;
+            await SendMail(message);
+            Assert.Equal(2, Server.ConnectionCount);
+            Assert.Equal("smtp.example.com", Server.TlsHostName);
+        }
+
+        [Fact]
+        public async Task SslOptions_InPlaceChangeAppliesAfterReconnect()
+        {
+            Server.ReceiveMultipleConnections = true;
+            Smtp.EnableSsl = true;
+            _serverCertValidationCallback = (cert, chain, errors) => true;
+            using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
+            await SendMail(message);
+
+            Smtp.SslOptions.TargetHost = "smtp.example.com";
+            Smtp.TargetName = "SMTPSVC/another-name";
+            await SendMail(message);
+
+            Assert.Equal(2, Server.ConnectionCount);
+            Assert.Equal("smtp.example.com", Server.TlsHostName);
+        }
+
+        [Fact]
+        public async Task SslOptions_AssignmentDuringSendThrows()
+        {
+            Smtp.EnableSsl = true;
+            SslClientAuthenticationOptions original = Smtp.SslOptions;
+            bool callbackCalled = false;
+            _serverCertValidationCallback = (cert, chain, errors) =>
+            {
+                callbackCalled = true;
+                Assert.Throws<InvalidOperationException>(() => Smtp.SslOptions = new SslClientAuthenticationOptions());
+                Assert.Throws<InvalidOperationException>(() => Smtp.SslOptions = original);
+                Assert.Same(original, Smtp.SslOptions);
+                return true;
+            };
+            using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
+
+            await SendMail(message);
+
+            Assert.True(callbackCalled);
+        }
+
         private bool ServerCertValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
             if (_serverCertValidationCallback != null)
@@ -219,21 +383,16 @@ namespace System.Net.Mail.Tests
         }
     }
 
-    // since the tests change global state (ServicePointManager.ServerCertificateValidationCallback), we need to run them in isolation
-
-    [Collection(nameof(DisableParallelization))]
     public class SmtpClientTlsTest_Send : SmtpClientTlsTest<SyncSendMethod>, IClassFixture<CertificateSetup>
     {
         public SmtpClientTlsTest_Send(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
     }
 
-    [Collection(nameof(DisableParallelization))]
     public class SmtpClientTlsTest_SendAsync : SmtpClientTlsTest<AsyncSendMethod>, IClassFixture<CertificateSetup>
     {
         public SmtpClientTlsTest_SendAsync(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
     }
 
-    [Collection(nameof(DisableParallelization))]
     public class SmtpClientTlsTest_SendMailAsync : SmtpClientTlsTest<SendMailAsyncMethod>, IClassFixture<CertificateSetup>
     {
         public SmtpClientTlsTest_SendMailAsync(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
