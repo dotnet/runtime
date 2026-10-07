@@ -128,7 +128,7 @@ OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
 
-OBJECTREF            g_pPreallocatedSentinelObject;
+OBJECTREF            g_pPreallocatedSentinelObject = NULL;
 
 //
 //
