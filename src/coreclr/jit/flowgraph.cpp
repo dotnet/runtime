@@ -1011,7 +1011,7 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
 
-    // After LSRA the base of a contained address mode may be wrapped in a COPY/RELOAD.
+    // After LSRA the base of a contained address mode may be wrapped in a COPY/RELOAD
     op = op->gtSkipReloadOrCopy();
 
     // Ignore the offset for locals
