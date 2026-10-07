@@ -24,7 +24,6 @@
 #include "comsynchronizable.h"
 #include "floatdouble.h"
 #include "floatsingle.h"
-#include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
 
@@ -308,7 +307,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetIsBackground)
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
-    DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Initialize)
     DllImportEntry(ThreadNative_GetThreadState)
     DllImportEntry(ThreadNative_ReentrantWaitAny)
@@ -519,6 +517,7 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
+    DllImportEntry(ObjectMarshaler_ConvertToNativeVariantArrayElement)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
     DllImportEntry(InterfaceMarshaler_ConvertToManaged)

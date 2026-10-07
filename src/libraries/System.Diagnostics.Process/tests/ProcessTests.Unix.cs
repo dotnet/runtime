@@ -93,34 +93,26 @@ namespace System.Diagnostics.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Opens program")]
         [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_DirectoryNameInCurDirectorySameAsFileNameInExecDirectory_Success()
         {
-            string fileToOpen = "dotnet";
-            string curDir = Environment.CurrentDirectory;
-            string dotnetFolder = Path.Combine(Path.GetTempPath(),"dotnet");
-            bool shouldDelete = !Directory.Exists(dotnetFolder);
-            try
-            {
-                Directory.SetCurrentDirectory(Path.GetTempPath());
-                Directory.CreateDirectory(dotnetFolder);
+            Directory.CreateDirectory(Path.Combine(TestDirectory, "dotnet"));
 
+            RemoteExecutor.Invoke(StartDotnet, new RemoteInvokeOptions
+            {
+                StartInfo = new ProcessStartInfo { WorkingDirectory = TestDirectory }
+            }).Dispose();
+
+            static void StartDotnet()
+            {
+                string fileToOpen = "dotnet";
                 using (var px = Process.Start(fileToOpen))
                 {
                     Assert.NotNull(px);
                 }
-            }
-            finally
-            {
-                if (shouldDelete)
-                {
-                    Directory.Delete(dotnetFolder);
-                }
-
-                Directory.SetCurrentDirectory(curDir);
             }
         }
 
