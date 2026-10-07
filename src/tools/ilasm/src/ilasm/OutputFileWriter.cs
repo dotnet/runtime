@@ -27,31 +27,93 @@ namespace ILAssembler;
 /// so the PDB path holds either the file that was there before or the complete new PDB. If writing or renaming the
 /// temporary file fails, the run fails with the new image already written, and deleting the temporary file is
 /// attempted; it can remain if that deletion fails or the process ends before the rename. Because the PDB is renamed
-/// into place, a symbolic or hard link at <c>&lt;output&gt;.pdb</c> is replaced by a regular file and the link's
-/// target keeps its old content; deleting a stale PDB likewise removes a symbolic link, not its target. A stale PDB
+/// into place, a symbolic or hard link at <c>&lt;output&gt;.pdb</c> is replaced by a regular file and writing the PDB
+/// leaves the link's target as it was; deleting a stale PDB likewise removes a symbolic link, not its target. A stale PDB
 /// that cannot be deleted is left in place without failing the write.
+/// </para>
+/// <para>
+/// The image, by contrast, is written through a symbolic link at the output path. An output that leads to
+/// <c>&lt;output&gt;.pdb</c> through symbolic links is therefore treated like an output named <c>&lt;output&gt;.pdb</c>
+/// (<see cref="IsOutputPath"/>): no PDB is written over it, and it is not deleted as a stale PDB.
 /// </para>
 /// </remarks>
 internal static class OutputFileWriter
 {
+    /// <summary>
+    /// The most symbolic links <see cref="IsOutputPath"/> follows from the output path, which is the limit Linux
+    /// applies when it resolves a path. A cycle of links ends the walk here too.
+    /// </summary>
+    internal const int MaxSymbolicLinks = 40;
+
     /// <summary>
     /// Gets the full path of the PDB for an output: the output path with its extension replaced by <c>.pdb</c>.
     /// </summary>
     public static string GetPdbPath(string outputPath) => Path.GetFullPath(Path.ChangeExtension(outputPath, ".pdb"));
 
     /// <summary>
-    /// Gets whether <paramref name="pdbPath"/> names the output file itself, as it does for an output named
-    /// <c>Min.pdb</c>.
+    /// Gets whether writing the image to <paramref name="outputPath"/> would write it at <paramref name="pdbPath"/>,
+    /// where the PDB then replaces it: the output is named like its PDB (an output named <c>Min.pdb</c>), or it is a
+    /// symbolic link that leads to the PDB path.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// The full output path is compared with the PDB path, and so is each target in the chain of symbolic links that
+    /// starts at the output path, whether or not the last target exists. A relative link target is resolved against
+    /// the directory of the link. Only the links at the output path and at its targets are followed; the directories
+    /// in each path are compared as written.
+    /// </para>
+    /// <para>
+    /// The walk ends at a path that is not a symbolic link, at a path that does not exist (a
+    /// <see cref="FileNotFoundException"/> or <see cref="DirectoryNotFoundException"/> counts as no link), or after
+    /// <see cref="MaxSymbolicLinks"/> links. Any other failure to read a link, such as an
+    /// <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/>, propagates, so that an output that
+    /// cannot be inspected is not written.
+    /// </para>
+    /// <para>
+    /// A symbolic link at the PDB path needs no check, because the PDB is renamed into place and never written
+    /// through a link. Nor does a hard link between the two names: the image is written through the output's name
+    /// and the PDB then replaces the other name, which leaves the image under the output's name.
+    /// </para>
+    /// <para>
     /// The comparison ignores case on Windows and macOS, whose default file systems do, so that
     /// <c>Min.PDB</c> and <c>Min.pdb</c> are treated as the same file there; elsewhere it is exact.
+    /// </para>
     /// </remarks>
-    public static bool IsOutputPath(string pdbPath, string outputPath) =>
-        string.Equals(
-            pdbPath,
-            Path.GetFullPath(outputPath),
-            OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    public static bool IsOutputPath(string pdbPath, string outputPath)
+    {
+        StringComparison comparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+        string? path = Path.GetFullPath(outputPath);
+        for (int links = 0; path is not null && links <= MaxSymbolicLinks; links++)
+        {
+            if (string.Equals(pdbPath, path, comparison))
+            {
+                return true;
+            }
+
+            path = TryGetSymbolicLinkTarget(path);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the full path of the target of the symbolic link at <paramref name="path"/>, or <see langword="null"/>
+    /// when there is no link there or nothing exists at <paramref name="path"/>.
+    /// </summary>
+    /// <remarks>Any other failure to read the link propagates.</remarks>
+    private static string? TryGetSymbolicLinkTarget(string path)
+    {
+        try
+        {
+            return File.ResolveLinkTarget(path, returnFinalTarget: false)?.FullName;
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     /// Writes the image to <paramref name="outputPath"/>, then writes <paramref name="portablePdb"/> to

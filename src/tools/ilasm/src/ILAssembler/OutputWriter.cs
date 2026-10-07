@@ -50,7 +50,8 @@ public static class OutputWriter
     /// <param name="portablePdb">The PDB, or <see langword="null"/> when none was produced.</param>
     /// <returns>What was written or deleted.</returns>
     /// <remarks>
-    /// An exception from <paramref name="writeImage"/>, from creating or closing the output, or from
+    /// An exception from <see cref="IOutputStreams.PdbPathIsOutputPath"/> propagates to the caller before anything is
+    /// written. An exception from <paramref name="writeImage"/>, from creating or closing the output, or from
     /// <see cref="IOutputStreams.WritePdb"/> propagates to the caller. A PDB that belongs to the replaced image but
     /// cannot be deleted (<see cref="IOutputStreams.TryDeletePdb"/> returns <see langword="false"/>) is left in place
     /// without failing the write.
@@ -191,8 +192,8 @@ public static class OutputWriter
 public interface IOutputStreams
 {
     /// <summary>
-    /// Gets whether the PDB path names the output itself (an output named <c>Min.pdb</c>, for example), so that
-    /// writing a PDB would overwrite the image.
+    /// Gets whether the PDB path names the output itself (an output named <c>Min.pdb</c>, for example, or an output
+    /// that is a symbolic link to the PDB path), so that writing a PDB would overwrite the image.
     /// </summary>
     bool PdbPathIsOutputPath { get; }
 

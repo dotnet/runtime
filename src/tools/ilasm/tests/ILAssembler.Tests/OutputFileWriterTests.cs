@@ -5,6 +5,7 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace ILAssembler.Tests;
@@ -23,6 +24,9 @@ public sealed class OutputFileWriterTests : IDisposable
     // An image and the PDB its CodeView entry refers to.
     private static readonly (ImmutableArray<byte> Image, ImmutableArray<byte> Pdb) s_pair = DocumentCompilerTestHelpers.CompileImageAndPdb("A");
 
+    // Whether this process can create a symbolic link, probed once on first use (see CanCreateSymbolicLinks).
+    private static readonly Lazy<bool> s_canCreateSymbolicLinks = new(ProbeSymbolicLinkCreation);
+
     private readonly string _directory = Directory.CreateTempSubdirectory("ilasm-output-").FullName;
 
     public void Dispose() => Directory.Delete(_directory, recursive: true);
@@ -32,6 +36,49 @@ public sealed class OutputFileWriterTests : IDisposable
     private string[] FileNames() => Directory.EnumerateFileSystemEntries(_directory).Select(Path.GetFileName).Order().ToArray()!;
 
     private static void WriteImage(Stream stream) => stream.Write(s_image);
+
+    /// <summary>
+    /// The condition of the tests that are skipped on Windows, each of which says why.
+    /// </summary>
+    public static bool IsNotWindows => !OperatingSystem.IsWindows();
+
+    /// <summary>
+    /// The condition of the symbolic-link tests: whether this process can create a symbolic link to a file, which on
+    /// Windows needs a privilege or developer mode. Probed once, by creating one in a new temporary directory; a
+    /// file-system failure at any step, including creating that directory, counts as no.
+    /// </summary>
+    public static bool CanCreateSymbolicLinks => s_canCreateSymbolicLinks.Value;
+
+    private static bool ProbeSymbolicLinkCreation()
+    {
+        string? directory = null;
+        try
+        {
+            directory = Directory.CreateTempSubdirectory("ilasm-symlink-probe-").FullName;
+            string target = Path.Combine(directory, "target");
+            File.WriteAllBytes(target, []);
+            File.CreateSymbolicLink(Path.Combine(directory, "link"), target);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+        finally
+        {
+            if (directory is not null)
+            {
+                try
+                {
+                    Directory.Delete(directory, recursive: true);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Removing the probe's directory is best effort; the answer does not depend on it.
+                }
+            }
+        }
+    }
 
     [Theory]
     [InlineData("Min.dll", "Min.pdb")]
@@ -68,17 +115,12 @@ public sealed class OutputFileWriterTests : IDisposable
         Assert.Equal(s_pdb.ToArray(), File.ReadAllBytes(pdbPath));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(OutputFileWriterTests), nameof(IsNotWindows))]
     public void Write_WithPdb_RenamesANewFileOverTheExistingPdbInsteadOfRewritingIt()
     {
         // Renaming a completed temporary file over the PDB path is what keeps a failed write from leaving a
         // partial PDB. It is observable as a reader of the old PDB still seeing the old content afterwards.
-        // Renaming over a file that is open depends on the Windows version, so this runs elsewhere.
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
+        // Renaming over a file that is open depends on the Windows version, so this is skipped there.
         string outputPath = PathOf("Min.dll");
         string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
         File.WriteAllBytes(pdbPath, s_stale);
@@ -185,5 +227,123 @@ public sealed class OutputFileWriterTests : IDisposable
         OutputWriteResult result = OutputFileWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
 
         Assert.Equal(caseInsensitive ? OutputWriteResult.PdbWouldOverwriteOutput : OutputWriteResult.ImageAndPdbWritten, result);
+    }
+
+    [ConditionalFact(typeof(OutputFileWriterTests), nameof(CanCreateSymbolicLinks))]
+    public void Write_WithPdb_WritesNothingWhenTheOutputIsASymbolicLinkToThePdb()
+    {
+        // Writing the image through the link would put it in Min.pdb, which the PDB then replaces.
+        string outputPath = PathOf("Min.dll");
+        string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+        File.WriteAllBytes(pdbPath, s_stale);
+        File.CreateSymbolicLink(outputPath, pdbPath);
+
+        OutputWriteResult result = OutputFileWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+
+        Assert.Equal(OutputWriteResult.PdbWouldOverwriteOutput, result);
+        Assert.Equal(pdbPath, new FileInfo(outputPath).LinkTarget);
+        Assert.Equal(s_stale, File.ReadAllBytes(pdbPath));
+        Assert.Equal(new[] { "Min.dll", "Min.pdb" }, FileNames());
+    }
+
+    [ConditionalFact(typeof(OutputFileWriterTests), nameof(CanCreateSymbolicLinks))]
+    public void Write_WithPdb_ResolvesARelativeSymbolicLinkAgainstTheLinksDirectory()
+    {
+        string outputPath = PathOf("Min.dll");
+        string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+        Directory.CreateDirectory(PathOf("sub"));
+        File.WriteAllBytes(pdbPath, s_stale);
+        File.CreateSymbolicLink(outputPath, Path.Combine("sub", "..", "Min.pdb"));
+
+        OutputWriteResult result = OutputFileWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+
+        Assert.Equal(OutputWriteResult.PdbWouldOverwriteOutput, result);
+        Assert.Equal(s_stale, File.ReadAllBytes(pdbPath));
+    }
+
+    [ConditionalFact(typeof(OutputFileWriterTests), nameof(CanCreateSymbolicLinks))]
+    public void Write_WithPdb_WritesNothingWhenTheOutputIsASymbolicLinkToAPdbThatDoesNotExistYet()
+    {
+        // Creating the output through the dangling link would create Min.pdb, which the PDB then replaces.
+        string outputPath = PathOf("Min.dll");
+        string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+        File.CreateSymbolicLink(outputPath, pdbPath);
+
+        OutputWriteResult result = OutputFileWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+
+        Assert.Equal(OutputWriteResult.PdbWouldOverwriteOutput, result);
+        Assert.Equal(new[] { "Min.dll" }, FileNames());
+    }
+
+    [ConditionalFact(typeof(OutputFileWriterTests), nameof(CanCreateSymbolicLinks))]
+    public void Write_WithPdb_WritesNothingWhenTheOutputLeadsThroughThePdbPathToAnotherFile()
+    {
+        // Min.dll -> Min.pdb -> Other.dll: the image would go to Other.dll, but replacing the link at Min.pdb with the
+        // PDB would leave Min.dll naming the PDB.
+        string outputPath = PathOf("Min.dll");
+        string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+        string otherPath = PathOf("Other.dll");
+        File.WriteAllBytes(otherPath, s_stale);
+        File.CreateSymbolicLink(pdbPath, otherPath);
+        File.CreateSymbolicLink(outputPath, pdbPath);
+
+        OutputWriteResult result = OutputFileWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+
+        Assert.Equal(OutputWriteResult.PdbWouldOverwriteOutput, result);
+        Assert.Equal(s_stale, File.ReadAllBytes(otherPath));
+    }
+
+    [ConditionalFact(typeof(OutputFileWriterTests), nameof(CanCreateSymbolicLinks))]
+    public void Write_WithPdb_ReplacesASymbolicLinkToTheOutputAtThePdbPath()
+    {
+        // The PDB is renamed into place, so a link at the PDB path is replaced rather than written through.
+        string outputPath = PathOf("Min.dll");
+        string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+        File.WriteAllBytes(outputPath, s_stale);
+        File.CreateSymbolicLink(pdbPath, outputPath);
+
+        OutputWriteResult result = OutputFileWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+
+        Assert.Equal(OutputWriteResult.ImageAndPdbWritten, result);
+        Assert.Equal(s_image, File.ReadAllBytes(outputPath));
+        Assert.Null(new FileInfo(pdbPath).LinkTarget);
+        Assert.Equal(s_pdb.ToArray(), File.ReadAllBytes(pdbPath));
+    }
+
+    [Fact]
+    public void Write_WithPdb_KeepsTheImageWhenTheOutputAndThePdbAreHardLinks()
+    {
+        // The image is written through Min.dll into the shared file, and the PDB then replaces the name Min.pdb.
+        string outputPath = PathOf("Min.dll");
+        string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+        File.WriteAllBytes(pdbPath, s_stale);
+        File.CreateHardLink(outputPath, pdbPath);
+
+        OutputWriteResult result = OutputFileWriter.Write(outputPath, pdbPath, WriteImage, s_pdb);
+
+        Assert.Equal(OutputWriteResult.ImageAndPdbWritten, result);
+        Assert.Equal(s_image, File.ReadAllBytes(outputPath));
+        Assert.Equal(s_pdb.ToArray(), File.ReadAllBytes(pdbPath));
+    }
+
+    [Fact]
+    public void IsOutputPath_TreatsAnOutputInAMissingDirectoryAsNoLink()
+    {
+        string outputPath = PathOf(Path.Combine("missing", "Min.dll"));
+        string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+
+        Assert.False(OutputFileWriter.IsOutputPath(pdbPath, outputPath));
+    }
+
+    [ConditionalFact(typeof(OutputFileWriterTests), nameof(IsNotWindows))]
+    public void IsOutputPath_PropagatesAFailureToInspectTheOutputOtherThanItsAbsence()
+    {
+        // A file name longer than the file system allows cannot be inspected, and that is not a missing output. On
+        // Unix it fails with ENAMETOOLONG; the error Windows reports for it is not pinned here, so this is skipped
+        // there.
+        string outputPath = PathOf(new string('a', 300) + ".dll");
+        string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+
+        Assert.Throws<PathTooLongException>(() => OutputFileWriter.IsOutputPath(pdbPath, outputPath));
     }
 }
