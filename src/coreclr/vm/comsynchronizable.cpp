@@ -343,29 +343,6 @@ extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnSta
     END_QCALL;
 }
 
-extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId(QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    UINT64 threadId = 0;
-
-    BEGIN_QCALL;
-
-    // The Windows API GetCurrentThreadId returns a 32-bit integer thread ID.
-    // On some non-Windows platforms (e.g. OSX), the thread ID is a 64-bit value.
-    // We special case the API for non-Windows to get the 64-bit value and zero-extend
-    // the Windows value to return a single data type on all platforms.
-
-#ifndef TARGET_UNIX
-    threadId = (UINT64) GetCurrentThreadId();
-#else
-    threadId = (UINT64) PAL_GetCurrentOSThreadId();
-#endif
-    END_QCALL;
-
-    return threadId;
-}
-
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -703,16 +680,6 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
 }
 #endif // FEATURE_MULTITHREADING
 
-#ifdef FEATURE_MULTITHREADING
-FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
-{
-    FCALL_CONTRACT;
-
-    return (INT32)YieldProcessorNormalization::GetOptimalMaxNormalizedYieldsPerSpinIteration();
-}
-FCIMPLEND
-#endif // FEATURE_MULTITHREADING
-
 extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     INT_PTR status,
     QCall::ObjectHandleOnStack exception,
@@ -743,19 +710,16 @@ extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     END_QCALL;
 }
 
-#ifdef FEATURE_MULTITHREADING
-extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
+#if defined(TARGET_WASM) && defined(FEATURE_MULTITHREADING)
+// Break the thread-static bootstrap recursion in Thread.GetThreadStaticsBase.
+FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
 {
     FCALL_CONTRACT;
 
-    if (iterations <= 0)
-    {
-        return;
-    }
-
-    YieldProcessorNormalized(iterations);
+    return (void*)&t_ThreadStatics;
 }
-#endif // FEATURE_MULTITHREADING
+FCIMPLEND
+#endif // TARGET_WASM && FEATURE_MULTITHREADING
 
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
@@ -807,23 +771,6 @@ extern "C" void QCALLTYPE ThreadNative_PollGC()
     // This is an intentional no-op.  The call is made to ensure that the thread goes through a GC transition
     // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
 }
-
-#ifdef FEATURE_MULTITHREADING
-extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
-
-    BEGIN_QCALL;
-
-    ret = minipal_switch_to_thread(0);
-
-    END_QCALL;
-
-    return ret;
-}
-#endif // FEATURE_MULTITHREADING
 
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError)
 {

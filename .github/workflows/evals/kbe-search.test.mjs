@@ -99,6 +99,49 @@ test("production wrapper uses authenticated gh api transport", async () => {
     assert.match(script, /GITHUB_TOKEN/);
 });
 
+test("production GitHub backend supports repository lookup without exposing it to the agent", async () => {
+    const workflow = await readFile(new URL("../ci-failure-scan.md", import.meta.url), "utf8");
+    const toolsets = workflow.match(/^    toolsets: \[([^\]]+)\]/m);
+    const allowed = workflow.match(/^    allowed: \[([^\]]+)\]/m);
+    assert.ok(toolsets, "production GitHub toolsets were not found");
+    assert.ok(allowed, "production GitHub allowed tools were not found");
+    assert.ok(toolsets[1].split(",").map((value) => value.trim()).includes("repos"),
+        "the integrity gateway needs the repos toolset for search_repositories");
+    assert.deepEqual(allowed[1].split(",").map((value) => value.trim()).sort(),
+        ["issue_read", "pull_request_read", "search_pull_requests"]);
+});
+
+test("scanner eval and production use the same GitHub backend toolsets", async () => {
+    const workflow = await readFile(new URL("../ci-failure-scan.md", import.meta.url), "utf8");
+    const spec = await readFile(new URL("./ci-failure-scan.eval.yaml", import.meta.url), "utf8");
+    const productionToolsets = workflow.match(/^    toolsets: \[([^\]]+)\]/m);
+    const evalToolsets = spec.match(/^\s*- GITHUB_TOOLSETS=([^\r\n]+)/m);
+    assert.ok(productionToolsets, "production GitHub toolsets were not found");
+    assert.ok(evalToolsets, "eval GitHub toolsets were not found");
+    assert.deepEqual(
+        productionToolsets[1].split(",").map((value) => value.trim()).sort(),
+        evalToolsets[1].split(",").map((value) => value.trim()).sort()
+    );
+});
+
+for (const workflowId of ["ci-failure-scan", "ci-failure-scan-feedback"]) {
+    test(`${workflowId} uses the Responses API in the firewall's offline provider mode`, async () => {
+        const workflow = await readFile(new URL(`../${workflowId}.md`, import.meta.url), "utf8");
+        const engine = workflow.match(/^engine:\r?\n((?:^ .*(?:\r?\n|$))+)/m);
+        assert.ok(engine, "production engine configuration was not found");
+        assert.match(engine[1], /^    COPILOT_PROVIDER_WIRE_API: responses\r?$/m);
+
+        const compiled = await readFile(new URL(`../${workflowId}.lock.yml`, import.meta.url), "utf8");
+        const executionSteps = [...compiled.matchAll(
+            /^      - name: Execute GitHub Copilot CLI\r?\n([\s\S]*?)(?=^      - )/gm
+        )];
+        assert.equal(executionSteps.length, 2, "expected agent and detection Copilot execution steps");
+        for (const [, step] of executionSteps) {
+            assert.match(step, /^          COPILOT_PROVIDER_WIRE_API: responses\r?$/m);
+        }
+    });
+}
+
 test("production wrapper rejects incomplete results", async () => {
     await assert.rejects(
         runProductionSearch({ ...validResult(), incomplete_results: true }),

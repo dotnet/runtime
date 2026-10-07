@@ -40,7 +40,9 @@ public:
     };
 
 #ifdef FEATURE_MULTITHREADING
-    FCDECL0(static INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
+#ifdef TARGET_WASM
+    FCDECL0(static void*,       GetThreadStaticsBaseNative);
+#endif // TARGET_WASM
     FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
     FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
     FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);
@@ -55,11 +57,9 @@ extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnSta
 extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len, QCallExceptionStatus* qcallError);
-extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallError);
 #endif // FEATURE_MULTITHREADING
 extern "C" void QCALLTYPE ThreadNative_PollGC();
 #ifdef FEATURE_MULTITHREADING
-extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId(QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, QCallExceptionStatus* qcallError);
 #endif // FEATURE_MULTITHREADING
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);
@@ -80,9 +80,6 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t, QCal
 
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
-#ifdef FEATURE_MULTITHREADING
-extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
-#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP

@@ -309,8 +309,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetIsBackground)
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
-    DllImportEntry(ThreadNative_YieldThread)
-    DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Initialize)
 #endif // FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_GetThreadState)
@@ -321,9 +319,6 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
-#ifdef FEATURE_MULTITHREADING
-    DllImportEntry(ThreadNative_SpinWait)
-#endif // FEATURE_MULTITHREADING
 #ifdef TARGET_WINDOWS
     DllImportEntry(ThreadNative_CheckForPendingInterrupt)
     DllImportEntry(ThreadNative_Interrupt)
@@ -419,6 +414,11 @@ static const Entry s_QCall[] =
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
+#ifdef FEATURE_MULTITHREADING
+    DllImportEntry(Thread_SpinWait)
+    DllImportEntry(Thread_Yield)
+    DllImportEntry(Thread_GetOptimalMaxSpinWaitsPerSpinIteration)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(MetadataImport_Enum)
@@ -522,6 +522,7 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
+    DllImportEntry(ObjectMarshaler_ConvertToNativeVariantArrayElement)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
     DllImportEntry(InterfaceMarshaler_ConvertToManaged)

@@ -12,7 +12,7 @@ namespace System.Threading
         private static void PollGC() => PollGCInternal();
 
         // Spinning cannot make progress with only one thread.
-        internal static int OptimalMaxSpinWaitsPerSpinIteration => 0;
+        internal static int GetOptimalMaxSpinWaitsPerSpinIteration() => 0;
 
         // Finalizers execute on the current thread without marking it as a dedicated finalizer thread.
         internal static bool CurrentThreadIsFinalizerThread() => false;
@@ -32,7 +32,7 @@ namespace System.Threading
         }
 
         // Matches the OS thread ID that the native runtime reports for the only thread.
-        private static ulong GetCurrentOSThreadId() => 1;
+        internal static ulong CurrentOSThreadId => 1;
 
         // There are no other threads to yield to.
         public static bool Yield() => false;

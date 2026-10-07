@@ -4289,15 +4289,19 @@ namespace
             MethodTable* pDefaultItfMT = GetDefaultInterfaceMTForClass(arrayElementTypeHandle.AsMethodTable(), &bDispatch);
             if (pDefaultItfMT != NULL)
             {
+                TypeHandle thElement(arrayElementTypeHandle);
                 TypeHandle thItf(pDefaultItfMT);
-                *pElementType = thItf;
-                *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thItf, 1)).AsMethodTable();
+                TypeHandle thArgs[2] = { thElement, thItf };
+                *pElementType = thElement;
+                *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_CLASS_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
             }
             else
             {
                 TypeHandle thDispatch(bDispatch ? pEnabledMT : pDisabledMT);
-                *pElementType = TypeHandle(g_pObjectClass);
-                *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
+                TypeHandle thElement(arrayElementTypeHandle);
+                TypeHandle thArgs[2] = { thElement, thDispatch };
+                *pElementType = thElement;
+                *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_CLASS_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
             }
         }
         else
@@ -4739,12 +4743,12 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     BOOL bNativeDataValid = !!(fStatic & MngdSafeArrayMarshaler::SCSF_NativeDataValid);
     MethodDesc* pConvertToNativeMD = GetInstantiatedSafeArrayMethod(
         METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED,
-        mops.elementType, pElementMT, FALSE, bNativeDataValid);
+        mops.elementType, pElementMT, bNativeDataValid);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToNativeMD));
 
     MethodDesc* pConvertToManagedMD = GetInstantiatedSafeArrayMethod(
         METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED,
-        mops.elementType, pElementMT, FALSE);
+        mops.elementType, pElementMT);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToManagedMD));
 
     pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 6, 0);
