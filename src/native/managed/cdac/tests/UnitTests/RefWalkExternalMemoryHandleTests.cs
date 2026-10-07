@@ -69,7 +69,7 @@ public class ExternalMemoryHandleRootTests
                 [DataType.String] = TargetTestHelpers.CreateTypeInfo(MockStringObjectData.CreateLayout(arch)),
             })
             .AddGlobals((nameof(Constants.Globals.ObjectToMethodTableUnmask), 0ul))
-            .AddContract<IExternalMemoryHandles>(version: "c1")
+            .AddContract<IExternalMemoryHandles>(version: "c2")
             .AddMockContract(mockGC)
             .AddMockContract(rts);
 
@@ -77,6 +77,53 @@ public class ExternalMemoryHandleRootTests
         if (hasHandle)
             builder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(memory.Value, handleType, arch));
 
+        if (fragments is not null)
+        {
+            foreach (MockMemorySpace.HeapFragment fragment in fragments)
+                builder.MemoryBuilder.AddHeapFragment(fragment);
+        }
+
+        return builder.Build();
+    }
+
+    private static TestPlaceholderTarget CreateVersion1Target(
+        TargetPointer memory,
+        uint gcFlags,
+        Mock<IRuntimeTypeSystem> rts,
+        IEnumerable<MockMemorySpace.HeapFragment>? fragments = null,
+        Mock<IGC>? gc = null)
+    {
+        TargetTestHelpers helpers = new(Arch);
+        int pointerSize = helpers.PointerSize;
+        Mock<IGC> mockGC = gc ?? new Mock<IGC>();
+        if (gc is null)
+            mockGC.Setup(g => g.GetGCIdentifiers()).Returns([]);
+
+        var builder = new TestPlaceholderTarget.Builder(Arch)
+            .AddGlobals((Constants.Globals.ExternalMemoryHandles, ExternalMemoryHandlesHeadSlotAddr))
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.ExternalMemoryHandle] = new()
+                {
+                    Fields = new Dictionary<string, Target.FieldInfo>
+                    {
+                        { nameof(Data.ExternalMemoryHandle.Next), new() { Offset = 0, TypeName = DataType.pointer.ToString() } },
+                        { nameof(Data.ExternalMemoryHandle.MethodTable), new() { Offset = pointerSize, TypeName = DataType.pointer.ToString() } },
+                        { nameof(Data.ExternalMemoryHandle.Memory), new() { Offset = 2 * pointerSize, TypeName = DataType.pointer.ToString() } },
+                        { nameof(Data.ExternalMemoryHandle.GCFlags), new() { Offset = 3 * pointerSize, TypeName = DataType.uint32.ToString() } },
+                    }
+                },
+                [DataType.Object] = TargetTestHelpers.CreateTypeInfo(MockObjectData.CreateLayout(Arch)),
+                [DataType.Array] = TargetTestHelpers.CreateTypeInfo(MockArrayObjectData.CreateLayout(Arch)),
+                [DataType.String] = TargetTestHelpers.CreateTypeInfo(MockStringObjectData.CreateLayout(Arch)),
+            })
+            .AddGlobals((nameof(Constants.Globals.ObjectToMethodTableUnmask), 0ul))
+            .AddContract<IExternalMemoryHandles>(version: "c1")
+            .AddMockContract(mockGC)
+            .AddMockContract(rts);
+
+        builder.MemoryBuilder.AddHeapFragment(PointerFragment(ExternalMemoryHandlesHeadSlotAddr, HandleAddr));
+        builder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleVersion1Fragment(memory.Value, gcFlags));
         if (fragments is not null)
         {
             foreach (MockMemorySpace.HeapFragment fragment in fragments)
@@ -148,6 +195,60 @@ public class ExternalMemoryHandleRootTests
         helpers.WritePointer(data.AsSpan(pointerSize, pointerSize), typeHandle);
         helpers.WritePointer(data.AsSpan(2 * pointerSize, pointerSize), memory);
         return new MockMemorySpace.HeapFragment { Address = HandleAddr, Data = data, Name = "ExternalMemoryHandle" };
+    }
+
+    private static MockMemorySpace.HeapFragment ExternalMemoryHandleVersion1Fragment(ulong memory, uint gcFlags)
+    {
+        TargetTestHelpers helpers = new(Arch);
+        int pointerSize = helpers.PointerSize;
+        byte[] data = new byte[3 * pointerSize + sizeof(uint)];
+        helpers.WritePointer(data.AsSpan(pointerSize, pointerSize), MethodTableAddr);
+        helpers.WritePointer(data.AsSpan(2 * pointerSize, pointerSize), memory);
+        helpers.Write(data.AsSpan(3 * pointerSize, sizeof(uint)), gcFlags);
+        return new MockMemorySpace.HeapFragment { Address = HandleAddr, Data = data, Name = "ExternalMemoryHandleV1" };
+    }
+
+    [Theory]
+    [InlineData(0u, false)]
+    [InlineData(1u, true)]
+    public void Version1_ReferenceType_UsesGCFlags(uint gcFlags, bool isInterior)
+    {
+        const ulong MemoryAddr = 0x3000;
+        const ulong ObjectAddr = 0x4000;
+        var rts = new Mock<IRuntimeTypeSystem>(MockBehavior.Strict);
+        ITypeHandle typeHandle = new TargetTypeHandle(new TargetPointer(MethodTableAddr));
+        rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTableAddr))).Returns(typeHandle);
+        rts.Setup(r => r.IsValueType(typeHandle)).Returns(false);
+        IEnumerable<MockMemorySpace.HeapFragment>? fragments =
+            isInterior ? [PointerFragment(MemoryAddr, ObjectAddr)] : null;
+
+        IExternalMemoryHandles handles = CreateVersion1Target(
+            new TargetPointer(MemoryAddr), gcFlags, rts, fragments).Contracts.ExternalMemoryHandles;
+
+        ExternalMemoryHandleRootData root = Assert.Single(handles.GetRoots(resolveInteriorPointers: false));
+        Assert.Equal(isInterior, root.IsInteriorPointer);
+        Assert.Equal(new TargetPointer(MemoryAddr), root.Address);
+        Assert.Equal(new TargetPointer(isInterior ? ObjectAddr : 0), root.Object);
+    }
+
+    [Fact]
+    public void Version1_ValueType_UsesMethodTableLayout()
+    {
+        const ulong MemoryAddr = 0x5000;
+        var rts = new Mock<IRuntimeTypeSystem>(MockBehavior.Strict);
+        ITypeHandle typeHandle = new TargetTypeHandle(new TargetPointer(MethodTableAddr));
+        rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTableAddr))).Returns(typeHandle);
+        rts.Setup(r => r.IsValueType(typeHandle)).Returns(true);
+        rts.Setup(r => r.IsByRefLike(typeHandle)).Returns(false);
+        rts.Setup(r => r.ContainsGCPointers(typeHandle)).Returns(true);
+        rts.Setup(r => r.GetGCDescSeries(typeHandle)).Returns([(16u, 16u)]);
+
+        IExternalMemoryHandles handles =
+            CreateVersion1Target(new TargetPointer(MemoryAddr), gcFlags: 0, rts).Contracts.ExternalMemoryHandles;
+
+        IReadOnlyList<ExternalMemoryHandleRootData> roots = handles.GetRoots(resolveInteriorPointers: true);
+        Assert.Equal([MemoryAddr + 8, MemoryAddr + 16], roots.Select(r => r.Address.Value).ToArray());
+        Assert.All(roots, r => Assert.False(r.IsInteriorPointer));
     }
 
     [Fact]
