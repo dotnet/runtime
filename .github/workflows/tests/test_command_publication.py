@@ -63,6 +63,21 @@ def load(name):
     return yaml.safe_load("\n".join(lines[1:lines.index("---", 1)]))
 
 
+def publication_jobs(agent="success", cli="success", safe="success", process="success"):
+    return [
+        {
+            "name": "agent",
+            "conclusion": agent,
+            "steps": [{"name": "Execute GitHub Copilot CLI", "conclusion": cli}],
+        },
+        {
+            "name": "safe_outputs",
+            "conclusion": safe,
+            "steps": [{"name": "Process Safe Outputs", "conclusion": process}],
+        },
+    ]
+
+
 class CommandPublicationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -119,8 +134,7 @@ class CommandPublicationTests(unittest.TestCase):
         run_id = len(state["runs"]) + 1
         state["runs"].append({"id": run_id, "run_attempt": 1, "display_title": "Build failure analysis command 123"})
         conclusion = "failure" if fail_summary or fail_review else "success"
-        state["jobs"][f"{run_id}:1"] = [{"name": "safe_outputs", "conclusion": conclusion,
-                                       "steps": [{"name": "Process Safe Outputs", "conclusion": conclusion}]}]
+        state["jobs"][f"{run_id}:1"] = publication_jobs(safe=conclusion, process=conclusion)
 
     def test_partial_failure_retry_publishes_only_missing_outputs(self):
         for fail_summary, fail_review in ((True, False), (False, True), (True, True), (False, False)):
@@ -142,24 +156,35 @@ class CommandPublicationTests(unittest.TestCase):
                 self.assertEqual(self.prepare_items(state), [])
 
     def test_completion_requires_successful_finalization_for_exact_request_and_attempt(self):
-        for job_status, step_status, title, expected in (
-            ("failure", "failure", "123", False), ("cancelled", "success", "123", False),
-            ("skipped", "skipped", "123", False), ("success", "skipped", "123", False),
-            ("success", "failure", "123", False), ("success", "success", "1234", False),
-            ("success", "success", "123", True),
+        for agent, cli, safe, process, title, expected in (
+            ("failure", "failure", "success", "success", "123", False),
+            ("success", "failure", "success", "success", "123", False),
+            ("success", "success", "failure", "failure", "123", False),
+            ("success", "success", "cancelled", "success", "123", False),
+            ("success", "success", "success", "skipped", "123", False),
+            ("success", "success", "success", "failure", "123", False),
+            ("success", "success", "success", "success", "1234", False),
+            ("success", "success", "success", "success", "123", True),
         ):
-            with self.subTest(job_status=job_status, step_status=step_status, title=title):
+            with self.subTest(agent=agent, cli=cli, safe=safe, process=process, title=title):
                 state = {
                     "runs": [{"id": 9, "run_attempt": 2, "display_title": "Build failure analysis command " + title}],
-                    "jobs": {"9:2": [{"name": "safe_outputs", "conclusion": job_status,
-                                     "steps": [{"name": "Process Safe Outputs", "conclusion": step_status}]}]},
+                    "jobs": {"9:2": publication_jobs(agent, cli, safe, process)},
                 }
                 self.check_completed(state, expected)
+
+    def test_failed_agent_empty_placeholder_does_not_complete_command(self):
+        state = {
+            "runs": [{"id": 9, "run_attempt": 1, "display_title": "Build failure analysis command 123"}],
+            "jobs": {"9:1": publication_jobs("failure", "failure", "success", "success")},
+        }
+        self.check_completed(state, False)
 
     def test_failed_job_after_writes_retries_without_republishing(self):
         state = {"runs": [], "jobs": {}, "comments": [], "reviews": [], "inline": []}
         self.publish(state, self.prepare_items(state))
-        state["jobs"]["1:1"][0]["conclusion"] = "failure"
+        safe_outputs = next(job for job in state["jobs"]["1:1"] if job["name"] == "safe_outputs")
+        safe_outputs["conclusion"] = "failure"
         self.check_completed(state, False)
         retry = self.prepare_items(state)
         self.assertEqual(retry, [])
@@ -172,8 +197,7 @@ class CommandPublicationTests(unittest.TestCase):
         unrelated = {"id": 1, "run_attempt": 1, "display_title": "another command"}
         state = {"runs": [unrelated] * 100 + [{"id": 2, "run_attempt": 1,
                   "display_title": "Build failure analysis command 123"}],
-                 "jobs": {"2:1": [{"name": "safe_outputs", "conclusion": "success",
-                          "steps": [{"name": "Process Safe Outputs", "conclusion": "success"}]}]}}
+                 "jobs": {"2:1": publication_jobs()}}
         actual = self.check_completed(state, True)
         self.assertEqual([options["page"] for method, options in actual["calls"] if method == "runs"], [1, 2])
         for method, options in actual["calls"]:

@@ -1,11 +1,14 @@
 import copy
+import io
 import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import tempfile
 import unittest
+import zipfile
 
 import yaml
 
@@ -32,6 +35,16 @@ def safe_output_steps(workflow):
     return load_workflow("shared/build-failure-analysis-shared")["safe-outputs"]["steps"]
 
 
+def archive_bytes(name, mode):
+    content = io.BytesIO()
+    with zipfile.ZipFile(content, "w") as archive:
+        entry = zipfile.ZipInfo(name)
+        entry.create_system = 3
+        entry.external_attr = mode << 16
+        archive.writestr(entry, b"binlog")
+    return content.getvalue()
+
+
 class BuildFailureAnalysisTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -48,10 +61,19 @@ class BuildFailureAnalysisTests(unittest.TestCase):
     def run_script(self, script, env=None, files=None):
         with tempfile.TemporaryDirectory(prefix="bfa-test-") as directory:
             root = Path(directory)
+            path_value = os.environ.get("PATH", "")
+            if os.name == "nt":
+                python3 = root / "python3"
+                python3.write_text('#!/usr/bin/env bash\nexec python "$@"\n', encoding="utf-8")
+                python3.chmod(0o755)
+                path_value = str(root) + os.pathsep + path_value
             for name, content in (files or {}).items():
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(content, encoding="utf-8")
+                if isinstance(content, bytes):
+                    path.write_bytes(content)
+                else:
+                    path.write_text(content, encoding="utf-8")
             result = subprocess.run(
                 [self.bash, "--noprofile", "--norc", "-eo", "pipefail", "-s"],
                 input=script,
@@ -60,6 +82,7 @@ class BuildFailureAnalysisTests(unittest.TestCase):
                 cwd=root,
                 env={
                     **os.environ,
+                    "PATH": path_value,
                     "GITHUB_OUTPUT": "outputs",
                     "GITHUB_ENV": "agent-env",
                     "RUNNER_TEMP": ".",
@@ -260,6 +283,37 @@ cp() {
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("preserved-newline=true", result.stdout)
                 self.assertIn("staged=2;failed=0", result.stdout)
+
+    def test_archive_validation_rejects_unsafe_paths_and_types(self):
+        cases = (
+            ("regular", "nested/build.binlog", stat.S_IFREG | 0o644, True),
+            ("unspecified", "build.binlog", 0, True),
+            ("traversal", "../escape.binlog", stat.S_IFREG | 0o644, False),
+            ("absolute", "/escape.binlog", stat.S_IFREG | 0o644, False),
+            ("drive", r"C:\escape.binlog", stat.S_IFREG | 0o644, False),
+            ("symlink", "link.binlog", stat.S_IFLNK | 0o777, False),
+            ("device", "device.binlog", stat.S_IFCHR | 0o600, False),
+            ("fifo", "pipe.binlog", stat.S_IFIFO | 0o600, False),
+        )
+        for workflow_name, workflow in self.workflows.items():
+            source = step(workflow["jobs"]["fetch-binlog"]["steps"], "fetch")["run"]
+            start = source.index("# --- Validate ZIP entry metadata before extraction ---")
+            end = source.index("# --- Extract validated binlogs ---")
+            validator = source[start:end]
+            for name, entry, mode, accepted in cases:
+                with self.subTest(workflow=workflow_name, case=name):
+                    result, _, _ = self.run_script(
+                        "set +e\n"
+                        'for ZIP_TMP in "$ARCHIVE"; do\n'
+                        "safe_name=test\n"
+                        "MAX_ZIP_ENTRIES=65536\n"
+                        + validator
+                        + "\necho accepted=true\ndone\n",
+                        {"ARCHIVE": "archive.zip"},
+                        {"archive.zip": archive_bytes(entry, mode)},
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual("accepted=true" in result.stdout, accepted, result.stdout)
 
     def test_latest_build_and_revision_revalidation(self):
         for name, workflow in self.workflows.items():
