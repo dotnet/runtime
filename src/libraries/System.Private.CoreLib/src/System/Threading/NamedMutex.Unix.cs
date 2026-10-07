@@ -84,11 +84,9 @@ namespace System.Threading
         // Until Rosetta 2 is removed, we need to use the non-PThread mutexes on Apple platforms.
         // On FreeBSD, pthread process-shared robust mutexes cannot be placed in shared memory mapped
         // independently by the processes involved. See https://github.com/dotnet/runtime/issues/10519.
-        // On OpenBSD, cross process mutexes are not supported in the pthread implementation. See https://github.com/dotnet/runtime/pull/125089.
+        // On OpenBSD and OpenHarmony, cross process mutexes are not supported in the pthread implementation.
         // On Haiku, robust mutexes are WIP. See https://github.com/dotnet/runtime/pull/126701#issuecomment-4334338213.
         // On Linux arm and arm64, we do not use PThread mutex-backed named mutexes for compatibility with previous .NET versions.
-        // On OpenHarmony, the musl sysroot does not provide the robust mutex APIs
-        // (pthread_mutexattr_setrobust / pthread_mutex_consistent).
         private static bool UsePThreadMutexes =>
 #if (TARGET_ARM || TARGET_ARM64)
             !OperatingSystem.IsLinux() &&
