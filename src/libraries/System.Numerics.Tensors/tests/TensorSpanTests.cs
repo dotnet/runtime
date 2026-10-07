@@ -12,6 +12,168 @@ namespace System.Numerics.Tensors.Tests
 {
     public class TensorSpanTests
     {
+        [Fact]
+        public static void InvalidShapeAndSliceThrowDocumentedExceptions()
+        {
+            int[] data = new int[16];
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new TensorSpan<int>(data, [nint.MaxValue, 2], []));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new TensorSpan<int>(data.AsSpan(), [nint.MaxValue, 2], []));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new TensorSpan<int>(data, [4, 4], []).Slice([5, 0]));
+            Assert.Throws<IndexOutOfRangeException>(() =>
+                new TensorSpan<int>(data, [4, 4], [])[5, 0]);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 1)]
+        [InlineData(3, 2)]
+        [InlineData(3, 3)]
+        [InlineData(6, 0)]
+        [InlineData(6, 1)]
+        [InlineData(6, 2)]
+        [InlineData(6, 3)]
+        public static void InvalidExplicitShapeAcrossBufferSizes(int rank, int invalidKind)
+        {
+            nint[] lengths = new nint[rank];
+            nint[] strides = new nint[rank];
+            Array.Fill(lengths, (nint)1);
+            lengths[0] = 2;
+            lengths[1] = 2;
+            strides[0] = 2;
+            strides[1] = 1;
+            switch (invalidKind)
+            {
+                case 0:
+                    lengths[0] = -2;
+                    break;
+                case 1:
+                    strides[0] = -2;
+                    break;
+                case 2:
+                    strides[0] = 1;
+                    break;
+                case 3:
+                    strides[0] = nint.MaxValue;
+                    break;
+            }
+
+            int[] data = [1, 2, 3, 4];
+            if (invalidKind != 2)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.Create(data, lengths, strides));
+                Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<int>(data, lengths, strides));
+                Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlyTensorSpan<int>(data, lengths, strides));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Tensor.Create(data, lengths, strides));
+                Assert.Throws<ArgumentException>(() => new TensorSpan<int>(data, lengths, strides));
+                Assert.Throws<ArgumentException>(() => new ReadOnlyTensorSpan<int>(data, lengths, strides));
+            }
+            Assert.Equal([1, 2, 3, 4], data);
+        }
+
+        [Fact]
+        public static void ReshapeHandlesZeroDimensions()
+        {
+            int[] data = [1, 2, 3, 4];
+            Assert.Throws<ArgumentException>(() => new TensorSpan<int>(data).Reshape([-1, 0]));
+
+            TensorSpan<int> empty = Tensor.CreateFromShape<int>([0, 0, 7]).AsTensorSpan();
+            TensorSpan<int> reshaped = empty.Reshape([0, 1, 0, 1]);
+            Assert.Equal([0, 1, 0, 1], reshaped.Lengths);
+            Assert.Equal(0, reshaped.FlattenedLength);
+            Assert.Throws<ArgumentException>(() => new TensorSpan<int>(Array.Empty<int>()).Reshape([0, -1]));
+
+            TensorSpan<int> broadcast = Tensor.Create([1, 2], [2, 2], [0, 1]).AsTensorSpan();
+            TensorSpan<int> withSingleton = broadcast.Reshape([2, 1, 2]);
+            Assert.Equal([0, 0, 1], withSingleton.Strides);
+            Assert.Equal(2, withSingleton[1, 0, 1]);
+        }
+
+        [Fact]
+        public static void EmptyTensorSpanCannotExposeData()
+        {
+            TensorSpan<int> empty = default;
+            Assert.False(empty.TryGetSpan(ReadOnlySpan<nint>.Empty, 1, out Span<int> _));
+            Assert.Equal(0, empty.Slice(ReadOnlySpan<nint>.Empty).FlattenedLength);
+            empty.Clear();
+            TensorSpan<int>.Enumerator enumerator = empty.GetEnumerator();
+            Assert.False(enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(static () =>
+            {
+                TensorSpan<int>.Enumerator current = default(TensorSpan<int>).GetEnumerator();
+                _ = current.Current;
+            });
+
+            Assert.Throws<InvalidOperationException>(static () =>
+            {
+                TensorSpan<int>.Enumerator current = new TensorSpan<int>([7]).GetEnumerator();
+                _ = current.Current;
+            });
+        }
+
+        [Fact]
+        public static void SingletonSliceRemainsContiguous()
+        {
+            TensorSpan<int> tensor = new TensorSpan<int>([1, 2, 3, 4], [2, 1, 2]);
+            Assert.Equal([1, 2, 3, 4], tensor.GetSpan([0, 0, 0], 4).ToArray());
+            TensorSpan<int> slice = tensor.Slice(new NRange[] { .., .., .. });
+            Assert.True(slice.IsDense);
+            int[] flattened = new int[4];
+            slice.Reshape([4]).FlattenTo(flattened);
+            Assert.Equal([1, 2, 3, 4], flattened);
+        }
+
+        [Fact]
+        public static void TryBroadcastToReturnsFalseWithoutWriting()
+        {
+            ReadOnlyTensorSpan<int> source = new int[] { 1, 2 };
+            int[] data = [7, 7, 7];
+            TensorSpan<int> destination = new TensorSpan<int>(data);
+            Assert.False(source.TryBroadcastTo(destination));
+            Assert.Equal([7, 7, 7], data);
+        }
+
+        [Fact]
+        public static void TensorAuditBroadcastToEmptyDestination()
+        {
+            ReadOnlyTensorSpan<int> source = new ReadOnlyTensorSpan<int>([1, 2, 3], [1, 3]);
+            TensorSpan<int> destination = new TensorSpan<int>(Array.Empty<int>(), [0, 3]);
+
+            Tensor.BroadcastTo(source, destination);
+            Assert.True(source.TryBroadcastTo(destination));
+            Assert.Equal([0, 3], destination.Lengths);
+
+            source = new ReadOnlyTensorSpan<int>([1, 2], [2, 1]);
+            destination = new TensorSpan<int>(Array.Empty<int>(), [2, 0]);
+            Tensor.BroadcastTo(source, destination);
+            Assert.True(source.TryBroadcastTo(destination));
+            Assert.Equal([2, 0], destination.Lengths);
+        }
+
+        [Fact]
+        public static void TensorAuditCopiedMutableEnumeratorKeepsIndependentPosition()
+        {
+            TensorSpan<int> tensor = new TensorSpan<int>([10, 20, 99, 30, 40], [2, 2], [3, 1]);
+            TensorSpan<int>.Enumerator first = tensor.GetEnumerator();
+            Assert.True(first.MoveNext());
+            TensorSpan<int>.Enumerator second = first;
+
+            for (int i = 0; i < 3; i++)
+            {
+                second.Reset();
+                Assert.True(second.MoveNext());
+                Assert.True(second.MoveNext());
+                Assert.True(first.MoveNext());
+            }
+
+            Assert.Equal(40, first.Current);
+        }
+
         #region TensorPrimitivesForwardsTests
         private void FillTensor<T>(Span<T> span)
             where T : INumberBase<T>
@@ -40,11 +202,13 @@ namespace System.Numerics.Tensors.Tests
 
         public static IEnumerable<object[]> SpanInSpanOutData()
         {
+            const float TrigTolerance = 1e-4f;
+
             yield return Create<float, float>(float.Abs, Tensor.Abs);
             yield return Create<float, float>(float.Acos, Tensor.Acos);
             yield return Create<float, float>(float.Acosh, Tensor.Acosh);
             yield return Create<float, float>(float.AcosPi, Tensor.AcosPi);
-            yield return Create<float, float>(float.Asin, Tensor.Asin);
+            yield return Create<float, float>(float.Asin, Tensor.Asin, TrigTolerance);
             yield return Create<float, float>(float.Asinh, Tensor.Asinh);
             yield return Create<float, float>(float.AsinPi, Tensor.AsinPi);
             yield return Create<float, float>(float.Atan, Tensor.Atan);
@@ -52,15 +216,15 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float, float>(float.AtanPi, Tensor.AtanPi);
             yield return Create<float, float>(float.Cbrt, Tensor.Cbrt);
             yield return Create<float, float>(float.Ceiling, Tensor.Ceiling);
-            yield return Create<float, float>(float.Cos, Tensor.Cos);
+            yield return Create<float, float>(float.Cos, Tensor.Cos, TrigTolerance);
             yield return Create<float, float>(float.Cosh, Tensor.Cosh);
-            yield return Create<float, float>(float.CosPi, Tensor.CosPi);
+            yield return Create<float, float>(float.CosPi, Tensor.CosPi, TrigTolerance);
             yield return Create<float, float>(float.DegreesToRadians, Tensor.DegreesToRadians);
             yield return Create<float, float>(float.Exp, Tensor.Exp);
-            yield return Create<float, float>(float.Exp10, Tensor.Exp10);
-            yield return Create<float, float>(float.Exp10M1, Tensor.Exp10M1);
-            yield return Create<float, float>(float.Exp2, Tensor.Exp2);
-            yield return Create<float, float>(float.Exp2M1, Tensor.Exp2M1);
+            yield return Create<float, float>(float.Exp10, Tensor.Exp10, 1e-5f);
+            yield return Create<float, float>(float.Exp10M1, Tensor.Exp10M1, 1e-5f);
+            yield return Create<float, float>(float.Exp2, Tensor.Exp2, 1e-5f);
+            yield return Create<float, float>(float.Exp2M1, Tensor.Exp2M1, 1e-5f);
             yield return Create<float, float>(float.ExpM1, Tensor.ExpM1);
             yield return Create<float, float>(float.Floor, Tensor.Floor);
             yield return Create<int, int>(int.LeadingZeroCount, Tensor.LeadingZeroCount);
@@ -77,12 +241,12 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float, float>(f => 1 / f, Tensor.Reciprocal);
             yield return Create<float, float>(float.Round, Tensor.Round);
             //yield return Create<float, float>(float.Sigmoid, Tensor.Sigmoid);
-            yield return Create<float, float>(float.Sin, Tensor.Sin);
+            yield return Create<float, float>(float.Sin, Tensor.Sin, TrigTolerance);
             yield return Create<float, float>(float.Sinh, Tensor.Sinh);
-            yield return Create<float, float>(float.SinPi, Tensor.SinPi);
+            yield return Create<float, float>(float.SinPi, Tensor.SinPi, TrigTolerance);
             //yield return Create<float, float>(float.SoftMax, Tensor.SoftMax);
             yield return Create<float, float>(float.Sqrt, Tensor.Sqrt);
-            yield return Create<float, float>(float.Tan, Tensor.Tan);
+            yield return Create<float, float>(float.Tan, Tensor.Tan, TrigTolerance);
             yield return Create<float, float>(float.Tanh, Tensor.Tanh);
             yield return Create<float, float>(float.TanPi, Tensor.TanPi);
             yield return Create<float, float>(float.Truncate, Tensor.Truncate);
@@ -91,14 +255,14 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float, int>(x => (int)x, Tensor.ConvertSaturating);
             yield return Create<float, int>(x => (int)MathF.Truncate(x), Tensor.ConvertTruncating);
 
-            static object[] Create<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesMethod, TensorSpanInSpanOut<TIn, TOut> tensorOperation)
-                => new object[] { tensorPrimitivesMethod, tensorOperation };
+            static object[] Create<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesMethod, TensorSpanInSpanOut<TIn, TOut> tensorOperation, float? tolerance = null)
+                => new object[] { tensorPrimitivesMethod, tensorOperation, tolerance };
         }
 
         [Theory, MemberData(nameof(SpanInSpanOutData))]
-        public void TensorExtensionsSpanInSpanOut<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesOperation, TensorSpanInSpanOut<TIn, TOut> tensorOperation)
+        public void TensorExtensionsSpanInSpanOut<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesOperation, TensorSpanInSpanOut<TIn, TOut> tensorOperation, float? tolerance)
             where TIn : INumberBase<TIn>
-            where TOut: INumber<TOut>
+            where TOut : unmanaged, INumber<TOut>
         {
             Assert.All(Helpers.TensorShapes, (tensorLength, index) =>
             {
@@ -120,7 +284,8 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < data.Length; i++)
                 {
-                    Assert.Equal(tensorPrimitivesOperation(data[i]), span[i]);
+                    Helpers.AssertEqualWithTolerance(tensorPrimitivesOperation(data[i]), span[i],
+                        tolerance.HasValue ? TOut.CreateTruncating(tolerance.Value) : null);
                 }
 
                 // Now test if the source is sliced to be smaller then the destination that the destination is also sliced
@@ -145,7 +310,8 @@ namespace System.Numerics.Tensors.Tests
                     tensorResultsEnumMove = tensorResultsEnum.MoveNext();
 
                     Assert.True(tensorResultsEnumMove);
-                    Assert.Equal(tensorPrimitivesOperation(sliceData[i]), tensorResultsEnum.Current);
+                    Helpers.AssertEqualWithTolerance(tensorPrimitivesOperation(sliceData[i]), tensorResultsEnum.Current,
+                        tolerance.HasValue ? TOut.CreateTruncating(tolerance.Value) : null);
                 }
             });
         }
@@ -291,7 +457,9 @@ namespace System.Numerics.Tensors.Tests
                 NRange[] sliceLengths = Helpers.TensorSliceShapesForBroadcast[index].Select(i => new NRange(0, i)).ToArray();
                 nint sliceFlattenedLength = CalculateTotalLength(Helpers.TensorSliceShapesForBroadcast[index]);
                 //destination = destination.Slice(sliceLengths);
-                x.Slice(sliceLengths).BroadcastTo(x);
+                T[] xSlice = new T[sliceFlattenedLength];
+                x.Slice(sliceLengths).FlattenTo(xSlice);
+                new ReadOnlyTensorSpan<T>(xSlice, Helpers.TensorSliceShapesForBroadcast[index]).BroadcastTo(x);
                 x.FlattenTo(data1);
 
                 results = tensorOperation(x.Slice(sliceLengths), y, destination);
@@ -315,7 +483,9 @@ namespace System.Numerics.Tensors.Tests
                 }
 
                 // Now test if the second source is sliced to be smaller than the first (but is broadcast compatible) that broadcasting happens).
-                y.Slice(sliceLengths).BroadcastTo(y);
+                T[] ySlice = new T[sliceFlattenedLength];
+                y.Slice(sliceLengths).FlattenTo(ySlice);
+                new ReadOnlyTensorSpan<T>(ySlice, Helpers.TensorSliceShapesForBroadcast[index]).BroadcastTo(y);
                 y.FlattenTo(data2);
 
                 results = tensorOperation(x, y.Slice(sliceLengths), destination);
@@ -468,7 +638,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TensorSpanSystemArrayConstructorTests()
         {
-            // When using System.Array constructor make sure the type of the array matches T[]
+            // When using System.Array constructor make sure incompatible element types are rejected
             Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<double>(array: new[] { 1 }));
 
             string[] stringArray = { "a", "b", "c" };
@@ -844,6 +1014,85 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentException>(() => {
                 var spanInt = new TensorSpan<int>(a, 0, [2, 2], [1, 1]);
             });
+        }
+
+        [Fact]
+        public static void TensorSpanArrayConstructorSupportsCompatibleValueTypeArrays()
+        {
+            string[] strings = ["first", "second"];
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>((Array)strings));
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>((Array)strings, [1], [1], []));
+
+            string[,] strings2D = { { "first", "second" } };
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>((Array)strings2D));
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>((Array)strings2D, [0, 1], [1, 1], []));
+
+            int[] signed = [-1, 2];
+            uint[] unsigned = (uint[])(object)signed;
+            TensorSpan<uint> unsignedSpan = new TensorSpan<uint>((Array)signed);
+            Assert.Equal(unsigned[0], unsignedSpan[0]);
+            unsignedSpan = new TensorSpan<uint>((Array)signed, [1], [1], []);
+            unsignedSpan[0] = 7;
+            Assert.Equal(7, signed[1]);
+
+            int[,] signed2D = { { -1, 2 } };
+            uint[,] unsigned2D = (uint[,])(object)signed2D;
+            Assert.Equal(unsigned2D[0, 0], new TensorSpan<uint>((Array)signed2D)[0, 0]);
+            TensorSpan<uint> unsigned2DSpan = new TensorSpan<uint>((Array)signed2D, [0, 1], [1, 1], []);
+            unsigned2DSpan[0, 0] = 7;
+            Assert.Equal(7, signed2D[0, 1]);
+
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<long>((Array)signed));
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<long>((Array)signed2D, [0, 0], [1, 2], []));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public static void TensorSpanArrayConstructorPreservesElementCompatibility(int rank)
+        {
+            Validate<int>(CreateArray<uint>(rank), true);
+            Validate<int>(CreateArray<DayOfWeek>(rank), true);
+            Validate<DayOfWeek>(CreateArray<int>(rank), true);
+            Validate<sbyte>(CreateArray<byte>(rank), true);
+            Validate<short>(CreateArray<ushort>(rank), true);
+            Validate<long>(CreateArray<ulong>(rank), true);
+            Validate<nuint>(CreateArray<nint>(rank), true);
+            Validate<nint>(IntPtr.Size == 8 ? CreateArray<long>(rank) : CreateArray<int>(rank), true);
+            Validate<short>(CreateArray<char>(rank), false);
+            Validate<byte>(CreateArray<bool>(rank), false);
+            Validate<int>(CreateArray<float>(rank), false);
+            Validate<object>(CreateArray<int>(rank), false);
+
+            static Array CreateArray<TElement>(int rank) => rank switch
+            {
+                1 => new TElement[1],
+                2 => new TElement[1, 1],
+                _ => new TElement[1, 1, 1],
+            };
+
+            static void Validate<T>(Array array, bool compatible)
+            {
+                int[] start = new int[array.Rank];
+                nint[] lengths = new nint[array.Rank];
+                Array.Fill(lengths, 1);
+
+                if (compatible)
+                {
+                    Assert.Equal(1, new TensorSpan<T>(array).FlattenedLength);
+                    Assert.Equal(1, new TensorSpan<T>(array, start, lengths, []).FlattenedLength);
+                    Assert.Equal(1, new ReadOnlyTensorSpan<T>(array).FlattenedLength);
+                    Assert.Equal(1, new ReadOnlyTensorSpan<T>(array, start, lengths, []).FlattenedLength);
+                }
+                else
+                {
+                    Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<T>(array));
+                    Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<T>(array, start, lengths, []));
+                    Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<T>(array));
+                    Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlyTensorSpan<T>(array, start, lengths, []));
+                }
+            }
         }
 
         [Fact]

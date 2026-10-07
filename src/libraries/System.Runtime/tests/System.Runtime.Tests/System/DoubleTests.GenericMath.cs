@@ -2013,6 +2013,15 @@ namespace System.Tests
             Assert.True(NumberBaseHelper<double>.IsInfinity(double.PositiveInfinity));
         }
 
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public static void IntegerClassificationTest(double value)
+        {
+            Assert.Equal(value % 1.0 == 0.0, NumberBaseHelper<double>.IsInteger(value));
+            Assert.Equal(value % 2.0 == 0.0, NumberBaseHelper<double>.IsEvenInteger(value));
+            Assert.Equal(double.Abs(value % 2.0) == 1.0, NumberBaseHelper<double>.IsOddInteger(value));
+        }
+
         [Fact]
         public static void IsIntegerTest()
         {

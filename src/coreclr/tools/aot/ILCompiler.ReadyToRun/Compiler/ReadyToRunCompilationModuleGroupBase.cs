@@ -32,6 +32,7 @@ namespace ILCompiler
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
         public bool CompileAllPossibleCrossModuleCode;
         public InstructionSetSupport InstructionSetSupport;
+        public IEnumerable<string> DirectPInvokeModules = Array.Empty<string>();
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
@@ -67,6 +68,7 @@ namespace ILCompiler
         private readonly Func<EcmaMethod, bool> _tokenTranslationFreeNonVersionableUncached;
         private bool CompileAllPossibleCrossModuleCode = false;
         private InstructionSetSupport _instructionSetSupport;
+        private readonly HashSet<string> _directPInvokeModules;
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
@@ -87,6 +89,7 @@ namespace ILCompiler
             _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
+            _directPInvokeModules = new HashSet<string>(config.DirectPInvokeModules, StringComparer.Ordinal);
 
             _tokenResolver = new ModuleTokenResolver(this, config.Context);
 
@@ -101,6 +104,32 @@ namespace ILCompiler
         }
 
         public ModuleTokenResolver Resolver => _tokenResolver;
+
+        public bool IsDirectPInvoke(MethodDesc method)
+        {
+            Debug.Assert(method.IsPInvoke);
+
+            if (method.HasCustomAttribute("System.Runtime.InteropServices", "WasmImportLinkageAttribute"))
+            {
+                return true;
+            }
+
+            string module = method.GetPInvokeMethodMetadata().Module;
+            if (module is "*" or "QCall")
+            {
+                return true;
+            }
+
+            foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(method.Context.Target, module))
+            {
+                if (_directPInvokeModules.Contains(variation))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {

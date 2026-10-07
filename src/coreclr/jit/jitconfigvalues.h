@@ -688,6 +688,9 @@ CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 // Stress general runtime async inlining: forcibly inline async callees that may suspend,
 // with a probability that decays with inline depth. Nonzero enables; the value is the
 // external random seed. See AsyncStressPolicy.
+//
+// The stress is also enabled for roughly 50% of async methods under JitStress, in which
+// case the JitStress value is used as the external random seed.
 CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 0)
 CONFIG_INTEGER(JitStressAsyncInliningMaxDepth, "JitStressAsyncInliningMaxDepth", 8)
 // Probability, in percent, that the first async candidate of a body at depth 1 is inlined.
@@ -912,9 +915,6 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_WASM)
-// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
-RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
-
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")

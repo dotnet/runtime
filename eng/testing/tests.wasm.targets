@@ -122,7 +122,7 @@
   </ItemGroup>
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" Condition="'$(IsWasmProject)' != 'false'">
-    <ForceMSBuildGC />
+    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   </Target>
 
   <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"

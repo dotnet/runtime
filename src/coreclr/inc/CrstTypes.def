@@ -188,6 +188,9 @@ Crst ExecutableAllocatorLock
     AcquiredAfter LoaderHeap UMEntryThunkFreeListLock COMCallWrapper
 End
 
+Crst ExternalMemoryHandle
+End
+
 Crst FCall
     AcquiredBefore LoaderHeap
 End

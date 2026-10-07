@@ -12,6 +12,7 @@
 ===========================================================*/
 
 #include "common.h"
+#include <minipal/time.h>
 
 #include <stdlib.h>
 
@@ -393,17 +394,17 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
 
     // Set up the assembly manifest metadata
-    // When we create dynamic assembly, we always use a working copy of IMetaDataAssemblyEmit
+    // When we create dynamic assembly, we always use a working copy of IMDInternalEmit
     // to store temporary runtime assembly information. This is to preserve the invariant that
     // an assembly must have a PEAssembly with proper metadata.
-    // This working copy of IMetaDataAssemblyEmit will store every AssemblyRef as a simple name
+    // This working copy of IMDInternalEmit will store every AssemblyRef as a simple name
     // reference as we must have an instance of Assembly(can be dynamic assembly) before we can
     // add such a reference. Also because the referenced assembly if dynamic strong name, it may
     // not be ready to be hashed!
 
-    ReleaseHolderAnyMode<IMetaDataAssemblyEmit> pAssemblyEmit;
+    ReleaseHolderAnyMode<IMDInternalEmit> pAssemblyEmit;
     DefineEmitScope(
-        IID_IMetaDataAssemblyEmit,
+        IID_IMDInternalEmit,
         (void**)&pAssemblyEmit);
 
     // Now create a dynamic PE file out of the name & metadata
@@ -1282,7 +1283,7 @@ static void RunMainPost()
     //
     if (dwSecondsToSleep != 0)
     {
-        ClrSleepEx(dwSecondsToSleep * 1000, FALSE);
+        minipal_sleep(dwSecondsToSleep * 1000);
     }
 }
 
@@ -1641,7 +1642,7 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
 // Add an assembly to the assemblyref list. pAssemEmitter specifies where
 // the AssemblyRef is emitted to.
 //***********************************************************
-mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter)
+mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMDInternalEmit *pAssemEmitter)
 {
     CONTRACTL
     {
@@ -2050,10 +2051,6 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         BeforeTypeLoad();
         break;
 
-    case FILE_LOAD_EAGER_FIXUPS:
-        EagerFixups();
-        break;
-
     case FILE_LOAD_DELIVER_EVENTS:
         DeliverSyncEvents();
         break;
@@ -2066,6 +2063,10 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
 
     case FILE_LOADED:
         FinishLoad();
+        break;
+
+    case FILE_LOAD_EAGER_FIXUPS:
+        EagerFixups();
         break;
 
     case FILE_ACTIVE:

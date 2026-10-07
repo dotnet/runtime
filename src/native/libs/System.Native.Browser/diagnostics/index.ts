@@ -13,6 +13,7 @@ import { installLoggingProxy } from "./console-proxy";
 import { collectMetrics } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
+import { collectPgoTrace } from "./dotnet-pgo-trace";
 import { connectDSRouter, ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send, initializeDS } from "./diagnostic-server";
 import { ds_rt_browser_performance_measure } from "./browser-profiler";
 
@@ -45,6 +46,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     dotnetApi.collectCpuSamples = collectCpuSamples;
     dotnetApi.collectMetrics = collectMetrics;
     dotnetApi.collectGcDump = collectGcDump;
+    dotnetApi.collectPgoTrace = collectPgoTrace;
     dotnetApi.connectDSRouter = connectDSRouter;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -4,7 +4,6 @@
 using System;
 using Debug = System.Diagnostics.Debug;
 using HashCodeBuilder = Internal.VersionResilientHashCode.HashCodeBuilder;
-using TypeAttributes = System.Reflection.TypeAttributes;
 using TypeHashingAlgorithms = Internal.NativeFormat.TypeHashingAlgorithms;
 
 namespace Internal.Metadata.NativeFormat
@@ -59,16 +58,19 @@ namespace Internal.Metadata.NativeFormat
 
             HashCodeBuilder builder = new HashCodeBuilder(""u8);
 
-            if (!typeDef.Flags.IsNested())
-                AppendNamespaceHashCode(ref builder, typeDef.NamespaceDefinition, reader, appendDot: false);
+            Handle namespaceOrEnclosingType = typeDef.NamespaceOrEnclosingType;
+            if (namespaceOrEnclosingType.HandleType == HandleType.NamespaceDefinition)
+            {
+                AppendNamespaceHashCode(ref builder, namespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader), reader, appendDot: false);
+            }
 
             int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeDef.Name));
 
             int hashCode = VersionResilientHashCode.NameHashCode(builder.ToHashCode(), nameHashCode);
 
-            if (typeDef.Flags.IsNested())
+            if (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
             {
-                int enclosingTypeHashCode = typeDef.EnclosingType.ComputeHashCode(reader);
+                int enclosingTypeHashCode = namespaceOrEnclosingType.ToTypeDefinitionHandle(reader).ComputeHashCode(reader);
                 return VersionResilientHashCode.NestedTypeHashCode(enclosingTypeHashCode, hashCode);
             }
 
@@ -80,30 +82,19 @@ namespace Internal.Metadata.NativeFormat
             TypeReference typeRef = reader.GetTypeReference(typeRefHandle);
 
             HashCodeBuilder builder = new HashCodeBuilder(""u8);
-            AppendNamespaceHashCode(ref builder, typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(reader), reader, appendDot: false);
+            AppendNamespaceHashCode(ref builder, typeRef.NamespaceOrEnclosingType.ToNamespaceReferenceHandle(reader), reader, appendDot: false);
             int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeRef.TypeName));
 
             int hashCode = VersionResilientHashCode.NameHashCode(builder.ToHashCode(), nameHashCode);
 
-            if (typeRef.ParentNamespaceOrType.HandleType == HandleType.TypeReference)
+            if (typeRef.NamespaceOrEnclosingType.HandleType == HandleType.TypeReference)
             {
-                int enclosingTypeHashCode = typeRef.ParentNamespaceOrType.ToTypeReferenceHandle(reader).ComputeHashCode(reader);
+                int enclosingTypeHashCode = typeRef.NamespaceOrEnclosingType.ToTypeReferenceHandle(reader).ComputeHashCode(reader);
                 return VersionResilientHashCode.NestedTypeHashCode(enclosingTypeHashCode, hashCode);
             }
 
             return hashCode;
         }
 
-        // This mask is the fastest way to check if a type is nested from its flags,
-        // but it should not be added to the BCL enum as its semantics can be misleading.
-        // Consider, for example, that (NestedFamANDAssem & NestedMask) == NestedFamORAssem.
-        // Only comparison of the masked value to 0 is meaningful, which is different from
-        // the other masks in the enum.
-        private const TypeAttributes NestedMask = (TypeAttributes)0x00000006;
-
-        private static bool IsNested(this TypeAttributes flags)
-        {
-            return (flags & NestedMask) != 0;
-        }
     }
 }

@@ -880,7 +880,7 @@ CLRMapViewOfFile(
 BOOL
 CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
-    )
+    ) noexcept
 {
     STATIC_CONTRACT_ENTRY_POINT;
 

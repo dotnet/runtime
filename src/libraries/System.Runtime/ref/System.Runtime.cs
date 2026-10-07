@@ -14176,10 +14176,12 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr) { throw null; }
         public override System.Type? GetNullableUnderlyingType() { throw null; }
+        public override System.Type[] GetOptionalCustomModifiers() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override System.Reflection.PropertyInfo[] GetProperties(System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         protected override System.Reflection.PropertyInfo? GetPropertyImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type? returnType, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
+        public override System.Type[] GetRequiredCustomModifiers() { throw null; }
         protected override bool HasElementTypeImpl() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters) { throw null; }
@@ -18059,7 +18061,7 @@ namespace System
     {
         public NewsStyleUriParser() { }
     }
-    public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
+    public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.IParsable<System.Uri>, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
         public static readonly string UriSchemeData;
@@ -18156,6 +18158,8 @@ namespace System
         [System.ObsoleteAttribute("Uri.Parse has been deprecated and is not supported.")]
         protected virtual void Parse() { }
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        static System.Uri System.IParsable<System.Uri>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<System.Uri>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }
@@ -18224,6 +18228,7 @@ namespace System
     public partial struct UriCreationOptions
     {
         private int _dummyPrimitive;
+        public bool AllowImplicitFilePaths { readonly get { throw null; } set { } }
         public bool DangerousDisablePathAndQueryCanonicalization { readonly get { throw null; } set { } }
     }
     public enum UriFormat

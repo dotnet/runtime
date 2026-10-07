@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -36,28 +30,19 @@ namespace Microsoft.Interop
         private sealed class ManagedToUnmanagedMarshaller : IUnboundMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+            public void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 ManagedHResultExceptionMarshallingInfo marshallingInfo = (ManagedHResultExceptionMarshallingInfo)info.MarshallingAttributeInfo;
 
                 if (context.CurrentStage != StubIdentifierContext.Stage.Unmarshal)
                 {
-                    yield break;
+                    return;
                 }
 
                 (string managedIdentifier, _) = context.GetIdentifiers(info);
 
-                // Marshal.ThrowExceptionForHR(<managed>, new(<embeddedDataBlob>), <thisParameter>);
-                yield return MethodInvocationStatement(
-                                TypeSyntaxes.System_Runtime_InteropServices_Marshal,
-                                IdentifierName("ThrowExceptionForHR"),
-                                Argument(IdentifierName(managedIdentifier)),
-                                Argument(ImplicitObjectCreationExpression(
-                                    ArgumentList(
-                                        SingletonSeparatedList(
-                                            Argument(ComInterfaceGeneratorHelpers.CreateEmbeddedDataBlobCreationStatement(marshallingInfo.InterfaceId.ToByteArray())))),
-                                    initializer: null)),
-                                Argument(CastExpression(TypeSyntaxes.System_IntPtr, IdentifierName(VirtualMethodPointerStubGenerator.NativeThisParameterIdentifier))));
+                string interfaceId = ComInterfaceGeneratorHelpers.CreateEmbeddedDataBlobExpression(marshallingInfo.InterfaceId.ToByteArray());
+                writer.WriteLine($"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_InteropServices_Marshal}.ThrowExceptionForHR({managedIdentifier}, new({interfaceId}), (nint){VirtualMethodPointerStubGenerator.NativeThisParameterIdentifier});");
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
@@ -70,31 +55,18 @@ namespace Microsoft.Interop
         private sealed class UnmanagedToManagedMarshaller : IUnboundMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+            public void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
                 if (context.CurrentStage != StubIdentifierContext.Stage.Unmarshal)
                 {
-                    yield break;
+                    return;
                 }
 
                 (string managedIdentifier, _) = context.GetIdentifiers(info);
 
-                //<managed> = 0; // S_OK
-                yield return ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(managedIdentifier),
-                        LiteralExpression(
-                            SyntaxKind.NumericLiteralExpression,
-                            Literal(0))))
-                .WithSemicolonToken(
-                    Token(
-                        TriviaList(),
-                        SyntaxKind.SemicolonToken,
-                        TriviaList(
-                            Comment("// S_OK"))));
+                writer.WriteLine($"{managedIdentifier} = 0; // S_OK");
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;

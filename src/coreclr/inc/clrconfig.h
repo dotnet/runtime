@@ -134,7 +134,7 @@ public:
     static BOOL IsConfigOptionSpecified(LPCWSTR name);
 
     // Free a string returned by GetConfigValue
-    static void FreeConfigString(_In_ _In_z_ LPWSTR name);
+    static void FreeConfigString(_In_ _In_z_ LPWSTR name) noexcept;
 
     // Initialize the configuration.
     static void Initialize();
@@ -154,7 +154,7 @@ struct CLRConfigStringTraits final
 {
     using Type = LPWSTR;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type value) { CLRConfig::FreeConfigString(value); }
+    static void Free(Type value) noexcept { CLRConfig::FreeConfigString(value); }
 };
 
 using CLRConfigStringHolder = LifetimeHolder<CLRConfigStringTraits>;

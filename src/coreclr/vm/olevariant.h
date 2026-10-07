@@ -19,6 +19,7 @@ class OleVariant
     static void MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *pOle);
     static void MarshalObjectForOleVariant(const VARIANT *pOle, OBJECTREF * const & pObj);
     static void MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle);
+    static void MarshalVariantArrayElementForObject(OBJECTREF *pObj, VARIANT *pOle);
 
     static void ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj);
     static BSTR ConvertStringToBSTR(STRINGREF *pStringObj);
@@ -105,7 +106,7 @@ private:
 // Returns the instantiated MethodDesc for a StubHelpers array marshalling method
 // (e.g. ConvertArrayContentsToUnmanaged/ConvertArrayContentsToManaged) for a given
 // SAFEARRAY VARTYPE and element MethodTable.
-MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid = FALSE);
+MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bNativeDataValid = FALSE);
 
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT* pOle, QCallExceptionStatus* qcallError);
 

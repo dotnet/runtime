@@ -215,11 +215,14 @@ namespace System.Threading.Tasks.Tests
                     observedTimestamps.Add(ts);
             }
 
+            // These calls must not be inlined: distinct invocations need separate continuations
+            // to receive fresh timestamps rather than preserving this invocation's timestamp.
             await NestedDelay1(observedTimestamps);
             await NestedDelay2(observedTimestamps);
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         static async Task NestedDelay1(List<long> observedTimestamps)
         {
             var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
@@ -233,6 +236,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         static async Task NestedDelay2(List<long> observedTimestamps)
         {
             var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
@@ -773,8 +777,8 @@ namespace System.Threading.Tasks.Tests
                 var observedTimestamps = new List<long>();
                 await FuncWithNestedDelays(observedTimestamps);
 
-                // Each suspension across nested async methods should produce a fresh, non-zero
-                // timestamp — not one inherited from a parent continuation.
+                // New invocations of nested async methods should receive fresh, non-zero
+                // timestamps, not ones inherited from a parent continuation.
                 Assert.True(observedTimestamps.Count >= 3, $"Expected at least 3 observed timestamps, got {observedTimestamps.Count}");
                 Assert.All(observedTimestamps, ts => Assert.True(ts > 0, "Expected non-zero timestamp"));
                 Assert.True(observedTimestamps.Distinct().Count() > 1, "Expected timestamps from different suspensions to not all be identical");

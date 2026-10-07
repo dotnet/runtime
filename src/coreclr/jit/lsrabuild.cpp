@@ -2277,18 +2277,6 @@ void LinearScan::buildIntervals()
         buildInitialParamDef(lclDsc, paramReg);
     }
 
-    // If there is a secret stub param, it is also live in
-    if (m_compiler->info.compPublishStubParam)
-    {
-        calleeRegArgMaskLiveIn->AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
-
-        LclVarDsc* stubParamDsc = m_compiler->lvaGetDesc(m_compiler->lvaStubArgumentVar);
-        if (isCandidateVar(stubParamDsc))
-        {
-            buildInitialParamDef(stubParamDsc, REG_SECRET_STUB_PARAM);
-        }
-    }
-
 #ifdef DEBUG
     if (stressInitialParamReg())
     {
@@ -4615,37 +4603,7 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
     GenTree*         op2           = tree->gtGetOp2();
 
 #ifdef TARGET_X86
-    bool needByteRegs = false;
-    if (varTypeIsByte(tree))
-    {
-        if (varTypeUsesIntReg(op1))
-        {
-            needByteRegs = true;
-        }
-    }
-    // Example1: GT_EQ(int, op1 of type ubyte, op2 of type ubyte) - in this case codegen uses
-    // ubyte as the result of comparison and if the result needs to be materialized into a reg
-    // simply zero extend it to TYP_INT size.  Here is an example of generated code:
-    //         cmp dl, byte ptr[addr mode]
-    //         movzx edx, dl
-    else if (varTypeIsByte(op1) && varTypeIsByte(op2))
-    {
-        needByteRegs = true;
-    }
-    // Example2: GT_EQ(int, op1 of type ubyte, op2 is GT_CNS_INT) - in this case codegen uses
-    // ubyte as the result of the comparison and if the result needs to be materialized into a reg
-    // simply zero extend it to TYP_INT size.
-    else if (varTypeIsByte(op1) && op2->IsCnsIntOrI())
-    {
-        needByteRegs = true;
-    }
-    // Example3: GT_EQ(int, op1 is GT_CNS_INT, op2 of type ubyte) - in this case codegen uses
-    // ubyte as the result of the comparison and if the result needs to be materialized into a reg
-    // simply zero extend it to TYP_INT size.
-    else if (op1->IsCnsIntOrI() && varTypeIsByte(op2))
-    {
-        needByteRegs = true;
-    }
+    bool needByteRegs = (varTypeIsByte(tree) && varTypeUsesIntReg(op1)) || (tree->AsOp()->GetCompareSize() == 1);
     if (needByteRegs)
     {
         if (!op1->isContained())

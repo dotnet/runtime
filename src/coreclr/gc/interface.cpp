@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "gcinternal.h"
+#include "gcbridge.h"
 
 #ifdef SERVER_GC
 namespace SVR
@@ -2085,9 +2086,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
         gen0_seg = heap_segment_next (gen0_seg);
     }
 #else //USE_REGIONS
-    // For segments ephemeral seg does not change.
-    heap_segment* current_eph_seg = pGenGCHeap->ephemeral_heap_segment;
-    gen0_size = current_alloc_allocated - heap_segment_mem (current_eph_seg);
+    gen0_size = current_alloc_allocated - generation_allocation_start (gen);
 #endif //USE_REGIONS
 
     // Defense-in-depth clamp: gen0 frag counters are updated by the allocator under a different lock.
@@ -2734,6 +2733,17 @@ void GCHeap::NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHan
     Ref_NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
 #else
     assert(false);
+#endif
+}
+
+uintptr_t* GCHeap::GetPendingBridgeHandles(size_t* count)
+{
+#ifdef FEATURE_JAVAMARSHAL
+    return ::GetPendingBridgeHandles(count);
+#else
+    assert(false);
+    *count = 0;
+    return nullptr;
 #endif
 }
 

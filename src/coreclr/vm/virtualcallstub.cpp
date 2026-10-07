@@ -689,22 +689,26 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
-#ifdef CHAIN_LOOKUP
-    // Serialize cache chain unlinking against concurrent insert/promote writers.
-    CrstHolder lh(g_resolveCache->GetWriteLock());
-#endif
-    DispatchCache::Iterator it(g_resolveCache);
-    while (it.IsValid())
     {
-        // Using UnlinkEntry performs an implicit call to Next (see comment for UnlinkEntry).
-        // Thus, we need to avoid calling Next when we delete an entry so
-        // that we don't accidentally skip entries.
-        while (it.IsValid() && cache_entry_rangeList.IsInRange((TADDR)it.Entry()))
+#ifdef CHAIN_LOOKUP
+        // Serialize cache chain unlinking against concurrent insert/promote writers.
+        CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
+        DispatchCache::Iterator it(g_resolveCache);
+        while (it.IsValid())
         {
-            it.UnlinkEntry();
+            // Using UnlinkEntry performs an implicit call to Next (see comment for UnlinkEntry).
+            // Thus, we need to avoid calling Next when we delete an entry so
+            // that we don't accidentally skip entries.
+            while (it.IsValid() && cache_entry_rangeList.IsInRange((TADDR)it.Entry()))
+            {
+                it.UnlinkEntry();
+            }
+            it.Next();
         }
-        it.Next();
     }
+    // CrstStubDispatchCache must be released before deleting the loader heaps below, because
+    // freeing their memory takes CrstExecutableAllocatorLock, which is at the same lock level.
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH

@@ -14,45 +14,7 @@ enum WaitMode
     WaitMode_Alertable = 0x1,         // Can be waken by APC.  May pumping message.
 };
 
-class CLREventBase
-{
-public:
-    CLREventBase()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_handle = INVALID_HANDLE_VALUE;
-    }
-
-    void CreateAutoEvent(BOOL bInitialState);
-    void CreateManualEvent(BOOL bInitialState);
-
-    // Non-throwing variants of the functions above
-    BOOL CreateAutoEventNoThrow(BOOL bInitialState);
-    BOOL CreateManualEventNoThrow(BOOL bInitialState);
-
-    void CloseEvent();
-
-    BOOL IsValid() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_handle != INVALID_HANDLE_VALUE;
-    }
-
-#ifndef DACCESS_COMPILE
-    HANDLE GetOSEvent() {
-        LIMITED_METHOD_CONTRACT;
-        return m_handle;
-    }
-#endif // DACCESS_COMPILE
-
-    BOOL Set();
-    BOOL Reset();
-    DWORD Wait(DWORD dwMilliseconds, BOOL bAlertable);
-    DWORD WaitEx(DWORD dwMilliseconds, WaitMode mode);
-
-protected:
-    HANDLE m_handle;
-};
+#include "../runtime/CLREventBase.h"
 
 
 class CLREvent : public CLREventBase

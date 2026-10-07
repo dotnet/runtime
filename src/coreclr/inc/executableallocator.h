@@ -183,7 +183,7 @@ private:
     static bool IsDoubleMappingEnabled();
 
     // Release memory allocated via DoubleMapping for either templates or normal double mapped data
-    void ReleaseWorker(void* pRX, bool releaseTemplate);
+    void ReleaseWorker(void* pRX, bool releaseTemplate) noexcept;
 
     // Initialize the allocator instance
     bool Initialize();
@@ -211,7 +211,7 @@ public:
 #endif
 
     // Return the ExecuteAllocator singleton instance
-    static ExecutableAllocator* Instance();
+    static ExecutableAllocator* Instance() noexcept;
 
     // Initialize the static members of the Executable allocator and allocate
     // and initialize the instance of it.
@@ -258,13 +258,13 @@ public:
 
     // Release the executable memory block starting at the passed in address that was allocated
     // by one of the ReserveXXX methods.
-    void Release(void* pRX);
+    void Release(void* pRX) noexcept;
 
     // Map the specified block of executable memory as RW
     void* MapRW(void* pRX, size_t size, CacheableMapping cacheMapping);
 
     // Unmap the RW mapping at the specified address
-    void UnmapRW(void* pRW);
+    void UnmapRW(void* pRW) noexcept;
 
     // Allocate thunks from a template. pTemplate is the return value from CreateTemplate
     void* AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
@@ -298,7 +298,7 @@ class ExecutableWriterHolder
         other.m_addressRW = NULL;
     }
 
-    void Unmap()
+    void Unmap() noexcept
     {
 #if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
         if (m_addressRX != NULL)
@@ -344,7 +344,7 @@ public:
 #endif
     }
 
-    ~ExecutableWriterHolder()
+    ~ExecutableWriterHolder() noexcept
     {
         Unmap();
     }

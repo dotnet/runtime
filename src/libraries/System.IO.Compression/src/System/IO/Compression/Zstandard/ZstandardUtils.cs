@@ -18,6 +18,13 @@ namespace System.IO.Compression
         internal static int WindowLog_Max => Environment.Is64BitProcess ? 31 : 30;    // 1GB or 2GB window, depending on platform
         internal const int WindowLog_Default = 23; // 8MB window
 
+        // Hash table and chain table constraints based on Zstandard specification
+        internal const int HashLog_Min = 6;
+        internal const int HashLog_Max = 30;
+
+        internal const int ChainLog_Min = 6;
+        internal static int ChainLog_Max => Environment.Is64BitProcess ? 30 : 29;
+
         internal const int TargetBlockSize_Min = 1340;
         internal const int TargetBlockSize_Max = 131072;   // (2^17)
 

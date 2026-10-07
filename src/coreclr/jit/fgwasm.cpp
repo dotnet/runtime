@@ -348,7 +348,10 @@ public:
                         else
                         {
                             JITDUMP("Multiple try entries in SCC %u entry set\n", m_num);
-                            NYI_WASM("SCC with multiple try entry headers");
+                            // Multiple try entries in an SCC is currently not supported. These cases appear to be
+                            // relatively rare, and it would potentially require some fairly complex additional handling
+                            // to support them.
+                            IMPL_LIMITATION("Wasm SCC with multiple try entry headers");
                         }
                     }
                 }
@@ -2019,6 +2022,61 @@ PhaseStatus Compiler::fgWasmControlFlow()
             }
         }
     }
+
+    // Verify that an adjacent forward edge that cannot fall through, because a Try or
+    // ExnRefWrapper interval ends at its target (see BasicBlock::CanRemoveJumpToTarget),
+    // has a plain Block interval enclosing the source and ending at the target, so the
+    // explicit branch codegen emits has a label to bind to. For example, a callfinally
+    // whose continuation follows the end of a try_table:
+    //
+    //   block                ;; Block interval ending at the continuation
+    //     try_table ...
+    //       ...
+    //       call_indirect    ;; call the finally
+    //       br 1             ;; branch to the continuation
+    //     end                ;; end of try_table
+    //     unreachable        ;; fall-through from the try_table would trap here
+    //   end
+    //   ...                  ;; continuation
+    //
+    for (unsigned cursor = 0; cursor < numBlocks; cursor++)
+    {
+        BasicBlock* const block = initialLayout[cursor];
+        BasicBlock* const next  = initialLayout[cursor + 1];
+
+        bool const fallsToNext = (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && block->TargetIs(next)) ||
+                                 (block->KindIs(BBJ_COND) && block->FalseTargetIs(next));
+        if (!fallsToNext)
+        {
+            continue;
+        }
+
+        bool endsTryOrWrapper = false;
+        bool hasBlockTarget   = false;
+        for (WasmInterval* const interval : *fgWasmIntervals)
+        {
+            if (interval->End() != (cursor + 1))
+            {
+                continue;
+            }
+
+            if (interval->IsTry() || interval->IsExnRefWrapper())
+            {
+                endsTryOrWrapper = true;
+            }
+            else if (!interval->IsLoop() && (interval->Start() <= cursor))
+            {
+                hasBlockTarget = true;
+            }
+        }
+
+        if (endsTryOrWrapper && !hasBlockTarget)
+        {
+            JITDUMP(FMT_BB "[%u] -> " FMT_BB "[%u] crosses a Try/ExnRefWrapper end without a Block target\n",
+                    block->bbNum, cursor, next->bbNum, cursor + 1);
+            assert(!"Wasm fall-through across a Try/ExnRefWrapper end needs a Block target");
+        }
+    }
 #endif
 
     // -----------------------------------------------
@@ -3261,6 +3319,8 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     //
     BlockToBlockMap    resumePads(getAllocator(CMK_FlowEdge));
     BlockToFlowEdgeMap continuationEdges(getAllocator(CMK_FlowEdge));
+    bool const         verifyGCModeTransitions =
+        IsReadyToRun() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
 
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
@@ -3309,6 +3369,16 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
             GenTree* const store = gtNewStoreLclVarNode(resumeIPLocalNum, zero);
             LIR::Range     range = LIR::SeqTree(this, store);
             LIR::AsRange(resumePad).InsertAtEnd(std::move(range));
+
+            if (verifyGCModeTransitions)
+            {
+                // Reaching this pad means this dispatcher accepted the resumption. A nonmatching
+                // inner dispatcher takes the rethrow edge and must leave transitions forbidden.
+                GenTree* resumeAfterCatch = gtNewHelperCallNode(CORINFO_HELP_JIT_RESUME_AFTER_CATCH, TYP_VOID);
+                resumeAfterCatch          = fgMorphCall(resumeAfterCatch->AsCall());
+                gtSetEvalOrder(resumeAfterCatch);
+                LIR::AsRange(resumePad).InsertAtEnd(LIR::SeqTree(this, resumeAfterCatch));
+            }
 
             resumePads.Set(continuation, resumePad);
 
@@ -3622,7 +3692,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 //
                 const unsigned filterIndex             = block->getHndIndex();
                 const unsigned clauseIndex             = compEHTabOrderToVMClauseOrder[filterIndex];
-                clauses[clauseIndex].clause.ClassToken = virtualIP;
+                clauses[clauseIndex].clause.ClassToken = vipFirstInFunc ? func->startVirtualIP : virtualIP;
             }
 
             // Record the required Virtual IP and store-site/entry flags for each block.

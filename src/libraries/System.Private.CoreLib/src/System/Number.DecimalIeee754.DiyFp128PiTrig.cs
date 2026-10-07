@@ -13,14 +13,8 @@ internal static partial class Number
     // `sinpi`/`cospi`/`tanpi` from amd/aocl-libm-ose, BSD 3-Clause; see THIRD-PARTY-NOTICES.TXT): the
     // magnitude is split exactly into an integer and a fractional part in [0, 1), the fraction folds by
     // quarter turns, and a small ux sin/cos of (reduced * pi) with reduced in [0, 1/4] is evaluated. The
-    // integer/fractional split is exact in binary128 for every non-integer decimal (its magnitude is
-    // below 2^113), so the pi-scaled reduction avoids the large-argument cancellation that motivates a
-    // dedicated *Pi routine. The inverse variants are the radian result divided by pi.
-
-    private static DiyFp128 UxQuarter => new DiyFp128(0, -1, UxMsb, 0);
-    private static DiyFp128 UxHalf => new DiyFp128(0, 0, UxMsb, 0);
-    private static DiyFp128 UxThreeQuarter => new DiyFp128(0, 0, 0xC000000000000000, 0);
-    private static DiyFp128 UxOne => new DiyFp128(0, 1, UxMsb, 0);
+    // reduction is performed in decimal before conversion so small distances from integers and
+    // half-integers are preserved. The inverse variants are the radian result divided by pi.
 
     // 0, 1/4, 1/2, 3/4, 1 -- InvTrigConstants (0, pi/4, pi/2, 3pi/4, pi) divided by pi, for the exact
     // signed-zero/infinity quadrant results of the inverse *Pi variants.
@@ -34,95 +28,68 @@ internal static partial class Number
 
     private static bool DiyFp128IsZero(in DiyFp128 value) => (value._hi | value._lo) == 0;
 
-    // Compares the magnitudes of two normalized non-negative DiyFp128 values (returns a <= b).
-    private static bool DiyFp128MagnitudeLessOrEqual(in DiyFp128 a, in DiyFp128 b)
+    private static DiyFp128 ReduceDecimalIeee754Pi<TDecimal, TValue>(
+        in DecodedDecimalIeee754<TValue> decoded, out int octant)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
     {
-        if (DiyFp128IsZero(a))
+        int exponent = decoded.UnbiasedExponent;
+        TValue coefficient = decoded.Significand;
+        octant = 0;
+
+        if (exponent >= 0)
         {
-            return true;
+            octant = ((exponent == 0) && TValue.IsOddInteger(coefficient)) ? 4 : 0;
+            return new DiyFp128(decoded.Signed ? UxSignBit : 0, UxZeroExponent, 0, 0);
         }
 
-        if (DiyFp128IsZero(b))
+        if (-exponent > TDecimal.Precision)
         {
-            return false;
+            // |x| < 1/10: no reduction is needed, and 10^-exponent need not fit in TValue.
+            return DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, exponent, coefficient);
         }
 
-        if (a._exponent != b._exponent)
+        int scale = -exponent;
+        TValue one = (scale == TDecimal.Precision) ? TDecimal.MaxSignificand + TValue.One : TDecimal.Power10(scale);
+        TValue integer = coefficient / one;
+        TValue fraction = coefficient - (integer * one);
+        octant = TValue.IsOddInteger(integer) ? 4 : 0;
+
+        TValue fourFraction = fraction << 2;
+        if (fourFraction <= one)
         {
-            return a._exponent < b._exponent;
+            coefficient = fraction;
+        }
+        else if ((fraction << 1) <= one)
+        {
+            octant += 1;
+            coefficient = (one >> 1) - fraction;
+        }
+        else if (fourFraction <= (one + (one << 1)))
+        {
+            octant += 2;
+            coefficient = fraction - (one >> 1);
+        }
+        else
+        {
+            octant += 3;
+            coefficient = one - fraction;
         }
 
-        if (a._hi != b._hi)
-        {
-            return a._hi < b._hi;
-        }
-
-        return a._lo <= b._lo;
-    }
-
-    // Splits |value| (assumed normalized) into its fractional part in [0, 1); reports whether floor(|value|)
-    // is odd and whether the value is an exact integer.
-    private static DiyFp128 DiyFp128SplitInteger(in DiyFp128 value, out bool oddInteger, out bool isInteger)
-    {
-        if (DiyFp128IsZero(value))
-        {
-            oddInteger = false;
-            isInteger = true;
-            return default;
-        }
-
-        int exponent = value._exponent;
-
-        if (exponent <= 0)
-        {
-            // |value| < 1, so the whole value is fractional and floor is 0 (even).
-            oddInteger = false;
-            isInteger = false;
-            DiyFp128 fraction = value;
-            fraction._sign = 0;
-            return fraction;
-        }
-
-        if (exponent >= 128)
-        {
-            // The 128-bit significand has no fractional bits; the value is an even integer (a power-of-two scale).
-            oddInteger = false;
-            isInteger = true;
-            return default;
-        }
-
-        UInt128 significand = new UInt128(value._hi, value._lo);
-        int shift = 128 - exponent;
-        UInt128 fractionBits = significand & ((UInt128.One << shift) - UInt128.One);
-
-        // The integer part's low bit is bit `shift` of the significand; read it from the half that
-        // holds it rather than materializing the full 128-bit shifted integer for one bit.
-        oddInteger = (shift < 64) ? (((value._lo >> shift) & 1) != 0)
-                                  : (((value._hi >> (shift - 64)) & 1) != 0);
-
-        if (fractionBits == UInt128.Zero)
-        {
-            isInteger = true;
-            return default;
-        }
-
-        isInteger = false;
-        DiyFp128 result = new DiyFp128(0, exponent, fractionBits.Upper, fractionBits.Lower);
-        DiyFp128Normalize(ref result);
-        return result;
-    }
-
-    private static DiyFp128 DiyFp128Product(in DiyFp128 a, in DiyFp128 b)
-    {
-        DiyFp128 x = a;
-        DiyFp128 y = b;
-        DiyFp128Multiply(ref x, ref y, out DiyFp128 z);
-        DiyFp128Normalize(ref z);
-        return z;
+        return TValue.IsZero(coefficient)
+            ? new DiyFp128(decoded.Signed ? UxSignBit : 0, UxZeroExponent, 0, 0)
+            : DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, exponent, coefficient);
     }
 
     // reduced (in [0, 1/4]) * pi -> a small angle in [0, pi/4].
-    private static DiyFp128 DiyFp128TimesPi(in DiyFp128 reduced) => DiyFp128Product(reduced, GetInvTrigConstant(4));
+    private static DiyFp128 DiyFp128TimesPi(DiyFp128 reduced)
+    {
+        reduced._sign = 0;
+        DiyFp128 pi = GetInvTrigConstant(4);
+        DiyFp128Multiply(ref reduced, ref pi, out DiyFp128 result);
+        DiyFp128Normalize(ref result);
+        return result;
+    }
 
     private static DiyFp128 DiyFp128Difference(in DiyFp128 a, in DiyFp128 b)
     {
@@ -131,80 +98,49 @@ internal static partial class Number
         return result;
     }
 
-    private static DiyFp128 DiyFp128WithSignFlipped(DiyFp128 value, uint sign)
+    private static DiyFp128 DiyFp128EvaluatePiTrig(in DiyFp128 reduced, bool cosine)
     {
-        value._sign ^= sign;
-        return value;
+        // Decimal reduction already bounds the angle to [0, pi/4], so no radian reduction is needed.
+        DiyFp128 angle = DiyFp128TimesPi(reduced);
+        Span<DiyFp128> results = [default, default];
+        DiyFp128EvaluateRational(angle, cosine ? default : TrigSinCoefficients, 1,
+            cosine ? TrigCosCoefficients : default, 1, TrigSinCosDegree,
+            TrigSkip | (cosine ? TrigCosPolyFlags : TrigSinPolyFlags), results);
+        return results[0];
     }
 
-    /// <summary>Computes <c>sin(pi * x)</c> for a finite non-zero binary128 argument.</summary>
-    private static DiyFp128 DiyFp128SinPi(in DiyFp128 x)
+    /// <summary>Computes <c>sin(pi * x)</c> from its decimal-reduced argument and octant.</summary>
+    private static DiyFp128 DiyFp128SinPi(in DiyFp128 reduced, int octant)
     {
-        DiyFp128 magnitude = x;
-        magnitude._sign = 0;
-        DiyFp128 fraction = DiyFp128SplitInteger(magnitude, out bool oddInteger, out bool isInteger);
-
-        if (isInteger)
-        {
-            // sin(pi * n) = +/-0, keeping the sign of x.
-            return new DiyFp128(x._sign, UxZeroExponent, 0, 0);
-        }
-
-        uint sign = x._sign ^ (oddInteger ? UxSignBit : 0u);
+        bool useCosine = (octant & 3) is 1 or 2;
         DiyFp128 result;
 
-        if (DiyFp128MagnitudeLessOrEqual(fraction, UxQuarter))
+        if (DiyFp128IsZero(reduced))
         {
-            result = DiyFp128Sin(DiyFp128TimesPi(fraction));
-        }
-        else if (DiyFp128MagnitudeLessOrEqual(fraction, UxHalf))
-        {
-            result = DiyFp128Cos(DiyFp128TimesPi(DiyFp128Difference(UxHalf, fraction)));
-        }
-        else if (DiyFp128MagnitudeLessOrEqual(fraction, UxThreeQuarter))
-        {
-            result = DiyFp128Cos(DiyFp128TimesPi(DiyFp128Difference(fraction, UxHalf)));
+            if (!useCosine)
+            {
+                // sin(pi * n) = +/-0, keeping the sign of x.
+                return reduced;
+            }
+
+            result = DiyFp128One;
         }
         else
         {
-            result = DiyFp128Sin(DiyFp128TimesPi(DiyFp128Difference(UxOne, fraction)));
+            result = DiyFp128EvaluatePiTrig(reduced, useCosine);
         }
 
-        return DiyFp128WithSignFlipped(result, sign);
+        result._sign = reduced._sign ^ (((octant & 4) != 0) ? UxSignBit : 0u);
+        return result;
     }
 
-    /// <summary>Computes <c>cos(pi * x)</c> for a finite non-zero binary128 argument.</summary>
-    private static DiyFp128 DiyFp128CosPi(in DiyFp128 x)
+    /// <summary>Computes <c>cos(pi * x)</c> from its decimal-reduced argument and octant.</summary>
+    private static DiyFp128 DiyFp128CosPi(in DiyFp128 reduced, int octant)
     {
-        DiyFp128 magnitude = x;
-        magnitude._sign = 0;
-        DiyFp128 fraction = DiyFp128SplitInteger(magnitude, out bool oddInteger, out bool isInteger);
-
-        if (isInteger)
-        {
-            // cos(pi * n) = (-1)^n.
-            return DiyFp128WithSignFlipped(UxOne, oddInteger ? UxSignBit : 0u);
-        }
-
-        uint sign = oddInteger ? UxSignBit : 0u;
-        DiyFp128 result;
-
-        if (DiyFp128MagnitudeLessOrEqual(fraction, UxQuarter))
-        {
-            result = DiyFp128Cos(DiyFp128TimesPi(fraction));
-        }
-        else if (DiyFp128MagnitudeLessOrEqual(fraction, UxHalf))
-        {
-            result = DiyFp128Sin(DiyFp128TimesPi(DiyFp128Difference(UxHalf, fraction)));
-        }
-        else if (DiyFp128MagnitudeLessOrEqual(fraction, UxThreeQuarter))
-        {
-            result = DiyFp128WithSignFlipped(DiyFp128Sin(DiyFp128TimesPi(DiyFp128Difference(fraction, UxHalf))), UxSignBit);
-        }
-        else
-        {
-            result = DiyFp128WithSignFlipped(DiyFp128Cos(DiyFp128TimesPi(DiyFp128Difference(UxOne, fraction))), UxSignBit);
-        }
+        bool useCosine = (octant & 3) is not (1 or 2);
+        DiyFp128 result = DiyFp128IsZero(reduced)
+            ? (useCosine ? DiyFp128One : new DiyFp128(0, UxZeroExponent, 0, 0))
+            : DiyFp128EvaluatePiTrig(reduced, useCosine);
 
         // cos(pi * (n + 1/2)) is exactly +0; the reduced result is +0 and must not take the odd-integer sign.
         if (DiyFp128IsZero(result))
@@ -212,13 +148,35 @@ internal static partial class Number
             return new DiyFp128(0, UxZeroExponent, 0, 0);
         }
 
-        return DiyFp128WithSignFlipped(result, sign);
+        result._sign = (((octant + 2) & 4) != 0) ? UxSignBit : 0u;
+        return result;
     }
 
-    /// <summary>Computes <c>sin(pi * x)</c> and <c>cos(pi * x)</c> for a finite non-zero binary128 argument.</summary>
-    private static void DiyFp128SinCosPi(in DiyFp128 x, out DiyFp128 sin, out DiyFp128 cos)
+    /// <summary>Computes <c>sin(pi * x)</c> and <c>cos(pi * x)</c> from their decimal-reduced argument and octant.</summary>
+    private static void DiyFp128SinCosPi(in DiyFp128 reduced, int octant, out DiyFp128 sin, out DiyFp128 cos)
     {
-        sin = DiyFp128SinPi(x);
-        cos = DiyFp128CosPi(x);
+        if (DiyFp128IsZero(reduced))
+        {
+            sin = reduced;
+            cos = DiyFp128One;
+        }
+        else
+        {
+            DiyFp128 angle = DiyFp128TimesPi(reduced);
+            Span<DiyFp128> results = [default, default];
+            DiyFp128EvaluateRational(angle, TrigSinCoefficients, 1, TrigCosCoefficients, 1, TrigSinCosDegree,
+                TrigSinPolyFlags | TrigCosPolyFlags | TrigNoDivide, results);
+            sin = results[0];
+            cos = results[1];
+        }
+
+        if ((octant & 3) is 1 or 2)
+        {
+            (sin, cos) = (cos, sin);
+        }
+
+        // Integer sine zeros retain the input sign; half-integer cosine zeros are always positive.
+        sin._sign = reduced._sign ^ ((!DiyFp128IsZero(sin) && ((octant & 4) != 0)) ? UxSignBit : 0u);
+        cos._sign = (!DiyFp128IsZero(cos) && (((octant + 2) & 4) != 0)) ? UxSignBit : 0u;
     }
 }

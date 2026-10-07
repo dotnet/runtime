@@ -5,9 +5,11 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
@@ -33,9 +35,16 @@ namespace ILCompiler.ObjectWriter
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
 
-        public WebCilObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+        private readonly bool _emitNameSection;
+
+        public WebCilObjectWriter(
+            NodeFactory factory,
+            ObjectWritingOptions options,
+            OutputInfoBuilder outputInfoBuilder,
+            bool emitNameSection)
             : base(factory, options, outputInfoBuilder)
         {
+            _emitNameSection = emitNameSection;
         }
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
@@ -97,23 +106,18 @@ namespace ILCompiler.ObjectWriter
                 ]
         );
 
-        WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
-            new WasmFuncType(new([]), new([])), // (func)
-                [
-                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex),
-                    I32.Const(0),
-                    I32.Const(tableSize),
-                    Table.Init(0, 0)
-                ]
-        );
-
-        WasmFunctionBody GetWebcilPayload => new WasmFunctionBody(
+        /// <summary>
+        /// Records the table base in the installed payload's header. The payload and function table are
+        /// active segments, so the engine has already placed them at <c>__memory_base</c> and
+        /// <c>__table_base</c> during instantiation. The header's <c>tableBase</c> field is the one
+        /// value a segment cannot supply: the runtime reads it from the mapped image rather than from a
+        /// Wasm global (<c>WebcilDecoder::GetTableBaseOffset</c>), and it returns 0 when unwritten -
+        /// silently shifting every R2R function index by <c>tableBase</c>. Hosts must call this after
+        /// instantiation.
+        /// </summary>
+        static WasmFunctionBody PatchWebcilHeader = new WasmFunctionBody(
             new WasmFuncType(new([WasmValueType.I32, WasmValueType.I32]), new([])), // (func ($d i32) ($n i32))
                 [
-                    Local.Get(0), // (local.get $d)
-                    I32.Const(0),
-                    Local.Get(1), // (local.get $n)
-                    Memory.Init(1),
                     Local.Get(1),
                     I32.Const(32),
                     I32.Ge_s,
@@ -242,12 +246,43 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128(NumDataSegments); // number of data segments
         }
 
+        /// <summary>Offset constant expression placing the payload segment at the host-supplied image base.</summary>
+        private static WasmInstructionGroup ImageBaseOffsetExpr =>
+            new WasmInstructionGroup([Global.Get(ImageBaseGlobalIndex)]);
+
+        /// <summary>Offset constant expression placing the function table slice at the host-supplied table base.</summary>
+        private static WasmInstructionGroup TableBaseOffsetExpr =>
+            new WasmInstructionGroup([Global.Get(TableBaseGlobalIndex)]);
+
         private protected override void EmitSectionsAndLayout()
         {
-            int totalMethodCount = MethodCount + 3;
+#if READYTORUN
+            int expectedFunctionIndex = -1;
+            foreach (ILCompiler.DependencyAnalysis.ReadyToRun.MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
+            {
+                Utf8String methodName = new(method.GetMangledName(_nodeFactory.NameMangler));
+                int functionIndex = _wasmSymbolManager.GetSymbol(methodName).Index;
+
+                if (expectedFunctionIndex == -1)
+                {
+                    expectedFunctionIndex = functionIndex;
+                }
+
+                Debug.Assert(functionIndex == expectedFunctionIndex,
+                    $"R2R method {method.Method} has wasm function index {functionIndex}, expected {expectedFunctionIndex}");
+                expectedFunctionIndex += method.FrameInfos.Length;
+            }
+#endif
+
+            // Every image - composite, single-assembly, or component forwarding stub - installs its payload
+            // and function table via active segments, so the only stub the host calls beyond
+            // getWebcilSize is patchWebcilHeader: the header's tableBase field is read from linear memory
+            // and cannot come from a segment.
+            const int stubCount = 2;
+            int totalMethodCount = MethodCount + stubCount;
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
-            InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
-            InsertWasmStub(new Utf8String("fillWebcilTable"), FillWebcilTable(totalMethodCount));
+            InsertWasmStub(new Utf8String("patchWebcilHeader"), PatchWebcilHeader);
+
             Debug.Assert(MethodCount == totalMethodCount);
 
             WriteDataCountSection();
@@ -255,9 +290,8 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void WriteGlobalSection()
         {
-            // webcilVersion: i32 const = 0
             WriteGlobal("webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
-                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilConstants.WC_VERSION_MAJOR)]));
+                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING)]));
         }
 
         private static readonly ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
@@ -457,7 +491,10 @@ namespace ILCompiler.ObjectWriter
             webcilSections = _sections.Sections.OfType<WebcilSection>().ToArray();
             WebcilHeader webcilHeader = LayoutWebcilPayload(webcilSections);
             ResolveWebcilSectionRelocations(webcilSections);
-            WebcilPayloadDataSegment webcilPayloadSegment = new(webcilHeader, webcilSections);
+            WebcilPayloadDataSegment webcilPayloadSegment = new(
+                webcilHeader,
+                webcilSections,
+                ImageBaseOffsetExpr);
 
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
             WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
@@ -502,7 +539,9 @@ namespace ILCompiler.ObjectWriter
              * Emit Webcil segment at end of file to support ReadyToRun
              ****************************************************************/
 
-            // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit uint)
+            // Passive data segment for the payload size; this is metadata for the host loader, which
+            // reads it straight out of the module bytes before instantiation in order to size its
+            // allocation, so it must stay passive in both image shapes.
             byte[] lengthBuffer = new byte[sizeof(uint) * 2];
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)webcilPayloadSegment.ContentSize);
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
@@ -515,11 +554,14 @@ namespace ILCompiler.ObjectWriter
             dataSection.EmitToStream(outputFileStream);
 #endif
 
-            // The name section goes last, after the data section, as tooling expects. It is the only
-            // record of function names now that they are no longer carried by the export table, and
-            // wasm-merge -g synthesizes the merged module's names from it.
-            WasmNameSection nameSection = new WasmNameSection(_wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
-            nameSection.EmitToStream(outputFileStream);
+            if (_emitNameSection)
+            {
+                // The name section goes last, after the data section, as tooling expects. It is the only
+                // in-image record of function names now that they are no longer carried by the export table,
+                // and wasm-merge -g synthesizes the merged module's names from it.
+                WasmNameSection nameSection = new WasmNameSection(_wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
+                nameSection.EmitToStream(outputFileStream);
+            }
 
             if (_outputInfoBuilder is not null)
             {
@@ -538,6 +580,18 @@ namespace ILCompiler.ObjectWriter
                 {
                     _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, _codeOffsetMap);
                 }
+            }
+        }
+
+        public void EmitSymbolMap(string path)
+        {
+            Console.WriteLine($"Emitting WebAssembly symbol map: {path}");
+            using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function))
+            {
+                writer.Write(symbol.Index.ToString(CultureInfo.InvariantCulture));
+                writer.Write(':');
+                writer.WriteLine(symbol.Name);
             }
         }
 
@@ -1008,7 +1062,14 @@ namespace ILCompiler.ObjectWriter
 #nullable disable
 
         public const int RtlRestoreContextTagIndex = 0;
-        private static readonly Utf8String RtlRestoreContextTagName = new("rtlRestoreContextTag");
+
+        /// <summary>
+        /// Import field names for the table and tag. These match the corresponding <c>wasm-ld</c>
+        /// exports (<c>--export-table</c> emits <c>__indirect_function_table</c>), so that a
+        /// composite merged into the host resolves by name with no renaming step.
+        /// </summary>
+        private const string IndirectFunctionTableName = "__indirect_function_table";
+        private static readonly Utf8String RtlRestoreContextTagName = new("__coreclr_wasm_rtlrestorecontext_tag");
 
         private static readonly WasmFuncType RtlRestoreContextTagSignature = new(
             new([]),
@@ -1029,7 +1090,7 @@ namespace ILCompiler.ObjectWriter
                 new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.ImageBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
                 new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.TableBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
                 new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: AsyncContinuationGlobalIndex),
-                new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
+                new WasmImport("webcil", IndirectFunctionTableName, import: new WasmTableImportType(), index: 0),
                 new WasmImport("webcil", RtlRestoreContextTagName.ToString(), import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
             ];
         }
@@ -1079,7 +1140,8 @@ namespace ILCompiler.ObjectWriter
                 .Select(symbol => symbol.Index)
                 .ToArray();
 
-            WriteElementSegment(functionIndices);
+            // The table slice is installed by an active segment at the host-supplied table base.
+            WriteElementSegment(functionIndices, TableBaseOffsetExpr);
         }
     }
 }

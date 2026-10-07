@@ -21,20 +21,26 @@ public: // static
     static void SetActualCode(PCODE addr, void* actualCode);
     static MethodDesc* GetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
-    static void SetInterpreterData(PCODE addr, PCODE interpreterData);
+    // Returns the existing data, or interpreterData if this call installs it.
+    static void* SetInterpreterDataInterlocked(PCODE addr, void* interpreterData);
     static bool PrefersInterpreterEntryPoint(PCODE addr);
 
 private:
     Volatile<void*> _pActualCode;
     MethodDesc* _pMD;
-    void* _pInterpreterData;
+    Volatile<void*> _pInterpreterData;
 
+    // [cDAC] [ExecutionManager]: Contract depends on the value of kPrefersInterpreterEntryPoint.
     enum PortableEntryPointFlag
     {
         kNone = 0,
         kUnmanagedCallersOnly_Has = 0x1,
         kUnmanagedCallersOnly_Checked = 0x2,
         kPrefersInterpreterEntryPoint = 0x4,
+        // Set while this entry point is registered on a loader allocator's pending
+        // closed-static-retbuf resolution list, so a redundant registration attempt
+        // can be rejected without a linear scan of that list.
+        kPendingClosedStaticRetBufResolution = 0x8,
     };
     Volatile<int32_t> _flags;
 
@@ -116,6 +122,27 @@ public:
         ClearFlagsInterlocked(kPrefersInterpreterEntryPoint);
     }
 
+    bool IsPendingClosedStaticRetBufResolution() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return (_flags & kPendingClosedStaticRetBufResolution) != 0;
+    }
+
+    void SetPendingClosedStaticRetBufResolution()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        SetFlagsInterlocked(kPendingClosedStaticRetBufResolution);
+    }
+
+    void ClearPendingClosedStaticRetBufResolution()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        ClearFlagsInterlocked(kPendingClosedStaticRetBufResolution);
+    }
+
     // Atomically install an interpreter thunk if _pActualCode is still NULL.
     // Returns true if the thunk was installed, false if _pActualCode was already set.
     bool TrySetInterpreterThunk(void* thunk)
@@ -187,10 +214,53 @@ public:
 static_assert(offsetof(UnboxingStubPortableEntryPoint, _targetEntryPoint) == TARGET_POINTER_SIZE);
 static_assert(offsetof(UnboxingStubPortableEntryPoint, _entryPoint) == 2 * TARGET_POINTER_SIZE);
 
+class ClosedStaticRetBufPortableEntryPoint final
+{
+public:
+    PCODE _targetEntryPoint;
+    PortableEntryPoint _entryPoint;
+    MethodDesc* _delegateInvoke;
+
+    static ClosedStaticRetBufPortableEntryPoint* FromEntryPoint(PCODE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
+            reinterpret_cast<BYTE*>(PCODEToPINSTR(addr)) - offsetof(ClosedStaticRetBufPortableEntryPoint, _entryPoint));
+    }
+
+    PortableEntryPoint* GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &_entryPoint;
+    }
+
+    void Init(MethodDesc* targetMethod, MethodDesc* delegateInvoke, PCODE targetEntryPoint, void* thunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _delegateInvoke = delegateInvoke;
+        _targetEntryPoint = targetEntryPoint;
+        if (thunk != nullptr &&
+            PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
+        {
+            _entryPoint.Init_WithNativeCode(thunk, targetMethod);
+        }
+        else
+        {
+            _entryPoint.Init(targetMethod);
+        }
+    }
+};
+
+// Generated closed-static return-buffer stubs access the target entrypoint at a fixed
+// negative offset from the embedded entrypoint.
+static_assert(offsetof(ClosedStaticRetBufPortableEntryPoint, _entryPoint) == TARGET_POINTER_SIZE);
+
 template<>
 struct cdac_data<PortableEntryPoint>
 {
+    static constexpr size_t ActualCode = offsetof(PortableEntryPoint, _pActualCode);
     static constexpr size_t MethodDesc = offsetof(PortableEntryPoint, _pMD);
+    static constexpr size_t Flags = offsetof(PortableEntryPoint, _flags);
 
     static_assert(offsetof(PortableEntryPoint, _pActualCode) == 0, "CLR ABI requires _pActualCode to be at offset 0 of PortableEntryPoint");
 };

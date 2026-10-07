@@ -151,10 +151,12 @@ public:
     {
         return const_cast<RecordPool &>(m_RecordStorage).Count();
     }
+#ifdef FEATURE_METADATA_PERSISTENCE
     inline HRESULT GetRecordsDataSize(UINT32 *pcbSize) const
     {
         return m_RecordStorage.GetSaveSize(pcbSize);
     }
+#endif
 
     __checkReturn
     inline HRESULT GetRecord(
@@ -164,12 +166,14 @@ public:
         return m_RecordStorage.GetRecord(nIndex, ppRecord);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     inline HRESULT SaveToStream(
         IStream *pStream) const
     {
         return const_cast<RecordPool &>(m_RecordStorage).PersistToStream(pStream);
     }
+#endif
 
 public:
     //

@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "threadsuspend.h"
 
@@ -334,12 +335,12 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                             if ((tries++) % 20 != 0) {
                                 YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
                             } else {
-                                __SwitchToThread(0, ++dwSwitchCount);
+                                minipal_switch_to_thread(++dwSwitchCount);
                             }
                         }
                         else
                         {
-                            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+                            minipal_switch_to_thread(++dwSwitchCount); // don't spin on uniproc machines
                         }
                     }
                 }
@@ -401,7 +402,7 @@ retry:
 #endif // _DEBUG
 
         // Allow the target thread to run in order to make some progress.
-        // On multi processor machines we saw the suspending thread resuming immediately after the __SwitchToThread()
+        // On multi processor machines we saw the suspending thread resuming immediately after minipal_switch_to_thread()
         // because it has another few processors available.  As a consequence the target thread was being Resumed and
         // Suspended right away, w/o a real chance to make any progress.
         if (g_SystemInfo.dwNumberOfProcessors > 1 && (tries++) % 20 != 0)
@@ -410,7 +411,7 @@ retry:
         }
         else
         {
-            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+            minipal_switch_to_thread(++dwSwitchCount); // don't spin on uniproc machines
         }
     }
 
@@ -1418,7 +1419,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
             case STR_UnstartedOrDead:
             case STR_NoStressLog:
                 checkForAbort.Release();
-                __SwitchToThread(0, ++dwSwitchCount);
+                minipal_switch_to_thread(++dwSwitchCount);
                 continue;
 
             default:
@@ -1582,7 +1583,7 @@ LPrepareRetry:
         }
         else
         {
-            ClrSleepEx(ABORT_POLL_TIMEOUT, FALSE);
+            minipal_sleep(ABORT_POLL_TIMEOUT);
         }
 
 
@@ -1618,7 +1619,7 @@ LPrepareRetry:
             }
             else
             {
-                ClrSleepEx(100, FALSE);
+                minipal_sleep(100);
             }
         }
 
@@ -1652,7 +1653,7 @@ void Thread::LockAbortRequest(Thread* pThread)
         if (InterlockedCompareExchange(&(pThread->m_AbortRequestLock),1,0) == 0) {
             return;
         }
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
     }
 }
 
@@ -1859,7 +1860,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 #endif
 }
 
-void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSPEND_REASON reason)
+void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSPEND_REASON reason) noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -2049,7 +2050,7 @@ extern void WaitForEndOfShutdown();
 // currently in progress.  This is the situation when returning back into
 // the EE from outside.  See the comments in DisablePreemptiveGC() to understand
 // why we Enable GC here!
-void Thread::RareDisablePreemptiveGC()
+void Thread::RareDisablePreemptiveGC() noexcept
 {
     PreserveLastErrorHolder preserveLastError;
 
@@ -2376,7 +2377,7 @@ void ThreadStore::IncrementTrapReturningThreads()
         // we can't forbid suspension while we are sleeping and don't hold the lock
         // this will trigger an assert on SQLCLR but is a general issue
         suspend.Release();
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
         suspend.Acquire();
     }
 
@@ -2414,7 +2415,7 @@ void ThreadStore::DecrementTrapReturningThreads()
         // we can't forbid suspension while we are sleeping and don't hold the lock
         // this will trigger an assert on SQLCLR but is a general issue
         suspend.Release();
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
         suspend.Acquire();
     }
 
@@ -2449,7 +2450,7 @@ bool ThreadStore::IsTrappingThreadsForSuspension()
 
 #ifdef FEATURE_HIJACK
 
-void RedirectedThreadFrame::ExceptionUnwind_Impl()
+void RedirectedThreadFrame::ExceptionUnwind_Impl() noexcept
 {
     CONTRACTL
     {
@@ -4007,7 +4008,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                     if (!thread->CheckForAndDoRedirectForDbg())
                     {
                         thread->ResumeThread();
-                        __SwitchToThread(0, ++dwSwitchCount);
+                        minipal_switch_to_thread(++dwSwitchCount);
                         goto RetrySuspension;
                     }
                 }
@@ -4247,7 +4248,7 @@ RetrySuspension:
                 if (!thread->CheckForAndDoRedirectForDbg())
                 {
                     thread->ResumeThread();
-                    __SwitchToThread(0, ++dwSwitchCount);
+                    minipal_switch_to_thread(++dwSwitchCount);
                     goto RetrySuspension;
                 }
 
@@ -4396,7 +4397,7 @@ BOOL Thread::WaitForDebugSuspendHelper(void)
                 ThreadState newState = (ThreadState)(oldState | TS_DebugSyncSuspended);
                 if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
                 {
-                    result = m_DebugSuspendEvent.Wait(INFINITE,FALSE);
+                    result = m_DebugSuspendEvent.Wait(INFINITE, FALSE, false);
 #if _DEBUG
                     newState = m_State;
                     _ASSERTE(!(newState & TS_DebugSyncSuspended));
@@ -5691,7 +5692,7 @@ retry_for_debugger:
         else
         {
             // otherwise, just yield so the debugger can finish what it's doing.
-            __SwitchToThread(0, ++dwSwitchCount);
+            minipal_switch_to_thread(++dwSwitchCount);
         }
 
         goto retry_for_debugger;

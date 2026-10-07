@@ -44,7 +44,7 @@ namespace System
             if (destination.Length < sizeof(byte))
                 return false;
 
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value ? (byte)1 : (byte)0);
+            destination[0] = value ? (byte)1 : (byte)0;
             return true;
         }
 
@@ -950,7 +950,7 @@ namespace System
         {
             if (value.Length < sizeof(byte))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
-            return Unsafe.ReadUnaligned<byte>(ref MemoryMarshal.GetReference(value)) != 0;
+            return value[0] != 0;
         }
 
         /// <summary>

@@ -1246,7 +1246,7 @@ private:
     static bool UnapplyPatch(DebuggerControllerPatch *patch);
     static bool IsPatched(CORDB_ADDRESS_TYPE *address, BOOL native);
 
-    static void ActivatePatch(DebuggerControllerPatch *patch);
+    static bool ActivatePatch(DebuggerControllerPatch *patch);
     static void DeactivatePatch(DebuggerControllerPatch *patch);
 
     static void ApplyTraceFlag(Thread *thread);
@@ -1315,7 +1315,7 @@ public:
                   AppDomain *pAppDomain);
 
     // Add a patch at the start of a not-yet-jitted method.
-    void AddPatchToStartOfLatestMethod(MethodDesc * fd);
+    BOOL AddPatchToStartOfLatestMethod(MethodDesc * fd);
 
 
     // This version is particularly useful b/c it doesn't assume that the

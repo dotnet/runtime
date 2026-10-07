@@ -197,7 +197,9 @@ public:
 typedef CMetaDataHashBase CMemberRefHash;
 typedef CMetaDataHashBase CLookUpHash;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 class MDTOKENMAP;
+#endif
 class MDInternalRW;
 
 template <class MiniMd> class CLiteWeightStgdb;
@@ -771,12 +773,6 @@ public:
         LPCUTF8     szName,                 // Name of item.
         mdToken     tkParent);              // Token of parent, if any.
 
-    HashSearchResult FindNamedItemFromHash(
-        ULONG     ixTbl,    // Table with the item.
-        LPCUTF8   szName,   // Name of item.
-        mdToken   tkParent, // Token of parent, if any.
-        mdToken * ptk);     // Return if found.
-
     __checkReturn
     HRESULT CompareNamedItems(              // S_OK match, S_FALSE no match.
         ULONG       ixTbl,                  // Table with the item.
@@ -1268,8 +1264,10 @@ public:
     FORCEINLINE TOKENMAP *GetMemberRefToMemberDefMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetMemberRefToMemberDefMap() : NULL; };
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     FORCEINLINE MDTOKENMAP *GetTokenMovementMap()
     { return m_pTokenRemapManager ? m_pTokenRemapManager->GetTokenMovementMap() : NULL; };
+#endif
 
     FORCEINLINE TokenRemapManager *GetTokenRemapManager() { return m_pTokenRemapManager; };
 

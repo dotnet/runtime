@@ -42,7 +42,7 @@ public class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     [Fact]
-    public static int TestEntryPoint()
+    public static async Task<int> TestEntryPoint()
     {
         for(int i = 0; i < s.Length; i++) s[i] = new byte[2];
 
@@ -58,7 +58,7 @@ public class Program
             s[r.Next(s.Length)] = new byte[3 + r.Next(100)];
         }
         Task t = Task.WhenAll(tasks);
-        t.Wait();
+        await t;
         return returnVal;
     }
 }

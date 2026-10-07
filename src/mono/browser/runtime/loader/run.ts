@@ -16,6 +16,7 @@ import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
+import { extractLegacyModuleCallbacks, loaderCallbacks } from "./callbacks";
 
 
 export class HostBuilder implements DotnetHostBuilder {
@@ -24,7 +25,7 @@ export class HostBuilder implements DotnetHostBuilder {
     // internal
     withModuleConfig (moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
-            deep_merge_module(emscriptenModule, moduleConfig);
+            deep_merge_module(emscriptenModule, extractLegacyModuleCallbacks(moduleConfig));
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -215,6 +216,36 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withDownloadResourceProgress (callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder {
+        try {
+            loaderCallbacks.downloadResourceProgress = callback;
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withConfigLoaded (callback?: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
+        try {
+            loaderCallbacks.configLoaded = callback;
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withDotnetReady (callback?: () => void | Promise<void>): DotnetHostBuilder {
+        try {
+            loaderCallbacks.dotnetReady = callback;
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withResourceLoader (loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
         try {
             loaderHelpers.loadBootResource = loadBootResource;
@@ -308,7 +339,7 @@ async function prepareEmscripten (moduleFactory: DotnetModuleConfig | ((api: Run
         throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
-    await detect_features_and_polyfill(emscriptenModule);
+    await detect_features_and_polyfill();
 }
 
 export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI | EmscriptenModuleInternal> {
@@ -462,7 +493,7 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
         setup_proxy_console("main", globalThis.console, globalThis.location.origin);
     }
 
-    await detect_features_and_polyfill(emscriptenModule);
+    await detect_features_and_polyfill();
 
     await mono_download_assets();
 

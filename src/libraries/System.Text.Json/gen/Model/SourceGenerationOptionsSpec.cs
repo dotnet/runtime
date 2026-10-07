@@ -78,6 +78,9 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool? InferClosedTypePolymorphism { get; init; }
 
+        public JsonNumberHandling GetEffectiveNumberHandling()
+            => NumberHandling ?? (Defaults is JsonSerializerDefaults.Web ? JsonNumberHandling.AllowReadingFromString : JsonNumberHandling.Strict);
+
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
             => PropertyNamingPolicy ?? (Defaults is JsonSerializerDefaults.Web ? JsonKnownNamingPolicy.CamelCase : null);
     }

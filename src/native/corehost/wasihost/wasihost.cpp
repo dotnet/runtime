@@ -6,8 +6,10 @@
 // real wasi:cli/run main() instead of a JS driver.
 // See https://github.com/dotnet/runtime/issues/130129.
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <set>
 #include <sstream>
@@ -16,6 +18,21 @@
 
 // Shared pal (path handling, CORE_ROOT/TPA helpers); header-only, so no corerun object is linked.
 #include "corerun.hpp"
+
+// WASI R2R external-assembly probe, so the per-app host serves statically-composed R2R images instead
+// of silently interpreting everything. Requires corerun.hpp above (pal::try_map_file_readonly).
+#include "wasi_r2r_probe.hpp"
+
+namespace wasi_r2r
+{
+// A ReadyToRun publish supplies strong definitions sized from its composite. Keep non-R2R app links
+// working with a minimal placeholder.
+extern "C"
+{
+    alignas(16) __attribute__((weak)) uint8_t g_wasi_r2r_image[64] = {};
+    __attribute__((weak)) uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image);
+}
+}
 
 #include <host_runtime_contract.h>
 
@@ -26,7 +43,6 @@ namespace envvar
 {
     const char_t* const coreRoot = W("CORE_ROOT");
     const char_t* const coreLibraries = W("CORE_LIBRARIES");
-    const char_t* const printExitCode = W("DOTNET_WASI_PRINT_EXIT_CODE");
 }
 
 // Statically linked at the per-app relink, so declared extern here (as browserhost does).
@@ -70,9 +86,36 @@ extern "C" __attribute__((weak)) int32_t GlobalizationNative_LoadICUData(const c
 static std::vector<std::string> s_property_keys;
 static std::vector<std::string> s_property_values;
 
+// R2R external-assembly probe search dirs, captured before coreclr_initialize so the probe callback
+// (invoked later by the runtime) can reach them.
+static string_t s_r2r_app_path;
+static string_t s_r2r_core_root;
+static string_t s_r2r_core_libs;
+
 static void log_error_info(const char* line)
 {
     std::fprintf(stderr, "%s\n", line);
+}
+
+// Serves statically-composed R2R images (the composite plus per-assembly stubs) to the runtime, using
+// the shared WASI probe. Returns false for everything else, so non-R2R assemblies load normally via the
+// TPA list.
+static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
+    const char* path,
+    void** data_start,
+    int64_t* size)
+{
+    const char* name = path;
+    const char* slash = ::strrchr(name, '/');
+    if (slash != nullptr)
+        name = slash + 1;
+
+    const char* const r2r_dirs[] = {
+        s_r2r_app_path.empty() ? nullptr : s_r2r_app_path.c_str(),
+        s_r2r_core_libs.empty() ? nullptr : s_r2r_core_libs.c_str(),
+        (s_r2r_core_root.empty() || s_r2r_core_root == s_r2r_app_path) ? nullptr : s_r2r_core_root.c_str()
+    };
+    return wasi_r2r::WasiStaticR2RProbe(name, r2r_dirs, sizeof(r2r_dirs) / sizeof(r2r_dirs[0]), data_start, size);
 }
 
 // Include only the first instance of each simple assembly name (CoreCLR may otherwise prefer a
@@ -114,6 +157,110 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
     }
 
     return tpa_list.str();
+}
+
+// ECMA-335 compressed unsigned integer (II.23.2), as written by BlobBuilder.WriteCompressedInteger.
+static bool read_compressed_uint(const uint8_t*& cur, const uint8_t* end, uint32_t& value)
+{
+    if (cur >= end)
+        return false;
+
+    uint8_t b = cur[0];
+    if ((b & 0x80) == 0)
+    {
+        value = b;
+        cur += 1;
+        return true;
+    }
+
+    if ((b & 0xC0) == 0x80)
+    {
+        if (end - cur < 2)
+            return false;
+
+        value = (static_cast<uint32_t>(b & 0x3F) << 8) | cur[1];
+        cur += 2;
+        return true;
+    }
+
+    if ((b & 0xE0) == 0xC0)
+    {
+        if (end - cur < 4)
+            return false;
+
+        value = (static_cast<uint32_t>(b & 0x1F) << 24) | (static_cast<uint32_t>(cur[1]) << 16) | (static_cast<uint32_t>(cur[2]) << 8) | cur[3];
+        cur += 4;
+        return true;
+    }
+
+    return false;
+}
+
+// Length-prefixed UTF-8 string, as written by BlobBuilder.WriteSerializedString.
+static bool read_serialized_string(const uint8_t*& cur, const uint8_t* end, std::string& value)
+{
+    uint32_t len;
+    if (!read_compressed_uint(cur, end, len) || static_cast<size_t>(end - cur) < len)
+        return false;
+
+    value.assign(reinterpret_cast<const char*>(cur), len);
+    cur += len;
+    return true;
+}
+
+// Appends the app's runtimeconfig configProperties (feature switches, RuntimeHostConfigurationOption
+// items, ...) to the init properties. Reads the runtimeconfig.bin that RuntimeConfigParserTask writes
+// (the same file Mono's WASI driver consumes): a compressed count followed by that many key/value
+// serialized strings. Properties already set by the host take precedence. A missing file is not an
+// error.
+static bool add_runtimeconfig_properties(const string_t& path)
+{
+    FILE* file = std::fopen(path.c_str(), "rb");
+    if (file == nullptr)
+        return true;
+
+    std::vector<uint8_t> data;
+    uint8_t buffer[4096];
+    size_t read;
+    while ((read = std::fread(buffer, 1, sizeof(buffer), file)) > 0)
+        data.insert(data.end(), buffer, buffer + read);
+
+    bool read_error = std::ferror(file) != 0;
+    std::fclose(file);
+
+    const uint8_t* cur = data.data();
+    const uint8_t* end = cur + data.size();
+    uint32_t count = 0;
+    bool valid = !read_error && read_compressed_uint(cur, end, count);
+    std::vector<std::string> keys;
+    std::vector<std::string> values;
+    for (uint32_t i = 0; valid && i < count; ++i)
+    {
+        std::string key;
+        std::string value;
+        valid = read_serialized_string(cur, end, key) && read_serialized_string(cur, end, value);
+        keys.push_back(std::move(key));
+        values.push_back(std::move(value));
+    }
+
+    if (!valid)
+    {
+        std::fprintf(stderr, "Failed to read runtime configuration from '%s'\n", path.c_str());
+        return false;
+    }
+
+    size_t host_property_count = s_property_keys.size();
+    for (size_t i = 0; i < keys.size(); ++i)
+    {
+        auto host_keys_end = s_property_keys.begin() + host_property_count;
+        if (std::find(s_property_keys.begin(), host_keys_end, keys[i]) != host_keys_end)
+            continue;
+
+        s_property_keys.push_back(std::move(keys[i]));
+        s_property_values.push_back(std::move(values[i]));
+    }
+
+    return true;
 }
 
 static size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
@@ -172,6 +319,11 @@ int main(int argc, char* argv[])
         core_root = app_path;
     pal::ensure_trailing_delimiter(core_root);
 
+    // Capture the R2R probe search dirs (trailing-delimited) for the external_assembly_probe callback.
+    s_r2r_app_path = app_path;
+    s_r2r_core_root = core_root;
+    s_r2r_core_libs = core_libs;
+
     string_t exe_path = pal::get_exe_path();
 
     string_t tpa_list = build_tpa(core_root, core_libs);
@@ -193,12 +345,19 @@ int main(int argc, char* argv[])
     static host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
     host_contract.get_runtime_property = &get_runtime_property;
     host_contract.pinvoke_override = &callhelpers_pinvoke_override;
+    host_contract.external_assembly_probe = &external_assembly_probe;
     {
         std::stringstream ss;
         ss << "0x" << std::hex << (size_t)(&host_contract);
         s_property_keys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
         s_property_values.push_back(ss.str());
     }
+
+    // The app bundle places runtimeconfig.bin next to the entry assembly.
+    string_t runtimeconfig_path = app_path;
+    runtimeconfig_path.append(W("runtimeconfig.bin"));
+    if (!add_runtimeconfig_properties(runtimeconfig_path))
+        return -1;
 
     std::vector<const char*> property_keys;
     std::vector<const char*> property_values;
@@ -260,12 +419,7 @@ int main(int argc, char* argv[])
         latched_exit_code = -1;
     }
 
-    // wasi:cli/exit's exit() only signals ok/err, so wasmtime collapses a non-zero result to host
-    // exit 1. Under DOTNET_WASI_PRINT_EXIT_CODE=1, emit a "WASM EXIT <n>" marker the WASI launcher
-    // parses (matching Mono). exit-with-code is stable in WASI 0.3 but still @unstable in the wasip2
-    // world this targets; see corerun.cpp.
-    if (pal::getenv(envvar::printExitCode) == W("1"))
-        std::fprintf(stderr, "WASM EXIT %d\n", latched_exit_code);
-
-    return latched_exit_code;
+    // Returning from main only reports success/failure through wasi:cli/run.
+    // exit() reports the actual code through wasi:cli/exit's exit-with-code.
+    std::exit(latched_exit_code);
 }

@@ -6,10 +6,14 @@
   of once per shell language. See generate-coreclr-helpers.md.
 
   Properties:
-    Configuration     Debug (default), Release or Checked. Has to match the configuration the
+    Configuration     Release (the scripts' default), Debug or Checked. Has to match the configuration the
                       scanned assemblies were built in.
     BrowserScanPath   Overrides the browser scan path.
     WasiScanPath      Overrides the wasi scan path.
+    CallHelperTargetOS
+                      browser or wasi to regenerate only that flavor's tables (default: both).
+                      Lets a build that produced only one flavor, such as a CI leg, regenerate
+                      its own tables.
 -->
 <Project Sdk="Microsoft.Build.NoTargets">
 
@@ -19,7 +23,7 @@
 
   <!-- The framework P/Invoke modules, shared with the runtime tests' corerun relink so the
        checked-in tables and the ones the tests generate cannot drift apart. -->
-  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
+  <Import Project="$(WasmPInvokeModulesPropsPath)" />
 
   <PropertyGroup>
     <_TesthostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost'))</_TesthostDir>
@@ -31,11 +35,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <_WasmCallHelperTarget Include="browser">
+    <_WasmCallHelperTarget Include="browser" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'browser'">
       <ScanPath Condition="'$(BrowserScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(BrowserScanPath)'))</ScanPath>
       <ScanPath Condition="'$(BrowserScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-browser-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
     </_WasmCallHelperTarget>
-    <_WasmCallHelperTarget Include="wasi">
+    <_WasmCallHelperTarget Include="wasi" Condition="'$(CallHelperTargetOS)' == '' or '$(CallHelperTargetOS)' == 'wasi'">
       <ScanPath Condition="'$(WasiScanPath)' != ''">$([MSBuild]::EnsureTrailingSlash('$(WasiScanPath)'))</ScanPath>
       <ScanPath Condition="'$(WasiScanPath)' == ''">$(_TesthostDir)$(NetCoreAppCurrent)-wasi-$(Configuration)-wasm/shared/Microsoft.NETCore.App/$(_FrameworkVersion)/</ScanPath>
     </_WasmCallHelperTarget>
@@ -81,8 +85,13 @@
     </Task>
   </UsingTask>
 
+  <Target Name="_ValidateCallHelperTargetOS">
+    <Error Condition="'@(_WasmCallHelperTarget)' == ''"
+           Text="Unknown CallHelperTargetOS '$(CallHelperTargetOS)'. Expected browser or wasi." />
+  </Target>
+
   <!-- Batched over _WasmCallHelperTarget: one crossgen2 run per wasm flavor. -->
-  <Target Name="GenerateCallHelpers" Outputs="%(_WasmCallHelperTarget.Identity)">
+  <Target Name="GenerateCallHelpers" DependsOnTargets="_ValidateCallHelperTargetOS" Outputs="%(_WasmCallHelperTarget.Identity)">
     <PropertyGroup>
       <_TargetOS>%(_WasmCallHelperTarget.Identity)</_TargetOS>
       <_ScanPath>%(_WasmCallHelperTarget.ScanPath)</_ScanPath>
@@ -100,7 +109,7 @@
     <Error Condition="!Exists('$(_ScanPath)')"
            Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
     <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
-           Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(RepositoryEngineeringDir)wasm/WasmPInvokeModules.props." />
+           Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(WasmPInvokeModulesPropsPath)." />
 
     <Message Importance="High" Text="[$(_TargetOS)] Scan path: $(_ScanPath)" />
     <Message Importance="High" Text="[$(_TargetOS)] Output path: $(_OutputDir)" />
@@ -117,11 +126,16 @@
            Text="No assemblies to scan were found in $(_ScanPath)." />
 
     <ItemGroup>
+      <_TargetPInvokeModule Remove="@(_TargetPInvokeModule)" />
+      <_TargetPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))"
+                            Condition="'$(_TargetOS)' == 'browser'" />
+      <_TargetPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))"
+                            Condition="'$(_TargetOS)' == 'wasi'" />
       <_GeneratorArg Remove="@(_GeneratorArg)" />
       <_GeneratorArg Include="--targetos:$(_TargetOS)" />
       <_GeneratorArg Include="--targetarch:wasm" />
       <_GeneratorArg Include="--generate-portable-callhelpers:$(_StagingDir)" />
-      <_GeneratorArg Include="@(WasmCoreClrFrameworkPInvokeModule->'--directpinvoke:%(Identity)')" />
+      <_GeneratorArg Include="@(_TargetPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_GeneratorArg Include="@(_ScanAssembly->'%(FullPath)')" />
     </ItemGroup>
 

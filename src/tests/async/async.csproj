@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <EnableRuntimeAsyncOnWasm>true</EnableRuntimeAsyncOnWasm>
-  </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="*/**/*.??proj" GlobalPropertiesToRemove="EnableRuntimeAsyncOnWasm" />
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
 
     <!-- Remove manual benchmarks from the test wrapper -->
     <MergedWrapperProjectReference Remove="eh-microbench.csproj" />

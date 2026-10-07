@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -24,16 +23,23 @@ namespace Microsoft.Interop
         // See https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype
         internal const UnmanagedType UnmanagedType_LPUTF8Str = (UnmanagedType)0x30;
 
-        private protected abstract bool TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute);
+        private protected abstract bool TryCreateAttribute([NotNullWhen(true)] out string? attribute);
 
-        bool IForwardedMarshallingInfo.TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute) => TryCreateAttributeSyntax(out attribute);
+        bool IForwardedMarshallingInfo.TryCreateAttribute([NotNullWhen(true)] out string? attribute) => TryCreateAttribute(out attribute);
+
+        private protected static IndentedTextWriter CreateAttributeWriter(UnmanagedType unmanagedType)
+        {
+            var writer = new IndentedTextWriter();
+            writer.Write($"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_InteropServices_MarshalAsAttribute}(({TypeNames.GlobalAlias}{TypeNames.System_Runtime_InteropServices_UnmanagedType}){(int)unmanagedType}");
+            return writer;
+        }
     }
 
     public sealed record MarshalAsScalarInfo(
         UnmanagedType UnmanagedType,
         CharEncoding CharEncoding) : MarshalAsInfo(UnmanagedType, CharEncoding)
     {
-        private protected override bool TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute)
+        private protected override bool TryCreateAttribute([NotNullWhen(true)] out string? attribute)
         {
             if (UnmanagedType == UnmanagedType.CustomMarshaler)
             {
@@ -41,17 +47,9 @@ namespace Microsoft.Interop
                 return false;
             }
 
-            attribute = Attribute(
-                ParseName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute),
-                AttributeArgumentList(
-                    SingletonSeparatedList(
-                        AttributeArgument(
-                            CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
-                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                Literal((int)UnmanagedType))))
-                    )
-                )
-            );
+            IndentedTextWriter writer = CreateAttributeWriter(UnmanagedType);
+            writer.Write(')');
+            attribute = writer.ToString();
             return true;
         }
     }
@@ -64,27 +62,17 @@ namespace Microsoft.Interop
         public override IEnumerable<TypePositionInfo> ElementDependencies
             => IidParameterIndexInfo is null ? [] : [IidParameterIndexInfo];
 
-        private protected override bool TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute)
+        private protected override bool TryCreateAttribute([NotNullWhen(true)] out string? attribute)
         {
-            attribute = Attribute(
-                ParseName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute),
-                AttributeArgumentList(
-                    SingletonSeparatedList(
-                        AttributeArgument(
-                            CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
-                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                Literal((int)UnmanagedType))))
-                    )
-                )
-            );
+            IndentedTextWriter writer = CreateAttributeWriter(UnmanagedType);
 
             if (IidParameterIndexInfo is { ManagedIndex: int paramIndex } && !TypePositionInfo.IsSpecialIndex(paramIndex))
             {
-                attribute = attribute.AddArgumentListArguments(
-                    AttributeArgument(NameEquals(nameof(MarshalAsAttribute.IidParameterIndex)), null,
-                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(paramIndex))));
+                writer.Write($", {nameof(MarshalAsAttribute.IidParameterIndex)} = {paramIndex}");
             }
 
+            writer.Write(')');
+            attribute = writer.ToString();
             return true;
         }
     }
@@ -95,7 +83,7 @@ namespace Microsoft.Interop
         UnmanagedType ArraySubType,
         CountInfo CountInfo) : MarshalAsInfo(UnmanagedType, CharEncoding)
     {
-        private protected override bool TryCreateAttributeSyntax([NotNullWhen(true)] out AttributeSyntax? attribute)
+        private protected override bool TryCreateAttribute([NotNullWhen(true)] out string? attribute)
         {
             if (ArraySubType == UnmanagedType.CustomMarshaler)
             {
@@ -103,46 +91,26 @@ namespace Microsoft.Interop
                 return false;
             }
 
-            attribute = Attribute(
-                ParseName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute),
-                AttributeArgumentList(
-                    SingletonSeparatedList(
-                        AttributeArgument(
-                            CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
-                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                Literal((int)UnmanagedType))))
-                    )
-                )
-            );
+            IndentedTextWriter writer = CreateAttributeWriter(UnmanagedType);
 
             if (ArraySubType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
             {
-                attribute = attribute.AddArgumentListArguments(
-                    AttributeArgument(CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
-                        LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                            Literal((int)ArraySubType))))
-                        .WithNameEquals(NameEquals(IdentifierName(nameof(ArraySubType)))));
+                writer.Write($", {nameof(ArraySubType)} = ({TypeNames.GlobalAlias}{TypeNames.System_Runtime_InteropServices_UnmanagedType}){(int)ArraySubType}");
             }
 
             if (CountInfo is SizeAndParamIndexInfo sizeParamIndex)
             {
                 if (sizeParamIndex.ConstSize != SizeAndParamIndexInfo.UnspecifiedConstSize)
                 {
-                    attribute = attribute.AddArgumentListArguments(
-                        AttributeArgument(NameEquals("SizeConst"), null,
-                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                Literal(sizeParamIndex.ConstSize)))
-                    );
+                    writer.Write($", {nameof(MarshalAsAttribute.SizeConst)} = {sizeParamIndex.ConstSize}");
                 }
                 if (sizeParamIndex.ParamAtIndex is { ManagedIndex: int paramIndex })
                 {
-                    attribute = attribute.AddArgumentListArguments(
-                        AttributeArgument(NameEquals("SizeParamIndex"), null,
-                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                Literal(paramIndex)))
-                    );
+                    writer.Write($", {nameof(MarshalAsAttribute.SizeParamIndex)} = {paramIndex}");
                 }
             }
+            writer.Write(')');
+            attribute = writer.ToString();
             return true;
         }
     }
