@@ -22,6 +22,36 @@ namespace System.Threading.Tests
                 Assert.Equal(initialState, ewh.WaitOne(0));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public void Wait_SingleThreaded()
+        {
+            using EventWaitHandle autoResetEvent = new(true, EventResetMode.AutoReset);
+            Assert.True(autoResetEvent.WaitOne());
+            Assert.False(autoResetEvent.WaitOne(0));
+            Assert.Throws<PlatformNotSupportedException>(() => autoResetEvent.WaitOne(1));
+
+            using EventWaitHandle manualResetEvent = new(true, EventResetMode.ManualReset);
+            Assert.True(manualResetEvent.WaitOne());
+            Assert.True(manualResetEvent.WaitOne(1));
+            manualResetEvent.Reset();
+            Assert.False(manualResetEvent.WaitOne(0));
+            Assert.Throws<PlatformNotSupportedException>(() => manualResetEvent.WaitOne(1));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public void SignalAndWait_SingleThreaded()
+        {
+            using EventWaitHandle toSignal = new(false, EventResetMode.ManualReset);
+            using EventWaitHandle toWaitOn = new(true, EventResetMode.AutoReset);
+
+            Assert.True(WaitHandle.SignalAndWait(toSignal, toWaitOn));
+            Assert.True(toSignal.WaitOne(0));
+            Assert.False(toWaitOn.WaitOne(0));
+            Assert.False(WaitHandle.SignalAndWait(toSignal, toWaitOn, 0, exitContext: false));
+            Assert.Throws<PlatformNotSupportedException>(
+                () => WaitHandle.SignalAndWait(toSignal, toWaitOn, 1, exitContext: false));
+        }
+
         [Fact]
         public void Ctor_InvalidMode()
         {
@@ -93,21 +123,21 @@ namespace System.Threading.Tests
             using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset))
             {
                 Assert.False(are.WaitOne(0));
-                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                are.AssertWaitOneTimeout();
                 are.Set();
                 Assert.True(are.WaitOne(0));
                 Assert.False(are.WaitOne(0));
-                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                are.AssertWaitOneTimeout();
                 are.Set();
                 are.Reset();
                 Assert.False(are.WaitOne(0));
-                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                are.AssertWaitOneTimeout();
             }
 
             using (EventWaitHandle mre = new EventWaitHandle(false, EventResetMode.ManualReset))
             {
                 Assert.False(mre.WaitOne(0));
-                Assert.False(mre.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                mre.AssertWaitOneTimeout();
                 mre.Set();
                 Assert.True(mre.WaitOne(0));
                 Assert.True(mre.WaitOne(0));
@@ -115,7 +145,7 @@ namespace System.Threading.Tests
                 Assert.True(mre.WaitOne(0));
                 mre.Reset();
                 Assert.False(mre.WaitOne(0));
-                Assert.False(mre.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                mre.AssertWaitOneTimeout();
             }
         }
 

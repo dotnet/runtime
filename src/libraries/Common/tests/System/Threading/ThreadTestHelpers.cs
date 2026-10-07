@@ -162,5 +162,43 @@ namespace System.Threading.Tests
         {
             Assert.True(t.Wait(UnexpectedTimeoutMilliseconds));
         }
+
+        public static void AssertWaitOneTimeout(this WaitHandle waitHandle)
+        {
+            if (PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.False(waitHandle.WaitOne(ExpectedTimeoutMilliseconds));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => waitHandle.WaitOne(ExpectedTimeoutMilliseconds));
+            }
+        }
+
+        public static void AssertWaitAnyTimeout(WaitHandle[] waitHandles)
+        {
+            if (PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(waitHandles, ExpectedTimeoutMilliseconds));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(
+                    () => WaitHandle.WaitAny(waitHandles, ExpectedTimeoutMilliseconds));
+            }
+        }
+
+        public static void AssertWaitAllTimeout(WaitHandle[] waitHandles)
+        {
+            if (PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.False(WaitHandle.WaitAll(waitHandles, ExpectedTimeoutMilliseconds));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(
+                    () => WaitHandle.WaitAll(waitHandles, ExpectedTimeoutMilliseconds));
+            }
+        }
     }
 }

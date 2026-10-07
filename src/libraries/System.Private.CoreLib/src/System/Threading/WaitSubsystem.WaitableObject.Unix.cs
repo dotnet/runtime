@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -337,6 +338,8 @@ namespace System.Threading
                     return WaitHandle.WaitTimeout;
                 }
 
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
                 WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(1);
                 waitableObjects[0] = this;
                 waitInfo.RegisterWait(1, isWaitForAll: false);
@@ -477,6 +480,8 @@ namespace System.Threading
                     {
                         return WaitHandle.WaitTimeout;
                     }
+
+                    RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                     waitableObjects = null; // no need to clear this anymore, RegisterWait / Wait will take over from here
 
