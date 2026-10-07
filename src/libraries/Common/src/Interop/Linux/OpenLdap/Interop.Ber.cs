@@ -11,6 +11,7 @@ internal static partial class Interop
     internal static partial class Ldap
     {
         public const int ber_default_successful_return_code = 0;
+        private const int LBER_BV_NOTERM = 0x02;
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_alloc_t")]
         public static partial IntPtr ber_alloc(int option);
@@ -134,15 +135,22 @@ internal static partial class Interop
             {
                 return ber_default_successful_return_code;
             }
+            else if (format == "n")
+            {
+                return ber_get_null(berElement);
+            }
             else
             {
-                Debug.Assert(format == "n" || format == "x");
-                return ber_get_null(berElement);
+                Debug.Assert(format == "x");
+                return ber_get_stringbv(berElement, new BerVal(), LBER_BV_NOTERM);
             }
         }
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_skip_tag")]
         private static partial int ber_skip_tag(SafeBerHandle berElement, ref nuint len);
+
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_stringbv")]
+        private static partial int ber_get_stringbv(SafeBerHandle berElement, BerVal value, int options);
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_null")]
         private static partial int ber_get_null(SafeBerHandle berElement);

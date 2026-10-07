@@ -69,6 +69,15 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetParameters(), Projector.ProjectParameter);
         }
 
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            return other is ProjectingConstructorInfo otherConstructor &&
+                   Projector == otherConstructor.Projector &&
+                   UnderlyingConstructor.HasSameMetadataDefinitionAs(otherConstructor.UnderlyingConstructor);
+        }
+
         public override bool Equals(object? o)
         {
             return o is ProjectingConstructorInfo other &&

@@ -151,7 +151,7 @@ namespace System.Text.Json.Serialization.Metadata
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
         {
             Type collectionType = typeof(TCollection);
-            Type elementType = JsonTypeInfo.ObjectType;
+            Type elementType = typeof(object);
 
             // We verified this won't be null when we created the converter for the collection type.
             MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;

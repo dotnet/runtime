@@ -38,7 +38,6 @@ class FCallMethodDesc;
 class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
-class JIT_TrialAlloc;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
@@ -977,7 +976,6 @@ class MethodTable
 
     // Special access for setting up String object method table correctly
     friend class ClassLoader;
-    friend class JIT_TrialAlloc;
     friend class Module;
     friend class EEClass;
     friend class MethodTableBuilder;
@@ -1324,7 +1322,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
+        return (VolatileLoad(&GetAuxiliaryData()->m_dwFlags) & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
@@ -1381,7 +1379,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        DWORD dwFlags = GetAuxiliaryData()->m_dwFlags;
+        DWORD dwFlags = VolatileLoad(&GetAuxiliaryData()->m_dwFlags);
 
         if (dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded)
         {
@@ -2147,7 +2145,7 @@ public:
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
+        return (VolatileLoad(&GetAuxiliaryData()->m_dwFlags) & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
     }
     inline void SetHasExactParent()
     {
