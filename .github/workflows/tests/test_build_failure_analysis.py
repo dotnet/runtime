@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import unittest
 import zipfile
+import zlib
 
 import yaml
 
@@ -36,14 +37,34 @@ def safe_output_steps(workflow):
     return load_workflow("shared/build-failure-analysis-shared")["safe-outputs"]["steps"]
 
 
-def archive_bytes(name, mode):
-    content = io.BytesIO()
-    with zipfile.ZipFile(content, "w") as archive:
+def archive_bytes(name, mode, content=b"binlog", extra=b""):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
         entry = zipfile.ZipInfo(name)
         entry.create_system = 3
         entry.external_attr = mode << 16
-        archive.writestr(entry, b"binlog")
-    return content.getvalue()
+        entry.extra = extra
+        archive.writestr(entry, content)
+    return buffer.getvalue()
+
+
+def asi_unix_extra(mode, size):
+    attributes = struct.pack("<HIHH", mode, size, 0, 0)
+    data = struct.pack("<I", zlib.crc32(attributes) & 0xFFFFFFFF) + attributes
+    return struct.pack("<HH", 0x756E, len(data)) + data
+
+
+def classic_max_entries_archive():
+    content = io.BytesIO()
+    with zipfile.ZipFile(content, "w", allowZip64=True) as archive:
+        for index in range(65535):
+            archive.writestr(f"{index:04x}", b"")
+    data = content.getvalue()
+    eocd_offset = data.rfind(b"PK\x05\x06")
+    eocd = struct.unpack_from("<4s4H2LH", data, eocd_offset)
+    if eocd[3:5] != (0xFFFF, 0xFFFF) or data[eocd_offset - 20 : eocd_offset].startswith(b"PK\x06\x07"):
+        raise AssertionError("fixture is not a classic 65,535-entry archive")
+    return data
 
 
 def rewrite_eocd(content, **updates):
@@ -165,7 +186,7 @@ class BuildFailureAnalysisTests(unittest.TestCase):
                     "ADO_API": "https://dev.azure.com/dnceng-public/public/_apis",
                     **(env or {}),
                 },
-                timeout=30,
+                timeout=90,
             )
             outputs = (root / "outputs").read_text() if (root / "outputs").exists() else ""
             agent_env = (root / "agent-env").read_text() if (root / "agent-env").exists() else ""
@@ -360,6 +381,7 @@ cp() {
 
     def test_archive_validation_rejects_unsafe_paths_and_types(self):
         regular = archive_bytes("nested/build.binlog", stat.S_IFREG | 0o644)
+        classic_boundary = classic_max_entries_archive()
         cases = (
             ("regular", regular, 65536, 16 * 1024 * 1024, True),
             ("unspecified", archive_bytes("build.binlog", 0), 65536, 16 * 1024 * 1024, True),
@@ -387,6 +409,13 @@ cp() {
                 65536,
                 16 * 1024 * 1024,
                 False,
+            ),
+            (
+                "classic-max-entry-count",
+                classic_boundary,
+                65536,
+                16 * 1024 * 1024,
+                True,
             ),
             ("zip64", zip64_archive(regular), 65536, 16 * 1024 * 1024, True),
             (
@@ -439,6 +468,41 @@ cp() {
                     )
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertEqual("accepted=true" in result.stdout, accepted, result.stdout)
+
+    def test_python_extraction_does_not_honor_asi_symlink_mode(self):
+        payload = b"target"
+        archive_content = archive_bytes(
+            "nested/link.binlog",
+            0,
+            payload,
+            asi_unix_extra(stat.S_IFLNK | 0o777, len(payload)),
+        )
+        for workflow_name, workflow in self.workflows.items():
+            source = step(workflow["jobs"]["fetch-binlog"]["steps"], "fetch")["run"]
+            start = source.index("# --- Extract validated binlogs ---")
+            end = source.index("# --- Stage extracted binlogs ---")
+            extractor = source[start:end]
+            with self.subTest(workflow=workflow_name):
+                result, _, _ = self.run_script(
+                    "set +e\n"
+                    'for ZIP_TMP in "$ARCHIVE"; do\n'
+                    "safe_name=test\n"
+                    'AX_DIR="$EXTRACT_DIR"\n'
+                    "FETCH_DEADLINE=$(( $(date +%s) + 120 ))\n"
+                    'mkdir -p "$AX_DIR"\n'
+                    + extractor
+                    + "\necho extracted=true\ndone\n"
+                    + 'test -f "$EXTRACT_DIR/nested/link.binlog"\n'
+                    + 'test ! -L "$EXTRACT_DIR/nested/link.binlog"\n'
+                    + 'test "$(cat "$EXTRACT_DIR/nested/link.binlog")" = target\n',
+                    {
+                        "ARCHIVE": "archive.zip",
+                        "EXTRACT_DIR": "extract",
+                    },
+                    {"archive.zip": archive_content},
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("extracted=true", result.stdout)
 
     def test_latest_build_and_revision_revalidation(self):
         for name, workflow in self.workflows.items():
