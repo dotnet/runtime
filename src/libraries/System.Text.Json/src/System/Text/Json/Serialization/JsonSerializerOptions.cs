@@ -1075,7 +1075,7 @@ namespace System.Text.Json
             {
                 Debug.Assert(_effectiveJsonTypeInfoResolver is null, "an effective resolver always returns metadata");
 
-                if (type == JsonTypeInfo.ObjectType)
+                if (type == typeof(object))
                 {
                     // If the resolver does not provide a JsonTypeInfo<object> instance, fill
                     // with the serialization-only converter to enable polymorphic serialization.

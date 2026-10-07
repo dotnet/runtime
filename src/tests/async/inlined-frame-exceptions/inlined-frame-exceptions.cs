@@ -10,7 +10,6 @@ using Xunit;
 // the frame suspended first. A suspension makes the resumption skip the entry code that
 // captured the frame's contexts, so the context restores that run while the exception
 // unwinds must see that the frame resumed.
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameExceptions
 {
     private static async Task SuspendOnlyAsync() => await Task.Yield();
@@ -56,20 +55,20 @@ public class Async2InlinedFrameExceptions
     private static async Task<string> SuspendThenThrowCaughtAsync() => await CatchAsync(InlinedSuspendThenThrowAsync);
 
     [Fact]
-    public static void ExceptionsSurfaceFromInlinedFrames()
+    public static async Task ExceptionsSurfaceFromInlinedFrames()
     {
-        Assert.Equal("no-exception", SuspendOnlyCaughtAsync().GetAwaiter().GetResult());
-        Assert.Equal("boom", ThrowOnlyCaughtAsync().GetAwaiter().GetResult());
-        Assert.Equal("boom", SuspendThenThrowCaughtAsync().GetAwaiter().GetResult());
+        Assert.Equal("no-exception", await SuspendOnlyCaughtAsync());
+        Assert.Equal("boom", await ThrowOnlyCaughtAsync());
+        Assert.Equal("boom", await SuspendThenThrowCaughtAsync());
     }
 
     private static async Task UncaughtAsync() => await InlinedSuspendThenThrowAsync();
 
     [Fact]
-    public static void ExceptionPropagatesOutOfInlinedFrame()
+    public static async Task ExceptionPropagatesOutOfInlinedFrame()
     {
         InvalidOperationException e =
-            Assert.Throws<InvalidOperationException>(() => UncaughtAsync().GetAwaiter().GetResult());
+            await Assert.ThrowsAsync<InvalidOperationException>(UncaughtAsync);
         Assert.Equal("boom", e.Message);
     }
 }

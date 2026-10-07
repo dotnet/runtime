@@ -209,6 +209,8 @@ steps:
       jq -r '.[] | "  #\(.number) (\(.total_count) refs) \(.title)"' "$OUT" || true
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   add-comment:
     target: "*"
     max: 5

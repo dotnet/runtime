@@ -5,8 +5,6 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
-
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class InstUnBoxThunks
 {
     class Utility
@@ -130,39 +128,39 @@ public class InstUnBoxThunks
 
 
     [Fact]
-    public static void NoArgUnbox()
+    public static async Task NoArgUnbox()
     {
-        Assert.Equal("hi", CallStruct0M0().Result);
+        Assert.Equal("hi", await CallStruct0M0());
     }
 
     [Fact]
-    public static void ManyArgUnbox()
+    public static async Task ManyArgUnbox()
     {
-        Assert.Equal("hello", CallStruct0M1().Result);
+        Assert.Equal("hello", await CallStruct0M1());
     }
 
     [Fact]
-    public static void NoArgGenericUnbox()
+    public static async Task NoArgGenericUnbox()
     {
-        Assert.Equal("System.String", CallStruct1M0().Result);
+        Assert.Equal("System.String", await CallStruct1M0());
     }
 
     [Fact]
-    public static void ManyArgGenericUnbox()
+    public static async Task ManyArgGenericUnbox()
     {
-        Assert.Equal("System.String", CallStruct1M1().Result);
+        Assert.Equal("System.String", await CallStruct1M1());
     }
 
     [Fact]
-    public static void NoArgGenericInstantiating()
+    public static async Task NoArgGenericInstantiating()
     {
-        Assert.Equal("System.String", CallStruct1M0b().Result);
+        Assert.Equal("System.String", await CallStruct1M0b());
     }
 
     [Fact]
-    public static void ManyArgGenericInstantiating()
+    public static async Task ManyArgGenericInstantiating()
     {
-        Assert.Equal("System.String", CallStruct1M1b().Result);
+        Assert.Equal("System.String", await CallStruct1M1b());
     }
     
     interface I2
@@ -201,15 +199,15 @@ public class InstUnBoxThunks
     }
 
     [Fact]
-    public static void NoArgGVM()
+    public static async Task NoArgGVM()
     {
-        Assert.Equal("System.String", CallClass2M0().Result);
+        Assert.Equal("System.String", await CallClass2M0());
     }
 
     [Fact]
-    public static void ManyArgGVM()
+    public static async Task ManyArgGVM()
     {
-        Assert.Equal("System.String", CallClass2M1().Result);
+        Assert.Equal("System.String", await CallClass2M1());
     }
 
     interface I3<T>
@@ -244,14 +242,14 @@ public class InstUnBoxThunks
     }
 
     [Fact]
-    public static void NoArgDefaultMethod()
+    public static async Task NoArgDefaultMethod()
     {
-        Assert.Equal("System.String", CallClass3M0().Result);
+        Assert.Equal("System.String", await CallClass3M0());
     }
 
     [Fact]
-    public static void ManyArgDefaultMethod()
+    public static async Task ManyArgDefaultMethod()
     {
-        Assert.Equal("System.String", CallClass3M1().Result);
+        Assert.Equal("System.String", await CallClass3M1());
     }
 }

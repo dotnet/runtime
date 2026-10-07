@@ -8,10 +8,10 @@ using Xunit;
 
 public class Async2Object
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static int TestEntryPoint()
+    [Fact]
+    public static async Task<int> TestEntryPoint()
     {
-        return (int)AsyncTestEntryPoint(100).Result;
+        return (int)(await AsyncTestEntryPoint(100));
     }
 
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]

@@ -37,10 +37,9 @@ namespace System.Collections.Generic
             {
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericComparer<int>), runtimeType);
             }
-            else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            else if (runtimeType.GetNullableUnderlyingType() is RuntimeType embeddedType)
             {
                 // Nullable does not implement IComparable<T?> directly because that would add an extra interface call per comparison.
-                var embeddedType = (RuntimeType)type.GetGenericArguments()[0];
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), embeddedType);
             }
             // The comparer for enums is specialized to avoid boxing.

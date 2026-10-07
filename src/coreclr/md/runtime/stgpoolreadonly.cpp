@@ -65,7 +65,7 @@ HRESULT StgPoolReadOnly::InitOnMemReadOnly(// Return code.
 //*****************************************************************************
 // Prepare to shut down or reinitialize.
 //*****************************************************************************
-void StgPoolReadOnly::Uninit()
+void StgPoolReadOnly::Uninit() noexcept
 {
     LIMITED_METHOD_CONTRACT;
 

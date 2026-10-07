@@ -4278,31 +4278,33 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
 #ifdef TARGET_ARM64
-
             if (index->isContained())
             {
+                // Only BFIZ/CAST nodes should be present for contained index on ARM64.
+                GenTreeCast* cast;
                 if (index->OperIs(GT_BFIZ))
                 {
-                    // Handle LEA with "contained" BFIZ
                     assert(scale == 0);
                     scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
-                    index = index->gtGetOp1()->gtGetOp1();
-                }
-                else if (index->OperIs(GT_CAST))
-                {
-                    index = index->AsCast()->gtGetOp1();
+                    cast  = index->gtGetOp1()->AsCast();
                 }
                 else
                 {
-                    // Only BFIZ/CAST nodes should be present for for contained index on ARM64.
-                    // If there are more, we need to handle them here.
-                    unreached();
+                    cast = index->AsCast();
                 }
-            }
-#endif
 
-            // Then compute target reg from [base + index*scale]
-            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+                // The 32-bit index has to be sign/zero-extended as part of the add.
+                assert(genActualTypeIsInt(cast->CastOp()) && (scale <= 4));
+                emit->emitIns_R_R_R_I(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(),
+                                      cast->CastOp()->GetRegNum(), scale,
+                                      cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW);
+            }
+            else
+#endif
+            {
+                // Then compute target reg from [base + index*scale]
+                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
+            }
         }
     }
     else if (lea->HasBase())

@@ -950,7 +950,7 @@ ExecutionManager::WriterLockHolder::WriterLockHolder()
         // this thread
         Thread::DecForbidSuspendThread();
 
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
     }
     EE_LOCK_TAKEN(GetPtrForLockContract());
 }

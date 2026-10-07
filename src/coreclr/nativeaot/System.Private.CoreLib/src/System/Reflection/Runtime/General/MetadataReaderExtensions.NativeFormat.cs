@@ -42,18 +42,6 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        public static bool IsNamespaceDefinitionHandle(this Handle handle, MetadataReader reader)
-        {
-            HandleType handleType = handle.HandleType;
-            return handleType == HandleType.NamespaceDefinition;
-        }
-
-        public static bool IsNamespaceReferenceHandle(this Handle handle, MetadataReader reader)
-        {
-            HandleType handleType = handle.HandleType;
-            return handleType == HandleType.NamespaceReference;
-        }
-
         // Conversion where a invalid handle type indicates bad metadata rather a mistake by the caller.
         public static NamespaceReferenceHandle ToExpectedNamespaceReferenceHandle(this Handle handle, MetadataReader reader)
         {
@@ -194,7 +182,10 @@ namespace System.Reflection.Runtime.General
                 TypeDefinition typeDefinition = typeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
                 if (!typeDefinition.Name.StringEquals(name, reader))
                     return false;
-                NamespaceDefinitionHandle nsHandle = typeDefinition.NamespaceDefinition;
+                Handle namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
+                if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceDefinition)
+                    return false;
+                NamespaceDefinitionHandle nsHandle = namespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader);
                 int idx = namespaceParts.Length;
                 while (idx-- != 0)
                 {
@@ -202,7 +193,7 @@ namespace System.Reflection.Runtime.General
                     NamespaceDefinition namespaceDefinition = nsHandle.GetNamespaceDefinition(reader);
                     if (!namespaceDefinition.Name.StringOrNullEquals(namespacePart, reader))
                         return false;
-                    if (!namespaceDefinition.ParentScopeOrNamespace.IsNamespaceDefinitionHandle(reader))
+                    if (namespaceDefinition.ParentScopeOrNamespace.HandleType != HandleType.NamespaceDefinition)
                         return false;
                     nsHandle = namespaceDefinition.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(reader);
                 }
@@ -215,9 +206,10 @@ namespace System.Reflection.Runtime.General
                 TypeReference typeReference = typeHandle.ToTypeReferenceHandle(reader).GetTypeReference(reader);
                 if (!typeReference.TypeName.StringEquals(name, reader))
                     return false;
-                if (!typeReference.ParentNamespaceOrType.IsNamespaceReferenceHandle(reader))
+                Handle namespaceOrEnclosingType = typeReference.NamespaceOrEnclosingType;
+                if (namespaceOrEnclosingType.HandleType != HandleType.NamespaceReference)
                     return false;
-                NamespaceReferenceHandle nsHandle = typeReference.ParentNamespaceOrType.ToNamespaceReferenceHandle(reader);
+                NamespaceReferenceHandle nsHandle = namespaceOrEnclosingType.ToNamespaceReferenceHandle(reader);
                 int idx = namespaceParts.Length;
                 while (idx-- != 0)
                 {
@@ -225,7 +217,7 @@ namespace System.Reflection.Runtime.General
                     NamespaceReference namespaceReference = nsHandle.GetNamespaceReference(reader);
                     if (!namespaceReference.Name.StringOrNullEquals(namespacePart, reader))
                         return false;
-                    if (!namespaceReference.ParentScopeOrNamespace.IsNamespaceReferenceHandle(reader))
+                    if (namespaceReference.ParentScopeOrNamespace.HandleType != HandleType.NamespaceReference)
                         return false;
                     nsHandle = namespaceReference.ParentScopeOrNamespace.ToNamespaceReferenceHandle(reader);
                 }

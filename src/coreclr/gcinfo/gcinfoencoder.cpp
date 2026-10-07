@@ -612,6 +612,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::WriteSlo
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineInterruptibleRange( UINT32 startInstructionOffset, UINT32 length )
 {
+    _ASSERTE(GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES);
+
     UINT32 stopInstructionOffset = startInstructionOffset + length;
 
     UINT32 normStartOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(startInstructionOffset);
@@ -1108,7 +1110,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     m_NumCallSites = numCallSites;
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
-    if (slimHeader)
+    if (slimHeader || !GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
     {
         _ASSERTE(numInterruptibleRanges == 0);
     }

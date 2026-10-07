@@ -19,7 +19,7 @@
 // writers, however.)
 //
 
-void ArrayListBase::Clear()
+void ArrayListBase::Clear() noexcept
 {
     CONTRACTL
     {

@@ -15,7 +15,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <Import Project="$(CoreClrProjectRoot)tools\aot\AotCompilerCommon.props" />
+  <Import Project="$(CoreClrProjectRoot)tools\aot\NativeAotToolRuntimeSettings.props" />
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />

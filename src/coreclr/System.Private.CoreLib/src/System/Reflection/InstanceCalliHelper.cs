@@ -157,6 +157,62 @@ namespace System.Reflection
             => fn(o, arg1, arg2, arg3, arg4, arg5, arg6);
 
         [Intrinsic]
+        internal static void Call(delegate*<object, object?, object?, object?, object?, object?, object?, object?, void> fn, object o, object? arg1, object? arg2, object? arg3, object? arg4, object? arg5, object? arg6, object? arg7)
+            => fn(o, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, object?, object?, object?, object?, object?, object?, object?, object?, void> fn, object o, object? arg1, object? arg2, object? arg3, object? arg4, object? arg5, object? arg6, object? arg7, object? arg8)
+            => fn(o, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+
+        [Intrinsic]
+        internal static object? Call(delegate*<object, object?, object?> fn, object o, object? arg1)
+            => fn(o, arg1);
+
+        [Intrinsic]
+        internal static object? Call(delegate*<object, object?, object?, object?> fn, object o, object? arg1, object? arg2)
+            => fn(o, arg1, arg2);
+
+        [Intrinsic]
+        internal static object? Call(delegate*<object, object?, object?, object?, object?> fn, object o, object? arg1, object? arg2, object? arg3)
+            => fn(o, arg1, arg2, arg3);
+
+        [Intrinsic]
+        internal static object? Call(delegate*<object, object?, object?, object?, object?, object?> fn, object o, object? arg1, object? arg2, object? arg3, object? arg4)
+            => fn(o, arg1, arg2, arg3, arg4);
+
+        [Intrinsic]
+        internal static int Call(delegate*<object, object?, object?, int> fn, object o, object? arg1, object? arg2)
+            => fn(o, arg1, arg2);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, int, int, void> fn, object o, int arg1, int arg2)
+            => fn(o, arg1, arg2);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, long, long, void> fn, object o, long arg1, long arg2)
+            => fn(o, arg1, arg2);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, object?, int, void> fn, object o, object? arg1, int arg2)
+            => fn(o, arg1, arg2);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, object?, int, object?, object?, void> fn, object o, object? arg1, int arg2, object? arg3, object? arg4)
+            => fn(o, arg1, arg2, arg3, arg4);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, object?, object?, bool, object?, void> fn, object o, object? arg1, object? arg2, bool arg3, object? arg4)
+            => fn(o, arg1, arg2, arg3, arg4);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, object?, object?, object?, bool, object?, void> fn, object o, object? arg1, object? arg2, object? arg3, bool arg4, object? arg5)
+            => fn(o, arg1, arg2, arg3, arg4, arg5);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, float, float, float, int, void> fn, object o, float arg1, float arg2, float arg3, int arg4)
+            => fn(o, arg1, arg2, arg3, arg4);
+
+        [Intrinsic]
         internal static void Call(delegate*<object, IEnumerable<object>?, void> fn, object o, IEnumerable<object>? arg1)
             => fn(o, arg1);
 

@@ -2226,7 +2226,7 @@ PALIMPORT
 BOOL
 PALAPI
 UnmapViewOfFile(
-        IN LPCVOID lpBaseAddress);
+        IN LPCVOID lpBaseAddress) noexcept;
 
 PALIMPORT
 HMODULE
@@ -2631,7 +2631,7 @@ PALIMPORT
 BOOL
 PALAPI
 CloseHandle(
-        IN OUT HANDLE hObject);
+        IN OUT HANDLE hObject) noexcept;
 
 PALIMPORT
 VOID
@@ -3175,13 +3175,13 @@ FormatMessageW(
 PALIMPORT
 DWORD
 PALAPI
-GetLastError();
+GetLastError() noexcept;
 
 PALIMPORT
 VOID
 PALAPI
 SetLastError(
-         IN DWORD dwErrCode);
+         IN DWORD dwErrCode) noexcept;
 
 PALIMPORT
 VOID
@@ -3387,7 +3387,7 @@ VOID
 PALAPI
 PAL_FreeExceptionRecords(
   IN EXCEPTION_RECORD *exceptionRecord,
-  IN CONTEXT *contextRecord);
+  IN CONTEXT *contextRecord) noexcept;
 
 #define EXCEPTION_CONTINUE_SEARCH   0
 #define EXCEPTION_EXECUTE_HANDLER   1

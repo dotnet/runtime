@@ -104,7 +104,7 @@ void TerminateExceptionHandling();
 // Prototypes
 EXTERN_C VOID STDCALL ResetCurrentContext();
 
-void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP);
+void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP) noexcept;
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
 DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM, const METHODTOKEN& mdTok, SIZE_T offsNat);
 BOOL IsException(MethodTable *pMT);

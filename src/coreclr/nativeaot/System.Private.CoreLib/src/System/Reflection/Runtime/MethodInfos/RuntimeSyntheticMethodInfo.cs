@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core.Execution;
@@ -189,16 +188,20 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
+        internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod)
         {
             RuntimeTypeInfo[] runtimeParameterTypes = _runtimeParameterTypes;
             RuntimeParameterInfo[] parameters = new RuntimeParameterInfo[runtimeParameterTypes.Length];
             for (int i = 0; i < parameters.Length; i++)
             {
-                parameters[i] = RuntimeSyntheticParameterInfo.GetRuntimeSyntheticParameterInfo(this, i, runtimeParameterTypes[i]);
+                parameters[i] = new RuntimeParameterInfo(this, runtimeParameterTypes[i].ToType(), i);
             }
-            returnParameter = RuntimeSyntheticParameterInfo.GetRuntimeSyntheticParameterInfo(this, -1, _returnType);
             return parameters;
+        }
+
+        internal sealed override RuntimeParameterInfo GetRuntimeReturnParameter(RuntimeMethodInfo contextMethod)
+        {
+            return new RuntimeParameterInfo(this, _returnType.ToType(), -1);
         }
 
         internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType

@@ -19,8 +19,8 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 29
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MAJOR_VERSION 31
+#define READYTORUN_MINOR_VERSION 0x0000
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -76,6 +76,10 @@
 // compiled with the GC mode transition verification scaffolding (and therefore emits
 // READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
 // consumes the scaffolding, so the flag is only ever set on WebAssembly images.
+// R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
+// R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
+// R2R Version 31 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun for initializing a
+// method's ReadyToRun entry point and fixups.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -173,9 +177,9 @@ enum class ReadyToRunImportSectionType : uint8_t
 
 enum class ReadyToRunImportSectionFlags : uint16_t
 {
-    None     = 0x0000,
-    Eager    = 0x0001, // Section at module load time.
-    PCode    = 0x0004, // Section contains pointers to code
+    None  = 0x0000,
+    Eager = 0x0001, // Fixups must be resolved at module load time before any code in the module runs.
+    PCode = 0x0004, // Section contains pointers to code
 };
 
 // All values in this enum should within a nibble (4 bits).
@@ -336,6 +340,8 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
+    READYTORUN_FIXUP_MethodEntry_ReadyToRun       = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
+
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
 };
@@ -387,6 +393,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
     READYTORUN_HELPER_ByRefWriteBarrier         = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
     READYTORUN_HELPER_BulkWriteBarrier          = 0x33,
+    READYTORUN_HELPER_BulkWriteBarrierSmall     = 0x34,
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,

@@ -32,7 +32,7 @@ void ClrEnterCriticalSection(CRITSEC_COOKIE cookie)
     minipal_mutex_enter((minipal_mutex*)cookie);
 }
 
-void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
+void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept
 {
     _ASSERTE(cookie);
     minipal_mutex_leave((minipal_mutex*)cookie);

@@ -66,8 +66,14 @@ public class Runtime_66624
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
+        string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return 100;
+        }
+
         CollectibleALC alc = new CollectibleALC();
-        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(assemblyPath);
         System.Reflection.MethodInfo mi = asm.GetType(typeof(Runtime_66624).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
         return (int)mi.Invoke(null, new object[] { System.Activator.CreateInstance(runtimeTy) });

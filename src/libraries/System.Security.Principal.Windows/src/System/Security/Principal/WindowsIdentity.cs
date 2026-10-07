@@ -140,14 +140,14 @@ namespace System.Security.Principal
                 // so we'll use the same name the CLR used even though we're not actually the "CLR."
                 ReadOnlySpan<byte> sourceName = "CLR\0"u8;
 
-                TOKEN_SOURCE sourceContext;
+                TOKEN_SOURCE sourceContext = default;
                 unsafe
                 {
                     if (!Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier))
                         throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
-
-                    sourceName.CopyTo(new Span<byte>(sourceContext.SourceName, TOKEN_SOURCE.TOKEN_SOURCE_LENGTH));
                 }
+
+                sourceName.CopyTo(sourceContext.SourceName);
 
                 ArgumentNullException.ThrowIfNull(sUserPrincipalName);
 

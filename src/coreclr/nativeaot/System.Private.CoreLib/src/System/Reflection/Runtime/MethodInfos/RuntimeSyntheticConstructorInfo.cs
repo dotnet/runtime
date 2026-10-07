@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core.Execution;
@@ -142,7 +141,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     parameters = new RuntimeParameterInfo[runtimeParameterTypes.Length];
                     for (int i = 0; i < parameters.Length; i++)
                     {
-                        parameters[i] = RuntimeSyntheticParameterInfo.GetRuntimeSyntheticParameterInfo(this, i, runtimeParameterTypes[i]);
+                        parameters[i] = new RuntimeParameterInfo(this, runtimeParameterTypes[i].ToType(), i);
                     }
                     _lazyParameters = parameters;
                 }

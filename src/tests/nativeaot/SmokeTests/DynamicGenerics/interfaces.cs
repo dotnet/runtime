@@ -103,6 +103,16 @@ public class InterfacesTests
             TypeOf.CommonType2);
             
         mi.Invoke(null, null);
+
+        mi = typeof(InterfacesTests).GetTypeInfo().GetDeclaredMethod(nameof(TestGenericCollapsingInInterfaceMapHelper)).MakeGenericMethod(
+            TypeOf.CommonType1,
+            TypeOf.CommonType1);
+        mi.Invoke(null, null);
+
+        mi = typeof(InterfacesTests).GetTypeInfo().GetDeclaredMethod(nameof(TestGenericCollapsingInInterfaceMapHelper)).MakeGenericMethod(
+            TypeOf.CommonType1,
+            TypeOf.String);
+        mi.Invoke(null, null);
 #endif
     }
     public static void TestGenericCollapsingInInterfaceMapHelper<T, U>()

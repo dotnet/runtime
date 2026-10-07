@@ -153,7 +153,7 @@ namespace System.Collections.Generic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode([DisallowNull] T obj) =>
-            obj?.GetHashCode() ?? 0;
+            obj is null ? 0 : obj.GetHashCode();
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -222,7 +222,7 @@ namespace System.Collections.Generic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode([DisallowNull] T obj) =>
-            obj?.GetHashCode() ?? 0;
+            obj is null ? 0 : obj.GetHashCode();
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -320,7 +320,7 @@ namespace System.Collections.Generic
 
         public override bool Equals(string? x, string? y) => string.Equals(x, y);
 
-        public override int GetHashCode([DisallowNull] string obj) => obj?.GetHashCode() ?? 0;
+        public override int GetHashCode([DisallowNull] string obj) => obj is null ? 0 : obj.GetHashCode();
 
         public bool Equals(ReadOnlySpan<char> span, string target)
         {

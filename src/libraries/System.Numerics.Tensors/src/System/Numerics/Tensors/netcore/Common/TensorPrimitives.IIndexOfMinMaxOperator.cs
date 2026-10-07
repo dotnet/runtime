@@ -9,7 +9,7 @@ namespace System.Numerics.Tensors
 {
     public static unsafe partial class TensorPrimitives
     {
-        private interface IIndexOfMinMaxOperator<T>
+        internal interface IIndexOfMinMaxOperator<T>
         {
             static abstract T Aggregate(Vector128<T> value);
             static abstract T Aggregate(Vector256<T> value);
@@ -20,7 +20,7 @@ namespace System.Numerics.Tensors
             static abstract Vector512<T> Compare(Vector512<T> x, Vector512<T> y);
         }
 
-        private static int IndexOfMinMaxCore<T, TOperator>(ReadOnlySpan<T> x)
+        internal static int IndexOfMinMaxCore<T, TOperator>(ReadOnlySpan<T> x)
             where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
         {
             if (x.IsEmpty)

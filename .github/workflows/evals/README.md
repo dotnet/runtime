@@ -26,10 +26,32 @@ for conformance, behavior, and constructiveness. Every grader must pass.
 The workflow preserves the eval specs and installs Vally from the trusted base
 branch before it checks out the PR head. This lets it evaluate PR changes to the
 workflow prompts without allowing the PR to weaken its graders or toolchain.
-Each eval attaches a read-only GitHub MCP server with the `pull_requests`,
-`repos`, `issues`, and `search` toolsets. The `GITHUB_TOKEN` that the eval job
-supplies to that server has only the job's read permissions, allowing the
-scanner to use the `github` MCP server's `search_issues` tool.
+Each eval attaches a read-only GitHub MCP server with the toolsets its scenario
+needs. The `GITHUB_TOKEN` that the eval job supplies to that server has only the
+job's read permissions. The scanner eval omits the built-in `search` toolset and
+invokes a CLI harness for the workflow's `search-kbe-issues` MCP-script tool
+through Node because the eval runner does not launch workflow frontmatter MCP
+servers. It uses the `github` MCP server's `issue_read` tool for candidate
+inspection. A trusted static grader correlates every candidate returned by the
+harness with a successful, unfiltered `issue_read`. Focused Node tests keep the
+workflow-frontmatter and CLI wrapper behavior in sync and exercise the grader's
+candidate correlation.
+
+The scanner's focused tests also require the production and eval GitHub backend
+toolsets to match and retain `repos`, which the production integrity gateway
+needs for its internal `search_repositories` visibility check. The agent-facing
+allowlist remains limited to issue reads and PR reads/searches.
+
+The scanner eval connects directly to GitHub MCP, without production's filtering
+gateway. It validates search and candidate-read behavior, but cannot detect
+gateway-only failures. The toolset checks cover this configuration dependency;
+they are not an end-to-end gateway test.
+
+The focused tests also require the scanner and feedback workflows to select the
+Responses API in both their source and compiled Copilot execution steps.
+Production's firewall runs the CLI in offline/BYOK mode, where GPT-6.1 needs
+`COPILOT_PROVIDER_WIRE_API: responses`; the native Copilot SDK eval does not
+exercise that inference routing.
 
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually
@@ -37,13 +59,16 @@ exist and scores workflow output against them, is deferred.
 
 - **`ci-failure-scan`** has the agent query the anonymous dnceng-public AzDO REST
   API for a currently-failing outer-loop build on `main`, extract a real error
-  signature, check for an existing KBE, and emit the create-issue safe-output at
-  `out/kbe.md`. Graders check the static Known Build Error format, meaning the
-  title, exactly `Known Build Error` plus one blocking label, the three sections,
-  collapsed authoring guidance, a single json signature, the collapsed
-  workflow-owned positive match-count metadata, and no test-muting. They also check
-  `tool-calls` evidence that it actually fetched a real build and searched existing
-  KBEs.
+  signature, check for an existing KBE, and either emit the create-issue
+  safe-output at `out/kbe.md` or write the exact no-op result
+  `Result: No new Known Build Error` when the live scan has nothing actionable
+  to file. Graders check the static Known Build Error format when a KBE is
+  emitted: the title, exactly `Known Build Error` plus one blocking label, the
+  three sections, collapsed authoring guidance, a single json signature, the
+  collapsed workflow-owned positive match-count metadata, and no test-muting.
+  They also check `tool-calls` evidence that it actually fetched a real build,
+  searched existing KBEs through the wrapper, and inspected returned candidates
+  through `issue_read`.
 
 - **`ci-failure-fix`** runs the workflow's deterministic scanner-author filter
   in trusted eval setup before the agent starts. The agent then reads a
@@ -80,6 +105,12 @@ is failing at eval time.
 
 ## Run locally
 
+The deterministic scanner tests need Node, but no credentials or network access:
+
+```bash
+node --test .github/workflows/evals/kbe-search.test.mjs
+```
+
 The deterministic fixer tests need Python 3, Bash, jq, and Node with the eval
 dependencies installed (`npm ci --prefix .github/workflows/evals`), but no
 credentials or network access during testing. They exercise the shared intake
@@ -100,7 +131,10 @@ export PATH="$PWD/.github/workflows/evals/node_modules/.bin:$PATH"
 export COPILOT_GITHUB_TOKEN="$(gh auth token)"
 export GH_TOKEN="$(gh auth token)"
 export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"
-vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml --strict
+export KBE_SEARCH_HELPER="$PWD/.github/workflows/evals/search-kbe-issues.cjs"
+vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
+  --grader-plugin "$PWD/.github/workflows/evals/kbe-candidate-reads-grader.mjs" --strict
 vally eval --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
+  --grader-plugin "$PWD/.github/workflows/evals/kbe-candidate-reads-grader.mjs" \
   --skill-dir .github/workflows --workspace /tmp/ws --output-dir /tmp/out
 ```

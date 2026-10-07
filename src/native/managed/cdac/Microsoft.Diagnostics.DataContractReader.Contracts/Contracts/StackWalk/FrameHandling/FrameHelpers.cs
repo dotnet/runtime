@@ -371,6 +371,29 @@ internal sealed class FrameHelpers
         };
     }
 
+    /// <summary>
+    /// Mirrors native <c>InlinedCallFrame::IsInInterpreter</c> (frames.cpp): an active
+    /// InlinedCallFrame pushed by the interpreter for a P/Invoke is directly followed by the
+    /// owning InterpreterFrame, whose top InterpMethodContextFrame is the ICF's CallSiteSP.
+    /// </summary>
+    public bool IsInlinedCallFrameInInterpreter(Data.Frame frame)
+    {
+        if (GetFrameType(frame.Identifier) != FrameType.InlinedCallFrame)
+            return false;
+
+        ulong terminator = _target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue;
+        if (frame.Next == TargetPointer.Null || frame.Next.Value == terminator)
+            return false;
+
+        Data.Frame next = _target.ProcessedData.GetOrAdd<Data.Frame>(frame.Next);
+        if (GetFrameType(next.Identifier) != FrameType.InterpreterFrame)
+            return false;
+
+        Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+        Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(next.Address);
+        return ResolveTopInterpMethodContextFrame(interpreterFrame) == icf.CallSiteSP;
+    }
+
     private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
     {
         return frame.CallerReturnAddress != TargetCodePointer.Null;
@@ -543,7 +566,11 @@ internal sealed class FrameHelpers
         GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame);
     }
 
-    private TargetPointer GetFirstArgRegister(IPlatformAgnosticContext context)
+    /// <summary>
+    /// Returns the first-argument register, which holds the owning InterpreterFrame for a context
+    /// in interpreted code (native <c>GetFirstArgReg</c>).
+    /// </summary>
+    public TargetPointer GetFirstArgRegister(IPlatformAgnosticContext context)
     {
         string registerName = GetFirstArgRegisterName();
         if (!context.TryReadRegister(registerName, out TargetNUInt value))

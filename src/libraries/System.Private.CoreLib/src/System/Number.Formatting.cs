@@ -744,9 +744,8 @@ namespace System
                     vlb.AppendSpan(precision).Fill(TChar.CastFrom('0'));
                 }
 
-                // Exponent sign is always emitted ('+' or '-'), consistent with the 'E' format.
                 vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
-                vlb.Append(TChar.CastFrom('+'));
+                vlb.Append(info.PositiveSignTChar<TChar>());
                 vlb.Append(TChar.CastFrom('0'));
 
                 return;
@@ -893,22 +892,18 @@ namespace System
                 }
             }
 
-            // Emit exponent: p+NNN or p-NNN
-            // The exponent sign is always ASCII '+'/'-' per IEEE 754 §5.12.3,
-            // independent of NumberFormatInfo (which only governs the leading value sign).
             vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
 
             if (actualExponent >= 0)
             {
-                vlb.Append(TChar.CastFrom('+'));
+                vlb.Append(info.PositiveSignTChar<TChar>());
             }
             else
             {
-                vlb.Append(TChar.CastFrom('-'));
+                vlb.Append(info.NegativeSignTChar<TChar>());
                 actualExponent = -actualExponent;
             }
 
-            // Write exponent digits
             Debug.Assert(actualExponent >= 0);
             int digitCount = FormattingHelpers.CountDigits((uint)actualExponent);
             Span<TChar> exponentBuffer = vlb.AppendSpan(digitCount);
@@ -1012,8 +1007,9 @@ namespace System
             // When the number is known to be roundtrippable (either because we requested it be, or
             // because we know we have enough digits to satisfy roundtrippability), we should validate
             // that the number actually roundtrips back to the original result.
+            // This only applies to significant digits; fractional digits may include leading zeros.
 
-            Debug.Assert(((precision != -1) && (precision < TNumber.MaxRoundTripDigits)) || (TNumber.FloatToBits(value) == TNumber.FloatToBits(NumberToFloat<TNumber>(ref number))));
+            Debug.Assert(!isSignificantDigits || ((precision != -1) && (precision < TNumber.MaxRoundTripDigits)) || (TNumber.FloatToBits(value) == TNumber.FloatToBits(NumberToFloat<TNumber>(ref number))));
 
             if (fmt != 0)
             {

@@ -7,12 +7,6 @@ using Xunit;
 
 public class AwaitNotAsync
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
-    {
-        AsyncEntryPoint().Wait();
-    }
-
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<T> GetTask<T>(T arg)
     {
@@ -34,7 +28,8 @@ public class AwaitNotAsync
 
     private static T sIdentity<T>(T arg) => arg;
 
-    private static async Task AsyncEntryPoint()
+    [Fact]
+    public static async Task AsyncEntryPoint()
     {
         // static field
         sField = GetTask(5);

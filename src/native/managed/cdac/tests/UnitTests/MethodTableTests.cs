@@ -12,6 +12,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 using static Microsoft.Diagnostics.DataContractReader.TestInfrastructure.TestHelpers;
 
@@ -49,6 +50,7 @@ public class MethodTableTests
             (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
             (nameof(Constants.Globals.FieldOffsetBigRVA), MockRTS.FieldOffsetBigRVAValue),
+            (nameof(Constants.Globals.FieldOffsetDynamicRVA), MockRTS.FieldOffsetDynamicRVAValue),
         ];
 
     public static IEnumerable<object[]> StdArchBool()
@@ -889,6 +891,57 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IsInlineArrayReturnsFalseWhenVMFlagNotSet(MockTarget.Architecture arch)
+    {
+        TargetPointer mtPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddEEClass("NotInlineArray");
+                MockMethodTable mt = rtsBuilder.AddMethodTable("NotInlineArray");
+                mt.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+                // EEClass.VMFlags does NOT have VMFLAG_INLINE_ARRAY (0x00010000) set
+                mtPtr = mt.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.False(contract.IsInlineArray(typeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsInlineArrayReturnsTrueWhenVMFlagSet(MockTarget.Architecture arch)
+    {
+        const uint InlineArrayVMFlag = 0x00010000;
+        TargetPointer mtPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddEEClass("InlineArray");
+                eeClass.VMFlags = InlineArrayVMFlag;
+                MockMethodTable mt = rtsBuilder.AddMethodTable("InlineArray");
+                mt.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                mt.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                mt.NumVirtuals = 3;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+                mtPtr = mt.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle typeHandle = contract.GetTypeHandle(mtPtr);
+        Assert.True(contract.IsInlineArray(typeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetGCDescSeriesReturnsEmptyWhenNoGCPointers(MockTarget.Architecture arch)
     {
         TargetPointer mtPtr = default;
@@ -1376,6 +1429,57 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Assert.Equal((uint)rva, contract.GetFieldDescOffset(fieldDescPtr, fieldDef));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public unsafe void GetFieldDescStaticAddress_DynamicRVA_ResolvesFieldTokenWithoutPEImage(MockTarget.Architecture arch)
+    {
+        const uint IsStatic = 0x01000000;
+        const uint IsRVA = 0x04000000;
+        byte[] metadata = BuildMetadataWithRvaField(rva: 0, out FieldDefinitionHandle fieldHandle);
+        using MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(metadata));
+        MetadataReader reader = provider.GetMetadataReader();
+        uint fieldToken = (uint)MetadataTokens.GetToken(fieldHandle);
+        TargetPointer moduleAddress = new(0x0002_0000);
+        TargetPointer fieldData = new(0x0003_0000);
+        Contracts.ModuleHandle moduleHandle = new(moduleAddress);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(moduleAddress)).Returns(moduleHandle);
+        loader.Setup(l => l.GetDynamicIL(moduleHandle, fieldToken)).Returns(fieldData);
+        Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
+        ecmaMetadata.Setup(m => m.GetMetadata(moduleHandle)).Returns(reader);
+
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
+        rtsBuilder.SystemObjectMethodTable.Module = moduleAddress.Value;
+        MockFieldDesc fieldDesc = rtsBuilder.AddFieldDesc(
+            rtsBuilder.SystemObjectMethodTable.Address, CorElementType.I4, MockRTS.FieldOffsetDynamicRVAValue, fieldToken);
+        fieldDesc.DWord1 |= IsStatic | IsRVA;
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(CreateContractTypes(rtsBuilder))
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
+            .AddMockContract(loader)
+            .AddMockContract(ecmaMetadata)
+            .Build();
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+
+        Assert.True(contract.IsFieldDescStatic(fieldDesc.Address));
+        Assert.True(contract.IsFieldDescRVA(fieldDesc.Address));
+        Assert.Equal(fieldData, contract.GetFieldDescStaticAddress(fieldDesc.Address));
+
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        ulong staticAddress;
+        Assert.Equal(System.HResults.S_OK, dacDbi.GetCollectibleTypeStaticAddress(fieldDesc.Address, &staticAddress));
+        Assert.Equal(fieldData.Value, staticAddress);
+        loader.Verify(l => l.GetModuleHandleFromModulePtr(moduleAddress), Times.Exactly(2));
+        loader.Verify(l => l.GetDynamicIL(moduleHandle, fieldToken), Times.Exactly(2));
+        loader.VerifyNoOtherCalls();
+        ecmaMetadata.Verify(m => m.GetMetadata(moduleHandle), Times.Exactly(2));
+        ecmaMetadata.VerifyNoOtherCalls();
     }
 
     [Theory]

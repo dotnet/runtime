@@ -37,9 +37,9 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunImportSectionFlags : ushort
     {
-        None     = 0x0000,
-        Eager    = 0x0001, // Section at module load time.
-        PCode    = 0x0004, // Section contains pointers to code
+        None  = 0x0000,
+        Eager = 0x0001, // Section before module activation.
+        PCode = 0x0004, // Section contains pointers to code
     }
 
     /// <summary>
@@ -201,6 +201,8 @@ namespace Internal.ReadyToRunConstants
 
         StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
+        MethodEntry_ReadyToRun = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
+
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or
@@ -255,6 +257,7 @@ namespace Internal.ReadyToRunConstants
         CheckedWriteBarrier         = 0x31,
         ByRefWriteBarrier           = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
         BulkWriteBarrier            = 0x33,
+        BulkWriteBarrierSmall       = 0x34,
 
         // Array helpers
         Stelem_Ref                  = 0x38,
@@ -408,6 +411,24 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+
+        // NativeAOT allocation helpers
+        NewFast,
+        NewFinalizable,
+        NewFastAlign8,
+        NewFinalizableAlign8,
+        NewFastMisalign,
+        NewPtrArrayFast,
+        NewArrayFastAlign8,
+        NewArrayFast,
+
+        // NativeAOT interface dispatch helpers
+        InterfaceDispatch,
+        InterfaceDispatchGuarded,
+        ResolveInterfaceMethodFast,
+        ResolveInterfaceMethod,
+
+        TlsGetAddr,
     }
 
     // Enum used for HFA type recognition.

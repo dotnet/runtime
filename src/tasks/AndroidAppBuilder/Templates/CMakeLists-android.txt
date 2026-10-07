@@ -2,13 +2,25 @@ cmake_minimum_required(VERSION 3.10)
 
 project(monodroid)
 
-enable_language(C ASM)
+enable_language(C CXX ASM)
 
 if(ANDROID_NDK_MAJOR VERSION_LESS "23")
     message(FATAL_ERROR "Error: need at least Android NDK 23, got ${ANDROID_NDK_REVISION}!")
 endif()
 
-add_compile_options(-Werror=missing-prototypes -Werror=missing-declarations -Wall -std=c99)
+add_compile_options(-Wall)
+
+# These warnings describe C function declarations and can be rejected by C++ compilers.
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-Werror=missing-prototypes>)
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-Werror=missing-declarations>)
+add_compile_options($<$<COMPILE_LANGUAGE:C>:-std=c99>)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# ANDROID_STL=none does not provide the C++ ABI support needed by RTTI or exceptions.
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
 
 add_library(
     monodroid

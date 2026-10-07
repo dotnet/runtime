@@ -493,7 +493,7 @@ EXTERN PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress;
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
-inline bool IsAtProcessExit()
+inline bool IsAtProcessExit() noexcept
 {
     SUPPORTS_DAC;
 #if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)

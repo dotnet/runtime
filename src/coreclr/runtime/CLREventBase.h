@@ -19,7 +19,7 @@ public:
     bool CreateFromOSHandle(void* osHandle);
 #endif
 
-    void CloseEvent();
+    void CloseEvent() noexcept;
     bool IsValid() const;
     bool Set();
     bool Reset();

@@ -10,7 +10,6 @@ using Xunit;
 // A frame that awaited with ConfigureAwait(false) does not want to be brought back onto
 // the SynchronizationContext that was current when it suspended. That has to hold for the
 // logical return of an inlined async frame too.
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameConfigureAwait
 {
     private sealed class TrackingContext : SynchronizationContext
@@ -67,20 +66,14 @@ public class Async2InlinedFrameConfigureAwait
     }
 
     [Fact]
-    public static void ConfiguredAwaitDoesNotReturnToContext()
+    public static async Task ConfiguredAwaitDoesNotReturnToContext()
     {
-        SynchronizationContext original = SynchronizationContext.Current;
         TrackingContext tracking = new TrackingContext();
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(tracking);
-            OuterConfigured().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        SynchronizationContext.SetSynchronizationContext(tracking);
 
+#pragma warning disable xUnit1030 // Capturing the test context would add a post and invalidate the assertion.
+        await OuterConfigured().ConfigureAwait(false);
+#pragma warning restore xUnit1030
         Assert.Equal(0, tracking.Posts);
     }
 
@@ -102,20 +95,14 @@ public class Async2InlinedFrameConfigureAwait
     }
 
     [Fact]
-    public static void ConfiguredAwaitInLoopDoesNotReturnToContext()
+    public static async Task ConfiguredAwaitInLoopDoesNotReturnToContext()
     {
-        SynchronizationContext original = SynchronizationContext.Current;
         TrackingContext tracking = new TrackingContext();
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(tracking);
-            LoopOuterConfigured(5).GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        SynchronizationContext.SetSynchronizationContext(tracking);
 
+#pragma warning disable xUnit1030 // Capturing the test context would add a post and invalidate the assertion.
+        await LoopOuterConfigured(5).ConfigureAwait(false);
+#pragma warning restore xUnit1030
         Assert.Equal(0, tracking.Posts);
     }
 }

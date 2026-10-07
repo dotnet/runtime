@@ -628,7 +628,8 @@ BOOL EnumClasses()
                     }
                 }
             }
-            g_pImport->EnumMethodImplClose(&hBody,&hDecl);
+            g_pImport->EnumClose(&hBody);
+            g_pImport->EnumClose(&hDecl);
         }
         i++;
     }
