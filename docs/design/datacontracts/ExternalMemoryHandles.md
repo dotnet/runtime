@@ -26,9 +26,10 @@ IReadOnlyList<ExternalMemoryHandleRootData> GetRoots(bool resolveInteriorPointer
 | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
 | `Array` | `m_NumComponents` | `uint32` | Number of items in the array |
+| `ExternalMemoryHandle` | `GCFlags` | `uint32` | Non-zero if the handle's memory holds a direct object pointer (interior/GC_CALL_INTERIOR root) rather than the address of an object reference slot |
 | `ExternalMemoryHandle` | `Memory` | `pointer` | Pointer to the external memory tracked by this handle |
+| `ExternalMemoryHandle` | `MethodTable` | `pointer` | Pointer to the MethodTable describing the type of the tracked memory |
 | `ExternalMemoryHandle` | `Next` | `pointer` | Pointer to the next ExternalMemoryHandle in the process-wide list |
-| `ExternalMemoryHandle` | `TypeHandle` | `pointer` | Tagged type handle describing the memory as a managed local: inline value, object-reference slot, or managed-byref slot |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
 
@@ -52,6 +53,73 @@ interior root through `IsInteriorPointer` and `Object`. When `resolveInteriorPoi
 `Object` is the containing managed object; null, invalid, or unresolvable interior pointers are
 omitted. When it is false, `Object` is the raw pointer read from `Address`.
 
+For reference-type handles, a zero `GCFlags` value produces an ordinary root at the handle's
+`Memory` address and a non-zero value produces an interior root. For value-type handles, the
+implementation reports ordinary object-reference fields described by the type's GCDesc and
+recursively finds `ELEMENT_TYPE_BYREF` fields in byref-like value types, including every element of
+an inline array. GCDesc offsets are adjusted from boxed-object layout to the unboxed external-memory
+layout.
+
+``` csharp
+IReadOnlyList<ExternalMemoryHandleRootData> IExternalMemoryHandles.GetRoots(bool resolveInteriorPointers)
+{
+    TargetPointer headPointer = // read the ExternalMemoryHandles global
+    TargetPointer current = // read a pointer from headPointer
+
+    HashSet<TargetPointer> visited = [];
+    List<ExternalMemoryHandleRootData> roots = [];
+    while (current != TargetPointer.Null)
+    {
+        if (!visited.Add(current))
+            throw new InvalidOperationException();
+
+        ExternalMemoryHandle handle = // read ExternalMemoryHandle object starting at current
+        TypeHandle type = // get the RuntimeTypeSystem handle for handle.MethodTable
+        if (type.IsValueType)
+        {
+            // Add GCDesc object-reference slots and recursively discovered byref-like interior roots.
+        }
+        else if (handle.GCFlags != 0)
+        {
+            // Read the pointer from handle.Memory and optionally resolve it to its containing object.
+        }
+        else
+        {
+            roots.Add(new ExternalMemoryHandleRootData { Address = handle.Memory });
+        }
+        current = handle.Next;
+    }
+    return roots;
+}
+```
+
+## Version 2 dependency changes from Version 1
+
+<!-- BEGIN GENERATED: usage contract=ExternalMemoryHandles version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Removed | `ExternalMemoryHandle` | `GCFlags` | `uint32` | Non-zero if the handle's memory holds a direct object pointer (interior/GC_CALL_INTERIOR root) rather than the address of an object reference slot |
+| Removed | `ExternalMemoryHandle` | `MethodTable` | `pointer` | Pointer to the MethodTable describing the type of the tracked memory |
+| Added | `ExternalMemoryHandle` | `TypeHandle` | `pointer` | Tagged type handle describing the memory as a managed local: inline value, object-reference slot, or managed-byref slot |
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=ExternalMemoryHandles version=c2 diff-from=c1 -->
+
+## Version 2
+
+Each returned root identifies either an ordinary object-reference slot through `Address`, or an
+interior root through `IsInteriorPointer` and `Object`. When `resolveInteriorPointers` is true,
+`Object` is the containing managed object; null, invalid, or unresolvable interior pointers are
+omitted. When it is false, `Object` is the raw pointer read from `Address`.
+
 The `TypeHandle` describes the tracked memory exactly as a managed local of that type. Reference
 types contain an object-reference slot. Value types contain inline value data. A `BYREF`
 `ParamTypeDesc` describes a managed-byref slot, including `ref T` for structs and `ref object`.
@@ -60,10 +128,9 @@ using the target's layout. Pointer and function-pointer locals contain unmanaged
 not produce GC roots.
 
 For inline value types, the implementation reports ordinary object-reference fields described by
-the type's GCDesc and
-recursively finds `ELEMENT_TYPE_BYREF` fields in byref-like value types, including every element of
-an inline array. GCDesc offsets are adjusted from boxed-object layout to the unboxed external-memory
-layout.
+the type's GCDesc and recursively finds `ELEMENT_TYPE_BYREF` fields in byref-like value types,
+including every element of an inline array. GCDesc offsets are adjusted from boxed-object layout to
+the unboxed external-memory layout.
 
 ``` csharp
 IReadOnlyList<ExternalMemoryHandleRootData> IExternalMemoryHandles.GetRoots(bool resolveInteriorPointers)
