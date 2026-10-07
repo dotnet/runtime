@@ -38,7 +38,6 @@ class FCallMethodDesc;
 class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
-class JIT_TrialAlloc;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
@@ -977,7 +976,6 @@ class MethodTable
 
     // Special access for setting up String object method table correctly
     friend class ClassLoader;
-    friend class JIT_TrialAlloc;
     friend class Module;
     friend class EEClass;
     friend class MethodTableBuilder;
