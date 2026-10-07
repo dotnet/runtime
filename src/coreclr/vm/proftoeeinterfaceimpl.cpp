@@ -950,12 +950,12 @@ void __stdcall UpdateGenerationBounds()
         s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
-#ifdef ENABLE_CONTRACTS_IMPL
+#if defined(PROFILING_SUPPORTED) && defined(ENABLE_CONTRACTS_IMPL)
     {
         LONG result = InterlockedDecrement(&s_generationTableWriterCount);
         _ASSERTE(result == 0);
     }
-#endif
+#endif // PROFILING_SUPPORTED && ENABLE_CONTRACTS_IMPL
 }
 
 void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)

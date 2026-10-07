@@ -56,7 +56,7 @@ target_precompile_headers(mdruntime_dac PRIVATE stdafx.h)
 
 add_library_clr(mdruntime_wks OBJECT ${MDRUNTIME_SOURCES})
 target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
-if (FEATURE_CORPROFILER)
+if (FEATURE_CORPROFILER OR FEATURE_METADATA_UPDATER)
     target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
 endif()
 target_precompile_headers(mdruntime_wks PRIVATE stdafx.h)

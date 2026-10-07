@@ -8249,6 +8249,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         MethodDesc *pCaller = m_pMethodBeingCompiled;
         pCallee->GetModule()->AddInlining(pCaller, pCallee);
 
+#ifdef PROFILING_SUPPORTED
         if (CORProfilerEnableRejit())
         {
             ModuleID modId = 0;
@@ -8280,6 +8281,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                 ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
             }
         }
+#endif // PROFILING_SUPPORTED
     }
 #endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 

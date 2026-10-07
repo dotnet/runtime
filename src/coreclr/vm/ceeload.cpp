@@ -106,7 +106,7 @@ COUNT_T Module::GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef in
 }
 #endif // FEATURE_INLINE_TRACKING
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 BOOL Module::HasJitInlineTrackingMap()
 {
     LIMITED_METHOD_CONTRACT;
@@ -125,7 +125,7 @@ void Module::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
         m_pJitInlinerTrackingMap->AddInlining(inliner, inlinee);
     }
 }
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 
 #ifndef DACCESS_COMPILE
 // ===========================================================================
@@ -497,13 +497,18 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
-#ifdef PROFILING_SUPPORTED_DATA
-    // These will be initialized in NotifyProfilerLoadFinished, set them to
-    // a safe initial value now.
+#if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
+#ifdef PROFILING_SUPPORTED
+    // These will be initialized in NotifyProfilerLoadFinished.
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
-#endif // PROFILING_SUPPORTED_DATA
+#else
+    m_dwTypeCount = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
+    m_dwExportedTypeCount = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
+    m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
+#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 
 #ifdef PROFILING_SUPPORTED
     // set profiler related JIT flags
@@ -517,13 +522,15 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
 
     UpdateJitOptimizationDisabledState();
+#endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_REJIT
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // PROFILING_SUPPORTED
+#endif // FEATURE_REJIT
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
 }
@@ -782,9 +789,9 @@ void Module::Destruct()
     if (m_pDynamicMethodTable)
         m_pDynamicMethodTable->Destroy();
 
-#if defined(PROFILING_SUPPORTED)
+#ifdef FEATURE_REJIT
     delete m_pJitInlinerTrackingMap;
-#endif
+#endif // FEATURE_REJIT
 }
 
 bool Module::NeedsGlobalMethodTable()
