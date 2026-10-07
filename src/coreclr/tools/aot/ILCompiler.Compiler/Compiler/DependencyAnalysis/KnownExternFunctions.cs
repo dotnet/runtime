@@ -119,6 +119,9 @@ namespace ILCompiler.DependencyAnalysis
             MethodSignature MakeSignature(TypeDesc returnType, params TypeDesc[] parameters) =>
                 new MethodSignature(MethodSignatureFlags.Static, 0, returnType, parameters);
 
+            MethodSignature MakeUnmanagedSignature(TypeDesc returnType, params TypeDesc[] parameters) =>
+                new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0, returnType, parameters);
+
             return function switch
             {
                 ReadyToRunHelper.Throw => MakeSignature(voidType, objectType),
@@ -130,8 +133,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 ReadyToRunHelper.DebugBreak => MakeSignature(voidType),
 
-                ReadyToRunHelper.WriteBarrier => MakeSignature(voidType, nativeIntType, objectType),
-                ReadyToRunHelper.CheckedWriteBarrier => MakeSignature(voidType, nativeIntType, objectType),
+                ReadyToRunHelper.WriteBarrier => MakeUnmanagedSignature(voidType, nativeIntType, objectType),
+                ReadyToRunHelper.CheckedWriteBarrier => MakeUnmanagedSignature(voidType, nativeIntType, objectType),
 
                 ReadyToRunHelper.WriteBarrier_EAX or
                 ReadyToRunHelper.WriteBarrier_EBX or
@@ -161,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunHelper.NewArrayFastAlign8 => MakeSignature(objectType, nativeIntType, nativeIntType),
                 ReadyToRunHelper.NewArrayFast => MakeSignature(objectType, nativeIntType, nativeIntType),
 
-                ReadyToRunHelper.NativeMemSet => MakeSignature(voidPointerType, voidPointerType, int32Type, nativeUIntType),
+                ReadyToRunHelper.NativeMemSet => MakeUnmanagedSignature(voidPointerType, voidPointerType, int32Type, nativeUIntType),
                 ReadyToRunHelper.DblRem => MakeSignature(doubleType, doubleType, doubleType),
                 ReadyToRunHelper.FltRem => MakeSignature(singleType, singleType, singleType),
 
