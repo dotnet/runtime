@@ -629,9 +629,11 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            // The child may be unmanaged, or stopped rather than exited (macOS waitid
-                            // can report stopped children despite WEXITED). Scan all managed children
-                            // instead of repeatedly observing the same child without reaping it.
+                            // The child may be unmanaged, or stopped rather than exited. On macOS,
+                            // waitid can report stopped children despite omitting WSTOPPED;
+                            // the SIGCHLD handler is also registered with SA_NOCLDSTOP.
+                            // Scan all managed children instead of repeatedly observing
+                            // the same child without reaping it.
                             checkAll = true;
                             break;
                         }
