@@ -18,7 +18,7 @@
 #include "dbgtransportmanager.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
-#if defined(TARGET_UNIX) || defined(__ANDROID__)
+#if defined(HOST_UNIX) || defined(__ANDROID__)
 // Local (in-process) debugging is not supported for UNIX and Android.
 #define SUPPORT_LOCAL_DEBUGGING 0
 #else
