@@ -645,6 +645,7 @@ private:
         PROF_DISABLE_INLINING       = 0x00000100,   // indicates if Profiler disabled JIT Inlining event mask was set when loaded
 
         IS_ENC_CAPABLE              = 0x00000200,   // Cached result of IsEditAndContinueCapable() at Module creation
+        IS_RUNTIME_DELEGATE_MODULE  = 0x00010000,   // Signatures are constructed by the runtime and may contain TypeHandles
 
         //
         // Note: The values below must match the ones defined in
@@ -933,6 +934,13 @@ protected:
 #endif
 
     BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
+    BOOL IsRuntimeDelegateModule() const { LIMITED_METHOD_CONTRACT; return (m_dwTransientFlags & IS_RUNTIME_DELEGATE_MODULE) != 0; }
+    void SetRuntimeDelegateModule()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsReflectionEmit());
+        SetTransientFlagInterlocked(IS_RUNTIME_DELEGATE_MODULE);
+    }
     bool IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }

@@ -2713,7 +2713,8 @@ MethodTableBuilder::EnumerateClassMethods()
         // Signature validation
         if (!bmtProp.fNoSanityChecks && !isVtblGap)
         {
-            hr = validateTokenSig(tok,pMemberSignature,cMemberSignature,dwMemberAttrs,pMDInternalImport);
+            hr = validateTokenSig(tok,pMemberSignature,cMemberSignature,dwMemberAttrs,pMDInternalImport,
+                                  GetModule()->IsRuntimeDelegateModule());
             if (FAILED(hr))
             {
                 BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);

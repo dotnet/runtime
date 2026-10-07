@@ -131,6 +131,7 @@
     <Compile Include="$(BclSourcesRoot)\System\ComAwareWeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Delegate.TypeFactory.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />

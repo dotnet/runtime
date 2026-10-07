@@ -11,6 +11,27 @@
 #include "typeparse.h"
 #include "typekey.h"
 
+static void ImportMethodSignature(Module* pSourceModule, RefClassWriter* pDestination,
+    PCCOR_SIGNATURE signature, ULONG signatureLength, CQuickBytes& importedSignature, ULONG* importedLength)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (pSourceModule->IsRuntimeDelegateModule())
+    {
+        // Factory method signatures are module-independent. Metadata translation cannot parse internal TypeHandles.
+        importedSignature.ReSizeThrows(signatureLength);
+        memcpy(importedSignature.Ptr(), signature, signatureLength);
+        *importedLength = signatureLength;
+    }
+    else
+    {
+        IfFailThrow(pSourceModule->GetMDImport()->TranslateSigWithScope(
+            pSourceModule->GetAssembly()->GetMDImport(), nullptr, 0,
+            signature, signatureLength, pDestination->GetEmitter(), pDestination->GetEmitter(),
+            &importedSignature, importedLength));
+    }
+}
+
 
 //**************************************************
 // GetTypeRef
@@ -259,15 +280,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModul
     CQuickBytes             qbNewSig;
     ULONG                   cbNewSig;
 
-    IfFailThrow( pRefedModule->GetMDImport()->TranslateSigWithScope(
-        pRefedAssembly->GetMDImport(),
-        NULL, 0,        // hash value
-        pvComSig,
-        cbComSig,
-        pRCW->GetEmitter(),
-        pRCW->GetEmitter(),
-        &qbNewSig,
-        &cbNewSig) );
+    ImportMethodSignature(pRefedModule, pRCW, pvComSig, cbComSig, qbNewSig, &cbNewSig);
 
     mdTypeRef               tref;
 
@@ -341,15 +354,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
                 COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
         }
 
-        IfFailThrow( pMeth->GetMDImport()->TranslateSigWithScope(
-            pRefedAssembly->GetMDImport(),
-            NULL, 0,        // hash blob value
-            pvComSig,
-            cbComSig,
-            pRCW->GetEmitter(),
-            pRCW->GetEmitter(),
-            &qbNewSig,
-            &cbNewSig) );
+        ImportMethodSignature(pMeth->GetModule(), pRCW, pvComSig, cbComSig, qbNewSig, &cbNewSig);
 
         // translate the name to unicode string
         MAKE_WIDEPTR_FROMUTF8(wszName, szName);

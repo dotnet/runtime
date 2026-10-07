@@ -2936,7 +2936,8 @@ HRESULT validateTokenSig(
     PCCOR_SIGNATURE     pbSig,                  // [IN] Signature.
     ULONG               cbSig,                  // [IN] Size in bytes of the signature.
     DWORD               dwFlags,                // [IN] Method flags.
-    IMDInternalImport*  pImport);               // [IN] Internal MD Import interface ptr
+    IMDInternalImport*  pImport,                // [IN] Internal MD Import interface ptr
+    bool                allowInternalTypes = false); // Only for runtime-constructed signatures
 
 //*****************************************************************************
 // The registry keys and values that contain the information regarding

@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -46,6 +50,50 @@ namespace System.Linq.Expressions.Tests
         public void GetNullaryAction()
         {
             Assert.Equal(typeof(Action), Expression.GetDelegateType(typeof(void)));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [MemberData(nameof(ExcessiveLengthTypeArgs))]
+        [MemberData(nameof(ByRefTypeArgs))]
+        [MemberData(nameof(ByRefLikeTypeArgs))]
+        [MemberData(nameof(PointerTypeArgs))]
+        [MemberData(nameof(ManagedPointerTypeArgs))]
+        public void CustomDelegateUsesRuntimeFactory(Type[] typeArgs)
+        {
+            Assert.Same(Delegate.GetDelegateType(typeArgs), Expression.GetDelegateType(typeArgs));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        public void RuntimeFactoryBuildDoesNotReferenceClassicEmit()
+        {
+            Assert.Null(typeof(Expression).Assembly.GetType("System.Linq.Expressions.Compiler.AssemblyGen"));
+            using FileStream stream = File.OpenRead(typeof(Expression).Assembly.Location);
+            using PEReader peReader = new PEReader(stream);
+            MetadataReader reader = peReader.GetMetadataReader();
+            foreach (TypeReferenceHandle handle in reader.TypeReferences)
+            {
+                TypeReference reference = reader.GetTypeReference(handle);
+                if (reader.GetString(reference.Namespace) == "System.Reflection.Emit")
+                {
+                    string name = reader.GetString(reference.Name);
+                    if (name.EndsWith("Builder", StringComparison.Ordinal))
+                    {
+                        Assert.True(name is "LocalBuilder" or "AssemblyBuilder", $"Unexpected classic Emit reference: {name}");
+                    }
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void RuntimeFactoryDoesNotFallBackForOpenCustomSignatures(bool byRef)
+        {
+            Type[] signature = byRef
+                ? new[] { typeof(List<>).MakeByRefType(), typeof(void) }
+                : Enumerable.Repeat(typeof(List<>), 18).Append(typeof(void)).ToArray();
+            Assert.Throws<ArgumentException>(() => Delegate.GetDelegateType(signature));
+            Assert.Throws<ArgumentException>(() => Expression.GetDelegateType(signature));
         }
 
         [Theory]

@@ -6,7 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Reflection;
+#if !FEATURE_RUNTIME_DELEGATE_FACTORY
 using System.Reflection.Emit;
+#endif
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler
@@ -110,8 +112,12 @@ namespace System.Linq.Expressions.Compiler
             return mo.Expression is ParameterExpression pe && pe.IsByRef;
         }
 
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static System.Reflection.TypeInfo MakeNewCustomDelegate(Type[] types)
         {
+#if FEATURE_RUNTIME_DELEGATE_FACTORY
+            return Delegate.GetDelegateType(types).GetTypeInfo();
+#else
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 Type returnType = types[types.Length - 1];
@@ -131,6 +137,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 throw new PlatformNotSupportedException();
             }
+#endif
         }
     }
 }
