@@ -14,7 +14,7 @@ permissions:
   issues: read
 
 checkout:
-  repository: ${{ github.repository }}
+  fetch-depth: 1
 
 tools:
   bash: ["pwsh", "gh", "jq", "mkdir"]
