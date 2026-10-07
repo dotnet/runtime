@@ -475,6 +475,13 @@ namespace System.Runtime.CompilerServices
         internal static unsafe object? Box(MethodTable* methodTable, ref byte data) =>
             methodTable->IsNullable ? CastHelpers.Box_Nullable(methodTable, ref data) : CastHelpers.Box(methodTable, ref data);
 
+        internal static void EnsureInstanceActive(RuntimeType type) =>
+            EnsureInstanceActive(new QCallTypeHandle(ref type));
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_EnsureInstanceActive")]
+        private static partial void EnsureInstanceActive(QCallTypeHandle type);
+
         // Given an object reference, returns its MethodTable*.
         //
         // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
