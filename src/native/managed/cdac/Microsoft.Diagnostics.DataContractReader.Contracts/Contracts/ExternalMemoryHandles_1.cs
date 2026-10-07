@@ -35,17 +35,18 @@ internal sealed class ExternalMemoryHandles_1 : IExternalMemoryHandles
                 throw new InvalidOperationException("ExternalMemoryHandle list is cyclic.");
 
             Data.ExternalMemoryHandle handle = _target.ProcessedData.GetOrAdd<Data.ExternalMemoryHandle>(current);
-            ITypeHandle typeHandle = _rts.GetTypeHandle(handle.MethodTable);
+            ITypeHandle typeHandle = _rts.GetTypeHandle(handle.TypeHandle);
+            CorElementType elementType = _rts.GetSignatureCorElementType(typeHandle);
 
-            if (_rts.IsValueType(typeHandle))
-            {
-                AddValueTypeRoots(roots, typeHandle, handle.Memory, resolveInteriorPointers);
-            }
-            else if (handle.GCFlags != 0)
+            if (elementType == CorElementType.Byref)
             {
                 AddInteriorRoot(roots, handle.Memory, resolveInteriorPointers);
             }
-            else
+            else if (_rts.IsValueType(typeHandle))
+            {
+                AddValueTypeRoots(roots, typeHandle, handle.Memory, resolveInteriorPointers);
+            }
+            else if (elementType is not (CorElementType.Ptr or CorElementType.FnPtr))
             {
                 roots.Add(new ExternalMemoryHandleRootData { Address = handle.Memory });
             }
