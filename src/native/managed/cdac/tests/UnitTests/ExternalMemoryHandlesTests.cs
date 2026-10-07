@@ -55,7 +55,7 @@ public class ExternalMemoryHandlesTests
                 [DataType.Array] = TargetTestHelpers.CreateTypeInfo(MockArrayObjectData.CreateLayout(Arch)),
                 [DataType.String] = TargetTestHelpers.CreateTypeInfo(MockStringObjectData.CreateLayout(Arch)),
             })
-            .AddContract<IExternalMemoryHandles>(version: "c1")
+            .AddContract<IExternalMemoryHandles>(version: "c2")
             .AddMockContract(gc)
             .AddMockContract(rts);
 
