@@ -1081,6 +1081,20 @@ namespace Internal.JitInterface
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
 
+        private void AddManagedHelperDependency(MethodDesc helperMethod)
+        {
+            // Cached helper targets outlive the current compilation's dependencies, including probes.
+            MethodWithToken helperMethodWithToken = new MethodWithToken(
+                helperMethod,
+                _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(helperMethod, true, true),
+                constrainedType: null,
+                unboxing: false,
+                genericContextObject: MethodBeingCompiled);
+            AddAdditionalDependency(
+                _compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(helperMethodWithToken),
+                "Eager ReadyToRun method entry");
+        }
+
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
             MethodDesc managedHelper = ReadyToRunJitHelperRootProvider.GetManagedHelper(
@@ -1092,17 +1106,7 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(_compilation.CompilationModuleGroup.ContainsMethodBody(managedHelper, unboxingStub: false));
                 helperMethod = managedHelper;
-                MethodWithGCInfo helperMethodNode = _compilation.NodeFactory.CompiledMethodNode(managedHelper);
-                MethodWithToken helperMethodWithToken = new MethodWithToken(
-                    managedHelper,
-                    _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(managedHelper, true, true),
-                    constrainedType: null,
-                    unboxing: false,
-                    genericContextObject: MethodBeingCompiled);
-                AddAdditionalDependency(
-                    _compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(helperMethodWithToken),
-                    "Eager ReadyToRun method entry");
-                return helperMethodNode;
+                return _compilation.NodeFactory.CompiledMethodNode(managedHelper);
             }
 
             helperMethod = null;
