@@ -210,6 +210,10 @@ internal sealed partial class GrammarActions
             if (local.Name is not null)
             {
                 scope.Names.TryAdd(local.Name, index);
+                if (GeneratesPdb)
+                {
+                    scope.Variables.Add(new EntityRegistry.LocalVariableRecord(local.Name, index));
+                }
             }
         }
     }
@@ -218,15 +222,18 @@ internal sealed partial class GrammarActions
     /// Opens a lexical scope for a <c>{ }</c> block of the current method body, starting at the current offset.
     /// </summary>
     private void OpenLexicalScope(CurrentMethodContext method)
-        => method.OpenScopes.Add(new LexicalScope(CurrentMethodBodyOffset));
+        => method.OpenScopes.Add(new LexicalScope(CurrentMethodBodyOffset, method.NextScopeOrder++));
 
     /// <summary>
     /// Closes the innermost open lexical scopes of the method, at the current offset, until <paramref name="count"/>
     /// remain open. The slots that a closed scope declared are no longer in use, even when an enclosing scope that
-    /// is still open declared the same slot (<see cref="LocalSlot.InScope"/>).
+    /// is still open declared the same slot (<see cref="LocalSlot.InScope"/>). When a PDB is requested
+    /// (<see cref="GeneratesPdb"/>), the scope is recorded in the method's
+    /// <see cref="EntityRegistry.MethodDebugInfo.LocalScopes"/> for the PDB.
     /// </summary>
     private void CloseLexicalScopes(CurrentMethodContext method, int count)
     {
+        bool recordScopes = GeneratesPdb;
         while (method.OpenScopes.Count > count)
         {
             LexicalScope scope = method.OpenScopes[^1];
@@ -234,6 +241,15 @@ internal sealed partial class GrammarActions
             foreach (int slot in scope.DeclaredSlots)
             {
                 method.LocalSlots[slot].InScope = false;
+            }
+
+            if (recordScopes)
+            {
+                method.Definition.DebugInfo.LocalScopes.Add(new EntityRegistry.LocalScopeRecord(
+                    scope.StartOffset,
+                    CurrentMethodBodyOffset,
+                    scope.Order,
+                    scope.Variables.ToImmutableArray()));
             }
         }
     }
@@ -308,11 +324,27 @@ internal sealed partial class GrammarActions
     /// </summary>
     private sealed class LexicalScope
     {
+        /// <summary>Creates an open scope that has declared no locals yet.</summary>
         /// <param name="startOffset">The IL offset at which the scope starts.</param>
-        public LexicalScope(int startOffset) => StartOffset = startOffset;
+        /// <param name="order">The position of the scope in source order (<see cref="EntityRegistry.LocalScopeRecord.Order"/>).</param>
+        public LexicalScope(int startOffset, int order)
+        {
+            StartOffset = startOffset;
+            Order = order;
+        }
 
         /// <summary>Gets the IL offset at which the scope starts: 0 for the root scope, the offset at <c>{</c> for a block.</summary>
         public int StartOffset { get; }
+
+        /// <summary>Gets the position of the scope in source order: 0 for the root scope, then each block as it opens.</summary>
+        public int Order { get; }
+
+        /// <summary>
+        /// Gets the named locals declared in this scope, in declaration order, including a second declaration of a
+        /// name or a slot, from which the scope's LocalVariable rows are chosen. Filled only when a PDB is requested
+        /// (<see cref="GeneratesPdb"/>).
+        /// </summary>
+        public List<EntityRegistry.LocalVariableRecord> Variables { get; } = new();
 
         /// <summary>
         /// Gets the slot of each name declared in this scope. Names resolve from the innermost open scope outward.

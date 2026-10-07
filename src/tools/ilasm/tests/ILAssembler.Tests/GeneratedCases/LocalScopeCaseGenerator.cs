@@ -12,13 +12,15 @@ namespace ILAssembler.Tests.GeneratedCases
 {
     /// <summary>
     /// A generated method with nested <c>{ }</c> blocks that declare locals, and what the assembler must produce for
-    /// it: the type of each local slot, and the slot each <c>ldloc name</c> refers to, in instruction order.
+    /// it: the type of each local slot, the slot each <c>ldloc name</c> refers to, in instruction order, and the
+    /// LocalScope rows of the method in table order, formatted as <c>start-end: name=index ...</c>.
     /// </summary>
     public sealed record GeneratedLocalsMethod(
         string Name,
         string Body,
         ImmutableArray<string> SlotTypes,
-        ImmutableArray<int> ReferencedSlots);
+        ImmutableArray<int> ReferencedSlots,
+        ImmutableArray<string> Scopes);
 
     /// <summary>
     /// A generated program: one class with one or more <see cref="GeneratedLocalsMethod"/>s, and how many of each
@@ -69,6 +71,17 @@ namespace ILAssembler.Tests.GeneratedCases
     /// far, a slot holds the type of its declarations, and a name refers to the first declaration of that name in
     /// the innermost open scope that declares it. Instructions are written in their long forms, so the model knows
     /// every IL offset: <c>nop</c>, <c>pop</c> and <c>ret</c> are one byte and <c>ldloc</c> is four.
+    /// </para>
+    /// <para>
+    /// A scope has a LocalScope row when it has at least one instruction and declares a named local. The row spans
+    /// the scope's offsets (the whole body for the root scope) and lists the first declaration of each name, in
+    /// declaration order, with its slot. Rows are ordered by start offset, then longest first, then enclosing
+    /// scope first. A block with no instructions, which the generator sometimes writes, has no row.
+    /// </para>
+    /// <para>
+    /// The generator reuses only slots that are not in use, so a scope never declares one slot twice, and the
+    /// rule for a scope that declares both a name and a slot twice is not exercised here; the unit tests in
+    /// <see cref="LocalScopeTests"/> cover it.
     /// </para>
     /// </remarks>
     public static class LocalScopeCaseGenerator
@@ -138,7 +151,9 @@ namespace ILAssembler.Tests.GeneratedCases
             private readonly List<bool> _slotInScope = new();
             private readonly List<OpenScope> _openScopes = new();
             private readonly List<int> _referencedSlots = new();
+            private readonly List<(int Start, int End, int Order, string Row)> _scopes = new();
             private int _offset;
+            private int _nextOrder;
 
             public MethodGenerator(Random random, Dictionary<string, int> stats)
             {
@@ -153,7 +168,13 @@ namespace ILAssembler.Tests.GeneratedCases
                     name,
                     _body.ToString(),
                     _slotTypes.Select(type => type!).ToImmutableArray(),
-                    _referencedSlots.ToImmutableArray());
+                    _referencedSlots.ToImmutableArray(),
+                    _scopes
+                        .OrderBy(scope => scope.Start)
+                        .ThenByDescending(scope => scope.End - scope.Start)
+                        .ThenBy(scope => scope.Order)
+                        .Select(scope => scope.Row)
+                        .ToImmutableArray());
             }
 
             private void Count(string key, int increment = 1) => _stats[key] = _stats.GetValueOrDefault(key) + increment;
@@ -171,7 +192,7 @@ namespace ILAssembler.Tests.GeneratedCases
                     Count($"depth{depth}");
                 }
 
-                var scope = new OpenScope();
+                var scope = new OpenScope(_offset, _nextOrder++);
                 _openScopes.Add(scope);
                 Declare(scope, _random.Next(4), inner);
                 int children = depth < MaximumDepth ? _random.Next(4) : 0;
@@ -198,6 +219,16 @@ namespace ILAssembler.Tests.GeneratedCases
                 if (!root)
                 {
                     Line(indent, "}");
+                }
+
+                if (scope.Named.Count > 0 && _offset == scope.Start)
+                {
+                    Count("namedScopeWithoutInstructions");
+                }
+
+                if (scope.Named.Count > 0 && _offset > scope.Start)
+                {
+                    _scopes.Add((scope.Start, _offset, scope.Order, $"{scope.Start}-{_offset}: " + string.Join(" ", scope.Named.Select(local => $"{local.Name}={local.Slot}"))));
                 }
             }
 
@@ -261,12 +292,16 @@ namespace ILAssembler.Tests.GeneratedCases
                         {
                             Count("duplicateNameInScope");
                         }
-                        else if (_openScopes.Take(_openScopes.Count - 1).Any(outer => outer.Names.ContainsKey(name)))
+                        else
                         {
-                            Count("shadows");
-                        }
+                            if (_openScopes.Take(_openScopes.Count - 1).Any(outer => outer.Names.ContainsKey(name)))
+                            {
+                                Count("shadows");
+                            }
 
-                        scope.Names.TryAdd(name, slot);
+                            scope.Names.Add(name, slot);
+                            scope.Named.Add((name, slot));
+                        }
                     }
 
                     declarations.Add((explicitSlot is int n ? $"[{n}] " : string.Empty) + type + (name is null ? string.Empty : " " + name));
@@ -287,6 +322,7 @@ namespace ILAssembler.Tests.GeneratedCases
                         _slotInScope[slot] = true;
                         root.DeclaredSlots.Add(slot);
                         root.Names.Add(name, slot);
+                        root.Named.Add((name, slot));
                         declarations.Add($"[{slot}] int32 {name}");
                         Count("padDeclaredAtEnd");
                     }
@@ -336,6 +372,19 @@ namespace ILAssembler.Tests.GeneratedCases
 
             private sealed class OpenScope
             {
+                public OpenScope(int start, int order)
+                {
+                    Start = start;
+                    Order = order;
+                }
+
+                public int Start { get; }
+
+                public int Order { get; }
+
+                /// <summary>The first declaration of each name in the scope, in declaration order.</summary>
+                public List<(string Name, int Slot)> Named { get; } = new();
+
                 public Dictionary<string, int> Names { get; } = new(StringComparer.Ordinal);
 
                 public List<int> DeclaredSlots { get; } = new();

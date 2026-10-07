@@ -200,7 +200,7 @@ namespace ILAssembler
                     }
                 }
 
-                OpenScopes.Add(new LexicalScope(startOffset: 0));
+                OpenScopes.Add(new LexicalScope(startOffset: 0, order: 0));
             }
 
             public EntityRegistry.MethodDefinitionEntity Definition { get; }
@@ -222,6 +222,11 @@ namespace ILAssembler
             /// Gets the method's local slots, indexed by slot. The body's local signature has one entry per slot.
             /// </summary>
             public List<LocalSlot> LocalSlots { get; } = new();
+
+            /// <summary>
+            /// Gets or sets the source-order position of the next block to open; the root scope is 0.
+            /// </summary>
+            public int NextScopeOrder { get; set; } = 1;
         }
 
         private CurrentMethodContext? _currentMethod;

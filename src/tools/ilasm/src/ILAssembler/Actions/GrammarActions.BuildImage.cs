@@ -558,6 +558,13 @@ namespace ILAssembler
         }
 
         /// <summary>
+        /// Gets whether a PDB is requested: <see cref="Options.Debug"/>, <see cref="Options.DebugMode"/> or
+        /// <see cref="Options.Pdb"/> is set. Information that only the PDB uses, such as the lexical scopes of
+        /// method bodies, is kept only when this is <see langword="true"/>.
+        /// </summary>
+        private bool GeneratesPdb => _options.Debug || _options.DebugMode is not null || _options.Pdb;
+
+        /// <summary>
         /// Builds the Portable PDB and the debug directory that references it, when a PDB is requested.
         /// </summary>
         /// <remarks>
@@ -592,8 +599,7 @@ namespace ILAssembler
 
             // As in native ilasm, only /DEBUG (any mode) or /PDB produces a PDB. Without them, sequence
             // points from .line directives are parsed and validated but not emitted.
-            bool generatePdb = _options.Debug || _options.DebugMode is not null || _options.Pdb;
-            if (!generatePdb)
+            if (!GeneratesPdb)
             {
                 return null;
             }
@@ -667,7 +673,8 @@ namespace ILAssembler
         }
 
         /// <summary>
-        /// Adds the Document rows and one MethodDebugInformation row per MethodDef row to the PDB metadata.
+        /// Adds the Document rows, one MethodDebugInformation row per MethodDef row, and each method's LocalScope and
+        /// LocalVariable rows (<see cref="AddLocalScopes"/>) to the PDB metadata.
         /// </summary>
         /// <remarks>
         /// The documents are added in <see cref="PdbDocumentTable"/> order. A method without sequence points, or
@@ -702,29 +709,115 @@ namespace ILAssembler
                 if (sequencePoints.Count == 0 || !method.HasBody)
                 {
                     _pdbBuilder.AddMethodDebugInformation(default, default);
+                }
+                else
+                {
+                    int firstDocument = sequencePoints[0].DocumentIndex;
+                    bool singleDocument = true;
+                    for (int i = 1; i < sequencePoints.Count && singleDocument; i++)
+                    {
+                        singleDocument = sequencePoints[i].DocumentIndex == firstDocument;
+                    }
+
+                    BlobBuilder sequencePointsBlob = EncodeSequencePoints(
+                        sequencePoints,
+                        method.DebugInfo.LocalSignature,
+                        documentHandles,
+                        singleDocument);
+                    // docs/design/specs/PortablePdb-Metadata.md, MethodDebugInformation table: Document is "the row id of the
+                    // single document containing all sequence points of the method, or 0 if the method doesn't have sequence
+                    // points or spans multiple documents", and "_InitialDocument_ is only present if the _Document_ field of
+                    // the _MethodDebugInformation_ table is nil"; the blob then names the documents (EncodeSequencePoints).
+                    _pdbBuilder.AddMethodDebugInformation(
+                        singleDocument ? documentHandles[firstDocument] : default,
+                        _pdbBuilder.GetOrAddBlob(sequencePointsBlob));
+                }
+
+                AddLocalScopes((MethodDefinitionHandle)method.Handle, method.DebugInfo.LocalScopes);
+            }
+        }
+
+        /// <summary>
+        /// Adds a method's LocalScope rows, each followed by its LocalVariable rows, to the PDB metadata
+        /// (docs/design/specs/PortablePdb-Metadata.md, "LocalScope Table" and "LocalVariable Table").
+        /// </summary>
+        /// <param name="method">The method's MethodDef row. Methods must be added in MethodDef order.</param>
+        /// <param name="scopes">The method's lexical scopes (<see cref="EntityRegistry.MethodDebugInfo.LocalScopes"/>).</param>
+        /// <remarks>
+        /// <para>
+        /// As in native ilasm, a scope gets a row only when it declares a named local, and an unnamed local gets no
+        /// row; so the root scope, which spans the whole body, has a row only when the method-level <c>.locals</c>
+        /// name a local. Each variable's Index is its slot in the local signature, and its attributes are 0.
+        /// Import scopes and local constants are not recorded.
+        /// </para>
+        /// <para>
+        /// Two rules keep the rows valid where native ilasm writes rows the specification does not allow: a scope
+        /// without IL (a block with no instructions, or any scope of a method without a body) gets no row, because
+        /// a scope's length must be positive; and because a scope may not have two variables with the same name
+        /// or index, within a scope each name gets a LocalVariable row at the slot its first declaration has,
+        /// unless an earlier row of the scope already describes that slot. A name refers to its first declaration
+        /// in the scope, so a row never describes a local that its name does not refer to. Later declarations of
+        /// a name take no part, and neither do unnamed locals, which have no name to record: neither keeps a name
+        /// out of the rows.
+        /// </para>
+        /// <para>
+        /// The rows are sorted by start offset, then by length with the longest first, as the table requires;
+        /// scopes with the same range keep their source order, enclosing scope first. Scopes of a method nest or
+        /// are disjoint because blocks do, and the variables of a scope are added together right after it, so its
+        /// VariableList run holds exactly its variables.
+        /// </para>
+        /// </remarks>
+        private void AddLocalScopes(MethodDefinitionHandle method, List<EntityRegistry.LocalScopeRecord> scopes)
+        {
+            // Most methods name no local; they get no rows and need no sorting.
+            if (!scopes.Exists(static scope => !scope.Variables.IsEmpty))
+            {
+                return;
+            }
+
+            IEnumerable<EntityRegistry.LocalScopeRecord> ordered = scopes
+                .Where(scope => scope.Length > 0)
+                .OrderBy(scope => scope.StartOffset)
+                .ThenByDescending(scope => scope.Length)
+                .ThenBy(scope => scope.Order);
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            var slots = new HashSet<int>();
+            var variables = new List<EntityRegistry.LocalVariableRecord>();
+            foreach (EntityRegistry.LocalScopeRecord scope in ordered)
+            {
+                names.Clear();
+                slots.Clear();
+                variables.Clear();
+                foreach (EntityRegistry.LocalVariableRecord variable in scope.Variables)
+                {
+                    // Only the first declaration of a name takes part: it is the local the name refers to. A later
+                    // declaration of the name claims nothing, so it cannot keep another name's row out. The slot
+                    // is claimed only by a row that is written.
+                    if (names.Add(variable.Name) && slots.Add(variable.Slot))
+                    {
+                        variables.Add(variable);
+                    }
+                }
+
+                if (variables.Count == 0)
+                {
                     continue;
                 }
 
-                int firstDocument = sequencePoints[0].DocumentIndex;
-                bool singleDocument = true;
-                for (int i = 1; i < sequencePoints.Count && singleDocument; i++)
+                _pdbBuilder.AddLocalScope(
+                    method,
+                    importScope: default,
+                    variableList: MetadataTokens.LocalVariableHandle(_pdbBuilder.GetRowCount(TableIndex.LocalVariable) + 1),
+                    constantList: default,
+                    scope.StartOffset,
+                    scope.Length);
+                foreach (EntityRegistry.LocalVariableRecord variable in variables)
                 {
-                    singleDocument = sequencePoints[i].DocumentIndex == firstDocument;
+                    _pdbBuilder.AddLocalVariable(
+                        LocalVariableAttributes.None,
+                        variable.Slot,
+                        _pdbBuilder.GetOrAddString(variable.Name));
                 }
-
-                BlobBuilder sequencePointsBlob = EncodeSequencePoints(
-                    sequencePoints,
-                    method.DebugInfo.LocalSignature,
-                    documentHandles,
-                    singleDocument);
-
-                // docs/design/specs/PortablePdb-Metadata.md, MethodDebugInformation table: Document is "the row id of the
-                // single document containing all sequence points of the method, or 0 if the method doesn't have sequence
-                // points or spans multiple documents", and "_InitialDocument_ is only present if the _Document_ field of
-                // the _MethodDebugInformation_ table is nil"; the blob then names the documents (EncodeSequencePoints).
-                _pdbBuilder.AddMethodDebugInformation(
-                    singleDocument ? documentHandles[firstDocument] : default,
-                    _pdbBuilder.GetOrAddBlob(sequencePointsBlob));
             }
         }
 
