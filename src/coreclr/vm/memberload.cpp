@@ -1368,7 +1368,7 @@ MemberLoader::FindEventMethod(MethodTable * pMT, LPCUTF8 pszName, EnumEventMetho
     } CONTRACTL_END;
 
     // The format strings for the getter and setter. These must stay in synch with the
-    // EnumPropertyMethods enum defined in class.h
+    // EnumEventMethods enum defined in memberload.h
     static const LPCUTF8 aFormatStrings[] =
     {
         "add_%s",

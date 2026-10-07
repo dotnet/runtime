@@ -863,8 +863,6 @@ BOOL Module::IsCollectible()
 }
 
 #ifndef DACCESS_COMPILE
-#include "staticallocationhelpers.inl"
-
 // initialize Crst controlling the Dynamic IL hashtable
 void Module::InitializeDynamicILCrst()
 {

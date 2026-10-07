@@ -77,7 +77,7 @@ public:
     __checkReturn __success(return) inline BOOL GetU4(_Out_ UINT32 *pnValue);
     __checkReturn __success(return) inline BOOL GetU8(_Out_ UINT64 *pnValue);
 
-    // Reads compressed integer (1, 2 or 4 bytes of format code:CompressedInteger#Format - returns the size
+    // Reads compressed integer (1, 2 or 4 bytes of format ECMA-335 II.23.2 - returns the size
     // in *pcbCompressedValueSize) from the data blob without skipping the read data.
     // Returns FALSE if there's not enough data in the blob or the compression is invalid (starts with byte
     // 111? ????), doesn't initialize the value *pnValue nor the size of the compressed value
@@ -89,7 +89,7 @@ public:
     inline BOOL PeekCompressedU(
         _Out_ UINT32 *pnValue,
         _Out_ UINT32 *pcbCompressedValueSize);
-    // Reads compressed integer (1, 2 or 4 bytes of format code:CompressedInteger#Format) from the data blob
+    // Reads compressed integer (1, 2 or 4 bytes of format ECMA-335 II.23.2) from the data blob
     // and skips the read data.
     // Returns FALSE if there's not enough data in the blob or the compression is invalid (starts with byte
     // 111? ????), doesn't initialize the value *pnValue then.
@@ -97,7 +97,7 @@ public:
     __checkReturn
     __success(return)
     inline BOOL GetCompressedU(_Out_ UINT32 *pnValue);
-    // Reads compressed integer (1, 2 or 4 bytes of format code:CompressedInteger#Format - returns the size
+    // Reads compressed integer (1, 2 or 4 bytes of format ECMA-335 II.23.2 - returns the size
     // in *pcbCompressedValueSize) from the data blob and skips the read data.
     // Returns FALSE if there's not enough data in the blob or the compression is invalid (starts with byte
     // 111? ????), doesn't initialize the value *pnValue nor the size of the compressed value
@@ -193,14 +193,6 @@ public:
     //
     // Setters
     //
-
-    // Writes compressed integer (1, 2 or 4 bytes of format code:CompressedInteger#Format) to the data blob
-    // and skips the written data.
-    // Returns FALSE if there's not enough data in the blob or the value cannot be encoded as compressed
-    // integer (bigger than code:CompressedInteger::const_Max).
-    // Returns TRUE on success and moves the memory block behind the written data.
-    __checkReturn
-    __success(return)
 
     // Writes data from *pSource to the data blob and skips the written data.
     // Returns FALSE if there's not enough data in the blob.

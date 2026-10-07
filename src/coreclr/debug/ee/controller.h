@@ -909,10 +909,6 @@ public:
         return ItemIndex(p);
     }
 
-#ifdef _DEBUG
-public:
-#endif // _DEBUG
-
     // Count how many patches are in the table.
     // Use for asserts
     int GetNumberOfPatches();
@@ -1370,7 +1366,6 @@ public:
     void Dequeue();
 
   protected:
-
     DebuggerControllerPatch *AddILPrimaryPatch(Module *module,
                   mdMethodDef md,
                   MethodDesc *pMethodDescFilter,

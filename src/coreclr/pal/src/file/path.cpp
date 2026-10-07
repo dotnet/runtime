@@ -363,56 +363,6 @@ GetTempPathA(
 }
 
 /*++
-Function:
-  FILEGetDirectoryFromFullPathA
-
-Parse the given path. If it contains a directory part and a file part,
-put the directory part into the supplied buffer, and return the number of
-characters written to the buffer. If the buffer is not large enough,
-return the required size of the buffer including the NULL character. If
-there is no directory part in the path, return 0.
---*/
-DWORD FILEGetDirectoryFromFullPathA( LPCSTR lpFullPath,
-                     DWORD  nBufferLength,
-                     LPSTR  lpBuffer )
-{
-    size_t full_len, dir_len, i;
-    LPCSTR lpDirEnd;
-    DWORD  dwRetLength;
-
-    full_len = strlen( lpFullPath );
-
-    /* look for the first path separator backwards */
-    lpDirEnd = lpFullPath + full_len - 1;
-    while( lpDirEnd >= lpFullPath && *lpDirEnd != '/')
-    --lpDirEnd;
-
-    dir_len = lpDirEnd - lpFullPath + 1; /* +1 for fencepost */
-
-    if ( dir_len <= 0 )
-    {
-        dwRetLength = 0;
-    }
-    else if (dir_len >= nBufferLength)
-    {
-        dwRetLength = dir_len + 1; /* +1 for NULL char */
-    }
-    else
-    {
-    /* put the directory into the buffer, including 1 or more
-       trailing path separators */
-    for( i = 0; i < dir_len; ++i )
-        *(lpBuffer + i) = *(lpFullPath + i);
-
-    *(lpBuffer + i) = '\0';
-
-    dwRetLength = dir_len;
-    }
-
-    return( dwRetLength );
-}
-
-/*++
 FILECanonicalizePath
     Removes all instances of '/./', '/../' and '//' from an absolute path.
 

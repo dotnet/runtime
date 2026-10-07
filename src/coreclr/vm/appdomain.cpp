@@ -1293,12 +1293,6 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
         return NULL;
 }
 
-struct CallersData
-{
-    int skip;
-    MethodDesc* pMethod;
-};
-
 /*static*/
 Assembly* SystemDomain::GetCallersAssembly(StackCrawlMark *stackMark)
 {

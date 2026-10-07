@@ -1241,7 +1241,6 @@ public:
         //return m_TypeDefDList.FIND(szName);
     };
     unsigned NumTypeDefs() {return m_TypeDefDList.COUNT();};
-private:
 
 public:
     void RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars);

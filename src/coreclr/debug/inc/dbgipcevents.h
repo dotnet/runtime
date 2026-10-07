@@ -1326,7 +1326,6 @@ struct MSLAYOUT Ls_Rs_BaseBuffer
 {
 #ifdef RIGHT_SIDE_COMPILE
 protected:
-
     // retrieve the RS data and own it
     BYTE *TransferRSDataWorker()
     {

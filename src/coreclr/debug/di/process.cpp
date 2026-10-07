@@ -11843,16 +11843,6 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
     }
 #endif
 
-    // If we were stepping for exception retrigger and got the single step and it should be hidden then just ignore it.
-    // Anything that isn't cInbandExceptionRetrigger will cause the debug event to be dequeued, stepping turned off, and
-    // it will count as not retriggering
-    // TODO: I don't think the IsSSFlagNeeded() check is needed here though it doesn't break anything
-    if (pUnmanagedThread->IsSSFlagNeeded() && pUnmanagedThread->IsSSFlagHidden() && (dwExCode == STATUS_SINGLE_STEP))
-    {
-        LOG((LF_CORDB, LL_INFO10000, "CP::TE1stCAI: ignoring hidden single step\n"));
-        return REACTION(cIgnore);
-    }
-
     // Is this a breakpoint indicating that the Left Side is now synchronized?
     if ((dwExCode == STATUS_BREAKPOINT) &&
         (pExAddress == pIPCRuntimeOffsets->m_notifyRSOfSyncCompleteBPAddr))
@@ -12447,22 +12437,6 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     CordbWin32EventThread * pW32EventThread = this->m_pShim->GetWin32EventThread();
     _ASSERTE(pW32EventThread != NULL);
 
-    // if we were waiting for a retriggered exception but received any other event then turn
-    // off the single stepping and dequeue the IB event. Right now we only use the SS flag internally
-    // for stepping during possible retrigger.
-    if(reaction.GetType() != Reaction::cInbandExceptionRetrigger && pUnmanagedThread->IsSSFlagNeeded())
-    {
-        _ASSERTE(pUnmanagedThread->HasIBEvent());
-        CordbUnmanagedEvent* pUnmanagedEvent = pUnmanagedThread->IBEvent();
-        _ASSERTE(pUnmanagedEvent->IsIBEvent());
-        _ASSERTE(pUnmanagedEvent->IsEventContinuedUnhijacked());
-        _ASSERTE(pUnmanagedEvent->IsDispatched());
-        LOG((LF_CORDB, LL_INFO100000, "CP::HDEFID: IB event did not retrigger ue=0x%p\n", pUnmanagedEvent));
-
-        DequeueUnmanagedEvent(pUnmanagedThread);
-        pUnmanagedThread->EndStepping();
-    }
-
     switch(reaction.GetType())
     {
     // Common for flares.
@@ -12611,10 +12585,6 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         // so can't assert this
         //_ASSERTE(pUnmanagedThread->IsFirstChanceHijacked());
 
-        // we should not be stepping at the end of hijacks
-        _ASSERTE(!pUnmanagedThread->IsSSFlagHidden());
-        _ASSERTE(!pUnmanagedThread->IsSSFlagNeeded());
-
         // if we were hijacked then clean up
         if(pUnmanagedThread->IsFirstChanceHijacked())
         {
@@ -12760,8 +12730,6 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL: IB event completing, continuing ue=0x%p\n", pUnmanagedEvent));
 
         DequeueUnmanagedEvent(pUnmanagedThread);
-        // We should have been stepping
-        pUnmanagedThread->EndStepping();
         pW32EventThread->ForceDbgContinue(this, pUnmanagedThread,
             pUnmanagedEvent->IsExceptionCleared() ? DBG_CONTINUE : DBG_EXCEPTION_NOT_HANDLED, false);
 

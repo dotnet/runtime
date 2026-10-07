@@ -1702,7 +1702,6 @@ public:
     // Tell profiler about system created domains which are created before the profiler is
     // actually activated.
     static void NotifyProfilerStartup();
-
 #endif // PROFILING_SUPPORTED
 
 #ifndef DACCESS_COMPILE

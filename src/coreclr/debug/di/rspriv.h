@@ -10379,13 +10379,13 @@ enum CordbUnmanagedThreadState
     CUTS_None                        = 0x0000,
     CUTS_Deleted                     = 0x0001,
     CUTS_FirstChanceHijacked         = 0x0002,
-    // Set when interop debugging needs the SS flag to be enabled
-    // regardless of what the user wants it to be
-    CUTS_IsSSFlagNeeded              = 0x0004,
+    // unused                        = 0x0004,
     CUTS_GenericHijacked             = 0x0008,
+    // unused                        = 0x0010,
     CUTS_BlockingForSync             = 0x0020,
     CUTS_Suspended                   = 0x0040,
     CUTS_IsSpecialDebuggerThread     = 0x0080,
+    // unused                        = 0x0100,
     CUTS_HasIBEvent                  = 0x0200,
     CUTS_HasOOBEvent                 = 0x0400,
     CUTS_HasSpecialStackOverflowCase = 0x0800,
@@ -10394,9 +10394,7 @@ enum CordbUnmanagedThreadState
 #endif
     CUTS_SkippingNativePatch         = 0x2000,
     CUTS_HasContextSet               = 0x4000,
-    // Set when interop debugging is making use of the single step flag
-    // but the user has not set it
-    CUTS_IsSSFlagHidden              = 0x8000
+    // unused                        = 0x8000,
 
 };
 
@@ -10447,8 +10445,6 @@ public:
     HRESULT GetThreadContext(DT_CONTEXT * pContext);
     HRESULT SetThreadContext(DT_CONTEXT * pContext);
 
-    VOID EndStepping();
-
     // An accessor for &m_context, this value generally stores
     // a context we may need to restore after a hijack completes
     DT_CONTEXT * GetHijackCtx();
@@ -10474,8 +10470,6 @@ public:
 #endif
     BOOL IsSkippingNativePatch() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_SkippingNativePatch; }
     BOOL IsContextSet() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasContextSet; }
-    BOOL IsSSFlagNeeded() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagNeeded; }
-    BOOL IsSSFlagHidden() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagHidden; }
 
     void SetState(CordbUnmanagedThreadState state)
     {

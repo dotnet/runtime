@@ -407,10 +407,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define OPEN_ALWAYS                4
 #define TRUNCATE_EXISTING          5
 
-#define FILE_ATTRIBUTE_HIDDEN                   0x00000002
-#define FILE_ATTRIBUTE_SYSTEM                   0x00000004
-#define FILE_ATTRIBUTE_DIRECTORY                0x00000010
-#define FILE_ATTRIBUTE_ARCHIVE                  0x00000020
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
@@ -764,14 +760,6 @@ typedef struct _CONTEXT {
 
     UCHAR   ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
-
-// To support saving and loading xmm register context we need to know the offset in the ExtendedRegisters
-// section at which they are stored. This has been determined experimentally since I have found no
-// documentation thus far but it corresponds to the offset we'd expect if a fxsave instruction was used to
-// store the regular FP state along with the XMM registers at the start of the extended registers section.
-// Technically the offset doesn't really matter if no code in the PAL or runtime knows what the offset should
-// be either (as long as we're consistent across GetThreadContext() and SetThreadContext() and we don't
-// support any other values in the ExtendedRegisters) but we might as well be as accurate as we can.
 
 typedef struct _KNONVOLATILE_CONTEXT {
 
@@ -2466,8 +2454,6 @@ WideCharToMultiByte(
 #define EXCEPTION_UNWIND (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND | \
                           EXCEPTION_TARGET_UNWIND | EXCEPTION_COLLIDED_UNWIND)
 
-#define IS_UNWINDING(Flag) ((Flag & EXCEPTION_UNWIND) != 0)
-
 #define EXCEPTION_IS_SIGNAL 0x100
 
 #define EXCEPTION_MAXIMUM_PARAMETERS 15
@@ -2511,7 +2497,6 @@ typedef struct _RUNTIME_FUNCTION {
 #endif // HOST_ARM64
 
 #define SYNCHRONIZE               (0x00100000L)
-#define MAXIMUM_ALLOWED           (0x02000000L)
 
 PALIMPORT
 VOID
@@ -3355,8 +3340,6 @@ private:
         TargetIp = ex.TargetIp;
         RecordsOnStack = ex.RecordsOnStack;
         IsExternal = ex.IsExternal;
-        ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
-        ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
         ex.Clear();
     }
@@ -3382,9 +3365,6 @@ public:
     // the well known runtime helpers
     bool IsExternal;
 
-    void(*ManagedToNativeExceptionCallback)(void* context);
-    void* ManagedToNativeExceptionCallbackContext;
-
     PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord, bool onStack = false)
     {
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
@@ -3393,8 +3373,6 @@ public:
         TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
-        ManagedToNativeExceptionCallback = NULL;
-        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     PAL_SEHException()
@@ -3433,8 +3411,6 @@ public:
         TargetIp = 0;
         RecordsOnStack = false;
         IsExternal = false;
-        ManagedToNativeExceptionCallback = NULL;
-        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     bool HasTargetFrame()

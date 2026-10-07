@@ -28,8 +28,6 @@ HRESULT PESectionMan::Cleanup()
     return S_OK;
 }
 
-/*****************************************************************/
-
 /******************************************************************/
 // Apply the relocs for all the sections
 // Called by: ClassConverter after loading up during an in-memory conversion,

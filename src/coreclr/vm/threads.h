@@ -2758,7 +2758,6 @@ public:
     void ClearThreadCurrNotification();
 
 private:
-
     ThreadExceptionState  m_ExceptionState;
 
 private:
@@ -2813,7 +2812,6 @@ private:
 
 private:
 #ifndef DACCESS_COMPILE
-private:
     static UINT32 *GetThreadLocalCountRef(Thread *pThread, SIZE_T threadLocalCountOffset)
     {
         WRAPPER_NO_CONTRACT;
@@ -2858,7 +2856,6 @@ private:
         }
         return InterlockedCompareExchange64((LONGLONG *)overflowCount, 0, 0); // prevent tearing
     }
-
 #endif // !DACCESS_COMPILE
 
 public:
@@ -3245,7 +3242,6 @@ public:
 #endif
 
 public:
-
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
 private:

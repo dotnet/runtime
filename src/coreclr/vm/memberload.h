@@ -21,17 +21,6 @@
 #include "typectxt.h"
 
 //
-// This enum represents the property methods that can be passed to FindPropertyMethod().
-//
-
-enum EnumPropertyMethods
-{
-    PropertyGet = 0,
-    PropertySet = 1,
-};
-
-
-//
 // This enum represents the event methods that can be passed to FindEventMethod().
 //
 

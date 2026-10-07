@@ -11,7 +11,6 @@
 #pragma once
 
 #include "datablob.h"
-#include "compressedinteger.h"
 
 #include "debug_metadata.h"
 
@@ -259,7 +258,7 @@ DataBlob::GetU8(_Out_ UINT64 *pnValue)
 
 // --------------------------------------------------------------------------------------
 //
-// Reads compressed integer (1, 2 or 4 bytes of format code:CompressedInteger#Format) from the data blob
+// Reads compressed integer (1, 2 or 4 bytes of format ECMA-335 II.23.2) from the data blob
 // and skips the read data.
 // Returns FALSE if there's not enough data in the blob or the compression is invalid (starts with byte
 // 111? ????), doesn't initialize the value *pnValue then.
@@ -276,7 +275,7 @@ DataBlob::GetCompressedU(_Out_ UINT32 *pnValue)
 
 // --------------------------------------------------------------------------------------
 //
-// Reads compressed integer (1, 2 or 4 bytes of format code:CompressedInteger#Format - returns the size
+// Reads compressed integer (1, 2 or 4 bytes of format ECMA-335 II.23.2 - returns the size
 // in *pcbCompressedValueSize) from the data blob without skipping the read data.
 // Returns FALSE if there's not enough data in the blob or the compression is invalid (starts with byte
 // 111? ????), doesn't initialize the value *pnValue nor the size of the compressed value
@@ -292,7 +291,7 @@ DataBlob::PeekCompressedU(
     _Out_ UINT32 *pnValue,
     _Out_ UINT32 *pcbCompressedValueSize)
 {
-    // This algorithm has to be in sync with code:CompressedInteger#Format encoding definition.
+    // This algorithm implements the compressed integer encoding defined in ECMA-335 II.23.2.
     //
     // Note that this algorithm accepts technically invalid encodings, e.g.
     // encoding of value 0 is accepted as 0000 0000 (0x00, valid) and 1000 0000 0000 000 (0x8000, invalid).
@@ -348,7 +347,7 @@ DataBlob::PeekCompressedU(
 
 // --------------------------------------------------------------------------------------
 //
-// Reads compressed integer (1, 2 or 4 bytes of format code:CompressedInteger#Format - returns the size
+// Reads compressed integer (1, 2 or 4 bytes of format ECMA-335 II.23.2 - returns the size
 // in *pcbCompressedValueSize) from the data blob and skips the read data.
 // Returns FALSE if there's not enough data in the blob or the compression is invalid (starts with byte
 // 111? ????), doesn't initialize the value *pnValue nor the size of the compressed value

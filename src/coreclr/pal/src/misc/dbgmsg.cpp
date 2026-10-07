@@ -41,7 +41,6 @@ Abstract:
 
 using namespace CorUnix;
 
-/* append mode file I/O is safer */
 static const char FOPEN_FLAGS[] = "at";
 
 /* number of ENTRY nesting levels to indicate with a '.' */

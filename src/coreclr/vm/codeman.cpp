@@ -1440,9 +1440,6 @@ EEJitManager::EEJitManager()
 
     m_jit = NULL;
     m_JITCompiler      = NULL;
-#ifdef TARGET_AMD64
-    m_pEmergencyJumpStubReserveList = NULL;
-#endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     m_JITCompilerOther = NULL;
 #endif
@@ -2540,38 +2537,6 @@ void ThrowOutOfMemoryWithinRange()
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_OUT_OF_MEMORY_WITHIN_RANGE));
 }
 
-#ifdef TARGET_AMD64
-BYTE * EEJitManager::AllocateFromEmergencyJumpStubReserve(const BYTE * loAddr, const BYTE * hiAddr, SIZE_T * pReserveSize)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
-    } CONTRACTL_END;
-
-    for (EmergencyJumpStubReserve ** ppPrev = &m_pEmergencyJumpStubReserveList; *ppPrev != NULL; ppPrev = &(*ppPrev)->m_pNext)
-    {
-        EmergencyJumpStubReserve * pList = *ppPrev;
-
-        if (loAddr <= pList->m_ptr &&
-            pList->m_ptr + pList->m_size < hiAddr)
-        {
-            *ppPrev = pList->m_pNext;
-
-            BYTE * pBlock = pList->m_ptr;
-            *pReserveSize = pList->m_size;
-
-            delete pList;
-
-            return pBlock;
-        }
-    }
-
-    return NULL;
-}
-
-#endif // TARGET_AMD64
-
 static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2624,7 +2589,6 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     BYTE * pBaseAddr = NULL;
     DWORD dwSizeAcquiredFromInitialBlock = 0;
-    bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
 #if defined(TARGET_64BIT)
@@ -2668,19 +2632,11 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
             if (!pBaseAddr)
             {
-                // Conserve emergency jump stub reserve until when it is really needed
                 if (!pInfo->GetThrowOnOutOfMemoryWithinRange())
                     {
                         return NULL;
                     }
-#ifdef TARGET_AMD64
-                pBaseAddr = ExecutionManager::GetEEJitManager()->AllocateFromEmergencyJumpStubReserve(loAddr, hiAddr, &reserveSize);
-                if (!pBaseAddr)
-                    ThrowOutOfMemoryWithinRange();
-                fAllocatedFromEmergencyJumpStubReserve = true;
-#else
                 ThrowOutOfMemoryWithinRange();
-#endif // TARGET_AMD64
             }
         }
         else
@@ -2728,7 +2684,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
-        pHp->reserveForJumpStubs = fAllocatedFromEmergencyJumpStubReserve ? pHp->maxCodeHeapSize : GetDefaultReserveForJumpStubs(pHp->maxCodeHeapSize);
+        pHp->reserveForJumpStubs = GetDefaultReserveForJumpStubs(pHp->maxCodeHeapSize);
     }
 
     _ASSERTE(heapSize >= initialRequestSize);

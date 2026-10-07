@@ -2355,25 +2355,6 @@ public:
 private :
     Crst                m_JitLoadLock;
 
-#ifdef TARGET_AMD64
-private:
-    //
-    // List of reserved memory blocks to be used for jump stub allocation if no suitable memory block is found
-    // via the regular mechanism
-    //
-    struct EmergencyJumpStubReserve
-    {
-        EmergencyJumpStubReserve * m_pNext;
-        BYTE *   m_ptr;
-        SIZE_T   m_size;
-        SIZE_T   m_free;
-    };
-    EmergencyJumpStubReserve * m_pEmergencyJumpStubReserveList;
-
-public:
-    BYTE * AllocateFromEmergencyJumpStubReserve(const BYTE * loAddr, const BYTE * hiAddr, SIZE_T * pReserveSize);
-#endif
-
 public:
     ICorJitCompiler *   m_jit;
     HINSTANCE           m_JITCompiler;

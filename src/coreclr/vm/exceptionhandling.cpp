@@ -797,19 +797,6 @@ static VOID UpdateContextForPropagationCallback(
 
 //---------------------------------------------------------------------------------------
 //
-// Function to update the current context for exception propagation.
-//
-// Arguments:
-//      exception       - the PAL_SEHException representing the propagating exception.
-//      currentContext  - the current context to update.
-//
-static VOID UpdateContextForPropagationCallback(
-    PAL_SEHException& ex,
-    CONTEXT* startContext)
-{
-    UpdateContextForPropagationCallback(ex.ManagedToNativeExceptionCallback, ex.ManagedToNativeExceptionCallbackContext, startContext);
-}
-
 extern void* g_hostingApiReturnAddress;
 
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException)

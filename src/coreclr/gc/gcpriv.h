@@ -2575,6 +2575,7 @@ private:
     PER_HEAP_METHOD BOOL background_allowed_p();
 #endif //BACKGROUND_GC
 
+    PER_HEAP_METHOD void check_batch_mark_array_bits (uint8_t* start, uint8_t* end);
     PER_HEAP_ISOLATED_METHOD void send_full_gc_notification (int gen_num, BOOL due_to_alloc_p);
 
     PER_HEAP_METHOD void check_for_full_gc (int gen_num, size_t size);
@@ -2834,6 +2835,8 @@ private:
     PER_HEAP_METHOD void mark_through_object (uint8_t* oo, BOOL mark_class_object_p THREAD_NUMBER_DCL);
     PER_HEAP_METHOD BOOL process_mark_overflow (int condemned_gen_number);
     PER_HEAP_METHOD void process_mark_overflow_internal (int condemned_gen_number,
+    PER_HEAP_METHOD void verify_partial();
+    PER_HEAP_METHOD void verify_mark_bits_cleared (uint8_t* obj, size_t s);
                                          uint8_t* min_address, uint8_t* max_address);
 
 #ifdef SNOOP_STATS

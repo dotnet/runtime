@@ -704,9 +704,6 @@ BOOL StressLog::ReserveStressLogChunks (unsigned chunksToReserve)
     return msgs->chunkListLength >= (LONG)chunksToReserve;
 }
 
-void (*FSwitchToSOTolerant)();
-void (*FSwitchToSOIntolerant)();
-
 /*********************************************************************************/
 /* fetch a buffer that can be used to write a stress message, it is thread safe */
 FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, va_list Args)

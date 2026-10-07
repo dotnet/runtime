@@ -3435,10 +3435,6 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
             hr = HRESULT_FROM_GetLastError();
     }
 
-    if(IsSSFlagHidden())
-    {
-        UnsetSSFlag(pContext);
-    }
     LogContext(pContext);
 
     return hr;
@@ -3476,19 +3472,6 @@ HRESULT CordbUnmanagedThread::SetThreadContext(DT_CONTEXT* pContext)
     {
         LOG((LF_CORDB, LL_INFO10000, "CUT::STC: setting context from win32.\n"));
 
-        // If the user is also setting the SS flag then we no longer have to hide it
-        if(IsSSFlagEnabled(pContext))
-        {
-            ClearState(CUTS_IsSSFlagHidden);
-        }
-        // if the user is turning off the SS flag but we still want it on then leave it on
-        // but hidden
-        if(!IsSSFlagEnabled(pContext) && IsSSFlagNeeded())
-        {
-            SetState(CUTS_IsSSFlagHidden);
-            SetSSFlag(pContext);
-        }
-
         BOOL succ = DbiSetThreadContext(m_handle, pContext);
 
         if (!succ)
@@ -3499,30 +3482,6 @@ HRESULT CordbUnmanagedThread::SetThreadContext(DT_CONTEXT* pContext)
 
     return hr;
 }
-
-// Turns off the stepping flag internally. If the user was also not using it then
-// the flag is turned off on the context
-VOID CordbUnmanagedThread::EndStepping()
-{
-    _ASSERTE(!IsGenericHijacked() && !IsFirstChanceHijacked());
-    _ASSERTE(IsSSFlagNeeded());
-
-    DT_CONTEXT tempContext;
-    tempContext.ContextFlags = DT_CONTEXT_FULL;
-    BOOL succ = DbiGetThreadContext(m_handle, &tempContext);
-    _ASSERTE(succ);
-
-    if(IsSSFlagHidden())
-    {
-        UnsetSSFlag(&tempContext);
-        ClearState(CUTS_IsSSFlagHidden);
-    }
-    ClearState(CUTS_IsSSFlagNeeded);
-
-    succ = DbiSetThreadContext(m_handle, &tempContext);
-    _ASSERTE(succ);
-}
-
 
 // Writes some details of the given context into the debugger log
 VOID CordbUnmanagedThread::LogContext(DT_CONTEXT* pContext)
@@ -3572,9 +3531,6 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     // This also means we can't hijack in coopeative (since that's a can't-stop)
     _ASSERTE(!IsCantStop());
 
-    // we should not be stepping into hijacks
-    _ASSERTE(!IsSSFlagHidden());
-    _ASSERTE(!IsSSFlagNeeded());
     _ASSERTE(!IsContextSet());
 
     // snapshot the current context so we can start spoofing it
@@ -3658,10 +3614,6 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijack(EHijackReason::EHijackReaso
     // We'd better not be hijacking in a can't stop region!
     // This also means we can't hijack in coopeative (since that's a can't-stop)
     _ASSERTE(!IsCantStop());
-
-    // we should not be stepping into hijacks
-    _ASSERTE(!IsSSFlagHidden());
-    _ASSERTE(!IsSSFlagNeeded());
 
     // There's a bizarre race where the thread was suspended right as the thread was about to dispatch a
     // debug event. We still get the debug event, and then may try to hijack. Resume the thread so that
