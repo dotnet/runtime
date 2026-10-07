@@ -122,7 +122,7 @@ public:
     bool Initialize();
     void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
-    bool GatherCrashInfo(DumpRegionOperations& regionOperations);
+    bool GatherProcessState(DumpRegionOperations& regionOperations);
     bool SelectDumpRegions(DumpRegionOperations& regionOperations, DumpType dumpType);
     bool ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read);
     bool AddMapping(const MemoryRegion& region);

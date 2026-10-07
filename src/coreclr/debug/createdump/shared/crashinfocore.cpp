@@ -183,7 +183,7 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionOperations& regionOperations, cons
     return pagesAdded;
 }
 
-bool ProcessInfo::GatherCrashInfo(DumpRegionOperations& regionOperations)
+bool ProcessInfo::GatherProcessState(DumpRegionOperations& regionOperations)
 {
     for (ThreadSnapshot& thread : m_threads)
     {

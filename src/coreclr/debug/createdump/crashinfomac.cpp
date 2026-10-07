@@ -338,7 +338,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             ModuleRegion newModule(regionFlags, start, end, offset);
             if (!newModule.SetFileName(module.Name().c_str()))
             {
-                return;
+                throw std::bad_alloc();
             }
             std::set<ModuleRegion>::iterator existingModule = m_moduleMappings.find(newModule);
             if (existingModule == m_moduleMappings.end())
@@ -367,7 +367,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                         ModuleRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset);
                         if (!gap.SetFileName(newModule.FileName()))
                         {
-                            return;
+                            throw std::bad_alloc();
                         }
 
                         const auto& found = m_moduleMappings.find(gap);

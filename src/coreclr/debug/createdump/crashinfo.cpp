@@ -430,9 +430,7 @@ CrashInfo::EnumerateManagedModules()
                         std::string moduleName = ConvertString(wszUnicodeName);
 
                         // Change the module mapping name
-                        if (!AddOrReplaceModuleMapping(loadedPEAddress, moduleData.LoadedPESize, moduleName)) {
-                            TRACE("AddOrReplaceModuleMapping FAILED for module %s\n", moduleName.c_str());
-                        }
+                        AddOrReplaceModuleMapping(loadedPEAddress, moduleData.LoadedPESize, moduleName);
 
                         // Add managed module info
                         AddModuleInfo(true, loadedPEAddress, pClrDataModule, moduleName);
@@ -488,7 +486,7 @@ CrashInfo::UnwindAllThreads()
 //
 // Replace an existing module mapping with one with a different name.
 //
-bool
+void
 CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& name)
 {
     // Round to page boundary (single-file managed assemblies are not page aligned)
@@ -516,7 +514,7 @@ CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const 
         ModuleRegion newRegion(flags, start, end, 0);
         if (!newRegion.SetFileName(name.c_str()))
         {
-            return false;
+            throw std::bad_alloc();
         }
         m_cbModuleMappings += newRegion.Size();
 
@@ -532,7 +530,7 @@ CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const 
         ModuleRegion newRegion(existingRegion);
         if (!newRegion.SetFileName(name.c_str()))
         {
-            return false;
+            throw std::bad_alloc();
         }
 
         uint64_t oldRegionSize = found->Size();
@@ -549,7 +547,6 @@ CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const 
         }
         m_moduleMappings.insert(Move(newRegion));
     }
-    return true;
 }
 
 //
@@ -722,23 +719,17 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 void
 CrashInfo::CombineMemoryRegions()
 {
-    std::set<MemoryRegion> memoryRegionsNew;
-
     if (!::CombineMemoryRegions(
             m_memoryRegions,
-            memoryRegionsNew,
-            [&memoryRegionsNew](const MemoryRegion& region)
+            [](std::set<MemoryRegion>& regions, const MemoryRegion& region)
             {
-                assert(memoryRegionsNew.find(region) == memoryRegionsNew.end());
+                assert(regions.find(region) == regions.end());
                 // .second: true if insertion occurred, false if the element was already present
-                return memoryRegionsNew.insert(region).second;
+                return regions.insert(region).second;
             }))
     {
         assert(!"Could not combine memory regions");
-        return;
     }
-
-    m_memoryRegions = memoryRegionsNew;
 }
 
 //

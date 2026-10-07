@@ -7,7 +7,7 @@ bool GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t name
 
 bool ProcessInfo::Initialize()
 {
-#ifdef CREATEDUMP_RUNTIME_PAGE_SIZE
+#ifdef CREATEDUMP_NEEDS_RUNTIME_PAGE_SIZE
     // g_pageSize may have been initialized in the external createdump
     if (g_pageSize == 0)
     {

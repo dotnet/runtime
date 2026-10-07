@@ -146,11 +146,13 @@ GetDumpTypeString(DumpType dumpType)
 // This algorithm allows for both implementations of createdump to combine contiguous memory regions.
 // Each supplies its own list of memory regions and a way to insert the combined regions so linked
 // createdump doesn't need to depend on libstdc++ containers.
-template <typename TRegions, typename TCombinedRegions, typename TInsert>
-bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedRegions, TInsert insert)
+template <typename TRegions, typename TInsert>
+bool CombineMemoryRegions(TRegions& regions, TInsert insert)
 {
     TRACE("CombineMemoryRegions: STARTED\n");
     assert(!regions.empty());
+
+    TRegions combinedRegions;
 
     // MEMORY_REGION_FLAG_SHARED and MEMORY_REGION_FLAG_PRIVATE are internal flags that
     // don't affect the core dump so ignore them when comparing the flags.
@@ -168,7 +170,7 @@ bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedReg
         }
         else
         {
-            if (!insert(MemoryRegion(flags, start, end)))
+            if (!insert(combinedRegions, MemoryRegion(flags, start, end)))
             {
                 return false;
             }
@@ -179,17 +181,19 @@ bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedReg
     }
 
     assert(start != end);
-    if (!insert(MemoryRegion(flags, start, end)))
+    if (!insert(combinedRegions, MemoryRegion(flags, start, end)))
     {
         return false;
     }
+
+    regions = Move(combinedRegions);
 
     TRACE("CombineMemoryRegions: FINISHED\n");
 
     if (g_diagnosticsVerbose)
     {
         TRACE("Final Memory Regions:\n");
-        for (const MemoryRegion& region : combinedRegions)
+        for (const MemoryRegion& region : regions)
         {
             region.Trace();
         }

@@ -115,7 +115,7 @@ private:
     bool InitializeDAC(DumpType dumpType);
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
-    bool AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& pszName);
+    void AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& pszName);
     int InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool PageCanBeRead(uint64_t start);

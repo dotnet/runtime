@@ -7,8 +7,6 @@
 //
 // The Linux/MacOS create dump code
 //
-// There is a simplified version of this CreateDump function available in nativeaot_createdump_main.cpp.
-// If changes are made to this function, consider updating the other one.
 bool
 CreateDump(const CreateDumpOptions& options)
 {
@@ -19,7 +17,7 @@ CreateDump(const CreateDumpOptions& options)
     bool result = false;
 
     // Initialize PAGE_SIZE
-#ifdef CREATEDUMP_RUNTIME_PAGE_SIZE
+#ifdef CREATEDUMP_NEEDS_RUNTIME_PAGE_SIZE
     g_pageSize = minipal_getpagesize();
 #endif
     TRACE("PAGE_SIZE %lu\n", (unsigned long)PAGE_SIZE);
@@ -50,7 +48,7 @@ CreateDump(const CreateDumpOptions& options)
     }
 
     // The following three steps gather all the info about the process, threads (registers, etc.) and memory regions
-    if (!processInfo.GatherCrashInfo(crashInfo->GetDumpRegionOperations()))
+    if (!processInfo.GatherProcessState(crashInfo->GetDumpRegionOperations()))
     {
         goto exit;
     }

@@ -23,7 +23,7 @@ CrashInfo::CleanupAndResumeProcess()
 bool
 CrashInfo::EnumerateMemoryRegions()
 {
-    // On unix, this is done by ProcessInfo, so we don't need to do anything here.
+    // On unix, this is done by ProcessInfo, we don't need to do anything here.
     return true;
 }
 
