@@ -330,6 +330,18 @@ namespace System.Tests
             Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
+        [Fact]
+        public static void StructWithSelfReferencingGenericFieldPassedToGenericMethodTest()
+        {
+            var self = new StructWithSelfReferencingGenericField { value = new GenericFieldBox<StructWithSelfReferencingGenericField> { value = "self" } };
+            Assert.Equal("self", Identity(self).value.value);
+
+            var mutual = new StructWithMutualGenericFieldA { value = new GenericFieldBox<StructWithMutualGenericFieldB> { value = "mutual" } };
+            Assert.Equal("mutual", Identity(mutual).value.value);
+        }
+
+        private static T Identity<T>(T value) => value;
+
         public struct S
         {
             public int x;
@@ -442,6 +454,26 @@ namespace System.Tests
         {
             public StructOverriddenNotBitwiseComparable value1;
             public StructOverriddenNotBitwiseComparable value2;
+        }
+
+        public struct GenericFieldBox<T>
+        {
+            public object value;
+        }
+
+        public struct StructWithSelfReferencingGenericField
+        {
+            public GenericFieldBox<StructWithSelfReferencingGenericField> value;
+        }
+
+        public struct StructWithMutualGenericFieldA
+        {
+            public GenericFieldBox<StructWithMutualGenericFieldB> value;
+        }
+
+        public struct StructWithMutualGenericFieldB
+        {
+            public GenericFieldBox<StructWithMutualGenericFieldA> value;
         }
     }
 }
