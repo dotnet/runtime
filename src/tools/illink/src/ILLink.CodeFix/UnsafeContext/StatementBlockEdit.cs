@@ -71,7 +71,7 @@ namespace ILLink.CodeFix.UnsafeContext
             for (int i = first; i <= last; i++)
             {
                 StatementSyntax statement = i == first ? firstWrapped : MergePlaceholderWrappers(list[i]);
-                SyntaxTriviaList lines = i == first ? default : UnsafeContextFormatting.SplitLeadingTrivia(statement.GetLeadingTrivia()).Lines;
+                var (lines, inline) = i == first ? (default, firstInline) : UnsafeContextFormatting.SplitLeadingTrivia(statement.GetLeadingTrivia());
                 if (statement is UnsafeStatementSyntax placeholder && PlaceholderContexts.IsExtendableBlock(placeholder))
                 {
                     // An extended placeholder block is unwrapped; its comments other than the marker are kept.
@@ -82,9 +82,9 @@ namespace ILLink.CodeFix.UnsafeContext
                 }
                 else if (splits.TryGetValue(i, out DeclarationSplit? split))
                 {
-                    // Comments above a split declaration stay with the declaration.
+                    // Comments before a split declaration, above it or on its line, stay with the declaration.
                     declarations.AddRange(split.Declarations.Select((declaration, index) => declaration
-                        .WithLeadingTrivia((index == 0 ? lines : default).AddRange(UnsafeContextFormatting.Whitespace(indentation)))
+                        .WithLeadingTrivia(index == 0 ? lines.AddRange(UnsafeContextFormatting.Whitespace(indentation)).AddRange(inline) : UnsafeContextFormatting.Whitespace(indentation))
                         .WithTrailingTrivia(formatting.EndOfLine)));
                     body.AddRange(split.Remaining.Select(remaining => IndentFirstLine(formatting, remaining, inner, default)));
                 }

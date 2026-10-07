@@ -377,6 +377,84 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task SplitDeclaration_KeepsInlineComment()
+        {
+            return VerifyAsync("""
+                class C
+                {
+                    int M(int* p)
+                    {
+                        {|CS9360:*|}p = 0;
+                        /* important */ int a = {|CS9360:*|}p;
+                        return a;
+                    }
+                }
+                """, """
+                class C
+                {
+                    int M(int* p)
+                    {
+                        /* important */ int a;
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            *p = 0;
+                            a = *p;
+                        }
+                        return a;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public Task VarWithDirectivesInInitializer_GrowsInsteadOfSplitting()
+        {
+            // The inferred type is `long` in the inactive arm, so hoisting `int value;` would break that configuration.
+            return VerifyAsync("""
+                class C
+                {
+                    static unsafe int GetInt() => 0;
+                    static long GetLong() => 0;
+
+                    long M()
+                    {
+                        var value = (
+                #if NEVER
+                            GetLong()
+                #else
+                            {|CS9362:GetInt()|}
+                #endif
+                            );
+                        return value;
+                    }
+                }
+                """, """
+                class C
+                {
+                    static unsafe int GetInt() => 0;
+                    static long GetLong() => 0;
+
+                    long M()
+                    {
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            var value = (
+                #if NEVER
+                                GetLong()
+                #else
+                                GetInt()
+                #endif
+                                );
+                            return value;
+                        }
+                    }
+                }
+                """);
+        }
+
+        [Fact]
         public Task NullableVar_SplitKeepsAnnotation()
         {
             return VerifyAsync("""

@@ -144,6 +144,41 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task CallerArgumentExpression_InConstructorInitializer_NeverWrapsCapturedArgument()
+        {
+            // Initializer arguments are captured like any other, and no block can cover an initializer: no fix is offered.
+            const string source = """
+                using System.Runtime.CompilerServices;
+
+                class Base
+                {
+                    public Base(int value, [CallerArgumentExpression(nameof(value))] string expression = "") { }
+                }
+
+                class Derived : Base
+                {
+                    static unsafe int Get() => 0;
+
+                    public Derived()
+                        : base({|CS9362:Get()|})
+                    {
+                    }
+
+                    public Derived(bool flag)
+                        : this({|CS9362:Get()|}, flag)
+                    {
+                    }
+
+                    public Derived(int value, bool flag, [CallerArgumentExpression(nameof(value))] string expression = "")
+                        : base(value)
+                    {
+                    }
+                }
+                """;
+            return VerifyAsync(source, source);
+        }
+
+        [Fact]
         public Task ExtendsAdjacentPlaceholderBlock()
         {
             return VerifyAsync("""

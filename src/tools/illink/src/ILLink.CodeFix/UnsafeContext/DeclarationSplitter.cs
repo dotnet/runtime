@@ -59,7 +59,7 @@ namespace ILLink.CodeFix.UnsafeContext
             if (statement is ExpressionStatementSyntax { Expression: AssignmentExpressionSyntax { Left: DeclarationExpressionSyntax or TupleExpressionSyntax } deconstruction }
                 && deconstruction.IsKind(SyntaxKind.SimpleAssignmentExpression))
             {
-                if (LiftDeconstructionTarget(deconstruction.Left, pending, declarations, context) is not { } target)
+                if (LiftDeconstructionTarget(deconstruction.Left, deconstruction.Right, pending, declarations, context) is not { } target)
                     return null;
 
                 replacements[deconstruction.Left] = target.WithTriviaFrom(deconstruction.Left);
@@ -89,10 +89,11 @@ namespace ILLink.CodeFix.UnsafeContext
         /// <summary>
         /// Rewrites a deconstruction target: newly declared locals with a nameable type are hoisted and assigned by
         /// name, existing targets are unchanged, and discards and other declarations keep their declaration form,
-        /// so that a discard never binds to a symbol named <c>_</c>.
+        /// so that a discard never binds to a symbol named <c>_</c>. <paramref name="source"/> is the deconstructed value.
         /// </summary>
         private static ExpressionSyntax? LiftDeconstructionTarget(
             ExpressionSyntax target,
+            ExpressionSyntax source,
             HashSet<ILocalSymbol> pending,
             ImmutableArray<StatementSyntax>.Builder declarations,
             PlanningContext context)
@@ -103,7 +104,7 @@ namespace ILLink.CodeFix.UnsafeContext
                     List<ArgumentSyntax> arguments = [];
                     foreach (ArgumentSyntax argument in tuple.Arguments)
                     {
-                        if (LiftDeconstructionTarget(argument.Expression, pending, declarations, context) is not { } lifted)
+                        if (LiftDeconstructionTarget(argument.Expression, source, pending, declarations, context) is not { } lifted)
                             return null;
 
                         arguments.Add(argument.WithExpression(lifted.WithTriviaFrom(argument.Expression)));
@@ -111,7 +112,7 @@ namespace ILLink.CodeFix.UnsafeContext
 
                     return tuple.WithArguments(SyntaxFactory.SeparatedList(arguments, tuple.Arguments.GetSeparators()));
                 case DeclarationExpressionSyntax declaration:
-                    return LiftDesignation(declaration.Type, declaration.Designation, pending, declarations, context);
+                    return LiftDesignation(declaration.Type, declaration.Designation, source, pending, declarations, context);
                 default:
                     return target;
             }
@@ -121,6 +122,7 @@ namespace ILLink.CodeFix.UnsafeContext
         private static ExpressionSyntax? LiftDesignation(
             TypeSyntax type,
             VariableDesignationSyntax designation,
+            ExpressionSyntax source,
             HashSet<ILocalSymbol> pending,
             ImmutableArray<StatementSyntax>.Builder declarations,
             PlanningContext context)
@@ -131,7 +133,7 @@ namespace ILLink.CodeFix.UnsafeContext
                 List<ArgumentSyntax> elements = [];
                 foreach (VariableDesignationSyntax variable in parenthesized.Variables)
                 {
-                    if (LiftDesignation(type, variable, pending, declarations, context) is not { } lifted)
+                    if (LiftDesignation(type, variable, source, pending, declarations, context) is not { } lifted)
                         return null;
 
                     elements.Add(SyntaxFactory.Argument(lifted));
@@ -148,7 +150,7 @@ namespace ILLink.CodeFix.UnsafeContext
             }
 
             bool isPending = pending.Remove(local);
-            TypeSyntax? typeSyntax = local.Type.IsRefLikeType ? null : GetTypeSyntax(type, local, initializer: null, single, context);
+            TypeSyntax? typeSyntax = local.Type.IsRefLikeType ? null : GetTypeSyntax(type, local, source, single, context);
             if (typeSyntax is null)
                 return isPending ? null : inlineDeclaration;
 
@@ -281,15 +283,17 @@ namespace ILLink.CodeFix.UnsafeContext
 
         /// <summary>
         /// Whether an inferred type may differ in another build configuration: it (or a type argument) is declared in
-        /// an <c>#if</c> group or named through a <c>using</c> alias, or the initializer's member is in an <c>#if</c> group.
+        /// an <c>#if</c> group or named through a <c>using</c> alias, the initializer contains directives (so its text
+        /// differs per configuration), or the initializer's member is in an <c>#if</c> group.
         /// </summary>
         private static bool IsConfigurationDependent(ITypeSymbol type, ExpressionSyntax? initializer, PlanningContext context) =>
             GetTypeParts(type).Any(part =>
                 part.DeclaringSyntaxReferences.Any(context.IsConditionallyCompiled)
                 || context.AliasTargets.Contains(part, SymbolEqualityComparer.Default))
             || (initializer is not null
-                && context.Model.GetSymbolInfo(initializer, context.CancellationToken).Symbol is { } member
-                && member.DeclaringSyntaxReferences.Any(context.IsConditionallyCompiled));
+                && (initializer.ContainsDirectives
+                    || (context.Model.GetSymbolInfo(initializer, context.CancellationToken).Symbol is { } member
+                        && member.DeclaringSyntaxReferences.Any(context.IsConditionallyCompiled))));
 
         // The type itself and, recursively, its element, pointed-at and argument types.
         private static IEnumerable<ITypeSymbol> GetTypeParts(ITypeSymbol type)

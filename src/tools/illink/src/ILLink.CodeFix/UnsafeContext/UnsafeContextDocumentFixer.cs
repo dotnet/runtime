@@ -23,8 +23,6 @@ namespace ILLink.CodeFix.UnsafeContext
     /// </summary>
     internal static class UnsafeContextDocumentFixer
     {
-        private const int MaxValidationRounds = 12;
-
         /// <summary>Fixes the members containing <paramref name="diagnostics"/>; returns <see langword="null"/> if nothing could be fixed.</summary>
         /// <param name="focus">For a single code action, the diagnostic whose region is applied; <see langword="null"/> for Fix All.</param>
         public static async Task<UnsafeContextFixResult?> FixAsync(
@@ -85,12 +83,13 @@ namespace ILLink.CodeFix.UnsafeContext
 
         /// <summary>
         /// Validates the regions until every remaining region has a valid candidate. Returns the edited root and the
-        /// applied regions, or <see langword="null"/> when no region could be fixed.
+        /// applied regions, or <see langword="null"/> when no region could be fixed. Terminates because every failure
+        /// moves a region to a later candidate and each refinement is expanded at most once.
         /// </summary>
         private static (SyntaxNode Root, List<UnsafeContextRegion> Applied)? Converge(List<UnsafeContextRegion> regions, UnsafeContextValidator validator, CancellationToken cancellationToken)
         {
             Normalize(regions);
-            for (int round = 0; regions.Count > 0; round++)
+            while (regions.Count > 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 List<UnsafeContextRegion> applied = SelectApplicable(regions);
@@ -99,16 +98,9 @@ namespace ILLink.CodeFix.UnsafeContext
                 if (failed.Count == 0)
                     return (newRoot, applied);
 
-                foreach (UnsafeContextRegion region in failed)
-                {
-                    if (!regions.Contains(region))
-                        continue;
-
-                    if (round < MaxValidationRounds)
-                        Fail(regions, region);
-                    else
-                        regions.Remove(region);
-                }
+                // A region may already be gone because an earlier failure fell back to its ancestor.
+                foreach (UnsafeContextRegion region in failed.Where(regions.Contains))
+                    Fail(regions, region);
 
                 Normalize(regions);
             }

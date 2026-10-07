@@ -84,6 +84,57 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task ManyFailingWrappers_StillReachBodyConversion()
+        {
+            // Every parenthesized level is a wrapper candidate that fails as above; the conversion comes after all of them.
+            return VerifyAsync("""
+                class Base
+                {
+                    public virtual bool IsCollectible => false;
+                }
+
+                class Other
+                {
+                    public unsafe bool IsCollectible => true;
+                }
+
+                class C : Base
+                {
+                    Other ReflectedType => new Other();
+
+                    public override bool IsCollectible => (((((((((((((({|CS9362:ReflectedType.IsCollectible|}))))))))))))));
+                }
+                """, """
+                class Base
+                {
+                    public virtual bool IsCollectible => false;
+                }
+
+                class Other
+                {
+                    public unsafe bool IsCollectible => true;
+                }
+
+                class C : Base
+                {
+                    Other ReflectedType => new Other();
+
+                    public override bool IsCollectible
+                    {
+                        get
+                        {
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                return ((((((((((((((ReflectedType.IsCollectible))))))))))))));
+                            }
+                        }
+                    }
+                }
+                """);
+        }
+
+        [Fact]
         public Task SwitchCaseGuards_EachLabelIsAnAnchor()
         {
             return VerifyAsync("""
