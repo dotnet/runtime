@@ -77,7 +77,6 @@ namespace System.Threading
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return ObjWait(millisecondsTimeout, obj);
         }
@@ -125,6 +124,9 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
             if (!ObjectHeader.HasOwner(obj))
                 throw new SynchronizationLockException();
+
+            if (millisecondsTimeout != 0)
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             bool sendWaitEvents =
                 millisecondsTimeout != 0 &&

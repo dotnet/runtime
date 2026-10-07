@@ -140,7 +140,6 @@ namespace System.Threading
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return GetLockObject(obj).Wait(millisecondsTimeout, obj);
         }

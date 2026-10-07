@@ -47,7 +47,7 @@ namespace System.Threading.Tests
             e.CheckedWait();
 
             e.Reset();
-            Assert.False(e.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            e.AssertWaitOneTimeout();
         }
 
         [Fact]
@@ -87,7 +87,7 @@ namespace System.Threading.Tests
             Assert.Equal(1, WaitHandle.WaitAny(es, 0));
             Assert.Equal(1, WaitHandle.WaitAny(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
             Assert.False(WaitHandle.WaitAll(es, 0));
-            Assert.False(WaitHandle.WaitAll(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            ThreadTestHelpers.AssertWaitAllTimeout(es);
             for (int i = 0; i < es.Length; ++i)
             {
                 Assert.Equal(i == 1 || i == 2, es[i].WaitOne(0));
@@ -106,9 +106,9 @@ namespace System.Threading.Tests
                     new ManualResetEvent(false)
                 };
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, 0));
-            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            ThreadTestHelpers.AssertWaitAnyTimeout(es);
             Assert.False(WaitHandle.WaitAll(es, 0));
-            Assert.False(WaitHandle.WaitAll(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            ThreadTestHelpers.AssertWaitAllTimeout(es);
             for (int i = 0; i < es.Length; ++i)
             {
                 Assert.False(es[i].WaitOne(0));
