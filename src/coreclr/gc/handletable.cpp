@@ -30,10 +30,10 @@ DWORD g_dwHandles = 0;
 
 #ifdef _DEBUG
 void DEBUG_PostGCScanHandler(HandleTable *pTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, ScanCallbackInfo *info);
+void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level);
 #endif
 
 /*--------------------------------------------------------------------------*/
-void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level);
 
 
 
@@ -956,11 +956,6 @@ void DEBUG_PostGCScanHandler(HandleTable *pTable, const uint32_t *types, uint32_
     }
 }
 
-#endif // _DEBUG
-#endif // !DACCESS_COMPILE
-
-
-/*--------------------------------------------------------------------------*/
 void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
 {
     WRAPPER_NO_CONTRACT;
@@ -1007,3 +1002,9 @@ void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
         LOG((LF_GC, level, "==============================================================\n\n"));
     }
 }
+
+#endif // _DEBUG
+#endif // !DACCESS_COMPILE
+
+
+/*--------------------------------------------------------------------------*/
