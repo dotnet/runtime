@@ -1,9 +1,10 @@
 # Runtime delegate-type factory proposal
 
 This is an unapproved API proposal and cross-runtime prototype, not a shipping API.
-The prototype is on the local `api-proposal/runtime-delegate-factory` branch,
+The prototype is on the `api-proposal/runtime-delegate-factory` branch,
 based on upstream main commit `2eb7113245f7c536ab876dca5e3533fb96c81bbf`.
-It has not been published.
+This is exploratory evidence for discussion, not the likely direction we will
+take for this problem, and is not intended to merge as-is.
 
 ## Background and motivation
 
