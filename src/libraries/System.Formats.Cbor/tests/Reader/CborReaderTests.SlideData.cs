@@ -403,7 +403,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void PeekState_DanglingTagAtEndOfRootSequence_MatchesFinalBlockBehavior()
+        public static void PeekState_DanglingTagAtEndOfRootSequence_ThrowsCborContentException()
         {
             var options = new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, AllowMultipleRootLevelValues = true };
 
@@ -413,18 +413,38 @@ namespace System.Formats.Cbor.Tests
             reader.ReadTag();
             Assert.Equal(CborReaderState.NeedsMoreData, reader.PeekState());
 
-            // once the final block arrives, incremental readers match the shipped final-block behavior:
-            // the dangling tag is reported as the end of the sequence rather than as malformed data
+            // once the final block arrives, the dangling tag is reported as malformed data
             reader.SlideData(ReadOnlyMemory<byte>.Empty, isFinalBlock: true);
-            Assert.Equal(CborReaderState.Finished, reader.PeekState());
-            Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
+            Assert.Throws<CborContentException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.ReadInt32());
 
             // final mode behaves identically
             reader = new CborReader("01c1".HexToByteArray(), options, isFinalBlock: true);
             Helpers.VerifyValue(reader, 1);
             reader.ReadTag();
-            Assert.Equal(CborReaderState.Finished, reader.PeekState());
-            Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
+            Assert.Throws<CborContentException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.ReadInt32());
+        }
+
+        [Fact]
+        public static void PeekState_DanglingTagIsOnlyTokenOfRootSequence_ThrowsCborContentException()
+        {
+            var options = new CborReaderOptions { ConformanceMode = CborConformanceMode.Lax, AllowMultipleRootLevelValues = true };
+
+            // the tag is the only token consumed, and SlideData rebases the offset to zero
+            var reader = new CborReader("c1".HexToByteArray(), options, isFinalBlock: false);
+            reader.ReadTag();
+            reader.SlideData(ReadOnlyMemory<byte>.Empty, isFinalBlock: true);
+            Assert.Throws<CborContentException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.ReadInt32());
+            Assert.Throws<CborContentException>(() => reader.TrySkipValue());
+
+            // final mode behaves identically
+            reader = new CborReader("c1".HexToByteArray(), options, isFinalBlock: true);
+            reader.ReadTag();
+            Assert.Throws<CborContentException>(() => reader.PeekState());
+            Assert.Throws<CborContentException>(() => reader.ReadInt32());
+            Assert.Throws<CborContentException>(() => reader.TrySkipValue());
         }
 
         [Fact]
