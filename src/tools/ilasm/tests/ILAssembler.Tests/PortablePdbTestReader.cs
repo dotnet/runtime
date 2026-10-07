@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -12,8 +14,9 @@ using Xunit;
 namespace ILAssembler.Tests
 {
     /// <summary>
-    /// Reads a compilation's image and Portable PDB together, so that tests can look up a method's
-    /// MethodDebugInformation by method name and read document names and the sequence points blob.
+    /// Reads an image and its Portable PDB together, from a compilation or from the files the command line writes,
+    /// so that tests can look up a method's MethodDebugInformation by method name and read document names and the
+    /// sequence points blob.
     /// </summary>
     internal sealed class PortablePdbTestReader : IDisposable
     {
@@ -22,9 +25,14 @@ namespace ILAssembler.Tests
 
         /// <summary>Opens the image and the Portable PDB of a compilation that produced a PDB.</summary>
         public PortablePdbTestReader(CompilationResult result)
+            : this(new PEReader(DocumentCompilerTestHelpers.Serialize(result)), DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result))
         {
-            _image = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
-            _pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
+        }
+
+        private PortablePdbTestReader(PEReader image, MetadataReaderProvider pdbProvider)
+        {
+            _image = image;
+            _pdbProvider = pdbProvider;
             Image = _image.GetMetadataReader();
             Pdb = _pdbProvider.GetMetadataReader();
         }
@@ -32,6 +40,15 @@ namespace ILAssembler.Tests
         /// <summary>Compiles a single source named <c>test.il</c> and opens its image and PDB.</summary>
         public static PortablePdbTestReader Compile(string source, Options? options = null)
             => new(DocumentCompilerTestHelpers.CompileAndGetResult(source, options ?? new Options { Debug = true }));
+
+        /// <summary>
+        /// Opens an image file and a Portable PDB file, such as the ones the ilasm command line writes. Both files
+        /// are read into memory, so they are not held open.
+        /// </summary>
+        public static PortablePdbTestReader Open(string imagePath, string pdbPath)
+            => new(
+                new PEReader(ImmutableArray.Create(File.ReadAllBytes(imagePath))),
+                MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(File.ReadAllBytes(pdbPath))));
 
         /// <summary>Gets the image's metadata.</summary>
         public MetadataReader Image { get; }
