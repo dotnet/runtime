@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Formats.Tar
 {
@@ -19,6 +20,35 @@ namespace System.Formats.Tar
 
         // Used to access the data section of this entry in an unseekable file
         private TarReader? _readerOfOrigin;
+
+        internal sealed class ExtractionContext
+        {
+            private string? _resolvedDestinationDirectoryPath;
+
+            internal ExtractionContext(string destinationDirectoryPath)
+            {
+                DestinationDirectoryPath = destinationDirectoryPath;
+            }
+
+            internal string DestinationDirectoryPath { get; }
+
+            internal string ResolveDestinationDirectoryPath()
+            {
+                if (_resolvedDestinationDirectoryPath is not null)
+                {
+                    return _resolvedDestinationDirectoryPath;
+                }
+
+                string resolvedPath = ResolvePhysicalPath(DestinationDirectoryPath, out bool canReuse);
+                if (canReuse)
+                {
+                    // Archive entries cannot replace the destination directory or its ancestors.
+                    _resolvedDestinationDirectoryPath = resolvedPath;
+                }
+
+                return resolvedPath;
+            }
+        }
 
         // These formats have a limited numeric range due to the octal number representation.
         protected bool FormatIsOctalOnly => _header._format is TarEntryFormat.V7 or TarEntryFormat.Ustar;
@@ -319,9 +349,9 @@ namespace System.Formats.Tar
         internal abstract bool IsDataStreamSetterSupported();
 
         // Extracts the current entry to a location relative to the specified directory.
-        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarHardLinkMode hardLinkMode)
+        internal void ExtractRelativeToDirectory(ExtractionContext context, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarHardLinkMode hardLinkMode)
         {
-            (string destinationFullPath, string? linkTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
+            (string destinationFullPath, string? linkTargetPath) = GetDestinationAndLinkPaths(context);
 
             if (EntryType == TarEntryType.Directory)
             {
@@ -337,14 +367,14 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously extracts the current entry to a location relative to the specified directory.
-        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarHardLinkMode hardLinkMode, CancellationToken cancellationToken)
+        internal Task ExtractRelativeToDirectoryAsync(ExtractionContext context, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarHardLinkMode hardLinkMode, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
             }
 
-            (string destinationFullPath, string? linkTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
+            (string destinationFullPath, string? linkTargetPath) = GetDestinationAndLinkPaths(context);
 
             if (EntryType == TarEntryType.Directory)
             {
@@ -361,8 +391,9 @@ namespace System.Formats.Tar
         }
 
         // Gets the sanitized paths for the file destination and link target paths to be used when extracting relative to a directory.
-        private (string, string?) GetDestinationAndLinkPaths(string destinationDirectoryPath)
+        private (string, string?) GetDestinationAndLinkPaths(ExtractionContext context)
         {
+            string destinationDirectoryPath = context.DestinationDirectoryPath;
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
@@ -370,7 +401,7 @@ namespace System.Formats.Tar
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
                                                 Path.IsPathFullyQualified(name) ? name : Path.Join(destinationDirectoryPath, name));
-            if (fileDestinationPath is null || FilePathEscapesDirectory(destinationDirectoryPath, fileDestinationPath))
+            if (fileDestinationPath is null || FilePathEscapesDirectory(context, fileDestinationPath))
             {
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
             }
@@ -391,7 +422,7 @@ namespace System.Formats.Tar
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
-                if (linkDestination is null || FilePathEscapesDirectory(destinationDirectoryPath, linkDestination))
+                if (linkDestination is null || FilePathEscapesDirectory(context, linkDestination))
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
@@ -406,7 +437,7 @@ namespace System.Formats.Tar
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.Join(destinationDirectoryPath, linkName));
-                if (linkDestination is null || FilePathEscapesDirectory(destinationDirectoryPath, linkDestination))
+                if (linkDestination is null || FilePathEscapesDirectory(context, linkDestination))
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
@@ -420,12 +451,12 @@ namespace System.Formats.Tar
         // Prevent an archive from escaping the extraction root through symlinks that were created by earlier entries in the same archive.
         // This protection applies only to links introduced by the archive itself. It is not intended to defend against preexisting symlinks
         // already present on disk before extraction
-        private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
+        private static bool FilePathEscapesDirectory(ExtractionContext context, string fileDestinationPath)
         {
-            string resolvedDest = ResolvePhysicalPath(destinationDirectoryPath);
+            string resolvedDest = context.ResolveDestinationDirectoryPath();
 
             // Use the logical destination path for computing the relative path
-            string logicalDest = Path.GetFullPath(destinationDirectoryPath);
+            string logicalDest = Path.GetFullPath(context.DestinationDirectoryPath);
             string logicalPrefix = logicalDest.EndsWith(Path.DirectorySeparatorChar)
                 ? logicalDest
                 : logicalDest + Path.DirectorySeparatorChar;
@@ -446,22 +477,24 @@ namespace System.Formats.Tar
             }
 
             // Walk relative components, resolving symlinks at each step
-            string relative = normalizedFile.Substring(logicalPrefix.Length)
-                .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-            string[] components = relative.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
-                StringSplitOptions.RemoveEmptyEntries);
+            ReadOnlySpan<char> relative = normalizedFile.AsSpan(logicalPrefix.Length)
+                .TrimStart(s_directorySeparators);
 
             string current = resolvedDest;
 
-            foreach (string component in components)
+            foreach (Range range in relative.SplitAny(s_directorySeparators))
             {
-                current = Path.Combine(current, component);
+                ReadOnlySpan<char> component = relative[range];
+                if (component.IsEmpty)
+                {
+                    continue;
+                }
+
+                current = Path.Join(current, component);
                 current = ResolveSymlink(current);
 
-                string normalizedCurrent = Path.GetFullPath(current);
-                if (!normalizedCurrent.StartsWith(destPrefix, StringComparison.Ordinal) &&
-                    !normalizedCurrent.Equals(resolvedDest, StringComparison.Ordinal))
+                if (!current.StartsWith(destPrefix, StringComparison.Ordinal) &&
+                    !current.Equals(resolvedDest, StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -478,7 +511,7 @@ namespace System.Formats.Tar
             // are still resolved to their raw target, rather than being treated as a non-link.
             if (info.LinkTarget is null)
             {
-                return Path.GetFullPath(path);
+                return info.FullName;
             }
 
             FileSystemInfo target = info.ResolveLinkTarget(returnFinalTarget: true) ?? info;
@@ -487,26 +520,31 @@ namespace System.Formats.Tar
 
         // Resolves the full path of the specified path, resolving symlinks at each step.
         // This is needed to mitigate malicious entries in the archive that could lead to writing files outside of the intended directory.
-        private static string ResolvePhysicalPath(string path)
+        private static string ResolvePhysicalPath(string path, out bool canReuse)
         {
+            canReuse = true;
             string fullPath = Path.GetFullPath(path);
             string? root = Path.GetPathRoot(fullPath);
 
             if (root is null)
             {
+                canReuse = false;
                 return fullPath;
             }
 
-            string[] components = fullPath.Substring(root.Length)
-                .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            ReadOnlySpan<char> relative = fullPath.AsSpan(root.Length);
             string current = root;
-            foreach (string component in components)
+            foreach (Range range in relative.SplitAny(s_directorySeparators))
             {
-                current = Path.Combine(current, component);
-                if (Path.Exists(current))
+                ReadOnlySpan<char> component = relative[range];
+                if (component.IsEmpty)
                 {
-                    current = ResolveSymlink(current);
+                    continue;
                 }
+
+                current = Path.Join(current, component);
+                current = ResolveExistingPath(current, out bool isOrdinaryDirectory);
+                canReuse &= isOrdinaryDirectory;
             }
 
             return current;
@@ -690,9 +728,9 @@ namespace System.Formats.Tar
                     // Important: The DataStream will be written from its current position
                     DataStream?.CopyTo(fs);
                 }
-            }
 
-            AttemptSetLastWriteTime(destinationFileName, ModificationTime);
+                AttemptSetLastWriteTime(fs.SafeFileHandle, ModificationTime);
+            }
         }
 
         // Asynchronously extracts the current entry as a regular file into the specified destination.
@@ -717,16 +755,18 @@ namespace System.Formats.Tar
                     // Important: The DataStream will be written from its current position
                     await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
                 }
-            }
 
-            AttemptSetLastWriteTime(destinationFileName, ModificationTime);
+                // Exposing the handle otherwise flushes buffered data synchronously.
+                await fs.FlushAsync().ConfigureAwait(false);
+                AttemptSetLastWriteTime(fs.SafeFileHandle, ModificationTime);
+            }
         }
 
-        private static void AttemptSetLastWriteTime(string destinationFileName, DateTimeOffset lastWriteTime)
+        private static void AttemptSetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset lastWriteTime)
         {
             try
             {
-                File.SetLastWriteTime(destinationFileName, lastWriteTime.UtcDateTime);
+                File.SetLastWriteTime(fileHandle, lastWriteTime.UtcDateTime);
             }
             catch
             {
@@ -748,6 +788,12 @@ namespace System.Formats.Tar
                 PreallocationSize = _header._gnuSparseDataStream is null ? Length : 0,
                 Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
             };
+
+            if (_header._gnuSparseDataStream is null && fileStreamOptions.PreallocationSize < fileStreamOptions.BufferSize)
+            {
+                // Sizes 0 and 1 disable buffering needed by short-reading streams.
+                fileStreamOptions.BufferSize = (int)Math.Max(fileStreamOptions.PreallocationSize, 2);
+            }
 
             if (!OperatingSystem.IsWindows())
             {

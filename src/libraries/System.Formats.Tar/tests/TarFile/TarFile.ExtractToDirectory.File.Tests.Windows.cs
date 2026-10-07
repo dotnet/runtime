@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -45,6 +46,117 @@ namespace System.Formats.Tar.Tests
             }
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
             Assert.Empty(Directory.EnumerateFileSystemEntries(destDir));
+        }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task ExtractToDirectory_DestinationThroughSymbolicLink(bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string physicalDirectory = Path.Join(root.Path, "physical");
+            string logicalDirectory = Path.Join(root.Path, "logical");
+            string archive = Path.Join(root.Path, "input.tar");
+            byte[] expected = [1, 2, 3];
+            Directory.CreateDirectory(physicalDirectory);
+            Directory.CreateSymbolicLink(logicalDirectory, physicalDirectory);
+            using MemoryStream data = new MemoryStream(expected);
+            using (FileStream stream = new FileStream(archive, FileMode.CreateNew, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "nested/file.txt")
+                {
+                    DataStream = data,
+                    ModificationTime = TestModificationTime
+                });
+            }
+
+            await ExtractToDirectory(archive, logicalDirectory, overwriteFiles: false, async);
+
+            string destination = Path.Join(physicalDirectory, "nested", "file.txt");
+            Assert.Equal(expected, File.ReadAllBytes(destination));
+            Assert.Equal(TestModificationTime.UtcDateTime, File.GetLastWriteTimeUtc(destination));
+        }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task ExtractToDirectory_ReparseRootIsResolvedForEachEntry(bool ancestorLink, bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string firstPhysical = Path.Join(root.Path, "first");
+            string secondPhysical = Path.Join(root.Path, "second");
+            string logical = Path.Join(root.Path, "logical");
+            Directory.CreateDirectory(firstPhysical);
+            Directory.CreateDirectory(secondPhysical);
+            Directory.CreateSymbolicLink(logical, firstPhysical);
+            string destination = ancestorLink ? Path.Join(logical, "destination") : logical;
+            string firstDestination = ancestorLink ? Path.Join(firstPhysical, "destination") : firstPhysical;
+            string secondDestination = ancestorLink ? Path.Join(secondPhysical, "destination") : secondPhysical;
+            Directory.CreateDirectory(firstDestination);
+            Directory.CreateDirectory(secondDestination);
+            byte[] expected = [1, 2, 3];
+            long secondHeaderOffset;
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
+            {
+                using MemoryStream firstData = new MemoryStream(expected);
+                writer.WriteEntry(new UstarTarEntry(TarEntryType.RegularFile, "first.txt") { DataStream = firstData });
+                secondHeaderOffset = archive.Position;
+                using MemoryStream secondData = new MemoryStream(expected);
+                writer.WriteEntry(new UstarTarEntry(TarEntryType.RegularFile, "second.txt") { DataStream = secondData });
+            }
+
+            bool switched = false;
+            using RootChangeStream source = new(archive.ToArray(), secondHeaderOffset, () =>
+            {
+                Assert.Equal(expected, File.ReadAllBytes(Path.Join(firstDestination, "first.txt")));
+                Directory.Delete(logical);
+                Directory.CreateSymbolicLink(logical, secondPhysical);
+                switched = true;
+            });
+
+            await ExtractToDirectory(source, destination, overwriteFiles: false, async);
+
+            Assert.True(switched);
+            Assert.Equal(expected, File.ReadAllBytes(Path.Join(secondDestination, "second.txt")));
+            Assert.False(File.Exists(Path.Join(firstDestination, "second.txt")));
+        }
+
+        private sealed class RootChangeStream : MemoryStream
+        {
+            private readonly long _changePosition;
+            private readonly Action _changeRoot;
+            private bool _changed;
+
+            internal RootChangeStream(byte[] data, long changePosition, Action changeRoot)
+                : base(data, writable: false)
+            {
+                _changePosition = changePosition;
+                _changeRoot = changeRoot;
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                ChangeRootIfNeeded();
+                return base.Read(buffer);
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                ChangeRootIfNeeded();
+                return base.ReadAsync(buffer, cancellationToken);
+            }
+
+            private void ChangeRootIfNeeded()
+            {
+                if (!_changed && Position >= _changePosition)
+                {
+                    _changed = true;
+                    _changeRoot();
+                }
+            }
         }
     }
 }

@@ -110,5 +110,37 @@ namespace System.Formats.Tar.Tests
 
             Verify_Extract(destination, entry, entryType);
         }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        [InlineData(0, false)]
+        [InlineData(1, false)]
+        [InlineData(256, false)]
+        [InlineData(4095, false)]
+        [InlineData(4096, false)]
+        [InlineData(8192, false)]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        [InlineData(256, true)]
+        [InlineData(4095, true)]
+        [InlineData(4096, true)]
+        [InlineData(8192, true)]
+        public async Task ExtractBufferedData_RestoresModificationTime(int length, bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string destination = Path.Join(root.Path, "file.txt");
+            byte[] expected = Enumerable.Range(0, length).Select(value => (byte)(value % 251)).ToArray();
+            using MemoryStream source = new MemoryStream(expected);
+            PaxTarEntry entry = new(TarEntryType.RegularFile, "file.txt")
+            {
+                DataStream = source,
+                ModificationTime = TestModificationTime
+            };
+
+            await ExtractToFile(entry, destination, overwrite: false, async);
+
+            Assert.Equal(expected, File.ReadAllBytes(destination));
+            Assert.Equal(TestModificationTime.UtcDateTime, File.GetLastWriteTimeUtc(destination));
+        }
     }
 }

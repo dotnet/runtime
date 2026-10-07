@@ -110,6 +110,76 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Extract_NoFilesystemEntries_DoesNotCreateDestination(bool globalAttributes, bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string destination = Path.Join(root.Path, "missing", "destination");
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                if (globalAttributes)
+                {
+                    writer.WriteEntry(new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string> { ["custom"] = "value" }));
+                }
+            }
+            archive.Position = 0;
+
+            await ExtractToDirectory(archive, destination, overwriteFiles: false, async);
+
+            Assert.False(Directory.Exists(Path.Join(root.Path, "missing")));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Extract_MissingDestination_MultipleEntries(bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string destination = Path.Join(root.Path, "missing", "destination");
+            byte[] expected = [1, 2, 3];
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                foreach (string name in new[] { "first/file.txt", "second/file.txt" })
+                {
+                    using MemoryStream data = new MemoryStream(expected);
+                    writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, name) { DataStream = data });
+                }
+            }
+            archive.Position = 0;
+
+            await ExtractToDirectory(archive, destination, overwriteFiles: false, async);
+
+            Assert.Equal(expected, File.ReadAllBytes(Path.Join(destination, "first", "file.txt")));
+            Assert.Equal(expected, File.ReadAllBytes(Path.Join(destination, "second", "file.txt")));
+        }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Extract_ArchiveCannotReplaceDestinationRoot(bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string destination = Path.Join(root.Path, "destination");
+            byte[] expected = [1, 2, 3];
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                using MemoryStream data = new MemoryStream(expected);
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "file.txt") { DataStream = data });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "./") { LinkName = "inside" });
+            }
+            archive.Position = 0;
+
+            await Assert.ThrowsAsync<IOException>(() => ExtractToDirectory(archive, destination, overwriteFiles: true, async));
+
+            Assert.Equal(expected, File.ReadAllBytes(Path.Join(destination, "file.txt")));
+            Assert.Null(new DirectoryInfo(destination).LinkTarget);
+        }
+
+        [Theory]
         [MemberData(nameof(GetBooleanData))]
         public async Task ExtractToDirectory_DifferentlyCasedSiblingDirectory_Throws(bool async)
         {
