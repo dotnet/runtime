@@ -16,7 +16,7 @@ void ExternalMemoryHandle::Init()
     s_crst.Init(CrstExternalMemoryHandle, CrstFlags(CRST_UNSAFE_COOPGC | CRST_TAKEN_DURING_SHUTDOWN));
 }
 
-ExternalMemoryHandle* ExternalMemoryHandle::Add(PTR_MethodTable pMT, PTR_VOID pMemory, UINT gcFlags)
+ExternalMemoryHandle* ExternalMemoryHandle::Add(TypeHandle type, PTR_VOID pMemory)
 {
     CONTRACTL
     {
@@ -27,10 +27,10 @@ ExternalMemoryHandle* ExternalMemoryHandle::Add(PTR_MethodTable pMT, PTR_VOID pM
     }
     CONTRACTL_END;
 
-    _ASSERTE(pMT != nullptr);
+    _ASSERTE(!type.IsNull());
     _ASSERTE(pMemory != nullptr);
 
-    ExternalMemoryHandle* handle = new ExternalMemoryHandle(pMT, pMemory, gcFlags);
+    ExternalMemoryHandle* handle = new ExternalMemoryHandle(type, pMemory);
 
     {
         CrstHolder lock(&s_crst);
@@ -100,30 +100,30 @@ void ExternalMemoryHandle::GCScanRoot(promote_func *fn, ScanContext *sc)
 #ifndef DACCESS_COMPILE
     if (sc->promotion)
     {
-        // Native storage has no object header to keep its MethodTable's loader allocator alive.
-        GcReportLoaderAllocator(fn, sc, m_pMT->GetLoaderAllocator());
+        // Native storage has no object header to preserve its type's loader allocator.
+        GcReportLoaderAllocator(fn, sc, m_type.GetLoaderAllocator());
     }
 #endif // !DACCESS_COMPILE
 
     PTR_VOID fromAddress = m_pMemory;
-    if (m_pMT->IsValueType())
+    if (m_type.IsByRef())
     {
-        ReportPointersFromValueType(fn, sc, m_pMT, m_pMemory);
+        PromoteCarefully(fn, (PTR_PTR_Object)m_pMemory, sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
+    }
+    else if (m_type.IsValueType())
+    {
+        ReportPointersFromValueType(fn, sc, m_type.GetMethodTable(), m_pMemory);
+    }
+    else if (!m_type.IsTypeDesc())
+    {
+        (*fn)((PTR_PTR_Object)m_pMemory, sc, 0);
     }
     else
     {
-        if (m_gcFlags != 0)
-        {
-            _ASSERTE(m_gcFlags & GC_CALL_INTERIOR);
-            PromoteCarefully(fn, (PTR_PTR_Object)m_pMemory, sc, m_gcFlags | CHECK_APP_DOMAIN);
-        }
-        else
-        {
-            (*fn)((PTR_PTR_Object)m_pMemory, sc, 0);
-        }
-
-        PTR_VOID toAddress = m_pMemory;
-        LOG((LF_GC, INFO3, "External Memory Handle promoted" FMT_ADDR "to" FMT_ADDR "\n",
-            DBG_ADDR(fromAddress), DBG_ADDR(toAddress)));
+        _ASSERTE(m_type.IsPointer() || m_type.GetSignatureCorElementType() == ELEMENT_TYPE_FNPTR);
     }
+
+    PTR_VOID toAddress = m_pMemory;
+    LOG((LF_GC, INFO3, "External Memory Handle promoted" FMT_ADDR "to" FMT_ADDR "\n",
+        DBG_ADDR(fromAddress), DBG_ADDR(toAddress)));
 }
