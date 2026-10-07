@@ -5,7 +5,7 @@
 #ifndef __DBG_TRANSPORT_MANAGER_INCLUDED
 #define __DBG_TRANSPORT_MANAGER_INCLUDED
 
-#ifdef FEATURE_DBGIPC_TRANSPORT_DI
+#ifdef HOST_UNIX
 
 #ifdef HOST_UNIX
 #include <pthread.h>
@@ -90,6 +90,6 @@ private:
 
 extern DbgTransportTarget g_DbgTransportTarget;
 
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
 #endif // __DBG_TRANSPORT_MANAGER_INCLUDED

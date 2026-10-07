@@ -15,7 +15,7 @@
 #include <minipal/guid.h>
 #include "debugwait.h"
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
 
 #include "processdescriptor.h"
 
@@ -861,6 +861,6 @@ extern void (*g_pfnAbortTransportCallback)(void);
 #endif // HOST_UNIX
 #endif // !RIGHT_SIDE_COMPILE
 
-#endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#endif // defined(HOST_UNIX)
 
 #endif // __DBG_TRANSPORT_SESSION_INCLUDED

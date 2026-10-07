@@ -116,14 +116,14 @@ void CordbStackWalk::DeleteAll()
         HRESULT hr = S_OK;
         EX_TRY
         {
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
             // For Mac debugging, it's not safe to call into the DAC once
             // code:INativeEventPipeline::TerminateProcess is called.  This is because the transport will not
             // work anymore.  The sole purpose of calling DeleteStackWalk() is to release the resources and
             // memory allocated for the stackwalk.  In the remote debugging case, the memory is allocated in
             // the debuggee process.  If the process is already terminated, then it's ok to skip the call.
             if (!GetProcess()->m_exiting)
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
             {
                 // This Delete call shouldn't actually throw. Worst case, the DDImpl leaked memory.
                 IfFailThrow(GetProcess()->GetDAC()->DeleteStackWalk(m_pSFIHandle));
@@ -626,11 +626,13 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
             // If justAfterILThrow is true, it means nativeOffset points to the return address of IL_Throw
             // (or another JIT exception helper) after an exception has been thrown.
             // In such cases we want to adjust nativeOffset, so it will point an actual exception callsite.
-            // By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
+            // By subtracting the result of GetStackwalkControlPCAdjustOffset() from nativeOffset you can get
             // an address somewhere inside CALL instruction.
             // This ensures more consistent placement of exception line highlighting in Visual Studio
+            ULONG32 offset = 0;
+            IfFailThrow(GetProcess()->GetStackwalkControlPCAdjustOffset(&offset));
             DWORD nativeOffsetToMap = pJITFuncData->justAfterILThrow ?
-                               (DWORD)pJITFuncData->nativeOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET :
+                               (DWORD)pJITFuncData->nativeOffset - offset :
                                (DWORD)pJITFuncData->nativeOffset;
             CorDebugMappingResult mappingType;
             ULONG uILOffset = pNativeCode->GetSequencePoints()->MapNativeOffsetToIL(

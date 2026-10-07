@@ -14,14 +14,6 @@
 #include "stdafx.h"
 #include "primitives.h"
 
-#if defined(TARGET_X86)
-static const ULONG32 REGISTER_X86_MAX  = REGISTER_X86_FPSTACK_7 + 1;
-static const ULONG32 MAX_MASK_COUNT    = (REGISTER_X86_MAX + 7) >> 3;
-#elif defined(TARGET_AMD64)
-static const ULONG32 REGISTER_AMD64_MAX = REGISTER_AMD64_XMM15 + 1;
-static const ULONG32 MAX_MASK_COUNT     = (REGISTER_AMD64_MAX + 7) >> 3;
-#endif
-
 ShimStackWalk::ShimStackWalk(ShimProcess * pProcess, ICorDebugThread * pThread)
   : m_pChainEnumList(NULL),
     m_pFrameEnumList(NULL)
@@ -1119,12 +1111,18 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
             // We need to send an extra enter-managed chain.
             _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
             BYTE * sp = reinterpret_cast<BYTE *>(CORDB_ADDRESS_TO_PTR(CORDbgGetSP(&(pChainInfo->m_leafNativeContext))));
-#if !defined(TARGET_ARM) &&  !defined(TARGET_ARM64)
+            IDacDbiInterface::TargetInfo targetInfo;
             // Dev11 324806: on ARM we use the caller's SP for a frame's ending delimiter so we cannot
-            // subtract 4 bytes from the chain's ending delimiter else the frame might never be in range.
+            // subtract from the chain's ending delimiter else the frame might never be in range.
             // TODO: revisit overlapping ranges on ARM, it would be nice to make it consistent with the other architectures.
-            sp -= sizeof(LPVOID);
-#endif
+            CordbProcess * pProcess = static_cast<CordbProcess *>(m_pProcess->GetProcess());
+            if (pProcess != NULL &&
+                SUCCEEDED(pProcess->GetTargetInfo(&targetInfo)) &&
+                targetInfo.arch != IDacDbiInterface::kArchArm &&
+                targetInfo.arch != IDacDbiInterface::kArchArm64)
+            {
+                sp -= targetInfo.pointerSize;
+            }
             FramePointer fp = FramePointer::MakeFramePointer(sp);
 
             AppendChainWorker(pStackWalkInfo,

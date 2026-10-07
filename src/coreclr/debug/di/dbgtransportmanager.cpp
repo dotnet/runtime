@@ -5,7 +5,7 @@
 #include "dbgtransportsession.h"
 #include "dbgtransportmanager.h"
 
-#ifdef FEATURE_DBGIPC_TRANSPORT_DI
+#ifdef HOST_UNIX
 
 #ifdef HOST_UNIX
 #include <errno.h>
@@ -312,4 +312,4 @@ DbgTransportTarget::ProcessEntry *DbgTransportTarget::LocateProcessByPID(DWORD d
     return NULL;
 }
 
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
