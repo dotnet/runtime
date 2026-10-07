@@ -548,8 +548,11 @@ namespace System.Security.Cryptography.Tests
             Span<byte> actualTag = new byte[expectedTag.Length];
             Span<byte> ciphertext = Span<byte>.Empty;
 
-            AesGcm aesGcm = new AesGcm(key, expectedTag.Length);
-            aesGcm.Encrypt(nonce, plaintext, ciphertext, actualTag, aad);
+            using (AesGcm aesGcm = new(key, expectedTag.Length))
+            {
+                aesGcm.Encrypt(nonce, plaintext, ciphertext, actualTag, aad);
+            }
+
             AssertExtensions.SequenceEqual(expectedTag, actualTag);
         }
 
@@ -563,8 +566,10 @@ namespace System.Security.Cryptography.Tests
             ReadOnlySpan<byte> tag = "58e2fccefa7e3061367f1d57a4e7455a".HexToByteArray();
             ReadOnlySpan<byte> ciphertext = ReadOnlySpan<byte>.Empty;
 
-            AesGcm aesGcm = new AesGcm(key, tag.Length);
-            aesGcm.Decrypt(nonce, ciphertext, tag, plaintext, aad);
+            using (AesGcm aesGcm = new(key, tag.Length))
+            {
+                aesGcm.Decrypt(nonce, ciphertext, tag, plaintext, aad);
+            }
         }
 
         public static IEnumerable<object[]> GetValidNonceSizes()
