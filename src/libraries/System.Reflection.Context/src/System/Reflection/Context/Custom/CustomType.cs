@@ -186,6 +186,7 @@ namespace System.Reflection.Context.Custom
             return AddNewPropertyAccessors(method, name, bindingAttr, binder, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             MethodInfo? method = base.GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
