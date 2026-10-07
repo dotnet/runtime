@@ -3360,6 +3360,7 @@ void ReleaseDebuggerExternalMemoryHandle(ExternalMemoryHandle* pHandle);
 class DebuggerExternalMemoryOwner
 {
 public:
+    static DebuggerExternalMemoryOwner *Create(MethodTable *pMT, SIZE_T size);
     DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory);
     ~DebuggerExternalMemoryOwner();
 
@@ -3496,21 +3497,21 @@ public:
 class DebuggerFuncEvalResult
 {
 public:
-    DebuggerFuncEvalResult(DebuggerEval* pDE, OBJECTREF loaderAllocator);
+    DebuggerFuncEvalResult(DebuggerEval* pDE, TypeHandle resultType);
     ~DebuggerFuncEvalResult();
 
     DebuggerFuncEvalResult(const DebuggerFuncEvalResult&) = delete;
     DebuggerFuncEvalResult& operator=(const DebuggerFuncEvalResult&) = delete;
 
-    OBJECTREF m_loaderAllocator;
-
 private:
-    ExternalMemoryHandle* m_loaderAllocatorHandle;
     ExternalMemoryHandle* m_resultHandle;
 };
 
 typedef Wrapper<DebuggerFuncEvalResult*, DoNothing<DebuggerFuncEvalResult*>,
     DeleteInteropSafe<DebuggerFuncEvalResult>> DebuggerFuncEvalResultHolder;
+
+typedef Wrapper<DebuggerExternalMemoryOwner*, DoNothing<DebuggerExternalMemoryOwner*>,
+    DeleteInteropSafe<DebuggerExternalMemoryOwner>> DebuggerExternalMemoryOwnerHolder;
 
 /* ------------------------------------------------------------------------ *
  * New/delete overrides to use the debugger's private heap

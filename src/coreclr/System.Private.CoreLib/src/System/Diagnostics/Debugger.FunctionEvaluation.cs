@@ -17,7 +17,6 @@ namespace System.Diagnostics
             internal struct Context
             {
                 internal IntPtr Evaluation;
-                internal IntPtr Method;
 #pragma warning disable CS8500
                 internal object?* Objects;
 #pragma warning restore CS8500
@@ -25,12 +24,10 @@ namespace System.Diagnostics
                 internal void** Homes;
                 internal ulong* CapturedArguments;
                 internal void** ResultOwner;
+                internal void** TemporaryResultOwner;
                 internal void** ResultByRefs;
                 internal void* ResultData;
                 internal void* ResultHandle;
-#pragma warning disable CS8500
-                internal object?* LoaderAllocator;
-#pragma warning restore CS8500
                 internal uint ArgumentCount;
                 internal uint ParameterCount;
                 internal EvaluationFlags Flags;
@@ -46,6 +43,7 @@ namespace System.Diagnostics
                 Interface = 8,
                 Shared = 16,
                 ExternalResult = 32,
+                ValueTypeResult = 64,
             }
 
             [Flags]
@@ -90,26 +88,22 @@ namespace System.Diagnostics
             private readonly bool _hasReceiver;
             private readonly Argument[] _arguments;
             private readonly object?[] _objects;
-            private readonly object?[] _originalNullables;
             private readonly InvokerEmitUtil.InvokeFunc_Debugger _invoke;
-            // Holds the new-object/boxed-value-type/object-typed result across the gap between
-            // the constructor and Invoke(). An instance field is tracked like any other live
-            // managed reference for as long as this FunctionEvaluation is reachable, so it needs
-            // no native-side rooting the way a raw Context-pointer slot would.
-            private object? _resultObject;
-
             internal bool IsNewObject() => (_context->Flags & EvaluationFlags.NewObject) != 0;
 
             private bool UsesExternalResult => (_context->Flags & EvaluationFlags.ExternalResult) != 0;
 
+            private bool UsesValueTypeResult => (_context->Flags & EvaluationFlags.ValueTypeResult) != 0;
+
             [DebuggerHidden]
             internal static void Run(Context* context)
             {
-                const int MaxStackArguments = 16;
+                const int MaxStackArguments = 14;
                 int argumentCount = checked((int)context->ArgumentCount);
                 int storageCount = checked(argumentCount + 2);
+                InlineArray16<IntPtr> inlineStorage = default;
                 Span<IntPtr> storage = argumentCount <= MaxStackArguments
-                    ? stackalloc IntPtr[MaxStackArguments + 2]
+                    ? ((Span<IntPtr>)inlineStorage).Slice(0, storageCount)
                     : new IntPtr[storageCount];
                 storage.Clear();
 
@@ -137,18 +131,11 @@ namespace System.Diagnostics
                 _arguments = new Argument[argumentCount];
                 CapturePrimitiveArguments();
                 RuntimeType? declaringType = null;
-                RuntimeType? allocationType = null;
-                GetMethod(context, (uint)sizeof(Context),
-                    ObjectHandleOnStack.Create(ref declaringType), ObjectHandleOnStack.Create(ref allocationType));
+                IRuntimeMethodInfo? methodOwner = null;
+                GetMethod(context,
+                    ObjectHandleOnStack.Create(ref declaringType), ObjectHandleOnStack.Create(ref methodOwner));
                 Debug.Assert(declaringType is not null);
-
-                object? newObject = null;
-                if (IsNewObject() && !UsesExternalResult)
-                {
-                    Debug.Assert(allocationType is not null);
-                    newObject = AllocateObject(allocationType);
-                }
-
+                Debug.Assert(methodOwner is not null);
                 bool isStatic = (context->Flags & EvaluationFlags.Static) != 0;
                 if ((ulong)context->ArgumentCount + (IsNewObject() ? 1UL : 0UL) !=
                     (ulong)context->ParameterCount + (isStatic ? 0UL : 1UL))
@@ -156,12 +143,12 @@ namespace System.Diagnostics
                     throw new TargetParameterCountException(SR.Arg_ParmCnt);
                 }
 
-                MethodBase? method = RuntimeType.GetMethodBase(declaringType, new RuntimeMethodHandleInternal(context->Method));
+                MethodBase? method = RuntimeType.GetMethodBase(declaringType, methodOwner);
                 Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
+                Debug.Assert(!IsNewObject() || method is RuntimeConstructorInfo);
                 _method = method;
                 _hasReceiver = !isStatic && !IsNewObject();
                 _objects = new object?[argumentCount];
-                _originalNullables = new object?[argumentCount];
 
                 if (_hasReceiver)
                 {
@@ -174,31 +161,7 @@ namespace System.Diagnostics
                     PrepareArgument(0, declaringType, isByRef: false, isReceiver: true);
                     ValidateReceiver(declaringType);
                 }
-                else if (IsNewObject())
-                {
-                    if (UsesExternalResult)
-                    {
-                        Debug.Assert(declaringType.IsByRefLike);
-                        SetStorage(0, ref Unsafe.AsRef<byte>(context->ResultData));
-                    }
-                    else
-                    {
-                        Debug.Assert(newObject is not null);
-                        _resultObject = newObject;
-                        if (declaringType.IsValueType)
-                        {
-                            SetStorage(0, ref newObject.GetRawData());
-                        }
-                        else
-                        {
-                            SetStorage(0, ref _resultObject);
-                        }
-                    }
-                }
-
-                RuntimeType? returnType = null;
-                GetReturnType(context, ObjectHandleOnStack.Create(ref returnType));
-                Debug.Assert(returnType is not null);
+                PrepareResult(context);
 
                 ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
                 for (int i = 0; i < parameters.Length; i++)
@@ -215,11 +178,6 @@ namespace System.Diagnostics
                     throw new ArgumentException(SR.Argument_CannotCreateTypedReference);
                 }
 
-                if (!IsNewObject() && !UsesExternalResult && returnElementType == CorElementType.ELEMENT_TYPE_VALUETYPE)
-                {
-                    _resultObject = AllocateObject(returnType);
-                }
-
                 _invoke = method is RuntimeMethodInfo methodInfo
                     ? methodInfo.Invoker.GetDebuggerInvokeDelegate()
                     : ((RuntimeConstructorInfo)method).GetDebuggerInvokeDelegate();
@@ -230,30 +188,38 @@ namespace System.Diagnostics
             {
                 int resultSlot = checked((int)_context->ParameterCount + 1);
                 CorElementType returnType = (CorElementType)_context->ReturnElementType;
-                if (UsesExternalResult)
+                object? resultObject = null;
+                if (UsesExternalResult || UsesValueTypeResult)
                 {
-                    SetStorage(resultSlot, ref Unsafe.AsRef<byte>(_context->ResultData));
-                }
-                else if (IsNewObject() || returnType == CorElementType.ELEMENT_TYPE_VALUETYPE)
-                {
-                    object? result = _resultObject;
-                    Debug.Assert(result is not null);
-                    SetStorage(resultSlot, ref result.GetRawData());
+                    SetStorage(resultSlot, ref *(byte*)_context->ResultData);
                 }
                 else if (IsObject(returnType))
                 {
-                    SetStorage(resultSlot, ref _resultObject);
+                    SetStorage(resultSlot, ref resultObject);
                 }
                 else if (returnType == CorElementType.ELEMENT_TYPE_BYREF)
                 {
-                    SetStorage(resultSlot, ref Unsafe.AsRef<byte>(_context->ResultByRefs));
+                    SetStorage(resultSlot, ref *(byte*)_context->ResultByRefs);
                 }
                 else if (returnType != CorElementType.ELEMENT_TYPE_VOID)
                 {
-                    SetStorage(resultSlot, ref Unsafe.AsRef<byte>(_context->ResultData));
+                    SetStorage(resultSlot, ref *(byte*)_context->ResultData);
                 }
 
-                _invoke(this, _storage);
+                object? newObject = _invoke(this, _storage);
+                if (UsesValueTypeResult)
+                {
+                    RuntimeType type = IsNewObject()
+                        ? (RuntimeType)_method.DeclaringType!
+                        : (RuntimeType)((RuntimeMethodInfo)_method).ReturnType;
+                    ref byte source = ref *(byte*)_context->ResultData;
+                    resultObject = CastHelpers.Box(type.GetNativeTypeHandle().AsMethodTable(), ref source);
+                }
+                else if (IsNewObject() && !UsesExternalResult)
+                {
+                    resultObject = newObject;
+                    Debug.Assert(resultObject is not null);
+                }
 
                 // Matches native's boxing-policy computation (DebuggerEval::m_retValueBoxing) so the
                 // completion step in funceval.cpp can tell what, if anything, it should publish.
@@ -262,8 +228,8 @@ namespace System.Diagnostics
                 if (boxed || IsObject(returnType))
                 {
                     // The strong handle is what crosses back into native code; once allocated it is
-                    // a stable, self-rooting reference, so _resultObject needs no further protection.
-                    _context->ResultHandle = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(_resultObject));
+                    // a stable, self-rooting reference, so resultObject needs no further protection.
+                    _context->ResultHandle = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(resultObject));
                 }
 
                 GC.KeepAlive(_method);
@@ -280,6 +246,11 @@ namespace System.Diagnostics
                     : type.GetCorElementType();
                 int slot = index + (_hasReceiver ? 0 : 1);
 
+                // input.Type describes the debugger's transport representation, not the signature type.
+                // Boxed value types arrive as objects; Nullable<T> specifically arrives as null or boxed T,
+                // so materialize a true nullable box when mutable Nullable<T> storage is required.
+                // A debugger handle is not a writable nullable home: mutations remain in this temporary
+                // and are not copied back to the handle's target.
                 if (IsObject(input.Type))
                 {
                     object? value = ReadObject(index, interior: false);
@@ -287,22 +258,18 @@ namespace System.Diagnostics
                     {
                         if (type.IsNullableOfT)
                         {
-                            _originalNullables[index] = value;
                             if (!isReceiver || value is null || value.GetType() != type)
                             {
-                                object nullable = AllocateObject(type);
-                                MethodTable* nullableType = type.GetNativeTypeHandle().AsMethodTable();
                                 if (value is not null)
                                 {
-                                    MethodTable* valueType = RuntimeHelpers.GetMethodTable(value);
-                                    if (valueType != nullableType && !CastHelpers.IsNullableForType(nullableType, valueType))
+                                    Type valueType = value.GetType();
+                                    if (valueType != type && !valueType.IsEquivalentTo(Nullable.GetUnderlyingType(type)))
                                     {
                                         throw new ArgumentException(SR.Argument_BadObjRef);
                                     }
                                 }
 
-                                CastHelpers.Unbox_Nullable(ref nullable.GetRawData(), nullableType, value);
-                                value = nullable;
+                                value = RuntimeMethodHandle.ReboxToNullable(value, type);
                             }
                         }
                         else if (value is null)
@@ -359,9 +326,7 @@ namespace System.Diagnostics
                                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
                             }
 
-                            object temporary = AllocateObject(actualType);
-                            CopyValueTypeArgument(index, actualType, ref temporary.GetRawData());
-                            value = RuntimeMethodHandle.ReboxFromNullable(temporary);
+                            value = actualType.Box(ref *(byte*)(_context->CapturedArguments + index));
                         }
 
                         if (isReceiver && value is null)
@@ -374,11 +339,20 @@ namespace System.Diagnostics
                     }
                     else if (input.HasMemory)
                     {
-                        SetStorage(slot, ref ((ByReference*)(_context->Interiors + index))->Value);
+                        if (type.IsByRefLike && !isByRef && !isReceiver)
+                        {
+                            // Copy by-value ref structs into an exact managed local so their byrefs
+                            // are reported by normal JIT GC info throughout the evaluated call.
+                            argument.IsTypedLocal = true;
+                        }
+                        else
+                        {
+                            SetStorage(slot, ref ((ByReference*)(_context->Interiors + index))->Value);
+                        }
                     }
                     else
                     {
-                        if (!type.IsValueType || GetValueSize(type) > sizeof(ulong))
+                        if (!type.IsValueType || type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes() > sizeof(ulong))
                         {
                             throw new ArgumentException(SR.Argument_BadObjRef);
                         }
@@ -390,9 +364,19 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            object temporary = AllocateObject(type);
+                            ref byte source = ref *(byte*)(_context->CapturedArguments + index);
+                            object temporary;
+                            if (type.IsNullableOfT)
+                            {
+                                RuntimeHelpers.EnsureInstanceActive(type);
+                                temporary = CastHelpers.Box(type.GetNativeTypeHandle().AsMethodTable(), ref source);
+                            }
+                            else
+                            {
+                                temporary = type.Box(ref source)!;
+                            }
+
                             _objects[index] = temporary;
-                            CopyValueTypeArgument(index, type, ref temporary.GetRawData());
                             argument.IsBoxedTemporary = true;
                             SetStorage(slot, ref temporary.GetRawData());
                         }
@@ -420,12 +404,15 @@ namespace System.Diagnostics
                 {
                     ulong value = argument.Primitive;
                     if (!input.IsInRegister && !input.IsHandle &&
-                        input.Type is not (CorElementType.ELEMENT_TYPE_I8 or CorElementType.ELEMENT_TYPE_U8 or CorElementType.ELEMENT_TYPE_R8))
+                        argument.SignatureType == CorElementType.ELEMENT_TYPE_BOOLEAN)
                     {
-                        value = ConvertPrimitive(value, argument.SignatureType);
+                        value = NormalizeBoolValue(value);
                     }
 
-                    argument.Primitive = value;
+                    argument.Primitive = 0;
+                    Span<byte> primitive = MemoryMarshal.AsBytes(
+                        MemoryMarshal.CreateSpan(ref argument.Primitive, 1));
+                    WritePrimitive(primitive[..GetPrimitiveSize(argument.SignatureType)], value);
                     SetStorage(slot, ref argument.Primitive);
                 }
             }
@@ -466,116 +453,104 @@ namespace System.Diagnostics
             }
 
             [DebuggerHidden]
-            internal bool InitializeTypedArgument(int slot, ref byte storage)
+            internal bool UsesTypedArgument(int slot)
             {
-                if (slot == 0 && IsNewObject())
-                {
-                    SetStorage(slot, ref storage);
-                    return true;
-                }
-
                 int index = slot + (_hasReceiver ? 0 : -1);
-                if (!_arguments[index].IsTypedLocal)
-                {
-                    return false;
-                }
+                return _arguments[index].IsTypedLocal;
+            }
 
-                CopyValueTypeArgument(index, _arguments[index].Type, ref storage);
+            [DebuggerHidden]
+            internal void InitializeTypedArgument<T>(int slot, [UnscopedRef] ref T storage)
+                where T : allows ref struct
+            {
+                int index = slot + (_hasReceiver ? 0 : -1);
+                ref Argument argument = ref _arguments[index];
+                Debug.Assert(argument.IsTypedLocal);
+                Debug.Assert(argument.Input.HasMemory || sizeof(T) <= sizeof(ulong));
+                ref byte source = ref (argument.Input.HasMemory
+                    ? ref ((ByReference*)(_context->Interiors + index))->Value
+                    : ref *(byte*)(_context->CapturedArguments + index));
+                storage = Unsafe.As<byte, T>(ref source);
                 SetStorage(slot, ref storage);
-                return true;
             }
 
             [DebuggerHidden]
-            internal void CopyBackTypedArgument(int slot, ref byte storage, bool usesLocal)
+            internal void CopyBackTypedArgument<T>(int slot, ref T storage)
+                where T : allows ref struct
             {
-                if (slot == 0 && IsNewObject())
-                {
-                    return;
-                }
-
-                if (usesLocal)
-                {
-                    int index = slot + (_hasReceiver ? 0 : -1);
-                    WriteArgument(index, ref storage, GetValueSize(_arguments[index].Type));
-                }
-                else
-                {
-                    CopyBackArgument(slot);
-                }
+                int index = slot + (_hasReceiver ? 0 : -1);
+                Debug.Assert(_arguments[index].IsTypedLocal);
+                WriteArgument(index, ref Unsafe.As<T, byte>(ref storage), (uint)sizeof(T));
             }
 
             [DebuggerHidden]
-            internal void CopyBackArgument(int slot)
+            internal bool NeedsCopyBack(int slot)
             {
-                if (slot == 0 && !_hasReceiver)
-                {
-                    return;
-                }
-
                 int index = slot + (_hasReceiver ? 0 : -1);
                 ref Argument argument = ref _arguments[index];
                 NativeArgument input = argument.Input;
                 if (slot == 0)
                 {
-                    if (!argument.Type.IsValueType || input.Type != CorElementType.ELEMENT_TYPE_VALUETYPE || !input.IsInRegister)
-                    {
-                        return;
-                    }
-                }
-                else if (!argument.IsByRef || argument.UsesDirectHome)
-                {
-                    return;
+                    return _hasReceiver && argument.Type.IsValueType &&
+                        input.Type == CorElementType.ELEMENT_TYPE_VALUETYPE && input.IsInRegister;
                 }
 
+                Debug.Assert(argument.IsByRef);
+                if (argument.UsesDirectHome)
+                {
+                    return false;
+                }
+
+                if (input.IsHandle)
+                {
+                    return false;
+                }
+
+                return argument.IsBoxedTemporary || IsObject(input.Type) ||
+                    input.Type != CorElementType.ELEMENT_TYPE_VALUETYPE;
+            }
+
+            [DebuggerHidden]
+            internal void CopyBackArgument(int slot)
+            {
+                Debug.Assert(NeedsCopyBack(slot));
+                int index = slot + (_hasReceiver ? 0 : -1);
+                ref Argument argument = ref _arguments[index];
+                NativeArgument input = argument.Input;
                 if (argument.IsBoxedTemporary)
                 {
-                    WriteArgument(index, ref _objects[index]!.GetRawData(), GetValueSize(argument.Type));
-                    return;
+                    WriteArgument(index, ref _objects[index]!.GetRawData(),
+                        argument.Type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes());
                 }
-
-                if (IsObject(input.Type))
+                // Convert mutable value-type storage back to the debugger's object representation.
+                // This path is an object-reference home, not a debugger handle. Nullable<T> is
+                // normalized to null or boxed T before replacing that home.
+                else if (IsObject(input.Type))
                 {
-                    if (argument.Type.IsNullableOfT)
-                    {
-                        object? original = _originalNullables[index];
-                        if (!input.IsLiteral && original is not null && original.GetType() == argument.Type)
-                        {
-                            object? temporary = _objects[index];
-                            Debug.Assert(temporary is not null);
-                            CopyValue(argument.Type, ref original.GetRawData(), ref temporary.GetRawData());
-                            _objects[index] = original;
-                        }
-                        else
-                        {
-                            _objects[index] = RuntimeMethodHandle.ReboxFromNullable(_objects[index]);
-                            if (input.IsHandle)
-                            {
-                                GCHandle.InternalSet((nint)(nuint)_context->CapturedArguments[index], _objects[index]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        _objects[index] = RuntimeMethodHandle.ReboxFromNullable(_objects[index]);
-                    }
-
-                    WriteArgument(index, ref Unsafe.As<object?, byte>(ref _objects[index]), (uint)IntPtr.Size);
+                    Debug.Assert(!input.IsHandle);
+                    _objects[index] = RuntimeMethodHandle.ReboxFromNullable(_objects[index]);
+                    WriteObjectArgument(index, ref _objects[index]);
                 }
-                else if (input.Type != CorElementType.ELEMENT_TYPE_VALUETYPE)
+                else
                 {
+                    Debug.Assert(input.Type != CorElementType.ELEMENT_TYPE_VALUETYPE);
                     if (argument.UsesInterior)
                     {
-                        WriteArgument(index, ref Unsafe.As<object?, byte>(ref _objects[index]), (uint)IntPtr.Size);
+                        WriteObjectArgument(index, ref _objects[index]);
                     }
                     else
                     {
-                        WriteArgument(index, ref Unsafe.As<ulong, byte>(ref argument.Primitive), sizeof(ulong));
+                        Span<byte> primitive = MemoryMarshal.AsBytes(
+                            MemoryMarshal.CreateSpan(ref argument.Primitive, 1));
+                        primitive = primitive[..GetPrimitiveSize(argument.SignatureType)];
+                        WriteArgument(index, ref MemoryMarshal.GetReference(primitive), (uint)primitive.Length);
                     }
                 }
             }
 
-            private void SetStorage<T>(int slot, [UnscopedRef] ref T value) =>
-                *(ByReference*)(_storage + slot) = ByReference.Create(ref value);
+            private void SetStorage<T>(int slot, [UnscopedRef] ref T value)
+                where T : allows ref struct =>
+                *(ByReference*)(_storage + slot) = new(ref Unsafe.As<T, byte>(ref value));
 
             private object? ReadObject(int index, bool interior)
             {
@@ -626,30 +601,48 @@ namespace System.Diagnostics
                 }
 
                 ref byte source = ref (input.IsLiteral
-                    ? ref Unsafe.AsRef<byte>(input.Literal)
+                    ? ref *input.Literal
                     : ref ((ByReference*)(_context->Homes + index))->Value);
+                return ReadPrimitive(ref source, size);
+            }
+
+            private static ulong ReadPrimitive(ref byte source, int size)
+            {
+                ReadOnlySpan<byte> bytes = MemoryMarshal.CreateReadOnlySpan(ref source, size);
                 return size switch
                 {
                     1 => source,
-                    2 => Unsafe.ReadUnaligned<ushort>(ref source),
-                    4 => Unsafe.ReadUnaligned<uint>(ref source),
-                    8 => Unsafe.ReadUnaligned<ulong>(ref source),
+                    2 => BitConverter.ToUInt16(bytes),
+                    4 => BitConverter.ToUInt32(bytes),
+                    8 => BitConverter.ToUInt64(bytes),
                     _ => throw new ArgumentException(SR.Argument_BadObjRef),
                 };
             }
 
-            private static ulong ConvertPrimitive(ulong value, CorElementType type) => type switch
+            private static void WritePrimitive(Span<byte> destination, ulong value)
             {
-                CorElementType.ELEMENT_TYPE_BOOLEAN => value == 0 ? 0UL : 1UL,
-                _ => GetPrimitiveSize(type) switch
+                bool written;
+                switch (destination.Length)
                 {
-                    1 => (byte)value,
-                    2 => (ushort)value,
-                    4 => (uint)value,
-                    8 => value,
-                    _ => throw new ArgumentException(SR.Argument_BadObjRef),
-                },
-            };
+                    case 1:
+                        destination[0] = (byte)value;
+                        return;
+                    case 2:
+                        written = BitConverter.TryWriteBytes(destination, (ushort)value);
+                        break;
+                    case 4:
+                        written = BitConverter.TryWriteBytes(destination, (uint)value);
+                        break;
+                    case 8:
+                        written = BitConverter.TryWriteBytes(destination, value);
+                        break;
+                    default:
+                        throw new ArgumentException(SR.Argument_BadObjRef);
+                }
+                Debug.Assert(written);
+            }
+
+            private static ulong NormalizeBoolValue(ulong value) => value == 0 ? 0UL : 1UL;
 
             private static int GetPrimitiveSize(CorElementType type) => type switch
             {
@@ -665,44 +658,6 @@ namespace System.Diagnostics
             private static bool IsObject(CorElementType type) => type is
                 CorElementType.ELEMENT_TYPE_CLASS or CorElementType.ELEMENT_TYPE_OBJECT or
                 CorElementType.ELEMENT_TYPE_STRING or CorElementType.ELEMENT_TYPE_ARRAY or CorElementType.ELEMENT_TYPE_SZARRAY;
-
-            internal static uint GetValueSize(RuntimeType type) =>
-                type.GetNativeTypeHandle().AsMethodTable()->GetNumInstanceFieldBytes();
-
-            private static void CopyValue(RuntimeType type, ref byte destination, ref byte source)
-            {
-                uint size = GetValueSize(type);
-                if (type.GetNativeTypeHandle().AsMethodTable()->ContainsGCPointers)
-                {
-                    Buffer.BulkMoveWithWriteBarrier(ref destination, ref source, size);
-                }
-                else
-                {
-                    SpanHelpers.Memmove(ref destination, ref source, size);
-                }
-            }
-
-            private static object AllocateObject(RuntimeType type)
-            {
-                Debug.Assert(!type.IsByRefLike);
-                EnsureTypeActive(new QCallTypeHandle(ref type));
-                object result = RuntimeTypeHandle.InternalAllocNoChecks(type.GetNativeTypeHandle().AsMethodTable());
-                GC.KeepAlive(type);
-                return result;
-            }
-
-            private void CopyValueTypeArgument(int index, RuntimeType type, ref byte destination)
-            {
-                if (GetValueSize(type) > sizeof(ulong))
-                {
-                    throw new ArgumentException(SR.Argument_BadObjRef);
-                }
-
-                fixed (byte* address = &destination)
-                {
-                    CopyValueTypeArgument(_context, (uint)index, new QCallTypeHandle(ref type), address);
-                }
-            }
 
             private void WriteArgument(int index, ref byte value, uint size)
             {
@@ -724,27 +679,8 @@ namespace System.Diagnostics
                     return;
                 }
 
-                if (IsObject(input.Type) || argument.UsesInterior)
-                {
-                    Debug.Assert(size == IntPtr.Size);
-                    ref object? source = ref Unsafe.As<byte, object?>(ref value);
-                    if (input.IsLiteral)
-                    {
-                        Unsafe.WriteUnaligned(input.Literal, 0UL);
-#pragma warning disable CS8500
-                        *(object?*)input.Literal = source;
-#pragma warning restore CS8500
-                    }
-                    else
-                    {
-                        ref byte home = ref ((ByReference*)(_context->Homes + index))->Value;
-                        Unsafe.As<byte, object?>(ref home) = source;
-                    }
-                    return;
-                }
-
-                ulong bits = 0;
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<ulong, byte>(ref bits), ref value, size);
+                Debug.Assert(!IsObject(input.Type) && !argument.UsesInterior);
+                ulong bits = ReadPrimitive(ref value, checked((int)size));
                 if (input.Type is not (CorElementType.ELEMENT_TYPE_I8 or CorElementType.ELEMENT_TYPE_U8 or CorElementType.ELEMENT_TYPE_R8))
                 {
                     bits = (nuint)bits;
@@ -753,38 +689,59 @@ namespace System.Diagnostics
                 if (input.IsLiteral)
                 {
                     // Update the eval's private buffer, not the debugger's detached value.
-                    Unsafe.WriteUnaligned(input.Literal, bits);
+                    Span<byte> literal = new(input.Literal, sizeof(ulong));
+                    literal.Clear();
+                    WritePrimitive(literal[..GetPrimitiveSize(input.Type)], bits);
                     return;
                 }
 
-                bits = ConvertPrimitive(bits, input.Type);
-                ref byte destination = ref ((ByReference*)(_context->Homes + index))->Value;
-                switch (GetPrimitiveSize(input.Type))
+                if (input.Type == CorElementType.ELEMENT_TYPE_BOOLEAN)
                 {
-                    case 1:
-                        destination = (byte)bits;
-                        break;
-                    case 2:
-                        Unsafe.WriteUnaligned(ref destination, (ushort)bits);
-                        break;
-                    case 4:
-                        Unsafe.WriteUnaligned(ref destination, (uint)bits);
-                        break;
-                    case 8:
-                        Unsafe.WriteUnaligned(ref destination, bits);
-                        break;
-                    default:
-                        throw new ArgumentException(SR.Argument_BadObjRef);
+                    bits = NormalizeBoolValue(bits);
                 }
+                ref byte destination = ref ((ByReference*)(_context->Homes + index))->Value;
+                WritePrimitive(MemoryMarshal.CreateSpan(ref destination, GetPrimitiveSize(input.Type)), bits);
+            }
+
+            private void WriteObjectArgument(int index, ref object? value)
+            {
+                ref Argument argument = ref _arguments[index];
+                NativeArgument input = argument.Input;
+                Debug.Assert(IsObject(input.Type) || argument.UsesInterior);
+                if (input.IsInRegister)
+                {
+                    WriteObjectRegister(_context, (uint)index, ObjectHandleOnStack.Create(ref value));
+                    return;
+                }
+
+                if (input.IsHandle)
+                {
+                    // The argument used the handle's object-reference slot directly.
+                    return;
+                }
+
+                if (input.IsLiteral)
+                {
+                    // Update the eval's private buffer, not the debugger's detached value.
+                    Span<byte> literal = new(input.Literal, sizeof(ulong));
+                    literal.Clear();
+#pragma warning disable CS8500
+                    *(object?*)input.Literal = value;
+#pragma warning restore CS8500
+                    return;
+                }
+
+                ref byte destination = ref ((ByReference*)(_context->Homes + index))->Value;
+                Unsafe.As<byte, object?>(ref destination) = value;
             }
 
             [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalMethod")]
-            private static partial void GetMethod(Context* context, uint contextSize, ObjectHandleOnStack declaringType, ObjectHandleOnStack allocationType);
+            private static partial void GetMethod(Context* context, ObjectHandleOnStack declaringType, ObjectHandleOnStack methodOwner);
 
             [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalReturnType")]
-            private static partial void GetReturnType(Context* context, ObjectHandleOnStack returnType);
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_PrepareFuncEvalResult")]
+            private static partial void PrepareResult(Context* context);
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_GetFuncEvalArgument")]
             [SuppressGCTransition]
@@ -798,17 +755,13 @@ namespace System.Diagnostics
             [SuppressGCTransition]
             private static partial int GetObject(Context* context, uint index, int interior, ObjectHandleOnStack value);
 
-            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_EnsureFuncEvalTypeActive")]
-            private static partial void EnsureTypeActive(QCallTypeHandle type);
-
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CopyFuncEvalValueTypeArgument")]
-            [SuppressGCTransition]
-            private static partial void CopyValueTypeArgument(Context* context, uint index, QCallTypeHandle type, void* destination);
-
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_ReadFuncEvalPrimitiveRegister")]
             [SuppressGCTransition]
             private static partial int ReadPrimitiveRegister(Context* context, uint index, out ulong value);
+
+            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_WriteFuncEvalObjectRegister")]
+            private static partial void WriteObjectRegister(Context* context, uint index, ObjectHandleOnStack value);
 
             [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_WriteFuncEvalRegister")]
