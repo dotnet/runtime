@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import stat
+import struct
 import subprocess
 import tempfile
 import unittest
@@ -43,6 +44,79 @@ def archive_bytes(name, mode):
         entry.external_attr = mode << 16
         archive.writestr(entry, b"binlog")
     return content.getvalue()
+
+
+def rewrite_eocd(content, **updates):
+    data = bytearray(content)
+    offset = data.rfind(b"PK\x05\x06")
+    values = list(struct.unpack_from("<4s4H2LH", data, offset))
+    indexes = {
+        "disk_number": 1,
+        "central_directory_disk": 2,
+        "entries_on_disk": 3,
+        "entry_count": 4,
+        "central_directory_size": 5,
+        "central_directory_offset": 6,
+    }
+    for name, value in updates.items():
+        values[indexes[name]] = value
+    struct.pack_into("<4s4H2LH", data, offset, *values)
+    return bytes(data)
+
+
+def zip64_archive(content, classic_sentinels=True, **updates):
+    eocd_offset = content.rfind(b"PK\x05\x06")
+    (
+        _,
+        disk_number,
+        central_directory_disk,
+        entries_on_disk,
+        entry_count,
+        central_directory_size,
+        central_directory_offset,
+        comment_length,
+    ) = struct.unpack_from("<4s4H2LH", content, eocd_offset)
+    if comment_length:
+        raise ValueError("fixture helper requires an archive without an EOCD comment")
+    values = {
+        "disk_number": disk_number,
+        "central_directory_disk": central_directory_disk,
+        "entries_on_disk": entries_on_disk,
+        "entry_count": entry_count,
+        "central_directory_size": central_directory_size,
+        "central_directory_offset": central_directory_offset,
+    }
+    values.update(updates)
+    zip64_eocd = struct.pack(
+        "<4sQ2H2L4Q",
+        b"PK\x06\x06",
+        44,
+        45,
+        45,
+        values["disk_number"],
+        values["central_directory_disk"],
+        values["entries_on_disk"],
+        values["entry_count"],
+        values["central_directory_size"],
+        values["central_directory_offset"],
+    )
+    locator = struct.pack("<4sLQL", b"PK\x06\x07", 0, eocd_offset, 1)
+    eocd = (
+        struct.pack(
+            "<4s4H2LH",
+            b"PK\x05\x06",
+            0,
+            0,
+            0xFFFF,
+            0xFFFF,
+            0xFFFFFFFF,
+            0xFFFFFFFF,
+            0,
+        )
+        if classic_sentinels
+        else content[eocd_offset:]
+    )
+    return content[:eocd_offset] + zip64_eocd + locator + eocd
 
 
 class BuildFailureAnalysisTests(unittest.TestCase):
@@ -285,32 +359,83 @@ cp() {
                 self.assertIn("staged=2;failed=0", result.stdout)
 
     def test_archive_validation_rejects_unsafe_paths_and_types(self):
+        regular = archive_bytes("nested/build.binlog", stat.S_IFREG | 0o644)
         cases = (
-            ("regular", "nested/build.binlog", stat.S_IFREG | 0o644, True),
-            ("unspecified", "build.binlog", 0, True),
-            ("traversal", "../escape.binlog", stat.S_IFREG | 0o644, False),
-            ("absolute", "/escape.binlog", stat.S_IFREG | 0o644, False),
-            ("drive", r"C:\escape.binlog", stat.S_IFREG | 0o644, False),
-            ("symlink", "link.binlog", stat.S_IFLNK | 0o777, False),
-            ("device", "device.binlog", stat.S_IFCHR | 0o600, False),
-            ("fifo", "pipe.binlog", stat.S_IFIFO | 0o600, False),
+            ("regular", regular, 65536, 16 * 1024 * 1024, True),
+            ("unspecified", archive_bytes("build.binlog", 0), 65536, 16 * 1024 * 1024, True),
+            ("traversal", archive_bytes("../escape.binlog", stat.S_IFREG | 0o644), 65536, 16 * 1024 * 1024, False),
+            ("absolute", archive_bytes("/escape.binlog", stat.S_IFREG | 0o644), 65536, 16 * 1024 * 1024, False),
+            ("drive", archive_bytes(r"C:\escape.binlog", stat.S_IFREG | 0o644), 65536, 16 * 1024 * 1024, False),
+            ("symlink", archive_bytes("link.binlog", stat.S_IFLNK | 0o777), 65536, 16 * 1024 * 1024, False),
+            ("character-device", archive_bytes("device.binlog", stat.S_IFCHR | 0o600), 65536, 16 * 1024 * 1024, False),
+            ("block-device", archive_bytes("device.binlog", stat.S_IFBLK | 0o600), 65536, 16 * 1024 * 1024, False),
+            ("fifo", archive_bytes("pipe.binlog", stat.S_IFIFO | 0o600), 65536, 16 * 1024 * 1024, False),
+            ("socket", archive_bytes("socket.binlog", stat.S_IFSOCK | 0o600), 65536, 16 * 1024 * 1024, False),
+            ("metadata-cap", regular, 65536, 1, False),
+            ("missing-eocd", b"not a zip", 65536, 16 * 1024 * 1024, False),
+            ("multi-disk", rewrite_eocd(regular, disk_number=1), 65536, 16 * 1024 * 1024, False),
+            (
+                "classic-entry-cap",
+                rewrite_eocd(regular, entries_on_disk=2, entry_count=2),
+                1,
+                16 * 1024 * 1024,
+                False,
+            ),
+            (
+                "classic-metadata-cap",
+                rewrite_eocd(regular, central_directory_size=16 * 1024 * 1024 + 1),
+                65536,
+                16 * 1024 * 1024,
+                False,
+            ),
+            ("zip64", zip64_archive(regular), 65536, 16 * 1024 * 1024, True),
+            (
+                "zip64-entry-cap",
+                zip64_archive(regular, entries_on_disk=2, entry_count=2),
+                1,
+                16 * 1024 * 1024,
+                False,
+            ),
+            (
+                "zip64-nonsentinel-entry-cap",
+                zip64_archive(
+                    regular,
+                    classic_sentinels=False,
+                    entries_on_disk=2,
+                    entry_count=2,
+                ),
+                1,
+                16 * 1024 * 1024,
+                False,
+            ),
+            (
+                "zip64-metadata-cap",
+                zip64_archive(regular, central_directory_size=16 * 1024 * 1024 + 1),
+                65536,
+                16 * 1024 * 1024,
+                False,
+            ),
         )
         for workflow_name, workflow in self.workflows.items():
             source = step(workflow["jobs"]["fetch-binlog"]["steps"], "fetch")["run"]
             start = source.index("# --- Validate ZIP entry metadata before extraction ---")
             end = source.index("# --- Extract validated binlogs ---")
             validator = source[start:end]
-            for name, entry, mode, accepted in cases:
+            for name, content, max_entries, max_metadata_bytes, accepted in cases:
                 with self.subTest(workflow=workflow_name, case=name):
                     result, _, _ = self.run_script(
                         "set +e\n"
                         'for ZIP_TMP in "$ARCHIVE"; do\n'
                         "safe_name=test\n"
-                        "MAX_ZIP_ENTRIES=65536\n"
+                        f"MAX_ZIP_ENTRIES={max_entries}\n"
+                        f"MAX_ZIP_METADATA_BYTES={max_metadata_bytes}\n"
+                        "MAX_UNZIP_BYTES=2147483648\n"
+                        "MAX_TOTAL_BYTES=4294967296\n"
+                        "TOTAL_BYTES=0\n"
                         + validator
                         + "\necho accepted=true\ndone\n",
                         {"ARCHIVE": "archive.zip"},
-                        {"archive.zip": archive_bytes(entry, mode)},
+                        {"archive.zip": content},
                     )
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertEqual("accepted=true" in result.stdout, accepted, result.stdout)
