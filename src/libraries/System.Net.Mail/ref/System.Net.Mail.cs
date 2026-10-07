@@ -181,7 +181,6 @@ namespace System.Net.Mail
         public string? PickupDirectoryLocation { get { throw null; } set { } }
         public int Port { get { throw null; } set { } }
         public System.Net.ServicePoint ServicePoint { get { throw null; } }
-        public System.Net.Security.SslClientAuthenticationOptions SslOptions { get { throw null; } set { } }
         public string? TargetName { get { throw null; } set { } }
         public int Timeout { get { throw null; } set { } }
         public bool UseDefaultCredentials { get { throw null; } set { } }
