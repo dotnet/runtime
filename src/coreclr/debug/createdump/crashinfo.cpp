@@ -107,14 +107,14 @@ CrashInfo::FindMemoryRegionOverlap(
     MemoryRegion* result)
 {
     std::set<MemoryRegion>* regions = static_cast<std::set<MemoryRegion>*>(container);
-    MemoryRegion search(0, startAddress, endAddress, 0);
-    std::set<MemoryRegion>::const_iterator found = regions->find(search);
-    if (found == regions->end())
+    MemoryRegion regionToFind(0, startAddress, endAddress, 0);
+    std::set<MemoryRegion>::const_iterator conflictingRegion = regions->find(regionToFind);
+    if (conflictingRegion == regions->end())
     {
         return false;
     }
 
-    *result = *found;
+    *result = *conflictingRegion;
     return true;
 }
 
@@ -430,7 +430,9 @@ CrashInfo::EnumerateManagedModules()
                         std::string moduleName = ConvertString(wszUnicodeName);
 
                         // Change the module mapping name
-                        AddOrReplaceModuleMapping(loadedPEAddress, moduleData.LoadedPESize, moduleName);
+                        if (!AddOrReplaceModuleMapping(loadedPEAddress, moduleData.LoadedPESize, moduleName)) {
+                            TRACE("AddOrReplaceModuleMapping FAILED for module %s\n", moduleName.c_str());
+                        }
 
                         // Add managed module info
                         AddModuleInfo(true, loadedPEAddress, pClrDataModule, moduleName);
@@ -486,7 +488,7 @@ CrashInfo::UnwindAllThreads()
 //
 // Replace an existing module mapping with one with a different name.
 //
-void
+bool
 CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& name)
 {
     // Round to page boundary (single-file managed assemblies are not page aligned)
@@ -514,7 +516,7 @@ CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const 
         ModuleRegion newRegion(flags, start, end, 0);
         if (!newRegion.SetFileName(name.c_str()))
         {
-            return;
+            return false;
         }
         m_cbModuleMappings += newRegion.Size();
 
@@ -526,10 +528,11 @@ CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const 
     else if (!found->FileNameEquals(name.c_str()))
     {
         // Create the new memory region with the managed assembly name.
-        ModuleRegion newRegion(static_cast<const MemoryRegion&>(*found));
+        const MemoryRegion& existingRegion = *found;
+        ModuleRegion newRegion(existingRegion);
         if (!newRegion.SetFileName(name.c_str()))
         {
-            return;
+            return false;
         }
 
         uint64_t oldRegionSize = found->Size();
@@ -546,6 +549,7 @@ CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const 
         }
         m_moduleMappings.insert(Move(newRegion));
     }
+    return true;
 }
 
 //
@@ -726,6 +730,7 @@ CrashInfo::CombineMemoryRegions()
             [&memoryRegionsNew](const MemoryRegion& region)
             {
                 assert(memoryRegionsNew.find(region) == memoryRegionsNew.end());
+                // .second: true if insertion occurred, false if the element was already present
                 return memoryRegionsNew.insert(region).second;
             }))
     {

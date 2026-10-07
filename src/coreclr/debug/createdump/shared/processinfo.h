@@ -162,7 +162,7 @@ public:
     const DynamicArray<MemoryRegion>& OtherMappings() const noexcept { return m_otherMappings; }
 #ifndef __APPLE__
     const DynamicArray<elf_aux_entry>& AuxvEntries() const noexcept { return m_auxvEntries; }
-    size_t GetAuxvSize() const { return m_auxvEntries.Count() * sizeof(elf_aux_entry); }
+    size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
     elf_aux_val_t AuxvValue(size_t index) const { return m_auxvValues[index]; }
 #endif
 

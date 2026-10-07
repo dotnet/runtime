@@ -86,11 +86,6 @@ public:
     inline const std::set<MemoryRegion>& OtherMappings() const { return m_otherMappings; }
     inline const std::set<MemoryRegion>& MemoryRegions() const { return m_memoryRegions; }
     inline DumpRegionStore& GetDumpRegionStore() { return m_dumpRegionStore; }
-#ifndef __APPLE__
-    bool CopyDumpWriterRegions(DynamicArray<ModuleRegion>& moduleMappings, DynamicArray<MemoryRegion>& dumpRegions) const;
-    inline const DynamicArray<elf_aux_entry>& AuxvEntries() const { return m_processInfo.AuxvEntries(); }
-    inline size_t GetAuxvSize() const { return m_processInfo.GetAuxvSize(); }
-#endif
     bool ReadMemory(void* address, void* buffer, size_t size) { return ReadMemory((uint64_t)address, buffer, size); }
 
     // IUnknown
@@ -120,7 +115,7 @@ private:
     bool InitializeDAC(DumpType dumpType);
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
-    void AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& pszName);
+    bool AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& pszName);
     int InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool PageCanBeRead(uint64_t start);

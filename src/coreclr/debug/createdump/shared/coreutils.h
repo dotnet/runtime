@@ -244,7 +244,7 @@ public:
         return m_count == 0;
     }
 
-    size_t Count() const noexcept
+    size_t size() const noexcept
     {
         return m_count;
     }

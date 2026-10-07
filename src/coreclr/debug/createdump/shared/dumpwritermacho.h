@@ -60,12 +60,11 @@ private:
 public:
     DumpWriter(CrashInfo& crashInfo);
     virtual ~DumpWriter();
-    bool OpenAndWriteDump(const char* dumpFileName);
+    bool OpenDump(const char* dumpFileName);
+    bool WriteDump();
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
-    bool OpenDump(const char* dumpFileName);
-    bool WriteDump();
     bool WriteDiagInfo(size_t size);
     void BuildProcessMetadataNote();
     void BuildSegmentLoadCommands();

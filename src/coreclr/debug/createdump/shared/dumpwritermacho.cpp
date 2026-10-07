@@ -6,6 +6,13 @@
 
 extern int g_readProcessMemoryResult;
 
+DumpWriter::DumpWriter(CrashInfo& crashInfo) :
+    m_fd(-1),
+    m_crashInfo(crashInfo)
+{
+    m_crashInfo.AddRef();
+}
+
 //
 // Write the core dump file
 //

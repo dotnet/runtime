@@ -40,33 +40,44 @@
 #define NT_SIGINFO	0x53494749
 #endif
 
+extern int g_readProcessMemoryErrno;
+
+struct NTFileEntry
+{
+    unsigned long StartAddress;
+    unsigned long EndAddress;
+    unsigned long Offset;
+};
+
 class DumpWriter
 {
 private:
     int m_fd;
     uint8_t m_tempBuffer[0x4000];
     ProcessInfo& m_processInfo;
-    const DynamicArray<ModuleRegion>& m_moduleMappings;
-    const DynamicArray<MemoryRegion>& m_dumpRegions;
 
     // no public copy constructor
     DumpWriter(const DumpWriter&) = delete;
     void operator=(const DumpWriter&) = delete;
 
 public:
-    DumpWriter(ProcessInfo& processInfo, const DynamicArray<ModuleRegion>& moduleMappings, const DynamicArray<MemoryRegion>& dumpRegions);
+    explicit DumpWriter(ProcessInfo& processInfo);
     virtual ~DumpWriter();
-    bool OpenAndWriteDump(const char* dumpFileName);
+    bool OpenDump(const char* dumpFileName);
+    // This method is a template so external createdump can pass std::set
+    // while linked createdump passes DynamicArray
+    template <typename TModuleMappings, typename TDumpRegions>
+    bool WriteDump(const TModuleMappings& moduleMappings, const TDumpRegions& dumpRegions);
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
-    bool OpenDump(const char* dumpFileName);
-    bool WriteDump();
     bool WriteDiagInfo(size_t size);
     bool WriteProcessInfo();
     bool WriteAuxv();
-    size_t GetNTFileInfoSize(size_t* alignmentBytes = nullptr);
-    bool WriteNTFileInfo();
+    template <typename TModuleMappings>
+    size_t GetNTFileInfoSize(const TModuleMappings& moduleMappings, size_t* alignmentBytes = nullptr);
+    template <typename TModuleMappings>
+    bool WriteNTFileInfo(const TModuleMappings& moduleMappings);
     bool WriteThread(const ThreadSnapshot& thread);
     bool WriteData(const void* buffer, size_t length) { return WriteData(m_fd, buffer, length); }
 
@@ -75,7 +86,7 @@ private:
     size_t GetThreadInfoSize() const
     {
         return (m_processInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
-              + (m_processInfo.Threads().Count() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
+              + (m_processInfo.Threads().size() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
               + (sizeof(Nhdr) + 8 + sizeof(user_fpregs_struct))
 #if defined(__i386__)
               + (sizeof(Nhdr) + 8 + sizeof(user_fpxregs_struct))
@@ -86,5 +97,7 @@ private:
         ));
     }
 };
+
+#include "dumpwriterelf.inl"
 
 #endif // DUMPWRITERELF_H

@@ -108,20 +108,26 @@ CreateDump(const CreateDumpOptions& options)
 
 #ifdef __APPLE__
         DumpWriter dumpWriter(*crashInfo);
+        if (!dumpWriter.OpenDump(dumpPath.c_str()))
+        {
+            goto exit;
+        }
+        if (!dumpWriter.WriteDump())
+        {
+            goto exit;
+        }
 #else
-        DynamicArray<ModuleRegion> moduleMappings;
-        DynamicArray<MemoryRegion> dumpRegions;
-        if (!crashInfo->CopyDumpWriterRegions(moduleMappings, dumpRegions))
+        DumpWriter dumpWriter(processInfo);
+        if (!dumpWriter.OpenDump(dumpPath.c_str()))
         {
             goto exit;
         }
-        DumpWriter dumpWriter(processInfo, moduleMappings, dumpRegions);
+        // The template lets external createdump use std::set while linked createdump uses DynamicArray
+        if (!dumpWriter.WriteDump(crashInfo->ModuleMappings(), crashInfo->MemoryRegions()))
+        {
+            goto exit;
+        }
 #endif
-        // Write the actual dump file
-        if (!dumpWriter.OpenAndWriteDump(dumpPath.c_str()))
-        {
-            goto exit;
-        }
     }
     result = true;
 exit:
