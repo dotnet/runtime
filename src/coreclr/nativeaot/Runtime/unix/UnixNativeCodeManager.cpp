@@ -1060,17 +1060,16 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
     {
         uint32_t instr = *pInstr;
 
-        // Scan past authentication instructions to find the FP/LR restore.
-        if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
-        {
-            continue;
-        }
-
         // check for Branches, Exception Generating and System instruction group.
         // If we see such instruction before seeing FP or LR restored, we are not in an epilog.
         // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
         if ((instr & BEGS_MASK) == BEGS_BITS)
         {
+            // Scan past authentication instructions to find the FP/LR restore.
+            if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
+            {
+                continue;
+            }
             // not in an epilogue
             break;
         }
