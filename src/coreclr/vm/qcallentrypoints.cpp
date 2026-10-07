@@ -108,13 +108,12 @@ static const Entry s_QCall[] =
     DllImportEntry(DebugDebugger_IsManagedDebuggerAttached)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
     DllImportEntry(DebugDebugger_GetFuncEvalMethod)
-    DllImportEntry(DebugDebugger_GetFuncEvalReturnType)
+    DllImportEntry(DebugDebugger_PrepareFuncEvalResult)
     DllImportEntry(DebugDebugger_GetFuncEvalArgument)
     DllImportEntry(DebugDebugger_GetFuncEvalArgumentType)
     DllImportEntry(DebugDebugger_GetFuncEvalObject)
-    DllImportEntry(DebugDebugger_EnsureFuncEvalTypeActive)
     DllImportEntry(DebugDebugger_ReadFuncEvalPrimitiveRegister)
-    DllImportEntry(DebugDebugger_CopyFuncEvalValueTypeArgument)
+    DllImportEntry(DebugDebugger_WriteFuncEvalObjectRegister)
     DllImportEntry(DebugDebugger_WriteFuncEvalRegister)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
     DllImportEntry(Delegate_BindToMethodName)
@@ -168,6 +167,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_GetInstantiation)
     DllImportEntry(RuntimeTypeHandle_Instantiate)
     DllImportEntry(RuntimeTypeHandle_GetGenericTypeDefinition)
+    DllImportEntry(RuntimeTypeHandle_EnsureInstanceActive)
     DllImportEntry(RuntimeTypeHandle_GetActivationInfo)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(RuntimeTypeHandle_AllocateComObject)
