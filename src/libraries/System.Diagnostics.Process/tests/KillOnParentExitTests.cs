@@ -57,11 +57,13 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void KillOnParentExit_ProcessStartsAfterParentJoinsAdditionalJob(bool startSuspended)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void KillOnParentExit_ProcessStartsAfterParentJoinsAdditionalJob(bool startSuspended, bool restrictInheritance)
         {
-            using RemoteInvokeHandle handle = RemoteExecutor.Invoke((startSuspendedString) =>
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke((startSuspendedString, restrictInheritanceString) =>
             {
                 using (Process seed = CreateProcess(static () => RemoteExecutor.SuccessExitCode))
                 {
@@ -77,6 +79,7 @@ namespace System.Diagnostics.Tests
                 using Process child = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
                 child.StartInfo.KillOnParentExit = true;
                 child.StartInfo.StartSuspended = bool.Parse(startSuspendedString);
+                child.StartInfo.InheritedHandles = bool.Parse(restrictInheritanceString) ? [] : null;
                 child.Start();
 
                 if (child.StartInfo.StartSuspended)
@@ -88,7 +91,7 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(RemoteExecutor.SuccessExitCode, child.ExitCode);
 
                 return RemoteExecutor.SuccessExitCode;
-            }, startSuspended.ToString());
+            }, startSuspended.ToString(), restrictInheritance.ToString());
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
