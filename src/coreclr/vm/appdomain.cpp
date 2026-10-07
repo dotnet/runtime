@@ -1243,6 +1243,8 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
         CLASS__METHODBASEINVOKER,
+        CLASS__INSTANCE_CALLI_HELPER,
+        CLASS__INTRINSIC_INVOKE_HELPER,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,
     };
@@ -1955,10 +1957,10 @@ static const char *fileLoadLevelName[] =
     "ALLOCATE",                           // FILE_LOAD_ALLOCATE
     "BEGIN",                              // FILE_LOAD_BEGIN
     "BEFORE_TYPE_LOAD",                   // FILE_LOAD_BEFORE_TYPE_LOAD
-    "EAGER_FIXUPS",                       // FILE_LOAD_EAGER_FIXUPS
     "DELIVER_EVENTS",                     // FILE_LOAD_DELIVER_EVENTS
     "VTABLE FIXUPS",                      // FILE_LOAD_VTABLE_FIXUPS
     "LOADED",                             // FILE_LOADED
+    "EAGER_FIXUPS",                       // FILE_LOAD_EAGER_FIXUPS
     "ACTIVE",                             // FILE_ACTIVE
 };
 #endif // !DACCESS_COMPILE && (LOGGING || STRESS_LOG)

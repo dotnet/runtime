@@ -5,9 +5,11 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
@@ -33,9 +35,16 @@ namespace ILCompiler.ObjectWriter
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
 
-        public WebCilObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+        private readonly bool _emitNameSection;
+
+        public WebCilObjectWriter(
+            NodeFactory factory,
+            ObjectWritingOptions options,
+            OutputInfoBuilder outputInfoBuilder,
+            bool emitNameSection)
             : base(factory, options, outputInfoBuilder)
         {
+            _emitNameSection = emitNameSection;
         }
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
@@ -545,11 +554,14 @@ namespace ILCompiler.ObjectWriter
             dataSection.EmitToStream(outputFileStream);
 #endif
 
-            // The name section goes last, after the data section, as tooling expects. It is the only
-            // record of function names now that they are no longer carried by the export table, and
-            // wasm-merge -g synthesizes the merged module's names from it.
-            WasmNameSection nameSection = new WasmNameSection(_wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
-            nameSection.EmitToStream(outputFileStream);
+            if (_emitNameSection)
+            {
+                // The name section goes last, after the data section, as tooling expects. It is the only
+                // in-image record of function names now that they are no longer carried by the export table,
+                // and wasm-merge -g synthesizes the merged module's names from it.
+                WasmNameSection nameSection = new WasmNameSection(_wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
+                nameSection.EmitToStream(outputFileStream);
+            }
 
             if (_outputInfoBuilder is not null)
             {
@@ -568,6 +580,18 @@ namespace ILCompiler.ObjectWriter
                 {
                     _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, _codeOffsetMap);
                 }
+            }
+        }
+
+        public void EmitSymbolMap(string path)
+        {
+            Console.WriteLine($"Emitting WebAssembly symbol map: {path}");
+            using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function))
+            {
+                writer.Write(symbol.Index.ToString(CultureInfo.InvariantCulture));
+                writer.Write(':');
+                writer.WriteLine(symbol.Name);
             }
         }
 

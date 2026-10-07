@@ -81,7 +81,11 @@ TiggerStorage::Init(
     // For write case, dump the signature into the file up front.
     else
     {
+#ifdef FEATURE_METADATA_PERSISTENCE
         IfFailGo(WriteSignature(pVersion));
+#else
+        IfFailGo(E_NOTIMPL);
+#endif
     }
 
 ErrExit:
@@ -440,9 +444,13 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
     DWORD       reserved2,
     IStream     **ppstm)
 {
+#ifdef FEATURE_METADATA_PERSISTENCE
     char        rcStream[MAXSTREAMNAME];// For converted name.
     VERIFY(WideCharToMultiByte(CP_ACP, 0, pwcsName, -1, rcStream, sizeof(rcStream), 0, 0));
     return (CreateStream(rcStream, grfMode, reserved1, reserved2, ppstm));
+#else
+    return E_NOTIMPL;
+#endif
 }
 
 
@@ -454,6 +462,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
     DWORD       reserved2,
     IStream     **ppstm)
 {
+#ifdef FEATURE_METADATA_PERSISTENCE
     PSTORAGESTREAM pStream;             // For lookup.
     HRESULT     hr;
 
@@ -487,6 +496,9 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
         return (hr);
     }
     return (S_OK);
+#else
+    return E_NOTIMPL;
+#endif
 }
 #endif //!DACCESS_COMPILE
 

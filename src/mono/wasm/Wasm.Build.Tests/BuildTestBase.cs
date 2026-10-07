@@ -385,8 +385,9 @@ namespace Wasm.Build.Tests
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.9-preview.2.2"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
-        // Use the in-build wasm crossgen and task shim when the test leg provides them.
-        protected static string GetR2RBuildArgs(Configuration config)
+        // Use the in-build crossgen2 when the test leg provides it. Composite builds also need the
+        // wasm-aware task shim until the base SDK supports wasm R2R output naming.
+        protected static string GetR2RBuildArgs(Configuration config, bool composite = false)
         {
             string? baseDir = EnvironmentVariables.BaseDir;
             if (string.IsNullOrEmpty(baseDir))
@@ -401,9 +402,9 @@ namespace Wasm.Build.Tests
             var args = new List<string>();
             if (Directory.Exists(crossgenDir))
                 args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
-            if (File.Exists(shimProps))
+            if (composite && File.Exists(shimProps))
                 args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
-            if (File.Exists(shimTargets))
+            if (composite && File.Exists(shimTargets))
                 args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
             return string.Join(" ", args);
         }

@@ -909,7 +909,6 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
-        // We can not call __SwitchToThread since we can not go back to host.
         minipal_sleep(10);
     }
     if (m_ThreadHandleForClose == INVALID_HANDLE_VALUE)

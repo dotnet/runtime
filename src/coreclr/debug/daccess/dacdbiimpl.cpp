@@ -991,8 +991,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     TADDR pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
-    // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
-    // implemented for DAC.
+    // Dynamic modules have no PE-backed fallback.
     if (pTargetIL == 0 && !pModule->IsReflectionEmit())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);

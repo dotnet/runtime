@@ -306,12 +306,6 @@ namespace Internal.Reflection.Execution
                 return null;
             }
 
-            if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.CallingConventionMask) != 0)
-            {
-                // MethodInvokeInfo found, but it references a method with a native calling convention.
-                return null;
-            }
-
             IntPtr dynamicInvokeMethod;
             Debug.Assert((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.NeedsParameterInterpretation) == 0);
             dynamicInvokeMethod = GetDynamicMethodInvoke(
@@ -699,10 +693,8 @@ namespace Internal.Reflection.Execution
             Debug.Assert(!isAsyncVariant, "Async variants should not be visible to reflection");
             if (success)
             {
-                if (TypeLoaderEnvironment.Instance.TryGetMetadataForTypeMethodNameAndSignature(declaringTypeHandle, nameAndSig, out methodHandle))
-                {
-                    return true;
-                }
+                methodHandle = new QMethodDefinition(nameAndSig.Reader, nameAndSig.Handle);
+                return true;
             }
 
             methodHandle = default(QMethodDefinition);

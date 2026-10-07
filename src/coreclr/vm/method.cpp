@@ -2124,20 +2124,12 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Meth
         CheckRestore();
         MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis, pMTOfThis);
 
-        // If we're remoting this call we can't call directly on the returned
-        // method desc, we need to go through a stub that guarantees we end up
-        // in the remoting handler. The stub we use below is normally just for
-        // non-virtual calls on virtual methods (that have the same problem
-        // where we could end up bypassing the remoting system), but it serves
-        // our purpose here (basically pushes our correctly instantiated,
-        // resolved method desc on the stack and calls the remoting code).
-
         return pResultMD->GetSingleCallableAddrOfCode();
     }
 
     if (IsInterface())
     {
-        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,this,orThis, pMTOfThis);
+        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis);
         return pTargetMD->GetSingleCallableAddrOfCode();
     }
 

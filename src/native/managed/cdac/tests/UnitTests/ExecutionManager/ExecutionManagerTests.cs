@@ -332,6 +332,73 @@ public class ExecutionManagerTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetDebugInfo_R2R_NoDebugInfoSection_ReturnsNull(string version, MockTarget.Architecture arch)
+    {
+        const ulong CodeRangeStart = 0x0a0a_0000u;
+        const uint CodeRangeSize = 0xc000u;
+        const ulong JitManagerAddress = 0x000b_ff00;
+        const ulong MethodDescAddress = 0x0101_aaa0;
+        const uint RuntimeFunction = 0x100;
+        const uint CodeOffset = 4;
+        // Make the low addresses readable, as linear address 0 is on wasm, so that dereferencing
+        // a null DebugInfoSection decodes zeros instead of failing the read.
+        const ulong ReadableZeroPageSize = 0x1000;
+
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockExecutionManagerBuilder.JittedCodeRange jittedCode = emBuilder.AllocateJittedCodeRange(CodeRangeStart, CodeRangeSize);
+        MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([RuntimeFunction], []);
+        new MockHashMapBuilder(emBuilder.Builder).PopulatePtrMap(
+            r2rInfo.EntryPointToMethodDescMapAddress,
+            [(jittedCode.RangeStart + RuntimeFunction, MethodDescAddress)]);
+        MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+        MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, JitManagerAddress, r2rModule.Address);
+        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+        Assert.Equal(0ul, r2rInfo.DebugInfoSection);
+
+        TargetCodePointer methodStart = new(CodeRangeStart + RuntimeFunction);
+        TargetCodePointer pCode = new(CodeRangeStart + RuntimeFunction + CodeOffset);
+        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(new TargetPointer(MethodDescAddress));
+        Mock<ICodeVersions> codeVersions = new();
+        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(pCode)).Returns(nativeCodeVersion);
+        codeVersions.Setup(c => c.GetNativeCode(nativeCodeVersion)).Returns(methodStart);
+
+        MockMemorySpace.MemoryContext memoryContext = emBuilder.Builder.GetMemoryContext();
+        Target target = CreateTarget(emBuilder, configureTarget: targetBuilder => targetBuilder
+            .UseReader(ReadWithReadableZeroPage)
+            .AddContract<IDebugInfo>(version: "c1")
+            .AddMockContract(codeVersions));
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        CodeBlockHandle? handle = em.GetCodeBlockHandle(pCode);
+        Assert.NotNull(handle);
+        TargetPointer debugInfo = em.GetDebugInfo(handle.Value, out bool hasFlagByte);
+        Assert.Equal(TargetPointer.Null, debugInfo);
+        Assert.False(hasFlagByte);
+
+        IDebugInfo debugInfoContract = target.Contracts.DebugInfo;
+        Assert.False(debugInfoContract.HasDebugInfo(pCode));
+        Assert.Empty(debugInfoContract.GetMethodVarInfo(pCode, out uint varInfoCodeOffset));
+        Assert.Equal(CodeOffset, varInfoCodeOffset);
+        Assert.Empty(debugInfoContract.GetMethodNativeMap(pCode, preferUninstrumented: false, out uint nativeMapCodeOffset));
+        Assert.Equal(CodeOffset, nativeMapCodeOffset);
+
+        int ReadWithReadableZeroPage(ulong address, Span<byte> buffer)
+        {
+            if (address < ReadableZeroPageSize)
+            {
+                if (address + (ulong)buffer.Length > ReadableZeroPageSize)
+                    return -1;
+
+                buffer.Clear();
+                return 0;
+            }
+
+            return memoryContext.ReadFromTarget(address, buffer);
+        }
+    }
+
     [Fact]
     public void GetMethodDesc_R2R_WasmVirtualIPRangeList_ResolvesCapturedShape()
     {

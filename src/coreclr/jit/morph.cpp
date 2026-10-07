@@ -6417,16 +6417,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Couldn't inline - remember that this BB contains method calls
 
-    // Mark the block as a GC safe point for the call if possible.
-    // In the event the call indicates the block isn't a GC safe point
-    // and the call is unmanaged with a GC transition suppression request
-    // then insert a GC poll.
-
-    if (IsGcSafePoint(call))
-    {
-        compCurBB->SetFlags(BBF_GC_SAFE_POINT);
-    }
-
     // Regardless of the state of the basic block with respect to GC safe point,
     // we will always insert a GC Poll for scenarios involving a suppressed GC
     // transition. Only mark the block for GC Poll insertion on the first morph.
@@ -6571,6 +6561,13 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
             return result;
         }
+    }
+
+    // Mark the block as a GC safe point for the call if possible. This is done after the
+    // stelem.ref handling above, which may remove the call or convert it to a helper call.
+    if (IsGcSafePoint(call))
+    {
+        compCurBB->SetFlags(BBF_GC_SAFE_POINT);
     }
 
     if (call->IsNoReturn())
@@ -13308,6 +13305,20 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             bool       foundVal            = false;
             bool       profileInconsistent = false;
 
+            if (block->hasProfileWeight())
+            {
+                // Use unique successor edges, as duplicate jump table entries share an edge.
+                for (FlowEdge* const succEdge : block->SuccEdges())
+                {
+                    BasicBlock* const targetBlock = succEdge->getDestinationBlock();
+                    if (targetBlock->hasProfileWeight())
+                    {
+                        targetBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+                        profileInconsistent |= (targetBlock->NumSucc() > 0);
+                    }
+                }
+            }
+
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
                 FlowEdge* curEdge = *jumpTab;
@@ -13315,11 +13326,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
 
                 BasicBlock* const targetBlock = curEdge->getDestinationBlock();
-                if (block->hasProfileWeight() && targetBlock->hasProfileWeight())
-                {
-                    targetBlock->decreaseBBProfileWeight(curEdge->getLikelyWeight());
-                    profileInconsistent |= (targetBlock->NumSucc() > 0);
-                }
 
                 // If val matches switchVal or we are at the last entry and
                 // we never found the switch value then set the new jump dest
@@ -15328,19 +15334,20 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
 
             // If so, check for any struct last use and only do the expensive
             // tree walk if one exists.
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (!varTypeIsStruct(lcl) || !lcl->OperIsLocalRead())
+            stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                GenTree* lcl = occurrence.GetNode();
+                if (!lcl->OperIsLocalRead() || !varTypeIsStruct(occurrence.GetAccessType(this)))
                 {
-                    continue;
+                    return GenTree::VisitResult::Continue;
                 }
 
-                if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+                if ((occurrence.GetFlags() & GTF_VAR_DEATH) != 0)
                 {
                     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-                    break;
+                    return GenTree::VisitResult::Abort;
                 }
-            }
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 #endif

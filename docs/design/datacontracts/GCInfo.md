@@ -4,6 +4,15 @@ This contract is for fetching information related to GCInfo associated with nati
 
 The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
 
+WebAssembly uses the common decoder with `Wasm32GcInfoEncoding` traits from
+`src/coreclr/inc/gcinfotypes.h`: code lengths/offsets and stack offsets are
+unscaled, the code-length encoding base is 6, and there is no fixed stack
+parameter scratch area. The platform encoding has no interruptible-range
+count in its fat header (`HAS_INTERRUPTIBLE_RANGES` is false).
+`DecodeInterpreterGCInfo` uses the separate interpreter traits even on
+WebAssembly, including its code-length encoding base of 8 and its
+interruptible-range count field.
+
 ## APIs of contract
 
 ```csharp
@@ -220,7 +229,7 @@ The fat header is used for methods that cannot be encoded using the compact slim
 | ReversePInvokeFrameSlot | `REVERSE_PINVOKE_FRAME_ENCBASE` | Normalized reverse P/Invoke frame slot | If GC_INFO_REVERSE_PINVOKE_FRAME |
 | SizeOfStackOutgoingAndScratchArea | `SIZE_OF_STACK_AREA_ENCBASE` | Size of stack parameter area | Platform dependent |
 | NumSafePoints | `NUM_SAFE_POINTS_ENCBASE` | Number of safe points/callsites | #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED |
-| NumInterruptibleRanges | `NUM_INTERRUPTIBLE_RANGES_ENCBASE` | Number of interruptible ranges | |
+| NumInterruptibleRanges | `NUM_INTERRUPTIBLE_RANGES_ENCBASE` | Number of interruptible ranges | If `HAS_INTERRUPTIBLE_RANGES` (omitted for Wasm R2R) |
 
 ##### Header Flags
 
@@ -517,7 +526,10 @@ if HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA:  // platform-dependent
     fixedStackParameterScratchArea = DenormalizeSizeOfStackArea(DecodeVarLengthUnsigned(...))
 
 numSafePoints = DecodeVarLengthUnsigned(NUM_SAFE_POINTS_ENCBASE)
-numInterruptibleRanges = DecodeVarLengthUnsigned(NUM_INTERRUPTIBLE_RANGES_ENCBASE)
+if HAS_INTERRUPTIBLE_RANGES:  // false for Wasm R2R, which never has interruptible ranges
+    numInterruptibleRanges = DecodeVarLengthUnsigned(NUM_INTERRUPTIBLE_RANGES_ENCBASE)
+else:
+    numInterruptibleRanges = 0
 ```
 
 #### Body Decoding
@@ -646,6 +658,8 @@ For each chunk, the encoding stores:
 - **Transition points** within the chunk where each slot's liveness toggles.
 
 To determine liveness at the target offset: start from the chunk's final state, then apply any transitions that occur *after* the target offset (toggling the state backwards). A slot is live if its final state (after toggle adjustment) is 1.
+
+For encodings without interruptible ranges (`HAS_INTERRUPTIBLE_RANGES` is false, as for Wasm R2R), this step is replaced by reporting only untracked slots, including for `ExecutionAborted` frames. An aborted funclet shares those slots with parent frames that are skipped.
 
 **Step 4 — Report untracked slots**: Untracked slots are always live (they represent stack locations the JIT doesn't track at each safe point). They are reported unconditionally unless `ParentOfFuncletStackFrame` or `NoReportUntracked` flags are set. Untracked slots are reported with `reportScratchSlots=true` since the JIT may produce untracked scratch register slots for interior pointers.
 

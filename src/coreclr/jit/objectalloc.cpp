@@ -1822,7 +1822,6 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     //
     GenTree* const stackLocalAddr = m_compiler->gtNewLclAddrNode(lclNum, 0);
     newArr->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(stackLocalAddr).WellKnown(WellKnownArg::StackArrayLocal));
-    newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
 
     // Retype the call result as an unmanaged pointer
     //

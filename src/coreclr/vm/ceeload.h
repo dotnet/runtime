@@ -822,9 +822,11 @@ public:
     bool GetJMCStatus();
     void SetJMCStatus(bool fStatus);
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // If this is a dynamic module, eagerly serialize the metadata so that it is available for DAC.
     // This is a nop for non-dynamic modules.
     void UpdateDynamicMetadataIfNeeded();
+#endif
 
 #ifdef _DEBUG
     //
@@ -1034,7 +1036,7 @@ public:
         return m_pPEAssembly->GetMDImport();
     }
 
-#ifndef DACCESS_COMPILE
+#ifdef PROFILING_SUPPORTED
     IMetaDataEmit *GetEmitter()
     {
         WRAPPER_NO_CONTRACT;
@@ -1050,7 +1052,7 @@ public:
     }
 
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
-#endif // !DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED
 
 #if defined(FEATURE_READYTORUN)
     BOOL IsInSameVersionBubble(Module *target);
@@ -1469,10 +1471,10 @@ public:
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
 
-    // These are overridden by reflection modules
+    // This is overridden by reflection modules
     virtual TADDR GetIL(RVA il);
 
-    virtual PTR_VOID GetRvaField(RVA field);
+    PTR_VOID GetRvaField(RVA field);
     CHECK CheckRvaField(RVA field);
     CHECK CheckRvaField(RVA field, COUNT_T size);
 
@@ -1568,12 +1570,10 @@ public:
 #endif // !DACCESS_COMPILE
     TADDR GetDynamicIL(mdToken token);
 
-protected:
 #ifndef DACCESS_COMPILE
     void SetDynamicRvaField(mdToken token, TADDR blobAddress);
 #endif // !DACCESS_COMPILE
 
-public:
     TADDR GetDynamicRvaField(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
@@ -1756,11 +1756,6 @@ class ReflectionModule : public Module
 {
     VPTR_VTABLE_CLASS(ReflectionModule, Module)
 
- public:
-    HCEESECTION m_sdataSection;
-
- protected:
-    ICeeGenInternal * m_pCeeFileGen;
 private:
     RefClassWriter       *m_pInMemoryWriter;
 
@@ -1785,11 +1780,8 @@ public:
     void Destruct();
 #endif // !DACCESS_COMPILE
 
-    // Overrides functions to access sections
-    virtual TADDR GetIL(RVA target);
-    virtual PTR_VOID GetRvaField(RVA rva);
-
-    ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
+    // Emitted methods use their tokens in the metadata RVA column.
+    virtual TADDR GetIL(RVA methodToken);
 
     RefClassWriter *GetClassWriter()
     {
@@ -1798,8 +1790,10 @@ public:
         return m_pInMemoryWriter;
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Eagerly serialize the metadata to a buffer that the debugger can retrieve.
     void CaptureModuleMetaDataToMemory();
+#endif
 };
 
 struct ModuleHolderTraits final

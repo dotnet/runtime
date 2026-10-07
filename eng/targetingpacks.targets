@@ -59,6 +59,9 @@
                       RuntimePackLabels="Mono"
                       Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and ('@(KnownRuntimePack)' == '' or '@(KnownRuntimePack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('RuntimePackLabels', 'Mono')->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true')" />
     <!-- always add wasi-wasm as it is never added by the sdk -->
+    <KnownFrameworkReference Update="@(KnownFrameworkReference->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"
+                             RuntimePackRuntimeIdentifiers="%(RuntimePackRuntimeIdentifiers);wasi-wasm"
+                             Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
     <KnownRuntimePack Update="@(KnownRuntimePack->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->WithMetadataValue('RuntimePackLabels', 'Mono')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"
                       RuntimePackRuntimeIdentifiers="%(RuntimePackRuntimeIdentifiers);wasi-wasm"
                       Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />

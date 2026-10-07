@@ -438,6 +438,7 @@ StgPool::AddSegment(
     return S_OK;
 } // StgPool::AddSegment
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 #ifndef DACCESS_COMPILE
 //*****************************************************************************
 // The entire string pool is written to the given stream. The stream is aligned
@@ -575,6 +576,7 @@ StgPool::PersistPartialToStream(
 
     return hr;
 } // StgPool::PersistPartialToStream
+#endif // FEATURE_METADATA_PERSISTENCE
 
 // Copies data from pSourcePool starting at index nStartSourceIndex.
 __checkReturn
@@ -1791,4 +1793,3 @@ StgBlobPool::RehashBlobs()
     }
     return (S_OK);
 } // StgBlobPool::RehashBlobs
-

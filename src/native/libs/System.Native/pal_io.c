@@ -79,6 +79,10 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #include <procfs.h>
 #endif
 
+#if defined(TARGET_WASI)
+#include <sys/random.h> // getentropy
+#endif
+
 #ifdef __linux__
 #include <sys/utsname.h>
 
@@ -916,6 +920,57 @@ int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
 #endif /* TARGET_WASI */
 }
 
+#if defined(TARGET_WASI)
+// wasi-libc provides neither mkstemp(s) nor mkdtemp, so emulate them the way libc does:
+// replace the trailing XXXXXX with random characters and try to create the entry exclusively,
+// retrying on name collisions.
+#define TEMP_NAME_RANDOM_CHARS 6
+#define TEMP_NAME_MAX_ATTEMPTS 100
+
+// Validates the template and returns a pointer to the first of the six 'X' characters that
+// precede a suffix of suffixLength characters. Returns NULL and sets errno on failure.
+static char* GetTempNameRandomChars(char* pathTemplate, int32_t suffixLength)
+{
+    size_t pathTemplateLength = strlen(pathTemplate);
+    if (suffixLength < 0 || pathTemplateLength < TEMP_NAME_RANDOM_CHARS || (size_t)suffixLength > pathTemplateLength - TEMP_NAME_RANDOM_CHARS)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    char* randomChars = pathTemplate + pathTemplateLength - (size_t)suffixLength - TEMP_NAME_RANDOM_CHARS;
+    for (int32_t i = 0; i < TEMP_NAME_RANDOM_CHARS; i++)
+    {
+        if (randomChars[i] != 'X')
+        {
+            errno = EINVAL;
+            return NULL;
+        }
+    }
+
+    return randomChars;
+}
+
+// Replaces the six characters at randomChars with random [A-Za-z0-9] characters.
+// Returns 0 on success, or -1 with errno set on failure.
+static int32_t FillTempNameRandomChars(char* randomChars)
+{
+    static const char s_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    uint8_t randomBytes[TEMP_NAME_RANDOM_CHARS];
+    if (getentropy(randomBytes, sizeof(randomBytes)) != 0)
+    {
+        return -1;
+    }
+
+    for (int32_t i = 0; i < TEMP_NAME_RANDOM_CHARS; i++)
+    {
+        randomChars[i] = s_chars[randomBytes[i] % (sizeof(s_chars) - 1)];
+    }
+
+    return 0;
+}
+#endif /* TARGET_WASI */
+
 char* SystemNative_MkdTemp(char* pathTemplate)
 {
 #if !defined(TARGET_WASI)
@@ -923,6 +978,33 @@ char* SystemNative_MkdTemp(char* pathTemplate)
     while ((result = mkdtemp(pathTemplate)) == NULL && errno == EINTR);
     return result;
 #else /* TARGET_WASI */
+    char* randomChars = GetTempNameRandomChars(pathTemplate, 0);
+    if (randomChars == NULL)
+    {
+        return NULL;
+    }
+
+    for (int32_t attempt = 0; attempt < TEMP_NAME_MAX_ATTEMPTS; attempt++)
+    {
+        if (FillTempNameRandomChars(randomChars) != 0)
+        {
+            return NULL;
+        }
+
+        int result;
+        while ((result = mkdir(pathTemplate, 0700)) < 0 && errno == EINTR);
+        if (result == 0)
+        {
+            return pathTemplate;
+        }
+
+        if (errno != EEXIST)
+        {
+            return NULL;
+        }
+    }
+
+    errno = EEXIST;
     return NULL;
 #endif /* TARGET_WASI */
 }
@@ -966,8 +1048,28 @@ intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
     {
         pathTemplate[firstSuffixIndex] = firstSuffixChar;
     }
-#elif TARGET_WASI
-    assert_msg(false, "Not supported on WASI", 0);
+#elif defined(TARGET_WASI)
+    char* randomChars = GetTempNameRandomChars(pathTemplate, suffixLength);
+    if (randomChars == NULL)
+    {
+        return -1;
+    }
+
+    for (int32_t attempt = 0; attempt < TEMP_NAME_MAX_ATTEMPTS; attempt++)
+    {
+        if (FillTempNameRandomChars(randomChars) != 0)
+        {
+            return -1;
+        }
+
+        while ((result = open(pathTemplate, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0600)) < 0 && errno == EINTR);
+        if (result >= 0 || errno != EEXIST)
+        {
+            return result;
+        }
+    }
+
+    errno = EEXIST;
     result = -1;
 #else
 #error "Cannot find mkstemps nor mkstemp on this platform"
@@ -1577,6 +1679,13 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
+#if defined(TARGET_WASI)
+    // WASI hosts are not required to support setting file times, so copying them is best effort.
+    if (ret != 0 && (errno == ENOSYS || errno == ENOTSUP))
+    {
+        ret = 0;
+    }
+#endif /* TARGET_WASI */
     // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
     // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and
     // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
@@ -1586,8 +1695,8 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         return -1;
     }
 
-#if HAVE_FCHMOD
-    // Copy permissions.
+#if HAVE_FCHMOD && !defined(TARGET_WASI)
+    // Copy permissions. WASI has no permission bits and wasi-libc's fchmod always fails with ENOSYS.
     // Even though managed code created the file with permissions matching those of the source file,
     // we need to copy permissions because the open permissions may be filtered by 'umask'.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
@@ -1595,7 +1704,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     {
         return -1;
     }
-#endif /* HAVE_FCHMOD */
+#endif /* HAVE_FCHMOD && !defined(TARGET_WASI) */
 
     return 0;
 #endif // HAVE_FCOPYFILE

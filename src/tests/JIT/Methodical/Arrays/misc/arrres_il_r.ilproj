@@ -23,6 +23,14 @@
       puts the guard into the run script, so it must be kept.
     -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!--
+      WebAssembly ReadyToRun code reports untracked and call-spilled stack GC refs as always live (see
+      "GC References at Call Sites" in docs/design/coreclr/botr/clr-abi.md and
+      https://github.com/dotnet/runtime/issues/134803), so the Test objects can outlive the collections
+      this test expects to finalize them. The hand-written IL entry point has no generated wrapper,
+      so the skip has to be expressed here.
+    -->
+    <R2RIncompatible Condition="'$(TargetArchitecture)' == 'wasm' and '$(RuntimeFlavor)' == 'coreclr'">true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="arrres.il" />

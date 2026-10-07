@@ -565,7 +565,9 @@ namespace Internal.IL.Stubs
             }
             else
             {
-                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers"u8, "GetEmptyObjectArray"u8);
+                MethodDesc emptyObjectArrayMethod = Context.SystemModule.GetKnownType("System"u8, "Array"u8)
+                    .GetKnownMethod("Empty"u8, null)
+                    .MakeInstantiatedMethod(objectType);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(emptyObjectArrayMethod));
                 codeStream.EmitStLoc(argsLocal);
             }

@@ -24,6 +24,7 @@ namespace System.Net.Security.Tests
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            bool validationCallbackCalled = false;
 
             await WithVirtualConnection(async (server, client) =>
                 {
@@ -33,6 +34,7 @@ namespace System.Net.Security.Tests
                     });
 
                     SslServerAuthenticationOptions options = DefaultServerOptions();
+                    options.AllowTlsResume = false;
 
                     int timesCallbackCalled = 0;
                     options.ServerCertificateSelectionCallback = (sender, actualHostName) =>
@@ -50,10 +52,12 @@ namespace System.Net.Security.Tests
                 },
                 (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
+                    validationCallbackCalled = true;
                     Assert.Equal(serverCert, certificate);
                     return true;
                 }
             );
+            Assert.True(validationCallbackCalled);
         }
 
         [Theory]
@@ -110,6 +114,7 @@ namespace System.Net.Security.Tests
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             int timesCallbackCalled = 0;
+            bool validationCallbackCalled = false;
 
             var selectionCallback = new LocalCertificateSelectionCallback((object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] issuers) =>
             {
@@ -121,6 +126,7 @@ namespace System.Net.Security.Tests
 
             var validationCallback = new RemoteCertificateValidationCallback((object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
             {
+                validationCallbackCalled = true;
                 Assert.Equal(serverCert, certificate);
                 return true;
             });
@@ -135,11 +141,13 @@ namespace System.Net.Security.Tests
                 });
 
                 SslServerAuthenticationOptions options = DefaultServerOptions();
+                options.AllowTlsResume = false;
                 options.ServerCertificate = serverCert;
 
                 await TaskTimeoutExtensions.WhenAllOrAnyFailed(new[] { clientJob, server.AuthenticateAsServerAsync(options, CancellationToken.None) });
 
                 Assert.Equal(1, timesCallbackCalled);
+                Assert.True(validationCallbackCalled);
             }
         }
 

@@ -139,7 +139,7 @@ INT32 Object::GetHashCodeEx()
                     }
                     else
                     {
-                        __SwitchToThread(0, ++dwSwitchCount);
+                        minipal_switch_to_thread(++dwSwitchCount);
                     }
                     continue;
                 }

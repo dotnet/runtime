@@ -331,7 +331,7 @@ void Debugger::ReleaseDebuggerLockAndBlockForShutdownIfNotSpecialThread(Thread *
         GCX_ASSERT_PREEMP();
 
         WaitForEndOfShutdown();
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        minipal_sleep(INFINITE);
         _ASSERTE(!"Can not reach here");
     }
 }
@@ -366,7 +366,8 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     if (m_fDisabled)
     {
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        GCX_ASSERT_PREEMP();
+        minipal_sleep(INFINITE);
         _ASSERTE (!"Can not reach here");
     }
 
@@ -379,7 +380,8 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     if (m_fDisabled)
     {
         m_mutex.Leave();
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        GCX_ASSERT_PREEMP();
+        minipal_sleep(INFINITE);
         _ASSERTE (!"Can not reach here");
     }
 
@@ -476,7 +478,8 @@ void Debugger::DoNotCallDirectlyPrivateUnlock(void)
         //
         if (m_fDisabled)
         {
-            __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+            GCX_ASSERT_PREEMP();
+            minipal_sleep(INFINITE);
             _ASSERTE (!"Can not reach here");
         }
 

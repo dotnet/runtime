@@ -19,6 +19,19 @@ responsible for:
   review, and
 - formatting the final report back to the user.
 
+These shared analysis and template instructions do not grant permission to
+publish. The caller must follow the repository's
+[GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization):
+ordinary interactive and coding sessions require explicit authorization. In an
+interactive session, advance permission covering the proposed publication is
+sufficient; do not ask again. An executing user-requested or enabled workflow
+may publish the operations its documented publication contract authorizes for
+its currently authorized actions, without another approval step unless the
+contract requires one. A repository-configured agentic workflow may publish
+only the operations authorized by its purpose and configured outputs, through
+its configured output mechanism. Without authorization, leave a draft and
+report the pending decision. Dry-run mode never publishes.
+
 <a id="shared-kbe-rules"></a>
 
 ## Shared rules
@@ -59,6 +72,9 @@ retrieval failure to the caller and do not create a KBE for that signature
 while the lookup remains inconclusive.
 These rules also apply to candidate body and comments reads. Do not switch
 retrieval paths to work around an integrity-filtered or denied read.
+When the caller provides a bounded issue-search wrapper, use that wrapper for
+every issue query and read every returned candidate through the caller's
+full-issue transport before making a duplicate decision.
 
 1. Full `[FAIL]` line.
 2. Assertion text.
@@ -125,13 +141,21 @@ If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
 `skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
-If any lookup returns a `[Filtered]` or `[DIFC-FILTERED]` marker, treat it as
-a possible existing-KBE hit and record
+If an issue search fails, or a full candidate read fails or returns a
+`[Filtered]` marker for a KBE-oriented search, treat it as a likely
+existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
-This includes variation 5 and searches without a KBE label filter. A hidden
-result does not establish whether the issue is an unlabeled tracker or a KBE.
+If a full read fails or returns a `[Filtered]` marker for a plain tracker
+candidate, stop the search and record
+`skipped: integrity-filtered tracker candidate, needs human review`. Do not
+continue to issue creation.
+
+If any other lookup returns a `[Filtered]` or `[DIFC-FILTERED]` marker, treat it
+as a possible existing candidate and record
+`skipped: integrity-filtered candidate, needs human review`. A hidden result
+does not establish whether the issue is an unlabeled tracker or a KBE.
 
 On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
@@ -145,7 +169,8 @@ it does not end the inspection.
 The existing-KBE search above is open-only, so a `[ci-scan]` KBE already closed
 as fixed, duplicate, or stale is invisible and a recurring signature gets
 re-filed from scratch. After the open search misses, also scan recently-closed
-candidates:
+candidates, then read every returned candidate before comparing its contents or
+`closed_at`:
 
 - `is:issue is:closed label:"Known Build Error" "<assertion-or-test-name>" closed:>=<30-days-ago>`
 - `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` to catch a
@@ -213,7 +238,7 @@ fall back to the post-close recurrence rule above.
 
 ## Search for an area-team tracker
 
-Search for a plain tracker with:
+Search for a plain tracker, then read every returned candidate:
 
 - `is:issue is:open in:title "<test-name>"`
 - `in:body "<test-file-path>"`
@@ -234,6 +259,10 @@ A plain tracker is **not** a KBE substitute. Build Analysis only matches
 <a id="search-existing-prs"></a>
 
 ## Search for existing PRs already handling the failure
+
+Use the PR search and full-PR read transports available in the caller's
+environment. Do not decide that a PR handles the failure from search metadata
+alone.
 
 ### Existing test-disable PR
 

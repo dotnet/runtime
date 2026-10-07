@@ -751,8 +751,8 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                 {
                     g_directThreadLocalTLSBytesAvailable = newBytesAvailable - alignmentAdjust;
                     newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, actualIndexOffset);
+                    usedDirectOnThreadLocalDataPath = true;
                 }
-                usedDirectOnThreadLocalDataPath = true;
             }
             if (usedDirectOnThreadLocalDataPath)
                 VolatileStore(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);
