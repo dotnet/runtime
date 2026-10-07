@@ -32,9 +32,11 @@ namespace System.Net.Http.Functional.Tests
 
         // This enables customizing ServerCertificateCustomValidationCallback in WinHttpHandler variants:
         protected bool AllowAllCertificates { get; set; } = true;
-        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(
+        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(allowTlsResume: true);
+        protected new HttpClientHandler CreateHttpClientHandler(bool allowTlsResume) => CreateHttpClientHandler(
             useVersion: UseVersion,
-            allowAllCertificates: UseVersion >= HttpVersion20.Value && AllowAllCertificates);
+            allowAllCertificates: UseVersion >= HttpVersion20.Value && AllowAllCertificates,
+            allowTlsResume: allowTlsResume);
         protected override HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
         [Fact]
@@ -143,7 +145,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Configuration.Http.RemoteServer remoteServer, Uri url, bool checkRevocation)
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 bool callbackCalled = false;
@@ -186,7 +188,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task UseCallback_CallbackReturnsFailure_ThrowsException()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ServerCertificateCustomValidationCallback = delegate { return false; };
@@ -198,7 +200,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 var e = new DivideByZeroException();
@@ -221,7 +223,8 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(CertificateValidationServers))]
         public async Task NoCallback_BadCertificate_ThrowsException(string url)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
             }
@@ -245,7 +248,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
+            HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false);
             handler.CheckCertificateRevocationList = true;
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -261,7 +264,7 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, string useHttp2String, SslPolicyErrors expectedErrors)
         {
-            HttpClientHandler handler = CreateHttpClientHandler(useHttp2String);
+            HttpClientHandler handler = CreateHttpClientHandler(useHttp2String, allowTlsResume: false);
             using (HttpClient client = CreateHttpClient(handler, useHttp2String))
             {
                 bool callbackCalled = false;
@@ -318,18 +321,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors(int requestCount)
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                bool callbackCalled = false;
-                X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate();
+                int callbackCount = 0;
+                using X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate();
 
                 handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
-                    callbackCalled = true;
+                    callbackCount++;
                     Assert.NotNull(request);
                     Assert.NotNull(cert);
                     Assert.NotNull(chain);
@@ -341,12 +346,23 @@ namespace System.Net.Http.Functional.Tests
 
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.GetAsync($"https://{certificate.GetNameInfo(X509NameType.SimpleName, false)}:{url.Port}/"));
+                    for (int i = 0; i < requestCount; i++)
+                    {
+#if NETFRAMEWORK
+                        // The loopback authentication overload disposes its certificate after each handshake.
+                        options.Certificate = new X509Certificate2(certificate);
+#endif
+                        Task<HttpResponseMessage> responseTask = client.GetAsync($"https://{certificate.GetNameInfo(X509NameType.SimpleName, false)}:{url.Port}/");
+                        await TestHelper.WhenAllCompletedOrAnyFailed(
+                            server.AcceptConnectionSendResponseAndCloseAsync(),
+                            responseTask);
+                        using HttpResponseMessage response = await responseTask;
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.Equal(i + 1, callbackCount);
+                    }
                 }, options);
 
-                Assert.True(callbackCalled);
+                Assert.Equal(requestCount, callbackCount);
             }
         }
 
@@ -411,7 +427,8 @@ namespace System.Net.Http.Functional.Tests
                 var version = Version.Parse(useVersionString);
                 using HttpClientHandler handler = CreateHttpClientHandler(
                     useVersion: version,
-                    allowAllCertificates: version >= HttpVersion20.Value && bool.Parse(allowAllCertificatesString));
+                    allowAllCertificates: version >= HttpVersion20.Value && bool.Parse(allowAllCertificatesString),
+                    allowTlsResume: false);
                 using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
