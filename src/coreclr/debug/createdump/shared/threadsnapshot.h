@@ -83,7 +83,7 @@ private:
 #endif
 #else // __APPLE__
     struct user_regs_struct m_gpRegisters;      // general purpose registers
-    struct user_fpregs_struct m_fpRegisters;    // floating point registersReal
+    struct user_fpregs_struct m_fpRegisters;    // floating point registers
 #if defined(__i386__)
     struct user_fpxregs_struct m_fpxRegisters;  // x86 floating point registers
 #elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)

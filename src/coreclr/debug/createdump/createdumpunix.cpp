@@ -108,26 +108,27 @@ CreateDump(const CreateDumpOptions& options)
 
 #ifdef __APPLE__
         DumpWriter dumpWriter(*crashInfo);
-        if (!dumpWriter.OpenDump(dumpPath.c_str()))
-        {
-            goto exit;
-        }
-        if (!dumpWriter.WriteDump())
-        {
-            goto exit;
-        }
 #else
         DumpWriter dumpWriter(processInfo);
+#endif
         if (!dumpWriter.OpenDump(dumpPath.c_str()))
         {
             goto exit;
         }
+#ifdef __APPLE__
+        bool dumpWritten = dumpWriter.WriteDump();
+#else
         // The template lets external createdump use std::set while linked createdump uses DynamicArray
-        if (!dumpWriter.WriteDump(crashInfo->ModuleMappings(), crashInfo->MemoryRegions()))
+        bool dumpWritten = dumpWriter.WriteDump(crashInfo->ModuleMappings(), crashInfo->MemoryRegions());
+#endif
+        if (!dumpWritten)
         {
+            printf_error("Writing dump FAILED\n");
+
+            // Delete the partial dump file on error
+            remove(dumpPath.c_str());
             goto exit;
         }
-#endif
     }
     result = true;
 exit:
