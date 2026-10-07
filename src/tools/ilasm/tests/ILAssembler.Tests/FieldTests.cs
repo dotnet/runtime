@@ -280,7 +280,7 @@ namespace ILAssembler.Tests
                 .custom (field int32 Test::Value) instance void [mscorlib]{{attributeType}}::.ctor() = ( 01 00 00 00 )
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
 
@@ -302,7 +302,7 @@ namespace ILAssembler.Tests
                 .custom (field int32 Test::Value) instance void [mscorlib]System.Runtime.InteropServices.FieldOffsetAttribute::.ctor(uint32) = ( 01 00 08 00 00 00 00 00 )
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
 
@@ -329,7 +329,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
 
@@ -345,7 +345,7 @@ namespace ILAssembler.Tests
         [InlineData(0, true)]
         [InlineData(4, false)]
         [InlineData(4, true)]
-        public void PseudoCustomAttribute_FieldOffset_ExplicitOwnerIsAppliedAfterFieldLayout(
+        public void PseudoCustomAttribute_FieldOffset_ExplicitOwnerUsesSourceOrder(
             int? explicitOffset,
             bool attributeFirst)
         {
@@ -365,11 +365,11 @@ namespace ILAssembler.Tests
                 {{(attributeFirst ? "" : attribute)}}
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
 
-            Assert.Equal(32, field.GetOffset());
+            Assert.Equal(explicitOffset ?? (attributeFirst ? 8 : 32), field.GetOffset());
             Assert.Equal(1, reader.GetTableRowCount(TableIndex.FieldLayout));
             Assert.Empty(field.GetCustomAttributes());
         }
@@ -381,7 +381,7 @@ namespace ILAssembler.Tests
         [InlineData(0, true)]
         [InlineData(4, false)]
         [InlineData(4, true)]
-        public void PseudoCustomAttribute_FieldOffset_LocalConstructorIsAppliedAfterFieldLayout(
+        public void PseudoCustomAttribute_FieldOffset_LocalConstructorUsesSourceOrder(
             int? explicitOffset,
             bool attributeFirst)
         {
@@ -402,11 +402,11 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
 
-            Assert.Equal(32, field.GetOffset());
+            Assert.Equal(explicitOffset ?? (attributeFirst ? 8 : 32), field.GetOffset());
             Assert.Equal(1, reader.GetTableRowCount(TableIndex.FieldLayout));
             Assert.Empty(field.GetCustomAttributes());
         }
@@ -418,7 +418,7 @@ namespace ILAssembler.Tests
         [InlineData(0, true)]
         [InlineData(4, false)]
         [InlineData(4, true)]
-        public void PseudoCustomAttribute_FieldOffset_DeferredLocalConstructorFollowsExplicitOwner(
+        public void PseudoCustomAttribute_FieldOffset_LocalConstructorAndExplicitOwnerUseSourceOrder(
             int? explicitOffset,
             bool attributeFirst)
         {
@@ -440,11 +440,11 @@ namespace ILAssembler.Tests
                 {{(attributeFirst ? "" : attribute)}}
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
 
-            Assert.Equal(32, field.GetOffset());
+            Assert.Equal(explicitOffset ?? (attributeFirst ? 8 : 16), field.GetOffset());
             Assert.Equal(1, reader.GetTableRowCount(TableIndex.FieldLayout));
             Assert.Empty(field.GetCustomAttributes());
         }
@@ -468,7 +468,7 @@ namespace ILAssembler.Tests
                 """;
 
             ImmutableArray<Diagnostic> diagnostics =
-                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
 
             Assert.Equal(expectedDiagnostic, Assert.Single(diagnostics).Id);
         }

@@ -28,6 +28,9 @@ internal sealed class IlasmRootCommand : RootCommand
     public Option<bool> Optimize { get; } =
         new("--optimize", "-O") { Description = "Optimize long instructions to short" };
 
+    public Option<bool> PseudoAttributes { get; } =
+        new("--pseudoattributes") { Description = "Lower recognized pseudo custom attributes into metadata flags and auxiliary tables" };
+
     public Option<bool> Fold { get; } =
         new("--fold") { Description = "Fold identical method bodies into one" };
 
@@ -121,6 +124,7 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(Debug);
         Options.Add(DebugMode);
         Options.Add(Optimize);
+        Options.Add(PseudoAttributes);
         Options.Add(Fold);
         Options.Add(NoLogo);
         Options.Add(Quiet);

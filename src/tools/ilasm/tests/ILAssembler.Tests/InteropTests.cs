@@ -796,7 +796,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = GetMethod(reader, "M");
 
@@ -824,7 +824,7 @@ namespace ILAssembler.Tests
             // DllImportAttribute("kernel32.dll") with no named arguments.
             string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 00 00 )";
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = GetMethod(reader, "Native");
 
@@ -852,7 +852,7 @@ namespace ILAssembler.Tests
                 + "53 02 0D 45 78 61 63 74 53 70 65 6C 6C 69 6E 67 01 "
                 + "53 02 0B 50 72 65 73 65 72 76 65 53 69 67 00 )";
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = GetMethod(reader, "Native");
             var import = method.GetImport();
@@ -894,7 +894,7 @@ namespace ILAssembler.Tests
         private static void AssertInvalidDllImport(string blob)
         {
             string source = DllImportSource(blob);
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, Assert.Single(diagnostics).Id);
 
             var compiler = new DocumentCompiler();
@@ -902,7 +902,7 @@ namespace ILAssembler.Tests
                 new SourceText(source, "test.il"),
                 _ => { Assert.Fail("Expected no includes"); return default; },
                 _ => { Assert.Fail("Expected no resources"); return default; },
-                new Options { ErrorTolerant = true });
+                new Options { PseudoAttributes = true, ErrorTolerant = true });
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, Assert.Single(errorTolerantDiagnostics).Id);
             Assert.NotNull(result);
 
@@ -930,7 +930,7 @@ namespace ILAssembler.Tests
             string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 01 00 "
                 + "53 55 30 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E "
                 + $"11 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E {valueBytes} )";
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             Assert.Equal(expected, GetMethod(reader, "Native").GetImport().Attributes);
@@ -946,7 +946,7 @@ namespace ILAssembler.Tests
             string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 01 00 "
                 + "53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 "
                 + $"07 43 68 61 72 53 65 74 {valueBytes} )";
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             Assert.Equal(expected | MethodImportAttributes.CallingConventionWinApi, GetMethod(reader, "Native").GetImport().Attributes);
@@ -957,7 +957,7 @@ namespace ILAssembler.Tests
         {
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
                 DllImportSource("( 01 00 00 00 00 )"),
-                new Options());
+                new Options { PseudoAttributes = true });
 
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
@@ -982,7 +982,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var import = GetMethod(reader, "Native").GetImport();
 
@@ -1015,7 +1015,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = GetMethod(reader, "M");
             var parameter = reader.GetParameter(Assert.Single(method.GetParameters()));
@@ -1044,7 +1044,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
 
@@ -1073,7 +1073,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, diagnostic.Id);
         }
@@ -1106,7 +1106,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             var property = reader.GetPropertyDefinition(Assert.Single(reader.PropertyDefinitions));
@@ -1141,7 +1141,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var setterValue = reader.GetParameter(GetMethod(reader, "set_Value").GetParameters()
                 .Single(handle => reader.GetParameter(handle).SequenceNumber == 1));
@@ -1166,7 +1166,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
             var diagnostic = Assert.Single(diagnostics);
 
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
@@ -1185,7 +1185,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
             var diagnostic = Assert.Single(diagnostics);
 
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
@@ -1213,7 +1213,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var parameter = reader.GetParameter(Assert.Single(GetMethod(reader, "M").GetParameters()));
 

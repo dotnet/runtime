@@ -175,7 +175,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = reader.MethodDefinitions
                 .Select(reader.GetMethodDefinition)
@@ -208,7 +208,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = reader.MethodDefinitions
                 .Select(reader.GetMethodDefinition)
@@ -238,7 +238,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = reader.MethodDefinitions
                 .Select(reader.GetMethodDefinition)
@@ -271,7 +271,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
@@ -299,7 +299,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = reader.MethodDefinitions
                 .Select(reader.GetMethodDefinition)
@@ -325,7 +325,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
@@ -356,7 +356,7 @@ namespace ILAssembler.Tests
                 new SourceText(source, "test.il"),
                 _ => { Assert.Fail("Expected no includes"); return default; },
                 _ => { Assert.Fail("Expected no resources"); return default; },
-                new Options { ErrorTolerant = true });
+                new Options { PseudoAttributes = true, ErrorTolerant = true });
 
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
@@ -391,7 +391,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = reader.MethodDefinitions
                 .Select(reader.GetMethodDefinition)

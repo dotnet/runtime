@@ -244,15 +244,6 @@ internal static partial class PseudoCustomAttributes
         _ => throw new BadImageFormatException(),
     };
 
-    private static uint GetUInt32(object? value) => value switch
-    {
-        short signed => unchecked((ushort)signed),
-        ushort unsigned => unsigned,
-        int signed => unchecked((uint)signed),
-        uint unsigned => unsigned,
-        _ => throw new BadImageFormatException(),
-    };
-
     private static bool GetBoolean(object? value) =>
         value is bool boolean ? boolean : throw new BadImageFormatException();
 

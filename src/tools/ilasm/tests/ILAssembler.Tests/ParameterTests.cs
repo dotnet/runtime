@@ -249,7 +249,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = reader.MethodDefinitions
                 .Select(reader.GetMethodDefinition)

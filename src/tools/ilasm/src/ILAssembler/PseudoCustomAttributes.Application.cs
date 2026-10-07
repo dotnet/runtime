@@ -121,17 +121,16 @@ internal static partial class PseudoCustomAttributes
         LoweringContext context,
         CustomAttributeValue<SerializationTypeCode> arguments)
     {
-        uint offset = GetUInt32(arguments.FixedArguments[0].Value);
-        if (offset > int.MaxValue)
+        int offset = GetInt32(arguments.FixedArguments[0].Value);
+        if (offset < 0)
         {
             return context.InvalidValue();
         }
 
         var field = (EntityRegistry.FieldDefinitionEntity)context.Owner;
-        // SetClassLayout follows field attributes, but precedes deferred attributes.
-        if (!field.HasExplicitOffset || context.IsDeferred)
+        if (!field.HasExplicitOffset)
         {
-            field.Offset = (int)offset;
+            field.Offset = offset;
         }
 
         return true;
@@ -191,63 +190,61 @@ internal static partial class PseudoCustomAttributes
             ? unchecked((ushort)GetInt16(fixedValue))
             : GetInt32(fixedValue));
 
-        TypeAttributes layout = layoutKind switch
+        TypeAttributes? layout = layoutKind switch
         {
             LayoutKind.Sequential => TypeAttributes.SequentialLayout,
             LayoutKind.Extended => TypeAttributes.ExtendedLayout,
             LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
             LayoutKind.Auto => TypeAttributes.AutoLayout,
-            _ => (TypeAttributes)(-1),
+            _ => null,
         };
 
-        if (layout == (TypeAttributes)(-1))
+        if (layout is null)
         {
             return context.InvalidValue();
         }
 
-        TypeAttributes attributes = (type.Attributes & ~TypeAttributes.LayoutMask) | layout;
+        TypeAttributes attributes = (type.Attributes & ~TypeAttributes.LayoutMask) | layout.Value;
         int? packingSize = null;
         int? classSize = null;
 
         if (FindNamedArgument(arguments, StructLayoutPack) is { } packArgument)
         {
-            uint pack = GetUInt32(packArgument.Value);
-            if (pack > 128 || (pack & (pack - 1)) != 0)
+            int pack = GetInt32(packArgument.Value);
+            if (pack < 0 || pack > 128 || (pack & (pack - 1)) != 0)
             {
                 return context.InvalidValue();
             }
 
-            packingSize = (int)pack;
+            packingSize = pack;
         }
 
         if (FindNamedArgument(arguments, StructLayoutSize) is { } sizeArgument)
         {
-            uint size = GetUInt32(sizeArgument.Value);
-            if (size > int.MaxValue)
+            int size = GetInt32(sizeArgument.Value);
+            if (size < 0)
             {
                 return context.InvalidValue();
             }
 
-            classSize = (int)size;
+            classSize = size;
         }
 
         if (FindNamedArgument(arguments, StructLayoutCharSet) is { } charSetArgument)
         {
-            switch ((CharSet)GetUInt32(charSetArgument.Value))
+            TypeAttributes? charSet = (CharSet)GetInt32(charSetArgument.Value) switch
             {
-                case CharSet.None:
-                case CharSet.Ansi:
-                    attributes = (attributes & ~TypeAttributes.StringFormatMask) | TypeAttributes.AnsiClass;
-                    break;
-                case CharSet.Unicode:
-                    attributes = (attributes & ~TypeAttributes.StringFormatMask) | TypeAttributes.UnicodeClass;
-                    break;
-                case CharSet.Auto:
-                    attributes = (attributes & ~TypeAttributes.StringFormatMask) | TypeAttributes.AutoClass;
-                    break;
-                default:
-                    return context.InvalidValue();
+                CharSet.None or CharSet.Ansi => TypeAttributes.AnsiClass,
+                CharSet.Unicode => TypeAttributes.UnicodeClass,
+                CharSet.Auto => TypeAttributes.AutoClass,
+                _ => null,
+            };
+            if (charSet is null)
+            {
+                return context.InvalidValue();
             }
+
+            attributes = (attributes & ~TypeAttributes.StringFormatMask) | charSet.Value;
         }
 
         type.Attributes = attributes;
@@ -280,7 +277,7 @@ internal static partial class PseudoCustomAttributes
 
         if (FindNamedArgument(arguments, DllImportCallingConvention) is { } callingConventionArgument)
         {
-            MethodImportAttributes? callingConventionFlags = (CallingConvention)GetUInt32(callingConventionArgument.Value) switch
+            MethodImportAttributes? callingConventionFlags = (CallingConvention)GetInt32(callingConventionArgument.Value) switch
             {
                 CallingConvention.Winapi => MethodImportAttributes.CallingConventionWinApi,
                 CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
@@ -303,7 +300,7 @@ internal static partial class PseudoCustomAttributes
 
         if (FindNamedArgument(arguments, DllImportCharSet) is { } charSetArgument)
         {
-            MethodImportAttributes? charSetFlags = (CharSet)GetUInt32(charSetArgument.Value) switch
+            MethodImportAttributes? charSetFlags = (CharSet)GetInt32(charSetArgument.Value) switch
             {
                 CharSet.None => MethodImportAttributes.None,
                 CharSet.Ansi => MethodImportAttributes.CharSetAnsi,

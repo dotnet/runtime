@@ -1006,7 +1006,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             var attribute = reader.GetCustomAttribute(Assert.Single(reader.GetAssemblyDefinition().GetCustomAttributes()));

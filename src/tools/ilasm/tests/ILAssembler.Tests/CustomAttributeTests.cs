@@ -1091,7 +1091,7 @@ namespace ILAssembler.Tests
                 new SourceText(source, "test.il"),
                 _ => { Assert.Fail("Expected no includes"); return default; },
                 _ => { Assert.Fail("Expected no resources"); return default; },
-                new Options { ErrorTolerant = true });
+                new Options { PseudoAttributes = true, ErrorTolerant = true });
 
             Assert.NotNull(result);
             var image = new BlobBuilder();
@@ -1111,7 +1111,7 @@ namespace ILAssembler.Tests
         [MemberData(nameof(PseudoAttributeTypeFlagData))]
         public void PseudoCustomAttribute_OnType_LowersToFlagAndDropsAttribute(string attributeType, TypeAttributes expected)
         {
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(TypeWithAttribute(attributeType), new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(TypeWithAttribute(attributeType), new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var testType = GetTestType(reader);
 
@@ -1136,7 +1136,7 @@ namespace ILAssembler.Tests
         {
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
                 TypeWithAttribute(attributeType, constructor, value),
-                new Options());
+                new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             var attribute = reader.GetCustomAttribute(Assert.Single(GetTestType(reader).GetCustomAttributes()));
@@ -1161,7 +1161,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, diagnostic.Id);
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
@@ -1176,7 +1176,7 @@ namespace ILAssembler.Tests
         {
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
                 TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
-                new Options());
+                new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var testType = GetTestType(reader);
 
@@ -1195,7 +1195,7 @@ namespace ILAssembler.Tests
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
                 TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
-                new Options());
+                new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var testType = GetTestType(reader);
 
@@ -1221,7 +1221,7 @@ namespace ILAssembler.Tests
 
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
                 TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
-                new Options());
+                new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             Assert.Equal(expected, GetTestType(reader).Attributes & TypeAttributes.StringFormatMask);
@@ -1241,7 +1241,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var testType = GetTestType(reader);
             var layout = testType.GetLayout();
@@ -1296,7 +1296,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var method = reader.MethodDefinitions
                 .Select(reader.GetMethodDefinition)
@@ -1334,7 +1334,7 @@ namespace ILAssembler.Tests
                     }
                     """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             if (onType)
@@ -1356,7 +1356,7 @@ namespace ILAssembler.Tests
         [Theory]
         [InlineData("System.Security.DynamicSecurityMethodAttribute")]
         [InlineData("System.Security.SuppressUnmanagedCodeSecurityAttribute")]
-        public void PseudoCustomAttribute_SecurityAttributeOnField_IsEmittedUnchanged(string attributeType)
+        public void PseudoCustomAttribute_SecurityAttributeOnField_ReportsInvalidTarget(string attributeType)
         {
             string source = $$"""
                 .assembly extern mscorlib { }
@@ -1368,26 +1368,18 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
-            var reader = pe.GetMetadataReader();
-            var field = reader.GetFieldDefinition(Assert.Single(GetTestType(reader).GetFields()));
-            var attribute = reader.GetCustomAttribute(Assert.Single(field.GetCustomAttributes()));
-
-            Assert.Equal(FieldAttributes.Public, field.Attributes);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xDE, 0xAD }, reader.GetBlobBytes(attribute.Value));
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, Assert.Single(diagnostics).Id);
         }
 
         [Fact]
-        public void PseudoCustomAttribute_DynamicSecurityMethodOnType_IsEmittedUnchanged()
+        public void PseudoCustomAttribute_DynamicSecurityMethodOnType_ReportsInvalidTarget()
         {
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
                 TypeWithAttribute("System.Security.DynamicSecurityMethodAttribute"),
-                new Options());
-            var reader = pe.GetMetadataReader();
-            var type = GetTestType(reader);
+                new Options { PseudoAttributes = true });
 
-            Assert.Equal(default, type.Attributes & TypeAttributes.HasSecurity);
-            Assert.Single(type.GetCustomAttributes());
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -1398,7 +1390,7 @@ namespace ILAssembler.Tests
 
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
                 TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
-                new Options());
+                new Options { PseudoAttributes = true });
 
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeUnknownArgument, diagnostic.Id);
@@ -1422,7 +1414,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
             var layout = GetTestType(reader).GetLayout();
 
@@ -1461,7 +1453,7 @@ namespace ILAssembler.Tests
         {
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
                 TypeWithAttribute("System.ObsoleteAttribute"),
-                new Options());
+                new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             Assert.Single(GetTestType(reader).GetCustomAttributes());
@@ -1484,7 +1476,7 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             foreach (string typeName in new[] { "First", "Second" })
@@ -1514,7 +1506,7 @@ namespace ILAssembler.Tests
         {
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
                 TypeWithAttribute("System.SerializableAttribute", ".ctor()", value),
-                new Options());
+                new Options { PseudoAttributes = true });
 
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
@@ -1543,7 +1535,7 @@ namespace ILAssembler.Tests
                     "System.Runtime.InteropServices.StructLayoutAttribute",
                     ".ctor(int16)",
                     value),
-                new Options());
+                new Options { PseudoAttributes = true });
 
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
@@ -1559,7 +1551,7 @@ namespace ILAssembler.Tests
             string value = $"( 01 00 00 00 00 00 01 00 {kindBytes} {typeBytes} 04 50 61 63 6B 04 00 00 00 )";
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
                 TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
-                new Options());
+                new Options { PseudoAttributes = true });
             var reader = pe.GetMetadataReader();
 
             Assert.Equal(4, GetTestType(reader).GetLayout().PackingSize);
@@ -1574,7 +1566,7 @@ namespace ILAssembler.Tests
             string value = $"( 01 00 00 00 00 00 01 00 53 {typeBytes} )";
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
                 TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
-                new Options());
+                new Options { PseudoAttributes = true });
 
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, Assert.Single(diagnostics).Id);
         }
@@ -1595,7 +1587,7 @@ namespace ILAssembler.Tests
                     "test.il"),
                 _ => { Assert.Fail("Expected no includes"); return default; },
                 _ => { Assert.Fail("Expected no resources"); return default; },
-                new Options());
+                new Options { PseudoAttributes = true });
 
             var diagnostic = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);

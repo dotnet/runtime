@@ -279,7 +279,9 @@ internal static partial class PseudoCustomAttributes
                 }
                 break;
 
-            case int value when value == (int)UnmanagedType.ByValStr:
+#pragma warning disable CS0618 // VBByRefStr remains supported for existing marshalling descriptors.
+            case (int)UnmanagedType.VBByRefStr:
+#pragma warning restore CS0618
                 if (GetTarget(context.Owner) != CaTargets.ParamDef)
                 {
                     return context.InvalidTarget();

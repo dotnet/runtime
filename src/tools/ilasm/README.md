@@ -4,6 +4,10 @@ This directory contains the ILAssembler tool and its build instructions.
 
 ## Build Instructions
 
+The managed tool leaves custom attributes unchanged by default. Use `--pseudoattributes`
+to lower recognized pseudo custom attributes into metadata flags and auxiliary tables.
+This opt-in switch has no legacy `/` or single-dash spelling.
+
 ### Regular Builds
 For everyday development and regular builds, simply run:
 

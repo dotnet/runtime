@@ -158,6 +158,7 @@ internal sealed class Program
             options.AssemblyName = Get(_command.AssemblyName);
             options.KeyFile = Get(_command.KeyFile);
             options.Optimize = Get(_command.Optimize);
+            options.PseudoAttributes = Get(_command.PseudoAttributes);
             options.Fold = Get(_command.Fold);
             options.OutputFileName = Path.GetFileName(outputPath);
 

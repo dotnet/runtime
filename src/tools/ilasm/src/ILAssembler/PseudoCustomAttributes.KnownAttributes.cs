@@ -57,7 +57,6 @@ internal static partial class PseudoCustomAttributes
         string Name,
         CaTargets Targets,
         bool KeepAttribute = false,
-        bool KeepOnInvalidTarget = false,
         SerializationTypeCode[]? FixedArgumentTypes = null,
         NamedArgument[]? NamedArgumentDescriptors = null,
         bool MatchBySignature = false)
@@ -203,13 +202,11 @@ internal static partial class PseudoCustomAttributes
             "WindowsRuntimeImportAttribute", CaTargets.TypeDef),
 
         new(KnownAttributeKind.DynamicSecurityMethod, "System.Security", "DynamicSecurityMethodAttribute",
-            CaTargets.MethodDef,
-            KeepOnInvalidTarget: true),
+            CaTargets.MethodDef),
 
         new(KnownAttributeKind.SuppressUnmanagedCodeSecurity, "System.Security", "SuppressUnmanagedCodeSecurityAttribute",
             CaTargets.TypeDef | CaTargets.MethodDef,
-            KeepAttribute: true,
-            KeepOnInvalidTarget: true),
+            KeepAttribute: true),
     ];
 
     private static CaTargets GetTarget(EntityRegistry.EntityBase owner) => owner switch
