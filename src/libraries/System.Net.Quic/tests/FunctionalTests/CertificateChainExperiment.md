@@ -6,6 +6,10 @@ The recorded Windows/Schannel failures did not complete connection establishment
 
 Missing explicitly supplied issuers and enabled AIA downloads are a possible source of handshake delay, not evidence that a download occurred. Why IPv4 with the mismatching DNS name fails while the other three rows pass is still unknown.
 
+`ConnectWithCertificateForLoopbackIP_IndicatesExpectedError` now supplies a prebuilt offline server certificate context with the generated issuers. This removes the issuer-discovery dependency demonstrated by controlled AIA-response delays; it does not establish the cause of the historical CI failures. The diagnostic `Original` arm below retains the previous leaf-only setup.
+
+Current Windows credential setup marks MsQuic's Schannel acquisition as cache-only, but a leaf-only configuration first builds a managed certificate context with online issuer discovery and then passes the resulting intermediates to MsQuic. Consequently, the `Original` and `Client` arms can still perform AIA downloads before native credential acquisition. The `Server` and `Both` arms bypass that managed discovery by supplying the offline context up front.
+
 ## Arms and invariants
 
 `ConnectWithCertificateForLoopbackIP_ChainProvisioningExperiment` runs these arms:
@@ -43,7 +47,7 @@ Run `LoopbackCertificateChain_BuildExperiment` separately to measure `X509Chain.
 
 The experiment records elapsed setup/connect/callback/disposal phases, callback count, certificate algorithm, responder URI, and connection identities. The existing networking event listener records QUIC/security/HTTP-listener events with timestamps. `TRACE_REVOCATION_RESPONSE` records AIA `/cert/` requests separately from CRL and OCSP requests in the console; preserve both console output and the xUnit XML, including passing output.
 
-Diagnostics affect scheduling. Compare with the original `ConnectWithCertificateForLoopbackIP_IndicatesExpectedError` test, which retains its uninstrumented configuration.
+Diagnostics affect scheduling. Compare the `Server` arm with the uninstrumented `ConnectWithCertificateForLoopbackIP_IndicatesExpectedError` test, which now also supplies the server context.
 
 ## Interpretation and remaining controls
 

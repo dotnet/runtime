@@ -37,7 +37,7 @@ namespace System.Net.Quic.Tests
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
-        public readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public readonly X509Certificate2 ServerCertificate = QuicTestCollection.GetServerCertificate();
         public readonly X509Certificate2 ClientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
 
         public ITestOutputHelper _output;
@@ -96,7 +96,7 @@ namespace System.Net.Quic.Tests
             return new SslServerAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ServerCertificate = ServerCertificate
+                ServerCertificateContext = QuicTestCollection.ServerCertificateContext
             };
         }
 

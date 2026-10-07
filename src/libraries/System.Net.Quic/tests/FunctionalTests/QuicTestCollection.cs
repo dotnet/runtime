@@ -3,8 +3,10 @@
 
 using Microsoft.Quic;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Security;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,6 +26,13 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
     public static Version MsQuicVersion { get; } = GetMsQuicVersion();
 
     private static readonly Dictionary<string, int> s_unobservedExceptions = new Dictionary<string, int>();
+    private static readonly X509Certificate2 s_serverCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+
+    // Avoid rebuilding the default certificate chain, including issuer discovery, for every test connection.
+    internal static SslStreamCertificateContext ServerCertificateContext { get; } =
+        SslStreamCertificateContext.Create(s_serverCertificate, additionalCertificates: null, offline: true);
+
+    internal static X509Certificate2 GetServerCertificate() => new X509Certificate2(s_serverCertificate);
 
     public QuicTestCollection()
     {
@@ -56,6 +65,13 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
 
     public unsafe void Dispose()
     {
+        foreach (X509Certificate2 certificate in ServerCertificateContext.IntermediateCertificates)
+        {
+            certificate.Dispose();
+        }
+
+        s_serverCertificate.Dispose();
+
         if (!IsSupported)
         {
             return;
