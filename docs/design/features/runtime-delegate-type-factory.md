@@ -1,6 +1,6 @@
 # Runtime delegate-type factory proposal
 
-This is an unapproved API proposal and CoreCLR prototype, not a shipping API.
+This is an unapproved API proposal and cross-runtime prototype, not a shipping API.
 The prototype is on the local `api-proposal/runtime-delegate-factory` branch,
 based on upstream main commit `2eb7113245f7c536ab876dca5e3533fb96c81bbf`.
 It has not been published.
@@ -22,9 +22,9 @@ code-generation limitation.
 ## API proposal
 
 ```csharp
-namespace System;
+namespace System.Runtime.CompilerServices;
 
-public abstract partial class Delegate
+public static partial class RuntimeHelpers
 {
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCode(
         "Creating a delegate type may require generating code at runtime.")]
@@ -41,7 +41,7 @@ sealed `MulticastDelegate` subclasses with a runtime constructor and `Invoke`.
 Repeated requests with the same runtime type identities return the same type.
 
 ```csharp
-Type delegateType = Delegate.GetDelegateType(
+Type delegateType = RuntimeHelpers.GetDelegateType(
     typeof(int).MakeByRefType(), typeof(int));
 MethodInfo method = typeof(Example).GetMethod(nameof(Example.Increment))!;
 Delegate increment = method.CreateDelegate(delegateType);
@@ -54,7 +54,8 @@ public static class Example
 }
 ```
 
-This example requires `using System.Reflection;` in addition to `using System;`.
+This example requires `using System.Reflection;` and
+`using System.Runtime.CompilerServices;` in addition to `using System;`.
 
 ## CoreCLR implementation
 
@@ -99,21 +100,31 @@ dependency checks still apply.
 
 ## Prototype boundaries and risks
 
-Custom creation currently requires closed runtime types. Unbaked `TypeBuilder`
+Custom creation on CoreCLR and Mono currently requires closed runtime types. Unbaked `TypeBuilder`
 inputs and open custom signatures are not implemented; standard `Func`/`Action`
 construction retains its existing generic behavior.
-Mono and NativeAOT use predefined delegates where possible but custom creation
-throws `PlatformNotSupportedException`. A runtime supporting dynamic code is
-required for custom creation in this prototype.
+NativeAOT uses predefined delegates where possible but custom creation throws
+`PlatformNotSupportedException`, preserving Expressions' existing restriction.
+A runtime supporting dynamic code is required for custom creation.
 
-With `FEATURE_RUNTIME_DELEGATE_FACTORY`, Expressions uses the runtime factory
-unconditionally for custom delegate types and does not compile `AssemblyGen`.
+Mono's CoreLib implementation reuses its existing Reflection.Emit delegate
+creation machinery behind the factory API, with one lazily created assembly
+and a synchronized signature cache. This relocates the former Expressions
+implementation; it is not a new metadata-free Mono implementation. Mono's
+existing dynamic-assembly implementation places assemblies in the default
+load context, so its generated delegates remain process-lifetime types.
+CoreCLR's allocator-scoped collectible implementation is not ported to Mono
+by this change.
+
+Expressions uses `RuntimeHelpers.GetDelegateType` unconditionally for custom
+delegate types on all runtime flavors. `AssemblyGen` and the feature gate
+are removed.
 There is no fallback to managed assembly/module/type/method builders, including
 for inputs the factory rejects. `DynamicMethod`, `ILGenerator`, and their
 lightweight helpers remain available for compiling expression bodies, and the
 existing single `AssemblyBuilder.ForceAllowDynamicCode` scope is retained.
-Other runtime flavors retain their existing implementation when the feature is
-not enabled. Cross-runtime factory parity remains unimplemented.
+Runtime-specific custom generation or rejection is implemented in CoreLib
+rather than Expressions.
 
 Expressions is an archived library; this adoption is prototype evidence, not a
 proposed standalone feature contribution.
@@ -127,7 +138,7 @@ signatures, as it does for other process-lifetime generated types.
 
 ## Prototype validation
 
-Validation was performed on Windows x64 against the upstream-main baseline
+Initial CoreCLR validation was performed on Windows x64 against the upstream-main baseline
 identified above. Checked runtime/CoreLib builds and the final Release build
 completed without warnings or errors.
 
@@ -158,7 +169,41 @@ that `AssemblyGen` and classic Emit builder dependencies are absent, apart from
 the explicitly retained `AssemblyBuilder` dynamic-code scope. They also verify
 that unsupported open custom signatures throw rather than falling back.
 
-Mono, NativeAOT, and other operating systems were not validated.
+The subsequent unconditional `RuntimeHelpers` implementation was also built
+for Windows x64 Mono in Release, with API compatibility validation enabled and
+no warnings or errors:
+
+| Command | Result |
+|---|---|
+| `.\build.cmd mono+libs+libs.pretest -arch x64 -rc Release -lc Release` | Succeeded. |
+| `.\.dotnet\dotnet.exe build .\src\libraries\System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj /t:Test /p:RuntimeFlavor=Mono /p:RuntimeConfiguration=Release /p:Configuration=Release` | 30,774 tests passed; no failures or skips. |
+| `.\.dotnet\dotnet.exe build .\src\libraries\System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj /t:Test /p:RuntimeFlavor=Mono /p:RuntimeConfiguration=Release /p:Configuration=Release "/p:XUnitOptions=-class System.Tests.DelegateTests"` | 67 tests total; 60 passed, seven skipped, no failures. |
+
+Mono's `DynamicInvoke` does not write byref argument updates back into the
+argument array when the delegate targets an expression-compiled dynamic method.
+A separate probe reproduced this with a statically declared delegate and a
+manually Emit-generated delegate, as well as the factory-generated delegate.
+That writeback assertion remains CoreCLR-specific; binding, multicast,
+expression return values, and ordinary Emit wrapper invocation are exercised
+on both runtimes.
+
+Final validation of the unconditional `RuntimeHelpers` version also covered
+CoreCLR and NativeAOT:
+
+| Command | Result |
+|---|---|
+| `.\build.cmd clr+libs -arch x64 -rc Release -lc Release` | Succeeded with API compatibility validation enabled, no warnings or errors. |
+| `.\.dotnet\dotnet.exe build .\src\libraries\System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj /t:Test /p:RuntimeConfiguration=Release /p:Configuration=Release` | 35,132 tests passed; no failures or skips. |
+| `.\.dotnet\dotnet.exe build .\src\libraries\System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj /t:Rebuild,Test /p:BuildProjectReferences=false /p:RuntimeConfiguration=Release /p:Configuration=Release /p:CustomAfterMicrosoftCommonTargets=<isolation-targets>` | 78,570 tests total; 78,482 passed, 88 skipped, no failures, with the same baseline discovery isolation. |
+| `.\build.cmd clr.aot+libs -arch x64 -rc Release -lc Release` | Succeeded with API compatibility validation enabled, no warnings or errors. |
+| `.\.dotnet\dotnet.exe build .\src\libraries\System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj /t:Test /p:RuntimeConfiguration=Release /p:Configuration=Release /p:TestNativeAot=true "/p:XUnitOptions=-class System.Tests.DelegateTests"` | Native compilation succeeded, but the test script could not launch its unqualified executable name. |
+| `.\artifacts\bin\System.Runtime.Tests\Release\net11.0-windows\publish\System.Runtime.Tests.exe -notrait category=AdditionalTimezoneChecks -notrait category=OuterLoop -notrait category=failing -class System.Tests.DelegateTests -xml delegate-nativeaot-results.xml` | Invoked by absolute path from the publish directory: 71 tests total; 63 passed, eight skipped, no failures. |
+
+The NativeAOT run explicitly passed predefined delegate cases with 0, 1, and
+16 parameters, argument validation, and both byref and high-arity custom
+generation rejection through CoreLib and Expressions.
+
+Other operating systems were not validated.
 
 ## Performance evidence
 
@@ -169,8 +214,9 @@ Warm cases reuse their input arrays and previously cached types. Cold creation
 uses a distinct 18-parameter signature per iteration and one measured call to
 avoid creating an unbounded number of process-lifetime types.
 
-The initial comparison used three warmup iterations, eight measurement
-iterations, and one process launch per case:
+The initial CoreCLR comparison, before moving the API to `RuntimeHelpers`,
+used three warmup iterations, eight measurement iterations, and one process
+launch per case:
 
 | Workload | Baseline mean | Prototype mean | Baseline managed allocation | Prototype managed allocation |
 |---|---|---|---|---|
@@ -195,6 +241,24 @@ native metadata and loader allocations. The prototype's purpose is reducing
 the managed Emit dependency and providing allocator-scoped ownership, not
 promising a throughput improvement.
 
+After making Expressions unconditional and relocating the API to
+`RuntimeHelpers`, the same ten-case comparison was repeated with three warmup
+iterations, eight measurement iterations, and one process launch:
+
+| Workload | Baseline mean | Final prototype mean | Baseline managed allocation | Final prototype managed allocation |
+|---|---|---|---|---|
+| Cached Action | 42.78 ns | 38.53 ns | 0 B | 0 B |
+| Cached Func | 37.50 ns | 36.90 ns | 0 B | 0 B |
+| Cached byref delegate | 40.82 ns | 37.99 ns | 0 B | 0 B |
+| Cached high-arity delegate | 276.96 ns | 253.47 ns | 0 B | 0 B |
+| Uncached high-arity delegate | 59.76 us | 53.57 us | 6.05 KB | 4.18 KB |
+
+All benchmark processes succeeded. These short runs do not establish a
+throughput improvement. Cold creation still has overlapping confidence
+intervals and minimum-iteration time warnings; the managed allocation reduction
+remains approximately 31%. Mono and NativeAOT were functionally validated but
+not benchmarked.
+
 ## Alternatives
 
 | Alternative | Tradeoff |
@@ -209,10 +273,12 @@ promising a throughput improvement.
 
 | Status | Site | Scope |
 |---|---|---|
-| Updated | `System.Linq.Expressions/.../Compiler/DelegateHelpers.cs` | All custom delegate requests use the runtime factory when the feature is enabled, without a classic Emit fallback. |
-| Updated | `System.Linq.Expressions/src/System.Linq.Expressions.csproj` | Excludes `AssemblyGen` in feature-enabled builds. |
+| Updated | `System.Linq.Expressions/.../Compiler/DelegateHelpers.cs` | All custom delegate requests use the runtime factory unconditionally, without a classic Emit fallback. |
+| Updated | `System.Linq.Expressions/src/System.Linq.Expressions.csproj` | Removes `AssemblyGen` and the runtime-delegate-factory feature gate. |
 | Updated | `System.Linq.Expressions/tests/DelegateType/GetDelegateTypeTests.cs` | Exercises shared type identity and verifies the binary does not reference classic Emit builders, except the accepted dynamic-code scope. |
 | Updated | `System.Runtime/tests/System.Runtime.Tests/System/DelegateTests.cs` | Binding, multicast, expression compilation, signature import, caching, and collectible lifetimes. |
+| Updated | Mono CoreLib `RuntimeHelpers.DelegateTypeFactory.Mono.cs` | Existing Emit-based creation is owned by CoreLib and shares a process-lifetime assembly and signature cache. |
+| Updated | NativeAOT CoreLib `RuntimeHelpers.NativeAot.cs` | Explicitly rejects custom generation; predefined delegates use the shared implementation. |
 | Candidate | `Microsoft.CSharp/.../RuntimeBinder/ComInterop/ComInvokeAction.cs` | Direct use instead of requesting the delegate through Expressions; deferred pending runtime parity and API approval. |
 | Candidate | `Microsoft.CSharp/.../RuntimeBinder/DynamicDebuggerProxy.cs` | Existing `Expression.GetDelegateType` consumer; deferred to the area owner. |
 | Candidate | `System.ComponentModel.Composition/.../Primitives/ExportedDelegate.cs` | Existing `Expression.GetDelegateType` consumer; requires framework-target and compatibility review. |

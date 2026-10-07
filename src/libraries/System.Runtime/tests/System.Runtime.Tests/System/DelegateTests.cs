@@ -35,10 +35,10 @@ namespace System.Tests
         [Fact]
         public static void GetDelegateType_InvalidArguments()
         {
-            AssertExtensions.Throws<ArgumentNullException>("typeArgs", () => Delegate.GetDelegateType(null));
-            AssertExtensions.Throws<ArgumentException>("typeArgs", () => Delegate.GetDelegateType());
-            AssertExtensions.Throws<ArgumentNullException>("typeArgs[1]", () => Delegate.GetDelegateType(typeof(int), null));
-            Assert.Throws<ArgumentException>(() => Delegate.GetDelegateType(typeof(void), typeof(int)));
+            AssertExtensions.Throws<ArgumentNullException>("typeArgs", () => RuntimeHelpers.GetDelegateType(null));
+            AssertExtensions.Throws<ArgumentException>("typeArgs", () => RuntimeHelpers.GetDelegateType());
+            AssertExtensions.Throws<ArgumentNullException>("typeArgs[1]", () => RuntimeHelpers.GetDelegateType(typeof(int), null));
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.GetDelegateType(typeof(void), typeof(int)));
         }
 
         [Theory]
@@ -48,9 +48,21 @@ namespace System.Tests
         public static void GetDelegateType_PredefinedTypes(int parameterCount)
         {
             Type[] signature = Enumerable.Repeat(typeof(int), parameterCount).Append(typeof(void)).ToArray();
-            Assert.Same(Expression.GetDelegateType(signature), Delegate.GetDelegateType(signature));
+            Assert.Same(Expression.GetDelegateType(signature), RuntimeHelpers.GetDelegateType(signature));
             signature[parameterCount] = typeof(string);
-            Assert.Same(Expression.GetDelegateType(signature), Delegate.GetDelegateType(signature));
+            Assert.Same(Expression.GetDelegateType(signature), RuntimeHelpers.GetDelegateType(signature));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotReflectionEmitSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void GetDelegateType_CustomGenerationNotSupported(bool highArity)
+        {
+            Type[] signature = highArity
+                ? Enumerable.Repeat(typeof(int), 18).Append(typeof(void)).ToArray()
+                : new[] { typeof(int).MakeByRefType(), typeof(void) };
+            Assert.Throws<PlatformNotSupportedException>(() => RuntimeHelpers.GetDelegateType(signature));
+            Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(signature));
         }
 
         public static IEnumerable<object[]> CustomDelegateSignatures()
@@ -75,7 +87,7 @@ namespace System.Tests
         [MemberData(nameof(CustomDelegateSignatures))]
         public static void GetDelegateType_CustomSignatures(Type[] signature)
         {
-            Type delegateType = Delegate.GetDelegateType(signature);
+            Type delegateType = RuntimeHelpers.GetDelegateType(signature);
             Assert.Equal(typeof(MulticastDelegate), delegateType.BaseType);
             Assert.True(delegateType.IsSealed);
             MethodInfo invoke = delegateType.GetMethod("Invoke");
@@ -83,7 +95,7 @@ namespace System.Tests
             Assert.Equal(signature.Take(signature.Length - 1), invoke.GetParameters().Select(p => p.ParameterType));
             Assert.Equal(MethodImplAttributes.Runtime, invoke.GetMethodImplementationFlags() & MethodImplAttributes.CodeTypeMask);
             Assert.NotNull(delegateType.GetConstructor(new[] { typeof(object), typeof(IntPtr) }));
-            Assert.Same(delegateType, Delegate.GetDelegateType((Type[])signature.Clone()));
+            Assert.Same(delegateType, RuntimeHelpers.GetDelegateType((Type[])signature.Clone()));
 
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName(nameof(GetDelegateType_CustomSignatures)), AssemblyBuilderAccess.RunAndCollect);
@@ -104,10 +116,10 @@ namespace System.Tests
             RuntimeHelpers.PrepareMethod(wrapperMethod.MethodHandle);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void GetDelegateType_InvokeAndCombine()
         {
-            Type delegateType = Delegate.GetDelegateType(typeof(int).MakeByRefType(), typeof(int));
+            Type delegateType = RuntimeHelpers.GetDelegateType(typeof(int).MakeByRefType(), typeof(int));
             MethodInfo target = typeof(DelegateTests).GetMethod(nameof(IncrementAndReturn), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate first = target.CreateDelegate(delegateType);
             Delegate combined = Delegate.Combine(first, target.CreateDelegate(delegateType));
@@ -116,10 +128,8 @@ namespace System.Tests
             Assert.Equal(42, arguments[0]);
             Assert.Equal(2, combined.GetInvocationList().Length);
 
-            ParameterExpression parameter = Expression.Parameter(typeof(int).MakeByRefType());
-            Delegate compiled = Expression.Lambda(delegateType, Expression.Call(target, parameter), parameter).Compile();
+            Delegate compiled = CompileIncrementExpression(delegateType, target);
             Assert.Equal(43, compiled.DynamicInvoke(arguments));
-            Assert.Equal(43, arguments[0]);
 
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName(nameof(GetDelegateType_InvokeAndCombine)), AssemblyBuilderAccess.RunAndCollect);
@@ -136,6 +146,23 @@ namespace System.Tests
             Assert.Equal(44, wrapperArguments[1]);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public static void GetDelegateType_CompiledExpressionWritesBackByRefArguments()
+        {
+            Type delegateType = RuntimeHelpers.GetDelegateType(typeof(int).MakeByRefType(), typeof(int));
+            MethodInfo target = typeof(DelegateTests).GetMethod(nameof(IncrementAndReturn), BindingFlags.NonPublic | BindingFlags.Static);
+            Delegate compiled = CompileIncrementExpression(delegateType, target);
+            object[] arguments = { 42 };
+            Assert.Equal(43, compiled.DynamicInvoke(arguments));
+            Assert.Equal(43, arguments[0]);
+        }
+
+        private static Delegate CompileIncrementExpression(Type delegateType, MethodInfo target)
+        {
+            ParameterExpression parameter = Expression.Parameter(typeof(int).MakeByRefType());
+            return Expression.Lambda(delegateType, Expression.Call(target, parameter), parameter).Compile();
+        }
+
         private static int IncrementAndReturn(ref int value) => ++value;
 
         public static IEnumerable<object[]> ReconstructedDelegateSignatures()
@@ -148,7 +175,7 @@ namespace System.Tests
         [MemberData(nameof(ReconstructedDelegateSignatures))]
         public static void GetDelegateType_ReconstructedSignatures(Type[] signature)
         {
-            Type delegateType = Delegate.GetDelegateType(signature);
+            Type delegateType = RuntimeHelpers.GetDelegateType(signature);
             Assert.False(delegateType.IsGenericType);
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName(nameof(GetDelegateType_ReconstructedSignatures)), AssemblyBuilderAccess.RunAndCollect);
@@ -187,19 +214,19 @@ namespace System.Tests
             public override bool IsDefined(Type attributeType, bool inherit) => method.IsDefined(attributeType, inherit);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void GetDelegateType_SharedAssemblyAndConcurrentCache()
         {
             Type[] signature = { typeof(long).MakeByRefType(), typeof(long) };
             Type[] results = new Type[32];
-            Parallel.For(0, results.Length, i => results[i] = Delegate.GetDelegateType(signature));
+            Parallel.For(0, results.Length, i => results[i] = RuntimeHelpers.GetDelegateType(signature));
             Assert.All(results, result => Assert.Same(results[0], result));
-            Type other = Delegate.GetDelegateType(typeof(byte).MakeByRefType(), typeof(byte));
+            Type other = RuntimeHelpers.GetDelegateType(typeof(byte).MakeByRefType(), typeof(byte));
             Assert.Same(results[0].Assembly, other.Assembly);
             Assert.False(other.IsCollectible);
             signature[0] = typeof(short).MakeByRefType();
-            Assert.NotSame(results[0], Delegate.GetDelegateType(signature));
-            Assert.Same(results[0], Delegate.GetDelegateType(typeof(long).MakeByRefType(), typeof(long)));
+            Assert.NotSame(results[0], RuntimeHelpers.GetDelegateType(signature));
+            Assert.Same(results[0], RuntimeHelpers.GetDelegateType(typeof(long).MakeByRefType(), typeof(long)));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
@@ -235,11 +262,11 @@ namespace System.Tests
                 parameterType = assembly.DefineDynamicModule("Input").DefineType("Parameter", TypeAttributes.Public).CreateType();
             }
 
-            Type first = Delegate.GetDelegateType(parameterType.MakeByRefType(), typeof(void));
-            Type second = Delegate.GetDelegateType(typeof(List<>).MakeGenericType(parameterType).MakeByRefType(), typeof(void));
+            Type first = RuntimeHelpers.GetDelegateType(parameterType.MakeByRefType(), typeof(void));
+            Type second = RuntimeHelpers.GetDelegateType(typeof(List<>).MakeGenericType(parameterType).MakeByRefType(), typeof(void));
             Assert.True(first.IsCollectible);
             Assert.Same(first.Assembly, second.Assembly);
-            Assert.Same(first, Delegate.GetDelegateType(parameterType.MakeByRefType(), typeof(void)));
+            Assert.Same(first, RuntimeHelpers.GetDelegateType(parameterType.MakeByRefType(), typeof(void)));
             Assert.Same(first, Expression.GetDelegateType(parameterType.MakeByRefType(), typeof(void)));
             Assert.Equal(parameterType.MakeByRefType(), first.GetMethod("Invoke").GetParameters()[0].ParameterType);
 
@@ -298,12 +325,12 @@ namespace System.Tests
 
             Type first = CreateInput();
             Type second = CreateInput();
-            Type mixed = Delegate.GetDelegateType(first.MakeByRefType(), second);
+            Type mixed = RuntimeHelpers.GetDelegateType(first.MakeByRefType(), second);
             Assert.Equal(first.MakeByRefType(), mixed.GetMethod("Invoke").GetParameters()[0].ParameterType);
             Assert.Equal(second, mixed.GetMethod("Invoke").ReturnType);
-            Assert.Same(mixed.Assembly, Delegate.GetDelegateType(second.MakeByRefType(), typeof(void)).Assembly);
-            Assert.NotSame(mixed.Assembly, Delegate.GetDelegateType(first.MakeByRefType(), typeof(void)).Assembly);
-            Assert.Same(mixed, Delegate.GetDelegateType(first.MakeByRefType(), second));
+            Assert.Same(mixed.Assembly, RuntimeHelpers.GetDelegateType(second.MakeByRefType(), typeof(void)).Assembly);
+            Assert.NotSame(mixed.Assembly, RuntimeHelpers.GetDelegateType(first.MakeByRefType(), typeof(void)).Assembly);
+            Assert.Same(mixed, RuntimeHelpers.GetDelegateType(first.MakeByRefType(), second));
             return (mixed, new[] { new WeakReference(first), new WeakReference(second), new WeakReference(mixed), new WeakReference(mixed.Assembly) });
         }
 

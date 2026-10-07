@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if CORECLR || MONO
+using System.Collections.Generic;
+#endif
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
-namespace System;
+namespace System.Runtime.CompilerServices;
 
-public abstract partial class Delegate
+public static partial class RuntimeHelpers
 {
     /// <summary>Gets a delegate type with the specified parameter types and return type.</summary>
     /// <param name="typeArgs">The parameter types followed by the return type. Use <see cref="Void"/> for a delegate that does not return a value.</param>
@@ -18,7 +20,7 @@ public abstract partial class Delegate
     /// Uses a predefined <see cref="Action"/> or <see cref="Func{TResult}"/> type when possible.
     /// Otherwise, creates a runtime-implemented delegate type. Custom delegate types require closed runtime types.
     /// Repeated requests for the same custom signature return the same type.
-    /// A custom type referencing collectible types is collectible and keeps those types alive while it is in use.
+    /// Collectibility of custom delegate types depends on the runtime.
     /// </remarks>
     [RequiresDynamicCode("Creating a delegate type may require generating code at runtime.")]
     [UnconditionalSuppressMessage("Trimming", "IL2055",
@@ -105,9 +107,68 @@ public abstract partial class Delegate
                 _ => typeof(Func<,,,,,,,,,,,,,,,,>)
             };
 
-#if !CORECLR
-        internal static Type GetCustomDelegateType(Type[] typeArgs) =>
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
+#if CORECLR || MONO
+        private static RuntimeType[] GetSignature(Type[] typeArgs, out bool isCollectible)
+        {
+            RuntimeType[] signature = new RuntimeType[typeArgs.Length];
+            isCollectible = false;
+            for (int i = 0; i < signature.Length; i++)
+            {
+                if (typeArgs[i].UnderlyingSystemType is not RuntimeType type)
+                {
+                    throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(typeArgs));
+                }
+                if (type.ContainsGenericParameters)
+                {
+                    throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(typeArgs));
+                }
+
+                signature[i] = type;
+                isCollectible |= type.IsCollectible;
+            }
+
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
+            }
+
+            return signature;
+        }
+
+        private sealed class SignatureComparer : IEqualityComparer<RuntimeType[]>
+        {
+            internal static readonly SignatureComparer Instance = new();
+
+            public bool Equals(RuntimeType[]? first, RuntimeType[]? second)
+            {
+                if (ReferenceEquals(first, second))
+                {
+                    return true;
+                }
+                if (first is null || second is null || first.Length != second.Length)
+                {
+                    return false;
+                }
+                for (int i = 0; i < first.Length; i++)
+                {
+                    if (first[i] != second[i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            public int GetHashCode(RuntimeType[] signature)
+            {
+                HashCode hash = default;
+                foreach (RuntimeType type in signature)
+                {
+                    hash.Add(type);
+                }
+                return hash.ToHashCode();
+            }
+        }
 #endif
     }
 }

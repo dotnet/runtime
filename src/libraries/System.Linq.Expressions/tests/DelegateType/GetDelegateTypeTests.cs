@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(typeof(Action), Expression.GetDelegateType(typeof(void)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ExcessiveLengthTypeArgs))]
         [MemberData(nameof(ByRefTypeArgs))]
         [MemberData(nameof(ByRefLikeTypeArgs))]
@@ -60,10 +60,10 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CustomDelegateUsesRuntimeFactory(Type[] typeArgs)
         {
-            Assert.Same(Delegate.GetDelegateType(typeArgs), Expression.GetDelegateType(typeArgs));
+            Assert.Same(RuntimeHelpers.GetDelegateType(typeArgs), Expression.GetDelegateType(typeArgs));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void RuntimeFactoryBuildDoesNotReferenceClassicEmit()
         {
             Assert.Null(typeof(Expression).Assembly.GetType("System.Linq.Expressions.Compiler.AssemblyGen"));
@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void RuntimeFactoryDoesNotFallBackForOpenCustomSignatures(bool byRef)
@@ -92,7 +92,7 @@ namespace System.Linq.Expressions.Tests
             Type[] signature = byRef
                 ? new[] { typeof(List<>).MakeByRefType(), typeof(void) }
                 : Enumerable.Repeat(typeof(List<>), 18).Append(typeof(void)).ToArray();
-            Assert.Throws<ArgumentException>(() => Delegate.GetDelegateType(signature));
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.GetDelegateType(signature));
             Assert.Throws<ArgumentException>(() => Expression.GetDelegateType(signature));
         }
 

@@ -4,7 +4,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
-    <DefineConstants Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(DefineConstants);FEATURE_RUNTIME_DELEGATE_FACTORY</DefineConstants>
     <NoWarn>$(NoWarn);CA1859</NoWarn>
     <!--
       Disable constant propagation so that methods referenced from ILLink.Substitutions.xml don't get inlined
@@ -133,8 +132,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="System\Linq\Expressions\Compiler\AssemblyGen.cs"
-             Condition="!$(DefineConstants.Contains('FEATURE_RUNTIME_DELEGATE_FACTORY'))" />
     <Compile Include="System\Dynamic\Utils\Helpers.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\AnalyzedTree.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\BoundConstants.cs" />

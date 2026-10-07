@@ -3,12 +3,11 @@
 
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace System;
+namespace System.Runtime.CompilerServices;
 
-public abstract partial class Delegate
+public static partial class RuntimeHelpers
 {
     private static partial class DelegateTypeFactory
     {
@@ -25,27 +24,7 @@ public abstract partial class Delegate
 
         internal static unsafe Type GetCustomDelegateType(Type[] typeArgs)
         {
-            RuntimeType[] signature = new RuntimeType[typeArgs.Length];
-            bool isCollectible = false;
-            for (int i = 0; i < signature.Length; i++)
-            {
-                if (typeArgs[i].UnderlyingSystemType is not RuntimeType type)
-                {
-                    throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(typeArgs));
-                }
-                if (type.ContainsGenericParameters)
-                {
-                    throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(typeArgs));
-                }
-
-                signature[i] = type;
-                isCollectible |= type.IsCollectible;
-            }
-
-            if (!RuntimeFeature.IsDynamicCodeSupported)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
-            }
+            RuntimeType[] signature = GetSignature(typeArgs, out bool isCollectible);
 
             if (!isCollectible)
             {
@@ -110,39 +89,5 @@ public abstract partial class Delegate
             }
         }
 
-        private sealed class SignatureComparer : IEqualityComparer<RuntimeType[]>
-        {
-            internal static readonly SignatureComparer Instance = new();
-
-            public bool Equals(RuntimeType[]? first, RuntimeType[]? second)
-            {
-                if (ReferenceEquals(first, second))
-                {
-                    return true;
-                }
-                if (first is null || second is null || first.Length != second.Length)
-                {
-                    return false;
-                }
-                for (int i = 0; i < first.Length; i++)
-                {
-                    if (first[i] != second[i])
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            public int GetHashCode(RuntimeType[] signature)
-            {
-                HashCode hash = default;
-                foreach (RuntimeType type in signature)
-                {
-                    hash.Add(type);
-                }
-                return hash.ToHashCode();
-            }
-        }
     }
 }
