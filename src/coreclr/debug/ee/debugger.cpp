@@ -1288,7 +1288,7 @@ DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE 
     }
     CONTRACTL_END;
 
-    m_pHandle = ExternalMemoryHandle::Add(pMT, m_pMemory, 0);
+    m_pHandle = ExternalMemoryHandle::Add(TypeHandle(pMT), m_pMemory);
 }
 
 DebuggerExternalMemoryOwner::~DebuggerExternalMemoryOwner()
