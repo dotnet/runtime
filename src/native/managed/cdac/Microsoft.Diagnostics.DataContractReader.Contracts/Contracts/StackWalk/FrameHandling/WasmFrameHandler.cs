@@ -33,18 +33,25 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
 
     public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
     {
+        if (inlinedCallFrame.CallerReturnAddress == TargetCodePointer.Null)
+            return;
+
         if (inlinedCallFrame.CallerReturnAddress.Value == InlinedPInvokeFromR2R)
         {
             // Mirrors InlinedCallFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp.
             // If no R2R virtual IP can be recovered the IP is left null (not managed code), and the
             // stack walker fails the walk as native does, rather than treating the marker as an address.
             Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
+            TargetCodePointer instructionPointer = unwinder.GetVirtualIP(inlinedCallFrame.CallSiteSP);
             _holder.Context.StackPointer = inlinedCallFrame.CallSiteSP;
-            _holder.Context.InstructionPointer = unwinder.GetVirtualIP(inlinedCallFrame.CallSiteSP);
-            // Root-function frame base; the funclet-aware logical frame pointer is not modeled yet.
-            _holder.Context.FramePointer = unwinder.TryGetFramePointer(inlinedCallFrame.CallSiteSP, out TargetPointer framePointer)
-                ? framePointer
-                : TargetPointer.Null;
+            _holder.Context.InstructionPointer = instructionPointer;
+            // Native GetWasmFramePointerFromStackPointer: a funclet's frame pointer is its
+            // parent's establishing frame, not its own frame base.
+            _holder.Context.FramePointer =
+                instructionPointer != TargetCodePointer.Null &&
+                unwinder.TryGetLogicalFramePointer(inlinedCallFrame.CallSiteSP, out TargetPointer framePointer)
+                    ? framePointer
+                    : TargetPointer.Null;
         }
         else
         {
@@ -62,6 +69,45 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
             if (!_holder.Context.TrySetRegister(WasmContext.InterpreterWalkFramePointerRegister, new TargetNUInt(next.Address.Value)))
                 throw new InvalidOperationException($"Failed to set WASM interpreter frame-pointer register '{WasmContext.InterpreterWalkFramePointerRegister}'.");
         }
+    }
+
+    public override void HandleSoftwareExceptionFrame(SoftwareExceptionFrame softwareExceptionFrame)
+    {
+        // The serialized WASM T_CONTEXT carries SP/IP/FP together. The base implementation copies
+        // only IP/SP plus hardware callee-saved registers; WASM has no such register dictionary.
+        _holder.ReadFromAddress(_target, softwareExceptionFrame.TargetContext);
+    }
+
+    public override void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
+    {
+        Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(
+            framedMethodFrame.TransitionBlockPtr);
+        TargetPointer savedStackPointer = transitionBlock.StackPointer ?? TargetPointer.Null;
+        bool hasR2RStackPointer = savedStackPointer != TargetPointer.Null;
+
+        TargetCodePointer instructionPointer = transitionBlock.ReturnAddress;
+        if (instructionPointer == TargetCodePointer.Null && hasR2RStackPointer)
+        {
+            Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
+            instructionPointer = unwinder.GetVirtualIP(savedStackPointer);
+        }
+
+        _holder.Context.InstructionPointer = instructionPointer;
+        _holder.Context.StackPointer = hasR2RStackPointer && instructionPointer != TargetCodePointer.Null
+            ? savedStackPointer
+            : framedMethodFrame.TransitionBlockPtr + Data.TransitionBlock.GetSize(_target);
+
+        if (hasR2RStackPointer && instructionPointer != TargetCodePointer.Null)
+        {
+            Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
+            if (unwinder.TryGetLogicalFramePointer(savedStackPointer, out TargetPointer fp))
+            {
+                _holder.Context.FramePointer = fp;
+                return;
+            }
+        }
+
+        _holder.Context.FramePointer = TargetPointer.Null;
     }
 
     public void HandleHijackFrame(HijackFrame frame)

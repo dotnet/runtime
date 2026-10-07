@@ -84,15 +84,20 @@ internal struct WasmContext : IPlatformContext
         // the caller falls back to the explicit Frame chain / interpreter frame chain.
         Wasm.WasmUnwinder unwinder = new(target, new Wasm.WasmR2RInfo(target));
         TargetPointer sp = StackPointer;
-        if (unwinder.TryUnwindOneFrame(ref sp, out TargetCodePointer ip))
+        if (unwinder.TryUnwindOneFrame(ref sp, InstructionPointer, out TargetCodePointer ip))
         {
             StackPointer = sp;
             InstructionPointer = ip;
+            FramePointer = ip != TargetCodePointer.Null &&
+                unwinder.TryGetLogicalFramePointer(sp, out TargetPointer fp)
+                ? fp
+                : TargetPointer.Null;
         }
         else
         {
             StackPointer = TargetPointer.Null;
             InstructionPointer = TargetCodePointer.Null;
+            FramePointer = TargetPointer.Null;
         }
     }
 

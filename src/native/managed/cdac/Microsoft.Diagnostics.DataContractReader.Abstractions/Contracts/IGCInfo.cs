@@ -35,7 +35,8 @@ public readonly record struct GCInfoHeader(
     uint GSCookieValidRangeEnd,
     SpecialSlot? PSPSym,
     SpecialSlot? GenericsInstContext,
-    GenericsContextKind GenericsInstContextKind);
+    GenericsContextKind GenericsInstContextKind,
+    bool HasReversePInvokeFrame = false);
 
 /// <summary>Unified lifetime of a GC slot (register or stack).</summary>
 /// <param name="IsRegister">True if the slot is a CPU register; false if it is a stack location.</param>

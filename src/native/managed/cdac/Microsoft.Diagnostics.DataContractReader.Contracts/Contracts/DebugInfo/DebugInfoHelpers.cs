@@ -15,6 +15,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 /// </summary>
 internal static class DebugInfoHelpers
 {
+    // Keep in sync with ICorDebugInfo::WASM_LOCAL_REGNUM_BASE in cordebuginfo.h: one past
+    // REGNUM_AMBIENT_SP, so PC, REGNUM_COUNT, and REGNUM_AMBIENT_SP never name a WASM local.
+    internal const uint WasmLocalRegNumBase = 3;
+
     /// <summary>
     /// Mirrors ICorDebugInfo::VarLocType from cordebuginfo.h.
     /// Describes how a variable is stored at a particular point in native code.
@@ -109,7 +113,10 @@ internal static class DebugInfoHelpers
     /// public <see cref="DebugVarInfo"/> entries directly.
     /// Mirrors the native DoNativeVarInfo/TransferReader logic from debuginfostore.cpp.
     /// </summary>
-    internal static IEnumerable<DebugVarInfo> DoVars(NativeReader nativeReader, bool isX86)
+    internal static IEnumerable<DebugVarInfo> DoVars(
+        NativeReader nativeReader,
+        bool isX86,
+        bool isWasm = false)
     {
         NibbleReader reader = new(nativeReader, 0);
 
@@ -137,7 +144,7 @@ internal static class DebugInfoHelpers
             if (locType is VarLocType.VLT_INVALID or VarLocType.VLT_COUNT)
                 continue;
 
-            yield return locType switch
+            DebugVarInfo info = locType switch
             {
                 VarLocType.VLT_REG => new DebugVarInfo
                 {
@@ -199,7 +206,56 @@ internal static class DebugInfoHelpers
                     StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
                 },
             };
+
+            yield return isWasm ? ApplyWasmProjection(info) : info;
         }
+    }
+
+    /// <summary>
+    /// Decodes a WASM <c>regNumber</c> into a local index. Returns null for the reserved
+    /// pseudo-register values (<c>PC</c>, <c>REGNUM_COUNT</c>, <c>REGNUM_AMBIENT_SP</c>), which do
+    /// not name a local.
+    /// </summary>
+    internal static WasmLocalInfo? DecodeWasmRegister(uint register)
+        => register >= WasmLocalRegNumBase
+            ? new WasmLocalInfo { Index = register - WasmLocalRegNumBase }
+            : null;
+
+    /// <summary>
+    /// Reinterprets an architecture-neutral <see cref="DebugVarInfo"/> for WASM, where the JIT's
+    /// "registers" are biased WASM local indices rather than physical registers.
+    /// </summary>
+    private static DebugVarInfo ApplyWasmProjection(DebugVarInfo info)
+    {
+        WasmLocalInfo? local = DecodeWasmRegister(info.Register);
+        WasmLocalInfo? local2 = DecodeWasmRegister(info.Register2);
+
+        // Promote the kinds whose storage is entirely WASM locals, so that consumers written
+        // against a real register file cannot mistake them for readable registers. Stack-based
+        // kinds keep their kind: their storage is linear memory, which is readable; only the
+        // base register is a WASM local.
+        DebugVarLocKind kind = info.Kind switch
+        {
+            DebugVarLocKind.Register => local is not null
+                ? DebugVarLocKind.WasmLocal
+                : throw new InvalidOperationException(
+                    $"Invalid WASM debug register encoding 0x{info.Register:X8}."),
+            DebugVarLocKind.RegisterRegister => local is not null && local2 is not null
+                ? DebugVarLocKind.WasmLocalPair
+                : throw new InvalidOperationException(
+                    $"Invalid WASM debug register pair encoding 0x{info.Register:X8}, 0x{info.Register2:X8}."),
+            DebugVarLocKind.RegisterStack or DebugVarLocKind.StackRegister when local is null =>
+                throw new InvalidOperationException(
+                    $"Invalid WASM debug register encoding 0x{info.Register:X8}."),
+            _ => info.Kind,
+        };
+
+        return info with
+        {
+            Kind = kind,
+            WasmLocal = local,
+            WasmLocal2 = local2,
+        };
     }
 
     private static int ReadEncodedStackOffset(NibbleReader reader, bool isX86)

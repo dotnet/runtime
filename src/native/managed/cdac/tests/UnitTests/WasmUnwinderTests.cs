@@ -3,8 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -27,6 +30,7 @@ public class WasmUnwinderTests
     {
         public Dictionary<uint, ulong> VirtualIpBases { get; } = new();
         public Dictionary<uint, ulong> UnwindData { get; } = new();
+        public HashSet<uint> Funclets { get; } = new();
 
         public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP)
             => VirtualIpBases.TryGetValue(functionTableIndex, out baseVirtualIP);
@@ -41,13 +45,29 @@ public class WasmUnwinderTests
             unwindDataAddress = TargetPointer.Null;
             return false;
         }
+
+        // A function index is "known" here if it has unwind data or a virtual IP base registered.
+        public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
+        {
+            isFunclet = Funclets.Contains(functionTableIndex);
+            return UnwindData.ContainsKey(functionTableIndex)
+                || VirtualIpBases.ContainsKey(functionTableIndex)
+                || isFunclet;
+        }
     }
 
-    private static TestPlaceholderTarget CreateTarget(MockMemorySpace.HeapFragment[] fragments)
+    private static TestPlaceholderTarget CreateTarget(
+        MockMemorySpace.HeapFragment[] fragments,
+        IExecutionManager? executionManager = null,
+        IGCInfo? gcInfo = null)
     {
         TestPlaceholderTarget.Builder builder = new(WasmArch);
         foreach (MockMemorySpace.HeapFragment fragment in fragments)
             builder.MemoryBuilder.AddHeapFragment(fragment);
+        if (executionManager is not null)
+            builder.AddMockContract(executionManager);
+        if (gcInfo is not null)
+            builder.AddMockContract(gcInfo);
         return builder.Build();
     }
 
@@ -174,6 +194,29 @@ public class WasmUnwinderTests
     }
 
     [Fact]
+    public void TryUnwindOneFrame_CallerWithoutVirtualIp_PreservesCallerStackPointer()
+    {
+        const uint leafFrameSize = 0x20;
+        ulong callerBase = FramesBase + leafFrameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Frame(callerBase, FuncIndexCaller, 7, "nonR2RCaller"),
+            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, out TargetCodePointer ip));
+        Assert.Equal(callerBase, sp.Value);
+        Assert.Equal(TargetCodePointer.Null, ip);
+    }
+
+    [Fact]
     public void TryUnwindOneFrame_DecodesMultiByteFrameSize()
     {
         const uint leafFrameSize = 200; // ULEB128: 0xC8 0x01
@@ -195,6 +238,59 @@ public class WasmUnwinderTests
         TargetPointer sp = new(FramesBase);
         Assert.True(unwinder.TryUnwindOneFrame(ref sp, out _));
         Assert.Equal(callerBase, sp.Value);
+    }
+
+    [Fact]
+    public void TryUnwindOneFrame_ReversePInvoke_DoesNotProbeNativeCallerAsShadowFrame()
+    {
+        const uint frameSize = 0x20;
+        const ulong controlPc = VirtualIpBase + 6;
+        ulong nativeCallerSp = FramesBase + frameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+        // Deliberately make native caller bytes look like a valid R2R frame. Without the
+        // reverse-P/Invoke guard, GetVirtualIP would manufacture this false managed caller.
+        info.VirtualIpBases[FuncIndexCaller] = VirtualIpBase + 0x100;
+
+        Mock<IExecutionManager> executionManager = new();
+        executionManager
+            .Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(controlPc)))
+            .Returns(new CodeBlockHandle(new TargetPointer(0x30000)));
+        TargetPointer gcInfoAddress = new(0x40000);
+        uint gcVersion = 5;
+        executionManager
+            .Setup(e => e.GetGCInfo(
+                It.IsAny<CodeBlockHandle>(),
+                out gcInfoAddress,
+                out gcVersion));
+
+        IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
+        Mock<IGCInfo> gcInfo = new();
+        gcInfo
+            .Setup(g => g.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion))
+            .Returns(gcInfoHandle);
+        gcInfo
+            .Setup(g => g.GetHeader(gcInfoHandle))
+            .Returns(default(GCInfoHeader) with { HasReversePInvokeFrame = true });
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "reversePInvoke"),
+            Frame(nativeCallerSp, FuncIndexCaller, 2, "nativeBytesResemblingR2R"),
+            Blob(BlobsBase, [(byte)frameSize], "frameSize"),
+        ],
+        executionManager.Object,
+        gcInfo.Object);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.True(unwinder.TryUnwindOneFrame(
+            ref sp,
+            new TargetCodePointer(controlPc),
+            out TargetCodePointer ip));
+        Assert.Equal(nativeCallerSp, sp.Value);
+        Assert.Equal(TargetCodePointer.Null, ip);
     }
 
     [Fact]
@@ -264,4 +360,226 @@ public class WasmUnwinderTests
     }
 
     private const uint StackWalkSentinelIndirect = 0;
+    private const uint StackWalkSentinelTerminate = 1;
+
+    private const uint FuncIndexFunclet = 12;
+    private const uint FuncIndexNestedFunclet = 13;
+
+    // A ULEB128-encoded frame size, used as the whole unwind blob.
+    private static byte[] FrameSize(uint size)
+    {
+        List<byte> bytes = new();
+        do
+        {
+            byte b = (byte)(size & 0x7F);
+            size >>= 7;
+            if (size != 0)
+                b |= 0x80;
+            bytes.Add(b);
+        }
+        while (size != 0);
+        return bytes.ToArray();
+    }
+
+    [Fact]
+    public void TryGetLogicalFramePointer_RootFunction_ReturnsOwnFrameBase()
+    {
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "root"),
+            Blob(BlobsBase, FrameSize(0x20), "rootFrameSize"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.True(unwinder.TryGetLogicalFramePointer(new TargetPointer(FramesBase), out TargetPointer fp));
+        Assert.Equal(FramesBase, fp.Value);
+    }
+
+    /// <summary>
+    /// A funclet called directly by its containing method: unwinding out of the funclet lands on
+    /// the method's own frame, whose base is the establishing frame pointer.
+    /// </summary>
+    [Fact]
+    public void TryGetLogicalFramePointer_FuncletCalledByParent_ReturnsParentFrameBase()
+    {
+        const uint FuncletFrameSize = 0x20;
+        ulong parentFrame = FramesBase + FuncletFrameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.Funclets.Add(FuncIndexFunclet);
+        info.UnwindData[FuncIndexFunclet] = BlobsBase;
+        info.UnwindData[FuncIndexCaller] = BlobsBase + 0x10;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexFunclet, 1, "funclet"),
+            Frame(parentFrame, FuncIndexCaller, 5, "parent"),
+            Blob(BlobsBase, FrameSize(FuncletFrameSize), "funcletFrameSize"),
+            Blob(BlobsBase + 0x10, FrameSize(0x40), "parentFrameSize"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.True(unwinder.TryGetLogicalFramePointer(new TargetPointer(FramesBase), out TargetPointer fp));
+        Assert.Equal(parentFrame, fp.Value);
+    }
+
+    [Fact]
+    public void WasmContext_UnwindFromFuncletCalledByParent_SetsCallerStackInstructionAndFramePointers()
+    {
+        ulong funcletFrame = FramesBase;
+        ulong parentFrame = FramesBase + WasmMockTarget.FrameSize;
+        Target target = WasmMockTarget.Create(
+            funcletFrame,
+            WasmMockTarget.FuncletFunctionTableIndex,
+            isFunclet: true,
+            funcletCalledByParent: true);
+
+        WasmR2RInfo r2rInfo = new(target);
+        Assert.True(r2rInfo.TryGetFunctionIdentity(
+            WasmMockTarget.FuncletFunctionTableIndex,
+            out TargetPointer module,
+            out uint runtimeFunctionIndex,
+            out bool isFunclet));
+        Assert.NotEqual(TargetPointer.Null, module);
+        Assert.Equal(1u, runtimeFunctionIndex);
+        Assert.True(isFunclet);
+
+        // The funclet and its root resolve to the same virtual-IP base. This exercises the
+        // backward walk over two real RUNTIME_FUNCTION entries without treating the fixture's
+        // synthetic MinVirtualIP as captured-world truth.
+        Assert.True(r2rInfo.TryGetVirtualIPBase(
+            WasmMockTarget.FunctionTableIndex,
+            out ulong rootVirtualIpBase));
+        Assert.True(r2rInfo.TryGetVirtualIPBase(
+            WasmMockTarget.FuncletFunctionTableIndex,
+            out ulong funcletVirtualIpBase));
+        Assert.Equal(rootVirtualIpBase, funcletVirtualIpBase);
+
+        WasmContext context = new()
+        {
+            StackPointer = new TargetPointer(funcletFrame),
+            InstructionPointer = new TargetCodePointer(funcletVirtualIpBase + 6),
+            FramePointer = new TargetPointer(funcletFrame),
+        };
+
+        context.Unwind(target);
+
+        Assert.Equal(parentFrame, context.StackPointer.Value);
+        Assert.Equal(rootVirtualIpBase + 6, context.InstructionPointer.Value);
+        Assert.Equal(parentFrame, context.FramePointer.Value);
+    }
+
+    /// <summary>
+    /// A funclet invoked by the VM through CallFuncletWith[out]Throwable: unwinding terminates at
+    /// the synthetic TERMINATE_R2R_STACK_WALK frame, which carries the establishing frame pointer
+    /// one pointer-sized slot after the marker.
+    /// </summary>
+    [Fact]
+    public void TryGetLogicalFramePointer_FuncletCalledByVM_RecoversEstablishingFramePointer()
+    {
+        const uint FuncletFrameSize = 0x20;
+        ulong terminatorFrame = FramesBase + FuncletFrameSize;
+        ulong establishingFp = FramesBase + 0x1000;
+
+        TargetTestHelpers helpers = new(WasmArch);
+        byte[] terminator = new byte[16];
+        helpers.Write(terminator.AsSpan(0, sizeof(uint)), StackWalkSentinelTerminate);
+        helpers.WritePointer(terminator.AsSpan((int)helpers.PointerSize, helpers.PointerSize), establishingFp);
+
+        FakeWasmR2RInfo info = new();
+        info.Funclets.Add(FuncIndexFunclet);
+        info.UnwindData[FuncIndexFunclet] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexFunclet, 1, "funclet"),
+            new MockMemorySpace.HeapFragment { Address = terminatorFrame, Data = terminator, Name = "terminator" },
+            Blob(BlobsBase, FrameSize(FuncletFrameSize), "funcletFrameSize"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.True(unwinder.TryGetLogicalFramePointer(new TargetPointer(FramesBase), out TargetPointer fp));
+        Assert.Equal(establishingFp, fp.Value);
+    }
+
+    /// <summary>
+    /// A handler nested inside another funclet unwinds through both before reaching the method.
+    /// </summary>
+    [Fact]
+    public void TryGetLogicalFramePointer_NestedFunclets_WalksOutToMethod()
+    {
+        const uint InnerFrameSize = 0x10;
+        const uint OuterFrameSize = 0x20;
+        ulong outerFunclet = FramesBase + InnerFrameSize;
+        ulong parentFrame = outerFunclet + OuterFrameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.Funclets.Add(FuncIndexNestedFunclet);
+        info.Funclets.Add(FuncIndexFunclet);
+        info.UnwindData[FuncIndexNestedFunclet] = BlobsBase;
+        info.UnwindData[FuncIndexFunclet] = BlobsBase + 0x10;
+        info.UnwindData[FuncIndexCaller] = BlobsBase + 0x20;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexNestedFunclet, 1, "innerFunclet"),
+            Frame(outerFunclet, FuncIndexFunclet, 2, "outerFunclet"),
+            Frame(parentFrame, FuncIndexCaller, 5, "parent"),
+            Blob(BlobsBase, FrameSize(InnerFrameSize), "innerFrameSize"),
+            Blob(BlobsBase + 0x10, FrameSize(OuterFrameSize), "outerFrameSize"),
+            Blob(BlobsBase + 0x20, FrameSize(0x40), "parentFrameSize"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.True(unwinder.TryGetLogicalFramePointer(new TargetPointer(FramesBase), out TargetPointer fp));
+        Assert.Equal(parentFrame, fp.Value);
+    }
+
+    /// <summary>
+    /// A localloc frame indirects to its real base before anything else is read, so the logical
+    /// frame pointer must be the indirected base rather than the stack pointer.
+    /// </summary>
+    [Fact]
+    public void TryGetLogicalFramePointer_LocallocRootFunction_ReturnsIndirectedBase()
+    {
+        TargetTestHelpers helpers = new(WasmArch);
+        ulong realFp = FramesBase + 0x100;
+
+        byte[] indirect = new byte[16];
+        helpers.Write(indirect.AsSpan(0, sizeof(uint)), StackWalkSentinelIndirect);
+        helpers.WritePointer(indirect.AsSpan((int)helpers.PointerSize, helpers.PointerSize), realFp);
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            new MockMemorySpace.HeapFragment { Address = FramesBase, Data = indirect, Name = "locallocSp" },
+            Frame(realFp, FuncIndexLeaf, 3, "realFrame"),
+            Blob(BlobsBase, FrameSize(0x20), "frameSize"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.True(unwinder.TryGetLogicalFramePointer(new TargetPointer(FramesBase), out TargetPointer fp));
+        Assert.Equal(realFp, fp.Value);
+    }
+
+    [Fact]
+    public void TryGetFunctionIndex_ReportsIndexAndFuncletFlag()
+    {
+        FakeWasmR2RInfo info = new();
+        info.Funclets.Add(FuncIndexFunclet);
+        info.UnwindData[FuncIndexFunclet] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget([Frame(FramesBase, FuncIndexFunclet, 1, "funclet")]);
+        WasmUnwinder unwinder = new(target, info);
+
+        Assert.True(unwinder.TryGetFunctionIndex(new TargetPointer(FramesBase), out uint functionIndex));
+        Assert.Equal(FuncIndexFunclet, functionIndex);
+        Assert.True(info.TryIsFunclet(functionIndex, out bool isFunclet));
+        Assert.True(isFunclet);
+    }
 }

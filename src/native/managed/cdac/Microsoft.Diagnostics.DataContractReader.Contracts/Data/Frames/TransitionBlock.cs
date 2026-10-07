@@ -8,6 +8,9 @@ internal partial class TransitionBlock : IData<TransitionBlock>
 {
     [Field] public partial TargetCodePointer ReturnAddress { get; }
 
+    // WASM-only: the R2R shadow-stack pointer saved by transition helpers.
+    [Field] public partial TargetPointer? StackPointer { get; }
+
     [FieldAddress]
     public partial TargetPointer CalleeSavedRegisters { get; }
 

@@ -48,6 +48,44 @@ public enum DebugVarLocKind
     DoubleStack,
     FloatingPointStack,
     FixedVarArg,
+    /// <summary>
+    /// The variable lives in a WebAssembly local. WASM locals are engine-private frame state:
+    /// they are not in linear memory and cannot be read through the data target. Consumers with
+    /// access to the WASM engine (for example a debugger attached over the Chrome DevTools
+    /// Protocol) can fetch the value using <see cref="DebugVarInfo.WasmLocal"/>.
+    /// </summary>
+    WasmLocal,
+    /// <summary>
+    /// The variable spans two WebAssembly locals, described by
+    /// <see cref="DebugVarInfo.WasmLocal"/> and <see cref="DebugVarInfo.WasmLocal2"/>.
+    /// </summary>
+    WasmLocalPair,
+}
+
+/// <summary>
+/// Identifies a WebAssembly local by index.
+/// </summary>
+/// <remarks>
+/// <para>
+/// On WASM, RyuJIT has no physical registers. Each register field in the <c>ICorDebugInfo</c>
+/// variable-location stream holds a WASM local index biased past the reserved register numbers
+/// (<c>ICorDebugInfo::WASM_LOCAL_REGNUM_BASE</c> in <c>src/coreclr/inc/cordebuginfo.h</c>).
+/// <see cref="Index"/> is the unbiased index the emitted <c>local.get</c> / <c>local.set</c>
+/// instructions use directly, so it can be handed to a WASM engine as-is after selecting the
+/// correct module/function. As on other targets, the value type is not encoded; it is implied by
+/// the variable's type and by the local's declaration in the WASM function.
+/// </para>
+/// <para>
+/// WASM local index spaces are per function, and a method's funclets are separate WASM functions
+/// from its root (see <c>WasmRegAlloc</c> in <c>src/coreclr/jit/regallocwasm.cpp</c>). Variable
+/// ranges, by contrast, are method-relative. A consumer must therefore know which WASM function
+/// the current virtual IP belongs to before interpreting <see cref="Index"/>.
+/// </para>
+/// </remarks>
+public readonly struct WasmLocalInfo
+{
+    /// <summary>The WASM local index, as used by <c>local.get</c> / <c>local.set</c>.</summary>
+    public uint Index { get; init; }
 }
 
 /// <summary>
@@ -84,6 +122,17 @@ public readonly struct DebugVarInfo
     /// the call site whose return value this entry describes. Zero for all other entries.
     /// </summary>
     public uint CallReturnValueILOffset { get; init; }
+
+    /// <summary>
+    /// On WASM, <see cref="Register"/> decoded into a local index.
+    /// Null on every other architecture.
+    /// </summary>
+    public WasmLocalInfo? WasmLocal { get; init; }
+    /// <summary>
+    /// On WASM, <see cref="Register2"/> decoded into a local index.
+    /// Null on every other architecture.
+    /// </summary>
+    public WasmLocalInfo? WasmLocal2 { get; init; }
 }
 
 /// <summary>
