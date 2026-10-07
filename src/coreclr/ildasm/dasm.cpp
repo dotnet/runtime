@@ -5838,7 +5838,7 @@ void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
     TableSeenReset();
     metaSize = 0;
 
-    sprintf_s(szString,SZSTRING_SIZE,"// File size            : %d", fileSize = SafeGetFileSize(g_pPELoader->getHFile(), NULL));
+    sprintf_s(szString,SZSTRING_SIZE,"// File size            : %u", fileSize = g_pPELoader->getFileSize());
     printLine(GUICookie,szStr);
 
     if (g_pPELoader->IsPE32())
