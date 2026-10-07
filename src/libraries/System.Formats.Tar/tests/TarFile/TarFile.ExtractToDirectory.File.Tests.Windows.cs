@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -124,39 +123,5 @@ namespace System.Formats.Tar.Tests
             Assert.False(File.Exists(Path.Join(firstDestination, "second.txt")));
         }
 
-        private sealed class RootChangeStream : MemoryStream
-        {
-            private readonly long _changePosition;
-            private readonly Action _changeRoot;
-            private bool _changed;
-
-            internal RootChangeStream(byte[] data, long changePosition, Action changeRoot)
-                : base(data, writable: false)
-            {
-                _changePosition = changePosition;
-                _changeRoot = changeRoot;
-            }
-
-            public override int Read(Span<byte> buffer)
-            {
-                ChangeRootIfNeeded();
-                return base.Read(buffer);
-            }
-
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-            {
-                ChangeRootIfNeeded();
-                return base.ReadAsync(buffer, cancellationToken);
-            }
-
-            private void ChangeRootIfNeeded()
-            {
-                if (!_changed && Position >= _changePosition)
-                {
-                    _changed = true;
-                    _changeRoot();
-                }
-            }
-        }
     }
 }

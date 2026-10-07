@@ -15,6 +15,13 @@ namespace System.Formats.Tar
         private static string ResolveExistingPath(string path, out bool isOrdinaryDirectory)
         {
             isOrdinaryDirectory = false;
+            if (Interop.Sys.LStat(path, out Interop.Sys.FileStatus status) == 0 &&
+                (status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            {
+                isOrdinaryDirectory = true;
+                return Path.GetFullPath(path);
+            }
+
             return Path.Exists(path) ? ResolveSymlink(path) : path;
         }
 

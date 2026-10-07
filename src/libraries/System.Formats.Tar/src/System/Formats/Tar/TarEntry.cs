@@ -24,6 +24,7 @@ namespace System.Formats.Tar
         internal sealed class ExtractionContext
         {
             private string? _resolvedDestinationDirectoryPath;
+            private bool _destinationDirectoryWasEmpty;
 
             internal ExtractionContext(string destinationDirectoryPath)
             {
@@ -31,6 +32,10 @@ namespace System.Formats.Tar
             }
 
             internal string DestinationDirectoryPath { get; }
+
+            internal bool HasSymbolicLinkEntry { get; set; }
+
+            internal bool CanSkipRelativeChecks => _destinationDirectoryWasEmpty && !HasSymbolicLinkEntry;
 
             internal string ResolveDestinationDirectoryPath()
             {
@@ -44,6 +49,19 @@ namespace System.Formats.Tar
                 {
                     // Archive entries cannot replace the destination directory or its ancestors.
                     _resolvedDestinationDirectoryPath = resolvedPath;
+                    if (!HasSymbolicLinkEntry)
+                    {
+                        try
+                        {
+                            using IEnumerator<string> entries = Directory.EnumerateFileSystemEntries(DestinationDirectoryPath).GetEnumerator();
+                            _destinationDirectoryWasEmpty = !entries.MoveNext();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            // Enumeration permission is optional; retain per-entry checks when it is unavailable.
+                            _destinationDirectoryWasEmpty = false;
+                        }
+                    }
                 }
 
                 return resolvedPath;
@@ -393,6 +411,10 @@ namespace System.Formats.Tar
         // Gets the sanitized paths for the file destination and link target paths to be used when extracting relative to a directory.
         private (string, string?) GetDestinationAndLinkPaths(ExtractionContext context)
         {
+            if (EntryType is TarEntryType.SymbolicLink)
+            {
+                context.HasSymbolicLinkEntry = true;
+            }
             string destinationDirectoryPath = context.DestinationDirectoryPath;
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
@@ -454,6 +476,11 @@ namespace System.Formats.Tar
         private static bool FilePathEscapesDirectory(ExtractionContext context, string fileDestinationPath)
         {
             string resolvedDest = context.ResolveDestinationDirectoryPath();
+            if (context.CanSkipRelativeChecks)
+            {
+                // An initially empty ordinary root has no archive-created links until a symbolic-link entry is encountered.
+                return false;
+            }
 
             // Use the logical destination path for computing the relative path
             string logicalDest = Path.GetFullPath(context.DestinationDirectoryPath);
@@ -757,7 +784,7 @@ namespace System.Formats.Tar
                 }
 
                 // Exposing the handle otherwise flushes buffered data synchronously.
-                await fs.FlushAsync().ConfigureAwait(false);
+                await fs.FlushAsync(cancellationToken).ConfigureAwait(false);
                 AttemptSetLastWriteTime(fs.SafeFileHandle, ModificationTime);
             }
         }
