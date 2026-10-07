@@ -439,7 +439,6 @@ class ArrayBase : public Object
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
     friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
 
@@ -606,7 +605,6 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
 public:
@@ -779,7 +777,6 @@ class StringObject : public Object
     friend class ClrDataAccess;
 #endif
     friend class GCHeap;
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend class COMString;
 
