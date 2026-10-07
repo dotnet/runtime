@@ -221,8 +221,7 @@ namespace System
             if (declaringType.IsGenericType)
             {
                 Debug.Assert(!IsUnmanagedFunctionPtr);
-                MethodAttributes attributes = RuntimeMethodHandle.GetAttributes(method);
-                bool isStatic = (attributes & MethodAttributes.Static) != 0;
+                bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != 0;
                 if (!isStatic)
                 {
                     Type? targetType;
