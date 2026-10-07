@@ -11,12 +11,13 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        internal enum CFNumberType
+        // CFNumberType is based on CFIndex, which is 64-bit on supported Apple platforms.
+        internal enum CFNumberType : long
         {
             kCFNumberIntType = 9,
         }
 
         [LibraryImport(Libraries.CoreFoundationLibrary)]
-        private static unsafe partial int CFNumberGetValue(IntPtr handle, CFNumberType type, int* value);
+        private static unsafe partial byte CFNumberGetValue(IntPtr handle, CFNumberType type, int* value);
     }
 }

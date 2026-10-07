@@ -158,7 +158,7 @@ namespace ILCompiler.ObjectWriter
 
         partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, Utf8String relocSymbolName)
         {
-            if (relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternFunctionSymbolNode)
+            if (relocTarget is IMethodNode or AssemblyStubNode)
             {
                 // For now consider all method symbols address taken.
                 // We could restrict this in the future to those that are referenced from

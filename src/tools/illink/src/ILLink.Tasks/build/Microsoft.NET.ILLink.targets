@@ -17,7 +17,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <IntermediateLinkDir Condition=" '$(IntermediateLinkDir)' == '' ">$(IntermediateOutputPath)linked\</IntermediateLinkDir>
     <IntermediateLinkDir Condition=" !HasTrailingSlash('$(IntermediateLinkDir)') ">$(IntermediateLinkDir)\</IntermediateLinkDir>
     <!-- Used to enable incremental build for the ILLink target. -->
-    <_LinkSemaphore>$(IntermediateLinkDir)Link.semaphore</_LinkSemaphore>
+    <_LinkSemaphore>$(IntermediateLinkDir.TrimEnd('\/')).semaphore</_LinkSemaphore>
   </PropertyGroup>
 
   <ItemGroup>
@@ -137,6 +137,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     if the output semaphore file is out of date with respect to the inputs.
     ============================================================
     -->
+  <!-- The adjacent semaphore must not keep a deleted output directory up to date. -->
+  <Target Name="_InvalidateLinkSemaphore"
+          BeforeTargets="_RunILLink"
+          Condition="!Exists('$(IntermediateLinkDir)')">
+    <Delete Files="$(_LinkSemaphore)" />
+  </Target>
+
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
   <Target Name="_RunILLink"
           DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
@@ -151,7 +158,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_DotNetHostFileName Condition="$([MSBuild]::IsOSPlatform(`Windows`))">dotnet.exe</_DotNetHostFileName>
     </PropertyGroup>
 
-    <Delete Files="@(_LinkedResolvedFileToPublishCandidate)" />
     <ILLink AssemblyPaths="@(ManagedAssemblyToLink)"
             ReferenceAssemblyPaths="@(ReferencePath)"
             RootAssemblyNames="@(TrimmerRootAssembly)"

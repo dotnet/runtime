@@ -19,6 +19,19 @@ responsible for:
   review, and
 - formatting the final report back to the user.
 
+These shared analysis and template instructions do not grant permission to
+publish. The caller must follow the repository's
+[GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization):
+ordinary interactive and coding sessions require explicit authorization. In an
+interactive session, advance permission covering the proposed publication is
+sufficient; do not ask again. An executing user-requested or enabled workflow
+may publish the operations its documented publication contract authorizes for
+its currently authorized actions, without another approval step unless the
+contract requires one. A repository-configured agentic workflow may publish
+only the operations authorized by its purpose and configured outputs, through
+its configured output mechanism. Without authorization, leave a draft and
+report the pending decision. Dry-run mode never publishes.
+
 <a id="shared-kbe-rules"></a>
 
 ## Shared rules

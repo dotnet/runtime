@@ -199,10 +199,6 @@ namespace System.Runtime
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 #endif
 
-        [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
-
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
         //

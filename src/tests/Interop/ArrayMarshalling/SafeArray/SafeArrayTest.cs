@@ -3,8 +3,9 @@
 
 using System;
 using System.Linq;
-using System.Threading;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 #pragma warning disable CS0612, CS0618
@@ -196,6 +197,118 @@ public class SafeArrayMarshallingTest
         Assert.Throws<SafeArrayTypeMismatchException>(() => SafeArrayNative.Verify2DIntSafeArrayAsIntPtr(new IntPtr[2, 2], 2, 2));
     }
 
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void VariantArrayByRefElementIsReplacedWhenManagedTypeChanges()
+    {
+        SafeArrayNative.ReplaceVariantArrayElement(ReplaceVariantArrayElement, out int nativeValue, out ushort elementType);
+
+        Assert.Equal(4, nativeValue);
+        Assert.Equal((ushort)VarEnum.VT_BSTR, elementType);
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int AutoDualArrayReader([MarshalAs(UnmanagedType.LPArray, SizeConst = 1)] AutoDualArrayElement[] values);
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static unsafe void AutoDualClassArrayMarshalsDefaultInterface()
+    {
+        AutoDualArrayReader read = Marshal.GetDelegateForFunctionPointer<AutoDualArrayReader>(
+            (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr*, int>)&HasInterfacePointer);
+
+        Assert.Equal(1, read([new AutoDualArrayElement()]));
+        SafeArrayNative.VerifyAutoDualArray([new AutoDualArrayElement()]);
+    }
+
+    [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void InterfaceArraysPreservePerElementDefaultInterfaces(bool dispatch)
+    {
+        object first = dispatch ? new AutoDualArrayElement() : new DefaultInterfaceArrayElement();
+        object second = dispatch ? new OtherAutoDualArrayElement() : new AutoDualArrayElement();
+        object[] wrappers = dispatch
+            ? new DispatchWrapper[] { new(first), new(second) }
+            : new UnknownWrapper[] { new(first), new(second) };
+
+        IntPtr firstInterface = dispatch
+            ? Marshal.GetIDispatchForObject(first)
+            : Marshal.GetComInterfaceForObject(first, typeof(IDefaultInterfaceArrayElement));
+        try
+        {
+            IntPtr secondInterface = Marshal.GetIDispatchForObject(second);
+            try
+            {
+                SafeArrayNative.VerifyInterfaceArrayElements(wrappers, dispatch, firstInterface, secondInterface);
+            }
+            finally
+            {
+                Marshal.Release(secondInterface);
+            }
+        }
+        finally
+        {
+            Marshal.Release(firstInterface);
+        }
+    }
+
+    [ConditionalTheory(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void UntypedInterfaceArraysUseRequestedInterface(bool dispatch)
+    {
+        object first = new AutoDualArrayElement();
+        object second = new OtherAutoDualArrayElement();
+        IntPtr firstInterface = dispatch ? Marshal.GetIDispatchForObject(first) : Marshal.GetIUnknownForObject(first);
+        try
+        {
+            IntPtr secondInterface = dispatch ? Marshal.GetIDispatchForObject(second) : Marshal.GetIUnknownForObject(second);
+            try
+            {
+                SafeArrayNative.VerifyInterfaceArrayElements([first, second], dispatch, firstInterface, secondInterface);
+            }
+            finally
+            {
+                Marshal.Release(secondInterface);
+            }
+        }
+        finally
+        {
+            Marshal.Release(firstInterface);
+        }
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    public static void TypedClassInterfaceArraysPreserveDefaultInterface()
+    {
+        DefaultInterfaceArrayElement first = new();
+        DefaultInterfaceArrayElement second = new();
+        IntPtr firstInterface = Marshal.GetComInterfaceForObject(first, typeof(IDefaultInterfaceArrayElement));
+        try
+        {
+            IntPtr secondInterface = Marshal.GetComInterfaceForObject(second, typeof(IDefaultInterfaceArrayElement));
+            try
+            {
+                SafeArrayNative.VerifyTypedClassArrayElements([first, second], firstInterface, secondInterface);
+            }
+            finally
+            {
+                Marshal.Release(secondInterface);
+            }
+        }
+        finally
+        {
+            Marshal.Release(firstInterface);
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe int HasInterfacePointer(IntPtr* values) => values[0] != IntPtr.Zero ? 1 : 0;
+
+    private static void ReplaceVariantArrayElement(object[] values)
+    {
+        values[0] = "7";
+    }
+
     private static bool XorArray(bool[] values)
     {
         bool retVal = false;
@@ -212,6 +325,39 @@ public class SafeArrayMarshallingTest
         Array.Reverse(chars);
         return new string(chars);
     }
+}
+
+[ComVisible(true)]
+[Guid("A7CC0C2F-8E38-46D8-B53B-BA845484A713")]
+[ClassInterface(ClassInterfaceType.AutoDual)]
+public class AutoDualArrayElement
+{
+    public int GetValue() => 42;
+}
+
+[ComVisible(true)]
+[Guid("2B103C06-6EA6-4531-9762-26402F614E68")]
+[ClassInterface(ClassInterfaceType.AutoDual)]
+public class OtherAutoDualArrayElement
+{
+    public int GetValue() => 43;
+}
+
+[ComVisible(true)]
+[Guid("8CB4A142-C0CF-43A7-84E6-9AD438720346")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface IDefaultInterfaceArrayElement
+{
+    void Invoke();
+}
+
+[ComVisible(true)]
+[Guid("1700F1CB-946B-4A8B-8781-5DC404154EF0")]
+[ClassInterface(ClassInterfaceType.None)]
+[ComDefaultInterface(typeof(IDefaultInterfaceArrayElement))]
+public class DefaultInterfaceArrayElement : IDefaultInterfaceArrayElement
+{
+    public void Invoke() { }
 }
 
 class SafeArrayNative
@@ -314,11 +460,65 @@ class SafeArrayNative
         VerifyInterfaceArrayIDispatch(objects, (short)VarEnum.VT_DISPATCH);
     }
 
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false, EntryPoint = "VerifyInterfaceArrayElements")]
+    private static extern void VerifyIUnknownArrayElements(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_UNKNOWN)] object[] objects,
+        short expectedVarType, IntPtr first, IntPtr second);
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false, EntryPoint = "VerifyInterfaceArrayElements")]
+    private static extern void VerifyIDispatchArrayElements(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_DISPATCH)] object[] objects,
+        short expectedVarType, IntPtr first, IntPtr second);
+
+    public static void VerifyInterfaceArrayElements(object[] objects, bool dispatch, IntPtr first, IntPtr second)
+    {
+        if (dispatch)
+        {
+            VerifyIDispatchArrayElements(objects, (short)VarEnum.VT_DISPATCH, first, second);
+        }
+        else
+        {
+            VerifyIUnknownArrayElements(objects, (short)VarEnum.VT_UNKNOWN, first, second);
+        }
+    }
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false, EntryPoint = "VerifyInterfaceArrayElements")]
+    private static extern void VerifyTypedClassArrayElementsNative(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_UNKNOWN)] DefaultInterfaceArrayElement[] objects,
+        short expectedVarType, IntPtr first, IntPtr second);
+
+    public static void VerifyTypedClassArrayElements(DefaultInterfaceArrayElement[] objects, IntPtr first, IntPtr second)
+    {
+        VerifyTypedClassArrayElementsNative(objects, (short)VarEnum.VT_UNKNOWN, first, second);
+    }
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false, EntryPoint = "VerifyInterfaceArray")]
+    private static extern void VerifyAutoDualSafeArray(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_UNKNOWN)] AutoDualArrayElement[] values,
+        short expectedVarType);
+
+    public static void VerifyAutoDualArray(AutoDualArrayElement[] values)
+    {
+        VerifyAutoDualSafeArray(values, (short)VarEnum.VT_UNKNOWN);
+    }
+
     [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
     public static extern void MeanVariantIntArray(
         [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]
         object[] objects,
         out int result
+    );
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void VariantArrayCallback(
+        [In, Out, MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] object[] values
+    );
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
+    public static extern void ReplaceVariantArrayElement(
+        VariantArrayCallback callback,
+        out int nativeValue,
+        out ushort elementType
     );
 
     [DllImport(nameof(SafeArrayNative), PreserveSig = false)]

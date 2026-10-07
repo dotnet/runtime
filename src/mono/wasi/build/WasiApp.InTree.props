@@ -10,7 +10,6 @@
     <UseMonoRuntime>false</UseMonoRuntime>
     <WasiCoreCLRHostNativeDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'wasi-wasm.$(Configuration)', 'sharedFramework'))</WasiCoreCLRHostNativeDir>
     <WasiCoreCLRNativeRuntimeDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', 'wasi.wasm.$(Configuration)', 'sharedFramework'))</WasiCoreCLRNativeRuntimeDir>
-    <WasiCoreCLRSystemPrivateCoreLibPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'coreclr', 'wasi.wasm.$(Configuration)', 'IL', 'System.Private.CoreLib.dll'))</WasiCoreCLRSystemPrivateCoreLibPath>
     <!-- Full ICU globalization: the wasihost corehost preloads icudt.dat (see
          src/native/corehost/wasihost / WasiApp.CoreCLR.targets), so the leg no longer needs
          invariant mode. -->

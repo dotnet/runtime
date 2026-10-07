@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 using Internal.IL;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
@@ -14,6 +16,13 @@ namespace ILCompiler
     /// </summary>
     public abstract class InteropStubManager : ICompilationRootProvider
     {
+        protected readonly PInvokeILEmitterConfiguration _configuration;
+
+        public InteropStubManager(PInvokeILEmitterConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         public abstract void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method);
 
         public abstract void AddInterestingInteropConstructedTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type);
@@ -32,6 +41,14 @@ namespace ILCompiler
 
         public virtual void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
+        }
+
+        public string GetDirectCallExternName(MethodDesc method)
+        {
+            bool directCall = _configuration.GenerateDirectCall(method, out string externName);
+            Debug.Assert(directCall);
+            Debug.Assert(externName != null);
+            return externName;
         }
     }
 }
