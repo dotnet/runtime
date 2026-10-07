@@ -966,7 +966,7 @@ static bool CanReadFuncEvalRegistersInPlace(DebuggerIPCE_FuncEvalArgData* pArg)
 }
 
 template <typename T>
-static void RegisterFuncEvalSlot(Portable<T>* pSlot, uint32_t flags, ExternalMemoryHandle**& pNextHandle)
+static void RegisterFuncEvalSlot(Portable<T>* pSlot, TypeHandle type, ExternalMemoryHandle**& pNextHandle)
 {
     CONTRACTL
     {
@@ -979,7 +979,7 @@ static void RegisterFuncEvalSlot(Portable<T>* pSlot, uint32_t flags, ExternalMem
     static_assert(sizeof(T) >= sizeof(void*));
     T* pAddress = pSlot->GetNativeAddress();
     _ASSERTE(IS_ALIGNED(reinterpret_cast<SIZE_T>(pAddress), sizeof(void*)));
-    *pNextHandle = ExternalMemoryHandle::Add(g_pObjectClass, pAddress, flags);
+    *pNextHandle = ExternalMemoryHandle::Add(type, pAddress);
     pNextHandle++;
 }
 
@@ -987,10 +987,12 @@ struct FuncEvalRegisterRootContext : ScanContext
 {
     RemoteAddress* home;
     BYTE* layoutBase;
+    TypeHandle interiorType;
     ExternalMemoryHandle** nextHandle;
 
-    FuncEvalRegisterRootContext(RemoteAddress* home, BYTE* layoutBase, ExternalMemoryHandle** nextHandle)
-        : home(home), layoutBase(layoutBase), nextHandle(nextHandle)
+    FuncEvalRegisterRootContext(RemoteAddress* home, BYTE* layoutBase, TypeHandle interiorType,
+                                ExternalMemoryHandle** nextHandle)
+        : home(home), layoutBase(layoutBase), interiorType(interiorType), nextHandle(nextHandle)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -1012,6 +1014,7 @@ struct FuncEvalRegisterRootContext : ScanContext
             COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
         }
 
+        TypeHandle slotType = flags == 0 ? TypeHandle(g_pObjectClass) : context->interiorType;
         RemoteAddress* home = context->home;
         switch (home->kind)
         {
@@ -1019,7 +1022,7 @@ struct FuncEvalRegisterRootContext : ScanContext
             _ASSERTE(offset == 0);
             if (home->reg1Addr == kNonLeafFrameRegAddr)
             {
-                RegisterFuncEvalSlot(&home->reg1Value, flags, context->nextHandle);
+                RegisterFuncEvalSlot(&home->reg1Value, slotType, context->nextHandle);
             }
             break;
 #if !defined(HOST_64BIT)
@@ -1028,12 +1031,12 @@ struct FuncEvalRegisterRootContext : ScanContext
             {
                 if (home->u.reg2Addr == kNonLeafFrameRegAddr)
                 {
-                    RegisterFuncEvalSlot(&home->u.reg2Value, flags, context->nextHandle);
+                    RegisterFuncEvalSlot(&home->u.reg2Value, slotType, context->nextHandle);
                 }
             }
             else if (home->reg1Addr == kNonLeafFrameRegAddr)
             {
-                RegisterFuncEvalSlot(&home->reg1Value, flags, context->nextHandle);
+                RegisterFuncEvalSlot(&home->reg1Value, slotType, context->nextHandle);
             }
             break;
         case RAK_MEMREG:
@@ -1048,7 +1051,7 @@ struct FuncEvalRegisterRootContext : ScanContext
 };
 
 static HRESULT ProtectFuncEvalArgumentStorage(
-    DebuggerEval* pDE, OBJECTREF* pObjectRefArray, INT64* pBufferForArgsArray,
+    DebuggerEval* pDE, OBJECTREF* pObjectRefArray, INT64* pBufferForArgsArray, TypeHandle objectByRefType,
     ExternalMemoryHandle** pArgumentHandles)
 {
     CONTRACTL
@@ -1073,7 +1076,7 @@ static HRESULT ProtectFuncEvalArgumentStorage(
                 {
                     return COR_E_ARGUMENT;
                 }
-                RegisterFuncEvalSlot(&pArg->argHome.reg1Value, 0, pNextHandle);
+                RegisterFuncEvalSlot(&pArg->argHome.reg1Value, TypeHandle(g_pObjectClass), pNextHandle);
             }
             continue;
         }
@@ -1129,7 +1132,8 @@ static HRESULT ProtectFuncEvalArgumentStorage(
             {
                 // Only field offsets are consumed; the callback registers the original serialized slots.
                 UINT64 layout = 0;
-                FuncEvalRegisterRootContext context(&pArg->argHome, reinterpret_cast<BYTE*>(&layout), pNextHandle);
+                FuncEvalRegisterRootContext context(
+                    &pArg->argHome, reinterpret_cast<BYTE*>(&layout), objectByRefType, pNextHandle);
                 ReportPointersFromValueType(FuncEvalRegisterRootContext::Register, &context, pMT, &layout);
                 pNextHandle = context.nextHandle;
             }
@@ -1139,7 +1143,7 @@ static HRESULT ProtectFuncEvalArgumentStorage(
                 pBufferForArgsArray[i] = static_cast<INT64>(value);
                 if (!mixedHome && (pMT->ContainsGCPointers() || pMT->IsByRefLike()))
                 {
-                    *pNextHandle = ExternalMemoryHandle::Add(pMT, &pBufferForArgsArray[i], 0);
+                    *pNextHandle = ExternalMemoryHandle::Add(type, &pBufferForArgsArray[i]);
                     pNextHandle++;
                 }
             }
@@ -1581,10 +1585,10 @@ DebuggerFuncEvalResult::DebuggerFuncEvalResult(DebuggerEval* pDE, OBJECTREF load
     CONTRACTL_END;
 
     Holder<ExternalMemoryHandle*, DoNothing<ExternalMemoryHandle*>, ReleaseDebuggerExternalMemoryHandle>
-        loaderAllocatorHandle(ExternalMemoryHandle::Add(g_pObjectClass, &m_loaderAllocator, 0));
+        loaderAllocatorHandle(ExternalMemoryHandle::Add(TypeHandle(g_pObjectClass), &m_loaderAllocator));
     pDE->m_result[0] = 0;
     _ASSERTE(IS_ALIGNED(reinterpret_cast<SIZE_T>(&pDE->m_result[0]), sizeof(void*)));
-    m_resultHandle = ExternalMemoryHandle::Add(g_pObjectClass, &pDE->m_result[0], GC_CALL_INTERIOR);
+    m_resultHandle = ExternalMemoryHandle::Add(pDE->m_resultType, &pDE->m_result[0]);
     m_loaderAllocatorHandle = loaderAllocatorHandle.GetValue();
     loaderAllocatorHandle.SuppressRelease();
 }
@@ -1683,6 +1687,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
 
 
     DebuggerFuncEvalResultHolder result;
+    TypeHandle objectByRefType = TypeHandle(g_pObjectClass).MakeByRef();
 
     //
     // An array to hold object ref args. This array is protected from GC's.
@@ -1782,7 +1787,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
                                    pBufferForArgsArray
                                    );
             captureResult = ProtectFuncEvalArgumentStorage(
-                pDE, pObjectRefArray, pBufferForArgsArray, pArgumentHandles);
+                pDE, pObjectRefArray, pBufferForArgsArray, objectByRefType, pArgumentHandles);
         }
 
         InvokeManagedFuncEval(&context, pCatcherStackAddr, &result, captureResult);
