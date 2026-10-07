@@ -1299,6 +1299,33 @@ DebuggerExternalMemoryOwner::~DebuggerExternalMemoryOwner()
     DeleteInteropSafe(m_pMemory);
 }
 
+DebuggerExternalMemoryOwner *DebuggerExternalMemoryOwner::Create(MethodTable *pMT, SIZE_T size)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    BYTE *pMemory = new (interopsafe) BYTE[size];
+    memset(pMemory, 0, size);
+    DebuggerExternalMemoryOwner *pOwner = nullptr;
+    EX_TRY
+    {
+        pOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
+    }
+    EX_CATCH
+    {
+        DeleteInteropSafe(pMemory);
+        EX_RETHROW;
+    }
+    EX_END_CATCH
+
+    return pOwner;
+}
+
 BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
 {
     CONTRACTL
@@ -1309,21 +1336,9 @@ BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
     }
     CONTRACTL_END;
 
-    _ASSERTE(m_externalMemoryOwner == NULL);
-
-    BYTE *pMemory = new (interopsafe) BYTE[size];
-    EX_TRY
-    {
-        m_externalMemoryOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
-    }
-    EX_CATCH
-    {
-        DeleteInteropSafe(pMemory);
-        EX_RETHROW;
-    }
-    EX_END_CATCH
-
-    return pMemory;
+    _ASSERTE(m_externalMemoryOwner == nullptr);
+    m_externalMemoryOwner = DebuggerExternalMemoryOwner::Create(pMT, size);
+    return m_externalMemoryOwner->GetMemory();
 }
 
 #ifdef _DEBUG

@@ -32,7 +32,7 @@ MethodDesc* g_pDebuggerInvokeFunctionMethodDesc = nullptr;
 // Bootstrap protection must precede the first managed entry, including metadata loading
 // and thunk generation. Objects, possible interior values, and writable argument homes
 // have separate roots. Native capture runs with GC forbidden. ExternalMemoryHandle
-// protects serialized non-leaf register slots in place and copies of leaf-frame structs.
+// protects serialized non-leaf object slots and contiguous snapshots of register structs.
 // One managed entry owns primitive working storage, the registered call-address vector,
 // conversion, boxing, invocation and memory/literal copy-back.
 // Byref-like temporaries are exact typed locals in its emitted thunk.
@@ -72,6 +72,11 @@ static void ValidateFuncEvalReturnType(DebuggerIPCE_FuncEvalType evalType, Metho
         GC_TRIGGERS;
     }
     CONTRACTL_END;
+
+    if ((evalType == DB_IPCE_FET_NEW_OBJECT || evalType == DB_IPCE_FET_NEW_OBJECT_NC) && pMT->IsAbstract())
+    {
+        COMPlusThrow(kMemberAccessException, pMT->IsInterface() ? W("Acc_CreateInterface") : W("Acc_CreateAbst"));
+    }
 
     if (pMT == g_pStringClass)
     {
@@ -940,27 +945,8 @@ static bool HasNonLeafFuncEvalRegister(DebuggerIPCE_FuncEvalArgData* pArg)
     }
 }
 
-static bool CanReadFuncEvalRegistersInPlace(DebuggerIPCE_FuncEvalArgData* pArg)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!HasNonLeafFuncEvalRegister(pArg))
-    {
-        return false;
-    }
-
-#if !defined(HOST_64BIT)
-    if (pArg->argHome.kind == RAK_REGREG)
-    {
-        return pArg->argHome.reg1Addr == kNonLeafFrameRegAddr &&
-            pArg->argHome.u.reg2Addr == kNonLeafFrameRegAddr;
-    }
-#endif
-    return pArg->argHome.kind == RAK_REG;
-}
-
 template <typename T>
-static void RegisterFuncEvalSlot(Portable<T>* pSlot, TypeHandle type, ExternalMemoryHandle**& pNextHandle)
+static void RegisterFuncEvalSlot(Portable<T>* pSlot, ExternalMemoryHandle**& pNextHandle)
 {
     CONTRACTL
     {
@@ -973,79 +959,12 @@ static void RegisterFuncEvalSlot(Portable<T>* pSlot, TypeHandle type, ExternalMe
     static_assert(sizeof(T) >= sizeof(void*));
     T* pAddress = pSlot->GetNativeAddress();
     _ASSERTE(IS_ALIGNED(reinterpret_cast<SIZE_T>(pAddress), sizeof(void*)));
-    *pNextHandle = ExternalMemoryHandle::Add(type, pAddress);
+    *pNextHandle = ExternalMemoryHandle::Add(TypeHandle(g_pObjectClass), pAddress);
     pNextHandle++;
 }
 
-struct FuncEvalRegisterRootContext : ScanContext
-{
-    RemoteAddress* home;
-    BYTE* layoutBase;
-    TypeHandle interiorType;
-    ExternalMemoryHandle** nextHandle;
-
-    FuncEvalRegisterRootContext(RemoteAddress* home, BYTE* layoutBase, TypeHandle interiorType,
-                                ExternalMemoryHandle** nextHandle)
-        : home(home), layoutBase(layoutBase), interiorType(interiorType), nextHandle(nextHandle)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    static void Register(PTR_PTR_Object pField, ScanContext* sc, uint32_t flags)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        FuncEvalRegisterRootContext* context = static_cast<FuncEvalRegisterRootContext*>(sc);
-        SIZE_T offset = reinterpret_cast<BYTE*>(pField) - context->layoutBase;
-        if (offset >= sizeof(UINT64) || offset % sizeof(void*) != 0)
-        {
-            COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
-        }
-
-        TypeHandle slotType = flags == 0 ? TypeHandle(g_pObjectClass) : context->interiorType;
-        RemoteAddress* home = context->home;
-        switch (home->kind)
-        {
-        case RAK_REG:
-            _ASSERTE(offset == 0);
-            if (home->reg1Addr == kNonLeafFrameRegAddr)
-            {
-                RegisterFuncEvalSlot(&home->reg1Value, slotType, context->nextHandle);
-            }
-            break;
-#if !defined(HOST_64BIT)
-        case RAK_REGREG:
-            if (offset == 0)
-            {
-                if (home->u.reg2Addr == kNonLeafFrameRegAddr)
-                {
-                    RegisterFuncEvalSlot(&home->u.reg2Value, slotType, context->nextHandle);
-                }
-            }
-            else if (home->reg1Addr == kNonLeafFrameRegAddr)
-            {
-                RegisterFuncEvalSlot(&home->reg1Value, slotType, context->nextHandle);
-            }
-            break;
-        case RAK_MEMREG:
-        case RAK_REGMEM:
-            _ASSERTE(!"Mixed register/memory homes cannot contain GC references or byrefs");
-            break;
-#endif
-        default:
-            UNREACHABLE();
-        }
-    }
-};
-
 static HRESULT ProtectFuncEvalArgumentStorage(
-    DebuggerEval* pDE, OBJECTREF* pObjectRefArray, INT64* pBufferForArgsArray, TypeHandle objectByRefType,
+    DebuggerEval* pDE, INT64* pBufferForArgsArray,
     ExternalMemoryHandle** pArgumentHandles)
 {
     CONTRACTL
@@ -1070,7 +989,7 @@ static HRESULT ProtectFuncEvalArgumentStorage(
                 {
                     return COR_E_ARGUMENT;
                 }
-                RegisterFuncEvalSlot(&pArg->argHome.reg1Value, TypeHandle(g_pObjectClass), pNextHandle);
+                RegisterFuncEvalSlot(&pArg->argHome.reg1Value, pNextHandle);
             }
             continue;
         }
@@ -1110,37 +1029,17 @@ static HRESULT ProtectFuncEvalArgumentStorage(
 
             MethodTable* pMT = type.AsMethodTable();
 #if !defined(HOST_64BIT)
-            bool mixedHome = IsMixedFuncEvalRegisterHome(pArg->argHome.kind);
-            if (mixedHome)
+            if (IsMixedFuncEvalRegisterHome(pArg->argHome.kind))
             {
                 AssertValidMixedFuncEvalRegisterHome(pArg);
                 _ASSERTE(type.GetInternalCorElementType() == ELEMENT_TYPE_I8 ||
                     type.GetInternalCorElementType() == ELEMENT_TYPE_U8);
             }
-#else
-            constexpr bool mixedHome = false;
 #endif
-            // Value-type arguments do not use this object slot. Keep their captured layout alive.
-            pObjectRefArray[i] = pMT->GetLoaderAllocator()->GetExposedObject();
-            if (nonLeafRegister && !mixedHome)
-            {
-                // Only field offsets are consumed; the callback registers the original serialized slots.
-                UINT64 layout = 0;
-                FuncEvalRegisterRootContext context(
-                    &pArg->argHome, reinterpret_cast<BYTE*>(&layout), objectByRefType, pNextHandle);
-                ReportPointersFromValueType(FuncEvalRegisterRootContext::Register, &context, pMT, &layout);
-                pNextHandle = context.nextHandle;
-            }
-            if (!CanReadFuncEvalRegistersInPlace(pArg))
-            {
-                // Leaf and mixed homes need a stable value snapshot across managed preparation.
-                pBufferForArgsArray[i] = static_cast<INT64>(value);
-                if (!mixedHome && (pMT->ContainsGCPointers() || pMT->IsByRefLike()))
-                {
-                    *pNextHandle = ExternalMemoryHandle::Add(type, &pBufferForArgsArray[i]);
-                    pNextHandle++;
-                }
-            }
+            // Root the full snapshot and its type layout across managed preparation.
+            pBufferForArgsArray[i] = static_cast<INT64>(value);
+            *pNextHandle = ExternalMemoryHandle::Add(type, &pBufferForArgsArray[i]);
+            pNextHandle++;
         }
     }
 
@@ -1240,20 +1139,17 @@ static BYTE* AllocateFuncEvalExternalResult(DebuggerEval* pDE)
     _ASSERTE(pDE->m_resultType.IsByRefLike());
     MethodTable* pMT = pDE->m_resultType.GetMethodTable();
     SIZE_T size = pMT->GetNumInstanceFieldBytes();
-    BYTE* pResult = pDE->CreateExternalMemory(pMT, size);
-    memset(pResult, 0, size);
-    return pResult;
+    return pDE->CreateExternalMemory(pMT, size);
 }
 
 extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
-    DebuggerFuncEvalContext* pContext, UINT32 contextSize,
-    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack allocationType,
+    DebuggerFuncEvalContext* pContext,
+    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
     QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    _ASSERTE(contextSize == sizeof(DebuggerFuncEvalContext));
     DebuggerEval* pDE = pContext->pEval;
     ResolveFuncEvalGenericArgInfo(pDE);
 
@@ -1263,7 +1159,6 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
         COMPlusThrow(kArgumentException, W("Argument_CORDBBadVarArgCallConv"));
     }
 
-    pContext->pMethod = pDE->m_md;
     pContext->parameterCount = sig.NumFixedArgs();
     pContext->flags = (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT ? FuncEvalNewObject : 0) |
         (pDE->m_md->IsStatic() ? FuncEvalStatic : 0) |
@@ -1273,7 +1168,9 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
 
     {
         GCX_COOP();
-        *pContext->pLoaderAllocator = pDE->m_md->GetLoaderAllocator()->GetExposedObject();
+        OBJECTREF loaderAllocator = pDE->m_md->GetLoaderAllocator()->GetExposedObject();
+        GCPROTECT_BEGIN(loaderAllocator);
+        methodOwner.Set(pDE->m_md->AllocateStubMethodInfo());
         declaringType.Set(pDE->m_ownerTypeHandle.GetManagedClassObject());
         if (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT)
         {
@@ -1285,15 +1182,15 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
                 pContext->pResultData = AllocateFuncEvalExternalResult(pDE);
                 pContext->flags |= FuncEvalExternalResult;
             }
-            allocationType.Set(pDE->m_resultType.GetManagedClassObject());
         }
+        GCPROTECT_END();
     }
 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalReturnType(
-    DebuggerFuncEvalContext* pContext, QCall::ObjectHandleOnStack returnType, QCallExceptionStatus* qcallError)
+extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
+    DebuggerFuncEvalContext* pContext, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -1308,19 +1205,32 @@ extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalReturnType(
 
     {
         GCX_COOP();
-        if (pDE->m_resultType.IsByRefLike() && (pContext->flags & FuncEvalExternalResult) == 0)
+        if (pDE->m_resultType.IsByRefLike())
         {
-            pDE->m_resultType.GetMethodTable()->EnsureInstanceActive();
-            pContext->pResultData = AllocateFuncEvalExternalResult(pDE);
-            pContext->flags |= FuncEvalExternalResult;
+            if ((pContext->flags & FuncEvalExternalResult) == 0)
+            {
+                pDE->m_resultType.GetMethodTable()->EnsureInstanceActive();
+                pContext->pResultData = AllocateFuncEvalExternalResult(pDE);
+                pContext->flags |= FuncEvalExternalResult;
+            }
+        }
+        else if (pContext->returnElementType == ELEMENT_TYPE_VALUETYPE ||
+                 ((pContext->flags & FuncEvalNewObject) != 0 && pDE->m_resultType.IsValueType()))
+        {
+            MethodTable* pMT = pDE->m_resultType.GetMethodTable();
+            pMT->EnsureInstanceActive();
+            _ASSERTE(*pContext->ppTemporaryResult == nullptr);
+            *pContext->ppTemporaryResult =
+                DebuggerExternalMemoryOwner::Create(pMT, pMT->GetNumInstanceFieldBytes());
+            pContext->pResultData = (*pContext->ppTemporaryResult)->GetMemory();
+            pContext->flags |= FuncEvalValueTypeResult;
         }
         if (pContext->returnElementType == ELEMENT_TYPE_BYREF)
         {
             _ASSERTE(*pContext->ppResult == nullptr);
-            *pContext->ppResult = new (interopsafe) DebuggerFuncEvalResult(pDE, *pContext->pLoaderAllocator);
+            *pContext->ppResult = new (interopsafe) DebuggerFuncEvalResult(pDE, pDE->m_resultType);
             pContext->pResultByRefs = reinterpret_cast<void**>(&pDE->m_result[0]);
         }
-        returnType.Set(pDE->m_resultType.GetManagedClassObject());
     }
 
     END_QCALL;
@@ -1381,18 +1291,6 @@ extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
     return hr;
 }
 
-extern "C" void QCALLTYPE DebugDebugger_EnsureFuncEvalTypeActive(
-    QCall::TypeHandle type, QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-    {
-        GCX_COOP();
-        type.AsTypeHandle().GetMethodTable()->EnsureInstanceActive();
-    }
-    END_QCALL;
-}
-
 extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
     DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue)
 {
@@ -1401,28 +1299,6 @@ extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
     DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
     _ASSERTE(pArg->argElementType != ELEMENT_TYPE_VALUETYPE && !IsElementTypeSpecial(pArg->argElementType));
     return ReadFuncEvalRegisterValue(pContext->pEval, pArg, pValue);
-}
-
-extern "C" void QCALLTYPE DebugDebugger_CopyFuncEvalValueTypeArgument(
-    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::TypeHandle type, void* pDestination)
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-    _ASSERTE(index < pContext->argumentCount);
-    MethodTable* pMT = type.AsTypeHandle().GetMethodTable();
-    _ASSERTE(pMT->GetNumInstanceFieldBytes() <= sizeof(UINT64));
-    DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
-    if (CanReadFuncEvalRegistersInPlace(pArg))
-    {
-        UINT64 value;
-        BOOL read = ReadFuncEvalRegisterValue(pContext->pEval, pArg, &value);
-        _ASSERTE(read);
-        // Read the GC-updated serialized slots and transfer directly into rooted managed storage.
-        CopyValueClassUnchecked(pDestination, &value, pMT);
-    }
-    else
-    {
-        CopyValueClassUnchecked(pDestination, &pContext->pCapturedArguments[index], pMT);
-    }
 }
 
 extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
@@ -1436,14 +1312,27 @@ extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
         _ASSERTE(index < pContext->argumentCount);
         _ASSERTE(size <= sizeof(UINT64));
         DebuggerIPCE_FuncEvalArgData* pArg = &pContext->pEval->GetArgData()[index];
+        _ASSERTE(!IsElementTypeSpecial(pArg->argElementType));
         UINT64 bits = 0;
-        memcpyNoGCRefs(&bits, pValue, size);
-        OBJECTREF object = IsElementTypeSpecial(pArg->argElementType)
-            ? *static_cast<OBJECTREF*>(pValue)
-            : nullptr;
+        memcpyNoGCRefs(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&bits), size), pValue, size);
+        SetFuncEvalRegisterValue(pContext->pEval, pArg, bits);
+    }
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    {
+        GCX_COOP();
+        _ASSERTE(index < pContext->argumentCount);
+        OBJECTREF object = value.Get();
         GCPROTECT_BEGIN(object);
-        SetFuncEvalRegisterValue(pContext->pEval, pArg,
-            IsElementTypeSpecial(pArg->argElementType) ? ObjToArgSlot(object) : bits);
+        SetFuncEvalRegisterValue(
+            pContext->pEval, &pContext->pEval->GetArgData()[index], ObjToArgSlot(object));
         GCPROTECT_END();
     }
     END_QCALL;
@@ -1566,8 +1455,8 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
 }
 
 
-DebuggerFuncEvalResult::DebuggerFuncEvalResult(DebuggerEval* pDE, OBJECTREF loaderAllocator)
-    : m_loaderAllocator(loaderAllocator), m_loaderAllocatorHandle(nullptr), m_resultHandle(nullptr)
+DebuggerFuncEvalResult::DebuggerFuncEvalResult(DebuggerEval* pDE, TypeHandle resultType)
+    : m_resultHandle(nullptr)
 {
     CONTRACTL
     {
@@ -1577,13 +1466,10 @@ DebuggerFuncEvalResult::DebuggerFuncEvalResult(DebuggerEval* pDE, OBJECTREF load
     }
     CONTRACTL_END;
 
-    Holder<ExternalMemoryHandle*, DoNothing<ExternalMemoryHandle*>, ReleaseDebuggerExternalMemoryHandle>
-        loaderAllocatorHandle(ExternalMemoryHandle::Add(TypeHandle(g_pObjectClass), &m_loaderAllocator));
+    _ASSERTE(resultType.IsByRef());
     pDE->m_result[0] = 0;
     _ASSERTE(IS_ALIGNED(reinterpret_cast<SIZE_T>(&pDE->m_result[0]), sizeof(void*)));
-    m_resultHandle = ExternalMemoryHandle::Add(pDE->m_resultType, &pDE->m_result[0]);
-    m_loaderAllocatorHandle = loaderAllocatorHandle.GetValue();
-    loaderAllocatorHandle.SuppressRelease();
+    m_resultHandle = ExternalMemoryHandle::Add(resultType, &pDE->m_result[0]);
 }
 
 DebuggerFuncEvalResult::~DebuggerFuncEvalResult()
@@ -1591,7 +1477,6 @@ DebuggerFuncEvalResult::~DebuggerFuncEvalResult()
     WRAPPER_NO_CONTRACT;
 
     ReleaseDebuggerExternalMemoryHandle(m_resultHandle);
-    ReleaseDebuggerExternalMemoryHandle(m_loaderAllocatorHandle);
 }
 
 void DebuggerEval::ReleaseFuncEvalResult()
@@ -1680,7 +1565,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
 
 
     DebuggerFuncEvalResultHolder result;
-    TypeHandle objectByRefType = TypeHandle(g_pObjectClass).MakeByRef();
+    DebuggerExternalMemoryOwnerHolder temporaryResult;
 
     //
     // An array to hold object ref args. This array is protected from GC's.
@@ -1725,8 +1610,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     GCPROTECT_BEGININTERIOR_ARRAY(*pByRefMaybeInteriorPtrArray, (UINT)(cbAllocSize/sizeof(OBJECTREF)));
 
     //
-    // Capture handle addresses and leaf-frame or mixed-home value-type data.
-    // Pure non-leaf register homes are rooted in place and read again when preparing managed storage.
+    // Capture handle addresses and contiguous snapshots of register value-type data.
     //
     if ((!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(INT64), cbAllocSize)) ||
         (cbAllocSize != (size_t)(cbAllocSize)))
@@ -1736,12 +1620,8 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     INT64 *pBufferForArgsArray = (INT64*)_alloca(cbAllocSize);
     memset(pBufferForArgsArray, 0, cbAllocSize);
 
-    // A two-register value can require two scalar roots; other value homes need at most
-    // one register root plus one rooted snapshot.
-    constexpr SIZE_T MaxHandlesPerArgument = 2;
     SIZE_T handleCount;
-    if (!ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, MaxHandlesPerArgument, handleCount) ||
-        !ClrSafeInt<SIZE_T>::addition(handleCount, 1, handleCount) ||
+    if (!ClrSafeInt<SIZE_T>::addition(pDE->m_argCount, 1, handleCount) ||
         !ClrSafeInt<SIZE_T>::multiply(handleCount, sizeof(ExternalMemoryHandle*), cbAllocSize))
     {
         ThrowHR(COR_E_OVERFLOW);
@@ -1750,17 +1630,15 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     // Keep a null terminator so partially registered snapshots are cleaned up on failure.
     memset(pArgumentHandles, 0, cbAllocSize);
 
-    OBJECTREF loaderAllocator = nullptr;
     DebuggerFuncEvalContext context = {};
     context.pEval = pDE;
     context.pObjects = pObjectRefArray;
     context.pInteriors = pMaybeInteriorPtrArray;
     context.pHomes = pByRefMaybeInteriorPtrArray;
     context.pCapturedArguments = pBufferForArgsArray;
+    context.ppTemporaryResult = &temporaryResult;
     context.pResultData = pDE->m_result;
     context.argumentCount = pDE->m_argCount;
-    context.pLoaderAllocator = &loaderAllocator;
-    GCPROTECT_BEGIN(loaderAllocator);
     Holder<ExternalMemoryHandle**, DoNothing<ExternalMemoryHandle**>, ReleaseFuncEvalArgumentHandles>
         argumentHandles(pArgumentHandles);
 
@@ -1780,7 +1658,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
                                    pBufferForArgsArray
                                    );
             captureResult = ProtectFuncEvalArgumentStorage(
-                pDE, pObjectRefArray, pBufferForArgsArray, objectByRefType, pArgumentHandles);
+                pDE, pBufferForArgsArray, pArgumentHandles);
         }
 
         InvokeManagedFuncEval(&context, pCatcherStackAddr, &result, captureResult);
@@ -1790,6 +1668,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
         // The result slot is registered as an interior root for byref returns. Release
         // that registration before replacing the slot with an exception OBJECTHANDLE.
         result = nullptr;
+        temporaryResult = nullptr;
 
         // Managed code can create the result handle immediately before an abort reaches
         // the UCO boundary. Destroy it unless the successful path transferred ownership
@@ -1809,8 +1688,8 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
     EX_END_CATCH
 
+    temporaryResult.Release();
     argumentHandles.Release();
-    GCPROTECT_END();    // loaderAllocator
     GCPROTECT_END();    // pByRefMaybeInteriorPtrArray
     GCPROTECT_END();    // pMaybeInteriorPtrArray
     GCPROTECT_END();    // pObjectRefArray
@@ -1883,14 +1762,14 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 if (th.IsNull() || th.ContainsGenericVariables())
                     COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
 
+                ValidateFuncEvalReturnType(DB_IPCE_FET_NEW_OBJECT_NC, th.GetMethodTable());
+
                 // Run the Class Init for this type, if necessary.
                 MethodTable * pOwningMT = th.GetMethodTable();
                 pOwningMT->EnsureInstanceActive();
                 pOwningMT->CheckRunClassInitThrowing();
 
                 // Create a new instance of the class
-
-                ValidateFuncEvalReturnType(DB_IPCE_FET_NEW_OBJECT_NC, th.GetMethodTable());
 
                 pDE->m_resultType = th;
                 if (th.IsByRefLike())

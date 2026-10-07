@@ -23,20 +23,20 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 class DebuggerEval;
 class DebuggerFuncEvalResult;
+class DebuggerExternalMemoryOwner;
 
 struct DebuggerFuncEvalContext
 {
     DebuggerEval* pEval;
-    MethodDesc* pMethod;
     OBJECTREF* pObjects;
     void** pInteriors;
     void** pHomes;
     INT64* pCapturedArguments;
     DebuggerFuncEvalResult** ppResult;
+    DebuggerExternalMemoryOwner** ppTemporaryResult;
     void** pResultByRefs;
     void* pResultData;
     void* resultHandle;
-    OBJECTREF* pLoaderAllocator;
     UINT32 argumentCount;
     UINT32 parameterCount;
     UINT32 flags;
@@ -51,6 +51,7 @@ enum DebuggerFuncEvalFlags
     FuncEvalInterface = 8,
     FuncEvalShared = 16,
     FuncEvalExternalResult = 32,
+    FuncEvalValueTypeResult = 64,
 };
 
 struct DebuggerFuncEvalArgument
@@ -69,23 +70,22 @@ enum DebuggerFuncEvalArgumentFlags
 };
 
 extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
-    DebuggerFuncEvalContext* pContext, UINT32 contextSize,
-    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack allocationType,
+    DebuggerFuncEvalContext* pContext,
+    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
     QCallExceptionStatus* qcallError);
-extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalReturnType(
-    DebuggerFuncEvalContext* pContext, QCall::ObjectHandleOnStack returnType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
+    DebuggerFuncEvalContext* pContext, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgument(
     DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument);
 extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
     DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type, QCallExceptionStatus* qcallError);
 extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
     DebuggerFuncEvalContext* pContext, UINT32 index, BOOL interior, QCall::ObjectHandleOnStack value);
-extern "C" void QCALLTYPE DebugDebugger_EnsureFuncEvalTypeActive(
-    QCall::TypeHandle type, QCallExceptionStatus* qcallError);
 extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
     DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
-extern "C" void QCALLTYPE DebugDebugger_CopyFuncEvalValueTypeArgument(
-    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::TypeHandle type, void* pDestination);
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
     DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
     QCallExceptionStatus* qcallError);
