@@ -19,7 +19,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options, ProcessInfo& processInfo)
     m_pClrDataProcess(nullptr),
     m_appModel(options.AppModel),
     m_gatherFrames(options.CrashReport),
-    m_dumpRegionStore(&m_memoryRegions, &CrashInfo::FindMemoryRegionOverlap, &CrashInfo::InsertDumpRegion),
+    m_dumpRegionOperations(&m_memoryRegions, &CrashInfo::TryFindMemoryRegionOverlap, &CrashInfo::TryInsertDumpRegion),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -100,13 +100,13 @@ CrashInfo::~CrashInfo()
 }
 
 bool
-CrashInfo::FindMemoryRegionOverlap(
-    void* container,
+CrashInfo::TryFindMemoryRegionOverlap(
+    void* context,
     uint64_t startAddress,
     uint64_t endAddress,
-    MemoryRegion* result)
+    MemoryRegion& result)
 {
-    std::set<MemoryRegion>* regions = static_cast<std::set<MemoryRegion>*>(container);
+    std::set<MemoryRegion>* regions = static_cast<std::set<MemoryRegion>*>(context);
     MemoryRegion regionToFind(0, startAddress, endAddress, 0);
     std::set<MemoryRegion>::const_iterator conflictingRegion = regions->find(regionToFind);
     if (conflictingRegion == regions->end())
@@ -114,15 +114,15 @@ CrashInfo::FindMemoryRegionOverlap(
         return false;
     }
 
-    *result = *conflictingRegion;
+    result = *conflictingRegion;
     return true;
 }
 
 bool
-CrashInfo::InsertDumpRegion(void* container, const MemoryRegion* region)
+CrashInfo::TryInsertDumpRegion(void* context, const MemoryRegion& region)
 {
-    std::set<MemoryRegion>* regions = static_cast<std::set<MemoryRegion>*>(container);
-    regions->insert(*region);
+    std::set<MemoryRegion>* regions = static_cast<std::set<MemoryRegion>*>(context);
+    regions->insert(region);
     return true;
 }
 
@@ -713,7 +713,7 @@ CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
 int
 CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 {
-    return m_processInfo.InsertMemoryRegion(m_dumpRegionStore, region);
+    return m_processInfo.InsertMemoryRegion(m_dumpRegionOperations, region);
 }
 
 //

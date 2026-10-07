@@ -50,7 +50,7 @@ CreateDump(const CreateDumpOptions& options)
     }
 
     // The following three steps gather all the info about the process, threads (registers, etc.) and memory regions
-    if (!processInfo.GatherCrashInfo(crashInfo->GetDumpRegionStore()))
+    if (!processInfo.GatherCrashInfo(crashInfo->GetDumpRegionOperations()))
     {
         goto exit;
     }
@@ -64,13 +64,13 @@ CreateDump(const CreateDumpOptions& options)
     }
 
     // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
-    if (!AddSpecialDiagInfoRegion(crashInfo->GetDumpRegionStore()))
+    if (!AddSpecialDiagInfoRegion(crashInfo->GetDumpRegionOperations()))
     {
         goto exit;
     }
 
     // Determine which memory regions should be included in the dump based on the dump type
-    if (!processInfo.SelectDumpRegions(crashInfo->GetDumpRegionStore(), options.DumpType))
+    if (!processInfo.SelectDumpRegions(crashInfo->GetDumpRegionOperations(), options.DumpType))
     {
         goto exit;
     }

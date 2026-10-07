@@ -55,14 +55,14 @@ bool ProcessInfo::PageMappedToPhysicalMemory(uint64_t start)
     #endif
 }
 
-bool ProcessInfo::SelectDumpRegions(DumpRegionStore& regionStore, DumpType dumpType)
+bool ProcessInfo::SelectDumpRegions(DumpRegionOperations& regionOperations, DumpType dumpType)
 {
     // If full memory dump, include everything regardless of permissions
     if (dumpType == DumpType::Full)
     {
         for (const MemoryRegion& region : m_moduleMappings)
         {
-            if (InsertMemoryRegion(regionStore, region) < 0)
+            if (InsertMemoryRegion(regionOperations, region) < 0)
                 return false;
         }
         for (const MemoryRegion& region : m_otherMappings)
@@ -70,7 +70,7 @@ bool ProcessInfo::SelectDumpRegions(DumpRegionStore& regionStore, DumpType dumpT
             // Don't add uncommitted pages to the full dump
             if ((region.Permissions() & (PF_R | PF_W | PF_X)) != 0)
             {
-                if (InsertMemoryRegion(regionStore, region) < 0)
+                if (InsertMemoryRegion(regionOperations, region) < 0)
                     return false;
             }
         }
@@ -90,7 +90,7 @@ bool ProcessInfo::SelectDumpRegions(DumpRegionStore& regionStore, DumpType dumpT
                 if (permissions == (PF_R | PF_W) || permissions == (PF_R | PF_W | PF_X))
 #endif
                 {
-                    if (InsertMemoryRegion(regionStore, region) < 0)
+                    if (InsertMemoryRegion(regionOperations, region) < 0)
                         return false;
                 }
             }
@@ -115,20 +115,20 @@ bool ProcessInfo::AddMapping(const ModuleRegion& region)
     return m_moduleMappings.Add(Move(mapping));
 }
 
-bool AddSpecialDiagInfoRegion(DumpRegionStore& regionStore)
+bool AddSpecialDiagInfoRegion(DumpRegionOperations& regionOperations)
 {
     MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize, /* offset */ 0);
-    return regionStore.Insert(&special);
+    return regionOperations.TryInsert(special);
 }
 
 //
 // Add a memory region to the list. Returns the number of pages actually added.
 //
-int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRegion& memoryRegion)
+int ProcessInfo::InsertMemoryRegion(DumpRegionOperations& regionOperations, const MemoryRegion& memoryRegion)
 {
     // Check if the new region overlaps with the previously added ones
     MemoryRegion conflictingRegion;
-    bool hasConflict = regionStore.FindOverlap(memoryRegion.StartAddress(), memoryRegion.EndAddress(), &conflictingRegion);
+    bool hasConflict = regionOperations.TryFindOverlap(memoryRegion.StartAddress(), memoryRegion.EndAddress(), conflictingRegion);
     if (hasConflict && conflictingRegion.Contains(memoryRegion))
     {
         // The region is contained in the one we added before
@@ -146,7 +146,7 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRe
         MemoryRegion pageRegion(memoryRegion.Flags(), pageStart, pageStart + PAGE_SIZE);
         // avoid searching for conflicts if we know we don't have one
         bool pageHasConflicts = hasConflict && 
-                                regionStore.FindOverlap(pageRegion.StartAddress(), pageRegion.EndAddress(), &conflictingRegion);
+                                regionOperations.TryFindOverlap(pageRegion.StartAddress(), pageRegion.EndAddress(), conflictingRegion);
         // avoid validating the page if it conflicts: we won't add it in any case
         bool pageIsValid = !pageHasConflicts && PageMappedToPhysicalMemory(pageStart) && PageCanBeRead(pageStart);
 
@@ -161,7 +161,7 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRe
             if (subRegionStart != subRegionEnd)
             {
                 MemoryRegion subRegion(memoryRegion.Flags(), subRegionStart, subRegionEnd);
-                if (!regionStore.Insert(&subRegion))
+                if (!regionOperations.TryInsert(subRegion))
                 {
                     return -1;
                 }
@@ -174,7 +174,7 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRe
     if (subRegionStart != subRegionEnd)
     {
         MemoryRegion subRegion(memoryRegion.Flags(), subRegionStart, subRegionEnd);
-        if (!regionStore.Insert(&subRegion))
+        if (!regionOperations.TryInsert(subRegion))
         {
             return -1;
         }
@@ -183,7 +183,7 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRe
     return pagesAdded;
 }
 
-bool ProcessInfo::GatherCrashInfo(DumpRegionStore& regionStore)
+bool ProcessInfo::GatherCrashInfo(DumpRegionOperations& regionOperations)
 {
     for (ThreadSnapshot& thread : m_threads)
     {
@@ -197,7 +197,7 @@ bool ProcessInfo::GatherCrashInfo(DumpRegionStore& regionStore)
     {
         return false;
     }
-    if (!EnumerateMemoryRegions(regionStore))
+    if (!EnumerateMemoryRegions(regionOperations))
     {
         return false;
     }

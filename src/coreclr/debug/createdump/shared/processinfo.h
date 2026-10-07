@@ -38,45 +38,40 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 #define MAX_LONGPATH   1024
 #endif
 
-// To allow both external and linked createdump to share some common algorithms
-// we have this class that allows each to supply its container and the necessary callbacks for managing memory regions.
-class DumpRegionStore
+// To allow both external and linked createdump to share some common algorithms,
+// each supplies a context and the operations needed to manage its dump regions.
+// External createdump uses std::set for efficient lookup, while linked NativeAOT
+// createdump uses DynamicArray to avoid a libstdc++ dependency.
+class DumpRegionOperations
 {
 public:
-    DumpRegionStore(
-        void* container,
-        bool (*findOverlap)(void*, uint64_t, uint64_t, MemoryRegion*),
-        bool (*insert)(void*, const MemoryRegion*)) noexcept :
-        m_container(container),
+    using FindOverlapCallback = bool (*)(void*, uint64_t, uint64_t, MemoryRegion&);
+    using InsertCallback = bool (*)(void*, const MemoryRegion&);
+
+    DumpRegionOperations(
+        void* context,
+        FindOverlapCallback findOverlap,
+        InsertCallback insert) noexcept :
+        m_context(context),
         m_findOverlap(findOverlap),
         m_insert(insert)
     {
     }
 
-    bool FindOverlap(uint64_t startAddress, uint64_t endAddress, MemoryRegion* result) const
+    bool TryFindOverlap(uint64_t startAddress, uint64_t endAddress, MemoryRegion& result) const
     {
-        return m_findOverlap(m_container, startAddress, endAddress, result);
+        return m_findOverlap(m_context, startAddress, endAddress, result);
     }
 
-    bool Insert(const MemoryRegion* region) const
+    bool TryInsert(const MemoryRegion& region) const
     {
-        return m_insert(m_container, region);
+        return m_insert(m_context, region);
     }
-
-    void* Container() const { return m_container; }
 
 private:
-    void* m_container;
-
-    bool (*m_findOverlap)(
-        void* container,
-        uint64_t startAddress,
-        uint64_t endAddress,
-        MemoryRegion* result);
-
-    bool (*m_insert)(
-        void* container,
-        const MemoryRegion* region);
+    void* m_context;
+    FindOverlapCallback m_findOverlap;
+    InsertCallback m_insert;
 };
 
 // Process snapshot containing all data needed for dump generation
@@ -127,12 +122,12 @@ public:
     bool Initialize();
     void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
-    bool GatherCrashInfo(DumpRegionStore& regionStore);
-    bool SelectDumpRegions(DumpRegionStore& regionStore, DumpType dumpType);
+    bool GatherCrashInfo(DumpRegionOperations& regionOperations);
+    bool SelectDumpRegions(DumpRegionOperations& regionOperations, DumpType dumpType);
     bool ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read);
     bool AddMapping(const MemoryRegion& region);
     bool AddMapping(const ModuleRegion& region);
-    int InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRegion& memoryRegion);
+    int InsertMemoryRegion(DumpRegionOperations& regionOperations, const MemoryRegion& memoryRegion);
 #ifndef __APPLE__
     void CalculateRuntimeBaseAddress();
 #endif
@@ -167,7 +162,7 @@ public:
 #endif
 
 private:
-    bool EnumerateMemoryRegions(DumpRegionStore& regionStore);
+    bool EnumerateMemoryRegions(DumpRegionOperations& regionOperations);
     bool GetAuxvEntries();
     bool PageCanBeRead(uint64_t start);
     bool PageMappedToPhysicalMemory(uint64_t start);

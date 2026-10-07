@@ -32,7 +32,7 @@ private:
     std::set<ModuleRegion> m_moduleMappings;        // module memory mappings
     std::set<MemoryRegion> m_otherMappings;         // other memory mappings
     std::set<MemoryRegion> m_memoryRegions;         // memory regions from DAC, etc.
-    DumpRegionStore m_dumpRegionStore;              // shared adapter over m_memoryRegions
+    DumpRegionOperations m_dumpRegionOperations;    // shared operations over m_memoryRegions
     std::set<MemoryRegion> m_moduleAddresses;       // memory region to module base address
     std::set<ModuleInfo*, bool (*)(const ModuleInfo* lhs, const ModuleInfo* rhs)> m_moduleInfos; // module infos (base address and module name)
     ModuleInfo* m_mainModule;                       // the module containing "Main"
@@ -85,7 +85,7 @@ public:
     inline const std::set<ModuleRegion>& ModuleMappings() const { return m_moduleMappings; }
     inline const std::set<MemoryRegion>& OtherMappings() const { return m_otherMappings; }
     inline const std::set<MemoryRegion>& MemoryRegions() const { return m_memoryRegions; }
-    inline DumpRegionStore& GetDumpRegionStore() { return m_dumpRegionStore; }
+    inline DumpRegionOperations& GetDumpRegionOperations() { return m_dumpRegionOperations; }
     bool ReadMemory(void* address, void* buffer, size_t size) { return ReadMemory((uint64_t)address, buffer, size); }
 
     // IUnknown
@@ -120,8 +120,8 @@ private:
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool PageCanBeRead(uint64_t start);
     bool PageMappedToPhysicalMemory(uint64_t start);
-    static bool FindMemoryRegionOverlap(void* container, uint64_t startAddress, uint64_t endAddress, MemoryRegion* result);
-    static bool InsertDumpRegion(void* container, const MemoryRegion* region);
+    static bool TryFindMemoryRegionOverlap(void* context, uint64_t startAddress, uint64_t endAddress, MemoryRegion& result);
+    static bool TryInsertDumpRegion(void* context, const MemoryRegion& region);
     void Trace(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
     void TraceVerbose(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
 };

@@ -156,7 +156,7 @@ static void TraceModuleRegion(
     mapping->MemoryRegion::Trace(prefix, suffix);
 }
 
-bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
+bool ProcessInfo::EnumerateMemoryRegions(DumpRegionOperations& regionOperations)
 {
     // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says
     // about a library we are looking for. This file looks something like this:
@@ -258,7 +258,7 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
             {
                 MemoryRegion memoryRegion(regionFlags, start, end);
-                if (InsertMemoryRegion(regionStore, memoryRegion) < 0)
+                if (InsertMemoryRegion(regionOperations, memoryRegion) < 0)
                 {
                     free(permissions);
                     free(line);

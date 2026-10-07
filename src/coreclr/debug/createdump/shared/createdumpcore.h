@@ -211,8 +211,8 @@ int ParseCreateDumpOptions(int argc, char* argv[], CreateDumpOptions* options);
 bool ValidateDumpOptions(const CreateDumpOptions* options);
 #ifdef HOST_UNIX
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize);
-bool AddSpecialDiagInfoRegion(DumpRegionStore& regionStore);
-bool CreateDumpCore(const CreateDumpOptions* options, DumpRegionStore* regionStore);
+bool AddSpecialDiagInfoRegion(DumpRegionOperations& regionOperations);
+bool CreateDumpCore(const CreateDumpOptions* options, DumpRegionOperations* regionOperations);
 #endif
 
 #endif // CREATEDUMPCORE_H
