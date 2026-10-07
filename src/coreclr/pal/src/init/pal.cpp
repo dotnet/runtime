@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     init/pal.cpp
 
 Abstract:
-
     Implementation of PAL exported functions not part of the Win32 API.
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -100,7 +96,6 @@ bool g_arm64_atomics_present = false;
 #endif
 
 Volatile<INT> init_count = 0;
-Volatile<BOOL> shutdown_intent = 0;
 Volatile<LONG> g_coreclrInitialized = 0;
 static BOOL g_fThreadDataAvailable = FALSE;
 static pthread_mutex_t init_critsec_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -141,30 +136,6 @@ PAL_Initialize(
     char *const argv[])
 {
     return Initialize(PAL_INITIALIZE);
-}
-
-/*++
-Function:
-  PAL_InitializeWithFlags
-
-Abstract:
-  This function is the first function of the PAL to be called.
-  Internal structure initialization is done here. It could be called
-  several time by the same process, a reference count is kept.
-
-Return:
-  0 if successful
-  -1 if it failed
-
---*/
-int
-PALAPI
-PAL_InitializeWithFlags(
-    int argc,
-    const char *const argv[],
-    DWORD flags)
-{
-    return Initialize(flags);
 }
 
 /*++
@@ -701,9 +672,6 @@ PAL_TerminateEx(
         LOGEXIT("PAL_Terminate returns.\n");
     }
 
-    // Declare the beginning of shutdown
-    PALSetShutdownIntent();
-
     LOGEXIT("PAL_TerminateEx is exiting the current process.\n");
     exit(exitCode);
 }
@@ -717,46 +685,6 @@ Returns TRUE if startup has reached a point where thread data is available
 BOOL PALIsThreadDataInitialized()
 {
     return g_fThreadDataAvailable;
-}
-
-/*++
-Function:
-  PALCommonCleanup
-
-  Utility function to prepare for shutdown.
-
---*/
-void
-PALCommonCleanup()
-{
-    static bool cleanupDone = false;
-
-    // Declare the beginning of shutdown
-    PALSetShutdownIntent();
-
-    if (!cleanupDone)
-    {
-        cleanupDone = true;
-
-    }
-}
-
-BOOL PALIsShuttingDown()
-{
-    /* TODO: This function may be used to provide a reader/writer-like
-       mechanism (or a ref counting one) to prevent PAL APIs that need to access
-       PAL runtime data, from working when PAL is shutting down. Each of those API
-       should acquire a read access while executing. The shutting down code would
-       acquire a write lock, i.e. suspending any new incoming reader, and waiting
-       for the current readers to be done. That would allow us to get rid of the
-       dangerous suspend-all-other-threads at shutdown time */
-    return shutdown_intent;
-}
-
-void PALSetShutdownIntent()
-{
-    /* TODO: See comment in PALIsShuttingDown */
-    shutdown_intent = TRUE;
 }
 
 /*++
@@ -781,24 +709,6 @@ BOOL PALInitLock(void)
 
     minipal_mutex_enter(init_critsec);
     return TRUE;
-}
-
-/*++
-Function:
-  PALInitUnlock
-
-Release the initialization critical section (init_critsec).
-
-(no parameters, no return value)
---*/
-void PALInitUnlock(void)
-{
-    if(!init_critsec)
-    {
-        return;
-    }
-
-    minipal_mutex_leave(init_critsec);
 }
 
 /* Internal functions *********************************************************/

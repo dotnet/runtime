@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: UTIL.CPP
-// ===========================================================================
-
 #include "common.h"
 #include "excep.h"
 #include "corhost.h"
@@ -1520,23 +1516,6 @@ void DACNotify::DoModuleUnloadNotification(Module *ModulePtr)
     if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_MODULE_UNLOAD) != 0)
     {
         TADDR Args[2] = { MODULE_UNLOAD_NOTIFICATION, (TADDR) ModulePtr};
-        DACNotifyExceptionHelper(Args, 2);
-    }
-}
-
-void DACNotify::DoExceptionNotification(Thread* ThreadPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_EXCEPTION) != 0)
-    {
-        TADDR Args[2] = { EXCEPTION_NOTIFICATION, (TADDR) ThreadPtr};
         DACNotifyExceptionHelper(Args, 2);
     }
 }

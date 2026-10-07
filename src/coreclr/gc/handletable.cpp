@@ -5,9 +5,6 @@
  * Generational GC handle manager.  Main Entrypoint Layer.
  *
  * Implements generic support for external roots into a GC heap.
- *
-
- *
  */
 
 #include "common.h"
@@ -766,37 +763,6 @@ void HndVerifyTable(HHANDLETABLE hTable, const uint32_t *types, uint32_t typeCou
         // perform the scan
         TableScanHandles(pTable, types, typeCount, QuickSegmentIterator, BlockVerifyAgeMapForBlocks, &info, &ch);
     }
-}
-
-
-/*
- * HndNotifyGcCycleComplete
- *
- * Informs the handle table that a GC has completed.
- *
- */
-void HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t maxgen)
-{
-#ifdef _DEBUG
-    WRAPPER_NO_CONTRACT;
-
-    // fetch the handle table pointer
-    HandleTable *pTable = Table(hTable);
-
-    {
-        // lock the table down
-        CrstHolder ch(&pTable->Lock);
-
-        // if this was a full GC then dump a cumulative log of scanning stats
-        if (condemned >= maxgen)
-            DEBUG_LogScanningStatistics(pTable, LL_INFO10);
-    }
-#else
-    LIMITED_METHOD_CONTRACT;
-    UNREFERENCED_PARAMETER(hTable);
-    UNREFERENCED_PARAMETER(condemned);
-    UNREFERENCED_PARAMETER(maxgen);
-#endif
 }
 
 /*
