@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
@@ -12,8 +13,7 @@ namespace System.Net.NetworkInformation
             int realCount = Interop.Sys.GetEstimatedTcpConnectionCount();
             if (realCount == -1)
             {
-                // The platform (e.g. OpenBSD) does not expose the TCP connection table.
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+                ThrowExceptionForNativeError();
             }
 
             int infoCount = realCount * 2;
@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation
             {
                 if (Interop.Sys.GetActiveTcpConnectionInfos(infosPtr, &infoCount) == -1)
                 {
-                    throw new NetworkInformationException(SR.net_PInvokeError);
+                    ThrowExceptionForNativeError();
                 }
             }
 
@@ -78,8 +78,7 @@ namespace System.Net.NetworkInformation
             int realCount = Interop.Sys.GetEstimatedUdpListenerCount();
             if (realCount == -1)
             {
-                // The platform (e.g. OpenBSD) does not expose the UDP listener table.
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+                ThrowExceptionForNativeError();
             }
 
             int infoCount = realCount * 2;
@@ -88,7 +87,7 @@ namespace System.Net.NetworkInformation
             {
                 if (Interop.Sys.GetActiveUdpListeners(infosPtr, &infoCount) == -1)
                 {
-                    throw new NetworkInformationException(SR.net_PInvokeError);
+                    ThrowExceptionForNativeError();
                 }
             }
 
@@ -105,6 +104,18 @@ namespace System.Net.NetworkInformation
             }
 
             return endPoints;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowExceptionForNativeError()
+        {
+            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+            if (error.Error == Interop.Error.ENOTSUP)
+            {
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
+            throw new NetworkInformationException(error.RawErrno);
         }
 
         public override IcmpV4Statistics GetIcmpV4Statistics()
