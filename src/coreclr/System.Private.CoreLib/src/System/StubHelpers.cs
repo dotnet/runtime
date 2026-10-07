@@ -551,7 +551,6 @@ namespace System.StubHelpers
             ConvertToNativeVariantArrayElement(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
         }
 
-        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNativeVariantArrayElement")]
         private static partial void ConvertToNativeVariantArrayElement(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
 
