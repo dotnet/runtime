@@ -2,9 +2,6 @@ parameters:
 - name: runPrivateJobs
   type: boolean
   default: false
-- name: runScheduledJobs
-  type: boolean
-  default: false
 - name: onlySanityCheck
   type: boolean
   default: false
@@ -38,14 +35,6 @@ variables:
   - name: enableHelixJobMonitor
     value: true
 
-schedules:
-- cron: "30 2 * * *"
-  displayName: Every night at 2:30AM
-  branches:
-    include:
-    - main
-  always: true
-
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
@@ -65,8 +54,7 @@ extends:
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - template: /eng/pipelines/runtime-slow-perf-jobs.yml@performance
           parameters:
-            ${{ if or(in(variables['Build.Reason'], 'Schedule'), parameters.runScheduledJobs) }}:
-              runScheduledJobs: true
+            runMono: false
             ${{ if or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs) }}:
               runPrivateJobs: true
             runtimeRepoAlias: self

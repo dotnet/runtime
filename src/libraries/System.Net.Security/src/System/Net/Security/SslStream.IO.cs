@@ -458,6 +458,10 @@ namespace System.Net.Security
                 throw new IOException(SR.net_io_eof);
             }
 
+#pragma warning disable CS0618
+            int handshakeTypeOffset = _lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls;
+#pragma warning restore CS0618
+
             // At this point, we have at least one TLS frame.
             switch (_lastFrame.Header.Type)
             {
@@ -468,10 +472,13 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.Handshake:
-#pragma warning disable CS0618
-                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[_lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls] == (byte)TlsHandshakeType.ClientHello &&
+                    if (frameSize <= handshakeTypeOffset)
+                    {
+                        throw new IOException(SR.net_ssl_io_frame);
+                    }
+
+                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[handshakeTypeOffset] == (byte)TlsHandshakeType.ClientHello &&
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
-#pragma warning restore CS0618
                     {
                         TlsFrameHelper.ProcessingOptions options = TlsFrameHelper.ProcessingOptions.ServerName;
 
@@ -538,10 +545,8 @@ namespace System.Net.Security
             // (_securityContext == null), reject any frame that is not a ClientHello.
             if (_sslAuthenticationOptions!.IsServer && _securityContext == null)
             {
-#pragma warning disable CS0618
                 bool isClientHello = _lastFrame.Header.Type == TlsContentType.Handshake &&
-                    _buffer.EncryptedReadOnlySpan[_lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls] == (byte)TlsHandshakeType.ClientHello;
-#pragma warning restore CS0618
+                    _buffer.EncryptedReadOnlySpan[handshakeTypeOffset] == (byte)TlsHandshakeType.ClientHello;
                 if (!isClientHello)
                 {
                     throw new AuthenticationException(SR.net_ssl_io_frame);

@@ -37,7 +37,6 @@ namespace System.Xml.XmlReaderTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public static void TestResolveAbsolutePath()
         {
             string path = Path.GetTempFileName();

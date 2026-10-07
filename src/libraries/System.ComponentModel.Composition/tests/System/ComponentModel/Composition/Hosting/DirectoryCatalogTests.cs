@@ -50,7 +50,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor2_NullReflectionContextArgument_ShouldThrowArgumentNull()
         {
             DirectoryCatalogTests.Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull((rc) =>
@@ -60,7 +59,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor3_NullDefinitionOriginArgument_ShouldThrowArgumentNull()
         {
             DirectoryCatalogTests.Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull((dO) =>
@@ -70,7 +68,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor4_NullReflectionContextArgument_ShouldThrowArgumentNull()
         {
             DirectoryCatalogTests.Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull((rc) =>
@@ -80,7 +77,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor4_NullDefinitionOriginArgument_ShouldThrowArgumentNull()
         {
             DirectoryCatalogTests.Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull((dO) =>
@@ -136,7 +132,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void ICompositionElementDisplayName_WhenCatalogDisposed_ShouldNotThrow()
         {
             var catalog = CreateDirectoryCatalog();
@@ -146,7 +141,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void ICompositionElementOrigin_WhenCatalogDisposed_ShouldNotThrow()
         {
             var catalog = CreateDirectoryCatalog();
@@ -156,7 +150,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Parts_WhenCatalogDisposed_ShouldThrowObjectDisposed()
         {
             var catalog = CreateDirectoryCatalog();
@@ -169,7 +162,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void GetExports_WhenCatalogDisposed_ShouldThrowObjectDisposed()
         {
             var catalog = CreateDirectoryCatalog();
@@ -183,7 +175,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Refresh_WhenCatalogDisposed_ShouldThrowObjectDisposed()
         {
             var catalog = CreateDirectoryCatalog();
@@ -196,7 +187,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void ToString_WhenCatalogDisposed_ShouldNotThrow()
         {
             var catalog = CreateDirectoryCatalog();
@@ -206,7 +196,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void GetExports_NullAsConstraintArgument_ShouldThrowArgumentNull()
         {
             var catalog = CreateDirectoryCatalog();
@@ -218,7 +207,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Dispose_ShouldNotThrow()
         {
             using (var catalog = CreateDirectoryCatalog())
@@ -227,7 +215,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Dispose_CanBeCalledMultipleTimes()
         {
             var catalog = CreateDirectoryCatalog();
@@ -326,7 +313,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void LoadedFiles_EmptyDirectory_ShouldBeFine()
         {
                 var cat = new DirectoryCatalog(TemporaryFileCopier.GetNewTemporaryDirectory());
@@ -335,7 +321,6 @@ namespace System.ComponentModel.Composition
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
                 // Add one text file
@@ -354,7 +339,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void LoadedFiles_NonStaticallyReferencedAssembly()
         {
             string testAssembly = "System.ComponentModel.Composition.Noop.Assembly.dll";
@@ -368,7 +352,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor_InvalidAssembly_ShouldBeFine()
         {
                 using (File.CreateText(Path.Combine(TemporaryFileCopier.GetNewTemporaryDirectory(), "Test.dll"))) { }
@@ -376,7 +359,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor_NonExistentDirectory_ShouldThrow()
         {
                 Assert.Throws<DirectoryNotFoundException>(() =>
@@ -397,7 +379,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor_PassNonExistingFileName_ShouldThrow()
         {
                 Assert.Throws<DirectoryNotFoundException>(() =>
@@ -456,7 +437,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Refresh_NoChanges_ShouldNotFireOnChanged()
         {
                 var cat = new DirectoryCatalog(TemporaryFileCopier.GetNewTemporaryDirectory());
@@ -479,7 +459,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void GetExports()
         {
                 var catalog = new AggregateCatalog();

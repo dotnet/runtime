@@ -2,9 +2,10 @@
 setlocal enabledelayedexpansion
 
 :: Default configuration
-set "configuration=Debug"
+set "configuration=Release"
 set "browser_scan_path_override="
 set "wasi_scan_path_override="
+set "target_os="
 
 :: Get the repo root (script is in src/coreclr/vm/wasm).
 :: This must be computed before argument parsing, because SHIFT also shifts %0.
@@ -18,11 +19,13 @@ set "usage=!usage!^
 
 Options:^
 
-  -c, --configuration ^<Checked^|Debug^|Release^>  Build configuration (default: Debug)^
+  -c, --configuration ^<Checked^|Debug^|Release^>  Build configuration (default: Release)^
 
   -s, --scan-path ^<path^>                       Override the default browser scan path^
 
   -w, --wasi-scan-path ^<path^>                  Override the default wasi scan path^
+
+  -t, --target-os ^<browser^|wasi^>               Regenerate only this flavor (default: both)^
 
   -h, --help                                   Show this help message"
 
@@ -34,6 +37,8 @@ if /i "%~1"=="-s" goto :set_scan_path
 if /i "%~1"=="--scan-path" goto :set_scan_path
 if /i "%~1"=="-w" goto :set_wasi_scan_path
 if /i "%~1"=="--wasi-scan-path" goto :set_wasi_scan_path
+if /i "%~1"=="-t" goto :set_target_os
+if /i "%~1"=="--target-os" goto :set_target_os
 if /i "%~1"=="-h" goto :show_help
 if /i "%~1"=="--help" goto :show_help
 
@@ -59,6 +64,12 @@ shift
 shift
 goto :parse_args
 
+:set_target_os
+set target_os=%~2
+shift
+shift
+goto :parse_args
+
 :show_help
 echo !usage!
 exit /b 0
@@ -70,6 +81,15 @@ if /i not "%configuration%"=="Debug" if /i not "%configuration%"=="Release" if /
     echo Error: Invalid configuration "%configuration%". Must be Debug, Release, or Checked.
     exit /b 1
 )
+
+:: Validate target OS to prevent injection
+if not "%target_os%"=="" if /i not "%target_os%"=="browser" if /i not "%target_os%"=="wasi" (
+    echo Error: Invalid target OS "%target_os%". Must be browser or wasi.
+    exit /b 1
+)
+
+set "target_os_prop="
+if not "%target_os%"=="" set "target_os_prop=-p:CallHelperTargetOS=%target_os%"
 
 echo Configuration: %configuration%
 echo Repo root: %repo_root%
@@ -95,7 +115,7 @@ if not "%wasi_scan_path_override%"=="" (
     set wasi_prop="-p:WasiScanPath=!wasi_scan_path_override!"
 )
 
-call .\dotnet.cmd build "%generator_proj%" -t:GenerateCallHelpers "-p:Configuration=%configuration%" %browser_prop% %wasi_prop%
+call .\dotnet.cmd build "%generator_proj%" -t:GenerateCallHelpers "-p:Configuration=%configuration%" %browser_prop% %wasi_prop% %target_os_prop%
 if errorlevel 1 exit /b 1
 
 echo Done!

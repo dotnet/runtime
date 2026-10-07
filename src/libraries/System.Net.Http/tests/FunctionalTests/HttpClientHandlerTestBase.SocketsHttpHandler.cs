@@ -46,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true)
+        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true, bool allowTlsResume = true)
         {
             useVersion ??= HttpVersion.Version11;
 
@@ -56,6 +56,13 @@ namespace System.Net.Http.Functional.Tests
             if (allowAllCertificates && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            }
+
+            // Native mobile handlers do not use SslStream or expose its resumption setting.
+            if (!allowTlsResume && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi &&
+                GetUnderlyingSocketsHttpHandler(handler) is SocketsHttpHandler socketsHandler)
+            {
+                socketsHandler.SslOptions.AllowTlsResume = false;
             }
 
             return handler;
@@ -71,8 +78,11 @@ namespace System.Net.Http.Functional.Tests
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion);
 
-        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
-            CreateHttpClientHandler(Version.Parse(useVersionString));
+        protected HttpClientHandler CreateHttpClientHandler(bool allowTlsResume) =>
+            CreateHttpClientHandler(UseVersion, allowTlsResume: allowTlsResume);
+
+        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString, bool allowTlsResume = true) =>
+            CreateHttpClientHandler(Version.Parse(useVersionString), allowTlsResume: allowTlsResume);
 
         protected static SocketsHttpHandler GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {

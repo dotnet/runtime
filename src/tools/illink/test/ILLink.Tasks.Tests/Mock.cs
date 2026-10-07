@@ -76,7 +76,8 @@ namespace ILLink.Tasks.Tests
 
     public class MockBuildEngine : IBuildEngine
     {
-        public void LogErrorEvent(BuildErrorEventArgs e) { }
+        public List<BuildErrorEventArgs> Errors { get; } = new List<BuildErrorEventArgs>();
+        public void LogErrorEvent(BuildErrorEventArgs e) => Errors.Add(e);
         public void LogWarningEvent(BuildWarningEventArgs e) { }
         public void LogMessageEvent(BuildMessageEventArgs e) { }
         public void LogCustomEvent(CustomBuildEventArgs e) { }

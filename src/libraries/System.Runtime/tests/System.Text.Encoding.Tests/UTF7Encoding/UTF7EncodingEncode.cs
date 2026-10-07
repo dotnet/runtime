@@ -60,7 +60,6 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Encode_Basic_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134954", TestPlatforms.Wasi)]
         public void Encode_Basic(string source, int index, int count, byte[] expected)
         {
             Encode_Advanced(true, source, index, count, expected);
