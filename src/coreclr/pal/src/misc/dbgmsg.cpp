@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     misc/dbgmsg.cpp
 
 Abstract:
     Implementation of Debug Message utilies. Relay channel information,
     output functions, etc.
-
 --*/
 
 /* PAL headers */

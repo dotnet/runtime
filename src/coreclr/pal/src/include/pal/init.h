@@ -2,21 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/init.h
 
 Abstract:
     Header file for PAL init utility functions. Those functions
     are only use by the PAL itself.
-
-Revision History:
-
-
-
 --*/
 
 #ifndef _PAL_INIT_H_

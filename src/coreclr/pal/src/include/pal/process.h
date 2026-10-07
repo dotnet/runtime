@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/process.h
 
 Abstract:
-
     Miscellaneous process related functions.
-
-Revision History:
-
-
-
 --*/
 
 #ifndef _PAL_PROCESS_H_

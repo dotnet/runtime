@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     path.c
 
 Abstract:
-
     Implementation of all functions related to path support
-
-Revision History:
-
-
-
 --*/
 
 #include "pal/thread.hpp"

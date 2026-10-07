@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================================
-**
 ** Source:  palsuite.h
 **
 ** Purpose: Define constants and implement functions that are useful to
 **          multiple function categories. If common functions are useful
 **          only amongst the test cases for a particular function, a separate
 **          header file is placed in the root of those test cases.
-**
-**
 **==========================================================================*/
 
 #ifndef __PALSUITE_H__

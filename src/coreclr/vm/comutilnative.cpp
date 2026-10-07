@@ -1,21 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 /*============================================================
-**
 ** File:  COMUtilNative
-**
-**
 **
 ** Purpose: A dumping ground for classes which aren't large
 ** enough to get their own file in the EE.
-**
-**
-**
 ===========================================================*/
+
 #include "common.h"
 #include "object.h"
 #include "excep.h"

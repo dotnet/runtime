@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // MetaModelRW.cpp
 //
-
-//
 // Implementation for the Read/Write MiniMD code.
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 #include <limits.h>
 #include <posterror.h>

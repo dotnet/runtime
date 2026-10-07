@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
+// ======================================================================================
 // File: DataBuffer.inl
 //
-
-//
 // Class code:DataBuffer provides secure access to a block of memory.
-//
 // ======================================================================================
 
 #pragma once

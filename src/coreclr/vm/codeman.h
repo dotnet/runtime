@@ -1,17 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
-
 /******************************************************************************
-
 Module Name:
-
     codeman.h
 
 Abstract:
-
     Wrapper to facilitate multiple JITcompiler support in the CLR
 
     The ExecutionManager is responsible for managing the RangeSections.
@@ -51,7 +45,6 @@ Abstract:
                        +--------+      R                           +--------+      R
                        |ICodeMan|                                  |ICodeMan|     (RangeSections)
                        +--------+                                  +--------+
-
 ******************************************************************************/
 
 #ifndef __CODEMAN_HPP__

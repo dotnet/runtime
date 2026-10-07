@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgTiggerStorage.cpp
-//
-
 //
 // TiggerStorage is a stripped down version of compound doc files.  Doc files
 // have some very useful and complex features to them, unfortunately nothing
 // comes for free.  Given the incredibly tuned format of existing .tlb files,
 // every single byte counts and 10% added by doc files is just too expensive.
-//
 //*****************************************************************************
+
 #include "stdafx.h"                     // Standard header.
 #include "stgio.h"                      // I/O subsystem.
 #include "stgtiggerstorage.h"           // Our interface.

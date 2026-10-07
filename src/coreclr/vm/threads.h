@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-//
 // Currently represents a logical and physical CLR thread. Later, these concepts will be separated.
-//
-
 //
 // #SuspendingTheRuntime
 //
@@ -103,7 +99,6 @@
 // 'cooperates' to ensure that GCs can happen in a timely fashion.
 //
 // If you need to switch the GC mode of the current thread, look for the GCX_COOP() and GCX_PREEMP() macros.
-//
 
 #ifndef __threads_h__
 #define __threads_h__

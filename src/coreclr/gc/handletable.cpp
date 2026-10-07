@@ -5,9 +5,6 @@
  * Generational GC handle manager.  Main Entrypoint Layer.
  *
  * Implements generic support for external roots into a GC heap.
- *
-
- *
  */
 
 #include "common.h"

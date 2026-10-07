@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // UtilCode.h
 //
 // Utility functions implemented in UtilCode.lib.
-//
 //*****************************************************************************
 
 #ifndef __UtilCode_h__

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // =============================================================================================
 // Code for tracking method inlinings in NGen and R2R images.
 // The only information stored is "who" got inlined "where", no offsets or inlining depth tracking.
@@ -7,6 +8,7 @@
 // This information is later exposed to profilers and can be useful for ReJIT.
 // Runtime inlining is not being tracked because profilers can deduce it via callbacks anyway.
 // =============================================================================================
+
 #include "common.h"
 #include "inlinetracking.h"
 #include "ceeload.h"

@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
 ** Header:  AppDomain.cpp
 **
-
-**
 ** Purpose: Implements AppDomain (loader domain) architecture
-**
-**
 ===========================================================*/
+
 #ifndef _APPDOMAIN_H
 #define _APPDOMAIN_H
 

@@ -9,7 +9,6 @@ Abstract:
     Implementation of Win32 debugging API functions.
 --*/
 
-
 #include "pal/dbgmsg.h"
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do this first
 

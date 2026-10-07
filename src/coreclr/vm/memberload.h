@@ -1,14 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: memberload.h
-//
-
-
-//
-
-//
-// ============================================================================
 
 #ifndef _MEMBERLOAD_H
 #define _MEMBERLOAD_H

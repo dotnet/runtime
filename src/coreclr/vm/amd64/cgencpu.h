@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENCPU.H -
 //
 // Various helper routines for generating AMD64 assembly code.
 //
 // DO NOT INCLUDE THIS FILE DIRECTLY - ALWAYS USE CGENSYS.H INSTEAD
-//
-
-
 
 #ifndef TARGET_AMD64
 #error Should only include "AMD64\cgencpu.h" for AMD64 builds

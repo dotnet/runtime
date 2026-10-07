@@ -5,9 +5,6 @@
  * Generational GC handle manager.  Internal Implementation Header.
  *
  * Shared defines and declarations for handle table implementation.
- *
-
- *
  */
 
 #include "common.h"

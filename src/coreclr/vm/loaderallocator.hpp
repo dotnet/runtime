@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
 ** Header:  LoaderAllocator.hpp
 **
-
-**
 ** Purpose: Implements collection of loader heaps
-**
-**
 ===========================================================*/
 
 #ifndef __LoaderAllocator_h__

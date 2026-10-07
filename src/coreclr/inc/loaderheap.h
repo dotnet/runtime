@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // LoaderHeap.h
 //
-
-//
 // Utility functions for managing memory allocations that typically do not
 // need releasing.
-//
 //*****************************************************************************
-
 
 #ifndef __LoaderHeap_h__
 #define __LoaderHeap_h__

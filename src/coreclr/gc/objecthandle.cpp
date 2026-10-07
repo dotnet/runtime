@@ -3,9 +3,6 @@
 
 /*
  * Wraps handle table to implement various handle types (Strong, Weak, etc.)
- *
-
- *
  */
 
 #include "common.h"

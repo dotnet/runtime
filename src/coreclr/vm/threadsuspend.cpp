@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // threadsuspend.CPP
 //
 // This file contains the implementation of thread suspension. The implementation of thread suspension
 // used to be spread through multiple places. That is why, many methods still live in their own homes
 // (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
-//
 
 #include "common.h"
 #include "CLREventBase.h"

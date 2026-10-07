@@ -5,7 +5,6 @@
 // File: RsMain.cpp
 //
 // Random RS utility stuff, plus root ICorDebug implementation
-//
 //*****************************************************************************
 
 #include "stdafx.h"

@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: JITinterface.CPP
-// ===========================================================================
-
 #include "common.h"
 #include <inttypes.h>
 #include "jitinterface.h"

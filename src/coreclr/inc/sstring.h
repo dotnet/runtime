@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// ---------------------------------------------------------------------------
-// SString.h  (Safe String)
-//
-
-// ---------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------
 // SString is the "standard" string representation for the EE.  Its has two purposes.
@@ -37,7 +32,6 @@
 //
 // @todo: argument & overflow/underflow checking needs to be added
 // ------------------------------------------------------------------------------------------
-
 
 #ifndef _SSTRING_H_
 #define _SSTRING_H_

@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/utils.h
 
 Abstract:
     Miscellaneous helper functions for the PAL, which don't fit anywhere else
-
-
-
 --*/
 
 #ifndef _PAL_UTILS_H_

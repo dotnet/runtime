@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     environ.cpp
 
 Abstract:
-
     Implementation of functions manipulating environment variables.
-
-Revision History:
-
-
-
 --*/
 
 #include "pal/palinternal.h"

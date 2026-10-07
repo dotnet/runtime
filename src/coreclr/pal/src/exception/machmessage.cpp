@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     machmessage.cpp
 
 Abstract:
-
     Abstraction over Mach messages used during exception handling.
-
 --*/
 
 #include "config.h"

@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 /*
- *
  * EE to Debugger Interface Implementation
- *
  */
+
 #ifndef _eedbginterfaceimpl_h_
 #define _eedbginterfaceimpl_h_
 

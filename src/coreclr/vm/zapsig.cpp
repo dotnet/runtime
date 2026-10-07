@@ -1,16 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: zapsig.cpp
-//
 //
 // This module contains helper functions used to encode and manipulate
 // signatures for scenarios where runtime-specific signatures
 // including specific generic instantiations are persisted,
 // like Ready-To-Run decoding, and Multi-core JIT recording/playback
-//
 // ===========================================================================
-
 
 #include "common.h"
 #include "zapsig.h"

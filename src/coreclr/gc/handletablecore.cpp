@@ -5,9 +5,6 @@
  * Generational GC handle manager.  Core Table Implementation.
  *
  * Implementation of core table management routines.
- *
-
- *
  */
 
 #include "common.h"

@@ -1,16 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgPool.h
-//
-
 //
 // Pools are used to reduce the amount of data actually required in the database.
 // This allows for duplicate string and binary values to be folded into one
 // copy shared by the rest of the database.  Strings are tracked in a hash
 // table when insert/changing data to find duplicates quickly.  The strings
 // are then persisted consecutively in a stream in the database format.
-//
 //*****************************************************************************
 
 #ifndef __StgPool_h__

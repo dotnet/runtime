@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     wchar.c
 
 Abstract:
-
     Implementation of wide char string functions.
-
 --*/
 
 #include "pal/palinternal.h"

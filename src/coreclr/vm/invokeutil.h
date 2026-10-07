@@ -1,15 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
-//
 ////////////////////////////////////////////////////////////////////////////////
 // This module defines a Utility Class used by reflection
-//
-//
-
 ////////////////////////////////////////////////////////////////////////////////
-
 
 #ifndef __INVOKEUTIL_H__
 #define __INVOKEUTIL_H__

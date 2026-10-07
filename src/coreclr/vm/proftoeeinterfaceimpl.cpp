@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
+// ======================================================================================
 // FILE: ProfToEEInterfaceImpl.cpp
 //
 // This module implements the ICorProfilerInfo* interfaces, which allow the
 // Profiler to communicate with the EE.  This allows the Profiler DLL to get
 // access to private EE data structures and other things that should never be
 // exported outside of the EE.
-//
-
 //
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE!
@@ -56,7 +55,6 @@
 // NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
-//
 // #P2CLRRestrictionsOverview
 //
 // The public ICorProfilerInfo(N) functions below have different restrictions on when
@@ -100,10 +98,6 @@
 //             * normally immutable or disallowed after attach, AND
 //             * that the test plans to set after startup and / or by an attaching
 //                 profiler.
-//
-//
-
-//
 // ======================================================================================
 
 #include "common.h"

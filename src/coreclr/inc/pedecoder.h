@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// --------------------------------------------------------------------------------
-// PEDecoder.h
-//
-
-// --------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------
 // PEDecoder - Utility class for reading and verifying PE files.
@@ -21,7 +16,6 @@
 // range verification.  This is an optional parameter, but if you omit it be sure
 // you verify the size in some other way.
 // --------------------------------------------------------------------------------
-
 
 #ifndef PEDECODER_H_
 #define PEDECODER_H_

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // Section Manager for portable executables
 // Common to both Memory Only and Static (EXE making) code
-
 
 #ifndef PESectionMan_H
 #define PESectionMan_H

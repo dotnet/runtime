@@ -3,8 +3,6 @@
 
 // STUBLINK.H
 //
-
-//
 // A StubLinker object provides a way to link several location-independent
 // code sources into one executable stub, resolving references,
 // and choosing the shortest possible instruction size. The StubLinker
@@ -30,7 +28,6 @@
 //  StubLinker stublink;
 //  Inner();
 //
-//
 //  // Have to separate into inner function because VC++ forbids
 //  // mixing __try & local objects in the same function.
 //  void Inner() {
@@ -40,8 +37,6 @@
 //      } COMPLUSCATCH {
 //      }
 //  }
-//
-
 
 // This file should only be included via the platform-specific cgencpu.h.
 

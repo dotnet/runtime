@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: CompressedInteger.inl
-//
 
+// ======================================================================================
+// File: CompressedInteger.inl
 //
 // Class code:MetaData::CompressedInteger provides secure access to a compressed integer (as defined in CLI
 // ECMA specification). The integer is compressed into 1, 2 or 4 bytes. See code:CompressedInteger#Format
 // for full format description.
-//
 // ======================================================================================
 
 #pragma once

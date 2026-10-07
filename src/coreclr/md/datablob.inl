@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: DataBlob.inl
-//
 
+// ======================================================================================
+// File: DataBlob.inl
 //
 // Class code:MetaData::DataBlob provides secure access to a block of memory from MetaData (i.e. with fixed
 // endianness).
-//
 // ======================================================================================
 
 #pragma once

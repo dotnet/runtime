@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 //  util.cpp
 //
-
-//
 //  This contains a bunch of C++ utility classes.
-//
 //*****************************************************************************
+
 #include "stdafx.h"                     // Precompiled header key.
 #include "utilcode.h"
 #include "metadata.h"

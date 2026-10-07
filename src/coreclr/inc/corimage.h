@@ -1,15 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-//
-
 /*============================================================
-**
 ** CorImage.h
 **
 ** IMAGEHLP routines so we can avoid early binding to that DLL.
-**
 ===========================================================*/
 
 #ifndef _CORIMAGE_H_

@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // MetaModel.h -- header file for compressed CLR metadata.
-//
-
-//
 //*****************************************************************************
+
 #ifndef _METAMODEL_H_
 #define _METAMODEL_H_
 

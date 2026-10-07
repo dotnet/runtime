@@ -4,11 +4,9 @@
 //*****************************************************************************
 // MetaModelRW.h -- header file for Read/Write compressed CLR metadata.
 //
-
-//
 // Used by Emitters and by E&C.
-//
 //*****************************************************************************
+
 #ifndef _METAMODELRW_H_
 #define _METAMODELRW_H_
 

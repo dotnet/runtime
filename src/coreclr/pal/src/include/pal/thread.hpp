@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/thread.hpp
 
 Abstract:
     Header file for thread structures
-
-
-
 --*/
 
 #ifndef _PAL_THREAD_HPP_

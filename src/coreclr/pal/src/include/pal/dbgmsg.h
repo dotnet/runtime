@@ -139,9 +139,6 @@ Using Debug channels at Run Time
     Normally, if the file specified by PAL_API_TRACING exists, its content will
     be overwritten when a PAL process starts using it. If --enable-appendtraces
     is used, debug output will be appended at the end of the file instead.
-
-
-
  */
 
 #ifndef _PAL_DBGMSG_H_

@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     init/pal.cpp
 
 Abstract:
-
     Implementation of PAL exported functions not part of the Win32 API.
-
 --*/
 
 #include "pal/dbgmsg.h"

@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     misc/utils.c
 
 Abstract:
-
     Miscellaneous helper functions for the PAL, which don't fit anywhere else
-
-
-
 --*/
 
 #include "pal/dbgmsg.h"

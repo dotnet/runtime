@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: DispatchInfo.cpp
-//
 
+// File: DispatchInfo.cpp
 //
 // Implementation of helpers used to expose IDispatch
 // and IDispatchEx to COM.
-//
-
 
 #include "common.h"
 

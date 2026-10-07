@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // OBJECT.H
 //
 // Definitions of a CLR Object
-//
 
 // See code:EEStartup#TableOfContents for overview
-
 
 #ifndef _OBJECT_H_
 #define _OBJECT_H_

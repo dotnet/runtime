@@ -5,9 +5,6 @@
  * Generational GC handle manager.  Entrypoint Header.
  *
  * Implements generic support for external handles into a GC heap.
- *
-
- *
  */
 
 #ifndef _HANDLETABLE_H
