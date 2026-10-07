@@ -602,7 +602,7 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 
 void FatalErrorHandler(UINT errorCode, LPCWSTR pszMessage)
 {
-    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(errorCode, pszMessage);
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE_NO_GC_MODE_TRANSITION(errorCode, pszMessage);
 }
 
 void EEStartupHelper()

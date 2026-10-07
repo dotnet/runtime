@@ -34,7 +34,7 @@ public:
 
     static void HandleExitProcess(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
 
-    static int NOINLINE HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage=NULL, PEXCEPTION_POINTERS pExceptionInfo= NULL, LPCWSTR errorSource=NULL, LPCWSTR argExceptionString=NULL);
+    static int NOINLINE HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage=NULL, PEXCEPTION_POINTERS pExceptionInfo= NULL, LPCWSTR errorSource=NULL, LPCWSTR argExceptionString=NULL, bool allowGCModeTransition=true);
 
     static void DECLSPEC_NORETURN HandleFatalStackOverflow(EXCEPTION_POINTERS *pException, BOOL fSkipDebugger = FALSE);
 
@@ -43,7 +43,7 @@ public:
 #endif
 
 private:
-    static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
+    static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString, bool allowGCModeTransition);
 };
 
 //
@@ -60,6 +60,9 @@ private:
 
 // FailFast with specific error code and message (LPWSTR)
 #define EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(_exitcode, _message) EEPolicy::HandleFatalError(_exitcode, GetCurrentIP(), _message);
+
+// FailFast with specific error code and message (LPWSTR) without switching to cooperative mode
+#define EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE_NO_GC_MODE_TRANSITION(_exitcode, _message) EEPolicy::HandleFatalError(_exitcode, GetCurrentIP(), _message, NULL, NULL, NULL, false);
 
 // FailFast with specific error code and exception details
 #define EEPOLICY_HANDLE_FATAL_ERROR_USING_EXCEPTION_INFO(_exitcode, _pExceptionInfo) EEPolicy::HandleFatalError(_exitcode, GetCurrentIP(), NULL, _pExceptionInfo);
