@@ -113,10 +113,9 @@ typedef struct _WOD_SAVE_XMM128 {
 //
 
 typedef struct _WOD_PUSH2 {
-    UCHAR OpCode : 6;               // WOD_OP_PUSH2
-    UCHAR Register1Low : 2;         // Register1[1:0]
-    UCHAR Register1High : 3;        // Register1[4:2]
-    UCHAR Register2 : 5;
+    USHORT OpCode : 6;              // WOD_OP_PUSH2
+    USHORT Register1 : 5;
+    USHORT Register2 : 5;
 } WOD_PUSH2, *PWOD_PUSH2;
 
 //

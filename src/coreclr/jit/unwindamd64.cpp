@@ -609,14 +609,15 @@ void Compiler::unwindPush2V3(regNumber reg1, regNumber reg2)
     }
 
     // PUSH2 pushes reg1 first, so it ends up at [rsp + 8] and reg2 at [rsp]. WOD_PUSH2's
-    // Register1 and Register2 follow the same convention. Register1 straddles the WOD's two bytes.
-    WOD_PUSH2* wod     = (WOD_PUSH2*)unwindAllocWodV3(func, sizeof(WOD_PUSH2));
-    wod->OpCode        = WOD_OP_PUSH2;
-    wod->Register1Low  = (UCHAR)(reg1 & 0x3);
-    wod->Register1High = (UCHAR)(reg1 >> 2);
-    wod->Register2     = (UCHAR)reg2;
-    assert((regNumber)((wod->Register1High << 2) | wod->Register1Low) == reg1);
+    // Register1 and Register2 follow the same convention.
+    WOD_PUSH2* wod = (WOD_PUSH2*)unwindAllocWodV3(func, sizeof(WOD_PUSH2));
+    wod->OpCode    = WOD_OP_PUSH2;
+    wod->Register1 = (USHORT)reg1;
+    wod->Register2 = (USHORT)reg2;
+    assert((regNumber)wod->Register1 == reg1);
     assert((regNumber)wod->Register2 == reg2);
+    assert(((BYTE*)wod)[0] == (BYTE)(WOD_OP_PUSH2 | ((reg1 & 0x3) << 6)));
+    assert(((BYTE*)wod)[1] == (BYTE)((reg1 >> 2) | (reg2 << 3)));
 }
 
 void Compiler::unwindAllocStackV3(unsigned size)
