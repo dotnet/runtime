@@ -174,8 +174,8 @@ OBJECTREF *PinnedHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
     }
     CONTRACTL_END;
 
-    OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
-    _ASSERTE(pPreallocatedSentinelObject  != NULL);
+    OBJECTREF pPreallocatedSentinelObject = g_pPreallocatedSentinelObject;
+    _ASSERTE(pPreallocatedSentinelObject != NULL);
 
     for (int  i = m_CurrentEmbeddedFreePos; i < m_CurrentPos; i++)
     {
@@ -405,8 +405,8 @@ void PinnedHeapHandleTable::ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nRele
     _ASSERTE(m_Crst.OwnedByCurrentThread());
 #endif
 
-    OBJECTREF pPreallocatedSentinelObject = ObjectFromHandle(g_pPreallocatedSentinelObject);
-    _ASSERTE(pPreallocatedSentinelObject  != NULL);
+    OBJECTREF pPreallocatedSentinelObject = g_pPreallocatedSentinelObject;
+    _ASSERTE(pPreallocatedSentinelObject != NULL);
 
 
     // Add the released handles to the list of available handles.
@@ -807,8 +807,14 @@ void SystemDomain::PreallocateSpecialObjects()
 
     _ASSERTE(g_pPreallocatedSentinelObject == NULL);
 
-    OBJECTREF pPreallocatedSentinelObject = AllocateObject(g_pObjectClass);
-    g_pPreallocatedSentinelObject = AppDomain::GetCurrentDomain()->CreatePinningHandle( pPreallocatedSentinelObject );
+    g_pPreallocatedSentinelObject = TryAllocateFrozenObject(g_pObjectClass);
+    if (g_pPreallocatedSentinelObject == NULL)
+    {
+        OBJECTREF pPreallocatedSentinelObject = AllocateObject(g_pObjectClass);
+        // Keep the fallback object alive and immovable for the lifetime of the runtime.
+        OBJECTHANDLE handle = AppDomain::GetCurrentDomain()->CreatePinningHandle(pPreallocatedSentinelObject);
+        g_pPreallocatedSentinelObject = ObjectFromHandle(handle);
+    }
 }
 
 void SystemDomain::CreatePreallocatedExceptions()
