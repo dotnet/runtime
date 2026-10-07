@@ -377,6 +377,72 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task SplitDeclaration_KeepsCommentsAroundIdentifier()
+        {
+            return VerifyAsync("""
+                class C
+                {
+                    static unsafe int Get() => 0;
+
+                    int M()
+                    {
+                        int value /* identifier */ = /* assignment */ {|CS9362:Get()|};
+                        return value;
+                    }
+                }
+                """, """
+                class C
+                {
+                    static unsafe int Get() => 0;
+
+                    int M()
+                    {
+                        int value;
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            value /* identifier */ = /* assignment */ Get();
+                        }
+                        return value;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public Task SplitOutVariable_KeepsCommentAfterType()
+        {
+            return VerifyAsync("""
+                class C
+                {
+                    static unsafe void Get(out int value) { value = 0; }
+
+                    int M()
+                    {
+                        {|CS9362:Get(out int /* explanation */ value)|};
+                        return value;
+                    }
+                }
+                """, """
+                class C
+                {
+                    static unsafe void Get(out int value) { value = 0; }
+
+                    int M()
+                    {
+                        int /* explanation */ value;
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            Get(out value);
+                        }
+                        return value;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
         public Task SplitDeclaration_KeepsInlineComment()
         {
             return VerifyAsync("""

@@ -224,7 +224,7 @@ namespace ILLink.CodeFix.UnsafeContext
                 .. initialized.Select((variable, i) => SyntaxFactory.ExpressionStatement(
                     SyntaxFactory.AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
-                        SyntaxFactory.IdentifierName(variable.Identifier.WithoutTrivia()).WithTrailingTrivia(SyntaxFactory.Space),
+                        SyntaxFactory.IdentifierName(variable.Identifier.WithoutTrivia()).WithTrailingTrivia(SameLineOrSpace(variable.Identifier.TrailingTrivia)),
                         variable.Initializer!.EqualsToken,
                         variable.Initializer.Value),
                     i == initialized.Count - 1 ? rewritten.SemicolonToken : semicolon)),
@@ -233,14 +233,18 @@ namespace ILLink.CodeFix.UnsafeContext
             return (declaration, assignments);
         }
 
-        // Creates `T a, b;` without trivia.
+        // Creates `T a, b;`; comments after the type on its line are kept.
         private static StatementSyntax CreateDeclaration(TypeSyntax type, IEnumerable<VariableDeclaratorSyntax> variables)
         {
             List<VariableDeclaratorSyntax> list = [.. variables];
             var separators = Enumerable.Repeat(SyntaxFactory.Token(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space), list.Count - 1);
             return SyntaxFactory.LocalDeclarationStatement(
-                SyntaxFactory.VariableDeclaration(type.WithoutTrivia().WithTrailingTrivia(SyntaxFactory.Space), SyntaxFactory.SeparatedList(list, separators)));
+                SyntaxFactory.VariableDeclaration(type.WithoutTrivia().WithTrailingTrivia(SameLineOrSpace(type.GetTrailingTrivia())), SyntaxFactory.SeparatedList(list, separators)));
         }
+
+        // Keeps trailing trivia such as `/* note */ ` unless it is empty or ends the line, where a space is used instead.
+        private static SyntaxTriviaList SameLineOrSpace(SyntaxTriviaList trailing) =>
+            trailing.Count == 0 || trailing.Any(static t => t.EndsLine) ? [SyntaxFactory.Space] : trailing;
 
         // Whether the local is a Span<T>/ReadOnlySpan<T> initialized with a stackalloc.
         private static bool IsStackAllocatedSpan(ILocalSymbol local, VariableDeclaratorSyntax variable, PlanningContext context)
@@ -256,18 +260,19 @@ namespace ILLink.CodeFix.UnsafeContext
 
         /// <summary>
         /// Returns the type for a split declaration: the explicit source type, or the exact inferred type of a
-        /// <c>var</c> local when it is nameable and cannot differ between build configurations.
+        /// <c>var</c> local when it is nameable and cannot differ between build configurations. Trailing trivia
+        /// (e.g. a comment after the type) is kept.
         /// </summary>
         private static TypeSyntax? GetTypeSyntax(TypeSyntax? declaredType, ILocalSymbol local, ExpressionSyntax? initializer, SyntaxNode position, PlanningContext context)
         {
             if (declaredType is not null && !declaredType.IsVar)
-                return declaredType.WithoutTrivia();
+                return declaredType.WithoutLeadingTrivia();
 
             if (!IsNameable(local.Type) || IsConfigurationDependent(local.Type, initializer, context))
                 return null;
 
             TypeSyntax type = SyntaxFactory.ParseTypeName(local.Type.ToMinimalDisplayString(context.Model, position.SpanStart, s_typeFormat));
-            return type.ContainsDiagnostics ? null : type;
+            return type.ContainsDiagnostics ? null : type.WithTrailingTrivia(declaredType?.GetTrailingTrivia() ?? default);
         }
 
         // Whether the type can be written in source: no anonymous or error types, also as type arguments.

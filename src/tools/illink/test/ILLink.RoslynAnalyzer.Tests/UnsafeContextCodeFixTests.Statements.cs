@@ -533,6 +533,77 @@ namespace ILLink.RoslynAnalyzer.Tests
                 }
                 """);
         }
+
+        [Fact]
+        public Task AwaitInsideBlock()
+        {
+            // `await` is allowed in unsafe contexts under the updated rules.
+            return VerifyAsync("""
+                using System.Threading.Tasks;
+
+                class C
+                {
+                    static unsafe int Get(int value) => value;
+
+                    async Task<int> M()
+                    {
+                        int x = {|CS9362:Get(await Task.FromResult(1))|};
+                        return x;
+                    }
+                }
+                """, """
+                using System.Threading.Tasks;
+
+                class C
+                {
+                    static unsafe int Get(int value) => value;
+
+                    async Task<int> M()
+                    {
+                        int x;
+                        // SAFETY: To be audited
+                        unsafe
+                        {
+                            x = Get(await Task.FromResult(1));
+                        }
+                        return x;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public Task MethodGroupConversion_ConvertsToGetAccessor()
+        {
+            // `unsafe(M)` is still an error: the conversion to `Action` happens outside the unsafe expression.
+            return VerifyAsync("""
+                using System;
+
+                class C
+                {
+                    unsafe void M() { }
+                    Action P => {|CS9362:M|};
+                }
+                """, """
+                using System;
+
+                class C
+                {
+                    unsafe void M() { }
+                    Action P
+                    {
+                        get
+                        {
+                            // SAFETY: To be audited
+                            unsafe
+                            {
+                                return M;
+                            }
+                        }
+                    }
+                }
+                """);
+        }
     }
 }
 #endif
