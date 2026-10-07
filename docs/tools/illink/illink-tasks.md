@@ -58,6 +58,15 @@ Eligible invocations use a key covering arguments, input-file and sidecar conten
 assembly, the selected dotnet host executable, and the entire ILLink assembly.
 File contents are hashed on every invocation. Linker changes invalidate the cache even when
 the module version ID (MVID), file length, and timestamp are unchanged.
+`SourceRoots` with stable `MappedPath` metadata allow equivalent relative layouts in different
+clones/worktrees to share a key. Only known path arguments and input identities are mapped;
+external paths remain absolute and argument/search-directory order is preserved.
+For eligible invocations with one physical root (including consistent nested mappings),
+the task runs ILLink from that root with known in-root paths rendered relative to it.
+Original relative inputs are resolved against the caller's working directory first.
+External paths remain absolute. This does not change process-wide cwd, mutate task inputs,
+or normalize bytes embedded in inputs or outputs. Disjoint-root invocations retain their
+original execution; disabled or bypassed caching leaves execution unchanged.
 Bundled dependencies and configuration are not fingerprinted. Changes to those files require
 a cleared/isolated cache or disabled caching unless the linker binary also changes.
 
@@ -67,13 +76,28 @@ clear or isolate the cache when that distinction is required.
 Cache hits replace the output directory without running ILLink.
 Directories are created in the cache only when storing a successful result. Hits do not replay warnings or other linker diagnostics.
 
-Caching is bypassed with a diagnostic for non-whitespace `ExtraArgs`, custom steps/data,
-dependency-dump options, and explicit task environment overrides. Options supplied through
-`ExtraArgs` remain unsupported for caching; these invocations still run the linker normally.
+Caching is bypassed with a diagnostic for arbitrary `ExtraArgs`, custom steps/data,
+dependency-dump options, and explicit task environment overrides. The only supported
+`ExtraArgs` shape is `--ignore-link-attributes true` followed by zero or more
+`--link-attributes FILE`, `--substitutions FILE`, or `-d DIRECTORY` pairs. Referenced files
+and search-directory assembly candidates are content-hashed, including shadowed candidates.
+Other options still run the linker normally, uncached.
 Inherited environment variables are not tracked; disable caching
 when they affect outputs or dependencies beyond the keyed inputs, or require tool-execution
 side effects such as startup hooks or profiling. Unreadable inputs or linker files also
-fall back to normal linking. See the
+fall back to normal linking.
+
+Cache-enabled invocations that cannot meet the supported path-independence contract run
+uncached and store nothing, rather than create path-specific entries. Missing/invalid root
+mappings, physical symbol paths, unsupported symbol formats, additional modules, and linked
+resources bypass caching. Path-shaped assembly references and external XML assembly names
+also bypass caching because they can escape the declared search-directory inventory.
+Portable PDB emission requires already-normalized input paths and
+explicit `PreserveSymbolPaths=true`. Neither symbol preservation nor deterministic compiler
+paths are enabled automatically. Copy actions also require shareable input paths.
+The SDK forwards `@(SourceRoot)`; runtime library targets supply the repository root without
+changing how inputs are compiled. Current runtime raw arguments still include unsupported
+options and bypass caching; structured runtime argument integration is separate. See the
 [cache design](../../design/tools/illink/task-cache.md) for identity and eligibility details.
 
 ### Cache maintenance
@@ -165,6 +189,24 @@ paths.
 ### RootDescriptorFiles
 
 A list of XML [descriptors](data-formats.md#descriptor-format) files specifying trimmer roots at a granular level.
+
+### SourceRoots
+
+Physical absolute roots with stable `MappedPath` metadata for experimental cache identity.
+For example:
+
+```xml
+<ItemGroup>
+  <LinkerSourceRoot Include="$(RepositoryRoot)" MappedPath="/_/" />
+</ItemGroup>
+```
+
+Pass `SourceRoots="@(LinkerSourceRoot)"` to the task. The current shared-cache scope accepts
+the conventional `/_/`, `/_1/`, etc. logical prefixes; nested mappings must preserve relative
+layout. Eligible invocations with one physical root execute from it using relative in-root
+paths. This parameter does not enable caching, change compiler settings, or remap embedded
+paths in linker outputs. Without usable mappings a cache-enabled invocation runs normally,
+uncached.
 
 ## ILLink Task Customization
 
