@@ -257,7 +257,7 @@ namespace System
                     // RCWs don't need to be "strongly-typed" in which case we don't find a base type
                     // that matches the declaring type of the method. This is fine because interop needs
                     // to work with exact methods anyway so declaringType is never shared at this point.
-                    // The targetType may also be an interface with a Default interface method (DIM).
+                    // The method may also be declared by an interface with a Default interface method (DIM).
                     Debug.Assert(
                         !IsClosed || currentType is not null
                         || _target!.GetType().IsCOMObject
