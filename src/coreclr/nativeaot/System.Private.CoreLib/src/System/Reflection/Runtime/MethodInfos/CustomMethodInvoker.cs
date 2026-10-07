@@ -13,16 +13,13 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal sealed class CustomMethodInvoker : MethodBaseInvoker
     {
-        public CustomMethodInvoker(Type thisType, Type[] parameterTypes, InvokerOptions options, CustomMethodInvokerAction action, MethodInfo? methodInfo = null)
+        public CustomMethodInvoker(Type thisType, Type[] parameterTypes, InvokerOptions options, CustomMethodInvokerAction action)
         {
             _action = action;
             _options = options;
             _thisType = thisType;
             _parameterTypes = parameterTypes;
-            MethodInfo = methodInfo;
         }
-
-        internal MethodInfo? MethodInfo { get; }
 
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException) =>
             InvokeSpecial(thisObject, arguments, arguments, binderBundle, wrapInTargetInvocationException);
@@ -112,7 +109,22 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 if (isOpen)
                 {
-                    return DynamicDelegateAugments.CreateObjectArrayDelegate(Type.GetTypeFromHandle(delegateType), InvokeObjectArrayDelegate);
+                    return DynamicDelegateAugments.CreateObjectArrayDelegate(Type.GetTypeFromHandle(delegateType),
+                        (args) =>
+                        {
+                            object[] arguments;
+                            if (args.Length > 1)
+                            {
+                                arguments = new object[args.Length - 1];
+                                Array.Copy(args, 1, arguments, 0, args.Length - 1);
+                            }
+                            else
+                            {
+                                arguments = Array.Empty<object>();
+                            }
+
+                            return _action(args[0], arguments, _thisType);
+                        });
                 }
                 else
                 {
@@ -122,22 +134,6 @@ namespace System.Reflection.Runtime.MethodInfos
             }
 
             throw new PlatformNotSupportedException();
-        }
-
-        private object? InvokeObjectArrayDelegate(object?[] args)
-        {
-            object[] arguments;
-            if (args.Length > 1)
-            {
-                arguments = new object[args.Length - 1];
-                Array.Copy(args, 1, arguments, 0, args.Length - 1);
-            }
-            else
-            {
-                arguments = Array.Empty<object>();
-            }
-
-            return _action(args[0], arguments, _thisType);
         }
 
         public sealed override IntPtr LdFtnResult => throw new PlatformNotSupportedException();

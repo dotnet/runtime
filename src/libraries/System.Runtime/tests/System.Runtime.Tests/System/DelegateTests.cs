@@ -1378,7 +1378,6 @@ namespace System.Tests
                 typeof(NullableIntToString), mi);
             string s = toString(ref num);
             Assert.Equal(num.ToString(), s);
-            Assert.Equal(typeof(int?), toString.Method.ReflectedType);
         }
 
         [Fact]

@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Reflection.Runtime.MethodInfos;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -288,18 +287,14 @@ namespace System
                 return invocations[^1].Value!.GetMethodImpl();
             }
 
-            // Object-array delegates for custom method invokers retain the original method.
-            // Other object-array delegates and marshalled function pointers report Invoke.
+            // Return the delegate Invoke method for marshalled function pointers and LINQ expressions
             if (_target is NativeFunctionPointerWrapper || _methodPtr == GetThunk(ObjectArrayThunk))
             {
-                return GetCustomMethodInfo() ?? GetInvokeMethod(GetType());
+                return GetInvokeMethod(GetType());
             }
 
             return ReflectionAugments.GetDelegateMethod(this);
         }
-
-        private MethodInfo? GetCustomMethodInfo() =>
-            (_helperObject as Func<object?[], object?>)?.Target is CustomMethodInvoker invoker ? invoker.MethodInfo : null;
 
         internal DiagnosticMethodInfo GetDiagnosticMethodInfo()
         {
@@ -311,14 +306,9 @@ namespace System
                 return invocations[^1].Value!.GetDiagnosticMethodInfo();
             }
 
-            // Object-array delegates for custom method invokers retain the original method.
-            // Other object-array delegates and marshalled function pointers report Invoke.
+            // Return the delegate Invoke method for marshalled function pointers and LINQ expressions
             if (_target is NativeFunctionPointerWrapper || _methodPtr == GetThunk(ObjectArrayThunk))
             {
-                MethodInfo? methodInfo = GetCustomMethodInfo();
-                if (methodInfo is not null)
-                    return CreateDiagnosticMethodInfo(methodInfo);
-
                 Type t = GetType();
                 return new DiagnosticMethodInfo("Invoke", t.FullName, t.Module.Assembly.FullName);
             }
@@ -326,7 +316,11 @@ namespace System
             IntPtr ldftnResult = GetDelegateLdFtnResult(out RuntimeTypeHandle _, out bool isOpenResolver);
             if (isOpenResolver)
             {
-                return CreateDiagnosticMethodInfo(ReflectionAugments.GetDelegateMethod(this));
+                MethodInfo mi = ReflectionAugments.GetDelegateMethod(this);
+                Type? declaringType = mi.DeclaringType;
+                if (declaringType.IsConstructedGenericType)
+                    declaringType = declaringType.GetGenericTypeDefinition();
+                return new DiagnosticMethodInfo(mi.Name, declaringType.FullName, mi.Module.Assembly.FullName);
             }
 
             IntPtr functionPointer;
@@ -347,14 +341,6 @@ namespace System
                 functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
             }
             return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
-
-            static DiagnosticMethodInfo CreateDiagnosticMethodInfo(MethodInfo methodInfo)
-            {
-                Type? declaringType = methodInfo.DeclaringType;
-                if (declaringType.IsConstructedGenericType)
-                    declaringType = declaringType.GetGenericTypeDefinition();
-                return new DiagnosticMethodInfo(methodInfo.Name, declaringType.FullName, methodInfo.Module.Assembly.FullName);
-            }
         }
 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) =>

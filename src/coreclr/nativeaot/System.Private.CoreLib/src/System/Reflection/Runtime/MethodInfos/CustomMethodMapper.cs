@@ -38,7 +38,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
 
             InvokerOptions options = (methodBase.IsStatic || methodBase is ConstructorInfo || isNullable) ? InvokerOptions.AllowNullThis : InvokerOptions.None;
-            return new CustomMethodInvoker(declaringType, parameterTypes, options, action, methodBase as MethodInfo);
+            return new CustomMethodInvoker(declaringType, parameterTypes, options, action);
         }
 
         private static void AddConstructor(this Dictionary<MethodBase, CustomMethodInvokerAction> map, Type declaringType, Type[] parameterTypes, CustomMethodInvokerAction action)
