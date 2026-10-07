@@ -169,11 +169,13 @@ Create breaking change documentation for the pull request identified below.
 
 ## Dry-run mode
 
-- If triggered by `workflow_dispatch` with `suppress_output` = `true`,
+Dry-run mode for this run: `${{ github.event.inputs.suppress_output || false }}`.
+
+- If the value above is `true`,
   **do not** post a comment on the PR after producing the files. Write
   the markdown files and emit a `noop` explaining that dry-run drafts
   were generated without publication.
-- For pull_request triggers, post the comment only when permitted by the
+- If the value above is `false`, post the comment only when permitted by the
   skill's "Post the comment" rules, including its uncertainty gate.
 
 ## Instructions
