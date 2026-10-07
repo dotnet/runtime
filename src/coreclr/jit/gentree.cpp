@@ -2783,7 +2783,10 @@ AGAIN:
         switch (oper)
         {
             case GT_CNS_INT:
-                if (op1->AsIntCon()->IconValue() == op2->AsIntCon()->IconValue())
+                // Field sequences carry field identity (and thus type info) just like
+                // GT_FIELD_ADDR's field handle, so they must match too.
+                if ((op1->AsIntCon()->IconValue() == op2->AsIntCon()->IconValue()) &&
+                    (op1->AsIntCon()->GetFieldSeq() == op2->AsIntCon()->GetFieldSeq()))
                 {
                     return true;
                 }
